@@ -44,33 +44,37 @@
 // Comments are formatted for doxygen
 //
 
-`include "drom.vh"
+`include "microcontroller/drom.vh"
 
-module DROM(clk, clken, addr, drom);
+module DROM(clk, clken, dbus, drom);
 
    parameter dromWidth = `DROM_WIDTH;
-   
-   input 		  clk;          // Clock
-   input 		  clken;        // Clock Enable
-   input  [0:11] 	  addr;         // Address
-   output [0:dromWidth-1] drom; 	// Output Data 
+
+   input                  clk;          // Clock
+   input                  clken;        // Clock Enable
+   input  [0:35]          dbus;         // Data Bus (Instruction Register)
+   output [0:dromWidth-1] drom;         // Output Data
+
 
    initial
      $readmemb(`DROM_DATA, ROM, 0, 511);
 
    //
-   // ROM
+   // DROM
+   //  DPEA/E98
+   //  DPEA/E117
+   //  DPEA/E110
    //
-   
+
    reg [0:dromWidth-1] drom;
    reg [0:dromWidth-1] ROM[0:511];
-   
+
    always @(posedge clk)
      begin
         if (clken)
           begin
-             drom <= ROM[addr];
-          end 
+             drom <= ROM[dbus[0:8]];
+          end
      end
 
 endmodule
