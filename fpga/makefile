@@ -33,6 +33,4 @@ clean:
 	rcsclean $(ALU)/*
 	rcsclean $(UC)/*
 	rm -f    $(UC)/*.bin
-	find . -type f -name *~ 
-
-#| rm -v
+	find . -type f -name "*~" | xargs rm -fv
