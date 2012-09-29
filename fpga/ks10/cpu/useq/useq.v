@@ -47,54 +47,54 @@
 `include "microcontroller.vh"
 
 module microcontroller(clk, rst, clken, disp_diag, 
-                       disp_mul, disp_pf, disp_ni, disp_byte, disp_ea, disp_scad,
-                       skip_40, skip_20, skip_10, drom, crom);
+                       disp_mul, disp_pf, disp_ni, disp_byte, disp_ea,
+		       disp_scad, skip_40, skip_20, skip_10, drom, crom);
    
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
 
-   input         clk;           // Clock
-   input         rst;           // Reset
-   input         clken;         // Clock Enable
-   input  [0:11] disp_diag;     // Diagnostic Addr
-   input  [0: 3] disp_mul;      // Multiply Dispatch
-   input  [0: 3] disp_pf;       // Page Fail Dispatch
-   input  [0: 3] disp_ni;       // Next Instruction Dispatch
-   input  [0: 3] disp_byte;     // Byte Size/Position Dispatch
-   input  [0: 3] disp_ea;       // Effective Address Mode Dispatch
-   input  [0: 3] disp_scad;     // SCAD Dispatch
-   input  [0: 8] skip_40;       // Skip 40
-   input  [0: 8] skip_20;       // Skip 20
-   input  [0: 8] skip_10;       // Skip 10
-   input  [0:dromWidth-1] drom; // Dispatch ROM Data
-   output [0:cromWidth-1] crom; // Control ROM Data
+   input 		  clk;     	// Clock
+   input 		  rst;          // Reset
+   input 		  clken;        // Clock Enable
+   input  [0:11] 	  disp_diag;    // Diagnostic Addr
+   input  [0: 3] 	  disp_mul;     // Multiply Dispatch
+   input  [0: 3] 	  disp_pf;      // Page Fail Dispatch
+   input  [0: 3] 	  disp_ni;      // Next Instruction Dispatch
+   input  [0: 3] 	  disp_byte;    // Byte Size/Position Dispatch
+   input  [0: 3] 	  disp_ea;      // Effective Address Mode Dispatch
+   input  [0: 3] 	  disp_scad;    // SCAD Dispatch
+   input  [0: 7] 	  skip_40;      // Skip 40
+   input  [0: 7] 	  skip_20;      // Skip 20
+   input  [0: 7] 	  skip_10;      // Skip 10
+   input  [0:dromWidth-1] drom; 	// Dispatch ROM Data
+   output [0:cromWidth-1] crom; 	// Control ROM Data
 
    //
    // Control ROM Address
    //
 
    wire [0:11] addr;
-   wire [0:11] ret_addr;
+   wire [0:11] disp_ret;
    
    // Note:
    // The KS10 logic decodes "x0xx01" (CRA2/E34) but only
    //  001 and 041 are used by the microcode.
    //
    
-   wire        ret = ((`cromDISP == 6'o01) ||   // used
-                      (`cromDISP == 6'o05) ||   // not used
-                      (`cromDISP == 6'o11) ||   // not used
-                      (`cromDISP == 6'o15) ||   // not used
-                      (`cromDISP == 6'o41) ||   // used
-                      (`cromDISP == 6'o45) ||   // not used
-                      (`cromDISP == 6'o51) ||   // not used
-                      (`cromDISP == 6'o55));    // not used
+   wire ret = ((`cromDISP == 6'o01) ||   // used
+	       (`cromDISP == 6'o05) ||   // not used
+	       (`cromDISP == 6'o11) ||   // not used
+	       (`cromDISP == 6'o15) ||   // not used
+	       (`cromDISP == 6'o41) ||   // used
+	       (`cromDISP == 6'o45) ||   // not used
+	       (`cromDISP == 6'o51) ||   // not used
+               (`cromDISP == 6'o55));    // not used
 
    //
    // Page Fail
    //
 
-   wire        page_fail = 1'b0;
+   wire page_fail = 1'b0;
 
    //
    // Skip Logic
@@ -109,18 +109,23 @@ module microcontroller(clk, rst, clken, disp_diag,
 
    //
    // Dispatch Logic
+   //  The dromJ is implemented slightly different than the KS-10.
+   //  In the KS10, the J value is constained to be  between 1400
+   //  and 1777.  This allows the dispatch function to hardwire
+   //  the upper 4 data bits instead of storing them in the DROM.
+   //  I've hooked all data lines up and will let the optimizer do
+   //  it's thing.
    //
 
+   wire [0:11] disp_addr;
    wire        dromAEQJ   = 1'b0;
-	wire [0:11] dromJ      = `dromJ;
-   wire [0: 7] disp_aread = (dromAEQJ) ? 
-               {2'b00, dromAEQJ, dromAEQJ, dromJ} : 
-               {2'b00, dromAEQJ, dromAEQJ, 4'b0000};
+   wire [0:11] dromJ      = `dromJ;
+   wire [0: 7] disp_aread = (`dromAEQJ) ? 8'b00_00_0010 : {4'b00_11, dromJ[4:7]};
    
    DISPATCH uDISPATCH(.crom(crom),
                       .disp_diag(disp_diag),
                       .disp_ret(disp_ret),
-                      .disp_j(disp_j),
+                      .disp_j(dromJ[0:7]),
                       .disp_aread(disp_aread),
                       .disp_mul(disp_mul),
                       .disp_pf(disp_pf),
@@ -133,8 +138,6 @@ module microcontroller(clk, rst, clken, disp_diag,
    //
    // Address MUX
    //
-
- 
    
    assign addr = (rst)       ? 12'b000_000_000_000 :
                  (page_fail) ? 12'b111_111_111_111 :
@@ -160,6 +163,6 @@ module microcontroller(clk, rst, clken, disp_diag,
                 .call(`cromCALL),
                 .ret(ret),
                 .addr_in(addr),
-                .addr_out(ret_addr));
+                .addr_out(disp_ret));
    
 endmodule

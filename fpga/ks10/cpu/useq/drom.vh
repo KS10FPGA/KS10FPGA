@@ -3,7 +3,7 @@
 // KS-10 Processor
 //
 // \brief
-//      Dispatch ROM (DROM) Definitions 
+//      Dispatch ROM (DROM) Definitions
 //
 // \details
 //      In the KS-10 implementation, the Dispatch ROM is unclocked
@@ -13,7 +13,7 @@
 //      clocked when the Instruction Register is loaded.  This
 //      allows the Dispatch ROM to be implemented in an FPGA
 //      compatible fashion.
-//     
+//
 // \notes
 //
 // \file
@@ -56,18 +56,27 @@
 
 //
 // Dispatch ROM Fields
-//   
+//  Note : See page 5-39 of EK-0KS10-TM-002 for info about dromTXXXEN.
+//   The bit is not replicated into DROM DPEA/E114[2].
+//  Note : Four upper bits of dromJ are always "0001" (jump is always
+//   between 1400 and 1777) and are hardwired in the KS10.   The dromJ
+//   field is the 8 lower bits.
+//  Note : See figure 5-20 of EK-0KS10-TM-002 for mapping to ROM.
+//  Note : dromI and dromAEQJ are aliases of each other.
+//
 
-`define dromA           drom[2: 5]      // Operand Fetch Mode
-`define dromB           drom[8:11]      // Store result as
-`define dromROUND       drom[8]      	// Round the result
-`define dromMODE        drom[9]      	// Seperate Add/Sub & Mul/Div
-`define dromFL_B        drom[10:11]    	// Store Floating-point results as
-`define dromJ           drom[12:23]     // Jump
-`define dromACDISP      drom[24]        // Dispatch on AC Field
-`define dromI           drom[25]        // Immediate dispatch.  DISP/AREAD does a DISP/DROM
-`define dromREAD        drom[26]        // Start a read at AREAD
-`define dromTEST        drom[27]        // Start a write test at AREAD
-`define dromCOND_FUNC   drom[28]        // Start a memory cycle on BWRITE
-`define dromVMA         drom[29]        // Load the VMA on AREAD
-`define dromWRITE       drom[30]        // Start a write on AREAD
+`define dromA           drom[ 2: 5]     // DROM DPEA/E114[ 0: 3] Operand Fetch Mode
+`define dromB           drom[ 8:11]     // DROM DPEA/E114[ 4: 7] Store result as
+`define dromROUND       drom[ 8]        // DROM DPEA/E114[4]     Round the result
+`define dromMODE        drom[ 9]        // DROM DPEA/E114[5]     Seperate Add/Sub & Mul/Div
+`define dromFL_B        drom[10:11]     // DROM DPEA/E114[ 6: 7] Store Floating-point results as
+`define dromJ           drom[12:23]     // DROM DPEA/E115[ 0: 7] Jump (see notes)
+`define dromACDISP      drom[24]        // DROM DPEA/E113[1]     Dispatch on AC Field
+`define dromI           drom[25]        // DROM DPEA/E113[0]     Immediate dispatch on J field. (see notes)
+`define dromAEQJ        drom[25]        // DROM DPEA/E113[0]     Immediate dispatch on J field. (see notes)
+`define dromREAD        drom[26]        // DROM DPEA/E113[5]     Start a read at AREAD
+`define dromTEST        drom[27]        // DROM DPEA/E113[7]     Start a write test at AREAD
+`define dromCOND_FUNC   drom[28]        // DROM DPEA/E113[3]     Start a memory cycle on BWRITE
+`define dromVMA         drom[29]        // DROM DPEA/E113[4]     Load the VMA on AREAD
+`define dromWRITE       drom[30]        // DROM DPEA/E113[6]     Start a write on AREAD
+`define dromTXXXEN      drom[ 9]        // DROM DPEA/E113[5]     Shown as DROM DPEA/E113[2] (see notes)
