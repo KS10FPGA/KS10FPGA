@@ -51,21 +51,19 @@ module ks10(clk, rst, d, t, crom);
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
 
-   input  clk;                  // Clock
-   input  rst;                  // Reset
-   input [0:35] d;
-   output [0:35] t;
+   output [0:cromWidth-1] crom; 	// Control ROM
+   input 		  clk;          // Clock
+   input 		  rst;          // Reset
+   input  [0:35] 	  d;
+   output [0:35] 	  t;
    
-   output [0:cromWidth-1] crom; // Control ROM
 
-   wire   clken = 1'b1;
-   wire   ir_load;		// Load Instruction Register
-   wire   xr_load;		// Load Index Register
-   wire   ac_eq_zero;  		// AC selection is zero
-   wire   [0:35] dbus;
-	wire   [0:dromWidth-1] drom;
-   wire    [0:3] xr;
-	wire   [0:3] ac;
+   wire 		  clken = 1'b1;
+   wire 		  ir_load;    	// Load Instruction Register
+   wire 		  xr_load;	// Load Index Register
+   wire 		  ac_eq_zero;  	// AC selection is zero
+   wire   [0:35] 	  dbus;
+   wire   [0:dromWidth-1] drom;
 
    
    microcontroller u1(.clk(clk),
@@ -108,6 +106,8 @@ module ks10(clk, rst, d, t, crom);
    //  DPEA/E93
    //
    
+   wire [0:8] ir;
+   wire [0:3] ac;
    IR u3(.clk(clk),
          .rst(rst),
          .clken(ir_load),
@@ -123,6 +123,7 @@ module ks10(clk, rst, d, t, crom);
    //  DPEA/E93
    //
 
+   wire [0:3] xr;
    XR u4(.clk(clk),
          .rst(rst),
          .clken(xr_load),

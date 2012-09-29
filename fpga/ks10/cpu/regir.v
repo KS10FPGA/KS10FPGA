@@ -46,9 +46,9 @@
 
 module IR(clk, rst, clken, dbus, ir, ac);
 
-   input  clk;                  // Clock
-   input  rst;                  // Reset
-   input  clken;                // Clock Enable
+   input 	 clk;           // Clock
+   input 	 rst;           // Reset
+   input 	 clken          // Clock Enable
    input  [0:35] dbus;          // Input Bus
    output [0: 8] ir;            // Instruction register
    output [0: 3] ac;            // Accumulator selection

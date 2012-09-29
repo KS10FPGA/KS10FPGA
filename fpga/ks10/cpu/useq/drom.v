@@ -44,7 +44,7 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/drom.vh"
+`include "drom.vh"
 
 module DROM(clk, clken, dbus, drom);
 
@@ -55,19 +55,22 @@ module DROM(clk, clken, dbus, drom);
    input  [0:35]          dbus;         // Data Bus (Instruction Register)
    output [0:dromWidth-1] drom;         // Output Data
 
+   //
+   // ROM Definition
+   //
+   
+   reg    [0:dromWidth-1] drom;
+   reg    [0:dromWidth-1] ROM[0:511];
 
    initial
      $readmemb(`DROM_DATA, ROM, 0, 511);
 
    //
-   // DROM
+   // Dispatch ROM (DROM)
    //  DPEA/E98
    //  DPEA/E117
    //  DPEA/E110
    //
-
-   reg [0:dromWidth-1] drom;
-   reg [0:dromWidth-1] ROM[0:511];
 
    always @(posedge clk)
      begin

@@ -61,7 +61,7 @@ module SKIP(crom, skip_40, skip_20, skip_10, skip_addr);
    //
    
    reg sk;
-   always @(`cromSKIP)
+   always @(`cromSKIP or skip_40 or skip_20 or skip_10)
      begin
 	
         sk = 1'b0;
