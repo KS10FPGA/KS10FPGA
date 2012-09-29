@@ -80,7 +80,7 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
    // 
     
    wire [0:39] dd;
-   assign dd = {d[0], d[0], d[0:35], 0, 0};
+   assign dd = {d[0], d[0], d[0:35], 2'b00};
 
    
    //
@@ -362,8 +362,8 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
    // ALU Proper
    //
    
-   wire [0:40] r1 = {0, r};
-   wire [0:40] s1 = {0, s};
+   wire [0:40] r1 = {1'b0, r};
+   wire [0:40] s1 = {1'b0, s};
    reg  [0:40] f1;   
 
    always @(r1 or s1 or ci or `cromFUN)

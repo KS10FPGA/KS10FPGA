@@ -46,12 +46,12 @@
 
 module IR(clk, rst, clken, dbus, ir, ac);
 
-   input 	 clk;           // Clock
-   input 	 rst;           // Reset
-   input 	 clken          // Clock Enable
-   input  [0:35] dbus;          // Input Bus
-   output [0: 8] ir;            // Instruction register
-   output [0: 3] ac;            // Accumulator selection
+   input             clk;       // Clock
+   input             rst;       // Reset
+   input             clken;     // Clock Enable
+   input      [0:35] dbus;      // Input Bus
+   output reg [0: 8] ir;        // Instruction register
+   output reg [0: 3] ac;        // Accumulator selection
 
    //
    // Instruction Register and AC Selection
@@ -59,9 +59,6 @@ module IR(clk, rst, clken, dbus, ir, ac);
    //  DPEA/E64
    //  DPEA/E93
    //
-
-   reg [0: 8] ir;               // Instruction register
-   reg [0: 3] ac;               // Accumulator selection
 
    always @(posedge clk or posedge rst)
     begin

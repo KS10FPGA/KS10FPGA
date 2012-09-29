@@ -44,7 +44,7 @@
 // Comments are formatted for doxygen
 //
 
-`define CROM_WIDTH      	107             // CROM Width
+`define CROM_WIDTH      	108             // CROM Width
 `define CROM_DATA       	"crom.bin"      // CROM Data File
 
 //
@@ -110,6 +110,13 @@
 //
 
 `define cromSPEC        	crom[51:56]     // Spec Select
+`define cromSPEC_EN_40          crom[51]
+`define cromSPEC_EN_20          crom[52]
+`define cromSPEC_EN_10          crom[53]
+`define cromSPEC_SEL            crom[54:56]
+`define cromSPEC_SEL_LOADIR     3'b001
+`define cromSPEC_SEL_LOADXR     3'b001
+
 `define cromSPEC_SHSTYLE       	crom[54:56]     // Shift Style
 `define cromSPEC_SHSTYLE_NORM 	3'b000
 `define cromSPEC_SHSTYLE_ZERO 	3'b001
