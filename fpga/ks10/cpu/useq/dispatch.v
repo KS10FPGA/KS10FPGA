@@ -50,29 +50,33 @@ module DISPATCH(crom, disp_diag, disp_ret, disp_j, disp_aread,
                 disp_mul, disp_pf, disp_ni, disp_byte, disp_ea, disp_scad,
                 disp_addr);
 
-   parameter cromWidth = `CROM_WIDTH;
+   parameter  cromWidth = `CROM_WIDTH;
 
-   input  [0:cromWidth-1] crom; 	// Control ROM Data
-   input  [0:11]          disp_diag; 	// Diagnostic dispatch
-   input  [0:11]          disp_ret; 	// Microcode return dispatch
-   input  [0: 7]          disp_j; 	// Jump dispatch
-   input  [0: 7]          disp_aread; 	// Address Read dispatch
-   input  [0: 3]          disp_mul;     // Multiply Dispatch
-   input  [0: 3]          disp_pf;      // Page Fail Dispatch
-   input  [0: 3]          disp_ni;      // Next Instruction Dispatch
-   input  [0: 3]          disp_byte;    // Byte Size/Position Dispatch
-   input  [0: 3]          disp_ea;      // Effective Address Mode Dispatch
-   input  [0: 3]          disp_scad;    // SCAD Dispatch
-   output [0:11]          disp_addr;    // Dispatch Addr
-
+   input      [0:cromWidth-1] crom; 		// Control ROM Data
+   input      [0:11]          disp_diag;	// Diagnostic dispatch
+   input      [0:11]          disp_ret; 	// Microcode return dispatch
+   input      [0: 7]          disp_j; 		// Jump dispatch
+   input      [0: 7]          disp_aread; 	// Address Read dispatch
+   input      [8:11]          disp_mul;     	// Multiply Dispatch
+   input      [8:11]          disp_pf;      	// Page Fail Dispatch
+   input      [8:11]          disp_ni;      	// Next Instruction Dispatch
+   input      [8:11]          disp_byte;    	// Byte Size/Position Dispatch
+   input      [8:11]          disp_ea;      	// Effective Address Mode Dispatch
+   input      [8:11]          disp_scad;    	// SCAD Dispatch
+   output reg [0:11]          disp_addr;    	// Dispatch Addr
+   
    //
-   // Control ROM Address
+   // Control ROM Dispatch Address
    //
-
-   reg    [0:11] disp_addr;
-   always @(crom or disp_diag or disp_ret or disp_j or disp_aread or
+   
+   wire disp_en_10 = `cromDISP_EN_10;
+   wire disp_en_20 = `cromDISP_EN_20;
+   wire disp_selh  = `cromDISP_SELH;
+   wire disp_sel   = `cromDISP_SEL;
+       
+   always @(disp_diag or disp_ret or disp_j or disp_aread or
             disp_mul or disp_pf or disp_ni or disp_byte or disp_ea or
-            disp_scad)
+            disp_scad or disp_en_20 or disp_en_10 or disp_sel or disp_selh)
      begin
         
         disp_addr[0:11] = 12'b000_000_000_000;
@@ -85,17 +89,17 @@ module DISPATCH(crom, disp_diag, disp_ret, disp_j, disp_aread,
         //  CRA1/E138
         //
         
-        if (`cromDISP_EN_20)
+        if (disp_en_20)
           begin
-             case (`cromDISP_SELH)
+             case (disp_selh)
                `cromDISP_SELH_DIAG:
                  disp_addr[0:7] = disp_diag[0:7];
                `cromDISP_SELH_RET:
                  disp_addr[0:7] = disp_ret[0:7];
                `cromDISP_SELH_J:
-                 disp_addr[0:7] = disp_j;
+                 disp_addr[0:7] = disp_j[0:7];
                `cromDISP_SELH_AREAD:
-                 disp_addr[0:7] = disp_aread;
+                 disp_addr[0:7] = disp_aread[0:7];
              endcase
           end
 
@@ -107,25 +111,25 @@ module DISPATCH(crom, disp_diag, disp_ret, disp_j, disp_aread,
         //  CRA1/E182
         //
         
-        if (`cromDISP_EN_10)
+        if (disp_en_10)
           begin
-             case (`cromDISP_SEL)
+             case (disp_sel)
                `cromDISP_SEL_DIAG:
                  disp_addr[8:11] = disp_diag[8:11];
                `cromDISP_SEL_RET:
                  disp_addr[8:11] = disp_ret[8:11];
                `cromDISP_SEL_MULTIPLY:
-                 disp_addr[8:11] = disp_mul;
+                 disp_addr[8:11] = disp_mul[8:11];
                `cromDISP_SEL_PAGEFAIL:
-                 disp_addr[8:11] = disp_pf;
+                 disp_addr[8:11] = disp_pf[8:11];
                `cromDISP_SEL_NICOND:
-                 disp_addr[8:11] = disp_ni;
+                 disp_addr[8:11] = disp_ni[8:11];
                `cromDISP_SEL_BYTE:
-                 disp_addr[8:11] = disp_byte;
+                 disp_addr[8:11] = disp_byte[8:11];
                `cromDISP_SEL_EAMODE:
-                 disp_addr[8:11] = disp_ea;               
+                 disp_addr[8:11] = disp_ea[8:11];               
                `cromDISP_SEL_SCAD:
-                 disp_addr[8:11] = disp_scad;
+                 disp_addr[8:11] = disp_scad[8:11];
              endcase
           end
      end
