@@ -6,8 +6,10 @@
 //      Control ROM (CROM) Definitions
 //
 // \details
+//      This file contains the Control ROM microcode field 
+//      definitions.
 //
-// \notes
+//      Include it everywhere you need to access the Control ROM.
 //
 // \file
 //      crom.vh
@@ -124,11 +126,11 @@
 // DBUS
 //
 
-`define cromDBUS                crom[40:41]     // DBUS MUX Select
-`define cromDBUS_FLAGS          2'b00           //  PC Flags
-`define cromDBUS_DP             2'b01           //  Datapath
-`define cromDBUS_RAM            2'b10           //  RAM file
-`define cromDBUS_DBM            2'b11           //  DBM Mux
+`define cromDBUS_SEL            crom[40:41]     // DBUS MUX Select
+`define cromDBUS_SEL_FLAGS      2'b00           //  PC Flags
+`define cromDBUS_SEL_DP         2'b01           //  Datapath
+`define cromDBUS_SEL_RAM        2'b10           //  RAM file
+`define cromDBUS_SEL_DBM        2'b11           //  DBM Mux
 
 //
 // DBM

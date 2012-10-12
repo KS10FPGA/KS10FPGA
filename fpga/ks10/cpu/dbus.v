@@ -52,12 +52,29 @@ module DBUS(crom, force_ramfile, flags, dp, ram, dbm, dbus);
 
    input      [0:cromWidth-1] crom;             // Control ROM Data
    input                      force_ramfile;    // Force Ramfile
-   input      [0:35]          flags;         // PC Flags in Left Half
+   input      [0:35]          flags;         	// PC Flags in Left Half
    input      [0:35]          dp;               // Datapath
    input      [0:35]          ram;              // RAM File
    input      [0:35]          dbm;              // Databus Mux
    output reg [0:35]          dbus;             // DBus
 
+   wire [0:1] cromDBUS_SEL = `cromDBUS_SEL;
+
+   //
+   // Force RAMFILE
+   //  DPE3/E70 (force ramfile)
+   //
+
+   reg [0:1] dbusSEL;
+   
+   always @(cromDBUS_SEL or force_ramfile)
+     begin
+	if (force_ramfile && (cromDBUS_SEL == `cromDBUS_SEL_DBM))
+	  dbusSEL <= `cromDBUS_SEL_RAM;
+        else
+	  dbusSEL <= cromDBUS_SEL;
+     end
+	    
    //
    // DBM
    //  DPE3/E34
@@ -69,22 +86,18 @@ module DBUS(crom, force_ramfile, flags, dp, ram, dbm, dbus);
    //  DPE3/E63
    //  DPE3/E87
    //  DPE3/E40
-   //  DPE3/E70 (force ramfile)
    //
-
-   wire [0:1] cromDBUS = `cromDBUS;
-   wire [0:1] dbusSEL = {cromDBUS[0], cromDBUS[1] & ~(cromDBUS[0] & force_ramfile)};
    
    always @(dbusSEL or flags or dp or ram or dbm)
      begin
         case (dbusSEL)
-          `cromDBUS_FLAGS:
+          `cromDBUS_SEL_FLAGS:
             dbus = flags;
-          `cromDBUS_DP:
+          `cromDBUS_SEL_DP:
             dbus = dp;
-          `cromDBUS_RAM:
+          `cromDBUS_SEL_RAM:
             dbus = ram;
-          `cromDBUS_DBM:
+          `cromDBUS_SEL_DBM:
             dbus = dbm;
         endcase
      end

@@ -64,12 +64,12 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
    // CROM interface
    //
    
-   wire [0: 2] fun     = `cromSCAD_FUN;
-   wire [0: 2] asel    = `cromSCAD_ASEL;
-   wire [0: 1] bsel    = `cromSCAD_BSEL;
-   wire [0:17] num     = `cromNUM;
-   wire        loadSC  = `cromLOADSC;
-   wire        loadFE  = `cromLOADFE;
+   wire [0:2] fun     = `cromSCAD_FUN;
+   wire [0:2] asel    = `cromSCAD_ASEL;
+   wire [0:1] bsel    = `cromSCAD_BSEL;
+   wire [0:9] snum    = `cromNUM;
+   wire       loadSC  = `cromLOADSC;
+   wire       loadFE  = `cromLOADFE;
    
    //
    // EXP
@@ -93,25 +93,25 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
 
    reg [0: 9] scadA;
 
-   always @(asel or sc or num or dp)
+   always @(asel or sc or snum or dp)
      begin
         case (asel)
           `cromSCAD_ASEL_SC:
             scadA <= sc[0:9];
-          `cromSCAD_ASEL_S:
-            scadA <= num[8:17];
+          `cromSCAD_ASEL_SNUM:
+            scadA <= snum[0:9];
           `cromSCAD_ASEL_PTR44:
-            scadA <= {sc[0],  6'o44,     dp[6], sc[8:9]};
+            scadA <= {sc[0], 6'o44, dp[6], sc[8:9]};
           `cromSCAD_ASEL_BYTE1:
-            scadA <= {num[8], dp[ 0: 6], num[16:17]};
+            scadA <= {snum[0], dp[ 0: 6], snum[8:9]};
           `cromSCAD_ASEL_BYTE2:
-            scadA <= {sc[0],  dp[ 7:13], sc[8:9]};
+            scadA <= {sc[0],   dp[ 7:13], sc[8:9]};
           `cromSCAD_ASEL_BYTE3:
-            scadA <= {num[8], dp[14:20], num[16:17]};
+            scadA <= {snum[0], dp[14:20], snum[8:9]};
           `cromSCAD_ASEL_BYTE4:
-            scadA <= {sc[0],  dp[21:27], sc[8:9]};
+            scadA <= {sc[0],   dp[21:27], sc[8:9]};
           `cromSCAD_ASEL_BYTE5:
-            scadA <= {num[8], dp[28:34], num[16:17]};
+            scadA <= {snum[0], dp[28:34], snum[8:9]};
         endcase
      end
 
