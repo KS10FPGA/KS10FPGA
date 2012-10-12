@@ -6,9 +6,24 @@
 //!      Microcontroller Control ROM 
 //!
 //! \details
+//!      The Control ROM contains the executable microcode of the
+//!      the microcontroller.
 //!
-//! \todo
+//! \note
+//!      Although all of the microcontroller addressing supports
+//!      12-bit addresses (4096 words of ROM) the Control ROM only
+//!      implements 2048 words of ROM.
 //!
+//!      The current microcode uses all of the ROM except for
+//!      about 25 words.
+//!
+//!      Implementing 4096 words of ROM would all double the amount
+//!      of microcode and allow for feature growth.
+//!
+//! \note
+//!      The contents of this file was extracted from the microcode
+//!      listing file by a simple AWK script.  Go see the makefile.
+//!   
 //! \file
 //!      crom.v
 //!
@@ -46,24 +61,38 @@
 
 `include "crom.vh"
 
-module CROM(clk, clken, addr, crom);
+module CROM(clk, rst, clken, addr, crom);
 
    parameter  cromWidth = `CROM_WIDTH;
    
-   input      clk;                  	// Clock
-   input      clken;                	// Clock Enable
-   input      [0:11] addr;          	// Address
+   input                      clk;      // Clock
+   input                      rst; 	// Clock Enable
+   input                      clken;    // Clock Enable
+   input      [0:11]          addr;     // Address
    output reg [0:cromWidth-1] crom; 	// Output Data 
 
    //
    // CROM
-   //   Note ROM MSB is ignored.
+   //  Note ROM MSB is ignored.
+   //   Address buffers:
+   //    CRA7/E11,  CRA7/E19, CRA7/E106, CRA7/E100, CRA7/E10, CRA7/E6,
+   //    CRA7/E93,  CRA7/E68, CRA7/E80,  CRA7/E94,  CRA7/E20, CRA7/E5,
+   //   ROM:
+   //    CRA8/E14,  CRA8/E23, CRA8/E28,  CRA8/E38,  CRA8/E41, CRA8/E50,
    //
-   
-   always @(posedge clk)
+   //   Registers:
+   //    CRA6/E104, CRA6/E87, CRA6/E2,   CRA6/E46,  CRA6/E67, CRA6/E86,
+   //
+   //
+   always @(posedge clk or posedge rst)
      begin
-        if (clken)
+        
+        if (rst)
+          crom <= 108'b0;
+        
+        else if (clken)
 	  case(addr[1:11])
+            
             //                                                               11
             //                     0000 1112 2233 3344 4555 6666 7778 8899 9900
             //                     0369 2581 4703 6925 8147 0369 2581 4703 6925 
@@ -1002,7 +1031,7 @@ module CROM(clk, clken, addr, crom);
             12'o1644: crom <= 108'o2436_3441_0306_4174_4007_0700_0010_0000_0000;
             12'o1645: crom <= 108'o0000_0000_0000_0000_0000_0000_0000_0000_0000;
             12'o1646: crom <= 108'o0000_0000_0000_0000_0000_0000_0000_0000_0000;
-                12'o1647: crom <= 108'o1013_3441_0305_4174_4003_7700_0000_0000_0000;
+            12'o1647: crom <= 108'o1013_3441_0305_4174_4003_7700_0000_0000_0000;
             12'o1650: crom <= 108'o2737_4551_0202_4374_0007_0700_0000_0077_7740;
             12'o1651: crom <= 108'o2737_4551_0202_4374_0007_0700_0000_0077_7740;
             12'o1652: crom <= 108'o2737_4551_0202_4374_0007_0700_0000_0077_7740;
@@ -2115,6 +2144,7 @@ module CROM(clk, clken, addr, crom);
             12'o3775: crom <= 108'o3776_3771_0004_4365_5007_0700_0200_0000_0002;
             12'o3776: crom <= 108'o2654_4553_0500_4374_4007_0331_0000_0000_0001;
             12'o3777: crom <= 108'o3720_3333_0003_7174_4007_0700_0400_0000_0211;
-          endcase 
+          endcase
+        
      end
 endmodule

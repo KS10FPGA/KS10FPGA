@@ -44,54 +44,71 @@
 // Comments are formatted for doxygen
 //
 
-`include "../microcontroller/crom.vh"
+`include "microcontroller/crom.vh"
 
-module alu(clk, rst, d, crom, multi_shift, divide_shift,
-           ci, co, lZ, hZ, ovfl, sign, smear, t);
+module alu(clk, rst, dbus, crom, multi_shift, divide_shift,
+           ci, co, lZ, hZ, ovfl, sign, smear,
+           
+
+ t);
    
    parameter cromWidth = `CROM_WIDTH;
    
-   input                  clk;		// clock
-   input                  rst;		// reset
-   input  [0:35]          d;           	// ALU Input
-   input  [0:cromWidth-1] crom; 	// Control ROM Data
-   input                  multi_shift;  // ALU Multi Shift
-   input                  divide_shift; // Divide Shift
-   input                  ci; 		// Carry Input
-   output                 co; 		// Carry Output
-   output                 lZ; 		// ALU low-half Zero
-   output                 hZ; 		// ALU high-half Zero
-   output                 ovfl; 	// Overflow
-   output                 sign; 	// Sign
-   output                 smear; 	// Sign Smear   
-   output [0:35]          t;		// ALU Output
+   input                  clk;			// clock
+   input                  rst;			// reset
+   input  [0:35]          dbus;        		// ALU Input
+   input  [0:cromWidth-1] crom; 		// Control ROM Data
+   input                  multi_shift;  	// ALU Multi Shift
+   input                  divide_shift; 	// Divide Shift
+   input                  ci; 			// Carry Input
+   output                 co; 			// Carry Output
+   output                 lZ; 			// ALU low-half Zero
+   output                 hZ; 			// ALU high-half Zero
+   output                 ovfl; 		// Overflow
+   output                 sign; 		// Sign
+   output                 smear; 		// Sign Smear   
+   output [0:35]          t;			// ALU Output
 
    //
    //
    //
    
-   wire   [0:39]          f;		// ALU Output
-   reg    [0:39]          q;		// Q Register
-   wire   [0:39]          y;		//
+   wire   [0:39]          f;			// ALU Output
+   reg    [0:39]          q;			// Q Register
+   wire   [0:39]          y;			//
+   
+   wire   [0: 2]          fun  = `cromFUN;	//
+   wire   [0: 2]          lsrc = `cromLSRC;	//
+   wire   [0: 2]          rsrc = `cromRSRC;	//
+   wire   [0: 2]          dst  = `cromDST;	//
+   wire                   clkl = `cromCLKL;	//
+   wire                   clkr = `cromCLKR;	//
+   wire   [0: 3]          aa   = `cromALU_A;	//
+   wire   [0: 3]          ba   = `cromALU_B;	//
+   wire   [0: 2]          shstyle = `cromSPEC_SHSTYLE;
+
+   //
+   // DST[1] is inverted on DPE5/E62
+   //
+   
+   wire   [0: 2]          dest = {dst[0], ~dst[1], dst[2]};
    
    //
    // Sign extend input from 36 bits to 38 bits and add two
    // bits padding on right.
    // 
     
-   wire [0:39] dd;
-   assign dd = {d[0], d[0], d[0:35], 2'b00};
-
+   wire [0:39]            dd = {dbus[0], dbus[0], dbus[0:35], 2'b00};
    
    //
    // RAM Shifter
    //
    
    reg [0:39] bdi;
-   always @(f or y or q or `cromDST or `cromSPEC_SHSTYLE or sign or multi_shift) 
+   always @(f or y or q or dest or shstyle or sign or multi_shift) 
      begin
-        if (`cromDST == `cromDST_RAMQU || `cromDST == `cromDST_RAMU)
-          case (`cromSPEC_SHSTYLE)
+        if (dest == `cromDST_RAMQU || dest == `cromDST_RAMU)
+          case (shstyle)
             `cromSPEC_SHSTYLE_NORM:
               bdi = {f[1:39], multi_shift};
             `cromSPEC_SHSTYLE_ZERO:
@@ -109,8 +126,8 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
             `cromSPEC_SHSTYLE_ROTC:
               bdi = {f[1:3], y[0], f[5:39], q[4]};				
           endcase
-        else if (`cromDST == `cromDST_RAMQD ||  `cromDST == `cromDST_RAMD)
-          case (`cromSPEC_SHSTYLE)
+        else if (dest == `cromDST_RAMQD ||  dest == `cromDST_RAMD)
+          case (shstyle)
             `cromSPEC_SHSTYLE_NORM:
               bdi = {sign, f[0:38]};
             `cromSPEC_SHSTYLE_ZERO:
@@ -138,21 +155,16 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
     
    integer i;
    reg [0:19] RAML [0:15];
-   reg [0: 3] addr_al;
-   reg [0: 3] addr_bl;
+   wire wrl = ((dest ==`cromDST_RAMA) || (dest ==`cromDST_RAMF) || (dest ==`cromDST_RAMQD) ||
+               (dest ==`cromDST_RAMD) || (dest ==`cromDST_RAMU) || (dest ==`cromDST_RAMQU));
+      
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           for (i = 0; i < 16; i = i + 1)
             RAML[i] <= 20'b0;
-        else if (`cromCLKL)
-          if ((`cromDST ==`cromDST_RAMA) || (`cromDST ==`cromDST_RAMF) || (`cromDST ==`cromDST_RAMQD) ||
-              (`cromDST ==`cromDST_RAMD) || (`cromDST ==`cromDST_RAMU) || (`cromDST ==`cromDST_RAMQU))
-            begin
-               addr_al <= `cromALU_A;
-               addr_bl <= `cromALU_B;
-               RAML[`cromALU_B] <= bdi[0:19];
-            end
+        else if (clkl && wrl)
+          RAML[ba] <= bdi[0:19];
      end
 
    //
@@ -161,38 +173,31 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
     
    integer j;
    reg [0:19] RAMR [0:15];
-   reg [0: 3] addr_ar;
-   reg [0: 3] addr_br;
+   wire wrr = ((dest ==`cromDST_RAMA) || (dest ==`cromDST_RAMF) || (dest ==`cromDST_RAMQD) ||
+               (dest ==`cromDST_RAMD) || (dest ==`cromDST_RAMU) || (dest ==`cromDST_RAMQU));
+   
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           for (j = 0; j < 16; j = j + 1)
-            RAMR[i] <= 20'b0;
-        else if (`cromCLKR)
-          if ((`cromDST ==`cromDST_RAMA) || (`cromDST ==`cromDST_RAMF) || (`cromDST ==`cromDST_RAMQD) ||
-              (`cromDST ==`cromDST_RAMD) || (`cromDST ==`cromDST_RAMU) || (`cromDST ==`cromDST_RAMQU))
-            begin
-               addr_ar <= `cromALU_A;
-               addr_br <= `cromALU_B;
-               RAMR[`cromALU_B] <= bdi[20:39];
-            end
+            RAMR[j] <= 20'b0;
+        else if (clkr && wrr)
+          RAMR[ba] <= bdi[20:39];
      end
    
-	wire [0:39] ad;
-	wire [0:39] bd;
-   assign ad = {RAML[addr_al], RAMR[addr_ar]};
-   assign bd = {RAML[addr_bl], RAMR[addr_br]};
+   wire [0:39] ad = {RAML[aa], RAMR[aa]};
+   wire [0:39] bd = {RAML[ba], RAMR[ba]};
 
    //
    // Q Register Shifter
    //
 
    reg [0:39] qi;
-   always @(f or q or `cromDST or `cromSPEC_SHSTYLE or divide_shift)
+   always @(f or q or dest or shstyle or divide_shift)
      begin
-        case (`cromDST)
+        case (dest)
          `cromDST_RAMQU:
-            case (`cromSPEC_SHSTYLE)
+            case (shstyle)
               `cromSPEC_SHSTYLE_NORM:
                 qi <= {q[1:39], 1'b0};
               `cromSPEC_SHSTYLE_ZERO:
@@ -211,7 +216,7 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
                 qi <= {q[1:39], f[4]};
             endcase
          `cromDST_RAMQD:
-            case (`cromSPEC_SHSTYLE)
+            case (shstyle)
               `cromSPEC_SHSTYLE_NORM:
                 qi <= {1'b0, f[0:38]};
               `cromSPEC_SHSTYLE_ZERO:
@@ -244,7 +249,7 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
      begin
         if (rst)
           q[0:19] <= 20'b0;
-        else if (`cromCLKL)
+        else if (clkl)
           q[0:19] <= qi[0:19];
      end
    
@@ -256,7 +261,7 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
      begin
         if (rst)
           q[20:39] <= 20'b0;
-        else if (`cromCLKR)
+        else if (clkr)
           q[20:39] <= qi[20:39];
      end
 
@@ -265,9 +270,9 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
    //
 
    reg [0:39] r;
-   always @(ad or dd or `cromLSRC)
+   always @(ad or dd or lsrc)
      begin  
-        case (`cromLSRC)
+        case (lsrc)
           `cromSRC_AQ:
             r[0:19] = ad[0:19];
           `cromSRC_AB:
@@ -287,9 +292,9 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
    // ALU Right R Source Selector
    //
 
-   always @(ad or dd or `cromRSRC)
+   always @(ad or dd or rsrc)
      begin  
-        case (`cromRSRC)
+        case (rsrc)
           `cromSRC_AQ:
             r[20:39] = ad[20:39];
           `cromSRC_AB:
@@ -310,9 +315,9 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
    //
    
    reg [0:39] s;
-   always @(ad or bd or q or `cromLSRC)
+   always @(ad or bd or q or lsrc)
      begin  
-        case (`cromLSRC)
+        case (lsrc)
           `cromSRC_AQ:
             s[0:19] = q[0:19];
           `cromSRC_ZQ:
@@ -336,9 +341,9 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
    // ALU Right S Source Selector
    //
    
-   always @(ad or bd or q or `cromRSRC)
+   always @(ad or bd or q or rsrc)
      begin  
-        case (`cromRSRC)
+        case (rsrc)
           `cromSRC_AQ:
             s[20:39] = q[20:39];
           `cromSRC_ZQ:
@@ -366,9 +371,9 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
    wire [0:40] s1 = {1'b0, s};
    reg  [0:40] f1;   
 
-   always @(r1 or s1 or ci or `cromFUN)
+   always @(r1 or s1 or ci or fun)
      begin  
-        case (`cromFUN)
+        case (fun)
           `cromFUN_ADD:
             if (ci)
               f1 = r1 + s1 + 1;
@@ -404,16 +409,51 @@ module alu(clk, rst, d, crom, multi_shift, divide_shift,
    assign co   = f1[0];
    assign sign = f1[1];
    assign f    = f1[1:40];
-   assign ovfl = (f1[0] != f1[1]) ? 1 : 0;
-   assign lZ   = (f1[ 0:19] == 0) ? 1 : 0;
-   assign hZ   = (f1[20:39] == 0) ? 1 : 0;
+   assign ovfl = f1[0] != f1[1];
+   assign lZ   = f1[ 0:19] == 0;
+   assign hZ   = f1[20:39] == 0;
 
    //
    // ALU Destination Selector
    //
    
-   assign y = (`cromDST ==`cromDST_RAMA) ? ad : f;
+   assign y = (dest ==`cromDST_RAMA) ? ad : f;
 
+   //
+   // Status Register
+   //  DPE5/E20
+   //
+
+   reg flag_fl02;  //FIXME
+   reg flag_ql02;  //FIXME
+   reg flag_qr37;  //FIXME
+   reg flag_carry_02;  //FIXME
+   reg flag_carry_out;  //FIXME
+   reg flag_funct_01;  //FIXME
+   
+   
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          begin
+             flag_fl02      <= 1'b0;
+             flag_ql02      <= 1'b0;
+             flag_qr37      <= 1'b0;
+             flag_carry_02  <= 1'b0;
+             flag_carry_out <= 1'b0;
+             flag_funct_01  <= 1'b0;
+          end
+        else
+          begin
+             flag_fl02      <= 1'b0;  //FIXME
+             flag_ql02      <= 1'b0;  //FIXME
+             flag_qr37      <= 1'b0;  //FIXME
+             flag_carry_02  <= 1'b0;  //FIXME
+             flag_carry_out <= 1'b0;  //FIXME
+             flag_funct_01  <= 1'b0;  //FIXME
+          end
+     end
+   
    //
    // Truncate output bus from 40 bits to 36 bits.
    //

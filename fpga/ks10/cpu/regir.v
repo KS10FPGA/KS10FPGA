@@ -44,14 +44,19 @@
 // Comments are formatted for doxygen
 //
 
-module IR(clk, rst, clken, dbus, ir, ac);
+`include "microcontroller/crom.vh"
 
-   input             clk;       // Clock
-   input             rst;       // Reset
-   input             clken;     // Clock Enable
-   input      [0:35] dbus;      // Input Bus
-   output reg [0: 8] ir;        // Instruction register
-   output reg [0: 3] ac;        // Accumulator selection
+module IR(clk, rst, clken, crom, dbus, ir, ac);
+   
+   parameter cromWidth = `CROM_WIDTH;
+
+   input                      clk;      // Clock
+   input                      rst;      // Reset
+   input                      clken;    // Clock Enable
+   input      [0:cromWidth-1] crom;   	// Control ROM Data
+   input      [0:35]          dbus;     // Input Bus
+   output reg [0: 8]          ir;       // Instruction register
+   output reg [0: 3]          ac;   	// Accumulator selection
 
    //
    // Instruction Register and AC Selection
@@ -60,6 +65,8 @@ module IR(clk, rst, clken, dbus, ir, ac);
    //  DPEA/E93
    //
 
+   wire load_ir = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
+   
    always @(posedge clk or posedge rst)
     begin
         if (rst)
@@ -67,7 +74,7 @@ module IR(clk, rst, clken, dbus, ir, ac);
              ir <= 9'b000_000_000;
              ac <= 4'b0000;
           end
-        else if (clken)
+        else if (clken & load_ir)
           begin
              ir <= dbus[0:8];
              ac <= dbus[9:12];

@@ -6,8 +6,22 @@
 //!      Microcontroller Skip Logic
 //!
 //! \details
+//!      This section of the microcontroller controls the SKIP
+//!      field selection.
 //!
-//! \todo
+//!      The microcontroller can execute simple branches based
+//!      on a selected boolean input value.  Because the branch
+//!      logic is implemented as an OR gate, the skip logic can
+//!      only change the LSB of the control ROM address from a
+//!      zero to a one - this means that the 'skip not taken'
+//!      must be an even address and that the 'skip taken'
+//!      address must be the following odd address.
+//!
+//!      The microcode assemler handles all the details regarding
+//!      how microcode addresses are selected.
+//!
+//!      See the description of the dispatch logic and the
+//!      microcontroller for addtional details.
 //!
 //! \file
 //!      skip.v
@@ -44,27 +58,29 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller.vh"
+`include "crom.vh"
+`include "drom.vh"
 
-module SKIP(crom, skip_40, skip_20, skip_10, skip_addr);
+module SKIP(crom, skip40, skip20, skip10, skipADDR);
    
    parameter cromWidth = `CROM_WIDTH;
 
-   input  [0:7]           skip_40;
-   input  [0:7]           skip_20;
-   input  [0:7]           skip_10;
+   input  [0:7]           skip40;	// Skip 40 bits
+   input  [0:7]           skip20;	// Skip 20 bits
+   input  [0:7]           skip10;	// Skip 10 bits
    input  [0:cromWidth-1] crom; 	// Control ROM Data
-   output [0:11]          skip_addr;	// Skip Address
+   output [0:11]          skipADDR;	// Skip Address
    
    //
-   // Skip Mux
+   // Control ROM Skip Address
    //
    
-   reg sk;
-   always @(`cromSKIP or skip_40 or skip_20 or skip_10)
+   reg skip;
+   
+   always @(`cromSKIP or skip40 or skip20 or skip10)
      begin
 	
-        sk = 1'b0;
+        skip = 1'b0;
         
         //
         // DPEA/E45
@@ -74,21 +90,21 @@ module SKIP(crom, skip_40, skip_20, skip_10, skip_addr);
           begin
              case (`cromSKIP_SEL)
                3'b000:
-                 sk = skip_40[0];
+                 skip = skip40[0];
                3'b001:
-                 sk = skip_40[1];
+                 skip = skip40[1];
                3'b010:
-                 sk = skip_40[2];
+                 skip = skip40[2];
                3'b011:
-                 sk = skip_40[3];
+                 skip = skip40[3];
                3'b100:
-                 sk = skip_40[4];
+                 skip = skip40[4];
                3'b101:
-                 sk = skip_40[5];
+                 skip = skip40[5];
                3'b110:
-                 sk = skip_40[6];
+                 skip = skip40[6];
                3'b111:
-                 sk = skip_40[7];
+                 skip = skip40[7];
              endcase
           end
 
@@ -100,21 +116,21 @@ module SKIP(crom, skip_40, skip_20, skip_10, skip_addr);
           begin
              case (`cromSKIP_SEL)
                3'b000:
-                 sk = skip_20[0];
+                 skip = skip20[0];
                3'b001:
-                 sk = skip_20[1];
+                 skip = skip20[1];
                3'b010:
-                 sk = skip_20[2];
+                 skip = skip20[2];
                3'b011:
-                 sk = skip_20[3];
+                 skip = skip20[3];
                3'b100:
-                 sk = skip_20[4];
+                 skip = skip20[4];
                3'b101:
-                 sk = skip_20[5];
+                 skip = skip20[5];
                3'b110:
-                 sk = skip_20[6];
+                 skip = skip20[6];
                3'b111:
-                 sk = skip_20[7];
+                 skip = skip20[7];
              endcase
           end
 
@@ -126,25 +142,25 @@ module SKIP(crom, skip_40, skip_20, skip_10, skip_addr);
           begin
              case (`cromSKIP_SEL)
                3'b000:
-                 sk = skip_10[0];
+                 skip = skip10[0];
                3'b001:
-                 sk = skip_10[1];
+                 skip = skip10[1];
                3'b010:
-                 sk = skip_10[2];
+                 skip = skip10[2];
                3'b011:
-                 sk = skip_10[3];
+                 skip = skip10[3];
                3'b100:
-                 sk = skip_10[4];
+                 skip = skip10[4];
                3'b101:
-                 sk = skip_10[5];
+                 skip = skip10[5];
                3'b110:
-                 sk = skip_10[6];
+                 skip = skip10[6];
                3'b111:
-                 sk = skip_10[7];
+                 skip = skip10[7];
              endcase
           end
      end
    
-   assign skip_addr = (sk) ? 12'b000_000_000_001 : 12'b000_000_000_000;
+   assign skipADDR = (skip) ? 12'b000_000_000_001 : 12'b000_000_000_000;
    
 endmodule

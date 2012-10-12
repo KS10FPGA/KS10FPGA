@@ -46,92 +46,126 @@
 
 `include "crom.vh"
 
-module DISPATCH(crom, disp_diag, disp_ret, disp_j, disp_aread,
-                disp_mul, disp_pf, disp_ni, disp_byte, disp_ea, disp_scad,
-                disp_addr);
+module DISPATCH(crom, dp, dispDIAG, dispRET, dispJ, dispAREAD,
+                dispMUL, dispPF, dispNI, dispBYTE, dispEA,
+                dispSCAD, dispNORM, dispDROM_A, dispDROM_B,
+                dispADDR);
 
    parameter  cromWidth = `CROM_WIDTH;
 
    input      [0:cromWidth-1] crom;             // Control ROM Data
-   input      [0:11]          disp_diag;        // Diagnostic dispatch
-   input      [0:11]          disp_ret;         // Microcode return dispatch
-   input      [0: 7]          disp_j;           // Jump dispatch
-   input      [0: 7]          disp_aread;       // Address Read dispatch
-   input      [8:11]          disp_mul;         // Multiply Dispatch
-   input      [8:11]          disp_pf;          // Page Fail Dispatch
-   input      [8:11]          disp_ni;          // Next Instruction Dispatch
-   input      [8:11]          disp_byte;        // Byte Size/Position Dispatch
-   input      [8:11]          disp_ea;          // Effective Address Mode Dispatch
-   input      [8:11]          disp_scad;        // SCAD Dispatch
-   output reg [0:11]          disp_addr;        // Dispatch Addr
+   input      [0:35]          dp; 		// Datapath Dispatch
+   input      [0:11]          dispDIAG;         // Diagnostic dispatch
+   input      [0:11]          dispRET;          // Microcode return dispatch
+   input      [0:11]          dispJ;            // Jump dispatch
+   input      [0:11]          dispAREAD;        // Address Read dispatch
+   input      [8:11]          dispMUL;          // Multiply Dispatch
+   input      [8:11]          dispPF;           // Page Fail Dispatch
+   input      [8:11]          dispNI;           // Next Instruction Dispatch
+   input      [8:11]          dispBYTE;         // Byte Size/Position Dispatch
+   input      [8:11]          dispEA;           // Effective Address Mode Dispatch
+   input      [8:11]          dispSCAD;         // SCAD Dispatch
+   input      [8:11]          dispNORM;         // Normalize Dispatch
+   input      [8:11]          dispDROM_A;       // DROM A Dispatch
+   input      [8:11]          dispDROM_B;       // DROM B Dispatch
+   output reg [0:11]          dispADDR;         // Dispatch Addr
 
    //
    // Control ROM Dispatch Address
    //
 
-   wire disp_en_10 = `cromDISP_EN_10;
-   wire disp_en_20 = `cromDISP_EN_20;
-   wire disp_selh  = `cromDISP_SELH;
-   wire disp_sel   = `cromDISP_SEL;
+   wire       dispEN10 = `cromDISP_EN_10;
+   wire       dispEN20 = `cromDISP_EN_20;
+   wire       dispEN40 = `cromDISP_EN_40;
+   wire [0:1] dispSELH = `cromDISP_SELH;
+   wire [0:2] dispSEL  = `cromDISP_SEL;
 
-   always @(disp_diag or disp_ret or disp_j or disp_aread or
-            disp_mul or disp_pf or disp_ni or disp_byte or disp_ea or
-            disp_scad or disp_en_20 or disp_en_10 or disp_sel or disp_selh)
+   always @(dispDIAG or dispRET or dispJ or dispAREAD or
+            dispMUL  or dispPF or dispNI or dispBYTE or dispEA or
+            dispSCAD or dispEN20 or dispEN10 or dispSEL or
+            dispSELH)
      begin
 
-        disp_addr[0:11] = 12'b000_000_000_000;
+        //
+        // Default dispatch if none of the data selectors
+        // are activated.
+        //
+        
+        dispADDR[0:11] = 12'b000_000_000_000;
 
         //
-        // CROM Address Mux MSBs
+        // Dispatch Address Select MSBs
         //  CRA1/E69
         //  CRA1/E68
-        //  CRA1/E151
+        //  CRA1/E151 
         //  CRA1/E138
         //
 
-        if (disp_en_20)
+        if (dispEN20)
           begin
-             case (disp_selh)
+             case (dispSELH)
                `cromDISP_SELH_DIAG:
-                 disp_addr[0:7] = disp_diag[0:7];
+                 dispADDR[0:7] = dispDIAG[0:7];
                `cromDISP_SELH_RET:
-                 disp_addr[0:7] = disp_ret[0:7];
+                 dispADDR[0:7] = dispRET[0:7];
                `cromDISP_SELH_J:
-                 disp_addr[0:7] = disp_j[0:7];
+                 dispADDR[0:7] = dispJ[0:7];
                `cromDISP_SELH_AREAD:
-                 disp_addr[0:7] = disp_aread[0:7];
+                 dispADDR[0:7] = dispAREAD[0:7];
              endcase
           end
 
         //
-        // CROM Address Mux LSBs
+        // Dispatch Address Select LSBs
         //  CRA1/E158
         //  CRA1/E170
         //  CRA1/E171
         //  CRA1/E182
         //
 
-        if (disp_en_10)
-          begin
-             case (disp_sel)
-               `cromDISP_SEL_DIAG:
-                 disp_addr[8:11] = disp_diag[8:11];
-               `cromDISP_SEL_RET:
-                 disp_addr[8:11] = disp_ret[8:11];
-               `cromDISP_SEL_MULTIPLY:
-                 disp_addr[8:11] = disp_mul[8:11];
-               `cromDISP_SEL_PAGEFAIL:
-                 disp_addr[8:11] = disp_pf[8:11];
-               `cromDISP_SEL_NICOND:
-                 disp_addr[8:11] = disp_ni[8:11];
-               `cromDISP_SEL_BYTE:
-                 disp_addr[8:11] = disp_byte[8:11];
-               `cromDISP_SEL_EAMODE:
-                 disp_addr[8:11] = disp_ea[8:11];
-               `cromDISP_SEL_SCAD:
-                 disp_addr[8:11] = disp_scad[8:11];
-             endcase
-          end
+        if (dispEN10)
+          case (dispSEL)
+            `cromDISP_SEL_DIAG:
+              dispADDR[8:11] = dispDIAG[8:11];
+            `cromDISP_SEL_RET:
+              dispADDR[8:11] = dispRET[8:11];
+            `cromDISP_SEL_MULTIPLY:
+              dispADDR[8:11] = dispMUL[8:11];
+            `cromDISP_SEL_PAGEFAIL:
+              dispADDR[8:11] = dispPF[8:11];
+            `cromDISP_SEL_NICOND:
+              dispADDR[8:11] = dispNI[8:11];
+            `cromDISP_SEL_BYTE:
+              dispADDR[8:11] = dispBYTE[8:11];
+            `cromDISP_SEL_EAMODE:
+              dispADDR[8:11] = dispEA[8:11];
+            `cromDISP_SEL_SCAD:
+              dispADDR[8:11] = dispSCAD[8:11];
+          endcase
+
+        //
+        // Dispatch Address Select LSBs
+        //
+        
+        if (dispEN40)
+          case (dispSEL)
+            `cromDISP_SEL_ZERO:
+              dispADDR[8:11] = 4'b0;
+            `cromDISP_SEL_DP18TO21:
+              dispADDR[8:11] = dp[18:21];
+            `cromDISP_SEL_J:
+              dispADDR[8:11] = dispJ[8:11];
+            `cromDISP_SEL_AREAD:
+              dispADDR[8:11] = dispAREAD[8:11];
+            `cromDISP_SEL_NORM:
+              dispADDR[8:11] = dispNORM[8:11];
+            `cromDISP_SEL_DP32TO35:
+              dispADDR[8:11] = dp[32:35];
+            `cromDISP_SEL_DROMA:
+              dispADDR[8:11] = dispDROM_A;
+            `cromDISP_SEL_DROMB:
+              dispADDR[8:11] = dispDROM_B;
+          endcase
      end
 
 endmodule
