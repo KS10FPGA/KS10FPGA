@@ -140,7 +140,7 @@ module microcontroller(clk, rst, clken, page_fail, dp, dispDIAG,
      begin
         if (dromAEQJ)                                   // Dispatch Address Range:
           if (dromACDISP)
-            dispAREAD = {dromJ[0:7], ac[9:12]};         // 1400 to 1777  (4 upper address were hardwired)
+            dispAREAD = {dromJ[0:7], ac[0:3]};          // 1400 to 1777  (4 upper address were hardwired)
           else
             dispAREAD = dromJ;                          // 1400 to 1777  (4 upper address were hardwired)
         else

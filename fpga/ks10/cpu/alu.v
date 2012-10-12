@@ -46,7 +46,7 @@
 
 `include "microcontroller/crom.vh"
 
-module alu(clk, rst, dbus, crom, multi_shift, divide_shift,
+module ALU(clk, rst, dbus, crom, multi_shift, divide_shift,
            ci, co, lZ, hZ, ovfl, sign, smear,
            
 
