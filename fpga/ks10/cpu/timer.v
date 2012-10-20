@@ -99,7 +99,7 @@ module TIMER(clk, rst, clken, crom, msec_en, msec_intr, msec_count);
 
    reg [0:11] count;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge timerclk or posedge rst)
      begin
         if (rst)
           count <= 12'b0;

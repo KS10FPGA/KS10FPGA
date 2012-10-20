@@ -18,11 +18,13 @@ module testbench;
    KS10 UUT(.clk(clk),
             .rst(rst),
             .clken(1'b1),
-            .run(1'b1),
-            .msec_en(1'b1),
-            .execute(1'b1),
-            .d(36'b0),
-            .t(),
-            .crom());
+            .cons_run(1'b1),
+            .cons_msec_en(1'b1),
+            .cons_exec(1'b1),
+            .cons_cont(1'b1),
+            .consTRAPEN(1'b1),
+            .bus_ac_lo(1'b0),
+            .crom(),
+            .t());
 
 endmodule

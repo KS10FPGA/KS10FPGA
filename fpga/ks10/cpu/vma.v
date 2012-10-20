@@ -47,11 +47,9 @@
 `include "microcontroller/crom.vh"
 `include "microcontroller/drom.vh"
 
-module VMA(clk, rst, clken, crom, drom, dp, execute, user_flag,
-           pcu_flag, previous_en, wru_cycle, vector_cycle,
-           iobyte_cycle, vma_sweep, vma_extended, vma_user,
-           vma_previous, vma_physical, vma_fetch, vma_io,
-           vma_ac_ref, vma);
+module VMA(clk, rst, clken, crom, drom, dp, execute, previousEN,
+           flagPCU, flagUSER,
+           vmaSWEEP, vmaEXTENDED, vmaACREF, vmaFLAGS, vmaADDR);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -63,21 +61,14 @@ module VMA(clk, rst, clken, crom, drom, dp, execute, user_flag,
    input  [0:dromWidth-1] drom;		// Dispatch ROM Data
    input  [0:35]          dp;           // Data path
    input                  execute;  	//
-   input                  user_flag;    // User Flag
-   input                  pcu_flag;  	// Previous Context User (PCU) Flag
-   input                  previous_en;  //
-   output reg             wru_cycle;    // WRU Cycle
-   output reg             vector_cycle; // Vector Cycle
-   output reg             iobyte_cycle; // IO Byte Cycle
-   output reg             vma_sweep;    // VMA Sweep
-   output reg             vma_extended; // VMA Extended
-   output reg             vma_user;	// VMA User
-   output reg             vma_previous; // VMA Previous
-   output reg             vma_physical; // VMA Physical
-   output reg             vma_fetch;    // VMA Fetch
-   output reg             vma_io; 	// VMA IO
-   output                 vma_ac_ref;   // VMA references an AC
-   output reg [14:35]     vma;  	// Virtual Memory Address
+   input                  previousEN;	// Previous Enable
+   input                  flagPCU;	// PCU Flag
+   input                  flagUSER;	// USER Flag
+   output reg             vmaSWEEP;     // VMA Sweep
+   output reg             vmaEXTENDED;  // VMA Extended
+   output                 vmaACREF;     // VMA references an AC
+   output     [ 0:13]     vmaFLAGS;	// VMA Flags
+   output reg [14:35]     vmaADDR;  	// Virtual Memory Address
 
    //
    // VMA Logic
@@ -85,106 +76,152 @@ module VMA(clk, rst, clken, crom, drom, dp, execute, user_flag,
    //  DPE6/E53
    //
    
-   wire cache_sweep      = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE);
-   wire previous         = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_PREVIOUS);
-   wire dromVMA          = `dromVMA;		// 
-   wire mem_load_vma     = `cromMEM_LOADVMA;	// Load the VMA
-   wire mem_extaddr      = `cromMEM_EXTADDR;	// Put VMA[14:17] Bits onto Bus
-   wire mem_aread        = `cromMEM_AREAD;	// Let DROM select type and load VMA (see dromVMA)
-   wire mem_dp_funct     = `cromMEM_DPFUNC;	// This is a DP function.  Use dp[0:13] instead of cromNUM[0:13]
-   wire mem_cycle        = `cromMEM_CYCLE;	// Start/complete MEM or IO Cycle
-   wire mem_force_exec   = `cromMEM_FORCEEXEC;	// Force exec mode reference
-   wire mem_force_user   = `cromMEM_FORCEUSER;	// Force user mode reference
-   wire mem_fetch_cycle  = `cromMEM_FETCHCYCLE;	// This is an instruction fetch cycle
-   wire mem_wru_cycle    = `cromMEM_WRUCYCLE;	// This is a WRU cycle
-   wire mem_iobyte_cycle = `cromMEM_IOBYTECYCLE;// This is a byte cycle
-   wire mem_physical     = `cromMEM_PHYSICAL;	// No paging on this cycle
-     
-   //
-   // VMA EN
-   //  DPE3/E76
-   //  DPE3/E53
-   //
-        
-   wire vma_en = ((mem_cycle & mem_load_vma) | 
-                  (mem_cycle & mem_aread & dromVMA) |
-                  (cache_sweep));
+   wire cacheSWEEP       = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE);
+   wire selPREVIOUS      = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_PREVIOUS);
 
    //
-   // VMA USER, VMA PREV
+   // VMA Register
+   //  DPE3/E53
    //  DPM4/E55
    //  DPM4/E56
    //  DPM4/E74
+   //  DPE3/E76
    //  DPM4/E82
-   //
-   
-   wire prev = previous_en | previous;
-   
-   wire user = ((~mem_force_exec & ~execute & user_flag) |
-                (mem_fetch_cycle & user_flag) |
-                (mem_force_user) |
-                (pcu_flag & previous));
-   
-   //
-   // VMA Register
+   //  DPM4/E90
+   //  DPM4/E97
    //  DPM4/E103
-   //  DPM4/E152
+   //  DPM4/E115
    //  DPM4/E137
+   //  DPM4/E152
+   //  DPM4/E168
    //  DPM4/E175
    //  DPM4/E182
    //  DPM4/E183
-   //  DPM4/E97
-   //  DPM4/E90
-   //  DPM4/E168
-   //  DPM4/E115
    //
+
+   reg vmaUSER;
+   reg vmaFETCH;
+   reg vmaPHYSICAL;
+   reg vmaPREVIOUS;
+   reg vmaIO;
+   reg vmaWRUCYCLE;
+   reg vmaVECTORCYCLE;
+   reg vmaIOBYTECYCLE;
+
+   wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA) | 
+                 (`cromMEM_CYCLE & `cromMEM_AREAD & `dromVMA) |
+                 (cacheSWEEP));
    
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             vma_sweep     <=  1'b0;
-             vma_extended  <=  1'b0;
-             vma           <= 22'b0;
-             vma_user      <=  1'b0;
-             vma_previous  <=  1'b0;
-             wru_cycle     <=  1'b0;
-             vma_fetch     <=  1'b0;
-             vector_cycle  <=  1'b0;
-             iobyte_cycle  <=  1'b0;
-             vma_io        <=  1'b0;
-             vma_physical  <=  1'b0;
+             vmaADDR        <= 22'b0;
+             vmaSWEEP       <=  1'b0;
+             vmaEXTENDED    <=  1'b0;
+             vmaUSER        <=  1'b0;
+             vmaFETCH       <=  1'b0;
+             vmaPHYSICAL    <=  1'b0;
+             vmaPREVIOUS    <=  1'b0;
+             vmaIO          <=  1'b0;
+             vmaWRUCYCLE    <=  1'b0;
+             vmaVECTORCYCLE <=  1'b0;
+             vmaIOBYTECYCLE <=  1'b0;
           end
-        else if (clken & vma_en)
+        else if (clken & vmaEN)
           begin
-             vma_sweep     <= cache_sweep;
-             vma_extended  <= mem_extaddr;
-             vma           <= dp[14:35];
-             if (mem_dp_funct)
+             vmaADDR     <= dp[14:35];
+             vmaSWEEP    <= cacheSWEEP;
+             vmaEXTENDED <= `cromMEM_EXTADDR;
+             if (`cromMEM_DPFUNC)
                begin
-                  vma_user     <= dp[0];
-                  vma_fetch    <= dp[2];
-                  vma_physical <= dp[8];
-                  vma_previous <= dp[9];
-                  vma_io       <= dp[10];
-                  wru_cycle    <= dp[11];
-                  vector_cycle <= dp[12];
-                  iobyte_cycle <= dp[13];
+                  vmaUSER        <= dp[0];
+                  vmaFETCH       <= dp[2];
+                  vmaPHYSICAL    <= dp[8];
+                  vmaPREVIOUS    <= dp[9];
+                  vmaIO          <= dp[10];
+                  vmaWRUCYCLE    <= dp[11];
+                  vmaVECTORCYCLE <= dp[12];
+                  vmaIOBYTECYCLE <= dp[13];
                end
              else
                begin
-                  vma_user     <= user;
-                  vma_fetch    <= mem_fetch_cycle;
-                  vma_physical <= mem_physical;
-                  vma_previous <= prev;
-                  vma_io       <= 1'b0;
-                  wru_cycle    <= 1'b0;
-                  vector_cycle <= 1'b0;
-                  iobyte_cycle <= 1'b0;
+                  vmaUSER        <= ((~`cromMEM_FORCEEXEC & flagUSER  & ~execute) |
+                                     (`cromMEM_FETCHCYCLE & flagUSER            ) |
+                                     (previousEN  & flagPCU) |
+                                     (selPREVIOUS & flagPCU) |
+                                     (`cromMEM_FORCEUSER));
+                  vmaFETCH       <= `cromMEM_FETCHCYCLE;
+                  vmaPHYSICAL    <= `cromMEM_PHYSICAL;
+                  vmaPREVIOUS    <= previousEN | selPREVIOUS;
+                  vmaIO          <= 1'b0;
+                  vmaWRUCYCLE    <= 1'b0;
+                  vmaVECTORCYCLE <= 1'b0;
+                  vmaIOBYTECYCLE <= 1'b0;
                end
           end
     end
 
+   //
+   // Memory Cycle Control
+   //  DPM5/E48
+   //  DPM5/E66
+   //  DPM5/E33
+   //  DPM5/E110
+   //
+
+   reg vmaREADCYCLE;
+   reg vmaWRTESTCYCLE;
+   reg vmaWRITECYCLE;
+   reg vmaCACHEINH;
+
+   wire memEN = ((`cromMEM_CYCLE  & `cromMEM_WAIT ) |
+                 (`cromMEM_CYCLE  & `cromMEM_BWRITE & `dromCOND_FUNC));
+   
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          begin
+             vmaREADCYCLE   <= 1'b0;
+             vmaWRTESTCYCLE <= 1'b0;
+             vmaWRITECYCLE  <= 1'b0;
+             vmaCACHEINH    <= 1'b0;
+          end
+        else if (clken & memEN)
+          begin
+             if (`cromMEM_AREAD)
+               if (`cromMEM_DPFUNC)
+                 begin
+                    vmaREADCYCLE   <= `dromREADCYCLE;
+                    vmaWRTESTCYCLE <= `dromWRTESTCYCLE;
+                    vmaWRITECYCLE  <= `dromWRITECYCLE;
+                    vmaCACHEINH    <= 1'b0;
+                 end
+               else
+                 begin
+                    vmaREADCYCLE   <= 1'b0;
+                    vmaWRTESTCYCLE <= 1'b0;
+                    vmaWRITECYCLE  <= 1'b0;
+                    vmaCACHEINH    <= 1'b0;
+                 end
+             else
+               if (`cromMEM_DPFUNC)
+                 begin
+                    vmaREADCYCLE   <= dp[3];
+                    vmaWRTESTCYCLE <= dp[4];
+                    vmaWRITECYCLE  <= dp[5];
+                    vmaCACHEINH    <= dp[7];
+                 end
+               else
+                 begin
+                    vmaREADCYCLE   <= `cromMEM_READCYCLE;
+                    vmaWRTESTCYCLE <= `cromMEM_WRTESTCYCLE;
+                    vmaWRITECYCLE  <= `cromMEM_WRITECYCLE;
+                    vmaCACHEINH    <= `cromMEM_CACHEINH;
+                 end
+          end
+     end
+   
    //
    // The ACs are always physically addressed and are located
    // at address 0 to 15.  Note that the comparison igores
@@ -192,6 +229,25 @@ module VMA(clk, rst, clken, crom, drom, dp, execute, user_flag,
    // the upper address lines (vma[18:31]) are all zero.
    //
    
-   assign vma_ac_ref = vma_physical && (vma[18:31] == 14'b0);
+   assign vmaACREF = vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
+
+   //
+   // Fixup vmaFLAGS
+   //
+   
+   assign vmaFLAGS[ 0] = vmaUSER;
+   assign vmaFLAGS[ 1] = 1'b0;
+   assign vmaFLAGS[ 2] = vmaFETCH;
+   assign vmaFLAGS[ 3] = vmaREADCYCLE;
+   assign vmaFLAGS[ 4] = vmaWRTESTCYCLE;
+   assign vmaFLAGS[ 5] = vmaWRITECYCLE;
+   assign vmaFLAGS[ 6] = 1'b0;
+   assign vmaFLAGS[ 7] = vmaCACHEINH;
+   assign vmaFLAGS[ 8] = vmaPHYSICAL;
+   assign vmaFLAGS[ 9] = vmaPREVIOUS;
+   assign vmaFLAGS[10] = vmaIO;
+   assign vmaFLAGS[11] = vmaWRUCYCLE;
+   assign vmaFLAGS[12] = vmaVECTORCYCLE;
+   assign vmaFLAGS[13] = vmaIOBYTECYCLE;
    
 endmodule

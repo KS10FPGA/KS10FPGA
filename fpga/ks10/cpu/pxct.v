@@ -76,7 +76,7 @@ module PXCT(clk, rst, clken, crom, dp, pxct, pxct_on, previous_en);
         if (rst)
           begin
              pxct_on <= 1'b0;
-             pxct    <= 4'b0000;
+             pxct    <= 4'b0;
           end
         else if (clken & pxct_en)
           begin
@@ -94,7 +94,8 @@ module PXCT(clk, rst, clken, crom, dp, pxct, pxct_on, previous_en);
    
    always @(pxct or pxct_on or pxct_sel or wru_cycle)
      begin
-        if ((pxct_on && pxct[9]) || wru_cycle) 
+        if ((pxct_on & pxct[9]) |
+            (pxct_on & wru_cycle))
           case (pxct_sel)
             0: previous_en <= 1'b0;		// Current
             1: previous_en <= pxct[ 9];		// E1

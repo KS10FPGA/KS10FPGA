@@ -3,19 +3,19 @@
 //! KS-10 Processor
 //!
 //! \brief
-//!      Trap Cycle
+//!      Traps
 //!
 //! \details
 //!
-//! \todo
+//! \note
 //!
 //! \file
-//!      trap_cycle.v
+//!      traps.v
 //!
 //! \author
 //!      Rob Doyle - doyle (at) cox (dot) net
 //!
-////////////////////////////////////////////////////////////////////
+ ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2009, 2012 Rob Doyle
 //
@@ -24,8 +24,7 @@
 // removed from the file and that any derivative work contains
 // the original copyright notice and the associated disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
+// This source fiit under the terms of the GNU Lesser General
 // Public License as published by the Free Software Foundation;
 // version 2.1 of the License.
 //
@@ -46,36 +45,57 @@
 
 `include "microcontroller/crom.vh"
 
-module TRAP_CYCLE(clk, rst, clken, crom, trap3, trap2, trap1, trap_cycle);
-
+module TRAPS(clk, rst, clken, crom, dp, pcFLAGS, consTRAPEN, trapEN, traps, trapCYCLE);
+             
    parameter cromWidth = `CROM_WIDTH;
+             
+   input                      clk;              // Clock
+   input                      rst;              // Reset
+   input                      clken;            // Clock Enable
+   input      [0:cromWidth-1] crom;             // Control ROM Data
+   input      [0:35]          dp;               // Data path
+   input      [0:17]          pcFLAGS;          // PC Flags
+   input                      consTRAPEN;       // Console Trap Enable
+   input                      trapEN;           // Trap Enable
+   output reg [3: 1]          traps;            // Traps
+   output reg                 trapCYCLE;        // Trap Cycle
    
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input                  clken;        // Clock Enable
-   input  [0:cromWidth-1] crom;         // Control ROM Data
-   input                  trap3;        // Trap 3
-   input                  trap2;        // Trap 2
-   input                  trap1;        // Trap 1
-   output reg             trap_cycle;   // Trap Cycle
+   //
+   // Trap Selection
+   // CRA2/E147
+   //
+   
+   wire [0:1] trapSEL = pcFLAGS[9:10];
+   
+   always @(consTRAPEN or trapEN or trapSEL)
+     begin
+        if (consTRAPEN & trapEN)
+          case (trapSEL)
+            0: traps = 3'b000;
+            1: traps = 3'b001;
+            2: traps = 3'b010;
+            3: traps = 3'b100;
+          endcase
+        else
+          traps = 3'b000;
+     end
 
    //
-   // TRAP CYCLE
-   //  CRA2/E100
-   //  CRA2/E113
-   //
+   // Trap Cycle
    //  The schematic uses NICOND_09.  This is the same logic but
    //  a little more straight forward.
    //
+   //  CRA2/E159
+   //
 
-   wire trap_en = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADNICOND);
+   wire niEN = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADNICOND);
    
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          trap_cycle <= 1'b0;
-        else if (clken & trap_en)
-          trap_cycle <= trap3 | trap2 | trap1;
+          trapCYCLE <= 1'b0;
+        else if (clken & niEN)
+          trapCYCLE <= (traps != 3'b000);
     end
    
 endmodule

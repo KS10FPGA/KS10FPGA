@@ -14,24 +14,27 @@ SRC := \
 	ac_block.v \
 	alu.v \
 	apr.v \
-	apr_device.v \
 	byte_disp.v \
+	cache.v \
 	clkgen.v \
 	dbm.v \
 	dbus.v \
-	flags.v \
 	intr.v \
-	ir.v \
+	iolatch.v \
 	ni_disp.v \
 	page_tables.v \
+	pcflags.v \
 	pxct.v \
+	ram1kx36.v \
 	ramfile.v \
+	regir.v \
+	regxr.v \
 	scad.v \
 	timer.v \
-	trap_cycle.v \
+	traps.v \
 	vma.v \
-	xr.v \
 	ks10.v \
+	ks10.ucf \
 	testbench.v
 
 asdf : $(SRC)

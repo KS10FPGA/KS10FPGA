@@ -45,13 +45,11 @@
 // Comments are formatted for doxygen
 //
 
-module NI_DISP(run, memory_cycle, trap3, trap2, trap1, dispNI);
+module NI_DISP(run, memory_cycle, traps, dispNI);
 
    input         run;          	// Run
    input         memory_cycle;  // Memory Cycle
-   input         trap3;        	// Trap 3
-   input         trap2;        	// Trap 2
-   input         trap1;        	// Trap 1
+   input  [1:3]  traps;        	// Traps
    output [8:11] dispNI;    	// Next Instruction dispatch
 
    //
@@ -62,9 +60,9 @@ module NI_DISP(run, memory_cycle, trap3, trap2, trap1, dispNI);
    wire halt = ~run;
 
    assign dispNI[8]    = memory_cycle;		// Fetch in progress
-   assign dispNI[9:11] = ((trap3) ? 3'd1 :
-                          (trap2) ? 3'd2 :
-                          (trap1) ? 3'd3 :
+   assign dispNI[9:11] = ((traps[3]) ? 3'd1 :
+                          (traps[2]) ? 3'd2 :
+                          (traps[1]) ? 3'd3 :
                           (halt ) ? 3'd5 : 3'd7);
    
 endmodule

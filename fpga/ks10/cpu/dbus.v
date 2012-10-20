@@ -46,13 +46,13 @@
 
 `include "microcontroller/crom.vh"
 
-module DBUS(crom, force_ramfile, flags, dp, ram, dbm, dbus);
+module DBUS(crom, force_ramfile, pcFLAGS, dp, ram, dbm, dbus);
 
    parameter  cromWidth = `CROM_WIDTH;
 
    input      [0:cromWidth-1] crom;             // Control ROM Data
    input                      force_ramfile;    // Force Ramfile
-   input      [0:35]          flags;         	// PC Flags in Left Half
+   input      [0:35]          pcFLAGS;         	// PC Flags in Left Half
    input      [0:35]          dp;               // Datapath
    input      [0:35]          ram;              // RAM File
    input      [0:35]          dbm;              // Databus Mux
@@ -66,7 +66,7 @@ module DBUS(crom, force_ramfile, flags, dp, ram, dbm, dbus);
    //
 
    reg [0:1] dbusSEL;
-   
+
    always @(cromDBUS_SEL or force_ramfile)
      begin
 	if (force_ramfile && (cromDBUS_SEL == `cromDBUS_SEL_DBM))
@@ -88,11 +88,11 @@ module DBUS(crom, force_ramfile, flags, dp, ram, dbm, dbus);
    //  DPE3/E40
    //
    
-   always @(dbusSEL or flags or dp or ram or dbm)
+   always @(dbusSEL or pcFLAGS or dp or ram or dbm)
      begin
         case (dbusSEL)
           `cromDBUS_SEL_FLAGS:
-            dbus = flags;
+            dbus = pcFLAGS;
           `cromDBUS_SEL_DP:
             dbus = dp;
           `cromDBUS_SEL_RAM:

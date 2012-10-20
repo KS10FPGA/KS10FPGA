@@ -8,6 +8,48 @@
 //! \details
 //!      
 //! \note
+//!     
+//!     +------+----------------+
+//!     | 1777 |                |
+//!     |      |     Cache      |
+//!     | 1000 |                |
+//!     +------+----------------+
+//!     | 0777 |                |
+//!     |      |   Workspace    |
+//!     | 0200 |                |
+//!     +------+----------------+
+//!     | 0177 |                |
+//!     |      |   AC Block 7   |
+//!     | 0160 |                |
+//!     +------+----------------+
+//!     | 0067 |                |
+//!     |      |   AC Block 6   |
+//!     | 0140 |                |
+//!     +------+----------------+
+//!     | 0037 |                |
+//!     |      |   AC Block 5   |
+//!     | 0120 |                |
+//!     +------+----------------+
+//!     | 0117 |                |
+//!     |      |   AC Block 4   |
+//!     | 0100 |                |
+//!     +------+----------------+
+//!     | 0077 |                |
+//!     |      |   AC Block 3   |
+//!     | 0060 |                |
+//!     +------+----------------+
+//!     | 0057 |                |
+//!     |      |   AC Block 2   |
+//!     | 0040 |                |
+//!     +------+----------------+
+//!     | 0037 |                |
+//!     |      |   AC Block 1   |
+//!     | 0020 |                |
+//!     +------+----------------+
+//!     | 0017 |                |
+//!     |      |   AC Block 0   |
+//!     | 0000 |                |
+//!     +------+----------------+
 //!
 //! \todo
 //!
@@ -46,38 +88,146 @@
 // Comments are formatted for doxygen
 //
 
-module RAMFILE(clk, clken, wr, addr, din, dout);
-            
-   input         clk;       	// Clock
-   input         clken;     	// Clock enable
-   input         wr;        	// Write
-   input  [0: 9] addr;      	// Address
-   input  [0:35] din;      	// Data in
-   output [0:35] dout;   	// Data out
+`include "microcontroller/crom.vh"
 
+module RAMFILE(clk, rst, clken, crom, dbus, dbm, ac,
+               xr, xr_previous,
+               vmaADDR, vmaPHYSICAL, vmaPREVIOUS,
+               previous_block, current_block,
+               //memory_cycle, mem_wait, mem_read, stop_main_memory,
+               ram);
+   
+   parameter cromWidth = `CROM_WIDTH;
+            
+   input                   clk;                 // Clock
+   input                   rst;                 // Reset
+   input                   clken;               // Clock enable
+   input  [ 0:cromWidth-1] crom;                // Control ROM Data
+   input  [ 0:35]          dbus;                // DBUS Input
+   input  [ 0:35]          dbm;                 // DBM Input
+   input  [ 9:12]          ac;                  // AC
+   input  [14:17]          xr;                  // XR
+   input                   xr_previous;         //
+   input  [14:35]          vmaADDR;             // Virtual Memory Address
+   input                   vmaPHYSICAL;         // 
+   input                   vmaPREVIOUS;         //
+   input  [0:2]            previous_block;      //
+   input  [0:2]            current_block;       //
+   output [0:35]           ram;                 // RAMFILE output
+   
    //
-   // RAMFILE
-   //  DPE7/E906, DPE7/E907, DPE7/E908, DPE7/E909, DPE7/E910, DPE7/E911
-   //  DPE7/E912, DPE7/E913, DPE7/E914, DPE7/E915, DPE7/E916, DPE7/E917
-   //  DPE7/E918, DPE7/E919, DPE7/E920, DPE7/E921, DPE7/E922, DPE7/E923
-   //  DPE7/E806, DPE7/E807, DPE7/E808, DPE7/E809, DPE7/E810, DPE7/E811
-   //  DPE7/E812, DPE7/E813, DPE7/E814, DPE7/E815, DPE7/E816, DPE7/E817
-   //  DPE7/E818, DPE7/E819, DPE7/E820, DPE7/E821, DPE7/E822, DPE7/E823
+   // AC Reference
+   //  True when addressing lowest 16 addresses using
+   //  physical addressing.
    //
    
-   reg [0: 9] rd_addr;
-   reg [0:35] ram [0:1023];
+   wire vmaACREF = vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
    
-   always @(posedge clk)
+   //
+   // This was a 74LS181 ALU.  Only the part of that device
+   // that is used implemented.  The CROM Number field is
+   // present on the DBUS.  See microcode.
+   //
+   //  DPE6/E79
+   //
+
+   wire [0:5] acFUN = dbus[ 8:13];      // See cromACALU_EXTFUN
+   wire [0:2] acNUM = dbus[14:17];      // See cromACALU_NUM;
+   reg  [0:3] acPN;
+   
+   always @(acFUN or acNUM or ac)
      begin
-        if (clken)
-          begin
-             if (wr) 
-               ram[addr] <= din;
-             rd_addr <= addr;
-          end
+        case (acFUN)
+          6'o25  : acPN = acNUM;
+          6'o62  : acPN = ac + acNUM;
+          default: acPN = 4'b0;
+        endcase
      end
    
-   assign dout = ram[rd_addr];
+   //
+   // Address Mux
+   //  DPE6/E3
+   //  DPE6/E6
+   //  DPE6/E7
+   //  DPE6/E8
+   //  DPE6/E13
+   //  DPE6/E14
+   //  DPE6/E15
+   //  DPE6/E16
+   //  DPE6/E21
+   //  DPE6/E22
+   //  DPE6/E23
+   //  DPE6/E24
+   // 
+
+   reg  [0:9] addr;
+   wire [0:2] selRAMADDR = `cromRAMADDR_SEL;
+
+   always@(selRAMADDR or current_block or previous_block or ac or
+           xr or acPN or xr_previous or vmaACREF or vmaPREVIOUS or vmaADDR or dbm)
+     begin
+        case(selRAMADDR)
+          `cromRAMADDR_SEL_AC:
+            addr = {3'b0, current_block, ac  };
+          `cromRAMADDR_SEL_ACOPNUM:
+            addr = {3'b0, current_block, acPN};
+          `cromRAMADDR_SEL_XR:
+            begin
+               if (xr_previous)
+                 addr = {3'b0, previous_block, xr};
+               else 
+                 addr = {3'b0, current_block,  xr};
+            end
+          `cromRAMADDR_SEL_SPARE3:
+            addr = 9'b0;
+          `cromRAMADDR_SEL_VMA:
+            begin
+               if (vmaACREF)
+                 begin
+                    if (vmaPREVIOUS)
+                      addr = {3'b0, previous_block, vmaADDR[32:35]};
+                    else
+                      addr = {3'b0, current_block, vmaADDR[32:35]};
+                 end
+               else
+                 addr = {1'b1, vmaADDR[27:35]};
+            end
+          `cromRAMADDR_SEL_SPARE5:
+            addr = 9'b0;
+          `cromRAMADDR_SEL_RAM:
+            addr = vmaADDR[26:35];
+          `cromRAMADDR_SEL_NUM:
+            addr = {dbm[26:28], dbm[11:17]};
+        endcase
+     end
+   
+   //
+   // RAMFILE PAGE WRITE
+   //  DPMA/E2
+   //  DPMC/E3
+   //  DPMA/E134
+   //  DPMA/E119
+   //
+
+   reg pageWR;
+   
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          pageWR <= 1'b0;
+        else if (clken)
+          pageWR <= `cromSPEC_EN_10 && (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
+     end
+
+   //
+   // RAMFILE MEMORY
+   //
+   
+   RAM1Kx36 uRAM1Kx36(.clk(clk),
+                      .clken(clken),
+                      .wr(pageWR),
+                      .addr(addr),
+                      .din(dbus),
+                      .dout(ram));
    
 endmodule

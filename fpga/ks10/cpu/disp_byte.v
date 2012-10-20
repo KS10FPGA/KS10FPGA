@@ -55,10 +55,9 @@ module BYTE_DISP(dp, dispBYTE);
 
    //
    // BYTE DISP
-   //  See byte pointer format for PDP10.
-   //  The first 6 bits are the position, the second 6 bits is the size.
-   //  The dispatch code is meaningless except that it is unique and zero
-   //  indicates that no dispatch should occur.
+   //  The first 6 bits in DP are the position, the second 6 bits
+   //  in DP are the size.  This is derived from the byte pointer
+   //  format of the PDP10.
    //
    //  DPE3/E77
    //  DPE3/E16

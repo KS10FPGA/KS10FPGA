@@ -6,9 +6,37 @@
 //!      Page Tables
 //!
 //! \details
+//!     The page table translates virtual addresses/page numbers to
+//!     phyical addresses/page numbers.  There are 512 virtual pages
+//!     which map to 2048 pages.
+//!   
+//!          18                26 27                    35
+//!         +--------------------+------------------------+
+//!         |Virtual Page Number |        Word Number     |
+//!         +--------------------+------------------------+
+//!                  |                       |
+//!                  |                       |
+//!                 \ /                      |
+//!          +-------+-------+               |
+//!          |      Page     |               |
+//!          |  Translation  |               |
+//!          +-------+-------+               |
+//!                  |                       |
+//!                  |                       |
+//!                 \ /                     \ /
+//!     +------------------------+------------------------+
+//!     |  Physical Page Number  |        Word Number     |
+//!     +------------------------+------------------------+
+//!      16                    26 27                    35
 //!
-//! \todo
 //!
+//! \note   
+//!     The Page Tables use asynchronous memory which won't work in
+//!     an FPGA.  Since the Page Table is addressed by the VMA
+//!     register and the VMA register is loaded synchronously, we
+//!     can absorb the VMA register into the Page Table Memory
+//!     addressing.
+//!   
 //! \file
 //!      page_table.v
 //!
@@ -47,65 +75,50 @@
 `include "microcontroller/crom.vh"
 `include "microcontroller/drom.vh"
 
-module PAGE_TABLES(clk, rst, clken, crom, drom, dp);
+module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vma, vmaUSER,
+                   page_valid,
+                   page_writeable,
+                   page_cacheable,
+                   page_user,
+                   page_number);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
    
-   input 		  clk;        	// Clock
-   input 		  rst;          // Reset
-   input 		  clken;        // Clock Enable
-   input  [0:cromWidth-1] crom;		// Control ROM Data
-   input  [0:dromWidth-1] drom;		// Dispatch ROM Data
-   input  [0:35]          dp;           // Data path
-
+   input 		   clk;        		// Clock
+   input 		   rst;         	// Reset
+   input 	 	   clken;       	// Clock Enable
+   input  [ 0:cromWidth-1] crom;		// Control ROM Data
+   input  [ 0:dromWidth-1] drom;		// Dispatch ROM Data
+   input  [ 0:35]          dp;          	// Data path
+   input  [14:35]          vma;			// Virtural address
+   input                   vmaUSER;		//
+   output                  page_valid;		//
+   output                  page_writeable;	//
+   output                  page_cacheable;	//
+   output                  page_user;		//
+   output [16:26]          page_number;		//
+   
    //
    // VMA Logic
    //  DPE5/E76
    //  DPE6/E53
    //
    
-   wire sweep    = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE);
-   wire extended = `cromMEM_EXTADDR;		// Put VMA Bits onto Bus
-   wire loadVMA  = `cromMEM_LOADVMA;	// Load the VMA
-   wire aread    = `cromMEM_AREAD;		// Let DROM select type and load VMA
-   wire mem_fun  = `cromMEM_CYCLE;		// 
-   wire dromVMA  = `dromVMA;		// 
+   wire sweep      = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE);
+   wire page_write = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
+   
+   wire extended   = `cromMEM_EXTADDR;		// Put VMA Bits onto Bus
+   wire loadVMA    = `cromMEM_LOADVMA;		// Load the VMA
+   wire AREAD      = `cromMEM_AREAD;		// Let DROM select type and load VMA
+   wire mem_fun    = `cromMEM_CYCLE;		// 
+   wire dromVMA    = `dromVMA;			// 
 
-   wire vma_en = ((mem_fun & loadVMA) | 
-                  (mem_fun & aread & dromVMA) |
-                  (sweep));
 
-   //
-   // Page Table
-   //  The Page Tables use asynchronous memory which won't work in
-   //  an FPGA.  Since the Page Table is addressed by the VMA
-   //  register and the VMA register is loaded synchronously, we can
-   //  absorb the VMA register into the Page Table Memory addressing.
-   //
-   //  The page table translates virtual addresses/page numbers to
-   //  phyical addresses/page numbers.  There are 512 virtual pages
-   //  which map to 2048 pages.
-   //
-   //       18                26 27                    35
-   //      +--------------------+------------------------+
-   //      |Virtual Page Number |        Word Number     |
-   //      +--------------------+------------------------+
-   //               |
-   //               |
-   //              \ /
-   //       +-------+-------+
-   //       |      Page     |
-   //       |  Translation  |
-   //       +-------+-------+
-   //               |
-   //               |
-   //              \ /
-   //  +------------------------+------------------------+
-   //  |  Physical Page Number  |        Word Number     |
-   //  +------------------------+------------------------+
-   //   16                    26 27                    35
-   //
+   wire vma_en     = ((mem_fun & loadVMA) | 
+                      (mem_fun & AREAD & dromVMA) |
+                      (sweep));
+   
    //  DPM6/E130
    //  DPM6/E138
    //  DPM6/E154
@@ -116,15 +129,21 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp);
    //  DPM6/E192
    //
 
-/* -----\/----- EXCLUDED -----\/-----
- 
-   // FIXME
-   
    reg  [0:15] page_table[0:511];
-   reg  [0: 8] rd_addr;
-   wire [0: 8] virt_page = dp[18:26];
-   wire [0:15] din = {page_valid, page_writeable, page_cacheable, page_user,
-                                  1'b0 }; 
+   reg  [0: 8] read_addr;
+   wire [0: 8] virt_page = vma[18:26];
+   wire [0:15] din = {dp[18], dp[21:22], vmaUSER, 1'b0, dp[25:35]};
+   
+     
+ 
+   //
+   // FIXME DP has vma and data at different times.
+   //  need to register the address.
+   //
+   
+   //
+   // Page memory
+   //
    
    always @(posedge clk or posedge rst)
      begin
@@ -138,17 +157,15 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp);
           end
      end
 
- 
-   wire dout[0:15] = page_table[rd_addr];
-
-  
+   //
+   // Fixup Page RAM data
+   //
+   
+   wire [0:15] dout      = page_table[read_addr];
    assign page_valid     = dout[0];
    assign page_writeable = dout[1];
    assign page_cacheable = dout[2];
    assign page_user      = dout[3];
-   
- -----/\----- EXCLUDED -----/\----- */
-   
-   
+   assign page_number    = dout[5:15];
    
 endmodule

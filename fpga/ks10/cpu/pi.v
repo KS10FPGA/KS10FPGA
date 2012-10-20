@@ -50,18 +50,20 @@
 
 `include "microcontroller/crom.vh"
 
-module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new);
+module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new, pi_on);
             
    parameter cromWidth = `CROM_WIDTH;
 
-   input                  clk;			// Clock
-   input                  rst;			// Reset
-   input                  clken;		// Clock enable
-   input  [0:cromWidth-1] crom; 		// Control ROM Data
-   input  [0:35]          dp;           	// Data path
-   input  [1: 7]          bus_pi_req_in;	// Bus PI Request In
-   output reg             interrupt_req;	// Interrupt Request
-   output [0: 2]          pi_new;		// New Prioity Interrupt number
+   input                      clk;              // Clock
+   input                      rst;              // Reset
+   input                      clken;            // Clock enable
+   input      [0:cromWidth-1] crom;             // Control ROM Data
+   input      [0:35]          dp;               // Data path
+   input      [1: 7]          bus_pi_req_in;    // Bus PI Request In
+   output reg                 interrupt_req;    // Interrupt Request
+   output     [0: 2]          pi_new;           // New Prioity Interrupt number
+   output reg                 pi_on;		// PI is on
+   
    
    //
    // Bus Request In
@@ -85,9 +87,8 @@ module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new);
    //  DPEB/E140
    //
 
-   reg       pi_on;	// pi enabled
-   reg [1:7] pi_act;	// active pi level
-   reg [1:7] pi_cur;	// current pi level
+   reg [1:7] pi_act;    // active pi level
+   reg [1:7] pi_cur;    // current pi level
    reg [1:7] pi_sw;     // software pi level
    wire      pi_load = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADPI);
         
@@ -95,15 +96,15 @@ module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new);
      begin
         if (rst)
           begin
-             pi_act <= 7'b000_0000;
+             pi_act <= 7'b0;
              pi_on  <= 1'b0;
-             pi_cur <= 7'b000_0000;
-             pi_sw  <= 7'b000_0000;
+             pi_cur <= 7'b0;
+             pi_sw  <= 7'b0;
           end
         else if (clken & pi_load)
           begin
              pi_act <= ~dp[29:35];
-             pi_on  <= dp[28];
+             pi_on  <= ~dp[28];
              pi_cur <= ~dp[21:27];
              pi_sw  <= ~dp[11:17];
           end
@@ -124,28 +125,28 @@ module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new);
    //  DPEB/E147
    //
 
-   wire [0:3] pi_req_num = (pi_req[1] ? 4'b0001 :	// Highest priority
+   wire [0:3] pi_req_num = (pi_req[1] ? 4'b0001 :       // Highest priority
                             pi_req[2] ? 4'b0010 :
                             pi_req[3] ? 4'b0011 :                            
                             pi_req[4] ? 4'b0100 :                            
                             pi_req[5] ? 4'b0101 :                            
                             pi_req[6] ? 4'b0110 :                            
                             pi_req[7] ? 4'b0111 :
-                            4'b1000);			// Lowest priority
+                            4'b1000);                   // Lowest priority
                             
    //
    // Current Interrupt Priority Encoder
    //  DPEB/E134
    //
 
-   wire [0:3] pi_cur_num = (pi_cur[1] ? 4'b0001 :	// Highest priority
+   wire [0:3] pi_cur_num = (pi_cur[1] ? 4'b0001 :       // Highest priority
                             pi_cur[2] ? 4'b0010 :
                             pi_cur[3] ? 4'b0011 :                            
                             pi_cur[4] ? 4'b0100 :                            
                             pi_cur[5] ? 4'b0101 :                            
                             pi_cur[6] ? 4'b0110 :                            
                             pi_cur[7] ? 4'b0111 :
-                            4'b1000);			// Lowest priority
+                            4'b1000);                   // Lowest priority
 
    //
    // Interrupt Request
@@ -159,10 +160,7 @@ module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new);
           interrupt_req <= 1'b0;
         else if (clken)
           begin
-             if (pi_req_num < pi_cur_num)
-               interrupt_req <= intr_en;
-             else
-               interrupt_req <= 1'b0;
+             interrupt_req <= (pi_req_num < pi_cur_num);
           end
      end
 

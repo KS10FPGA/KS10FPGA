@@ -46,7 +46,7 @@
 
 `include "microcontroller/crom.vh"
 
-module IR(clk, rst, clken, crom, dbus, ir, ac);
+module regIR(clk, rst, clken, crom, dbus, ir, ac, jrst0);
    
    parameter cromWidth = `CROM_WIDTH;
 
@@ -57,6 +57,7 @@ module IR(clk, rst, clken, crom, dbus, ir, ac);
    input      [0:35]          dbus;     // Input Bus
    output reg [0: 8]          ir;       // Instruction register
    output reg [0: 3]          ac;   	// Accumulator selection
+   output                     jrst0;	// JRST Instruction
 
    //
    // Instruction Register and AC Selection
@@ -71,8 +72,8 @@ module IR(clk, rst, clken, crom, dbus, ir, ac);
     begin
         if (rst)
           begin
-             ir <= 9'b000_000_000;
-             ac <= 4'b0000;
+             ir <= 9'b0;
+             ac <= 4'b0;
           end
         else if (clken & load_ir)
           begin
@@ -81,4 +82,13 @@ module IR(clk, rst, clken, crom, dbus, ir, ac);
           end
     end
 
+   //
+   // JRST 0 decode
+   //  DPEA/E54
+   //  DPEA/E61
+   //  DPE1/E62
+   //
+   
+   assign jrst0 = ((ir == 9'o254) & (ac == 4'b0));
+   
  endmodule
