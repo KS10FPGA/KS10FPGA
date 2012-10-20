@@ -67,9 +67,9 @@ module microcontroller(clk, rst, clken, page_fail, dp, dispDIAG,
    input  [0: 3]          dispEA;       // Effective Address Mode Dispatch
    input  [0: 3]          dispSCAD;     // SCAD Dispatch
    input  [0: 3]          dispNORM;     // Normalize Dispatch
-   input  [0: 7]          skip40;       // Skip 40
-   input  [0: 7]          skip20;       // Skip 20
-   input  [0: 7]          skip10;       // Skip 10
+   input  [1: 7]          skip40;       // Skip 40
+   input  [1: 7]          skip20;       // Skip 20
+   input  [1: 7]          skip10;       // Skip 10
    input  [0: 3]          ac;           // Accumulator
    input  [0:dromWidth-1] drom;         // Dispatch ROM Data
    output [0:cromWidth-1] crom;         // Control ROM Data
@@ -187,7 +187,7 @@ module microcontroller(clk, rst, clken, page_fail, dp, dispDIAG,
    // CRA1/E111
    //
 
-   assign addr = (page_fail) ? 12'b111_111_111_111 : dispADDR | skipADDR | `cromJ;
+   assign addr = (page_fail) ? 12'b111_111_111_111 : (dispADDR | skipADDR | `cromJ);
 
    //
    // Control ROM

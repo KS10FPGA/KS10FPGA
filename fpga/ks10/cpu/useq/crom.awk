@@ -20,7 +20,7 @@ BEGIN {
 END {
     for (i = 0; i < 04000; i++) {
 	if (strtonum("0" MAP2[i]) == i) {
-	    printf "            12'o%04o: c rrom <= 108'o%s_%s_%s_%s_%s_%s_%s_%s_%s;\n", 
+	    printf "            CROM[%4d] = 108'o%s_%s_%s_%s_%s_%s_%s_%s_%s;\n",
 		i,
 		MAP[ 4,i],
 		MAP[ 5,i],
@@ -32,7 +32,7 @@ END {
 		MAP[11,i],
 		MAP[12,i]
 	} else {
-	    printf "            12'o%04o: crom <= 108'o%s_%s_%s_%s_%s_%s_%s_%s_%s;\n", 
+	    printf "            CROM[%4d] = 108'o%s_%s_%s_%s_%s_%s_%s_%s_%s;	// Unused\n",
 		i,
 		"0000",
 		"0000",

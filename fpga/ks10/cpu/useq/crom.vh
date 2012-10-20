@@ -112,15 +112,15 @@
 // RAMFILE Address
 //
 
-`define cromRAMADR_SEL          crom[36:38]     // RAMFILE address mux
-`define cromRAMADR_SEL_AC       3'b000          //  AC
-`define cromRAMADR_SEL_xxx      3'b001          //
-`define cromRAMADR_SEL_XR       3'b010          //  XR
-`define cromRAMADR_SEL_SPARE3   3'b011          //  Not used
-`define cromRAMADR_SEL_VMA      3'b100          //  VMA
-`define cromRAMADR_SEL_SPARE5   3'b101          //  Not used
-`define cromRAMADR_SEL_RAM      3'b110          //
-`define cromRAMADR_SEL_NUM      3'b111          //
+`define cromRAMADDR_SEL         crom[36:38]     // RAMFILE address mux
+`define cromRAMADDR_SEL_AC      3'b000          //  AC
+`define cromRAMADDR_SEL_ACOPNUM 3'b001          //  AC OP #
+`define cromRAMADDR_SEL_XR      3'b010          //  XR
+`define cromRAMADDR_SEL_SPARE3  3'b011          //  Not used
+`define cromRAMADDR_SEL_VMA     3'b100          //  
+`define cromRAMADDR_SEL_SPARE5  3'b101          //  Not used
+`define cromRAMADDR_SEL_RAM     3'b110          //
+`define cromRAMADDR_SEL_NUM     3'b111          //  Number Field
 
 //
 // DBUS
@@ -150,8 +150,8 @@
 // Clock enables
 //
 
-`define cromCLKL                crom[45]        // ALU Left Clock Enable
-`define cromCLKR                crom[48]        // ALU Right Clock Enable
+`define cromLCLKEN              crom[45]        // ALU Left Clock Enable
+`define cromRCLKEN              crom[48]        // ALU Right Clock Enable
 
 //
 // SPEC Field
@@ -163,14 +163,20 @@
 `define cromSPEC_EN_10          crom[53]        //  SPEC Select 10
 `define cromSPEC_SEL            crom[54:56]     //  SPEC Select
 `define cromSPEC_SEL_PREVIOUS   3'b000          //   Force Previous Context
+`define cromSPEC_SEL_CRY18INH   3'b000          //   Carry into Left Half inhibit
 `define cromSPEC_SEL_LOADIR     3'b001          //   Load IR
 `define cromSPEC_SEL_LOADXR     3'b001          //   Load XR
 `define cromSPEC_SEL_CLR1MSEC   3'b001          //   CLR Interval Timer
 `define cromSPEC_SEL_LOADPI     3'b011          //   Load PI
+`define cromSPEC_SEL_APRFLAGS   3'b011          //   Load APR Flags
+`define cromSPEC_SEL_ASHTEST    3'b100		//   ASH Test
+`define cromSPEC_SEL_PAGEWRITE  3'b100		//   PAGE WRITE
+`define cromSPEC_SEL_EXPTEST    3'b101		//   EXP Test
 `define cromSPEC_SEL_LOADAPR    3'b101          //   Load APR
 `define cromSPEC_SEL_LOADNICOND 3'b101          //   Load NICOND
 `define cromSPEC_SEL_PXCTEN     3'b110          //   Enable PXCT
 `define cromSPEC_SEL_PXCTOFF    3'b110          //   Turn off PXCT
+`define cromSPEC_SEL_PCFLAGS    3'b110          //   Load PC FLAGS
 `define cromSPEC_SEL_LOADACBLK  3'b111          //   Load AC Block
 `define cromSPEC_SEL_CLRCACHE   3'b100          //   Clear/Sweep cache
 
@@ -191,44 +197,56 @@
 //
 
 `define cromDISP                crom[57:62]     // DISP Fields
-`define cromDISP_EN_40          (~crom[57])     // DISP Select 40 (active low in microcode)
-`define cromDISP_EN_20          (~crom[58])     // DISP Select 20 (active low in microcode)
-`define cromDISP_EN_10          (~crom[59])     // DISP Select 10 (active low in microcode)
-`define cromDISP_SELH           crom[61:62]     // DISP Select (high 4 bits)
-`define cromDISP_SEL            crom[60:62]     // DISP Select (low 8 bits)
-`define cromDISP_SELH_DIAG      2'b00
-`define cromDISP_SELH_RET       2'b01
-`define cromDISP_SELH_J         2'b10
-`define cromDISP_SELH_AREAD     2'b11
-`define cromDISP_SEL_DIAG       3'b000
-`define cromDISP_SEL_RET        3'b001
-`define cromDISP_SEL_MULTIPLY   3'b010
-`define cromDISP_SEL_PAGEFAIL   3'b011
-`define cromDISP_SEL_NICOND     3'b100
-`define cromDISP_SEL_BYTE       3'b101
-`define cromDISP_SEL_EAMODE     3'b110
-`define cromDISP_SEL_SCAD       3'b111
-`define cromDISP_SEL_ZERO       3'b000
-`define cromDISP_SEL_DP18TO21   3'b001
-`define cromDISP_SEL_J          3'b010
-`define cromDISP_SEL_AREAD      3'b011
-`define cromDISP_SEL_NORM       3'b100
-`define cromDISP_SEL_DP32TO35   3'b101
-`define cromDISP_SEL_DROMA      3'b110
-`define cromDISP_SEL_DROMB      3'b111
+`define cromDISP_EN_40          (~crom[57])     //  DISP Select 40 (active low in microcode)
+`define cromDISP_EN_20          (~crom[58])     //  DISP Select 20 (active low in microcode)
+`define cromDISP_EN_10          (~crom[59])     //  DISP Select 10 (active low in microcode)
+`define cromDISP_SELH           crom[61:62]     //  DISP Select (high 4 bits)
+`define cromDISP_SELH_DIAG      2'b00     	//   Diagnostic Dispatch
+`define cromDISP_SELH_RET       2'b01    	//   Return Dispatch
+`define cromDISP_SELH_J         2'b10    	//   DROM J Dispatch
+`define cromDISP_SELH_AREAD     2'b11    	//   DROM AREAD Dispatch
+`define cromDISP_SEL            crom[60:62]     //  DISP Select (low 8 bits)
+`define cromDISP_SEL_DIAG       3'b000    	//   Diagnostic Dispatch
+`define cromDISP_SEL_RET        3'b001    	//   Return Dispatch
+`define cromDISP_SEL_MULTIPLY   3'b010    	//   Multiply Dispatch
+`define cromDISP_SEL_PAGEFAIL   3'b011    	//   Page Fail Dispatch
+`define cromDISP_SEL_NICOND     3'b100    	//   Next Instruction Dispatch
+`define cromDISP_SEL_BYTE       3'b101    	//   Byte Dispatch
+`define cromDISP_SEL_EAMODE     3'b110    	//   EA Mode Dispatch
+`define cromDISP_SEL_SCAD       3'b111    	//   SCAD Dispatch
+`define cromDISP_SEL_ZERO       3'b000    	//   No Dispatch (NOP)
+`define cromDISP_SEL_DP18TO21   3'b001    	//   DP[18:21] Dispatch
+`define cromDISP_SEL_J          3'b010    	//   DROM J Dispatch
+`define cromDISP_SEL_AREAD      3'b011    	//   DROM AREAD Dispatch
+`define cromDISP_SEL_NORM       3'b100    	//   Normailze Dispatch
+`define cromDISP_SEL_DP32TO35   3'b101    	//   DP[32:35] Dispatch
+`define cromDISP_SEL_DROMA      3'b110    	//   DROM A Dispatch
+`define cromDISP_SEL_DROMB      3'b111    	//   DROM B Dispatch
 
+//
 // Skip Select
+//
+
 `define cromSKIP                crom[63:68]     // SKIP Fields
-`define cromSKIP_EN_40          (~crom[63])     // SKIP Select 40 (active low in microcode)
-`define cromSKIP_EN_20          (~crom[64])     // SKIP Select 20 (active low in microcode)
-`define cromSKIP_EN_10          (~crom[65])     // SKIP Select 10 (active low in microcode)
-`define cromSKIP_SEL            crom[66:68]     // SKIP Select
+`define cromSKIP_EN_40          (~crom[63])     //  SKIP Select 40 (active low in microcode)
+`define cromSKIP_EN_20          (~crom[64])     //  SKIP Select 20 (active low in microcode)
+`define cromSKIP_EN_10          (~crom[65])     //  SKIP Select 10 (active low in microcode)
+`define cromSKIP_SEL            crom[66:68]     //  SKIP Select
 
 //
-//
+// Misc Bits
 //
 
+`define cromT                   crom[69:71]     // Microinstruction cycle length
+`define cromCRY38               crom[72]        // Insert a carry into the LSB of the ALU
+`define cromLOADSC              crom[73]        // Load Step Counter from SCAD
+`define cromLOADFE              crom[74]        // Load FE Register from SCAD
+`define cromFMWRITE             crom[75]        // Write to RAM FILE
 `define cromMEM_CYCLE           crom[76]        // Start/complete a memory or IO cycle using # field
+`define cromDIVIDE              crom[77]        // Microinstruction is doing a divide
+`define cromMULTIPREC           crom[78]        // Multiprecision step (Divide, DFAD, DFSB)
+`define cromMULTISHIFT          crom[79]        // Fast Shift (repeat until FE overflows)
+`define cromCALL                crom[80]        // Save current location on stack
 
 //
 // SCAD
@@ -257,23 +275,39 @@
 `define cromSCAD_BSEL           crom[96:97]     // SCAD B MUX Select
 `define cromSCAD_BSEL_FE        2'b00           //  FE
 `define cromSCAD_BSEL_EXP       2'b01           //  EXP
-`define cromSCAD_BSEL_SHIFT     2'b10           //
+`define cromSCAD_BSEL_SHIFT     2'b10           //  Shift
 `define cromSCAD_BSEL_SIZE      2'b11           //  DP[6:11]
+
+`define cromSNUM                crom[98:107]    // Small Number field (10-bit) for SCAD
+
+//
+// Number Field
+//
+
+`define cromNUM                 crom[90:107]    //
+
+//
+// State Field
+//  Overloaded with Number Field 
+//
+
+`define cromSTATE               crom[90:107]    //
 
 //
 // Memory Cycle Control
+//  Overloaded with Number Field 
 //
 
 `define cromMEM_FORCEUSER       crom[90]        // Force user mode reference
 `define cromMEM_FORCEEXEC       crom[91]        // Force exec mode reference
 `define cromMEM_FETCHCYCLE      crom[92]        // This is an instruction fetch cycle
 `define cromMEM_READCYCLE       crom[93]        // This is a read cycle
-`define cromMEM_WRITETEST       crom[94]        // Page Fail if not written
+`define cromMEM_WRTESTCYCLE     crom[94]        // Page Fail if not written
 `define cromMEM_WRITECYCLE      crom[95]        // This is a write cycle
-`define cromMEM_DONTCACHE       crom[97]        // Don't lock in cache
+`define cromMEM_CACHEINH        crom[97]        // Don't lock in cache
 `define cromMEM_PHYSICAL        crom[98]        // Don't invoke paging hardare
 `define cromMEM_PXCTSEL         crom[99:101]    // Which PXCT bits to look at
-`define cromMEM_AREAD           crom[102]       // Let DROM select sysle type and VMA load
+`define cromMEM_AREAD           crom[102]       // Let DROM select cycle type and VMA load
 `define cromMEM_DPFUNC          crom[103]       // Use dp[0:13] instead of cromNUM[0:13]
 `define cromMEM_LOADVMA         crom[104]       // Load the VMA
 `define cromMEM_EXTADDR         crom[105]       // Put VMA[14:17] Bits onto Bus
@@ -288,34 +322,48 @@
 `define cromMEM_IOBYTECYCLE     crom[103]       // This is a byte cycle
 
 //
-//
+// Flag Manipulation
+//  Overloaded with Number Field 
 //
 
-`define cromT                   crom[69:71]     //
-`define cromCRY38               crom[72]        //
-`define cromLOADSC              crom[73]        // Load Step Counter from SCAD
-`define cromLOADFE              crom[74]        // Load FE Register from SCAD
-`define cromFMWRITE             crom[75]        // Write to RAM FILE
-`define cromDIVIDE              crom[72]        //
-`define cromMULTIPREC           crom[78]        //
-`define cromMULTISHIFT          crom[79]        //
-`define cromCALL                crom[80]        //
-`define cromNUM                 crom[90:107]    //
-`define cromSTATE               crom[90:107]    //
 `define cromSETOV               crom[90]        // Set arithmetic overflow
 `define cromSETFOV              crom[91]        // Set floating point overflow
 `define cromSETNDV              crom[92]        // Set no divide
 `define cromCLRFPD              crom[93]        // Clear first part done
 `define cromSETFPD              crom[94]        // Set first part done
-`define cromHOLDUSER            crom[95]        //
+`define cromHOLDUSER            crom[95]        // Do not update USER
 `define cromSPARE1              crom[96]        // Spare
-`define cromTRAP2               crom[97]        // Set trap 2
-`define cromTRAP1               crom[98]        // Set trap 1
-`define cromSNUM                crom[98:107]    // Small Number field (10-bit) for SCAD
-`define cromLDPCU               crom[99]        // Load PCU
+`define cromSETTRAP2            crom[97]        // Set trap 2
+`define cromSETTRAP1            crom[98]        // Set trap 1
+`define cromSETPCU              crom[99]        // Set PCU
+`define cromSPARE2              crom[100]       // Spare
+`define cromSPARE3              crom[101]       // Spare
+`define cromSPARE4              crom[102]       // Spare
+`define cromSPARE5              crom[103]       // Spare
+`define cromJFCLFLAG            crom[104]       // JFCL instruction
+`define cromLDFLAGS             crom[105]       // Load flags from DP bus
+`define cromSPARE6              crom[106]       // Spare
+`define cromADFLAGS             crom[107]       // Update Carry Flags
+
+//
+// AC Math
+//
+//   
+//     +-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+//     |CARRY| S8  |  S4 | S2  |  S1 | MODE| B8  | B4  |  B2 | B1  |
+//     |  IN |       FUNCTION        |     |      DATA INPUTS      |
+//     +-----+-----------------------+-----+-----------------------+
+//
+
+`define cromACALU_CI            crom[98]	// AC ALU Carry In
+`define cromACALU_FUN           crom[99:102]	// AC ALU Function
+`define cromACALU_MODE          crom[103]	// AC ALU Mode
+`define cromACALU_EXTFUN        crom[98:103]	// AC ALU Extended Function
+`define cromACALU_NUM           crom[104:107]	// AC ALU Number
 
 //
 // Priority Interrupt (PI) bits
+//  Overloaded with Number Field 
 //
 
 `define cromPI_ZER              crom[90:92]     // (Not used)
@@ -336,26 +384,14 @@
 `define cromI_CO7               crom[107]       // (Not used)
 
 //
-//
-//
-
-`define cromSPARE2              crom[100]       // Spare
-`define cromSPARE3              crom[101]       // Spare
-`define cromSPARE4              crom[102]       // Spare
-`define cromSPARE5              crom[103]       // Spare
-`define cromJFCLFLG             crom[104]       // Do a JFCL instruction
-`define cromLDFLAGS             crom[105]       // Load flags from DP
-`define cromSPARE6              crom[106]       //
-`define cromADFLGS              crom[107]       //
-
-//
-//
+// Workspace Address Field
+//  Overloaded with Number Field 
 //
 
-`define cromWORK                crom[98:107]    //
+`define cromWORK                crom[98:107]    // Workspace Address
 
 //
-//
+// DT Field
 //
 
 `define cromDT                  crom[109:111]   // Not used

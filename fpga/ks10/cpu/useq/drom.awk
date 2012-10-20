@@ -14,13 +14,13 @@ BEGIN {
  END {
      for (i = 0; i < 512; i++) {
  	if (strtonum("0" MAP2[i]) == i) {
-	    printf "            9'o%03o: drom <= 36'o%s_%s_%s;\n", 
+	    printf "        DROM[%3d] = 36'o%s_%s_%s;\n", 
 		i,
 		MAP[ 4,i],
 		MAP[ 5,i],
 		MAP[ 6,i]
  	} else {
-	    printf "            9'o%03o: drom <= 36'o%s_%s_%s;\n", 
+	    printf "        DROM[%3d] <= 36'o%s_%s_%s;	// Unused\n", 
 		i,
 		"0000",
 		"0000",

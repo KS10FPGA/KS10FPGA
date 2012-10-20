@@ -65,9 +65,9 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
    
    parameter cromWidth = `CROM_WIDTH;
 
-   input  [0:7]           skip40;	// Skip 40 bits
-   input  [0:7]           skip20;	// Skip 20 bits
-   input  [0:7]           skip10;	// Skip 10 bits
+   input  [1:7]           skip40;	// Skip 40 bits
+   input  [1:7]           skip20;	// Skip 20 bits
+   input  [1:7]           skip10;	// Skip 10 bits
    input  [0:cromWidth-1] crom; 	// Control ROM Data
    output [0:11]          skipADDR;	// Skip Address
    
@@ -90,7 +90,7 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
           begin
              case (`cromSKIP_SEL)
                3'b000:
-                 skip = skip40[0];
+                 skip = 1'b0;
                3'b001:
                  skip = skip40[1];
                3'b010:
@@ -116,7 +116,7 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
           begin
              case (`cromSKIP_SEL)
                3'b000:
-                 skip = skip20[0];
+                 skip = 1'b0;
                3'b001:
                  skip = skip20[1];
                3'b010:
@@ -142,7 +142,7 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
           begin
              case (`cromSKIP_SEL)
                3'b000:
-                 skip = skip10[0];
+                 skip = 1'b0;
                3'b001:
                  skip = skip10[1];
                3'b010:

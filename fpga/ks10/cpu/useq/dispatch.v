@@ -82,8 +82,9 @@ module DISPATCH(crom, dp, dispDIAG, dispRET, dispJ, dispAREAD,
 
    always @(dispDIAG or dispRET or dispJ or dispAREAD or
             dispMUL  or dispPF or dispNI or dispBYTE or dispEA or
-            dispSCAD or dispEN20 or dispEN10 or dispSEL or
-            dispSELH)
+            dispSCAD or  dispNORM or dispDROM_A or dispDROM_B or
+	    dispEN40 or dispEN20 or dispEN10 or
+	    dispSEL  or dispSELH or dp)
      begin
 
         //
@@ -145,6 +146,10 @@ module DISPATCH(crom, dp, dispDIAG, dispRET, dispJ, dispAREAD,
 
         //
         // Dispatch Address Select LSBs
+        //  DPEA/E132
+        //  DPEA/E138
+        //  DPEA/E146
+        //  DPEA/E160
         //
         
         if (dispEN40)
