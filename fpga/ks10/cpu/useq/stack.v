@@ -166,12 +166,18 @@ module STACK(clk, rst, clken, crom, addrIN, addrOUT);
    //  CRA3/E160
    //
    
+   integer i;
    reg  [0:11] stack[0:15];	// Dual Ported Stack Memory
    wire [0: 3] wp = sp + 1;	// Write pointer
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (call)
+        if (rst)
+          begin
+            for (i = 0; i < 16; i = i + 1)
+              stack[i] <= 12'b0;
+          end
+        else if (clken & call)
           begin
              stack[wp] <= lastADDR;
           end

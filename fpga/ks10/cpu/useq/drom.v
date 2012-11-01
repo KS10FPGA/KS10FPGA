@@ -44,17 +44,30 @@
 // Comments are formatted for doxygen
 //
 
+`include "crom.vh"
 `include "drom.vh"
 
-module DROM(clk, rst, clken, addr, drom);
+module DROM(clk, rst, clken, dbus, crom, drom);
 
+   parameter  cromWidth = `CROM_WIDTH;
    parameter  dromWidth = `DROM_WIDTH;
 
    input                      clk;      // Clock
    input                      rst;      // Reset
    input                      clken;    // Clock Enable
-   input      [0:8]           addr;   	// Address
-   output reg [0:dromWidth-1] drom;     // Output Data
+   input      [0:35]          dbus;     // DBUS
+   input      [0:cromWidth-1] crom;     // Control ROM
+   output reg [0:dromWidth-1] drom;     // Dispatch ROM Output
+
+   //
+   // The DROM in the KS10 is asynchronous.  That won't work in an FPGA
+   // implementation.  Fortunately the DROM is addressed by the Instruction
+   // Register (IR) which is synchronous.  Therefore when we load the IR
+   // we also load the address of the DROM.
+   //
+   
+   wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
+   wire [0:8] addr = dbus[0:8];
 
    //
    // Dispatch ROM (DROM)
@@ -582,12 +595,14 @@ module DROM(clk, rst, clken, addr, drom);
      end
 
    //
-   //
+   // Synchronous ROM
    //
 
    always @(posedge clk)
      begin
-        if (clken)
+        if (rst)
+          drom <= 36'b0;
+        else if (clken & loadIR)
           drom <= DROM[addr];
      end
 
