@@ -76,26 +76,26 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
+`include "useq/crom.vh"
 
-module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, ac,
-               aluAOV, aluCRY0, aluCRY1, pcFLAGS, jfcl_skip);
+module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
+               aluAOV, aluCRY0, aluCRY1, pcFLAGS, skipJFCL);
              
    parameter cromWidth = `CROM_WIDTH;
              
-   input                  clk;              	// Clock
-   input                  rst;              	// Reset
-   input                  clken;    		// Clock Enable
-   input  [0:cromWidth-1] crom;             	// Control ROM Data
-   input  [0:35]          dp;               	// Data path
-   input  [0:35]          dbm;              	// DBM
-   input  [0: 9]          scad;             	// SCAD
-   input  [9:12]          ac;               	// AC
-   input                  aluAOV;		// ALU Arithmetic Overflow
-   input                  aluCRY0;		// ALU Carry 0
-   input                  aluCRY1;		// ALU Carry 1
-   output [0:17]          pcFLAGS;            	// Flags
-   output                 jfcl_skip;        	// JFCL Skip
+   input                  clk;                  // Clock
+   input                  rst;                  // Reset
+   input                  clken;                // Clock Enable
+   input  [0:cromWidth-1] crom;                 // Control ROM Data
+   input  [0:35]          dp;                   // Data path
+   input  [0:35]          dbm;                  // DBM
+   input  [0: 9]          scad;                 // SCAD
+   input  [0:17]          regIR;             	// Instruction Register
+   input                  aluAOV;               // ALU Arithmetic Overflow
+   input                  aluCRY0;              // ALU Carry 0
+   input                  aluCRY1;              // ALU Carry 1
+   output [0:17]          pcFLAGS;              // Flags
+   output                 skipJFCL;             // JFCL Skip
 
    //
    // Flags Registers
@@ -170,18 +170,20 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, ac,
    //  DPE9/E92
    //
 
-   wire jfcl[9:12];
-   assign jfcl[ 9]  = selPCFLAGS & dbmJFCLFLAGS & flagAOV  & ac[ 9];
-   assign jfcl[10]  = selPCFLAGS & dbmJFCLFLAGS & flagCRY0 & ac[10];
-   assign jfcl[11]  = selPCFLAGS & dbmJFCLFLAGS & flagCRY1 & ac[11];
-   assign jfcl[12]  = selPCFLAGS & dbmJFCLFLAGS & flagFOV  & ac[12];
+   wire [9:12] JFCL;
+   wire [9:12] regIR_AC = regIR[9:12];
+   
+   assign JFCL[ 9]  = selPCFLAGS & dbmJFCLFLAGS & flagAOV  & regIR_AC[ 9];
+   assign JFCL[10]  = selPCFLAGS & dbmJFCLFLAGS & flagCRY0 & regIR_AC[10];
+   assign JFCL[11]  = selPCFLAGS & dbmJFCLFLAGS & flagCRY1 & regIR_AC[11];
+   assign JFCL[12]  = selPCFLAGS & dbmJFCLFLAGS & flagFOV  & regIR_AC[12];
 
    //
    // JFCL Skip
    //  DPE9/E77
    //
    
-   assign jfcl_skip = jfcl[9] | jfcl[10] | jfcl[11] | jfcl[12];
+   assign skipJFCL = JFCL[9] | JFCL[10] | JFCL[11] | JFCL[12];
 
    //
    // Overflow Flag (OV)
@@ -204,7 +206,7 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, ac,
                     flagAOV <= 1'b1;
                   else if (dbmADFLAGS)
                     flagAOV <= aluAOV;
-                  else if (jfcl[9])
+                  else if (JFCL[9])
                     begin
                        if (dbmLDFLAGS)
                          flagAOV <= dpOV;
@@ -229,7 +231,7 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, ac,
           begin
              if (dbmADFLAGS)
                flagCRY0 <= aluCRY0;
-             else if (jfcl[10])
+             else if (JFCL[10])
                begin
                   if (dbmLDFLAGS)
                     flagCRY0 <= dpCRY0;
@@ -253,7 +255,7 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, ac,
           begin
              if (dbmADFLAGS)
                flagCRY1 <= aluCRY1;
-             else if (jfcl[11])
+             else if (JFCL[11])
                begin
                   if (dbmLDFLAGS)
                     flagCRY1 <= dpCRY1;
@@ -279,7 +281,7 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, ac,
                flagFOV <= scad[1];
              else if (selPCFLAGS)
                begin
-                  if (jfcl[12])
+                  if (JFCL[12])
                     begin
                        if (dbmLDFLAGS)
                          flagFOV <= dpFOV;

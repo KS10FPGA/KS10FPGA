@@ -88,14 +88,13 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
+`include "useq/crom.vh"
 
-module RAMFILE(clk, rst, clken, crom, dbus, dbm, ac,
-               xr, xr_previous,
+module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
                vmaADDR, vmaPHYSICAL, vmaPREVIOUS,
                previous_block, current_block,
                //memory_cycle, mem_wait, mem_read, stop_main_memory,
-               ram);
+               ramfile);
    
    parameter cromWidth = `CROM_WIDTH;
             
@@ -105,15 +104,21 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, ac,
    input  [ 0:cromWidth-1] crom;                // Control ROM Data
    input  [ 0:35]          dbus;                // DBUS Input
    input  [ 0:35]          dbm;                 // DBM Input
-   input  [ 9:12]          ac;                  // AC
-   input  [14:17]          xr;                  // XR
-   input                   xr_previous;         //
+   input  [ 0:17]          regIR;               // Instruction Register
+   input                   xrPREV;          	//
    input  [14:35]          vmaADDR;             // Virtual Memory Address
    input                   vmaPHYSICAL;         // 
    input                   vmaPREVIOUS;         //
    input  [0:2]            previous_block;      //
    input  [0:2]            current_block;       //
-   output [0:35]           ram;                 // RAMFILE output
+   output [0:35]           ramfile;             // RAMFILE output
+
+   //
+   // IR Fields
+   //
+   
+   wire [ 9:12] regIR_AC = regIR[ 9:12];        // Instruction Register AC Field
+   wire [14:17] regIR_XR = regIR[14:17];        // Instruction Register XR Field
    
    //
    // AC Reference
@@ -133,14 +138,14 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, ac,
 
    wire [0:5] acFUN = dbus[ 8:13];      // See cromACALU_EXTFUN
    wire [0:2] acNUM = dbus[14:17];      // See cromACALU_NUM;
-   reg  [0:3] acPN;
+   reg  [0:3] AC_PLUS_N;
    
-   always @(acFUN or acNUM or ac)
+   always @(acFUN or acNUM or regIR_AC)
      begin
         case (acFUN)
-          6'o25  : acPN = acNUM;
-          6'o62  : acPN = ac + acNUM;
-          default: acPN = 4'b0;
+          6'o25  : AC_PLUS_N = acNUM;
+          6'o62  : AC_PLUS_N = regIR_AC + acNUM;
+          default: AC_PLUS_N = 4'b0;
         endcase
      end
    
@@ -163,20 +168,21 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, ac,
    reg  [0:9] addr;
    wire [0:2] selRAMADDR = `cromRAMADDR_SEL;
 
-   always@(selRAMADDR or current_block or previous_block or ac or
-           xr or acPN or xr_previous or vmaACREF or vmaPREVIOUS or vmaADDR or dbm)
+   always@(selRAMADDR or current_block or previous_block or regIR_AC or
+           regIR_XR or AC_PLUS_N or xrPREV or vmaACREF or vmaPREVIOUS or
+           vmaADDR or dbm)
      begin
         case(selRAMADDR)
           `cromRAMADDR_SEL_AC:
-            addr = {3'b0, current_block, ac  };
+            addr = {3'b0, current_block, regIR_AC };
           `cromRAMADDR_SEL_ACOPNUM:
-            addr = {3'b0, current_block, acPN};
+            addr = {3'b0, current_block, AC_PLUS_N};
           `cromRAMADDR_SEL_XR:
             begin
-               if (xr_previous)
-                 addr = {3'b0, previous_block, xr};
+               if (xrPREV)
+                 addr = {3'b0, previous_block, regIR_XR};
                else 
-                 addr = {3'b0, current_block,  xr};
+                 addr = {3'b0, current_block,  regIR_XR};
             end
           `cromRAMADDR_SEL_SPARE3:
             addr = 9'b0;
@@ -202,32 +208,38 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, ac,
      end
    
    //
-   // RAMFILE PAGE WRITE
-   //  DPMA/E2
-   //  DPMC/E3
-   //  DPMA/E134
-   //  DPMA/E119
+   // RAMFILE WRITE
+   //  DPE5/E119
+   //  DPMA/E22
+   //  DPMA/E54
    //
 
-   reg pageWR;
+/*
+   // FIXME
+   start_cycle =  ((`cromMEM_READCYCLE & `cromMEM_WRITECYCLE & ~stop_main_memory) &
+                   (READ_EN | WRITE_EN) &
+ 
+                   (CRA6_MEMORY_FUNCTION & `cromMEM_WAIT   &              )
+                   (CRA6_MEMORY_FUNCTION & `cromMEM_BWRITE & dromCOND_FUNC));
+ 
+*/
    
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          pageWR <= 1'b0;
-        else if (clken)
-          pageWR <= `cromSPEC_EN_10 && (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
-     end
-
+   wire ramfileWRITE = (
+                   /*
+                    ( vmaACREF & ~MEM_READ        & memory_cycle & mem_wait) |
+                    (~vmaACREF & STOP_MAIN_MEMORY & memory_cycle & mem_wait) |
+                    */
+                   (`cromFMWRITE));
+   
    //
    // RAMFILE MEMORY
    //
    
    RAM1Kx36 uRAM1Kx36(.clk(clk),
                       .clken(clken),
-                      .wr(pageWR),
+                      .wr(ramfileWRITE),
                       .addr(addr),
                       .din(dbus),
-                      .dout(ram));
+                      .dout(ramfile));
    
 endmodule

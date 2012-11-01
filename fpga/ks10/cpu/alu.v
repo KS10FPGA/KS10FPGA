@@ -60,7 +60,7 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
+`include "useq/crom.vh"
 
 module ALU(clk, rst, clken, dbus, crom,
            aluLZero, aluRZero, aluLSign, aluRSign,
@@ -82,7 +82,7 @@ module ALU(clk, rst, clken, dbus, crom,
    output                 aluCRY0;              // ALU Carry 0
    output                 aluCRY1;              // ALU Carry 1
    output                 aluCRY2;              // ALU Carry 2
-   output                 aluQR37;		// ALU QR37
+   output                 aluQR37;              // ALU QR37
    output [0:35]          t;                    // ALU Output
 
    //
@@ -105,12 +105,23 @@ module ALU(clk, rst, clken, dbus, crom,
    wire cry18inh       = `cromSPEC_SEL_CRY18INH;// Inhibit carry from right half to left half
 
    //
+   // ALU Register Write
+   //
+   
+   wire write = ((dest ==`cromDST_RAMA)  ||
+                 (dest ==`cromDST_RAMF)  ||
+                 (dest ==`cromDST_RAMQD) ||
+                 (dest ==`cromDST_RAMQU) ||
+                 (dest ==`cromDST_RAMD)  ||
+                 (dest ==`cromDST_RAMU));
+
+   //
    // DST[1] is inverted on DPE5/E62
    //  Note on the am2901's during shifts, the dst[1] pin
    //  selects right shifts from left shifts.  In the KS10,
    //  the dst[1] also selects tri-state muxes for attaching
    //  the right-shift and left-shift operations.  This isn't
-   //  necessary on the FPGA implementation, because this
+   //  necessary on the FPGA implementation because this
    //  version of the am2901 doesn't have tri-stated inputs.
    //
 
@@ -308,45 +319,50 @@ module ALU(clk, rst, clken, dbus, crom,
           bdi = f;
      end
 
+   
    //
-   // Left Half (MS) Register File
+   // ALU Register File Write Port
+   //  The left side and right side of the ALU can be independantly
+   //  clocked and updated.
    //
 
    integer i;
-   reg [0:19] RAML [0:15];
-   wire wrl = ((dest ==`cromDST_RAMA) || (dest ==`cromDST_RAMF) || (dest ==`cromDST_RAMQD) ||
-               (dest ==`cromDST_RAMD) || (dest ==`cromDST_RAMU) || (dest ==`cromDST_RAMQU));
+   reg [0:39] aluRAM [0:15];
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           for (i = 0; i < 16; i = i + 1)
-            RAML[i] <= 20'b0;
-        else if (clken & lclken & wrl)
-          RAML[ba] <= bdi[0:19];
+            aluRAM[i] <= 40'b0;
+        else if (clken)
+          begin
+             if (lclken & write)
+               aluRAM[ba][ 0:19] <= bdi[0:19];
+             if (rclken & write)
+               aluRAM[ba][20:39] <= bdi[20:39];
+          end
      end
-
+   
    //
-   // Right Half (LS) Register File
+   // ALU Register File Read Port(s)
+   //  The am2901 latches the addresses when the clock is low. These latches
+   //  would be a problem for an FPGA design.  Latching the address lines is
+   //  not necessary anyway because the RAM address lines come directly from
+   //  the CROM which is already registered.   We'll abosorb the address latch
+   //  into the CROM register.
    //
-
-   integer j;
-   reg [0:19] RAMR [0:15];
-   wire wrr = ((dest ==`cromDST_RAMA) || (dest ==`cromDST_RAMF) || (dest ==`cromDST_RAMQD) ||
-               (dest ==`cromDST_RAMD) || (dest ==`cromDST_RAMU) || (dest ==`cromDST_RAMQU));
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          for (j = 0; j < 16; j = j + 1)
-            RAMR[j] <= 20'b0;
-        else if (clken & rclken && wrr)
-          RAMR[ba] <= bdi[20:39];
-     end
-
-   wire [0:39] ad = {RAML[aa], RAMR[aa]};
-   wire [0:39] bd = {RAML[ba], RAMR[ba]};
-
+   //  Note: this asynchronous read (and asynchronous reset) causes the RAM
+   //  to be built out of distributed RAM or flip-flops.   If this turns into
+   //  a too wasteful (576 flip-flops), we can pipeline the CROM register:
+   //  use the early CROM to set the read address the synchronous RAM and use
+   //  the pipelined delayed CROM for everything else.   When combined, the
+   //  clock delayed output of the synchronous RAM would be pipelined correctly
+   //  with the rest of the CROM.
+   //
+    
+   wire [0:39] ad = aluRAM[aa];
+   wire [0:39] bd = aluRAM[ba];
+   
    //
    // Q Register Shifter
    //
@@ -531,11 +547,11 @@ module ALU(clk, rst, clken, dbus, crom,
    //  ALU are calculated in parallel.
    //
 
-   reg [0:3] g;				// ALU Partial Sum
+   reg [0:3] g;                         // ALU Partial Sum
    reg       co;                        // Carry out of left half
    reg       go;                        // Partial sum for calculating CRY2
    wire      ci  = carry_in;            // Carry into left half
-   reg       bb;			// Bit Bucket
+   reg       bb;                        // Bit Bucket
    
 
    always @(r or s or ci or cry18inh or func)
@@ -549,12 +565,12 @@ module ALU(clk, rst, clken, dbus, crom,
                {go, g[ 0: 3]} = {1'b0, r[ 0: 3]} + {1'b0, s[ 0: 3]};
                if (cry18inh)
                  begin
-                    {bb, f[20:39]} = {1'b0, r[20:39]} + {1'b0, s[20:39]} + ci;      	// Right Half
-                    {co, f[ 0:19]} = {1'b0, r[ 0:19]} + {1'b0, s[ 0:19]};     		// Left Half (assumes no carry)
+                    {bb, f[20:39]} = {1'b0, r[20:39]} + {1'b0, s[20:39]} + ci;          // Right Half
+                    {co, f[ 0:19]} = {1'b0, r[ 0:19]} + {1'b0, s[ 0:19]};               // Left Half (assumes no carry)
                  end
                else
                  begin
-                    {co, f[ 0:39]} = {1'b0, r[ 0:39]} + {1'b0, s[ 0:39]} + ci;      	// Whole ACC
+                    {co, f[ 0:39]} = {1'b0, r[ 0:39]} + {1'b0, s[ 0:39]} + ci;          // Whole ACC
                  end
             end
           `cromFUN_SUBR:
@@ -562,12 +578,12 @@ module ALU(clk, rst, clken, dbus, crom,
                {go, g[ 0: 3]} = {1'b1, ~r[ 0: 3]} + {1'b0, s[ 0: 3]};
                if (cry18inh)
                  begin
-                    {bb, f[20:39]} = {1'b1, ~r[20:39]} + {1'b0, s[20:39]} + ci;     	// Right Half
-                    {co, f[ 0:19]} = {1'b1, ~r[ 0:19]} + {1'b0, s[ 0:19]};    		// Left Half (assumes no carry)
+                    {bb, f[20:39]} = {1'b1, ~r[20:39]} + {1'b0, s[20:39]} + ci;         // Right Half
+                    {co, f[ 0:19]} = {1'b1, ~r[ 0:19]} + {1'b0, s[ 0:19]};              // Left Half (assumes no carry)
                  end
                else
                  begin
-                    {co, f[ 0:39]} = {1'b1, ~r[ 0:39]} + {1'b0, s[ 0:39]} + ci;      	// Whole ACC
+                    {co, f[ 0:39]} = {1'b1, ~r[ 0:39]} + {1'b0, s[ 0:39]} + ci;         // Whole ACC
                  end
             end
           `cromFUN_SUBS:
@@ -575,12 +591,12 @@ module ALU(clk, rst, clken, dbus, crom,
                {go, g[ 0: 3]} = {1'b0, r[ 0: 3]} + {1'b1, ~s[ 0: 3]};
                if (cry18inh)
                  begin
-                    {bb, f[20:39]} = {1'b0, r[20:39]} + {1'b1, ~s[20:39]} + ci;     	// Right Half
-                    {co, f[ 0:19]} = {1'b0, r[ 0:19]} + {1'b1, ~s[ 0:19]};    		// Left Half (assumes no carry)
+                    {bb, f[20:39]} = {1'b0, r[20:39]} + {1'b1, ~s[20:39]} + ci;         // Right Half
+                    {co, f[ 0:19]} = {1'b0, r[ 0:19]} + {1'b1, ~s[ 0:19]};              // Left Half (assumes no carry)
                  end
                else
                  begin
-                    {co, f[ 0:39]} = {1'b0, r[ 0:39]} + {1'b1, ~s[ 0:39]} + ci;      	// Whole ACC
+                    {co, f[ 0:39]} = {1'b0, r[ 0:39]} + {1'b1, ~s[ 0:39]} + ci;         // Whole ACC
                  end
             end
           `cromFUN_ORRS:

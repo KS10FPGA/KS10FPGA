@@ -44,10 +44,10 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
-`include "microcontroller/drom.vh"
+`include "useq/crom.vh"
+`include "useq/drom.vh"
 
-module VMA(clk, rst, clken, crom, drom, dp, execute, previousEN,
+module VMA(clk, rst, clken, crom, drom, dp, consEXEC, prevEN,
            flagPCU, flagUSER,
            vmaSWEEP, vmaEXTENDED, vmaACREF, vmaFLAGS, vmaADDR);
 
@@ -60,8 +60,8 @@ module VMA(clk, rst, clken, crom, drom, dp, execute, previousEN,
    input  [0:cromWidth-1] crom;		// Control ROM Data
    input  [0:dromWidth-1] drom;		// Dispatch ROM Data
    input  [0:35]          dp;           // Data path
-   input                  execute;  	//
-   input                  previousEN;	// Previous Enable
+   input                  consEXEC;  	// Execute
+   input                  prevEN;	// Previous Enable
    input                  flagPCU;	// PCU Flag
    input                  flagUSER;	// USER Flag
    output reg             vmaSWEEP;     // VMA Sweep
@@ -103,7 +103,7 @@ module VMA(clk, rst, clken, crom, drom, dp, execute, previousEN,
    reg vmaFETCH;
    reg vmaPHYSICAL;
    reg vmaPREVIOUS;
-   reg vmaIO;
+   reg vmaIOCYCLE;
    reg vmaWRUCYCLE;
    reg vmaVECTORCYCLE;
    reg vmaIOBYTECYCLE;
@@ -123,7 +123,7 @@ module VMA(clk, rst, clken, crom, drom, dp, execute, previousEN,
              vmaFETCH       <=  1'b0;
              vmaPHYSICAL    <=  1'b0;
              vmaPREVIOUS    <=  1'b0;
-             vmaIO          <=  1'b0;
+             vmaIOCYCLE     <=  1'b0;
              vmaWRUCYCLE    <=  1'b0;
              vmaVECTORCYCLE <=  1'b0;
              vmaIOBYTECYCLE <=  1'b0;
@@ -139,22 +139,22 @@ module VMA(clk, rst, clken, crom, drom, dp, execute, previousEN,
                   vmaFETCH       <= dp[2];
                   vmaPHYSICAL    <= dp[8];
                   vmaPREVIOUS    <= dp[9];
-                  vmaIO          <= dp[10];
+                  vmaIOCYCLE     <= dp[10];
                   vmaWRUCYCLE    <= dp[11];
                   vmaVECTORCYCLE <= dp[12];
                   vmaIOBYTECYCLE <= dp[13];
                end
              else
                begin
-                  vmaUSER        <= ((~`cromMEM_FORCEEXEC & flagUSER  & ~execute) |
-                                     (`cromMEM_FETCHCYCLE & flagUSER            ) |
-                                     (previousEN  & flagPCU) |
+                  vmaUSER        <= ((~`cromMEM_FORCEEXEC & flagUSER  & ~consEXEC) |
+                                     (`cromMEM_FETCHCYCLE & flagUSER             ) |
+                                     (prevEN  & flagPCU) |
                                      (selPREVIOUS & flagPCU) |
                                      (`cromMEM_FORCEUSER));
                   vmaFETCH       <= `cromMEM_FETCHCYCLE;
                   vmaPHYSICAL    <= `cromMEM_PHYSICAL;
-                  vmaPREVIOUS    <= previousEN | selPREVIOUS;
-                  vmaIO          <= 1'b0;
+                  vmaPREVIOUS    <= prevEN | selPREVIOUS;
+                  vmaIOCYCLE     <= 1'b0;
                   vmaWRUCYCLE    <= 1'b0;
                   vmaVECTORCYCLE <= 1'b0;
                   vmaIOBYTECYCLE <= 1'b0;
@@ -245,7 +245,7 @@ module VMA(clk, rst, clken, crom, drom, dp, execute, previousEN,
    assign vmaFLAGS[ 7] = vmaCACHEINH;
    assign vmaFLAGS[ 8] = vmaPHYSICAL;
    assign vmaFLAGS[ 9] = vmaPREVIOUS;
-   assign vmaFLAGS[10] = vmaIO;
+   assign vmaFLAGS[10] = vmaIOCYCLE;
    assign vmaFLAGS[11] = vmaWRUCYCLE;
    assign vmaFLAGS[12] = vmaVECTORCYCLE;
    assign vmaFLAGS[13] = vmaIOBYTECYCLE;

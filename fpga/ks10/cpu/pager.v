@@ -31,8 +31,8 @@
 //!
 //!
 //! \note   
-//!     The Page Tables use asynchronous memory which won't work in
-//!     an FPGA.  Since the Page Table is addressed by the VMA
+//!     The Page Tables use asynchronous memory which won't work
+//!     in an FPGA.  Since the Page Table is addressed by the VMA
 //!     register and the VMA register is loaded synchronously, we
 //!     can absorb the VMA register into the Page Table Memory
 //!     addressing.
@@ -72,15 +72,15 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
-`include "microcontroller/drom.vh"
+`include "useq/crom.vh"
+`include "useq/drom.vh"
 
-module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vma, vmaUSER,
-                   page_valid,
-                   page_writeable,
-                   page_cacheable,
-                   page_user,
-                   page_number);
+module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, 
+                   pageVALID,
+                   pageWRITEABLE,
+                   pageCACHEABLE,
+                   pageUSER,
+                   pageNUMBER);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -91,13 +91,19 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vma, vmaUSER,
    input  [ 0:cromWidth-1] crom;		// Control ROM Data
    input  [ 0:dromWidth-1] drom;		// Dispatch ROM Data
    input  [ 0:35]          dp;          	// Data path
-   input  [14:35]          vma;			// Virtural address
-   input                   vmaUSER;		//
-   output                  page_valid;		//
-   output                  page_writeable;	//
-   output                  page_cacheable;	//
-   output                  page_user;		//
-   output [16:26]          page_number;		//
+   input  [0 :13]          vmaFLAGS;		//
+   input  [14:35]          vmaADDR;		// Virtural address
+   output                  pageVALID;		//
+   output                  pageWRITEABLE;	//
+   output                  pageCACHEABLE;	//
+   output                  pageUSER;		//
+   output [16:26]          pageNUMBER;		//
+
+   //
+   // vmaFLAGS
+   // 
+
+   wire vmaUSER      = vmaFLAGS[ 0];
    
    //
    // VMA Logic
@@ -105,67 +111,74 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vma, vmaUSER,
    //  DPE6/E53
    //
    
-   wire sweep      = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE);
-   wire page_write = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
+   wire sweep     = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE );
+   wire pageWRITE = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
+   wire vmaEN     = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) | 
+                     (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA));
    
-   wire extended   = `cromMEM_EXTADDR;		// Put VMA Bits onto Bus
-   wire loadVMA    = `cromMEM_LOADVMA;		// Load the VMA
-   wire AREAD      = `cromMEM_AREAD;		// Let DROM select type and load VMA
-   wire mem_fun    = `cromMEM_CYCLE;		// 
-   wire dromVMA    = `dromVMA;			// 
-
-
-   wire vma_en     = ((mem_fun & loadVMA) | 
-                      (mem_fun & AREAD & dromVMA) |
-                      (sweep));
-   
-   //  DPM6/E130
-   //  DPM6/E138
-   //  DPM6/E154
-   //  DPM6/E146
-   //  DPM6/E162
-   //  DPM6/E176
-   //  DPM6/E184
-   //  DPM6/E192
-   //
-
-   reg  [0:15] page_table[0:511];
-   reg  [0: 8] read_addr;
-   wire [0: 8] virt_page = vma[18:26];
+   wire [0: 8] virtPAGE = vmaADDR[18:26];
    wire [0:15] din = {dp[18], dp[21:22], vmaUSER, 1'b0, dp[25:35]};
-   
-     
  
    //
-   // FIXME DP has vma and data at different times.
-   //  need to register the address.
+   // Page memory
+   //  This has been converted to synchronous memory.  
+   //  The page table address is set when the vma address is set
+   //
+   //  The page table is interleaved with add and even memories
+   //  so that the memory can be swept two entries at a time.
+   //
+   //  Page parity is not implemented.
+   //
+
+   //
+   // Even Memory
+   //  DPM6/E130
+   //  DPM6/E154
+   //  DPM6/E162
+   //  DPM6/E184
+   //
+   // Odd Memory
+   //  DPM6/E138
+   //  DPM6/E146
+   //  DPM6/E176
+   //  DPM6/E192
    //
    
-   //
-   // Page memory
-   //
+   reg  [0: 8] readADDR;
+   reg  [0:15] pageTABLE1[0:255];
+   reg  [0:15] pageTABLE2[0:255];
    
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          read_addr <= 9'b000_000_000;
-        else if (clken & vma_en)
+          readADDR <= 9'b0;
+        else if (clken & vmaEN)
           begin
-             if (page_write)
-               page_table[virt_page] <= din;
-             read_addr <= virt_page;
+             readADDR <= virtPAGE;
+             if (pageWRITE)
+               begin
+                  if (~virtPAGE[0] | sweep) 
+                    pageTABLE1[virtPAGE[1:8]] <= din;
+                  if ( virtPAGE[0] | sweep)
+                    pageTABLE2[virtPAGE[1:8]] <= din;
+               end
           end
      end
-
+   
+   //
+   // Page Table Read
+   //
+   
+   wire [0:15] dout     = (readADDR[0]) ? pageTABLE2[readADDR[1:8]] : pageTABLE1[readADDR[1:8]];
+   
    //
    // Fixup Page RAM data
    //
-   
-   wire [0:15] dout      = page_table[read_addr];
-   assign page_valid     = dout[0];
-   assign page_writeable = dout[1];
-   assign page_cacheable = dout[2];
-   assign page_user      = dout[3];
-   assign page_number    = dout[5:15];
+               
+   assign pageVALID     = dout[0];
+   assign pageWRITEABLE = dout[1];
+   assign pageCACHEABLE = dout[2];
+   assign pageUSER      = dout[3];
+   assign pageNUMBER    = dout[5:15];
    
 endmodule

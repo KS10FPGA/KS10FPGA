@@ -88,6 +88,10 @@ module CROM(clk, rst, clken, addr, crom);
    reg [0:cromWidth-1] CROM[0:2047];
    initial
      begin
+        //
+        // This is KS10 MICROCODE V130.  Do not edit this data.  It is
+        // extracted from the microcode listing file.
+        //
         CROM[   0] = 108'o0002_3771_0012_4374_4007_0700_0000_0037_7777;
         CROM[   1] = 108'o3676_3333_0004_7174_4007_0700_0410_0000_0212;
         CROM[   2] = 108'o0013_3445_1212_4174_4007_0700_0000_0000_0000;
@@ -2139,7 +2143,10 @@ module CROM(clk, rst, clken, addr, crom);
      end
 
    //
-   //
+   // Registered ROM
+   //  Note MSB of the address is ignored.  If you need more than
+   //  2048 words of microcode, you can simply add more ROM.  See
+   //  notes at top-of-file.
    //
 
    always @(posedge clk)

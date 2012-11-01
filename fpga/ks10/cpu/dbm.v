@@ -82,7 +82,7 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
+`include "useq/crom.vh"
 
 module DBM(crom, dbm0, dbm1, dbm2, dbm3, dbm4, dbm5, dbm6, dbm7, dbm);
 

@@ -46,9 +46,9 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
+`include "useq/crom.vh"
 
-module PXCT(clk, rst, clken, crom, dp, pxct, pxct_on, previous_en);
+module PXCT(clk, rst, clken, crom, dp, pxct, pxctON, prevEN);
             
    parameter cromWidth = `CROM_WIDTH;
 
@@ -57,9 +57,9 @@ module PXCT(clk, rst, clken, crom, dp, pxct, pxct_on, previous_en);
    input                      clken;            // clock enable
    input      [0:cromWidth-1] crom;             // Control ROM Data
    input      [0:35]          dp;               // Data path
-   output reg                 pxct_on;          // PXCT on
+   output reg                 pxctON;          	// PXCT on
    output reg [9:12]          pxct;             // PXCT
-   output reg                 previous_en;
+   output reg                 prevEN;           // 
 
    //
    // PCXT Register
@@ -75,12 +75,12 @@ module PXCT(clk, rst, clken, crom, dp, pxct, pxct_on, previous_en);
      begin
         if (rst)
           begin
-             pxct_on <= 1'b0;
+             pxctON <= 1'b0;
              pxct    <= 4'b0;
           end
         else if (clken & pxct_en)
           begin
-             pxct_on <= ~pxct_off;
+             pxctON <= ~pxct_off;
              pxct    <= dp[9:12];
           end
      end
@@ -92,22 +92,22 @@ module PXCT(clk, rst, clken, crom, dp, pxct, pxct_on, previous_en);
    wire [0:2] pxct_sel  = `cromMEM_PXCTSEL;
    wire       wru_cycle = `cromMEM_WRUCYCLE;
    
-   always @(pxct or pxct_on or pxct_sel or wru_cycle)
+   always @(pxct or pxctON or pxct_sel or wru_cycle)
      begin
-        if ((pxct_on & pxct[9]) |
-            (pxct_on & wru_cycle))
+        if ((pxctON & pxct[9]) |
+            (pxctON & wru_cycle))
           case (pxct_sel)
-            0: previous_en <= 1'b0;		// Current
-            1: previous_en <= pxct[ 9];		// E1
-            2: previous_en <= pxct[10];		// Not used
-            3: previous_en <= pxct[10];		// D1
-            4: previous_en <= pxct[11];		// BIS-SRC-EA
-            5: previous_en <= pxct[11];		// E2
-            6: previous_en <= pxct[12];		// BIS-DST-EA
-            7: previous_en <= pxct[12];		// D2
+            0: prevEN <= 1'b0;			// Current
+            1: prevEN <= pxct[ 9];		// E1
+            2: prevEN <= pxct[10];		// Not used
+            3: prevEN <= pxct[10];		// D1
+            4: prevEN <= pxct[11];		// BIS-SRC-EA
+            5: prevEN <= pxct[11];		// E2
+            6: prevEN <= pxct[12];		// BIS-DST-EA
+            7: prevEN <= pxct[12];		// D2
           endcase
         else
-          previous_en <= 1'b0;			// Current
+          prevEN <= 1'b0;			// Current
      end
    
 endmodule

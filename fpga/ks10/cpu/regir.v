@@ -44,9 +44,9 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
+`include "useq/crom.vh"
 
-module regIR(clk, rst, clken, crom, dbus, ir, ac, jrst0);
+module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, JRST0);
    
    parameter cromWidth = `CROM_WIDTH;
 
@@ -55,40 +55,55 @@ module regIR(clk, rst, clken, crom, dbus, ir, ac, jrst0);
    input                      clken;    // Clock Enable
    input      [0:cromWidth-1] crom;   	// Control ROM Data
    input      [0:35]          dbus;     // Input Bus
-   output reg [0: 8]          ir;       // Instruction register
-   output reg [0: 3]          ac;   	// Accumulator selection
-   output                     jrst0;	// JRST Instruction
+   input      		      prevEN;	// Previous Enable
+   output reg [0:17]          regIR;    // Instruction register
+   output reg 		      xrPREV;	// XR Previous
+   output                     JRST0;	// JRST Instruction
 
    //
-   // Instruction Register and AC Selection
+   // Instruction Register and AC Selection.
+   //  Note: Both parts of the IR register can be loaded simultaneously.
+   //
    //  DPEA/E55
    //  DPEA/E64
    //  DPEA/E93
-   //
+   //  DPEA/E99
+   //  
 
-   wire load_ir = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
-   
+   wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
+   wire loadXR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADXR);
+    
    always @(posedge clk or posedge rst)
     begin
         if (rst)
           begin
-             ir <= 9'b0;
-             ac <= 4'b0;
+             regIR  <= 18'b0;
+             xrPREV <= 1'b0;
           end
-        else if (clken & load_ir)
+        else if (clken)
           begin
-             ir <= dbus[0:8];
-             ac <= dbus[9:12];
+             if (loadIR)
+               begin
+                  regIR <= dbus[ 0:12];
+               end
+             if (loadXR)
+               begin
+                  regIR  <= dbus[13:17];
+                  xrPREV <= prevEN;
+               end
           end
     end
-
+   
    //
    // JRST 0 decode
    //  DPEA/E54
    //  DPEA/E61
    //  DPE1/E62
    //
-   
-   assign jrst0 = ((ir == 9'o254) & (ac == 4'b0));
+
+   wire irOPCODE = regIR[0: 8];
+   wire irAC     = regIR[9:12];
+
+   assign JRST0 = ((irOPCODE == 9'o254) & (irAC == 4'b0));
    
  endmodule

@@ -61,9 +61,9 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
+`include "useq/crom.vh"
 
-module TIMER(clk, rst, clken, crom, msec_en, msec_intr, msec_count);
+module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -71,9 +71,9 @@ module TIMER(clk, rst, clken, crom, msec_en, msec_intr, msec_count);
    input                  rst;          // Reset
    input                  clken;        // Clock Enable
    input  [0:cromWidth-1] crom;         // Control ROM Data
-   input                  msec_en;      // Timer Enable
-   output reg             msec_intr;    // Timer Interrupt
-   output [0:11]          msec_count;   // Timer output
+   input                  timerEN;      // Timer Enable
+   output reg             timerINTR;    // Timer Interrupt
+   output reg [24:35]     timerCOUNT;   // Timer output
 
    //
    // CLKGEN
@@ -84,7 +84,9 @@ module TIMER(clk, rst, clken, crom, msec_en, msec_intr, msec_count);
 
    wire timerclk;
 
-   CLKGEN uCLKGEN(.clk(clk), .rst(rst), .timerclk(timerclk));
+   CLKGEN uCLKGEN(.clk(clk),
+                  .rst(rst),
+                  .timerCLK(timerCLK));
 
    //
    // Timer
@@ -96,48 +98,67 @@ module TIMER(clk, rst, clken, crom, msec_en, msec_intr, msec_count);
    //  The timer has the up/down pin wired to the reset signal.
    //  This doesn't make any sense.  I have not implemented this.
    //
+   //  The timerCLK runs at 8.2 MHz instead of 4.1 MHZ because
+   //  of a PLL limitation.  Therefore there is an extra counter
+   //  stage.
+   //
+   
+   reg [0:12] count;
 
-   reg [0:11] count;
-
-   always @(posedge timerclk or posedge rst)
+   always @(posedge timerCLK or posedge rst)
      begin
         if (rst)
-          count <= 12'b0;
-        else if (clken)
-          begin
-             count <= count + 1'b1;
-          end
+          count <= 13'b0;
+        else if (timerEN)
+          count <= count + 1'b1;
      end
 
    //
-   // Interrupt Enable
-   // The msec_intr signal is asserted on a timer overflow;
-   //  i.e., MSB changes from '1' to '0'.
-   //  DPMC/E56
-   //  DPMC/E1
-   //  DPMC/E3
+   // Change of clock domains
+   //  Note: The counter is synchronized with the main clock.  This is a little
+   //  different than the KS10
+   //
    //
 
-   wire reset_msec = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_CLR1MSEC);
-   reg  last;
-
+   reg timerLAST;
+   
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             msec_intr <= 1'b0;
-             last      <= 1'b0;
+             timerCOUNT <= 12'b0;
+             timerLAST  <= 1'b0;
           end
-        else
+        else if (clken)
           begin
-             if (reset_msec)
-               msec_intr <= 1'b0;
-             else if (msec_en && (count[0] == 1'b0) && (last == 1'b1))
-               msec_intr <= 1'b1;
-             last <= count[0];
+             timerCOUNT <= count[0:9];
+             timerLAST  <= timerCOUNT[24];
           end
      end
+             
+   //
+   // Interrupt Enable
+   //  The timerINTR signal is asserted on a timer overflow;
+   //  i.e., when MSB changes from '1' to '0'.
+   //
+   //  Resetting the interrupt has priority over setting the interrupt.
+   //
+   //  DPMC/E56
+   //  DPMC/E1
+   //  DPMC/E3
+   //
+   
+   wire timerRST = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_CLR1MSEC);
 
-   assign msec_count = count;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          timerINTR <= 1'b0;
+        else if (clken)
+          if (timerRST)
+            timerINTR <= 1'b0;
+          else if (timerEN & ~timerCOUNT[24] & timerLAST)
+            timerINTR <= 1'b1;
+     end
 
 endmodule

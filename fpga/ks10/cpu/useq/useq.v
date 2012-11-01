@@ -6,10 +6,10 @@
 //!      Microcontroller
 //!
 //! \details
-//!      This file implements the KS10 microcontroller.
+//!      This file implements the KS10 microsequencer.
 //!
 //! \file
-//!      microcontroller.v
+//!      useq.v
 //!
 //! \author
 //!      Rob Doyle - doyle (at) cox (dot) net
@@ -46,10 +46,10 @@
 `include "crom.vh"
 `include "drom.vh"
 
-module microcontroller(clk, rst, clken, page_fail, dp, dispDIAG,
-                       dispMUL, dispPF, dispNI, dispBYTE,
-                       dispEA, dispSCAD, dispNORM, skip40,
-                       skip20, skip10, ac, drom, crom);
+module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
+            dispMUL, dispPF, dispNI, dispBYTE,
+            dispEA, dispSCAD, dispNORM, skip40,
+            skip20, skip10, regIR, drom, crom);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -57,7 +57,7 @@ module microcontroller(clk, rst, clken, page_fail, dp, dispDIAG,
    input                  clk;          // Clock
    input                  rst;          // Reset
    input                  clken;        // Clock Enable
-   input                  page_fail;    // Page Fail
+   input                  pageFAIL;     // Page Fail
    input  [0:35]          dp;           // Datapath
    input  [0:11]          dispDIAG;     // Diagnostic Addr
    input  [0: 3]          dispMUL;      // Multiply Dispatch
@@ -70,10 +70,16 @@ module microcontroller(clk, rst, clken, page_fail, dp, dispDIAG,
    input  [1: 7]          skip40;       // Skip 40
    input  [1: 7]          skip20;       // Skip 20
    input  [1: 7]          skip10;       // Skip 10
-   input  [0: 3]          ac;           // Accumulator
+   input  [0:17]          regIR;        // Instruction Register
    input  [0:dromWidth-1] drom;         // Dispatch ROM Data
    output [0:cromWidth-1] crom;         // Control ROM Data
 
+   //
+   // Instruction Register AC field
+   //
+
+   wire [ 9:12] regIR_AC = regIR[ 9:12];
+   
    //
    // Control ROM Address
    //
@@ -100,9 +106,9 @@ module microcontroller(clk, rst, clken, page_fail, dp, dispDIAG,
    //  and 1777.  This allows the dispatch function to hardwire
    //  the upper 4 data bits instead of storing them in the DROM.
    //  I've hooked all data lines up and will let the optimizer do
-   //  it's thing.  The optimizer will determen that these lines
+   //  it's thing.  The optimizer will determine that these lines
    //  never change and replace the DROM columns with hardwired
-   //  constants.  Done this way, the address constants are  obvious
+   //  constants.  Done this way, the address constants are obvious
    //  and not embedded in the logic: therefore the intent is more
    //  evident.  Watch the index numbering on DROM_J!
    //
@@ -136,11 +142,11 @@ module microcontroller(clk, rst, clken, page_fail, dp, dispDIAG,
 
    reg [0:11] dispAREAD;
 
-   always @(dromAEQJ, dromACDISP, dromJ, dromA, ac)
+   always @(dromAEQJ, dromACDISP, dromJ, dromA, regIR_AC)
      begin
         if (dromAEQJ)                                   // Dispatch Address Range:
           if (dromACDISP)
-            dispAREAD = {dromJ[0:7], ac[0:3]};          // 1400 to 1777  (4 upper address were hardwired)
+            dispAREAD = {dromJ[0:7], regIR_AC};         // 1400 to 1777  (4 upper address were hardwired)
           else
             dispAREAD = dromJ;                          // 1400 to 1777  (4 upper address were hardwired)
         else
@@ -171,23 +177,49 @@ module microcontroller(clk, rst, clken, page_fail, dp, dispDIAG,
                       .dispADDR(dispADDR));
 
    //
-   // Address 'MUX'
-   //
-   // CRA1/E24
-   // CRA1/E26
-   // CRA1/E18
-   // CRA1/E25
-   // CRA1/E35
-   // CRA1/E9
-   // CRA1/E186
-   // CRA1/E174
-   // CRA1/E183
-   // CRA1/E184
-   // CRA1/E121
-   // CRA1/E111
+   // The CROM registers have been absorbed by the synchronous FPGA ROM.
+   //  Therefore the initial state of the microcode (address zero) must
+   //  be handled exlicitly.   This synchronizes the reset negation.
    //
 
-   assign addr = (page_fail) ? 12'b111_111_111_111 : (dispADDR | skipADDR | `cromJ);
+   reg reset;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          reset <= 1'b1;
+        else if (clken)
+          reset <= 1'b0;
+     end;
+   
+   //
+   // Address 'MUX'
+   //  Per comments above, this mux is modified to force the
+   //  CROM address to zero at reset.
+   //
+   //  The Page Fail address is hard coded to o1777 in the
+   //  microcode.  Note that the microcode address space is
+   //  12-bits but only 11-bits (2048 microcode words) are
+   //  actually implemented.   That will allow us to double
+   //  the amount of microcode without changing the micro-
+   //  architecture.
+   //
+   //  CRA1/E9
+   //  CRA1/E18
+   //  CRA1/E24
+   //  CRA1/E25
+   //  CRA1/E26
+   //  CRA1/E35
+   //  CRA1/E111
+   //  CRA1/E121
+   //  CRA1/E174
+   //  CRA1/E183
+   //  CRA1/E184
+   //  CRA1/E186
+   //
+
+   assign addr = (reset)    ? 12'b000_000_000_000 : 
+                 (pageFAIL) ? 12'b111_111_111_111 : 
+                 (dispADDR | skipADDR | `cromJ);
 
    //
    // Control ROM

@@ -43,7 +43,7 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
+`include "useq/crom.vh"
 
 module TRAPS(clk, rst, clken, crom, dp, pcFLAGS, consTRAPEN, trapEN, traps, trapCYCLE);
              

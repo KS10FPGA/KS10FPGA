@@ -169,9 +169,9 @@
 `define cromSPEC_SEL_CLR1MSEC   3'b001          //   CLR Interval Timer
 `define cromSPEC_SEL_LOADPI     3'b011          //   Load PI
 `define cromSPEC_SEL_APRFLAGS   3'b011          //   Load APR Flags
-`define cromSPEC_SEL_ASHTEST    3'b100		//   ASH Test
-`define cromSPEC_SEL_PAGEWRITE  3'b100		//   PAGE WRITE
-`define cromSPEC_SEL_EXPTEST    3'b101		//   EXP Test
+`define cromSPEC_SEL_ASHTEST    3'b100          //   ASH Test
+`define cromSPEC_SEL_PAGEWRITE  3'b100          //   PAGE WRITE
+`define cromSPEC_SEL_EXPTEST    3'b101          //   EXP Test
 `define cromSPEC_SEL_LOADAPR    3'b101          //   Load APR
 `define cromSPEC_SEL_LOADNICOND 3'b101          //   Load NICOND
 `define cromSPEC_SEL_PXCTEN     3'b110          //   Enable PXCT
@@ -201,27 +201,27 @@
 `define cromDISP_EN_20          (~crom[58])     //  DISP Select 20 (active low in microcode)
 `define cromDISP_EN_10          (~crom[59])     //  DISP Select 10 (active low in microcode)
 `define cromDISP_SELH           crom[61:62]     //  DISP Select (high 4 bits)
-`define cromDISP_SELH_DIAG      2'b00     	//   Diagnostic Dispatch
-`define cromDISP_SELH_RET       2'b01    	//   Return Dispatch
-`define cromDISP_SELH_J         2'b10    	//   DROM J Dispatch
-`define cromDISP_SELH_AREAD     2'b11    	//   DROM AREAD Dispatch
+`define cromDISP_SELH_DIAG      2'b00           //   Diagnostic Dispatch
+`define cromDISP_SELH_RET       2'b01           //   Return Dispatch
+`define cromDISP_SELH_J         2'b10           //   DROM J Dispatch
+`define cromDISP_SELH_AREAD     2'b11           //   DROM AREAD Dispatch
 `define cromDISP_SEL            crom[60:62]     //  DISP Select (low 8 bits)
-`define cromDISP_SEL_DIAG       3'b000    	//   Diagnostic Dispatch
-`define cromDISP_SEL_RET        3'b001    	//   Return Dispatch
-`define cromDISP_SEL_MULTIPLY   3'b010    	//   Multiply Dispatch
-`define cromDISP_SEL_PAGEFAIL   3'b011    	//   Page Fail Dispatch
-`define cromDISP_SEL_NICOND     3'b100    	//   Next Instruction Dispatch
-`define cromDISP_SEL_BYTE       3'b101    	//   Byte Dispatch
-`define cromDISP_SEL_EAMODE     3'b110    	//   EA Mode Dispatch
-`define cromDISP_SEL_SCAD       3'b111    	//   SCAD Dispatch
-`define cromDISP_SEL_ZERO       3'b000    	//   No Dispatch (NOP)
-`define cromDISP_SEL_DP18TO21   3'b001    	//   DP[18:21] Dispatch
-`define cromDISP_SEL_J          3'b010    	//   DROM J Dispatch
-`define cromDISP_SEL_AREAD      3'b011    	//   DROM AREAD Dispatch
-`define cromDISP_SEL_NORM       3'b100    	//   Normailze Dispatch
-`define cromDISP_SEL_DP32TO35   3'b101    	//   DP[32:35] Dispatch
-`define cromDISP_SEL_DROMA      3'b110    	//   DROM A Dispatch
-`define cromDISP_SEL_DROMB      3'b111    	//   DROM B Dispatch
+`define cromDISP_SEL_DIAG       3'b000          //   Diagnostic Dispatch
+`define cromDISP_SEL_RET        3'b001          //   Return Dispatch
+`define cromDISP_SEL_MULTIPLY   3'b010          //   Multiply Dispatch
+`define cromDISP_SEL_PAGEFAIL   3'b011          //   Page Fail Dispatch
+`define cromDISP_SEL_NICOND     3'b100          //   Next Instruction Dispatch
+`define cromDISP_SEL_BYTE       3'b101          //   Byte Dispatch
+`define cromDISP_SEL_EAMODE     3'b110          //   EA Mode Dispatch
+`define cromDISP_SEL_SCAD       3'b111          //   SCAD Dispatch
+`define cromDISP_SEL_ZERO       3'b000          //   No Dispatch (NOP)
+`define cromDISP_SEL_DP18TO21   3'b001          //   DP[18:21] Dispatch
+`define cromDISP_SEL_J          3'b010          //   DROM J Dispatch
+`define cromDISP_SEL_AREAD      3'b011          //   DROM AREAD Dispatch
+`define cromDISP_SEL_NORM       3'b100          //   Normailze Dispatch
+`define cromDISP_SEL_DP32TO35   3'b101          //   DP[32:35] Dispatch
+`define cromDISP_SEL_DROMA      3'b110          //   DROM A Dispatch
+`define cromDISP_SEL_DROMB      3'b111          //   DROM B Dispatch
 
 //
 // Skip Select
@@ -241,7 +241,7 @@
 `define cromCRY38               crom[72]        // Insert a carry into the LSB of the ALU
 `define cromLOADSC              crom[73]        // Load Step Counter from SCAD
 `define cromLOADFE              crom[74]        // Load FE Register from SCAD
-`define cromFMWRITE             crom[75]        // Write to RAM FILE
+`define cromFMWRITE             crom[75]        // Write to RAMFILE
 `define cromMEM_CYCLE           crom[76]        // Start/complete a memory or IO cycle using # field
 `define cromDIVIDE              crom[77]        // Microinstruction is doing a divide
 `define cromMULTIPREC           crom[78]        // Multiprecision step (Divide, DFAD, DFSB)
@@ -355,11 +355,11 @@
 //     +-----+-----------------------+-----+-----------------------+
 //
 
-`define cromACALU_CI            crom[98]	// AC ALU Carry In
-`define cromACALU_FUN           crom[99:102]	// AC ALU Function
-`define cromACALU_MODE          crom[103]	// AC ALU Mode
-`define cromACALU_EXTFUN        crom[98:103]	// AC ALU Extended Function
-`define cromACALU_NUM           crom[104:107]	// AC ALU Number
+`define cromACALU_CI            crom[98]        // AC ALU Carry In
+`define cromACALU_FUN           crom[99:102]    // AC ALU Function
+`define cromACALU_MODE          crom[103]       // AC ALU Mode
+`define cromACALU_EXTFUN        crom[98:103]    // AC ALU Extended Function
+`define cromACALU_NUM           crom[104:107]   // AC ALU Number
 
 //
 // Priority Interrupt (PI) bits

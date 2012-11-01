@@ -44,7 +44,7 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
+`include "useq/crom.vh"
 
 module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
 

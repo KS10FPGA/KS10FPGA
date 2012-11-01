@@ -125,24 +125,26 @@ module DISPATCH(crom, dp, dispDIAG, dispRET, dispJ, dispAREAD,
         //
 
         if (dispEN10)
-          case (dispSEL)
-            `cromDISP_SEL_DIAG:
-              dispADDR[8:11] = dispDIAG[8:11];
-            `cromDISP_SEL_RET:
-              dispADDR[8:11] = dispRET[8:11];
-            `cromDISP_SEL_MULTIPLY:
-              dispADDR[8:11] = dispMUL[8:11];
-            `cromDISP_SEL_PAGEFAIL:
-              dispADDR[8:11] = dispPF[8:11];
-            `cromDISP_SEL_NICOND:
-              dispADDR[8:11] = dispNI[8:11];
-            `cromDISP_SEL_BYTE:
-              dispADDR[8:11] = dispBYTE[8:11];
-            `cromDISP_SEL_EAMODE:
-              dispADDR[8:11] = dispEA[8:11];
-            `cromDISP_SEL_SCAD:
-              dispADDR[8:11] = dispSCAD[8:11];
-          endcase
+          begin
+             case (dispSEL)
+               `cromDISP_SEL_DIAG:
+                 dispADDR[8:11] = dispDIAG[8:11];
+               `cromDISP_SEL_RET:
+                 dispADDR[8:11] = dispRET[8:11];
+               `cromDISP_SEL_MULTIPLY:
+                 dispADDR[8:11] = dispMUL[8:11];
+               `cromDISP_SEL_PAGEFAIL:
+                 dispADDR[8:11] = dispPF[8:11];
+               `cromDISP_SEL_NICOND:
+                 dispADDR[8:11] = dispNI[8:11];
+               `cromDISP_SEL_BYTE:
+                 dispADDR[8:11] = dispBYTE[8:11];
+               `cromDISP_SEL_EAMODE:
+                 dispADDR[8:11] = dispEA[8:11];
+               `cromDISP_SEL_SCAD:
+                 dispADDR[8:11] = dispSCAD[8:11];
+             endcase
+          end
 
         //
         // Dispatch Address Select LSBs
@@ -153,24 +155,25 @@ module DISPATCH(crom, dp, dispDIAG, dispRET, dispJ, dispAREAD,
         //
         
         if (dispEN40)
-          case (dispSEL)
-            `cromDISP_SEL_ZERO:
-              dispADDR[8:11] = 4'b0;
-            `cromDISP_SEL_DP18TO21:
-              dispADDR[8:11] = dp[18:21];
-            `cromDISP_SEL_J:
-              dispADDR[8:11] = dispJ[8:11];
-            `cromDISP_SEL_AREAD:
-              dispADDR[8:11] = dispAREAD[8:11];
-            `cromDISP_SEL_NORM:
-              dispADDR[8:11] = dispNORM[8:11];
-            `cromDISP_SEL_DP32TO35:
-              dispADDR[8:11] = dp[32:35];
-            `cromDISP_SEL_DROMA:
-              dispADDR[8:11] = dispDROM_A;
-            `cromDISP_SEL_DROMB:
-              dispADDR[8:11] = dispDROM_B;
-          endcase
+          begin
+             case (dispSEL)
+               `cromDISP_SEL_ZERO:
+                 dispADDR[8:11] = 4'b0;
+               `cromDISP_SEL_DP18TO21:
+                 dispADDR[8:11] = dp[18:21];
+               `cromDISP_SEL_J:
+                 dispADDR[8:11] = dispJ[8:11];
+               `cromDISP_SEL_AREAD:
+                 dispADDR[8:11] = dispAREAD[8:11];
+               `cromDISP_SEL_NORM:
+                 dispADDR[8:11] = dispNORM[8:11];
+               `cromDISP_SEL_DP32TO35:
+                 dispADDR[8:11] = dp[32:35];
+               `cromDISP_SEL_DROMA:
+                 dispADDR[8:11] = dispDROM_A;
+               `cromDISP_SEL_DROMB:
+                 dispADDR[8:11] = dispDROM_B;
+             endcase
+          end
      end
-
 endmodule

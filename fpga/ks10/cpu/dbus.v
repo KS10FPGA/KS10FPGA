@@ -44,17 +44,17 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
+`include "useq/crom.vh"
 
-module DBUS(crom, force_ramfile, pcFLAGS, dp, ram, dbm, dbus);
+module DBUS(crom, forceRAMFILE, pcFLAGS, dp, ramfile, dbm, dbus);
 
    parameter  cromWidth = `CROM_WIDTH;
 
    input      [0:cromWidth-1] crom;             // Control ROM Data
-   input                      force_ramfile;    // Force Ramfile
+   input                      forceRAMFILE;     // Force Ramfile
    input      [0:35]          pcFLAGS;         	// PC Flags in Left Half
    input      [0:35]          dp;               // Datapath
-   input      [0:35]          ram;              // RAM File
+   input      [0:35]          ramfile;          // Ramfile
    input      [0:35]          dbm;              // Databus Mux
    output reg [0:35]          dbus;             // DBus
 
@@ -65,16 +65,20 @@ module DBUS(crom, force_ramfile, pcFLAGS, dp, ram, dbm, dbus);
    //  DPE3/E70 (force ramfile)
    //
 
+   wire [0:1] dbusSEL = cromDBUS_SEL;
+   
+/*
    reg [0:1] dbusSEL;
 
-   always @(cromDBUS_SEL or force_ramfile)
+   always @(cromDBUS_SEL or forceRAMFILE)
      begin
-	if (force_ramfile && (cromDBUS_SEL == `cromDBUS_SEL_DBM))
+	if (forceRAMFILE && (cromDBUS_SEL == `cromDBUS_SEL_DBM))
 	  dbusSEL <= `cromDBUS_SEL_RAM;
         else
 	  dbusSEL <= cromDBUS_SEL;
      end
-	    
+*/	
+     
    //
    // DBM
    //  DPE3/E34
@@ -88,7 +92,7 @@ module DBUS(crom, force_ramfile, pcFLAGS, dp, ram, dbm, dbus);
    //  DPE3/E40
    //
    
-   always @(dbusSEL or pcFLAGS or dp or ram or dbm)
+   always @(dbusSEL or pcFLAGS or dp or ramfile or dbm)
      begin
         case (dbusSEL)
           `cromDBUS_SEL_FLAGS:
@@ -96,7 +100,7 @@ module DBUS(crom, force_ramfile, pcFLAGS, dp, ram, dbm, dbus);
           `cromDBUS_SEL_DP:
             dbus = dp;
           `cromDBUS_SEL_RAM:
-            dbus = ram;
+            dbus = ramfile;
           `cromDBUS_SEL_DBM:
             dbus = dbm;
         endcase
