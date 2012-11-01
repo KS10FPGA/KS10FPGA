@@ -48,9 +48,9 @@
 // Comments are formatted for doxygen
 //
 
-`include "microcontroller/crom.vh"
+`include "useq/crom.vh"
 
-module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new, pi_on);
+module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new, pi_current, pi_on);
             
    parameter cromWidth = `CROM_WIDTH;
 
@@ -62,6 +62,7 @@ module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new, pi_
    input      [1: 7]          bus_pi_req_in;    // Bus PI Request In
    output reg                 interrupt_req;    // Interrupt Request
    output     [0: 2]          pi_new;           // New Prioity Interrupt number
+   output     [0: 2]          pi_current;       // Current Prioity Interrupt number
    output reg                 pi_on;		// PI is on
    
    
@@ -164,6 +165,7 @@ module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new, pi_
           end
      end
 
-   assign pi_new = pi_req_num[1:3];
+   assign pi_new     = pi_req_num[1:3];
+   assign pi_current = pi_cur_num[1:3];
      
 endmodule

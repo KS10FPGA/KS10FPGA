@@ -9,22 +9,31 @@ module testbench;
         $display($time, " << Starting the Simulation >>");
         clk = 1'b0;     	// initial state of clock
         rst = 1'b1;     	// initial state of reset
-        #91 rst = 1'b0;        // release reset at 90 nS
+        #95 rst = 1'b0;        // release reset at 95 nS
      end
    
    always
      #10 clk = ~clk;    	// invert every ten nS
 
-   KS10 UUT(.clk(clk),
-            .rst(rst),
-            .clken(1'b1),
-            .cons_run(1'b1),
-            .cons_msec_en(1'b1),
-            .cons_exec(1'b1),
-            .cons_cont(1'b1),
-            .consTRAPEN(1'b1),
-            .bus_ac_lo(1'b0),
-            .crom(),
-            .t());
+   CPU UUT(.clk(clk),
+           .rst(rst),
+           .clken(1'b1),
+           .consTIMEREN(1'b1),
+           .consSTEP(1'b0),
+           .consRUN(1'b1),
+           .consEXEC(1'b1),
+           .consCONT(1'b1),
+           .consTRAPEN(1'b1),
+           .consCACHEEN(1'b0),
+           .intPWR(intPWR),
+           .intCONS(intCONS),
+           .bus_data_in(),
+           .bus_data_out(),
+           .bus_pi_req_in(),
+           .bus_pi_req_out(),
+           .bus_pi_current(),
+           .crom(),
+           .dp(),
+           .pageNUMBER());
 
 endmodule

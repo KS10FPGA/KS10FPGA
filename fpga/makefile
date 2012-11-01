@@ -1,4 +1,9 @@
-UC  := microcontroller
+ARB := arb
+CON := con
+CPU := cpu
+MEM := mem
+UBA := uba
+UC  := $(CPU)/useq
 
 SRC := \
 	$(UC)/crom.vh  \
@@ -10,29 +15,33 @@ SRC := \
 	$(UC)/skip.v   \
 	$(UC)/stack.v  \
 	$(UC)/dispatch.v   \
-	$(UC)/microcontroller.v \
-	ac_block.v \
-	alu.v \
-	apr.v \
-	byte_disp.v \
-	cache.v \
-	clkgen.v \
-	dbm.v \
-	dbus.v \
-	intr.v \
-	iolatch.v \
-	ni_disp.v \
-	page_tables.v \
-	pcflags.v \
-	pxct.v \
-	ram1kx36.v \
-	ramfile.v \
-	regir.v \
-	regxr.v \
-	scad.v \
-	timer.v \
-	traps.v \
-	vma.v \
+	$(UC)/useq.v \
+	$(CPU)/ac_block.v \
+	$(CPU)/alu.v \
+	$(CPU)/apr.v \
+	$(CPU)/bus.v \
+	$(CPU)/byte_disp.v \
+	$(CPU)/cache.v \
+	$(CPU)/clkgen.v \
+	$(CPU)/dbm.v \
+	$(CPU)/dbus.v \
+	$(CPU)/intr.v \
+	$(CPU)/iolatch.v \
+	$(CPU)/ni_disp.v \
+	$(CPU)/page_tables.v \
+	$(CPU)/pcflags.v \
+	$(CPU)/pxct.v \
+	$(CPU)/ram1kx36.v \
+	$(CPU)/ramfile.v \
+	$(CPU)/regIR.v \
+	$(CPU)/scad.v \
+	$(CPU)/timer.v \
+	$(CPU)/traps.v \
+	$(CPU)/vma.v \
+	$(CPU)/cpu.v \
+	$(MEM)/mem.v \
+	$(ARB)/arb.v \
+	$(UBA)/uba.v \
 	ks10.v \
 	ks10.ucf \
 	testbench.v
@@ -48,6 +57,11 @@ $(UC)/drom.bin : $(UC)/ks10.mcr $(UC)/drom.awk makefile
 
 clean: 
 	rcsclean *
+	rcsclean $(ARB)/*
+	rcsclean $(CON)/*
+	rcsclean $(CPU)/*
+	rcsclean $(MEM)/*
+	rcsclean $(UBA)/*
 	rcsclean $(UC)/*
 	rm -f    $(UC)/*.bin
 	find . -type f -name "*~" | xargs rm -fv
