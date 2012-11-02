@@ -129,15 +129,20 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
    wire vmaACREF = vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
    
    //
-   // This was a 74LS181 ALU.  Only the part of that device
-   // that is used implemented.  The CROM Number field is
-   // present on the DBUS.  See microcode.
+   // This was a 74LS181 ALU in the KS10.  Only the part of
+   // that device that is used is implemented.  This adder is
+   // controlled by one of the overloaded usages of the CROM
+   // number field.   See cromACALU_FUN and cromACALU_NUM.
+   // I'm not exactly certain why this is controlled by the
+   // DBM instead of directly by the microcode.  It is
+   // probably just because of the way the boards were
+   // partitioned.
    //
    //  DPE6/E79
    //
 
-   wire [0:5] acFUN = dbus[ 8:13];      // See cromACALU_EXTFUN
-   wire [0:2] acNUM = dbus[14:17];      // See cromACALU_NUM;
+   wire [0:5] acFUN = dbm[ 8:13];
+   wire [0:2] acNUM = dbm[14:17];
    reg  [0:3] AC_PLUS_N;
    
    always @(acFUN or acNUM or regIR_AC)

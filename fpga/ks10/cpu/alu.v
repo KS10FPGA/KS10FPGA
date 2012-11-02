@@ -417,27 +417,23 @@ module ALU(clk, rst, clken, dbus, crom,
      end
 
    //
-   // Left Half Q Register
+   // Q Register
+   //  The left side and right side of the Q Register can be
+   //  independantly clocked and updated.  I'm not sure
+   //  if the microcode does that, or not.
    //
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          q[0:19] <= 20'b0;
-        else if (clken & lclken)
-          q[0:19] <= qi[0:19];
-     end
-
-   //
-   // Right Half Q Register
-   //
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          q[20:39] <= 20'b0;
-        else if (clken & rclken)
-          q[20:39] <= qi[20:39];
+          q[ 0:39] <= 40'b0;
+        else if (clken)
+          begin
+             if (lclken)
+               q[ 0:19] <= qi[ 0:19];
+             if (rclken)
+               q[20:39] <= qi[20:39];
+          end
      end
 
    //

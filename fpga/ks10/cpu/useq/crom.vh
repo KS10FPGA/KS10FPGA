@@ -348,18 +348,20 @@
 //
 // AC Math
 //
-//   
-//     +-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
-//     |CARRY| S8  |  S4 | S2  |  S1 | MODE| B8  | B4  |  B2 | B1  |
-//     |  IN |       FUNCTION        |     |      DATA INPUTS      |
-//     +-----+-----------------------+-----+-----------------------+
+//
+// MICROCODE
+// BIT ->   98    99   100   101   102   103   104   105   105   106
+//       +-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+//       |CARRY| S8  |  S4 | S2  |  S1 | MODE| B8  | B4  |  B2 | B1  |
+//       |  IN |       FUNCTION        |     |      DATA INPUTS      |
+//       +-----+-----------------------+-----+-----------------------+
 //
 
-`define cromACALU_CI            crom[98]        // AC ALU Carry In
-`define cromACALU_FUN           crom[99:102]    // AC ALU Function
-`define cromACALU_MODE          crom[103]       // AC ALU Mode
-`define cromACALU_EXTFUN        crom[98:103]    // AC ALU Extended Function
+`define cromACALU_FUN           crom[98:103]    // AC ALU Function
 `define cromACALU_NUM           crom[104:107]   // AC ALU Number
+
+`define cromACALU_FUN_NUM       6'o25;		// NUM
+`define cromACALU_FUN_ADDAC     6'o62;		// AC + NUM
 
 //
 // Priority Interrupt (PI) bits
