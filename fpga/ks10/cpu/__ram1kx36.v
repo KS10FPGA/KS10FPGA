@@ -19,7 +19,7 @@
 //!
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2009, 2012 Rob Doyle
+//  Copyright (C) 2012 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -48,12 +48,12 @@
 
 module RAM1Kx36(clk, clken, wr, addr, din, dout);
             
-   input         clk;       	// Clock
-   input         clken;     	// Clock enable
-   input         wr;        	// Write
-   input  [0: 9] addr;      	// Address
-   input  [0:35] din;      	// Data in
-   output [0:35] dout;   	// Data out
+   input            clk;        // Clock
+   input            clken;      // Clock enable
+   input            wr;         // Write
+   input     [0: 9] addr;       // Address
+   input     [0:35] din;        // Data in
+   output reg[0:35] dout;       // Data out
 
    //
    // RAM 1Kx36
@@ -65,9 +65,14 @@ module RAM1Kx36(clk, clken, wr, addr, din, dout);
    //  DPE7/E818, DPE7/E819, DPE7/E820, DPE7/E821, DPE7/E822, DPE7/E823
    //
    
-   reg [0: 9] rd_addr;
    reg [0:35] ram [0:1023];
-   
+
+/*
+ 
+   // FIXME
+ 
+   reg [0: 9] rd_addr;
+
    always @(posedge clk)
      begin
         if (clken)
@@ -77,7 +82,16 @@ module RAM1Kx36(clk, clken, wr, addr, din, dout);
              rd_addr <= addr;
           end
      end
-   
+
    assign dout = ram[rd_addr];
+   
+*/
+ 
+   always @(wr or addr or din or clk)
+     begin
+        if (wr & ~clk)
+          ram[addr] <= din;
+        dout = ram[addr];
+     end
    
 endmodule

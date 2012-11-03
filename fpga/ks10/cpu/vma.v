@@ -17,7 +17,7 @@
 //!
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2009, 2012 Rob Doyle
+//  Copyright (C) 2012 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -44,6 +44,7 @@
 // Comments are formatted for doxygen
 //
 
+`include "config.vh"
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
@@ -54,21 +55,21 @@ module VMA(clk, rst, clken, crom, drom, dp, consEXEC, prevEN,
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
    
-   input 		  clk;        	// Clock
-   input 		  rst;          // Reset
-   input 		  clken;        // Clock Enable
-   input  [0:cromWidth-1] crom;		// Control ROM Data
-   input  [0:dromWidth-1] drom;		// Dispatch ROM Data
+   input                  clk;          // Clock
+   input                  rst;          // Reset
+   input                  clken;        // Clock Enable
+   input  [0:cromWidth-1] crom;         // Control ROM Data
+   input  [0:dromWidth-1] drom;         // Dispatch ROM Data
    input  [0:35]          dp;           // Data path
-   input                  consEXEC;  	// Execute
-   input                  prevEN;	// Previous Enable
-   input                  flagPCU;	// PCU Flag
-   input                  flagUSER;	// USER Flag
+   input                  consEXEC;     // Execute
+   input                  prevEN;       // Previous Enable
+   input                  flagPCU;      // PCU Flag
+   input                  flagUSER;     // USER Flag
    output reg             vmaSWEEP;     // VMA Sweep
    output reg             vmaEXTENDED;  // VMA Extended
    output                 vmaACREF;     // VMA references an AC
-   output     [ 0:13]     vmaFLAGS;	// VMA Flags
-   output reg [14:35]     vmaADDR;  	// Virtual Memory Address
+   output     [ 0:13]     vmaFLAGS;     // VMA Flags
+   output reg [14:35]     vmaADDR;      // Virtual Memory Address
 
    //
    // VMA Logic
@@ -116,17 +117,31 @@ module VMA(clk, rst, clken, crom, drom, dp, consEXEC, prevEN,
      begin
         if (rst)
           begin
-             vmaADDR        <= 22'b0;
-             vmaSWEEP       <=  1'b0;
-             vmaEXTENDED    <=  1'b0;
-             vmaUSER        <=  1'b0;
-             vmaFETCH       <=  1'b0;
-             vmaPHYSICAL    <=  1'b0;
-             vmaPREVIOUS    <=  1'b0;
-             vmaIOCYCLE     <=  1'b0;
-             vmaWRUCYCLE    <=  1'b0;
-             vmaVECTORCYCLE <=  1'b0;
-             vmaIOBYTECYCLE <=  1'b0;
+            `ifdef INITREGS
+               vmaADDR        <= 22'b0;
+               vmaSWEEP       <=  1'b0;
+               vmaEXTENDED    <=  1'b0;
+               vmaUSER        <=  1'b0;
+               vmaFETCH       <=  1'b0;
+               vmaPHYSICAL    <=  1'b0;
+               vmaPREVIOUS    <=  1'b0;
+               vmaIOCYCLE     <=  1'b0;
+               vmaWRUCYCLE    <=  1'b0;
+               vmaVECTORCYCLE <=  1'b0;
+               vmaIOBYTECYCLE <=  1'b0;
+            `else
+               vmaADDR        <= 22'bx;
+               vmaSWEEP       <=  1'bx;
+               vmaEXTENDED    <=  1'bx;
+               vmaUSER        <=  1'bx;
+               vmaFETCH       <=  1'bx;
+               vmaPHYSICAL    <=  1'bx;
+               vmaPREVIOUS    <=  1'bx;
+               vmaIOCYCLE     <=  1'bx;
+               vmaWRUCYCLE    <=  1'bx;
+               vmaVECTORCYCLE <=  1'bx;
+               vmaIOBYTECYCLE <=  1'bx;
+            `endif
           end
         else if (clken & vmaEN)
           begin
@@ -182,10 +197,17 @@ module VMA(clk, rst, clken, crom, drom, dp, consEXEC, prevEN,
      begin
         if (rst)
           begin
-             vmaREADCYCLE   <= 1'b0;
-             vmaWRTESTCYCLE <= 1'b0;
-             vmaWRITECYCLE  <= 1'b0;
-             vmaCACHEINH    <= 1'b0;
+            `ifdef INITREGS
+               vmaREADCYCLE   <= 1'b0;
+               vmaWRTESTCYCLE <= 1'b0;
+               vmaWRITECYCLE  <= 1'b0;
+               vmaCACHEINH    <= 1'b0;
+            `else
+               vmaREADCYCLE   <= 1'bx;
+               vmaWRTESTCYCLE <= 1'bx;
+               vmaWRITECYCLE  <= 1'bx;
+               vmaCACHEINH    <= 1'bx;
+            `endif
           end
         else if (clken & memEN)
           begin

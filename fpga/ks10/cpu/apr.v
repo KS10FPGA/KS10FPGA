@@ -17,7 +17,7 @@
 //!
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2009, 2012 Rob Doyle
+//  Copyright (C) 2012 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -44,6 +44,7 @@
 // Comments are formatted for doxygen
 //
 
+`include "config.vh"
 `include "useq/crom.vh"
 
 module APR(clk, rst, clken, crom, dp,
@@ -52,17 +53,17 @@ module APR(clk, rst, clken, crom, dp,
 
    parameter cromWidth = `CROM_WIDTH;
 
-   input                       clk;      	// Clock
-   input                       rst;          	// Reset
-   input                       clken;        	// Clock Enable
-   input      [ 0:cromWidth-1] crom;		// Control ROM Data
-   input      [ 0:35]          dp;           	// Data path
-   input                       intPWR;    	// Power Failure interrupt
-   input                       intNXM;    	// Non existant memory interrupt
-   input                       intBADDATA; 	// Bad data interrupt
-   input                       intCONS;    	// Interrupt 10
-   output     [22:35]          aprFLAGS;    	// APR Flags
-   output reg [ 1: 7]          bus_pi_req_out;	// Bus PI Request Out
+   input                       clk;             // Clock
+   input                       rst;             // Reset
+   input                       clken;           // Clock Enable
+   input      [ 0:cromWidth-1] crom;            // Control ROM Data
+   input      [ 0:35]          dp;              // Data path
+   input                       intPWR;          // Power Failure interrupt
+   input                       intNXM;          // Non existant memory interrupt
+   input                       intBADDATA;      // Bad data interrupt
+   input                       intCONS;         // Interrupt 10
+   output     [22:35]          aprFLAGS;        // APR Flags
+   output reg [ 1: 7]          bus_pi_req_out;  // Bus PI Request Out
   
    //
    // Decode APR Flags Enable microcode
@@ -94,7 +95,11 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
+          `ifdef INITRAM
           flag25 <= 1'b0;
+          `else
+          flag25 <= 1'bx;
+          `endif
         else if (clken & specAPRFLAGS)
           flag25 <= dp[25];
      end
@@ -108,7 +113,11 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flagPWR <= 1'b0;
+          `ifdef INITRAM
+            flagPWR <= 1'b0;
+          `else
+            flagPWR <= 1'bx;
+          `endif
         else if (clken & specAPRFLAGS)
           if (intPWR)
             flagPWR <= 1'b1;
@@ -125,7 +134,11 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flagNXM <= 1'b0;
+          `ifdef INITRAM
+            flagNXM <= 1'b0;
+          `else
+            flagNXM <= 1'bx;
+          `endif
         else if (clken & specAPRFLAGS)
           if (intNXM)
             flagNXM <= 1'b1;
@@ -143,7 +156,11 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flagBADDATA <= 1'b0;
+          `ifdef INITRAM
+            flagBADDATA <= 1'b0;
+          `else
+            flagBADDATA <= 1'bx;
+          `endif
         else if (clken & specAPRFLAGS)
           if (intBADDATA)
             flagBADDATA <= 1'b1;
@@ -160,7 +177,11 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flagCORDATA <= 1'b0;
+          `ifdef INITRAM
+            flagCORDATA <= 1'b0;
+          `else
+            flagCORDATA <= 1'bx;
+         `endif
         else if (clken & specAPRFLAGS)
           flagCORDATA <= dp[29];
      end
@@ -174,7 +195,11 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flag30 <= 1'b0;
+          `ifdef INITRAM
+            flag30 <= 1'b0;
+          `else
+            flag30 <= 1'bx;
+          `endif
         else if (clken & specAPRFLAGS)
           flag30 <= dp[30];
      end
@@ -188,7 +213,11 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flagCONS <= 1'b0;
+          `ifdef INITRAM
+            flagCONS <= 1'b0;
+          `else
+            flagCONS <= 1'bx;
+          `endif
         else if (clken & specAPRFLAGS)
           if (intCONS)
             flagCONS <= 1'b1;
@@ -214,11 +243,19 @@ module APR(clk, rst, clken, crom, dp,
      begin
         if (rst)
           begin
-             trapEN <= 1'b0;
-             pageEN <= 1'b0;
-             aprEN  <= 9'b0;
-             swINT  <= 1'b0;
-             reqOUT <= 3'b0;
+            `ifdef INITRAM
+               trapEN <= 1'b0;
+               pageEN <= 1'b0;
+               aprEN  <= 9'b0;
+               swINT  <= 1'b0;
+               reqOUT <= 3'b0;
+            `else
+               trapEN <= 1'bx;
+               pageEN <= 1'bx;
+               aprEN  <= 9'bx;
+               swINT  <= 1'bx;
+               reqOUT <= 3'bx;
+            `endif
           end
         else if (clken & specAPREN)
           begin

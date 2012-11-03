@@ -33,7 +33,7 @@
 //!
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2009, 2012 Rob Doyle
+//  Copyright (C) 2012 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -60,6 +60,7 @@
 // Comments are formatted for doxygen
 //
 
+`include "config.vh"
 `include "useq/crom.vh"
 
 module ALU(clk, rst, clken, dbus, crom,
@@ -319,7 +320,6 @@ module ALU(clk, rst, clken, dbus, crom,
           bdi = f;
      end
 
-   
    //
    // ALU Register File Write Port
    //  The left side and right side of the ALU can be independantly
@@ -333,11 +333,15 @@ module ALU(clk, rst, clken, dbus, crom,
      begin
         if (rst)
           for (i = 0; i < 16; i = i + 1)
-            aluRAM[i] <= 40'b0;
+            `ifdef INITRAM
+              aluRAM[i] <= 40'b0;
+            `else
+              aluRAM[i] <= 40'bx;
+            `endif
         else if (clken)
           begin
              if (lclken & write)
-               aluRAM[ba][ 0:19] <= bdi[0:19];
+               aluRAM[ba][ 0:19] <= bdi[ 0:19];
              if (rclken & write)
                aluRAM[ba][20:39] <= bdi[20:39];
           end
@@ -426,7 +430,11 @@ module ALU(clk, rst, clken, dbus, crom,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          q[ 0:39] <= 40'b0;
+          `ifdef INITREGS
+            q[ 0:39] <= 40'b0;
+          `else
+            q[ 0:39] <= 40'bx;
+          `endif
         else if (clken)
           begin
              if (lclken)
@@ -548,7 +556,6 @@ module ALU(clk, rst, clken, dbus, crom,
    reg       go;                        // Partial sum for calculating CRY2
    wire      ci  = carry_in;            // Carry into left half
    reg       bb;                        // Bit Bucket
-   
 
    always @(r or s or ci or cry18inh or func)
      begin

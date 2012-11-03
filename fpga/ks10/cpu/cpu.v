@@ -17,7 +17,7 @@
 //!
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2009, 2012 Rob Doyle
+//  Copyright (C) 2012 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -271,7 +271,7 @@ module CPU(clk, rst, clken, consTIMEREN,
    wire [1:7] skip20 = {aluCRY2,   aluLSign,  aluRSign, flagUSERIO,
                         skipJFCL,  aluCRY1,   txxx};
    wire [1:7] skip10 = {trapCYCLE, aluZERO,   scSIGN,   consEXEC,
-                        iolatch,   consCONT,  timerINTR};
+                        iolatch,   ~consCONT, timerINTR};
 
    //
    // DBM inputs
