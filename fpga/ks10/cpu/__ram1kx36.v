@@ -48,12 +48,12 @@
 
 module RAM1Kx36(clk, clken, wr, addr, din, dout);
             
-   input            clk;        // Clock
-   input            clken;      // Clock enable
-   input            wr;         // Write
-   input     [0: 9] addr;       // Address
-   input     [0:35] din;        // Data in
-   output reg[0:35] dout;       // Data out
+   input         clk;        	// Clock
+   input         clken;      	// Clock enable
+   input         wr;         	// Write
+   input  [0: 9] addr;       	// Address
+   input  [0:35] din;        	// Data in
+   output [0:35] dout;       	// Data out
 
    //
    // RAM 1Kx36
@@ -67,13 +67,19 @@ module RAM1Kx36(clk, clken, wr, addr, din, dout);
    
    reg [0:35] ram [0:1023];
 
-/*
- 
-   // FIXME
+`define SYNCRAM
+   
+`ifdef SYNCRAM   
+
+   //
+   // FIXME:
+   // The following is a hack but it is good enough for simulation.
+   // It will create synthesis issues.
+   //
  
    reg [0: 9] rd_addr;
 
-   always @(posedge clk)
+   always @(negedge clk)
      begin
         if (clken)
           begin
@@ -84,14 +90,23 @@ module RAM1Kx36(clk, clken, wr, addr, din, dout);
      end
 
    assign dout = ram[rd_addr];
+
+`else 
+
+   //
+   // Asynchronous RAM
+   //
    
-*/
- 
+   reg [0:35] out;
+   
    always @(wr or addr or din or clk)
      begin
         if (wr & ~clk)
           ram[addr] <= din;
-        dout = ram[addr];
+        out = ram[addr];
      end
+   assign dout = out;
+   
+`endif
    
 endmodule
