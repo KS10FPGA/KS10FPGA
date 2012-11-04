@@ -48,20 +48,20 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module VMA(clk, rst, clken, crom, drom, dp, consEXEC, prevEN,
+module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN,
            flagPCU, flagUSER,
            vmaSWEEP, vmaEXTENDED, vmaACREF, vmaFLAGS, vmaADDR);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
-   
+
    input                  clk;          // Clock
    input                  rst;          // Reset
    input                  clken;        // Clock Enable
    input  [0:cromWidth-1] crom;         // Control ROM Data
    input  [0:dromWidth-1] drom;         // Dispatch ROM Data
    input  [0:35]          dp;           // Data path
-   input                  consEXEC;     // Execute
+   input                  cpuEXEC;     // Execute
    input                  prevEN;       // Previous Enable
    input                  flagPCU;      // PCU Flag
    input                  flagUSER;     // USER Flag
@@ -76,7 +76,7 @@ module VMA(clk, rst, clken, crom, drom, dp, consEXEC, prevEN,
    //  DPE5/E76
    //  DPE6/E53
    //
-   
+
    wire cacheSWEEP       = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE);
    wire selPREVIOUS      = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_PREVIOUS);
 
@@ -109,10 +109,10 @@ module VMA(clk, rst, clken, crom, drom, dp, consEXEC, prevEN,
    reg vmaVECTORCYCLE;
    reg vmaIOBYTECYCLE;
 
-   wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA) | 
+   wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA) |
                  (`cromMEM_CYCLE & `cromMEM_AREAD & `dromVMA) |
                  (cacheSWEEP));
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -161,8 +161,8 @@ module VMA(clk, rst, clken, crom, drom, dp, consEXEC, prevEN,
                end
              else
                begin
-                  vmaUSER        <= ((~`cromMEM_FORCEEXEC & flagUSER  & ~consEXEC) |
-                                     (`cromMEM_FETCHCYCLE & flagUSER             ) |
+                  vmaUSER        <= ((~`cromMEM_FORCEEXEC & flagUSER & ~cpuEXEC) |
+                                     (`cromMEM_FETCHCYCLE & flagUSER           ) |
                                      (prevEN  & flagPCU) |
                                      (selPREVIOUS & flagPCU) |
                                      (`cromMEM_FORCEUSER));
@@ -192,7 +192,7 @@ module VMA(clk, rst, clken, crom, drom, dp, consEXEC, prevEN,
 
    wire memEN = ((`cromMEM_CYCLE  & `cromMEM_WAIT ) |
                  (`cromMEM_CYCLE  & `cromMEM_BWRITE & `dromCOND_FUNC));
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -243,20 +243,20 @@ module VMA(clk, rst, clken, crom, drom, dp, consEXEC, prevEN,
                  end
           end
      end
-   
+
    //
    // The ACs are always physically addressed and are located
    // at address 0 to 15.  Note that the comparison igores
    // the 4 lowest address lines (vma[32:35]) and checks that
    // the upper address lines (vma[18:31]) are all zero.
    //
-   
+
    assign vmaACREF = vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
 
    //
    // Fixup vmaFLAGS
    //
-   
+
    assign vmaFLAGS[ 0] = vmaUSER;
    assign vmaFLAGS[ 1] = 1'b0;
    assign vmaFLAGS[ 2] = vmaFETCH;
@@ -271,5 +271,5 @@ module VMA(clk, rst, clken, crom, drom, dp, consEXEC, prevEN,
    assign vmaFLAGS[11] = vmaWRUCYCLE;
    assign vmaFLAGS[12] = vmaVECTORCYCLE;
    assign vmaFLAGS[13] = vmaIOBYTECYCLE;
-   
+
 endmodule

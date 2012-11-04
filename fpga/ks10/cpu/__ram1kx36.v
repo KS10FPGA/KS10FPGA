@@ -6,7 +6,7 @@
 //!      RAM 1Kx36
 //!
 //! \details
-//!      
+//!
 //! \note
 //!
 //! \todo
@@ -47,16 +47,22 @@
 //
 
 module RAM1Kx36(clk, clken, wr, addr, din, dout);
-            
-   input         clk;        	// Clock
-   input         clken;      	// Clock enable
-   input         wr;         	// Write
-   input  [0: 9] addr;       	// Address
-   input  [0:35] din;        	// Data in
-   output [0:35] dout;       	// Data out
+
+   input         clk;           // Clock
+   input         clken;         // Clock enable
+   input         wr;            // Write
+   input  [0: 9] addr;          // Address
+   input  [0:35] din;           // Data in
+   output [0:35] dout;          // Data out
 
    //
    // RAM 1Kx36
+   //
+   // FIXME:
+   //  The fall edge clock on the RAM is a hack but it is good enough
+   //  for simulation and until I figure out what to do here.
+   //  It will create synthesis issues.
+   //
    //  DPE7/E906, DPE7/E907, DPE7/E908, DPE7/E909, DPE7/E910, DPE7/E911
    //  DPE7/E912, DPE7/E913, DPE7/E914, DPE7/E915, DPE7/E916, DPE7/E917
    //  DPE7/E918, DPE7/E919, DPE7/E920, DPE7/E921, DPE7/E922, DPE7/E923
@@ -64,26 +70,15 @@ module RAM1Kx36(clk, clken, wr, addr, din, dout);
    //  DPE7/E812, DPE7/E813, DPE7/E814, DPE7/E815, DPE7/E816, DPE7/E817
    //  DPE7/E818, DPE7/E819, DPE7/E820, DPE7/E821, DPE7/E822, DPE7/E823
    //
-   
+
    reg [0:35] ram [0:1023];
-
-`define SYNCRAM
-   
-`ifdef SYNCRAM   
-
-   //
-   // FIXME:
-   // The following is a hack but it is good enough for simulation.
-   // It will create synthesis issues.
-   //
- 
    reg [0: 9] rd_addr;
 
    always @(negedge clk)
      begin
         if (clken)
           begin
-             if (wr) 
+             if (wr)
                ram[addr] <= din;
              rd_addr <= addr;
           end
@@ -91,22 +86,4 @@ module RAM1Kx36(clk, clken, wr, addr, din, dout);
 
    assign dout = ram[rd_addr];
 
-`else 
-
-   //
-   // Asynchronous RAM
-   //
-   
-   reg [0:35] out;
-   
-   always @(wr or addr or din or clk)
-     begin
-        if (wr & ~clk)
-          ram[addr] <= din;
-        out = ram[addr];
-     end
-   assign dout = out;
-   
-`endif
-   
 endmodule

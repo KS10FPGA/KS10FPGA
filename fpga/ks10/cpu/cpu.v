@@ -47,13 +47,14 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module CPU(clk, rst, clken, consTIMEREN, 
-            consSTEP, consRUN, consEXEC, consCONT, consTRAPEN, consCACHEEN, 
-            intPWR, intCONS,
-            bus_data_in, bus_data_out,
-            bus_pi_req_in,  bus_pi_req_out, bus_pi_current,
-           
-            crom, dp, pageNUMBER);
+module CPU(clk, rst, clken,
+           consTIMEREN,
+           consSTEP, consRUN, consEXEC, consCONT, consHALT, consTRAPEN, consCACHEEN,
+           intPWR, intCONS,
+           bus_data_in, bus_data_out,
+           bus_pi_req_in,  bus_pi_req_out, bus_pi_current,
+           cpuCONT, cpuHALT, cpuRUN,
+           crom, dp, pageNUMBER);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -61,32 +62,36 @@ module CPU(clk, rst, clken, consTIMEREN,
    input                  clk;          // Clock
    input                  rst;          // Reset
    input                  clken;        // Clock enable
-   input                  consTIMEREN; 	// Timer Enable
-   input                  consSTEP;	// Single Step
+   input                  consTIMEREN;  // Timer Enable
+   input                  consSTEP;     // Single Step
    input                  consRUN;      // Run
    input                  consEXEC;     // Execute
+   input                  consHALT;     // HALT
    input                  consCONT;     // Continue
    input                  consTRAPEN;   // Enable Traps
    input                  consCACHEEN;  // Enable Cache
-   input                  intPWR;    	// Power Fail Interrupt
-   input                  intCONS;    	// Console Interrupt
+   input                  intPWR;       // Power Fail Interrupt
+   input                  intCONS;      // Console Interrupt
 
    input  [1: 7]          bus_pi_req_in;
    output [1: 7]          bus_pi_req_out;
    output [0: 2]          bus_pi_current;
    input  [0:35]          bus_data_in;
    output [0:35]          bus_data_out;
-   
+   output                 cpuCONT;
+   output                 cpuHALT;
+   output                 cpuRUN;
+
    output [0:cromWidth-1] crom;         // Control ROM
    output [0:35]          dp;           // ALU Output Bus
-   output [16:26] 	  pageNUMBER;
+   output [16:26]         pageNUMBER;
 
    //
    // ROMS
    //
-   
+
    wire [0:dromWidth-1] drom;           // Dispatch ROM
-   
+
    //
    // ALU
    //
@@ -105,7 +110,6 @@ module CPU(clk, rst, clken, consTIMEREN,
    //
    // flags
    //
-   
 
    wire apr_int_req;
    wire mem_wait;
@@ -114,11 +118,10 @@ module CPU(clk, rst, clken, consTIMEREN,
    wire interrupt_req;
    wire iolatch;
    wire intNXM                  = 1'b0;         // FIXME
-   wire intBADDATA              = 1'b0;         // FIXME
    wire forceRAMFILE            = 1'b0;         // FIXME
    wire JRST0;
    wire indirect;
-   
+
    //
    // Registers
    //
@@ -126,7 +129,7 @@ module CPU(clk, rst, clken, consTIMEREN,
    wire [ 0: 2] pi_new;
    wire [ 0: 2] curr_block;             //
    wire [ 0: 2] prev_block;             //
-   
+
    //
    // PC Flags
    //
@@ -148,10 +151,10 @@ module CPU(clk, rst, clken, consTIMEREN,
    //
    // APR Flags
    //
-   
+
    wire [22:35] aprFLAGS;
-   wire         trapEN         = aprFLAGS[22];
-   wire         pageEN         = aprFLAGS[23];
+   wire         flagTRAPEN     = aprFLAGS[22];
+   wire         flagPAGEEN     = aprFLAGS[23];
    wire         flagPWR        = aprFLAGS[26];
    wire         flagNXM        = aprFLAGS[27];
    wire         flagBADDATA    = aprFLAGS[28];
@@ -162,29 +165,29 @@ module CPU(clk, rst, clken, consTIMEREN,
    //
    // A Registers
    //
-   
+
    wire [ 0:13] vmaFLAGS;
    wire [14:35] vmaADDR;
    wire         vmaUSER        = vmaFLAGS[ 0];
    wire         vmaEXEC        = vmaFLAGS[ 1];
    wire         vmaFETCH       = vmaFLAGS[ 2];
-   wire         vmaREADCYCLE   = vmaFLAGS[ 3];		// 1 = Read Cycle (IO or Memory)
+   wire         vmaREADCYCLE   = vmaFLAGS[ 3];          // 1 = Read Cycle (IO or Memory)
    wire         vmaWRTESTCYCLE = vmaFLAGS[ 4];
-   wire         vmaWRITECYCLE  = vmaFLAGS[ 5];		// 1 = Write Cycle (IO or Memory)
+   wire         vmaWRITECYCLE  = vmaFLAGS[ 5];          // 1 = Write Cycle (IO or Memory)
    wire         vmaIORDWR      = vmaFLAGS[ 6];
    wire         vmaCACHEIHN    = vmaFLAGS[ 7];
-   wire         vmaPHYSICAL    = vmaFLAGS[ 8];   
+   wire         vmaPHYSICAL    = vmaFLAGS[ 8];
    wire         vmaPREVIOUS    = vmaFLAGS[ 9];
-   wire         vmaIOCYCLE     = vmaFLAGS[10];		// 0 = Memory Cycle, 1 = IO Cycle
-   wire         vmaWRUCYCLE    = vmaFLAGS[11];		// 1 = Read interrupt controller number
-   wire         vmaVECTORCYCLE = vmaFLAGS[12];		// 1 = Read interrupt vector 
-   wire         vmaIOBYTECYCLE = vmaFLAGS[13];		// 1 = Unibus Byte IO Operation
+   wire         vmaIOCYCLE     = vmaFLAGS[10];          // 0 = Memory Cycle, 1 = IO Cycle
+   wire         vmaWRUCYCLE    = vmaFLAGS[11];          // 1 = Read interrupt controller number
+   wire         vmaVECTORCYCLE = vmaFLAGS[12];          // 1 = Read interrupt vector
+   wire         vmaIOBYTECYCLE = vmaFLAGS[13];          // 1 = Unibus Byte IO Operation
    wire         vmaACREF;
 
    //
    // Paging
    //
-   
+
    wire         pageFAIL       = 1'b0;         // FIXME
    wire         pageVALID;
    wire         pageWRITEABLE;
@@ -198,8 +201,8 @@ module CPU(clk, rst, clken, consTIMEREN,
 
    wire         timerINTR;
    wire [24:35] timerCOUNT;             // Millisecond timer
-   
-   
+
+
    //
    // Instruction Register IR
    //
@@ -220,7 +223,7 @@ module CPU(clk, rst, clken, consTIMEREN,
    wire [ 9:12] pxct;
    wire         pxctON;
    wire         prevEN;
-   
+
    //
    // Busses
    //
@@ -230,11 +233,11 @@ module CPU(clk, rst, clken, consTIMEREN,
    wire [ 0:35] dbm;                    //
    wire [ 0:35] mb = 36'b0;             // FIXME Memory Buffer
    wire [ 0:35] ramfile;                // RAMFILE output
-   
+
    //
    // SCAD, SC, and FE
    //
-   
+
    wire [ 0: 9] scad;
    wire [ 0: 9] sc;
    wire         scSIGN = sc[0];
@@ -245,20 +248,19 @@ module CPU(clk, rst, clken, consTIMEREN,
    // Traps
    //
 
-   wire [3:1]   traps;
    wire         trapCYCLE;
-   
+
    //
    // Dispatches
    //
-   
+
    wire [ 8:11] dispSCAD;                                       // SCAD dispatch
    wire [ 8:11] dispNI;                                         // Next Instruction dispatch
    wire [ 8:11] dispBYTE;                                       // Byte dispatch
    wire [ 8:11] dispMUL  = {1'b0, aluQR37, 1'b0, 1'b0};         // Multiply dispatch
    wire [ 8:11] dispPF   = 4'b0000;                             // Page Fail dispatch (depricated)
    wire [ 8:11] dispNORM = {aluZERO, dp[8:9], aluLSign};        // Normalize dispatch
-   wire [ 8:11] dispEA   = {~JRST0, regIR_I, regXRZERO, 1'b0}; 	// EA Dispatch
+   wire [ 8:11] dispEA   = {~JRST0, regIR_I, regXRZERO, 1'b0};  // EA Dispatch
    wire [ 0:11] dispDIAG = 12'b0000_0000_0000;                  // Diagnostic Dispatch
 
    //
@@ -270,13 +272,13 @@ module CPU(clk, rst, clken, consTIMEREN,
                         flagFPD,   regACZERO, interrupt_req};
    wire [1:7] skip20 = {aluCRY2,   aluLSign,  aluRSign, flagUSERIO,
                         skipJFCL,  aluCRY1,   txxx};
-   wire [1:7] skip10 = {trapCYCLE, aluZERO,   scSIGN,   consEXEC,
-                        iolatch,   ~consCONT, timerINTR};
+   wire [1:7] skip10 = {trapCYCLE, aluZERO,   scSIGN,   cpuEXEC,
+                        iolatch,   ~cpuCONT, timerINTR};
 
    //
    // DBM inputs
    //
-   
+
    wire [0:35] dbm0 = {scad[1:9], 8'b11111111, scad[0], aprFLAGS};
    wire [0:35] dbm1 = {scad[1:7], scad[1:7], scad[1:7], scad[1:7], scad[1:7], dp[35]};
    wire [0:35] dbm2 = {1'b0, scad[2:9], dp[9:17], 6'b111111, timerCOUNT};
@@ -289,307 +291,371 @@ module CPU(clk, rst, clken, consTIMEREN,
    //
    //
    //
-   
-   AC_BLOCK uAC_BLOCK(.clk(clk),
-                      .rst(rst),
-                      .clken(clken),
-                      .crom(crom),
-                      .dp(dp),
-                      .curr_block(curr_block),
-                      .prev_block(prev_block));
- 
+
+   AC_BLOCK uAC_BLOCK
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .dp(dp),
+      .curr_block(curr_block),
+      .prev_block(prev_block)
+      );
+
    //
    // Arithmetic Logic Unit
    //
 
-   ALU uALU(.clk(clk),
-            .rst(rst),
-            .clken(clken),
-            .dbus(dbus),
-            .crom(crom),
-            .aluLZero(aluLZero),
-            .aluRZero(aluRZero),
-            .aluLSign(aluLSign),
-            .aluRSign(aluRSign),
-            .aluAOV(aluAOV),
-            .aluCRY0(aluCRY0),
-            .aluCRY1(aluCRY1),
-            .aluCRY2(aluCRY2),
-            .aluQR37(aluQR37),
-            .t(dp));
+   ALU uALU
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .dbus(dbus),
+      .crom(crom),
+      .aluLZero(aluLZero),
+      .aluRZero(aluRZero),
+      .aluLSign(aluLSign),
+      .aluRSign(aluRSign),
+      .aluAOV(aluAOV),
+      .aluCRY0(aluCRY0),
+      .aluCRY1(aluCRY1),
+      .aluCRY2(aluCRY2),
+      .aluQR37(aluQR37),
+      .t(dp)
+      );
 
    //
    // APR
    //
 
-   APR uAPR(.clk(clk),
-            .rst(rst),
-            .clken(clken),
-            .crom(crom),
-            .dp(dp),
-            .intPWR(intPWR),
-            .intNXM(intNXM),
-            .intBADDATA(intBADDATA),
-            .intCONS(intCONS),
-            .aprFLAGS(aprFLAGS),
-            .bus_pi_req_out(bus_pi_req_out));
+   APR uAPR
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .dp(dp),
+      .intPWR(intPWR),
+      .intNXM(intNXM),
+      .intBADDATA(1'b0),
+      .intCONS(intCONS),
+      .aprFLAGS(aprFLAGS),
+      .bus_pi_req_out(bus_pi_req_out)
+      );
 
    //
    // Byte Dispatch
    //
 
-   BYTE_DISP uBYTE_DISP(.dp(dp),
-                        .dispBYTE(dispBYTE));
+   BYTE_DISP uBYTE_DISP
+     (.dp(dp),
+      .dispBYTE(dispBYTE)
+      );
 
 /*
-   BUS uBUS(.clk(clk),
-            .rst(rst),
-            .clken(clken),
-            .dp(dp),
-            .vmaFLAGS(vmaFLAGS),
-            .busDATA(busDATA));
- */  
-      
+
+   //
+   // KS10 Bus
+   //
+
+   BUS uBUS
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .dp(dp),
+      .vmaFLAGS(vmaFLAGS),
+      .busDATA(busDATA)
+      );
+ */
 
    //
    // Data Bus
    //
 
-   DBM uDBM(.crom(crom),
-            .dbm0(dbm0),
-            .dbm1(dbm1),
-            .dbm2(dbm2),
-            .dbm3(dbm3),
-            .dbm4(dbm4),
-            .dbm5(dbm5),
-            .dbm6(dbm6),
-            .dbm7(dbm7),
-            .dbm(dbm));
+   DBM uDBM
+     (.crom(crom),
+      .dbm0(dbm0),
+      .dbm1(dbm1),
+      .dbm2(dbm2),
+      .dbm3(dbm3),
+      .dbm4(dbm4),
+      .dbm5(dbm5),
+      .dbm6(dbm6),
+      .dbm7(dbm7),
+      .dbm(dbm)
+      );
 
    //
    // DBUS MUX
    //
 
-   DBUS uDBUS(.crom(crom),
-              .forceRAMFILE(forceRAMFILE),
-              .pcFLAGS({pcFLAGS, 1'b0, pi_new, 4'b1111, vmaADDR[26:35]}),
-              .dp(dp),
-              .ramfile(ramfile),
-              .dbm(dbm),
-              .dbus(dbus));
+   DBUS uDBUS
+     (.crom(crom),
+      .forceRAMFILE(forceRAMFILE),
+      .pcFLAGS({pcFLAGS, 1'b0, pi_new, 4'b1111, vmaADDR[26:35]}),
+      .dp(dp),
+      .ramfile(ramfile),
+      .dbm(dbm),
+      .dbus(dbus)
+      );
 
    //
    // Dispatch ROM
    //
 
-   DROM uDROM(.clk(clk),
-              .rst(rst),
-              .clken(clken),
-              .dbus(dbus),
-              .crom(crom),
-              .drom(drom));
+   DROM uDROM
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .dbus(dbus),
+      .crom(crom),
+      .drom(drom)
+      );
 
    //
    // Interrupt Controller
    //
-   
-   INTR uINTR(.clk(clk),
-              .rst(rst),
-              .clken(clken),
-              .crom(crom),
-              .dp(dp),
-              .bus_pi_req_in(bus_pi_req_in),
-              .interrupt_req(interrupt_req),
-              .pi_new(pi_new),
-              .pi_current(bus_pi_current),
-              .pi_on(pi_on));
-                
+
+   INTR uINTR
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .dp(dp),
+      .bus_pi_req_in(bus_pi_req_in),
+      .interrupt_req(interrupt_req),
+      .pi_new(pi_new),
+      .pi_current(bus_pi_current),
+      .pi_on(pi_on)
+      );
+
+   //
+   // INTF
+   //  Console Interface
+
+   INTF uINTF
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .consRUN(consRUN),
+      .consCONT(consCONT),
+      .consEXEC(consEXEC),
+      .consHALT(consHALT),
+      .cpuRUN(cpuRUN),
+      .cpuCONT(cpuCONT),
+      .cpuEXEC(cpuEXEC),
+      .cpuHALT(cpuHALT)
+      );
+
    //
    //
    //
-   
-   IOLATCH uIOLATCH(.clk(clk),
-                    .rst(rst),
-                    .clken(clken),
-                    .crom(crom),
-                    .iolatch(iolatch));
-  
+
+   IOLATCH uIOLATCH
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .iolatch(iolatch)
+      );
+
    //
    // Instruction Register
    //
 
-   regIR uIR(.clk(clk),
-             .rst(rst),
-             .clken(clken),
-             .crom(crom),
-             .dbus(dbus),
-             .prevEN(prevEN),
-             .regIR(regIR),
-             .xrPREV(xrPREV),
-             .JRST0(JRST0));
-   
+   regIR uIR
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .dbus(dbus),
+      .prevEN(prevEN),
+      .regIR(regIR),
+      .xrPREV(xrPREV),
+      .JRST0(JRST0)
+      );
+
    //
    // Microsequencer
    //
 
-   USEQ uUSEQ(.clk(clk),
-          .rst(rst),
-          .clken(clken),
-          .pageFAIL(pageFAIL),
-          .dp(dp),
-          .dispDIAG(dispDIAG),
-          .dispMUL(dispMUL),
-          .dispPF(dispPF),
-          .dispNI(dispNI),
-          .dispBYTE(dispBYTE),
-          .dispEA(dispEA),
-          .dispSCAD(dispSCAD),
-          .dispNORM(dispNORM),
-          .skip40(skip40),
-          .skip20(skip20),
-          .skip10(skip10),
-          .regIR(regIR),
-          .drom(drom),
-          .crom(crom));
-   
+   USEQ uUSEQ
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .pageFAIL(pageFAIL),
+      .dp(dp),
+      .dispDIAG(dispDIAG),
+      .dispMUL(dispMUL),
+      .dispPF(dispPF),
+      .dispNI(dispNI),
+      .dispBYTE(dispBYTE),
+      .dispEA(dispEA),
+      .dispSCAD(dispSCAD),
+      .dispNORM(dispNORM),
+      .skip40(skip40),
+      .skip20(skip20),
+      .skip10(skip10),
+      .regIR(regIR),
+      .drom(drom),
+      .crom(crom)
+      );
+
    //
    // Next Instruction Dispatch
    //
-   
-   NI_DISP uNI_DISP(.run(consRUN),
-                    .memory_cycle(memory_cycle),
-                    .traps(traps),
-                    .dispNI(dispNI));
+
+   NI_DISP uNI_DISP
+     (.aprFLAGS(aprFLAGS),
+      .pcFLAGS(pcFLAGS),
+      .consTRAPEN(consTRAPEN),
+      .cpuRUN(cpuRUN),
+      .memory_cycle(memory_cycle),
+      .dispNI(dispNI)
+      );
 
    //
    // Page Tables
    //
-   
-   PAGE_TABLES uPAGE_TABLES(.clk(clk),
-                            .rst(rst),
-                            .clken(clken),
-                            .crom(crom),
-                            .drom(drom),
-                            .dp(dp),
-                            .vmaADDR(vmaADDR),
-                            .vmaFLAGS(vmaFLAGS),
-                            .pageVALID(pageVALID),
-                            .pageWRITEABLE(pageWRITEABLE),
-                            .pageCACHEABLE(pageCACHEABLE),
-                            .pageUSER(pageUSER),
-                            .pageNUMBER(pageNUMBER));
-   
+
+   PAGE_TABLES uPAGE_TABLES
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .drom(drom),
+      .dp(dp),
+      .vmaADDR(vmaADDR),
+      .vmaFLAGS(vmaFLAGS),
+      .pageVALID(pageVALID),
+      .pageWRITEABLE(pageWRITEABLE),
+      .pageCACHEABLE(pageCACHEABLE),
+      .pageUSER(pageUSER),
+      .pageNUMBER(pageNUMBER)
+      );
+
    //
    // PC Flags
    //
 
-   PCFLAGS uPCFLAGS(.clk(clk),
-                    .rst(rst),
-                    .clken(clken),
-                    .crom(crom),
-                    .dp(dp),
-                    .dbm(dbm),
-                    .scad(scad),
-                    .regIR(regIR),
-                    .aluAOV(aluAOV),
-                    .aluCRY0(aluCRY0),
-                    .aluCRY1(aluCRY1),
-                    .pcFLAGS(pcFLAGS),
-                    .skipJFCL(skipJFCL));
+   PCFLAGS uPCFLAGS
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .dp(dp),
+      .dbm(dbm),
+      .scad(scad),
+      .regIR(regIR),
+      .aluAOV(aluAOV),
+      .aluCRY0(aluCRY0),
+      .aluCRY1(aluCRY1),
+      .pcFLAGS(pcFLAGS),
+      .skipJFCL(skipJFCL)
+      );
 
    //
-   // Pxct
-   //
+   // PXCT
+   //  Previous context
 
-   PXCT uPXCT(.clk(clk),
-              .rst(rst),
-              .clken(clken),
-              .crom(crom),
-              .dp(dp),
-              .pxctON(pxctON),
-              .prevEN(prevEN),
-              .pxct(pxct));
+   PXCT uPXCT
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .dp(dp),
+      .pxctON(pxctON),
+      .prevEN(prevEN),
+      .pxct(pxct)
+      );
 
    //
    // RAMFILE
    //
 
-   RAMFILE uRAMFILE(.clk(clk),
-                    .rst(rst),
-                    .clken(1'b1),
-                    .crom(crom),
-                    .dbus(dbus),
-                    .dbm(dbm),
-                    .regIR(regIR),
-                    .xrPREV(xrPREV),
-                    .vmaADDR(vmaADDR),
-                    .vmaPHYSICAL(vmaPHYSICAL),
-                    .vmaPREVIOUS(vmaPREVIOUS),
-                    .previous_block(prev_block),
-                    .current_block(curr_block),
-                    .ramfile(ramfile));    
-              
+   RAMFILE uRAMFILE
+     (.clk(clk),
+      .rst(rst),
+      .clken(1'b1),
+      .crom(crom),
+      .dbus(dbus),
+      .dbm(dbm),
+      .regIR(regIR),
+      .xrPREV(xrPREV),
+      .vmaADDR(vmaADDR),
+      .vmaPHYSICAL(vmaPHYSICAL),
+      .vmaPREVIOUS(vmaPREVIOUS),
+      .previous_block(prev_block),
+      .current_block(curr_block),
+      .ramfile(ramfile)
+      );
+
    //
    //
    //
 
-   SCAD uSCAD(.clk(clk),
-              .rst(rst),
-              .clken(clken),
-              .crom(crom),
-              .scad(scad),
-              .dp(dp),
-              .sc(sc),
-              .fe(fe),
-              .dispSCAD(dispSCAD));
+   SCAD uSCAD
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .scad(scad),
+      .dp(dp),
+      .sc(sc),
+      .fe(fe),
+      .dispSCAD(dispSCAD)
+      );
+
 
    //
    // One millisecond (more or less) interval timer.
    //
-   
-   TIMER uTIMER(.clk(clk),
-                .rst(rst),
-                .clken(clken),
-                .crom(crom),
-                .timerEN(consTIMEREN),
-                .timerINTR(timerINTR),
-                .timerCOUNT(timerCOUNT));
+
+   TIMER uTIMER
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .timerEN(consTIMEREN),
+      .timerINTR(timerINTR),
+      .timerCOUNT(timerCOUNT)
+      );
 
    //
    // Traps
    //
-   
-   TRAPS uTRAPS(.clk(clk),
-                .rst(rst),
-                .clken(clken),
-                .crom(crom),
-                .dp(dp),
-                .pcFLAGS(pcFLAGS),
-                .consTRAPEN(consTRAPEN),
-                .trapEN(trapEN),
-                .traps(traps),
-                .trapCYCLE(trapCYCLE));
-              
+
+   TRAPS uTRAPS
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .pcFLAGS(pcFLAGS),
+      .aprFLAGS(aprFLAGS),
+      .consTRAPEN(consTRAPEN),
+      .trapCYCLE(trapCYCLE)
+      );
+
    //
    // VMA
    //
-   
-   VMA uVMA(.clk(clk),
-            .rst(rst),
-            .clken(clken),
-            .crom(crom),
-            .drom(drom),
-            .dp(dp),
-            .consEXEC(consEXEC),
-            .prevEN(prevEN),
-            .flagPCU(flagPCU),
-            .flagUSER(flagUSER),
-            .vmaSWEEP(vmaSWEEP),
-            .vmaEXTENDED(vmaEXTENDED),
-            .vmaACREF(vmaACREF),
-            .vmaFLAGS(vmaFLAGS),
-            .vmaADDR(vmaADDR));
-   
+
+   VMA uVMA
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .crom(crom),
+      .drom(drom),
+      .dp(dp),
+      .cpuEXEC(cpuEXEC),
+      .prevEN(prevEN),
+      .flagPCU(flagPCU),
+      .flagUSER(flagUSER),
+      .vmaSWEEP(vmaSWEEP),
+      .vmaEXTENDED(vmaEXTENDED),
+      .vmaACREF(vmaACREF),
+      .vmaFLAGS(vmaFLAGS),
+      .vmaADDR(vmaADDR)
+      );
+
 endmodule
-
-

@@ -45,24 +45,52 @@
 // Comments are formatted for doxygen
 //
 
-module NI_DISP(run, memory_cycle, traps, dispNI);
+module NI_DISP (aprFLAGS, pcFLAGS, consTRAPEN, cpuRUN, memory_cycle, dispNI);
 
-   input         run;          	// Run
-   input         memory_cycle;  // Memory Cycle
-   input  [1:3]  traps;        	// Traps
-   output [8:11] dispNI;    	// Next Instruction dispatch
+   input  [ 0:17] pcFLAGS;              // PC Flags
+   input  [22:35] aprFLAGS;             // APR Flags
+   input          consTRAPEN;           // Console Trap Enable
+   input          cpuRUN;               // Run
+   input          memory_cycle;         // Memory Cycle
+   output [ 8:11] dispNI;               // Next Instruction dispatch
+
+   //
+   // Trap Enable Flag
+   //
+
+   wire flagTRAPEN = aprFLAGS[22];
+
+   //
+   // Trap Flags
+   //
+
+   wire flagTRAP2 = pcFLAGS[ 9];
+   wire flagTRAP1 = pcFLAGS[10];
+   wire [0:1] trapSEL = {flagTRAP2, flagTRAP1};
+   reg  [1:3] traps;
+
+   always @(consTRAPEN or flagTRAPEN or trapSEL)
+     begin
+        if (consTRAPEN & flagTRAPEN)
+          case (trapSEL)
+            0: traps = 3'b000;
+            1: traps = 3'b001;
+            2: traps = 3'b010;
+            3: traps = 3'b100;
+          endcase
+        else
+          traps = 3'b000;
+     end
 
    //
    // NICOND
    //  CRA2/E147
    //
 
-   wire halt = ~run;
+   assign dispNI[8] = memory_cycle;     // Fetch in progress
+   assign dispNI[9:11] = ((traps[3]) ? 3'o1 :
+                          (traps[2]) ? 3'o2 :
+                          (traps[1]) ? 3'o3 :
+                          (~cpuRUN ) ? 3'o5 : 3'o7);
 
-   assign dispNI[8]    = memory_cycle;		// Fetch in progress
-   assign dispNI[9:11] = ((traps[3]) ? 3'd1 :
-                          (traps[2]) ? 3'd2 :
-                          (traps[1]) ? 3'd3 :
-                          (halt ) ? 3'd5 : 3'd7);
-   
 endmodule

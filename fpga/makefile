@@ -8,14 +8,15 @@ UC  := $(CPU)/useq
 SRC := \
 	$(UC)/crom.vh  \
 	$(UC)/crom.v   \
-	$(UC)/crom.bin \
+	$(UC)/crom.dat \
 	$(UC)/drom.vh  \
 	$(UC)/drom.v   \
-	$(UC)/drom.bin \
+	$(UC)/drom.dat \
 	$(UC)/skip.v   \
 	$(UC)/stack.v  \
 	$(UC)/dispatch.v   \
 	$(UC)/useq.v \
+	$(CPU)/config.vh \
 	$(CPU)/ac_block.v \
 	$(CPU)/alu.v \
 	$(CPU)/apr.v \
@@ -49,11 +50,11 @@ SRC := \
 asdf : $(SRC)
 	echo $(SRC)
 
-$(UC)/crom.bin : $(UC)/ks10.mcr $(UC)/crom.awk makefile
-	awk -f $(UC)/crom.awk $(UC)/ks10.mcr > $(UC)/crom.bin
+$(UC)/crom.dat : $(UC)/ks10.mcr $(UC)/crom.awk makefile
+	awk -f $(UC)/crom.awk $(UC)/ks10.mcr > $(UC)/crom.dat
 
-$(UC)/drom.bin : $(UC)/ks10.mcr $(UC)/drom.awk makefile
-	awk -f $(UC)/drom.awk $(UC)/ks10.mcr > $(UC)/drom.bin
+$(UC)/drom.dat : $(UC)/ks10.mcr $(UC)/drom.awk makefile
+	awk -f $(UC)/drom.awk $(UC)/ks10.mcr > $(UC)/drom.dat
 
 clean: 
 	rcsclean *
@@ -63,7 +64,7 @@ clean:
 	rcsclean $(MEM)/*
 	rcsclean $(UBA)/*
 	rcsclean $(UC)/*
-	rm -f    $(UC)/*.bin
+	rm -f    $(UC)/*.dat
 	find . -type f -name "*~" | xargs rm -fv
 
 archive_src: $(SRC)

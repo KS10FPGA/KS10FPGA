@@ -64,20 +64,20 @@ module APR(clk, rst, clken, crom, dp,
    input                       intCONS;         // Interrupt 10
    output     [22:35]          aprFLAGS;        // APR Flags
    output reg [ 1: 7]          bus_pi_req_out;  // Bus PI Request Out
-  
+
    //
    // Decode APR Flags Enable microcode
    //
-   
+
    wire specAPRFLAGS = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_APRFLAGS);
    wire specAPREN    = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADAPR);
-   
+
    //
    // APR Flag Register 24
    //  DPMB/E814
    //
 
-   reg flag24;   
+   reg flag24;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -85,7 +85,7 @@ module APR(clk, rst, clken, crom, dp,
         else if (clken & specAPRFLAGS)
           flag24 <= dp[24];
      end
-   
+
    //
    // APR Flag Register 25
    //  DPMB/E814
@@ -103,7 +103,7 @@ module APR(clk, rst, clken, crom, dp,
         else if (clken & specAPRFLAGS)
           flag25 <= dp[25];
      end
-   
+
    //
    // APR Flag Register 26
    //  DPMB/E815
@@ -124,7 +124,7 @@ module APR(clk, rst, clken, crom, dp,
           else
             flagPWR <= dp[26];
      end
-   
+
    //
    // APR Flag Register 27
    //  DPMB/E815
@@ -185,7 +185,7 @@ module APR(clk, rst, clken, crom, dp,
         else if (clken & specAPRFLAGS)
           flagCORDATA <= dp[29];
      end
-   
+
    //
    // APR Flag Register 30
    //  DPMB/E915
@@ -231,42 +231,42 @@ module APR(clk, rst, clken, crom, dp,
    //  DPMB/E916
    //  DPEB/E173
    //
-   
 
-   reg         trapEN;
-   reg         pageEN;
-   reg [24:31] aprEN;
-   reg         swINT;
+
+   reg         flagTRAPEN;
+   reg         flagPAGEEN;
+   reg [24:31] flagAPREN;
+   reg         flagSWINT;
    reg [ 0: 2] reqOUT;
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
             `ifdef INITRAM
-               trapEN <= 1'b0;
-               pageEN <= 1'b0;
-               aprEN  <= 9'b0;
-               swINT  <= 1'b0;
-               reqOUT <= 3'b0;
+               flagTRAPEN <= 1'b0;
+               flagPAGEEN <= 1'b0;
+               flagAPREN  <= 9'b0;
+               flagSWINT  <= 1'b0;
+               reqOUT     <= 3'b0;
             `else
-               trapEN <= 1'bx;
-               pageEN <= 1'bx;
-               aprEN  <= 9'bx;
-               swINT  <= 1'bx;
-               reqOUT <= 3'bx;
+               flagTRAPEN <= 1'bx;
+               flagPAGEEN <= 1'bx;
+               flagAPREN  <= 9'bx;
+               flagSWINT  <= 1'bx;
+               reqOUT     <= 3'bx;
             `endif
           end
         else if (clken & specAPREN)
           begin
-             trapEN <= dp[22];
-             pageEN <= dp[23];
-             aprEN  <= dp[24:31];
-             swINT  <= dp[32];
-             reqOUT <= dp[33:35];
+             flagTRAPEN <= dp[22];
+             flagPAGEEN <= dp[23];
+             flagAPREN  <= dp[24:31];
+             flagSWINT  <= dp[32];
+             reqOUT     <= dp[33:35];
           end
     end
-   
+
    //
    // APR Interrupt Mask
    //  DPMB/E817
@@ -274,22 +274,22 @@ module APR(clk, rst, clken, crom, dp,
    //  DPMB/E121
    //  DPMB/E309
    //
-   
-   wire flagINTREQ = ((flag24      & aprEN[24]) ||
-                      (flag25      & aprEN[25]) ||
-                      (flagPWR     & aprEN[26]) ||
-                      (flagNXM     & aprEN[27]) ||
-                      (flagBADDATA & aprEN[28]) ||
-                      (flagCORDATA & aprEN[29]) ||
-                      (flag30      & aprEN[30]) ||
-                      (flagCONS    & aprEN[31]) ||
-                      (swINT));
-   
+
+   wire flagINTREQ = ((flag24      & flagAPREN[24]) ||
+                      (flag25      & flagAPREN[25]) ||
+                      (flagPWR     & flagAPREN[26]) ||
+                      (flagNXM     & flagAPREN[27]) ||
+                      (flagBADDATA & flagAPREN[28]) ||
+                      (flagCORDATA & flagAPREN[29]) ||
+                      (flag30      & flagAPREN[30]) ||
+                      (flagCONS    & flagAPREN[31]) ||
+                      (flagSWINT));
+
    //
-   // 
+   // PI Request Output Decoder
    //  DPEB/E166
    //
-   
+
    always @(reqOUT or flagINTREQ)
      begin
         if (flagINTREQ)
@@ -311,8 +311,8 @@ module APR(clk, rst, clken, crom, dp,
    // FIXUPS
    //
 
-   assign aprFLAGS[22] = trapEN;
-   assign aprFLAGS[23] = pageEN;
+   assign aprFLAGS[22] = flagTRAPEN;
+   assign aprFLAGS[23] = flagPAGEEN;
    assign aprFLAGS[24] = flag24;
    assign aprFLAGS[25] = flag25;
    assign aprFLAGS[26] = flagPWR;
@@ -325,5 +325,5 @@ module APR(clk, rst, clken, crom, dp,
    assign aprFLAGS[33] = 1'b1;
    assign aprFLAGS[34] = 1'b1;
    assign aprFLAGS[35] = 1'b1;
-   
+
 endmodule

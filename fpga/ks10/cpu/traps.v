@@ -45,40 +45,31 @@
 
 `include "useq/crom.vh"
 
-module TRAPS(clk, rst, clken, crom, dp, pcFLAGS, consTRAPEN, trapEN, traps, trapCYCLE);
-             
+module TRAPS(clk, rst, clken, crom, pcFLAGS, aprFLAGS, consTRAPEN, trapCYCLE);
+
    parameter cromWidth = `CROM_WIDTH;
-             
-   input                      clk;              // Clock
-   input                      rst;              // Reset
-   input                      clken;            // Clock Enable
-   input      [0:cromWidth-1] crom;             // Control ROM Data
-   input      [0:35]          dp;               // Data path
-   input      [0:17]          pcFLAGS;          // PC Flags
-   input                      consTRAPEN;       // Console Trap Enable
-   input                      trapEN;           // Trap Enable
-   output reg [3: 1]          traps;            // Traps
-   output reg                 trapCYCLE;        // Trap Cycle
-   
+
+   input                  clk;          // Clock
+   input                  rst;          // Reset
+   input                  clken;        // Clock Enable
+   input [ 0:cromWidth-1] crom;         // Control ROM Data
+   input [ 0:17]          pcFLAGS;      // PC Flags
+   input [22:35]          aprFLAGS;     // APR Flags
+   input                  consTRAPEN;   // Console Trap Enable
+   output reg             trapCYCLE;    // Trap Cycle
+
    //
-   // Trap Selection
-   // CRA2/E147
+   // Trap Enable Flag
    //
-   
-   wire [0:1] trapSEL = pcFLAGS[9:10];
-   
-   always @(consTRAPEN or trapEN or trapSEL)
-     begin
-        if (consTRAPEN & trapEN)
-          case (trapSEL)
-            0: traps = 3'b000;
-            1: traps = 3'b001;
-            2: traps = 3'b010;
-            3: traps = 3'b100;
-          endcase
-        else
-          traps = 3'b000;
-     end
+
+   wire flagTRAPEN = aprFLAGS[22];
+
+   //
+   // Trap Flags
+   //
+
+   wire flagTRAP2 = pcFLAGS[ 9];
+   wire flagTRAP1 = pcFLAGS[10];
 
    //
    // Trap Cycle
@@ -88,14 +79,16 @@ module TRAPS(clk, rst, clken, crom, dp, pcFLAGS, consTRAPEN, trapEN, traps, trap
    //  CRA2/E159
    //
 
-   wire niEN = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADNICOND);
-   
+   wire specNICOND = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADNICOND);
+   wire trapEN     = ((consTRAPEN & flagTRAPEN & flagTRAP2) |
+                      (consTRAPEN & flagTRAPEN & flagTRAP1));
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           trapCYCLE <= 1'b0;
-        else if (clken & niEN)
-          trapCYCLE <= (traps != 3'b000);
-    end
-   
+        else if (clken & specNICOND)
+          trapCYCLE <= trapEN;
+     end
+
 endmodule
