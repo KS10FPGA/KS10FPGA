@@ -162,6 +162,7 @@
 `define cromSPEC_EN_20          crom[52]        //  SPEC Select 20
 `define cromSPEC_EN_10          crom[53]        //  SPEC Select 10
 `define cromSPEC_SEL            crom[54:56]     //  SPEC Select
+`define cromSPEC_SEL_CONS       3'b000          //   Console
 `define cromSPEC_SEL_PREVIOUS   3'b000          //   Force Previous Context
 `define cromSPEC_SEL_CRY18INH   3'b000          //   Carry into Left Half inhibit
 `define cromSPEC_SEL_LOADIR     3'b001          //   Load IR
@@ -384,6 +385,21 @@
 `define cromI_CO5               crom[105]       // (Not used)
 `define cromI_CO6               crom[106]       // (Not used)
 `define cromI_CO7               crom[107]       // (Not used)
+
+//
+// Console Interface
+//  Overloaded with Number Field 
+//  This usage is not very well documented in the microcode listing.
+//  See "SET HALT", "CLEAR CONTINUE", "CLEAR EXECUTE", "CLEAR RUN"
+//  and "UNHALT" macros in the microcode listing.
+//  
+
+`define cromCONS_CLR_CONT       crom[102]       // Clear Continue
+`define cromCONS_CLR_EXEC       crom[103]       // Clear Execute
+`define cromCONS_CLR_RUN        crom[104]       // Clear Run
+`define cromCONS_SET_HALT       crom[105]       // Set Halt
+`define cromCONS_CLR_HALT       crom[106]       // Clear Halt
+`define cromCONS_UNUSED107      crom[107]       // Not used
 
 //
 // Workspace Address Field
