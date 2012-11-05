@@ -1,5 +1,5 @@
 ARB := arb
-CON := con
+CON := cons
 CPU := cpu
 MEM := mem
 UBA := uba
@@ -26,6 +26,7 @@ SRC := \
 	$(CPU)/clkgen.v \
 	$(CPU)/dbm.v \
 	$(CPU)/dbus.v \
+	$(CPU)/intf.v \
 	$(CPU)/intr.v \
 	$(CPU)/iolatch.v \
 	$(CPU)/ni_disp.v \
@@ -40,9 +41,11 @@ SRC := \
 	$(CPU)/traps.v \
 	$(CPU)/vma.v \
 	$(CPU)/cpu.v \
+	$(CON)/cons.v \
 	$(MEM)/mem.v \
 	$(ARB)/arb.v \
 	$(UBA)/uba.v \
+	rst.v \
 	ks10.v \
 	ks10.ucf \
 	testbench.v

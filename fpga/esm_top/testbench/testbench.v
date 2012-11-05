@@ -37,7 +37,7 @@ module testbench;
            .consTIMEREN(1'b1),
            .consSTEP(1'b0),
            .consRUN(1'b1),
-           .consEXEC(1'b1),
+           .consEXEC(1'b0),
            .consCONT(1'b1),
            .consTRAPEN(1'b1),
            .consCACHEEN(1'b0),
