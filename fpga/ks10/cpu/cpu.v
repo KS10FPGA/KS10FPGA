@@ -123,12 +123,18 @@ module CPU(clk, rst, clken,
    wire indirect;
 
    //
-   // Registers
+   // Interrupt Registers
    //
 
    wire [ 0: 2] pi_new;
-   wire [ 0: 2] curr_block;             //
-   wire [ 0: 2] prev_block;             //
+
+   //
+   // AC Blocks
+   //
+
+   wire [ 0: 5] acBLOCK                         //
+   wire [ 0: 2] currBLOCK = acBLOCK[0:2];       //
+   wire [ 0: 2] prevBLOCK = acBLOCK[3:5];       //
 
    //
    // PC Flags
@@ -220,8 +226,6 @@ module CPU(clk, rst, clken,
    // PXCT
    //
 
-   wire [ 9:12] pxct;
-   wire         pxctON;
    wire         prevEN;
 
    //
@@ -298,8 +302,7 @@ module CPU(clk, rst, clken,
       .clken(clken),
       .crom(crom),
       .dp(dp),
-      .curr_block(curr_block),
-      .prev_block(prev_block)
+      .acBLOCK(acBLOCK),
       );
 
    //
@@ -564,9 +567,7 @@ module CPU(clk, rst, clken,
       .clken(clken),
       .crom(crom),
       .dp(dp),
-      .pxctON(pxctON),
-      .prevEN(prevEN),
-      .pxct(pxct)
+      .prevEN(prevEN)
       );
 
    //
@@ -582,11 +583,9 @@ module CPU(clk, rst, clken,
       .dbm(dbm),
       .regIR(regIR),
       .xrPREV(xrPREV),
+      .vmaFLAGS(vmaFLAGS),
       .vmaADDR(vmaADDR),
-      .vmaPHYSICAL(vmaPHYSICAL),
-      .vmaPREVIOUS(vmaPREVIOUS),
-      .previous_block(prev_block),
-      .current_block(curr_block),
+      .acBLOCK(acBLOCK),
       .ramfile(ramfile)
       );
 

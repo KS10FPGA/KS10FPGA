@@ -6,10 +6,36 @@
 //!      PXCT
 //!
 //! \details
-//!      
+//!
 //! \note
-//!      
-//! \todo
+//!     For a really good explanation of these bits see Mike Eulers
+//!     Interoffice Memorandum on Extended Addressing.
+//!
+//!     It is available from:
+//!     <http://bitsavers.trailing-edge.com/pdf/dec/pdp10/
+//!     KC10_Jupiter/ExtendedAddressing_Jul83.pdf>
+//!
+//!     The following information is extracted from that document
+//!     verbatim.
+//!
+//!        Bit      References made in previous context if bit is 1
+//!
+//!        9  (E1)  Effective address calculation of instruction
+//!                 (index registers, indirect words).
+//!
+//!        10 (D1)  Memory operands specified by EA, whether fetch
+//!                 or store (e.g, PUSH source, POP or BLT
+//!                 destination); byte pointer.
+//!
+//!        11 (E2)  Effective address calculation of byte pointer;
+//!                 source in EXTEND (e.g., XBLT or MOVSLJ source);
+//!                 effective address calculation of source byte
+//!                 pointer in EXTEND (MOVSLJ).
+//!
+//!        12 (D2)  Byte data; source in BLT; destination in EXTEND
+//!                 (e.g., XBLT or MOVSLJ destination); effective
+//!                 address calculation of destination byte pointer
+//!                 in EXTEND (MOVSLJ).
 //!
 //! \file
 //!      pxct.v
@@ -46,68 +72,89 @@
 // Comments are formatted for doxygen
 //
 
+`include "config.vh"
 `include "useq/crom.vh"
 
-module PXCT(clk, rst, clken, crom, dp, pxct, pxctON, prevEN);
-            
+module PXCT(clk, rst, clken, crom, dp, prevEN);
+
    parameter cromWidth = `CROM_WIDTH;
 
-   input                      clk;              // clock
-   input                      rst;              // reset
-   input                      clken;            // clock enable
-   input      [0:cromWidth-1] crom;             // Control ROM Data
-   input      [0:35]          dp;               // Data path
-   output reg                 pxctON;          	// PXCT on
-   output reg [9:12]          pxct;             // PXCT
-   output reg                 prevEN;           // 
+   input                  clk;          // clock
+   input                  rst;          // reset
+   input                  clken;        // clock enable
+   input  [0:cromWidth-1] crom;         // Control ROM Data
+   input  [0:35]          dp;           // Previous Enable
+
+   //
+   // Microcode fields
+   //
+
+   wire       specPXCTEN  = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PXCTEN );
+   wire       specPXCTOFF = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_PXCTOFF);
+   wire [0:2] memPXCTSEL  = `cromMEM_PXCTSEL;
 
    //
    // PCXT Register
+   //
    //  DPMA/E71
    //  DPMA/E78
    //  DPMA/E2
    //
+   //  Note:
+   //     specPXCTEN and specPXCTOFF can occur simultaneously or
+   //     independantly.
+   //
 
-   wire pxct_en  = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PXCTEN );
-   wire pxct_off = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_PXCTOFF);
-   
+   reg        enPXCT;
+   reg [9:12] pxct;
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             pxctON <= 1'b0;
-             pxct    <= 4'b0;
+             `ifdef INITREGS
+               enPXCT   <= 1'b0;                // Enable PXCT
+               pxct     <= 4'b0;                // PXCT Bits
+             `else
+               enPXCT   <= 1'bx;                // Enable PXCT
+               pxct     <= 4'bx;                // PXCT Bits
+             `endif
           end
-        else if (clken & pxct_en)
+        else if (clken & specPXCTEN)
           begin
-             pxctON <= ~pxct_off;
-             pxct    <= dp[9:12];
+             enPXCT   <= ~specPXCTOFF;          // Enable PXCT
+             pxct[ 9] <= dp[ 9];                // PXCT E1 Bit
+             pxct[10] <= dp[10];                // PXCT D1 Bit
+             pxct[11] <= dp[11];                // PXCT E2 Bit
+             pxct[12] <= dp[12];                // PXCT D2 Bit
           end
      end
 
    //
+   // PXCT AC Field Decode
+   //  DPMA/E62
+   //  DPMA/E63
    //
-   //
-   
-   wire [0:2] pxct_sel  = `cromMEM_PXCTSEL;
-   wire       wru_cycle = `cromMEM_WRUCYCLE;
-   
-   always @(pxct or pxctON or pxct_sel or wru_cycle)
+
+   always @(pxct or enPXCT or memPXCTSEL)
      begin
-        if ((pxctON & pxct[9]) |
-            (pxctON & wru_cycle))
-          case (pxct_sel)
-            0: prevEN <= 1'b0;			// Current
-            1: prevEN <= pxct[ 9];		// E1
-            2: prevEN <= pxct[10];		// Not used
-            3: prevEN <= pxct[10];		// D1
-            4: prevEN <= pxct[11];		// BIS-SRC-EA
-            5: prevEN <= pxct[11];		// E2
-            6: prevEN <= pxct[12];		// BIS-DST-EA
-            7: prevEN <= pxct[12];		// D2
+        if (enPXCT)
+          case (memPXCTSEL)
+            0: prevEN <= 1'b0;                  // Current
+            1: prevEN <= pxct[ 9];              // E1: PXCT EA
+            2: prevEN <= pxct[10] & pxct[9];    // Not used
+            3: prevEN <= pxct[10];              // D1: PXCT DATA or
+                                                //     PXCT BLT DEST
+            4: prevEN <= pxct[11] & pxct[9];    // BIS-SRC-EA
+            5: prevEN <= pxct[11];              // E2: PXCT BYTE PTR EA or
+                                                //     PXCT EXTEND EA
+            6: prevEN <= pxct[12] & pxct[9];    // BIS-DST-EA
+            7: prevEN <= pxct[12];              // D2: PXCT BYTE DATA or
+                                                //     PXCT STACK WORD or
+                                                //     PXCT BLT SRC
           endcase
         else
-          prevEN <= 1'b0;			// Current
+          prevEN <= 1'b0;                       // Current
      end
-   
+
 endmodule
