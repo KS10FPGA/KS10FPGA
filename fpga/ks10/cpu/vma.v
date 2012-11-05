@@ -48,37 +48,41 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN,
-           flagPCU, flagUSER,
-           vmaSWEEP, vmaEXTENDED, vmaACREF, vmaFLAGS, vmaADDR);
+module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
+           vmaSWEEP, vmaEXTENDED, vmaFLAGS, vmaADDR);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
 
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input                  clken;        // Clock Enable
-   input  [0:cromWidth-1] crom;         // Control ROM Data
-   input  [0:dromWidth-1] drom;         // Dispatch ROM Data
-   input  [0:35]          dp;           // Data path
-   input                  cpuEXEC;     // Execute
-   input                  prevEN;       // Previous Enable
-   input                  flagPCU;      // PCU Flag
-   input                  flagUSER;     // USER Flag
-   output reg             vmaSWEEP;     // VMA Sweep
-   output reg             vmaEXTENDED;  // VMA Extended
-   output                 vmaACREF;     // VMA references an AC
-   output     [ 0:13]     vmaFLAGS;     // VMA Flags
-   output reg [14:35]     vmaADDR;      // Virtual Memory Address
+   input                       clk;          	// Clock
+   input                       rst;          	// Reset
+   input                       clken;        	// Clock Enable
+   input      [ 0:cromWidth-1] crom;         	// Control ROM Data
+   input      [ 0:dromWidth-1] drom;         	// Dispatch ROM Data
+   input      [ 0:35]          dp;           	// Data path
+   input                       cpuEXEC;      	// Execute
+   input                       prevEN;       	// Previous Enable
+   input      [ 0:17]          pcFLAGS;      	// PC Flags
+   output reg                  vmaSWEEP;     	// VMA Sweep
+   output reg                  vmaEXTENDED;  	// VMA Extended
+   output     [ 0:13]          vmaFLAGS;     	// VMA Flags
+   output reg [14:35]          vmaADDR;		// Virtual Memory Address
 
+   //
+   // PC Flags
+   //
+   
+   wire flagUSER = pcFLAGS[5];      		// User
+   wire flagPCU  = pcFLAGS[6];      		// Previous Context User
+   
    //
    // VMA Logic
    //  DPE5/E76
    //  DPE6/E53
    //
 
-   wire cacheSWEEP       = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE);
-   wire selPREVIOUS      = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_PREVIOUS);
+   wire cacheSWEEP  = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE);
+   wire selPREVIOUS = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_PREVIOUS);
 
    //
    // VMA Register
@@ -109,8 +113,8 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN,
    reg vmaVECTORCYCLE;
    reg vmaIOBYTECYCLE;
 
-   wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA) |
-                 (`cromMEM_CYCLE & `cromMEM_AREAD & `dromVMA) |
+   wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) |
+                 (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA) |
                  (cacheSWEEP));
 
    always @(posedge clk or posedge rst)
@@ -163,7 +167,7 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN,
                begin
                   vmaUSER        <= ((~`cromMEM_FORCEEXEC & flagUSER & ~cpuEXEC) |
                                      (`cromMEM_FETCHCYCLE & flagUSER           ) |
-                                     (prevEN  & flagPCU) |
+                                     (prevEN      & flagPCU) |
                                      (selPREVIOUS & flagPCU) |
                                      (`cromMEM_FORCEUSER));
                   vmaFETCH       <= `cromMEM_FETCHCYCLE;
@@ -243,15 +247,6 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN,
                  end
           end
      end
-
-   //
-   // The ACs are always physically addressed and are located
-   // at address 0 to 15.  Note that the comparison igores
-   // the 4 lowest address lines (vma[32:35]) and checks that
-   // the upper address lines (vma[18:31]) are all zero.
-   //
-
-   assign vmaACREF = vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
 
    //
    // Fixup vmaFLAGS

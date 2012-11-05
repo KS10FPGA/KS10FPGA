@@ -63,18 +63,18 @@
 `include "config.vh"
 `include "useq/crom.vh"
 
-module ALU(clk, rst, clken, dbus, crom,
+module ALU(clk, rst, clken, crom, aluIN,
            aluLZero, aluRZero, aluLSign, aluRSign,
            aluAOV, aluCRY0, aluCRY1, aluCRY2,
-           aluQR37, t);
+           aluQR37, aluOUT);
 
    parameter cromWidth = `CROM_WIDTH;
 
    input                  clk;                  // Clock
    input                  rst;                  // Reset
    input                  clken;                // Clock enable
-   input  [0:35]          dbus;                 // Bus input
    input  [0:cromWidth-1] crom;                 // Control ROM Data
+   input  [0:35]          aluIN;                 // Bus input
    output                 aluLZero;             // ALU left half Zero
    output                 aluRZero;             // ALU right half Zero
    output                 aluLSign;             // ALU left half Sign
@@ -84,7 +84,7 @@ module ALU(clk, rst, clken, dbus, crom,
    output                 aluCRY1;              // ALU Carry 1
    output                 aluCRY2;              // ALU Carry 2
    output                 aluQR37;              // ALU QR37
-   output [0:35]          t;                    // ALU Output
+   output [0:35]          aluOUT;               // ALU Output
 
    //
    // Microcode fields
@@ -142,7 +142,7 @@ module ALU(clk, rst, clken, dbus, crom,
    // from 36 bits to 38 bits and add two bits padding on right.
    //
 
-   wire [0:39] dd = {dbus[0], dbus[0], dbus[0:35], 2'b00};
+   wire [0:39] dd = {aluIN[0], aluIN[0], aluIN[0:35], 2'b00};
 
    //
    // Shifter Operations:
@@ -739,6 +739,6 @@ module ALU(clk, rst, clken, dbus, crom,
    //  to 36 bits.
    //
 
-   assign t = (dest ==`cromDST_RAMA) ? ad[2:37] : f[2:37];
+   assign aluOUT = (dest ==`cromDST_RAMA) ? ad[2:37] : f[2:37];
 
 endmodule

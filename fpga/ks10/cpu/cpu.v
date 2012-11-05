@@ -132,9 +132,9 @@ module CPU(clk, rst, clken,
    // AC Blocks
    //
 
-   wire [ 0: 5] acBLOCK                         //
-   wire [ 0: 2] currBLOCK = acBLOCK[0:2];       //
-   wire [ 0: 2] prevBLOCK = acBLOCK[3:5];       //
+   wire [ 0: 5] acBLOCK;                        // AC Block
+   wire [ 0: 2] currBLOCK = acBLOCK[0:2];       // Current AC Block
+   wire [ 0: 2] prevBLOCK = acBLOCK[3:5];       // Previous AC Block
 
    //
    // PC Flags
@@ -188,7 +188,6 @@ module CPU(clk, rst, clken,
    wire         vmaWRUCYCLE    = vmaFLAGS[11];          // 1 = Read interrupt controller number
    wire         vmaVECTORCYCLE = vmaFLAGS[12];          // 1 = Read interrupt vector
    wire         vmaIOBYTECYCLE = vmaFLAGS[13];          // 1 = Unibus Byte IO Operation
-   wire         vmaACREF;
 
    //
    // Paging
@@ -293,7 +292,7 @@ module CPU(clk, rst, clken,
    wire [0:35] dbm7 = {`cromNUM, `cromNUM};
 
    //
-   //
+   // AC Block
    //
 
    AC_BLOCK uAC_BLOCK
@@ -302,7 +301,7 @@ module CPU(clk, rst, clken,
       .clken(clken),
       .crom(crom),
       .dp(dp),
-      .acBLOCK(acBLOCK),
+      .acBLOCK(acBLOCK)
       );
 
    //
@@ -313,8 +312,8 @@ module CPU(clk, rst, clken,
      (.clk(clk),
       .rst(rst),
       .clken(clken),
-      .dbus(dbus),
       .crom(crom),
+      .aluIN(dbus),
       .aluLZero(aluLZero),
       .aluRZero(aluRZero),
       .aluLSign(aluLSign),
@@ -324,7 +323,7 @@ module CPU(clk, rst, clken,
       .aluCRY1(aluCRY1),
       .aluCRY2(aluCRY2),
       .aluQR37(aluQR37),
-      .t(dp)
+      .aluOUT(dp)
       );
 
    //
@@ -648,11 +647,9 @@ module CPU(clk, rst, clken,
       .dp(dp),
       .cpuEXEC(cpuEXEC),
       .prevEN(prevEN),
-      .flagPCU(flagPCU),
-      .flagUSER(flagUSER),
+      .pcFLAGS(pcFLAGS),
       .vmaSWEEP(vmaSWEEP),
       .vmaEXTENDED(vmaEXTENDED),
-      .vmaACREF(vmaACREF),
       .vmaFLAGS(vmaFLAGS),
       .vmaADDR(vmaADDR)
       );

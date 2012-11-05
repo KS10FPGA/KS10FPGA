@@ -83,7 +83,8 @@ module PXCT(clk, rst, clken, crom, dp, prevEN);
    input                  rst;          // reset
    input                  clken;        // clock enable
    input  [0:cromWidth-1] crom;         // Control ROM Data
-   input  [0:35]          dp;           // Previous Enable
+   input  [0:35]          dp;           // Data Path
+   output reg             prevEN;       // Previous Enable
 
    //
    // Microcode fields

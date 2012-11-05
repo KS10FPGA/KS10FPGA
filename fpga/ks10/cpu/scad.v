@@ -49,46 +49,40 @@
 module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
 
    parameter  cromWidth = `CROM_WIDTH;
-   
-   input 		      clk;      // Clock
-   input 		      rst;      // Reset
-   input 		      clken;    // Clock Enable
-   input      [0:cromWidth-1] crom;	// Control ROM Data
+
+   input                      clk;      // Clock
+   input                      rst;      // Reset
+   input                      clken;    // Clock Enable
+   input      [0:cromWidth-1] crom;     // Control ROM Data
    input      [0:35]          dp;       // Data path
-   output reg [0: 9]          scad;  	// SCAD
-   output reg [0: 9]          sc;       // Step Count 
+   output reg [0: 9]          scad;     // SCAD
+   output reg [0: 9]          sc;       // Step Count
    output reg [0: 9]          fe;       // Floating-point exponent
-   output     [8:11]          dispSCAD;	// SCAD Dispatch
+   output     [8:11]          dispSCAD; // SCAD Dispatch
 
    //
    // CROM interface
    //
-   
-   wire [0:2] fun     = `cromSCAD_FUN;
-   wire [0:2] asel    = `cromSCAD_ASEL;
-   wire [0:1] bsel    = `cromSCAD_BSEL;
-   wire [0:9] snum    = `cromNUM;
-   wire       loadSC  = `cromLOADSC;
-   wire       loadFE  = `cromLOADFE;
-   
-   //
-   // EXP
-   //  DPM3/E68
-   //  DPM3/E100
-   //
 
-   wire [2:9] ex = (dp[0]) ? ~dp[1:8] : dp[1:8];
+   wire [0:2] fun     = `cromSCAD_FUN;  // SCAN Function
+   wire [0:2] asel    = `cromSCAD_ASEL; // SCAD B Input
+   wire [0:1] bsel    = `cromSCAD_BSEL; // SCAD A Input
+   wire [0:9] snum    = `cromSNUM;      // Small number field
+   wire       loadSC  = `cromLOADSC;    // Load SC
+   wire       loadFE  = `cromLOADFE;    // Load FE
 
    //
    // SCADA MUX
-   //  DPM3/E75
-   //  DPM3/E51
-   //  DPM3/E91
-   //  DPM3/E67
-   //  DPM3/E83
-   //  DPM3/E99
-   //  DPM3/E107
    //  DPM3/E28
+   //  DPM3/E51
+   //  DPM3/E67
+   //  DPM3/E68
+   //  DPM3/E75
+   //  DPM3/E83
+   //  DPM3/E91
+   //  DPM3/E99
+   //  DPM3/E100
+   //  DPM3/E107
    //
 
    reg [0: 9] scadA;
@@ -125,13 +119,16 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
 
    reg [0:9] scadB;
 
-   always @(bsel or fe or ex or dp)
+   always @(bsel or fe or dp)
      begin
         case (bsel)
           `cromSCAD_BSEL_FE:
             scadB <= fe[0:9];
           `cromSCAD_BSEL_EXP:
-            scadB <= {2'b00, ex[2:9]};
+            if (dp[0])
+              scadB <= {2'b00, ~dp[1:8]};
+            else
+              scadB <= {2'b00,  dp[1:8]};
           `cromSCAD_BSEL_SHIFT:
             scadB <= {dp[18], dp[18], dp[28:35]};
           `cromSCAD_BSEL_SIZE:
@@ -147,7 +144,7 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
    //      microcode into the ALU function.
    //
    // \note
-   //     This is positive logic.  Be sure to use the right table
+   //      This is positive logic.  Be sure to use the right table
    //      in the 74ls181 data sheet.
    //
    // \note
@@ -164,7 +161,7 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
    //      diagram.
    //
    //      +-------------+-+-------------------------+---------------+
-   //      | FUN FUN FUN | | ALU ALU ALU ALU ALU ALU |               |  
+   //      | FUN FUN FUN | | ALU ALU ALU ALU ALU ALU |               |
    //      |  0   1   2  | |  8   4   2   1   CY  M  |  Descripton   |
    //      +-------------+-+-------------------------+---------------+
    //      |  0   0   0  | |  1   1   0   0   1   0  | F = A + A     |
@@ -205,7 +202,7 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
    //
    // FE Register
    //
-   
+
    always @(posedge clk or posedge rst)
     begin
         if (rst)
@@ -217,7 +214,7 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
    //
    // SC Register
    //
-   
+
    always @(posedge clk or posedge rst)
     begin
         if (rst)
@@ -229,7 +226,7 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
    //
    // SCAD Dispatch
    //
-   
+
    assign dispSCAD = (scad[0]) ? 4'b0010 : 4'b0000;
-   
+
 endmodule
