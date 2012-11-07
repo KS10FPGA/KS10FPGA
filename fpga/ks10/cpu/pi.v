@@ -50,7 +50,7 @@
 
 `include "useq/crom.vh"
 
-module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new, pi_current, pi_on);
+module INTR(clk, rst, clken, crom, dp, ubiIRQ,  pi_new, pi_current, cpuIRQ, pi_on);
             
    parameter cromWidth = `CROM_WIDTH;
 
@@ -59,10 +59,10 @@ module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new, pi_
    input                      clken;            // Clock enable
    input      [0:cromWidth-1] crom;             // Control ROM Data
    input      [0:35]          dp;               // Data path
-   input      [1: 7]          bus_pi_req_in;    // Bus PI Request In
-   output reg                 interrupt_req;    // Interrupt Request
+   input      [1: 7]          ubiIRQ; 		// Unibus request
    output     [0: 2]          pi_new;           // New Prioity Interrupt number
    output     [0: 2]          pi_current;       // Current Prioity Interrupt number
+   output reg                 cpuIRQ;    	// Interrupt Request
    output reg                 pi_on;		// PI is on
    
    
@@ -78,7 +78,7 @@ module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new, pi_
         if (rst)
           pi_bus <= 7'b000_0000;
         else if (clken)
-          pi_bus <= bus_pi_req_in;
+          pi_bus <= ubiIRQ;
      end
 
    //
@@ -158,10 +158,10 @@ module INTR(clk, rst, clken, crom, dp, bus_pi_req_in, interrupt_req, pi_new, pi_
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          interrupt_req <= 1'b0;
+          cpuIRQ <= 1'b0;
         else if (clken)
           begin
-             interrupt_req <= (pi_req_num < pi_cur_num);
+             cpuIRQ <= (pi_req_num < pi_cur_num);
           end
      end
 

@@ -79,7 +79,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
 
    wire [ 9:12] regIR_AC = regIR[ 9:12];
-   
+
    //
    // Control ROM Address
    //
@@ -92,15 +92,19 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
 
    wire [0:11] skipADDR;
-   
-   SKIP uSKIP(.crom(crom),
-              .skip40(skip40),
-              .skip20(skip20),
-              .skip10(skip10),
-              .skipADDR(skipADDR));
+
+   SKIP uSKIP
+     (.crom(crom),
+      .skip40(skip40),
+      .skip20(skip20),
+      .skip10(skip10),
+      .skipADDR(skipADDR)
+      );
 
    //
    // Dispatch Logic
+   //
+   // Details
    //  The dromJ is implemented slightly different than the KS-10.
    //  In the KS10, the DROM J value is constained to be between 1400
    //  and 1777.  This allows the dispatch function to hardwire
@@ -129,6 +133,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //               locations where the instruction code is expanded
    //               to 13 bits."
    //
+   // Trace:
    //  DPEA/E111
    //  DPEA/E153
    //  CRA2/E158
@@ -158,28 +163,36 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
 
    wire [0:11] dispADDR;
-   
-   DISPATCH uDISPATCH(.crom(crom),
-                      .dp(dp),
-                      .dispDIAG(dispDIAG),
-                      .dispRET(dispRET),
-                      .dispJ(dromJ),
-                      .dispAREAD(dispAREAD),
-                      .dispMUL(dispMUL),
-                      .dispPF(dispPF),
-                      .dispNI(dispNI),
-                      .dispBYTE(dispBYTE),
-                      .dispEA(dispEA),
-                      .dispSCAD(dispSCAD),
-                      .dispNORM(dispNORM),
-                      .dispDROM_A(dromA),
-                      .dispDROM_B(dromB),
-                      .dispADDR(dispADDR));
+
+   DISPATCH uDISPATCH
+     (.crom(crom),
+      .dp(dp),
+      .dispDIAG(dispDIAG),
+      .dispRET(dispRET),
+      .dispJ(dromJ),
+      .dispAREAD(dispAREAD),
+      .dispMUL(dispMUL),
+      .dispPF(dispPF),
+      .dispNI(dispNI),
+      .dispBYTE(dispBYTE),
+      .dispEA(dispEA),
+      .dispSCAD(dispSCAD),
+      .dispNORM(dispNORM),
+      .dispDROM_A(dromA),
+      .dispDROM_B(dromB),
+      .dispADDR(dispADDR)
+      );
 
    //
-   // The CROM registers have been absorbed by the synchronous FPGA ROM.
+   // CROM Reset
+   //
+   // Details:
+   //  The CROM registers have been absorbed by the synchronous FPGA ROM.
    //  Therefore the initial state of the microcode (address zero) must
-   //  be handled exlicitly.   This synchronizes the reset negation.
+   //  be handled explicitly.   This synchronizes the reset negation.
+   //
+   // Notes:
+   //  This implementation is different than the KS10 implementation.
    //
 
    reg reset;
@@ -190,19 +203,26 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
         else if (clken)
           reset <= 1'b0;
      end;
-   
+
    //
    // Address 'MUX'
-   //  Per comments above, this mux is modified to force the
-   //  CROM address to zero at reset.
    //
-   //  The Page Fail address is hard coded to o1777 in the
-   //  microcode.  Note that the microcode address space is
-   //  12-bits but only 11-bits (2048 microcode words) are
-   //  actually implemented.   That will allow us to double
-   //  the amount of microcode without changing the micro-
-   //  architecture.
+   // Details
+   //  Per comments above, this mux is modified to force the CROM
+   //  address to zero at reset.
    //
+   //  The Microcode should begin execution at address o0000.
+   //
+   //  The Page Fail address is hard coded to address o3777
+   //  in the microcode.
+   //
+   // Notes:
+   //  Note that the microcode address space is 12-bits but only
+   //  11-bits (2048 microcode words) are actually implemented.
+   //  That will allow us to double the amount of microcode without
+   //  changing the micro-architecture.
+   //
+   // Trace:
    //  CRA1/E9
    //  CRA1/E18
    //  CRA1/E24
@@ -217,29 +237,60 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //  CRA1/E186
    //
 
-   assign addr = (reset)    ? 12'b000_000_000_000 : 
-                 (pageFAIL) ? 12'b111_111_111_111 : 
+   assign addr = (reset)    ? 12'b000_000_000_000 :
+                 (pageFAIL) ? 12'b111_111_111_111 :
                  (dispADDR | skipADDR | `cromJ);
 
    //
    // Control ROM
    //
 
-   CROM uCROM(.clk(clk),
-              .clken(clken),
-              .rst(rst),
-              .addr(addr),
-              .crom(crom));
+   CROM uCROM
+     (.clk(clk),
+      .clken(clken),
+      .rst(rst),
+      .addr(addr),
+      .crom(crom)
+      );
+
+   //
+   // Call/Return Instruction Decode:
+   //
+   // Details:
+   //  The address is pushed on the stack during a call or when a
+   //  PAGE FAIL occurs.
+   //
+   // Note:
+   //  The KS10 logic decodes a 'return dispatch' as "x0xx01" but
+   //  only o01 and o41 are used by the microcode.
+   //
+   // Trace
+   //  CRA2/E33
+   //  CRA2/E34
+   //
+
+   wire call = `cromCALL | pageFAIL;
+   wire ret  = ((`cromDISP == 6'o01) ||   // used
+                (`cromDISP == 6'o05) ||   // not used
+                (`cromDISP == 6'o11) ||   // not used
+                (`cromDISP == 6'o15) ||   // not used
+                (`cromDISP == 6'o41) ||   // used
+                (`cromDISP == 6'o45) ||   // not used
+                (`cromDISP == 6'o51) ||   // not used
+                (`cromDISP == 6'o55));    // not used
 
    //
    // Call/Return Stack
    //
 
-   STACK uSTACK(.clk(clk),
-                .rst(rst),
-                .clken(clken),
-                .crom(crom),
-                .addrIN(addr),
-                .addrOUT(dispRET));
+   STACK uSTACK
+     (.clk(clk),
+      .rst(rst),
+      .clken(clken),
+      .call(call),
+      .ret(ret),
+      .addrIN(addr),
+      .addrOUT(dispRET)
+      );
 
 endmodule

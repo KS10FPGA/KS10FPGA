@@ -58,52 +58,32 @@
 
 `include "crom.vh"
 
-module STACK(clk, rst, clken, crom, addrIN, addrOUT);
+module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
 
    parameter cromWidth = `CROM_WIDTH;
 
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input                  clken;        // Clock Enable
-   input  [0:cromWidth-1] crom;   	// Control ROM Data
-   input  [0:11]          addrIN;       // Calling address for stack
-   output [0:11]          addrOUT;      // Return address from stack
-
-   //
-   // Return Instruction Decode:
-   //
-   //  Note:
-   //   The KS10 logic decodes a 'return dispatch' as "x0xx01"
-   //   but only 001 and 041 are used by the microcode.
-   //
-   // CRA2/E33
-   // CRA2/E34
-   //
-
-   wire ret = ((`cromDISP == 6'o01) ||   // used
-               (`cromDISP == 6'o05) ||   // not used
-               (`cromDISP == 6'o11) ||   // not used
-               (`cromDISP == 6'o15) ||   // not used
-               (`cromDISP == 6'o41) ||   // used
-               (`cromDISP == 6'o45) ||   // not used
-               (`cromDISP == 6'o51) ||   // not used
-               (`cromDISP == 6'o55));    // not used
-
-   //
-   // Call Decode:
-   //
-   
-   wire call = `cromCALL;
+   input         clk;           // Clock
+   input         rst;           // Reset
+   input         clken;         // Clock Enable
+   input         call;          // Push addr onto stakc
+   input         ret;           // Pop addr from stack
+   input  [0:11] addrIN;        // Calling address for stack
+   output [0:11] addrOUT;       // Return address from stack
 
    //
    // Stack Pointer
+   //
+   // Details
    //  The stack pointer is incremented on a 'call' and decremented
-   //  on a 'return' instruction - otherwise the stack pointer does
+   //  on a 'ret' instruction - otherwise the stack pointer does
    //  not change.
    //
-                 
-   reg [0:3] sp;           	// Stack pointer
-   
+   // Trace
+   //  CRA3/E32
+   //
+
+   reg [0:3] sp;
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -119,15 +99,18 @@ module STACK(clk, rst, clken, crom, addrIN, addrOUT);
 
    //
    // Last Address
+   //
+   // Details
    //  This is a simple one-clock delay to get the proper address.
    //
+   // Trace
    //  CRA3/E114
    //  CRA3/E137
    //  CRA3/E161
    //
-   
+
    reg [0:11] lastADDR;
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -135,9 +118,28 @@ module STACK(clk, rst, clken, crom, addrIN, addrOUT);
         else if (clken)
           lastADDR <= addrIN;
      end
-   
+
    //
-   // Stack
+   // Write Pointer
+   //
+   // Details:
+   //  The write pointer is always offset from the stack pointer
+   //  by 1.
+   //
+   // Note:
+   //  This is different than the KS10.  See below.
+   //
+   // Trace:
+   //  CRA3/E16
+   //  CRA3/E17
+   //
+
+   wire [0: 3] wp = sp + 1;     // Write pointer
+
+   //
+   // Dual Ported Stack
+   //
+   // Details
    //  The stack is implemented quite a bit differently than the
    //  KS10 just because the FPGA provides Dual Port RAMs.
    //
@@ -154,10 +156,12 @@ module STACK(clk, rst, clken, crom, addrIN, addrOUT);
    //  incremented and the return address automatically becomes
    //  available at the new top-of-stack.
    //
-   //  This impelementation saves all ths KS10 logic to
-   //  dynamically change RAM address depending if a 'call' or
-   //  'return' instruction is being processed.
+   //  This implementation saves all ths KS10 logic to dynamically
+   //  change RAM address depending if a 'call' or 'return'
+   //  instruction is being processed.  It also allow the stack
+   //  to always update in a single clock cycle.
    //
+   // Trace
    //  CRA3/E70
    //  CRA3/E56
    //  CRA3/149
@@ -165,10 +169,9 @@ module STACK(clk, rst, clken, crom, addrIN, addrOUT);
    //  CRA3/E55
    //  CRA3/E160
    //
-   
+
    integer i;
-   reg  [0:11] stack[0:15];	// Dual Ported Stack Memory
-   wire [0: 3] wp = sp + 1;	// Write pointer
+   reg [0:11] stack[0:15];      // Dual Ported Stack Memory
 
    always @(posedge clk or posedge rst)
      begin
@@ -178,11 +181,9 @@ module STACK(clk, rst, clken, crom, addrIN, addrOUT);
               stack[i] <= 12'b0;
           end
         else if (clken & call)
-          begin
-             stack[wp] <= lastADDR;
-          end
+          stack[wp] <= lastADDR;
      end
 
    assign addrOUT = stack[sp];
 
-endmodule   
+endmodule

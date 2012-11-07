@@ -75,12 +75,8 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, 
-                   pageVALID,
-                   pageWRITEABLE,
-                   pageCACHEABLE,
-                   pageUSER,
-                   pageNUMBER);
+module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
+		   pageFLAGS, pageADDR);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -93,17 +89,14 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    input  [ 0:35]          dp;          	// Data path
    input  [0 :13]          vmaFLAGS;		//
    input  [14:35]          vmaADDR;		// Virtural address
-   output                  pageVALID;		//
-   output                  pageWRITEABLE;	//
-   output                  pageCACHEABLE;	//
-   output                  pageUSER;		//
-   output [16:26]          pageNUMBER;		//
+   output [ 0: 4]          pageFLAGS;		// Page Flags
+   output [16:26]          pageADDR;		// Page Address
 
    //
    // vmaFLAGS
    // 
 
-   wire vmaUSER      = vmaFLAGS[ 0];
+   wire vmaUSER = vmaFLAGS[0];
    
    //
    // VMA Logic
@@ -169,16 +162,13 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    // Page Table Read
    //
    
-   wire [0:15] dout     = (readADDR[0]) ? pageTABLE2[readADDR[1:8]] : pageTABLE1[readADDR[1:8]];
-   
+   wire [0:15] dout = (readADDR[0]) ? pageTABLE2[readADDR[1:8]] : pageTABLE1[readADDR[1:8]];
+
    //
    // Fixup Page RAM data
    //
                
-   assign pageVALID     = dout[0];
-   assign pageWRITEABLE = dout[1];
-   assign pageCACHEABLE = dout[2];
-   assign pageUSER      = dout[3];
-   assign pageNUMBER    = dout[5:15];
+   assign pageFLAGS = dout[0: 4];
+   assign pageADDR  = dout[5:15];
    
 endmodule

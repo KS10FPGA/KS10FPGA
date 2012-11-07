@@ -71,14 +71,30 @@ module DISPATCH(crom, dp, dispDIAG, dispRET, dispJ, dispAREAD,
    output reg [0:11]          dispADDR;         // Dispatch Addr
 
    //
-   // Control ROM Dispatch Address
+   // Microcode aliases
    //
-
+   
    wire       dispEN10 = `cromDISP_EN_10;
    wire       dispEN20 = `cromDISP_EN_20;
    wire       dispEN40 = `cromDISP_EN_40;
    wire [0:1] dispSELH = `cromDISP_SELH;
    wire [0:2] dispSEL  = `cromDISP_SEL;
+
+   //
+   // Control ROM Dispatch Address
+   //
+   // Details
+   //  The micro-machine provides many mechanisms to perform an
+   //  N-way dispatch based on conditions.
+   //
+   //  This supplies the dispatch address when a dispatch is
+   //  required.
+   //
+   // Note:
+   //  Like the skip function, the dispatch function can only
+   //  set bits in the microcode address.  It cannot clear
+   //  bits.
+   //
 
    always @(dispDIAG or dispRET or dispJ or dispAREAD or
             dispMUL  or dispPF or dispNI or dispBYTE or dispEA or

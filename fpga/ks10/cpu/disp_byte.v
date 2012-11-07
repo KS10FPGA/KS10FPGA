@@ -50,8 +50,8 @@
 
 module BYTE_DISP(dp, dispBYTE);
 
-   input      [0:35] dp;              	// Data path
-   output reg [8:11] dispBYTE;   	// Byte dispatch
+   input      [0:35] dp;                // Data path
+   output reg [8:11] dispBYTE;          // Byte dispatch
 
    //
    // BYTE DISP
@@ -72,21 +72,15 @@ module BYTE_DISP(dp, dispBYTE);
      begin
         if (size == 7)
           case (pos)
-            1:
-              dispBYTE = 7;
-            8:
-              dispBYTE = 5;
-            15:
-              dispBYTE = 4;
-            22:
-              dispBYTE = 2;
-            29:
-              dispBYTE = 1;
-            default:
-              dispBYTE = 0;
+            1      : dispBYTE = 7;
+            8      : dispBYTE = 5;
+            15     : dispBYTE = 4;
+            22     : dispBYTE = 2;
+            29     : dispBYTE = 1;
+            default: dispBYTE = 0;
           endcase
         else
           dispBYTE = 0;
      end
-   
+
 endmodule

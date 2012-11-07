@@ -8,7 +8,7 @@
 //! \details
 //!      The original KS10 interval timer was 12 bits and operated
 //!      with a 4.096 MHz clock.  The 12-bit timer generates an
-//!      interrupt exactly every one millisecond.  
+//!      interrupt exactly every one millisecond.
 //!
 //!      This did not work well in practice.  The RDTIME instruction
 //!      needs to convert timer output to time in 10 us increment
@@ -21,8 +21,12 @@
 //!      "Clocks for Dolphin" on bitsavers.org
 //!
 //!      The KS10 would benefit from two timers, one clocked every
-//!      10 microseconds and another clocked every 1 ms, supported by
-//!      updated microcode.
+//!      10 microseconds and another clocked every 1 ms, supported
+//!      by updated microcode.
+//!
+//! \note
+//!      This timer code has be extensively re-written to clean
+//!      up metastaility issues from the independant timer clock.
 //!
 //! \todo
 //!
@@ -63,7 +67,7 @@
 
 `include "useq/crom.vh"
 
-module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
+module TIMER(clk, rst, clken, crom, timerEN, timerIRQ, timerCOUNT);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -72,93 +76,157 @@ module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
    input                  clken;        // Clock Enable
    input  [0:cromWidth-1] crom;         // Control ROM Data
    input                  timerEN;      // Timer Enable
-   output reg             timerINTR;    // Timer Interrupt
-   output reg [24:35]     timerCOUNT;   // Timer output
+   output                 timerIRQ;     // Timer Interrupt
+   output [18:35]         timerCOUNT;   // Timer output
 
    //
    // CLKGEN
-   // The Timer requires a 4.1 MHz clock.  Instead of an oscillator
-   // we will employ a PLL.
+   //
+   // Details:
+   //  The Timer requires a 4.1 MHz clock.  This design uses a PLL
+   //  instead of an oscillator.
+   //
+   // Note:
+   //  Actually, the timerCLK runs at 8.2 MHz instead of 4.1 MHZ
+   //  because of a PLL limitation (can't divide by a large enough
+   //  number).  Therefore there is an extra counter stage in the
+   //  timer.
+   //
+   // Trace:
    //  DPMC/E198
    //
 
-   wire timerclk;
+   wire timerCLK;
 
-   CLKGEN uCLKGEN(.clk(clk),
-                  .rst(rst),
-                  .timerCLK(timerCLK));
+   CLKGEN uCLKGEN
+     (.clk(clk),
+      .rst(rst),
+      .timerCLK(timerCLK)
+      );
+
+   //
+   // Timer Clock Synchronization
+   //
+   // Details:
+   //  Synchronize timerCLK to the CPU clock domain.  I.e., treat
+   //  timerCLK as an asynchronous input to the CPU.  This 'clock'
+   //  input is synchronized by multiple levels of flip-flops to
+   //  mitgate meta-stability issues.
+   //
+   // Note:
+   //  timerINC is asserted for one clock cycle on the falling
+   //  edge of timerCLK.
+   //
+   // Trace:
+   //  The KS10 does this very differently any probably has
+   //  metastability issues.  In fact, the microcode reads the timer
+   //  twice to ensure that it gets the same answer!  See the RDTIME
+   //  entry point in the microcode.
+   //
+
+   reg [0:2] d;
+   reg timerINC;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          begin
+             d[0]     <= 1'b0;
+             d[1]     <= 1'b0;
+             d[2]     <= 1'b0;
+             timerINC <= 1'b0;
+          end
+        else
+          begin
+             d[0]     <= timerCLK;
+             d[1]     <= d[0];
+             d[2]     <= d[1];
+             timerINC <= ~d[2] & d[1];
+          end
+     end
 
    //
    // Timer
-   //  DPMC/E180
-   //  DPMC/E189
-   //  DPMC/E181
+   //
+   // Details:
+   //  This is the one millisecond interval timer.  Most of the
+   //  timer is implemented in microcode...
    //
    // Note:
    //  The timer has the up/down pin wired to the reset signal.
    //  This doesn't make any sense.  I have not implemented this.
    //
-   //  The timerCLK runs at 8.2 MHz instead of 4.1 MHZ because
-   //  of a PLL limitation.  Therefore there is an extra counter
-   //  stage.
+   //  The timer is 13 bits instead of 12 bits because one bit
+   //  has been added to the LSB because the clock frequency is
+   //  8.2 MHz instead of 4.1 MHz.
    //
-   
+   //  This extra bit is used internally by the timer module only.
+   //
+   // Trace:
+   //  DPMC/E180
+   //  DPMC/E181
+   //  DPMC/E189
+   //
+
    reg [0:12] count;
 
-   always @(posedge timerCLK or posedge rst)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           count <= 13'b0;
-        else if (timerEN)
+        else if (timerEN & timerINC)
           count <= count + 1'b1;
      end
 
    //
-   // Change of clock domains
-   //  Note: The counter is synchronized with the main clock.  This is a little
-   //  different than the KS10
+   // Timer Interrupt
    //
-   //
-
-   reg timerLAST;
-   
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          begin
-             timerCOUNT <= 12'b0;
-             timerLAST  <= 1'b0;
-          end
-        else if (clken)
-          begin
-             timerCOUNT <= count[0:9];
-             timerLAST  <= timerCOUNT[24];
-          end
-     end
-             
-   //
-   // Interrupt Enable
-   //  The timerINTR signal is asserted on a timer overflow;
+   // Details
+   //  The timerIRQ signal is asserted on a timer overflow;
    //  i.e., when MSB changes from '1' to '0'.
    //
-   //  Resetting the interrupt has priority over setting the interrupt.
+   // Note:
+   //  Resetting the interrupt has priority over setting the
+   //  interrupt.
    //
-   //  DPMC/E56
+   // Trace:
    //  DPMC/E1
    //  DPMC/E3
+   //  DPMC/E56
    //
-   
+
    wire timerRST = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_CLR1MSEC);
+   reg  timerMSB;
+   reg  intr;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          timerINTR <= 1'b0;
+          begin
+             intr     <= 1'b0;
+             timerMSB <= 1'b0;
+          end
         else if (clken)
-          if (timerRST)
-            timerINTR <= 1'b0;
-          else if (timerEN & ~timerCOUNT[24] & timerLAST)
-            timerINTR <= 1'b1;
+          begin
+             if (timerRST)
+               intr <= 1'b0;
+             else if (timerEN & ~count[0] & timerMSB)
+               intr <= 1'b1;
+             timerMSB <= count[0];
+          end
      end
+
+   //
+   // Fixups
+   //  The KS10 does not use the two LSBS of the timer.
+   //  The upper 6-bits are also not significant.
+   //  The microcode seems to read all of the bits and does
+   //  not perform any masking.
+   //
+
+   assign timerCOUNT[18:23] = 6'b0;
+   assign timerCOUNT[24:33] = count[1:10];
+   assign timerCOUNT[34:35] = 2'b0;
+   assign timerIRQ          = intr;
 
 endmodule

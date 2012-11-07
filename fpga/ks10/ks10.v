@@ -49,7 +49,6 @@ module KS10(clk, reset, pwr_fail, conRXD, conTXD);
   
    // System Interfaces
    input  clk;          // Clock
-   input  rst;          // Reset
    input  pwr_fail;     // Power Fail
    
    // Console Outputs

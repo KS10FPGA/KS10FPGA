@@ -65,14 +65,23 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
    
    parameter cromWidth = `CROM_WIDTH;
 
+   input  [0:cromWidth-1] crom; 	// Control ROM Data
    input  [1:7]           skip40;	// Skip 40 bits
    input  [1:7]           skip20;	// Skip 20 bits
    input  [1:7]           skip10;	// Skip 10 bits
-   input  [0:cromWidth-1] crom; 	// Control ROM Data
    output [0:11]          skipADDR;	// Skip Address
    
    //
    // Control ROM Skip Address
+   //
+   // Details:
+   //  A skip always advances the microsequencer program counter
+   //  from an even address to the next odd address.
+   //
+   // Trace:
+   //  DPEA/E38
+   //  DPEA/E45
+   //  CRA2/E85
    //
    
    reg skip;
@@ -160,6 +169,17 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
              endcase
           end
      end
+
+   //
+   // Skip Address Generation
+   //
+   // Details:
+   //  This generates the 12-bit skip address that is "OR"ed into
+   //  the microsequencer address.
+   //
+   // Trace
+   //  CRA1/E111
+   //  CRA1/E121
    
    assign skipADDR = (skip) ? 12'b000_000_000_001 : 12'b000_000_000_000;
    

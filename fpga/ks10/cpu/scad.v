@@ -46,7 +46,7 @@
 
 `include "useq/crom.vh"
 
-module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
+module SCAD(clk, rst, clken, crom, dp, scad, dispSCAD, scSIGN, feSIGN);
 
    parameter  cromWidth = `CROM_WIDTH;
 
@@ -56,10 +56,22 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
    input      [0:cromWidth-1] crom;     // Control ROM Data
    input      [0:35]          dp;       // Data path
    output reg [0: 9]          scad;     // SCAD
-   output reg [0: 9]          sc;       // Step Count
-   output reg [0: 9]          fe;       // Floating-point exponent
    output     [8:11]          dispSCAD; // SCAD Dispatch
+   output                     scSIGN;	// SC Sign
+   output                     feSIGN;	// FE Sign
 
+   //
+   // Floating-point exponent
+   //
+   
+   reg [0:9] fe;
+
+   //
+   // Step Counter
+   //
+
+   reg [0:9] sc;
+   
    //
    // CROM interface
    //
@@ -73,6 +85,11 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
 
    //
    // SCADA MUX
+   //
+   // Details:
+   //  This mux provides one input to the SCAD ALU.
+   //
+   // Trace:
    //  DPM3/E28
    //  DPM3/E51
    //  DPM3/E67
@@ -111,6 +128,11 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
 
    //
    // SCADB Mux
+   //
+   // Details:
+   //  This mux provides the other input to the SCAD ALU.
+   //
+   // Trace:
    //  DPM3/E36
    //  DPM3/E60
    //  DPM3/E75
@@ -137,44 +159,49 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
      end
 
    //
-   // \brief
-   //      SCAD ALU:
-   //      The 74LS181 ALUs implment 16 functions.  Only 8 functions
-   //      are used.  Therefore this is a bunch of logic to map the
-   //      microcode into the ALU function.
+   // SCAD ALU:
    //
-   // \note
-   //      This is positive logic.  Be sure to use the right table
-   //      in the 74ls181 data sheet.
+   // Details:
+   //  The 74LS181 ALUs implment 16 functions.  Only 8 functions
+   //  are used.  Therefore this is a bunch of logic to map the
+   //  microcode into the ALU function.
    //
-   // \note
-   //      Be sure to notice that the CY# input to the ALU is
-   //      tied to FUN2
+   // Notes:
+   //   This is positive logic.  Be sure to use the right table in
+   //   the 74ls181 data sheet.
    //
-   // \note
-   //      The SCAD Carry Skipper DPM4/E704 is not implemented.
-   //      The FPGA carry logic does not require parallel
-   //      carries for this level of performance.
+   //   Be sure to notice that the CY# input to the ALU is tied to
+   //   FUN2
    //
-   // \details
-   //      The following truth table is derived from the circuit
-   //      diagram.
+   //   The SCAD Carry Skipper DPM4/E704 does not need to be
+   //   implemented.  The FPGA carry logic does not require
+   //   parallel carries for this level of performance.
    //
-   //      +-------------+-+-------------------------+---------------+
-   //      | FUN FUN FUN | | ALU ALU ALU ALU ALU ALU |               |
-   //      |  0   1   2  | |  8   4   2   1   CY  M  |  Descripton   |
-   //      +-------------+-+-------------------------+---------------+
-   //      |  0   0   0  | |  1   1   0   0   1   0  | F = A + A     |
-   //      |  0   0   1  | |  1   1   1   0   0   1  | F = A | B     |
-   //      |  0   1   0  | |  0   1   1   0   1   0  | F = A - B - 1 |
-   //      |  0   1   1  | |  0   1   1   0   0   0  | F = A - B     |
-   //      |  1   0   0  | |  1   0   0   1   1   0  | F = A + B     |
-   //      |  1   0   1  | |  1   0   1   1   0   1  | F = A & B     |
-   //      |  1   1   0  | |  1   1   1   1   1   0  | F = A - 1     |
-   //      |  1   1   1  | |  1   1   1   1   0   0  | F = A         |
-   //      +-------------+-+-------------------------+---------------+
+   //   The following truth table is derived from the circuit
+   //   diagram.
+   //
+   //   +-------------+-+-------------------------+---------------+
+   //   | FUN FUN FUN | | ALU ALU ALU ALU ALU ALU |               |
+   //   |  0   1   2  | |  8   4   2   1   CY  M  |  Descripton   |
+   //   +-------------+-+-------------------------+---------------+
+   //   |  0   0   0  | |  1   1   0   0   1   0  | F = A + A     |
+   //   |  0   0   1  | |  1   1   1   0   0   1  | F = A | B     |
+   //   |  0   1   0  | |  0   1   1   0   1   0  | F = A - B - 1 |
+   //   |  0   1   1  | |  0   1   1   0   0   0  | F = A - B     |
+   //   |  1   0   0  | |  1   0   0   1   1   0  | F = A + B     |
+   //   |  1   0   1  | |  1   0   1   1   0   1  | F = A & B     |
+   //   |  1   1   0  | |  1   1   1   1   1   0  | F = A - 1     |
+   //   |  1   1   1  | |  1   1   1   1   0   0  | F = A         |
+   //   +-------------+-+-------------------------+---------------+
    //
    // Funny enough, this matches the microcode.
+   //
+   // Trace:
+   //  DPM3/E5
+   //  DPM3/E19
+   //  DPM3/E22
+   //  DPM3/E20
+   //  DPM3/E24
    //
 
    always @(fun or scadA or scadB)
@@ -202,6 +229,13 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
    //
    // FE Register
    //
+   // Details:
+   //  This contains the floating-point exponent
+   //
+   // Trace
+   //  DPM4/E44
+   //  DPM4/E52
+   //
 
    always @(posedge clk or posedge rst)
     begin
@@ -214,7 +248,14 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
    //
    // SC Register
    //
-
+   // Details:
+   //  This contains the Step Counter
+   //
+   // Trace
+   //  DPM4/E35
+   //  DPM4/E43
+   //
+ 
    always @(posedge clk or posedge rst)
     begin
         if (rst)
@@ -228,5 +269,12 @@ module SCAD(clk, rst, clken, crom, dp, scad, sc, fe, dispSCAD);
    //
 
    assign dispSCAD = (scad[0]) ? 4'b0010 : 4'b0000;
+
+   //
+   // Signs
+   //
+   
+   assign scSIGN   = sc[0];
+   assign feSIGN   = fe[0];
 
 endmodule
