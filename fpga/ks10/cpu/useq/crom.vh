@@ -47,7 +47,6 @@
 //
 
 `define CROM_WIDTH              108             // CROM Width
-`define CROM_DATA               "crom.bin"      // CROM Data File
 
 //
 // Control ROM Fields
