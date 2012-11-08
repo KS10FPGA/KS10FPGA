@@ -45,240 +45,97 @@
 // Comments are formatted for doxygen
 //
 
-module KS10(clk, reset, pwr_fail, conRXD, conTXD);
-  
+module KS10(clk, reset, pwrFAIL, conRXD, conTXD, cpuHALT);
+
+   //
    // System Interfaces
-   input  clk;          // Clock
-   input  pwr_fail;     // Power Fail
+   //
    
-   // Console Outputs
-   
-   input  conRXD;      // Console RXD
-   output conTXD;      // Console TXD
+   input        clk;          	// Clock
+   input        reset;		// Reset
+   input        pwrFAIL;     	// Power Fail
 
    //
    // Console Outputs
    //
-
-   wire con_request;
-   wire con_grant;
-   wire con_addr_cycle;
-   wire con_data_cycle;
-   wire con_io_cycle;
-   wire con_mem_busy;
-   wire [0:35] con_data;
-
-   //
-   // Arbiter Outputs
-   //
-
-   wire arb_request;
-   wire arb_grant;
-   wire arb_uba_busy;
-   wire arb_mem_busy;
-   wire arb_addr_cycle;
-   wire arb_data_cycle;
-   wire arb_io_cycle;
-   wire [0:35] arb_data;
    
-   //
-   // Memory Interfaces
-   //
+   input        conRXD;      	// Console RXD
+   output       conTXD;      	// Console TXD
+   output       cpuHALT;	// CPU Halt
 
-   wire mem_busy;
-   wire mem_addr_cycle;
-   wire mem_data_cycle;
-   wire mem_io_cycle;
-   wire [0:35] mem_data;
-   
    //
-   // CPU Interaces
+   // CPU Outputs
    //
    
-   wire cpu_request;
-   wire cpu_grant;
-   wire cpu_addr_cycle;
-   wire cpu_data_cycle;
-   wire cpu_io_cycle;
-   wire cpu_clr_busy;
-   wire [1: 7] cpu_pi_lvl;
-   wire [0: 2] cpu_pi_current;
-   wire [0:35] cpu_data;
-   
+   wire         cpuWRITE;	// Memory Write
+   wire		cpuREAD;	// Memory Read
+   wire         cpuCONT;	//
+   wire         cpuHALT;	//
+   wire         cpuRUN;		//
+   wire [14:35] cpuADDR;	// Memory Address
+   wire [ 0:35] cpuDOUT;     	// Memory Data
+  
    //
-   // Unibus Interfaces
-   // 
-
-   wire uba_busy;
-   wire uba_reqest;
-   wire [1: 7] uba_pi_req;
-   wire [0:35] uba_data;
-
+   // Memory Outputs
+   //
+   
+   wire [ 0:35] memDOUT;	// Memory Data Output
+   wire         memACK;		// Memory ACK
+     
    //
    // Reset needs to be asserted for a few clock cycles (min)
    // for the hardware to initialize
    //
    
-   RST uRST(.clk            (clk),
-            .reset          (reset),
-            .rst            (rst)
-            );
-   
-   //
-   // The KS10 Bus Arbiter
-   //
-   
-   ARB uARB(.clk            (clk),
-            .rst            (rst),
-            .pwr_fail       (pwr_fail),
-               
-            //
-            // CON Interface
-            //
-            
-            .con_request    (con_request),
-            .con_grant      (con_grant),
-            .con_addr_cycle (con_addr_cycle),
-            .con_data_cycle (con_data_cycle),
-            .con_io_cycle   (con_io_cycle),
-            .con_data       (con_data),
-            
-            //
-            // CPU Interface
-            //
-            
-            .cpu_request    (cpu_request),
-            .cpu_grant      (cpu_grant),
-            .cpu_addr_cycle (cpu_addr_cycle),
-            .cpu_data_cycle (cpu_data_cycle),
-            .cpu_io_cycle   (cpu_io_cycle),
-            .cpu_data       (cpu_data),
-               
-            //
-            // Unibus Interface
-            //
-            
-            .uba_request    (uba_request),
-            .uba_grant      (uba_grant),
-            .uba_addr_cycle (uba_addr_cycle),
-            .uba_data_cycle (uba_data_cycle),
-            .uba_io_cycle   (uba_io_cycle),
-            .uba_data       (uba_data),
-                                
-            //
-            // Memory Interface
-            //
-            
-            .mem_addr_cycle (mem_addr_cycle),
-            .mem_data_cycle (mem_data_cycle),
-            .mem_io_cycle   (mem_io_cycle),
-            .mem_data       (mem_data),
-
-            //
-            // ARB Output
-            //
-            
-            .arb_addr_cycle (arb_addr_cycle),
-            .arb_data_cycle (arb_data_cycle),
-            .arb_io_cycle   (arb_io_cycle),
-            .arb_mem_busy   (arb_mem_busy),
-            .arb_uba_busy   (arb_uba_busy),
-            .arb_data       (arb_data)
-            );
+   RST uRST
+     (.clk            	(clk),
+      .reset          	(reset),
+      .rst            	(rst)
+      );
 
    //
    // The KS10 CPU
    //
    
-   CPU uCPU(.clk            (clk),
-            .rst            (rst),
-            .pwr_fail       (pwr_fail),
-            .bus_request    (cpu_request),
-            .bus_grant      (cpu_grant),
-            .bus_addr_cycle (cpu_addr_cycle),
-            .bus_data_cycle (cpu_data_cycle),
-            .bus_io_cycle   (cpu_io_cycle),
-            .bus_mem_busy   (mem_busy),
-            .bus_clr_busy   (uba_clr_busy),
-            .bus_pi_req_in  (uba_pi_req),
-            .bus_pi_req_out (cpu_pi_lvl),
-            .bus_pi_current (cpu_pi_current),
-            .bus_data_in    (arb_data_out),
-            .bus_data_out   (cpu_data_out)
-            );
+   CPU uCPU
+     (.clk            	(clk),
+      .rst            	(rst),
+      .clken          	(1'b1),
+      .consTIMEREN	(1'b1),
+      .consSTEP		(1'b0),
+      .consRUN		(1'b1),
+      .consEXEC		(1'b0),
+      .consCONT		(1'b1),
+      .consHALT		(1'b0),
+      .consTRAPEN	(1'b1),
+      .consCACHEEN	(1'b0),
+      .pwrIRQ		(1'b0),
+      .consIRQ		(1'b0),
+      .ubiIRQ		(7'b0),
+      .nxmIRQ		(~memACK),
+      .cpuADDR 		(cpuADDR),
+      .cpuDIN		(memDOUT),
+      .cpuDOUT		(cpuDOUT),
+      .cpuWRITE		(cpuWRITE),
+      .cpuREAD		(cpuREAD),
+      .cpuCONT		(cpuCONT),
+      .cpuHALT		(cpuHALT),
+      .cpuRUN		(cpuRUN)
+      );
 
    //
    // Memory Interface
    //
    
-   MEM uMEM(.clk                (clk),
-            .rst                (rst),
-            .pwr_fail           (pwr_fail),
-            .bus_uba_busy       (arb_uba_busy),
-            .bus_addr_cycle_in  (arb_addr_cycle),
-            .bus_addr_cycle_out (mem_addr_cycle),
-            .bus_data_cycle_in  (arb_data_cycle),
-            .bus_data_cycle_out (mem_data_cycle),
-            .bus_io_cycle_in    (arb_io_cycle),
-            .bus_io_cycle_out   (mem_io_cycle),
-            .bus_mem_busy_in    (arb_mem_busy),
-            .bus_mem_busy_out   (mem_busy),
-            .bus_data_in        (arb_data),
-            .bus_data_out       (mem_data)
-            );
-
-   //
-   // Unibus Interface
-   //  Note: The KS10 has two UNIBUS adapter.  Somehow SIMH only
-   //  implments a single UNIBUS adapter.  We will try the same
-   //  trick.
-   //
-   
-   UBA uUBA(.clk                (clk),
-            .rst                (rst),
-            .pwr_fail           (pwr_fail),
-            .bus_request        (uba_request),
-            .bus_grant          (uba_grant),
-            .bus_uba_busy       (arb_uba_busy),
-            .bus_addr_cycle_in  (arb_addr_cycle),
-            .bus_addr_cycle_out (uba_addr_cycle),
-            .bus_data_cycle_in  (arb_data_cycle),
-            .bus_data_cycle_out (uba_data_cycle),
-            .bus_io_cycle_out   (uba_io_cycle),
-            .bus_mem_busy_in    (arb_mem_busy),
-            .bus_mem_busy_out   (uba_mem_busy),
-            .bus_data_in        (arb_data),
-            .bus_data_out       (uba_data),
-            .bus_pi_current     (cpu_pi_current),
-            .bus_pi_request     (uba_pi_request)
-            );
-
-   //
-   // Console
-   //
-   
-   CONS uCONS(.clk                 (clk),
-              .rst                 (rst),
-              .pwr_fail            (pwr_fail),
-              .bus_request         (con_request),
-              .bus_grant           (con_grant),
-              .bus_uba_busy        (arb_uba_busy),
-              .bus_addr_cycle_in   (arb_addr_cycle),
-              .bus_addr_cycle_out  (con_addr_cycle),
-              .bus_data_cycle_in   (arb_data_cycle), 
-              .bus_data_cycle_out  (con_data_cycle),
-              .bus_io_cycle_in     (arb_io_cycle), 
-              .bus_io_cycle_out    (con_io_cycle),
-              .bus_mem_busy_in     (arb_mem_busy), 
-              .bus_mem_busy_out    (con_mem_busy),
-              .bus_pi_lvl          (cpu_pi_lvl),
-              .bus_pi_current      (cpu_pi_current),
-              .bus_data_in         (arb_data),     
-              .bus_data_out        (con_data),
-              .rxd                 (conRXD),
-              .txd                 (conTXD)
-              );
-   
+   MEM uMEM
+     (.clk              (clk),
+      .clken            (1'b1),
+      .memWRITE		(cpuWRITE),
+      .memADDR		(cpuADDR),
+      .memDIN		(cpuDOUT),
+      .memDOUT		(memDOUT),
+      .memACK		(memACK)
+      );
      
 endmodule
 
