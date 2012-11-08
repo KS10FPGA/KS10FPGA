@@ -249,11 +249,13 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
    // RAMFILE MEMORY
    //
 
-   RAM1Kx36 uRAM1Kx36(.clk(clk),
-                      .clken(clken),
-                      .wr(ramfileWRITE),
-                      .addr(addr),
-                      .din(dbus),
-                      .dout(ramfile));
+   RAM1Kx36 uRAM1Kx36
+     (.clk(clk),
+      .clken(clken),
+      .wr(ramfileWRITE),
+      .addr(addr),
+      .din(dbus),
+      .dout(ramfile)
+      );
 
 endmodule

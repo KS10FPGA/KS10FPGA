@@ -44,5 +44,6 @@
 // Comments are formatted for doxygen
 //
 
-`undef INITRAM
-`undef INITREGS
+`define INITRAM		// Initialize am2901 RAM
+`define INITREGS	// Initialize various registers to zero
+`define INITMEM		// Load code into memory

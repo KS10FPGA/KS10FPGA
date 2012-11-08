@@ -114,6 +114,7 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
 
    wire vmaUSER        = vmaFLAGS[0];           // VMA User
    wire vmaWRTESTCYCLE = vmaFLAGS[4];           // Write Test Cycle
+   wire vmaWRITECYCLE  = vmaFLAGS[5];           // Write Cycle
    wire vmaPHYSICAL    = vmaFLAGS[8];           // VMA Physical
 
    //
@@ -141,6 +142,7 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    wire vmaACREF       = vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
 
    //
+   // Memory Cycles
    //
    // Trace
    //  DPM5/E110
@@ -183,18 +185,35 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
      end
 
    //
+   // FIXME
+
+   wire startCYCLE  = 1'b0;
+   
+   //
    // Memory Cycle
    //
    
-   wire memory_cycle = 1'b0;	// FIXME
-   wire mem_write = 1'b0;	// FIXME
-  
+   reg memCYCLE;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          memCYCLE <= 1'b0;
+        else if (clken & memWAIT)
+          memCYCLE <= startCYCLE;
+     end
+   
    //
    // Page Logic
    //
+   // Trace:
+   //  DPM6/E9
+   //  DPM6/E15
+   //  DPM6/E17
+   //
 
-   wire INT_OR_ERR = ((intCPU & memory_cycle & ~(vmaPHYSICAL | mem_write))  |
-                      (intTIM & memory_cycle & ~(vmaPHYSICAL | mem_write)));
+   wire INT_OR_ERR = ((intCPU & memCYCLE & ~(vmaPHYSICAL | vmaWRITECYCLE))  |
+                      (intTIM & memCYCLE & ~(vmaPHYSICAL | vmaWRITECYCLE)));
 
    //
    // pagingOK

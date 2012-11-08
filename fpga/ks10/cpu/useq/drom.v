@@ -65,45 +65,49 @@ module DROM(clk, rst, clken, dbus, crom, drom);
    output reg [0:dromWidth-1] drom;     // Dispatch ROM Output
 
    //
-   // The DROM in the KS10 is asynchronous.  That won't work in an FPGA
-   // implementation.  Fortunately the DROM is addressed by the Instruction
-   // Register (IR) which is synchronous.  Therefore when we load the IR
-   // we also load the address of the DROM.
+   // Microcode decode
    //
    
    wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
    wire [0:8] addr = dbus[0:8];
 
    //
-   // Dispatch ROM (DROM)
+   // Dispatch ROM initialization
+   //
+   // Note:
+   //  The KS10 microcode is extracted from the listing file by
+   //  a 'simple' AWK script and is included below.
+   //
+
+   reg [0:dromWidth-1] DROM[0:511];
+
+   initial
+     begin
+        `include "drom.dat"
+     end
+
+   //
+   // Dispatch ROM
+   //
+   // Details:
+   //  The DROM in the KS10 is asynchronous.  That won't work in an FPGA
+   //  implementation.  Fortunately the DROM is addressed by the Instruction
+   //  Register (IR) which is loaded synchronously.  Therefore we can
+   //  absorb a copy of the OPCODE portion of IR directly into Dispatch ROM
+   //  addressing.
+   //
+   //  Simply put: when we load the IR, we also syncrhronously lookup the 
+   //  contents of the Dispatch ROM.
+   //
+   // Trace:
    //  DPEA/E98
    //  DPEA/E117
    //  DPEA/E110
    //
 
-   reg [0:dromWidth-1] DROM[0:511];
-   
-   initial
-     begin
-
-        //
-        // The KS10 microcode is extracted from the listing file by
-        // a simple AWK script and inserted below.
-        //
-	
-        `include "drom.dat"
-	
-     end
-
-   //
-   // Registered ROM
-   //
-
    always @(posedge clk)
      begin
-        if (rst)
-          drom <= 36'b0;
-        else if (clken & loadIR)
+        if (clken & loadIR)
           drom <= DROM[addr];
      end
 

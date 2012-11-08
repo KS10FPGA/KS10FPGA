@@ -79,12 +79,12 @@ module PXCT(clk, rst, clken, crom, dp, prevEN);
 
    parameter cromWidth = `CROM_WIDTH;
 
-   input                  clk;          // clock
-   input                  rst;          // reset
-   input                  clken;        // clock enable
-   input  [0:cromWidth-1] crom;         // Control ROM Data
-   input  [0:35]          dp;           // Data Path
-   output reg             prevEN;       // Previous Enable
+   input                  clk;                  // clock
+   input                  rst;                  // reset
+   input                  clken;                // clock enable
+   input  [0:cromWidth-1] crom;                 // Control ROM Data
+   input  [0:35]          dp;                   // Data Path
+   output reg             prevEN;               // Previous Enable
 
    //
    // Microcode fields
@@ -97,13 +97,19 @@ module PXCT(clk, rst, clken, crom, dp, prevEN);
    //
    // PCXT Register
    //
+   // Details:
+   //  The microcode saves the AC field of the XCT instruction into
+   //  this register.  The PXCT state is used in the operation
+   //  that follows.
+   //
+   // Note:
+   //  specPXCTEN and specPXCTOFF can occur simultaneously or
+   //  independantly.
+   //
+   // Trace:
    //  DPMA/E71
    //  DPMA/E78
    //  DPMA/E2
-   //
-   //  Note:
-   //     specPXCTEN and specPXCTOFF can occur simultaneously or
-   //     independantly.
    //
 
    reg        enPXCT;
@@ -114,11 +120,11 @@ module PXCT(clk, rst, clken, crom, dp, prevEN);
         if (rst)
           begin
              `ifdef INITREGS
-               enPXCT   <= 1'b0;                // Enable PXCT
-               pxct     <= 4'b0;                // PXCT Bits
+               enPXCT <= 1'b0;                  // Enable PXCT
+               pxct   <= 4'b0;                  // PXCT Bits
              `else
-               enPXCT   <= 1'bx;                // Enable PXCT
-               pxct     <= 4'bx;                // PXCT Bits
+               enPXCT <= 1'bx;                  // Enable PXCT
+               pxct   <= 4'bx;                  // PXCT Bits
              `endif
           end
         else if (clken & specPXCTEN)
@@ -133,6 +139,21 @@ module PXCT(clk, rst, clken, crom, dp, prevEN);
 
    //
    // PXCT AC Field Decode
+   //
+   // Details:
+   //  The use of previous context (prevEN) is a function of AC
+   //  field of the XCT opcode and the type of memory operation
+   //  being performed.
+   //
+   //  The microcode indexes this device with the type of
+   //  memory operation (memPXCTSEL) and this device examines
+   //  the AC field of the XCT instruction (pxct[9:12]) to
+   //  determine if previous context is applicable to this
+   //  specific memory operation, or not.
+   //
+   //  See additional information in file header.
+   //
+   // Trace:
    //  DPMA/E62
    //  DPMA/E63
    //

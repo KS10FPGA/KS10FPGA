@@ -134,7 +134,7 @@ module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
    //  CRA3/E17
    //
 
-   wire [0: 3] wp = sp + 1;     // Write pointer
+   wire [0: 3] wp = sp + 1;
 
    //
    // Dual Ported Stack
@@ -171,7 +171,7 @@ module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
    //
 
    integer i;
-   reg [0:11] stack[0:15];      // Dual Ported Stack Memory
+   reg [0:11] stack[0:15];
 
    always @(posedge clk or posedge rst)
      begin
@@ -184,6 +184,10 @@ module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
           stack[wp] <= lastADDR;
      end
 
+   //
+   // The stack read is asynchronous
+   //
+   
    assign addrOUT = stack[sp];
 
 endmodule

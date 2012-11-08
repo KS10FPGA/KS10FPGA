@@ -60,7 +60,7 @@ module BUS(clk, rst, clken, crom, dp, vmaFLAGS, vmaADDR, pcFLAGS,
    input      [ 0:13]         vmaFLAGS;		// VMA Flags
    input      [14:35]         vmaADDR;  	// Virtual Memory Address
    input      [0:35]          pcFLAGS;         	// PC Flags in Left Half
- 	input      [0:35]          cpu_bus_in;
+   input [0:35]               cpu_bus_in;	//
    output reg [0:35]          cpu_bus_out;      // KS10 Bus Out
 
    //

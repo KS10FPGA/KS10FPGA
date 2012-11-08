@@ -50,65 +50,65 @@
 module CPU(clk, rst, clken,
            consTIMEREN,
            consSTEP, consRUN, consEXEC, consCONT, consHALT, consTRAPEN, consCACHEEN,
-           pwrIRQ, consIRQ, ubiIRQ, nxmIRQ,
-
-	   
-           bus_data_in, bus_data_out,
-           bus_pi_req_out, bus_pi_current,
-           cpuCONT, cpuHALT, cpuRUN,
-           crom, dp, pageADDR);
-
+           cpuADDR, pwrIRQ, consIRQ, ubiIRQ, nxmIRQ,
+           cpuDIN, cpuDOUT, cpuWRITE, cpuREAD,
+           cpuCONT, cpuHALT, cpuRUN);
+   
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
 
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input                  clken;        // Clock enable
-   input                  consTIMEREN;  // Timer Enable
-   input                  consSTEP;     // Single Step
-   input                  consRUN;      // Run
-   input                  consEXEC;     // Execute
-   input                  consHALT;     // HALT
-   input                  consCONT;     // Continue
-   input                  consTRAPEN;   // Enable Traps
-   input                  consCACHEEN;  // Enable Cache
-   input                  pwrIRQ;       // Power Fail Interrupt Request
-   input                  consIRQ;      // Console Interrupt Request
-   input  [1: 7]          ubiIRQ;	// Unibus Interrupt Request
-   input                  nxmIRQ;	// Memory (non-existant) Request
+   input          clk;          // Clock
+   input          rst;          // Reset
+   input          clken;        // Clock enable
+   input          consTIMEREN;  // Timer Enable
+   input          consSTEP;     // Single Step
+   input          consRUN;      // Run
+   input          consEXEC;     // Execute
+   input          consHALT;     // HALT
+   input          consCONT;     // Continue
+   input          consTRAPEN;   // Enable Traps
+   input          consCACHEEN;  // Enable Cache
+   input          pwrIRQ;       // Power Fail Interrupt Request
+   input          consIRQ;      // Console Interrupt Request
+   input  [ 1: 7] ubiIRQ;       // Unibus Interrupt Request
+   input          nxmIRQ;       // Memory (non-existant) Request
+   input  [ 0:35] cpuDIN;       //
+   output [14:35] cpuADDR;      //
+   output [ 0:35] cpuDOUT;      //
+   output         cpuWRITE;     //
+   output         cpuREAD;      //
+   output         cpuCONT;      //
+   output         cpuHALT;      //
+   output         cpuRUN;       //
 
-   output [1: 7]          bus_pi_req_out;
-   output [0: 2]          bus_pi_current;
-   input  [0:35]          bus_data_in;
-   output [0:35]          bus_data_out;
-   output                 cpuCONT;
-   output                 cpuHALT;
-   output                 cpuRUN;
-
-   output [0:cromWidth-1] crom;         // Control ROM
-   output [0:35]          dp;           // ALU Output Bus
-   output [16:26]         pageADDR;
-
+   //
+   // FIXME
+   //
+   
+   wire [1: 7] bus_pi_req_out;  // FIXME
+   wire [0: 2] bus_pi_current;  // FIXME
+   
    //
    // ROMS
    //
 
-   wire [0:dromWidth-1] drom;           		// Dispatch ROM
+   wire [0:cromWidth-1] crom;                           // Control ROM
+   wire [0:dromWidth-1] drom;                           // Dispatch ROM
 
    //
    // ALU
    //
 
-   wire aluLZero;          				// ALU left-half is zero
-   wire aluRZero;					// ALU right-half is zero
-   wire aluLSign;					// ALU left-half sign
-   wire aluRSign;					// ALU right-half sign
-   wire aluCRY0;					// ALU carry into bit 0
-   wire aluCRY1;					// ALU carry into bit 1
-   wire aluCRY2;					// ALU carry into bit 2
-   wire aluQR37;					// Q Register LSB
-   wire aluZERO = aluLZero & aluRZero;          	// ALU (both halves) is zero
-   wire txxx = (aluZERO != `dromTXXXEN);		// Test Instruction Results
+   wire aluLZero;                                       // ALU left-half is zero
+   wire aluRZero;                                       // ALU right-half is zero
+   wire aluLSign;                                       // ALU left-half sign
+   wire aluRSign;                                       // ALU right-half sign
+   wire aluCRY0;                                        // ALU carry into bit 0
+   wire aluCRY1;                                        // ALU carry into bit 1
+   wire aluCRY2;                                        // ALU carry into bit 2
+   wire aluQR37;                                        // Q Register LSB
+   wire aluZERO = aluLZero & aluRZero;                  // ALU (both halves) is zero
+   wire txxx = (aluZERO != `dromTXXXEN);                // Test Instruction Results
 
    //
    // flags
@@ -117,10 +117,10 @@ module CPU(clk, rst, clken,
    wire apr_int_req;
    wire mem_wait;
    wire stop_main_memory;
-   wire memory_cycle            = 1'b0;         	// FIXME
-   wire cpuIRQ;						// Extenal Interrupt
+   wire memory_cycle            = 1'b0;                 // FIXME
+   wire cpuIRQ;                                         // Extenal Interrupt
    wire iolatch;
-   wire forceRAMFILE            = 1'b0;         	// FIXME
+   wire forceRAMFILE            = 1'b0;                 // FIXME
    wire JRST0;
    wire indirect;
 
@@ -134,58 +134,58 @@ module CPU(clk, rst, clken,
    // AC Blocks
    //
 
-   wire [ 0: 5] acBLOCK;                        	// AC Block
-   wire [ 0: 2] currBLOCK = acBLOCK[0:2];       	//  Current AC Block
-   wire [ 0: 2] prevBLOCK = acBLOCK[3:5];       	//  Previous AC Block
+   wire [ 0: 5] acBLOCK;                                // AC Block
+   wire [ 0: 2] currBLOCK = acBLOCK[0:2];               //  Current AC Block
+   wire [ 0: 2] prevBLOCK = acBLOCK[3:5];               //  Previous AC Block
 
    //
    // PC Flags
    //
 
-   wire [ 0:17] pcFLAGS;       				// PC Flags
-   wire         flagAOV        = pcFLAGS[ 0];       	//  Arithmetic overflow
-   wire         flagCRY0       = pcFLAGS[ 1];       	//  Carry into bit 0
-   wire         flagCRY1       = pcFLAGS[ 2];       	//  Carry into bit 1
-   wire         flagFOV        = pcFLAGS[ 3];       	//  Floating-poing overflow
-   wire         flagFPD        = pcFLAGS[ 4];       	//  First Part Done
-   wire         flagUSER       = pcFLAGS[ 5];       	//  User Mode
-   wire         flagUSERIO     = pcFLAGS[ 6];       	//  User mode IO instructions
-   wire         flagPCU        = pcFLAGS[ 6];       	//  Previous Context User
-   wire         flagTRAP2      = pcFLAGS[ 9];       	//  Trap2
-   wire         flagTRAP1      = pcFLAGS[10];       	//  Trap1
-   wire         flagFXU        = pcFLAGS[11];       	//  Floating-point underflow
-   wire         flagNODIV      = pcFLAGS[12];       	//  Divide failure
+   wire [ 0:17] pcFLAGS;                                // PC Flags
+   wire         flagAOV        = pcFLAGS[ 0];           //  Arithmetic overflow
+   wire         flagCRY0       = pcFLAGS[ 1];           //  Carry into bit 0
+   wire         flagCRY1       = pcFLAGS[ 2];           //  Carry into bit 1
+   wire         flagFOV        = pcFLAGS[ 3];           //  Floating-poing overflow
+   wire         flagFPD        = pcFLAGS[ 4];           //  First Part Done
+   wire         flagUSER       = pcFLAGS[ 5];           //  User Mode
+   wire         flagUSERIO     = pcFLAGS[ 6];           //  User mode IO instructions
+   wire         flagPCU        = pcFLAGS[ 6];           //  Previous Context User
+   wire         flagTRAP2      = pcFLAGS[ 9];           //  Trap2
+   wire         flagTRAP1      = pcFLAGS[10];           //  Trap1
+   wire         flagFXU        = pcFLAGS[11];           //  Floating-point underflow
+   wire         flagNODIV      = pcFLAGS[12];           //  Divide failure
 
    //
    // APR Flags
    //
 
-   wire [22:35] aprFLAGS;       			// Arithmetic Processor Flags
-   wire         flagTRAPEN     = aprFLAGS[22];       	//  Traps are enabled
-   wire         flagPAGEEN     = aprFLAGS[23];       	//  Paging is enabled
-   wire         flagPWR        = aprFLAGS[26];       	//  Power fail
-   wire         flagNXM        = aprFLAGS[27];       	//  Non existent memory
-   wire         flagBADDATA    = aprFLAGS[28];       	//  Bad memory data (not implemented)
-   wire         flagCORDATA    = aprFLAGS[29];       	//  Corrected memory data (not implemented)
-   wire         flagCONS       = aprFLAGS[31];       	//  Console interrupt
-   wire         flagINTREQ     = aprFLAGS[32];       	//  Interrupt Request
+   wire [22:35] aprFLAGS;                               // Arithmetic Processor Flags
+   wire         flagTRAPEN     = aprFLAGS[22];          //  Traps are enabled
+   wire         flagPAGEEN     = aprFLAGS[23];          //  Paging is enabled
+   wire         flagPWR        = aprFLAGS[26];          //  Power fail
+   wire         flagNXM        = aprFLAGS[27];          //  Non existent memory
+   wire         flagBADDATA    = aprFLAGS[28];          //  Bad memory data (not implemented)
+   wire         flagCORDATA    = aprFLAGS[29];          //  Corrected memory data (not implemented)
+   wire         flagCONS       = aprFLAGS[31];          //  Console interrupt
+   wire         flagINTREQ     = aprFLAGS[32];          //  Interrupt Request
 
    //
    // A Registers
    //
 
-   wire [14:35] vmaADDR;          			// VMA Address
-   wire [ 0:13] vmaFLAGS;          			// VMA Flags
+   wire [14:35] vmaADDR;                                // VMA Address
+   wire [ 0:13] vmaFLAGS;                               // VMA Flags
    wire         vmaUSER        = vmaFLAGS[ 0];          //  1 = Use Mode
    wire         vmaEXEC        = vmaFLAGS[ 1];          //  1 = Exec Mode
    wire         vmaFETCH       = vmaFLAGS[ 2];          //  1 = Instruction fetch
    wire         vmaREADCYCLE   = vmaFLAGS[ 3];          //  1 = Read Cycle (IO or Memory)
-   wire         vmaWRTESTCYCLE = vmaFLAGS[ 4];		//  1 = Perform write test for page fail
+   wire         vmaWRTESTCYCLE = vmaFLAGS[ 4];          //  1 = Perform write test for page fail
    wire         vmaWRITECYCLE  = vmaFLAGS[ 5];          //  1 = Write Cycle (IO or Memory)
    wire         vmaIORDWR      = vmaFLAGS[ 6];          //
    wire         vmaCACHEIHN    = vmaFLAGS[ 7];          //  1 = Cache is inhibited
-   wire         vmaPHYSICAL    = vmaFLAGS[ 8];		//  1 = Physical reference
-   wire         vmaPREVIOUS    = vmaFLAGS[ 9];          // 
+   wire         vmaPHYSICAL    = vmaFLAGS[ 8];          //  1 = Physical reference
+   wire         vmaPREVIOUS    = vmaFLAGS[ 9];          //  1 = VMA Previous Context
    wire         vmaIOCYCLE     = vmaFLAGS[10];          //  1 = IO Cycle, 0 = Memory Cycle
    wire         vmaWRUCYCLE    = vmaFLAGS[11];          //  1 = Read interrupt controller number
    wire         vmaVECTORCYCLE = vmaFLAGS[12];          //  1 = Read interrupt vector
@@ -195,34 +195,34 @@ module CPU(clk, rst, clken,
    // Paging
    //
 
-   wire         pageFAIL       = 1'b0;         		// Page Fail FIXME
-// wire [16:26] pageADDR;
-   wire [ 0: 4]	pageFLAGS;				// Page Flags
-   wire         pageVALID      = pageFLAGS[0];		//  Page is valid
-   wire         pageWRITEABLE  = pageFLAGS[1];		//  Page is writeable
-   wire         pageCACHEABLE  = pageFLAGS[2];		//  Page is cacheable
-   wire         pageUSER       = pageFLAGS[3];		//  Page is user mode
-   wire         pagePARITY     = pageFLAGS[4];		//  Not implemented
+   wire         pageFAIL       = 1'b0;                  // Page Fail FIXME
+   wire [16:26] pageADDR;                               // Page Address
+   wire [ 0: 4] pageFLAGS;                              // Page Flags
+   wire         pageVALID      = pageFLAGS[0];          //  Page is valid
+   wire         pageWRITEABLE  = pageFLAGS[1];          //  Page is writeable
+   wire         pageCACHEABLE  = pageFLAGS[2];          //  Page is cacheable
+   wire         pageUSER       = pageFLAGS[3];          //  Page is user mode
+   wire         pagePARITY     = pageFLAGS[4];          //  Not implemented
 
    //
    // Timer
    //
 
-   wire         timerIRQ;	             		// Timer Interrupt
-   wire [18:35] timerCOUNT;             		// Millisecond timer
+   wire         timerIRQ;                               // Timer Interrupt
+   wire [18:35] timerCOUNT;                             // Millisecond timer
 
    //
    // Instruction Register IR
    //
 
-   wire [ 0:17] regIR;            			// Instruction Register (IR)
-   wire [ 0: 8] regIR_OPCODE = regIR[ 0: 8];	        //  IR opcode Field
-   wire [ 9:12] regIR_AC     = regIR[ 9:12];	        //  IR AC field
-   wire         regIR_I      = regIR[13];	        //  IR I field
-   wire [14:17] regIR_XR     = regIR[14:17];	        //  IR XR field
-   wire         regACZERO    = (regIR_AC == 4'b0000);	//  AC is zero
-   wire         regXRZERO    = (regIR_XR == 4'b0000);	//  XR is zero
-   wire         xrPREV;					//  XR is previous
+   wire [ 0:17] regIR;                                  // Instruction Register (IR)
+   wire [ 0: 8] regIR_OPCODE = regIR[ 0: 8];            //  IR opcode Field
+   wire [ 9:12] regIR_AC     = regIR[ 9:12];            //  IR AC field
+   wire         regIR_I      = regIR[13];               //  IR I field
+   wire [14:17] regIR_XR     = regIR[14:17];            //  IR XR field
+   wire         regACZERO    = (regIR_AC == 4'b0000);   //  AC is zero
+   wire         regXRZERO    = (regIR_XR == 4'b0000);   //  XR is zero
+   wire         xrPREV;                                 //  XR is previous
 
    //
    // PXCT
@@ -234,20 +234,20 @@ module CPU(clk, rst, clken,
    // Busses
    //
 
-   wire [ 0:35] dp;                     		// ALU output bus
-   wire [ 0:35] dbus;                    		//
-   wire [ 0:35] dbm;                     		//
-   wire [ 0:35] mb = 36'b0;              		// FIXME Memory Buffer
-   wire [ 0:35] ramfile;                 		// RAMFILE output
+   wire [ 0:35] dp;                                     // ALU output bus
+   wire [ 0:35] dbus;                                   //
+   wire [ 0:35] dbm;                                    //
+   wire [ 0:35] mb;                                     // Memory Buffer
+   wire [ 0:35] ramfile;                                // RAMFILE output
 
    //
    // SCAD, SC, and FE
    //
 
    wire [ 0: 9] scad;
-   wire         scadSIGN = scad[0];			// SCAD Sign
-   wire         scSIGN;					// Step Count Sign
-   wire         feSIGN;					// Floating-point exponent Sign
+   wire         scadSIGN = scad[0];                     // SCAD Sign
+   wire         scSIGN;                                 // Step Count Sign
+   wire         feSIGN;                                 // Floating-point exponent Sign
 
    //
    // Traps
@@ -260,13 +260,13 @@ module CPU(clk, rst, clken,
    //
 
    wire [ 8:11] dispNI;                                         // Next Instruction dispatch
-   wire [ 8:11] dispPF;                             		// Page Fail dispatch
+   wire [ 8:11] dispPF;                                         // Page Fail dispatch
    wire [ 8:11] dispBYTE;                                       // Byte dispatch
    wire [ 8:11] dispSCAD;                                       // SCAD dispatch
    wire [ 8:11] dispMUL  = {1'b0, aluQR37, 1'b0, 1'b0};         // Multiply dispatch
    wire [ 8:11] dispNORM = {aluZERO, dp[8:9], aluLSign};        // Normalize dispatch
    wire [ 8:11] dispEA   = {~JRST0, regIR_I, regXRZERO, 1'b0};  // EA Dispatch
-   wire [ 0:11] dispDIAG = 12'b0;                  		// Diagnostic Dispatch
+   wire [ 0:11] dispDIAG = 12'b0;                               // Diagnostic Dispatch
 
    //
    // Skips
@@ -448,8 +448,8 @@ module CPU(clk, rst, clken,
       .cpuHALT(cpuHALT)
       );
 
-   //
-   //
+   // 
+   // IO Latch
    //
 
    IOLATCH uIOLATCH
@@ -605,7 +605,7 @@ module CPU(clk, rst, clken,
       );
 
    //
-   //
+   // SCAD
    //
 
    SCAD uSCAD
@@ -670,4 +670,11 @@ module CPU(clk, rst, clken,
       .vmaADDR(vmaADDR)
       );
 
+
+   assign cpuADDR  = vmaADDR;
+   assign mb       = cpuDIN;
+   assign cpuREAD  = vmaREADCYCLE;
+   assign cpuWRITE = vmaWRITECYCLE;
+   assign cpuDOUT  = dp;
+   
 endmodule

@@ -153,7 +153,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
           if (dromACDISP)
             dispAREAD = {dromJ[0:7], regIR_AC};         // 1400 to 1777  (4 upper address were hardwired)
           else
-            dispAREAD = dromJ;                          // 1400 to 1777  (4 upper address were hardwired)
+            dispAREAD = {dromJ[0:7], dromJ[8:11]};      // 1400 to 1777  (4 upper address were hardwired)
         else
           dispAREAD = {8'b00000010, dromA};             // 0040 to 0057
      end
