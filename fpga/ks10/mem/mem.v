@@ -44,29 +44,76 @@
 // Comments are formatted for doxygen
 //
 
-module MEM(clk, rst, pwr_fail, bus_uba_busy,
-           bus_addr_cycle_in, bus_addr_cycle_out,
-           bus_data_cycle_in, bus_data_cycle_out,
-           bus_io_cycle_in,   bus_io_cycle_out,
-           bus_mem_busy_in,   bus_mem_busy_out,
-           bus_data_in,       bus_data_out);
-   
-   input         clk;        		// Clock
-   input         rst;          		// Reset
-   input         pwr_fail;		//
-   input         bus_uba_busy;		// 
-   input         bus_addr_cycle_in;	//
-   output        bus_addr_cycle_out;	//
-   input         bus_data_cycle_in;	//
-   output        bus_data_cycle_out;	//
-   input         bus_io_cycle_in;	//
-   output        bus_io_cycle_out;	//
-   input         bus_mem_busy_in;	//
-   output        bus_mem_busy_out;	// Never Asserted
-   input  [0:35] bus_data_in;		//
-   output [0:35] bus_data_out;		//
+module MEM(clk, clken, memWRITE, memADDR, memDIN, memDOUT, memACK);
 
-   assign bus_mem_busy_out = 1'b0;
-   
-   
+   input          clk;          // Clock
+   input          clken;        // Clock enable
+   input          memWRITE;     // Write
+   input  [14:35] memADDR;      // Address
+   input  [ 0:35] memDIN;       // Data in
+   output [ 0:35] memDOUT;      // Data out
+   output         memACK;       // Memory ACK
+
+   //
+   // Address bus resize
+   //
+   // Note
+   //  Only 32K implemented.
+   //
+
+   wire [0:14] addr = memADDR[21:35];
+
+   //
+   // PDP10 Memory Initialization
+   //
+   // Note:
+   //  We initialize the PDP10 memory with the diagnostic
+   //  code.  This saves having to figure out how to load
+   //  the code into memory by some other means.
+   //
+   //  Object code is extracted from the listing file by a
+   //  'simple' AWK script and is included below.
+   //
+
+   reg [0:35] RAM [0:32767];
+   initial
+     begin
+       `ifdef INITMEM
+         `include "dskaa.dat"
+       `endif
+     end
+
+   //
+   // Synchronous RAM
+   //
+   // Details
+   //  This is PDP10 memory.
+   //
+   // Note:
+   //  Only 32K is implemented.  This is sufficient to run the
+   //  MAINDEC diagnostics.
+   //
+   // FIXME
+   //  This is temporary and won't synthesize well.  Notice the clock
+   //  polarity.
+   //
+
+   always @(negedge clk)
+     begin
+        if (clken)
+          begin
+             if (memWRITE && (memADDR != 0))
+               RAM[memADDR] <= memDIN;
+             rd_addr <= memADDR;
+          end
+     end
+
+   assign memDOUT = RAM[rd_addr];
+
+   //
+   // ACK the memory if implemented.x
+   //
+
+   assign memACK = memADDR < 32768;
+
 endmodule
