@@ -126,8 +126,16 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
 
    //
    // AC Reference
+   //
+   // Details:
    //  True when addressing lowest 16 addresses using
-   //  physical addressing.
+   //  physical addressing.  References to the ACs
+   //  are always physical.
+   //
+   // Trace
+   //  DPM4/E160
+   //  DPM4/E168
+   //  DPM4/E191
    //
 
    wire vmaACREF = vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
@@ -140,15 +148,23 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
    wire [0:2] prevBLOCK = acBLOCK[3:5];         // Previous AC Block
 
    //
-   // This was a 74LS181 ALU in the KS10.  Only the part of
-   // that device that is used is implemented.  This adder is
-   // controlled by one of the overloaded usages of the CROM
-   // number field.   See cromACALU_FUN and cromACALU_NUM.
-   // I'm not exactly certain why this is controlled by the
-   // DBM instead of directly by the microcode.  It is
-   // probably just because of the way the boards were
-   // partitioned.
+   // RAMFILE Address Index
    //
+   // Details
+   //  Access to the RAMFILE ACs are selected using the
+   //  AC field of the instruction.
+   //
+   // Notes
+   //  This was a 74LS181 ALU in the KS10.  Only the part of
+   //  that device that is used is implemented.  This adder is
+   //  controlled by one of the overloaded usages of the CROM
+   //  number field.   See cromACALU_FUN and cromACALU_NUM.
+   //  I'm not exactly certain why this is controlled by the
+   //  DBM instead of directly by the microcode.  It is
+   //  probably just because of the way the boards were
+   //  partitioned.
+   //
+   // Trace
    //  DPE6/E79
    //
 
@@ -158,6 +174,25 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
 
    //
    // Address Mux
+   //
+   // Details
+   //  This mux provide the address for various RAMFILE
+   //  operations.   Operations can be:
+   //
+   //  1.  Access to an AC in the current context using
+   //      the AC field of the instruction.
+   //  2.  Access to an AC in the current context using
+   //      the XR field of the instruction.
+   //  3.  Access to an AC in the previous context using
+   //      the XR field of the instruction.
+   //  4.  Access to an AC in the current context using
+   //      a plain address.
+   //  5.  Access to an AC in the previous context using
+   //      a plain address.
+   //  6.  Access to RAMFILE storage.
+   //  7.  Access to the cache
+   //
+   // Trace
    //  DPE6/E3
    //  DPE6/E6
    //  DPE6/E7
@@ -223,6 +258,11 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
 
    //
    // RAMFILE WRITE
+   //
+   // Todo
+   //  FIXME: This is a stub.
+   //
+   // Trace
    //  DPE5/E119
    //  DPMA/E22
    //  DPMA/E54

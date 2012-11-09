@@ -58,16 +58,24 @@ module DBUS(crom, forceRAMFILE, pcFLAGS, dp, ramfile, dbm, dbus);
    input      [0:35]          dbm;              // Databus Mux
    output reg [0:35]          dbus;             // DBus
 
+   //
+   // Microcode Decode
+   //
+   
    wire [0:1] cromDBUS_SEL = `cromDBUS_SEL;
 
    //
    // Force RAMFILE
+   //
+   // Trace
    //  DPE3/E70 (force ramfile)
    //
 
    wire [0:1] dbusSEL = cromDBUS_SEL;
    
 /*
+   FIXME: forceRAMFILE is broken and is stubbed out
+ 
    reg [0:1] dbusSEL;
 
    always @(cromDBUS_SEL or forceRAMFILE)
@@ -81,6 +89,11 @@ module DBUS(crom, forceRAMFILE, pcFLAGS, dp, ramfile, dbm, dbus);
      
    //
    // DBM
+   //
+   // Details
+   //  This is a simple 4-way 36-bit multiplexer.
+   //
+   // Trace
    //  DPE3/E34
    //  DPE3/E72
    //  DPE3/E35

@@ -68,7 +68,11 @@ module INTR(clk, rst, clken, crom, dp, ubaIRQ,  pi_new, pi_current, cpuIRQ, pi_o
    
    //
    // Bus Request In
+   //
+   // Details
    //  This synchronizes bus-based interrupt requests
+   //
+   // Trace
    //  DPEB/E167
    //
 
@@ -83,6 +87,8 @@ module INTR(clk, rst, clken, crom, dp, ubaIRQ,  pi_new, pi_current, cpuIRQ, pi_o
 
    //
    // Datapath Interface
+   //
+   // Trace
    //  DPEB/E175
    //  DPEB/E126
    //  DPEB/E140
@@ -113,6 +119,8 @@ module INTR(clk, rst, clken, crom, dp, ubaIRQ,  pi_new, pi_current, cpuIRQ, pi_o
 
    //
    // Interrupt enable logic
+   //
+   // Trace
    //  DPEB/E174
    //  DPEB/E168
    //  DPEB/E154
@@ -123,6 +131,8 @@ module INTR(clk, rst, clken, crom, dp, ubaIRQ,  pi_new, pi_current, cpuIRQ, pi_o
 
    //
    // Interrupt Request Priority Encoder
+   //
+   // Trace
    //  DPEB/E147
    //
 
@@ -137,6 +147,8 @@ module INTR(clk, rst, clken, crom, dp, ubaIRQ,  pi_new, pi_current, cpuIRQ, pi_o
                             
    //
    // Current Interrupt Priority Encoder
+   //
+   // Trace
    //  DPEB/E134
    //
 
@@ -151,6 +163,8 @@ module INTR(clk, rst, clken, crom, dp, ubaIRQ,  pi_new, pi_current, cpuIRQ, pi_o
 
    //
    // Interrupt Request
+   //
+   // Trace
    //  DPEB/E148
    //  DPEB/E167
    //

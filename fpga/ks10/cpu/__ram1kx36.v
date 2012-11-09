@@ -56,13 +56,14 @@ module RAM1Kx36(clk, clken, wr, addr, din, dout);
    output [0:35] dout;          // Data out
 
    //
-   // RAM 1Kx36
+   // RAM 1kx36
    //
    // FIXME:
    //  The fall edge clock on the RAM is a hack but it is good enough
    //  for simulation and until I figure out what to do here.
    //  It will create synthesis issues.
    //
+   // Trace
    //  DPE7/E906, DPE7/E907, DPE7/E908, DPE7/E909, DPE7/E910, DPE7/E911
    //  DPE7/E912, DPE7/E913, DPE7/E914, DPE7/E915, DPE7/E916, DPE7/E917
    //  DPE7/E918, DPE7/E919, DPE7/E920, DPE7/E921, DPE7/E922, DPE7/E923

@@ -58,6 +58,8 @@ module IOLATCH(clk, rst, clken, crom, iolatch);
 
    //
    // IO Latch
+   //
+   // Trace
    //  DPEA/E99
    //  DPEA/E93
    //

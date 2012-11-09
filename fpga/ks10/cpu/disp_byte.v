@@ -55,10 +55,13 @@ module BYTE_DISP(dp, dispBYTE);
 
    //
    // BYTE DISP
+   //
+   // Details
    //  The first 6 bits in DP are the position, the second 6 bits
    //  in DP are the size.  This is derived from the byte pointer
    //  format of the PDP10.
    //
+   // Trace
    //  DPE3/E77
    //  DPE3/E16
    //  DPE3/E10

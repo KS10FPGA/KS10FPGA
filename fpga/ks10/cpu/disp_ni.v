@@ -83,7 +83,9 @@ module NI_DISP (aprFLAGS, pcFLAGS, consTRAPEN, cpuRUN, memory_cycle, dispNI);
      end
 
    //
-   // NICOND
+   // NICOND Dispatch
+   //
+   // Trace
    //  CRA2/E147
    //
 

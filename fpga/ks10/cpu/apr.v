@@ -73,6 +73,8 @@ module APR(clk, rst, clken, crom, dp,
 
    //
    // APR Flag Register 24
+   //
+   // Trace
    //  DPMB/E814
    //
 
@@ -87,6 +89,8 @@ module APR(clk, rst, clken, crom, dp,
 
    //
    // APR Flag Register 25
+   //
+   // Trace
    //  DPMB/E814
    //
 
@@ -105,6 +109,8 @@ module APR(clk, rst, clken, crom, dp,
 
    //
    // APR Flag Register 26
+   //
+   // Trace
    //  DPMB/E815
    //
 
@@ -126,6 +132,8 @@ module APR(clk, rst, clken, crom, dp,
 
    //
    // APR Flag Register 27
+   //
+   // Trace
    //  DPMB/E815
    //
 
@@ -147,6 +155,8 @@ module APR(clk, rst, clken, crom, dp,
 
    //
    // APR Flag Register 28
+   //
+   // Trace
    //  DPMB/E914
    //  DPMB/E915
    //
@@ -166,6 +176,8 @@ module APR(clk, rst, clken, crom, dp,
 
    //
    // APR Flag Register 29
+   //
+   // Trace
    //  DPMB/E914
    //
 
@@ -184,6 +196,8 @@ module APR(clk, rst, clken, crom, dp,
 
    //
    // APR Flag Register 30
+   //
+   // Trace
    //  DPMB/E915
    //
 
@@ -202,6 +216,8 @@ module APR(clk, rst, clken, crom, dp,
 
    //
    // APR Flag Register 31
+   //
+   // Trace
    //  DPMB/E915
    //
 
@@ -223,11 +239,12 @@ module APR(clk, rst, clken, crom, dp,
 
    //
    // APR Enable Register
+   //
+   // Trace
    //  DPMB/E816
    //  DPMB/E916
    //  DPEB/E173
    //
-
 
    reg         flagTRAPEN;
    reg         flagPAGEEN;
@@ -283,6 +300,8 @@ module APR(clk, rst, clken, crom, dp,
 
    //
    // PI Request Output Decoder
+   //
+   // Trace
    //  DPEB/E166
    //
 

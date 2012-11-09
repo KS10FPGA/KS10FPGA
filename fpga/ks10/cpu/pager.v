@@ -114,6 +114,8 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
  
    //
    // Page memory
+   //
+   // Notes
    //  This has been converted to synchronous memory.  
    //  The page table address is set when the vma address is set
    //
@@ -122,19 +124,17 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    //
    //  Page parity is not implemented.
    //
-
-   //
-   // Even Memory
-   //  DPM6/E130
-   //  DPM6/E154
-   //  DPM6/E162
-   //  DPM6/E184
-   //
-   // Odd Memory
-   //  DPM6/E138
-   //  DPM6/E146
-   //  DPM6/E176
-   //  DPM6/E192
+   // Trace
+   //  Even Memory
+   //   DPM6/E130
+   //   DPM6/E154
+   //   DPM6/E162
+   //   DPM6/E184
+   //  Odd Memory
+   //   DPM6/E138
+   //   DPM6/E146
+   //   DPM6/E176
+   //   DPM6/E192
    //
    
    reg  [0: 8] readADDR;

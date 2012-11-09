@@ -114,6 +114,9 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    reg flagNODIV;                               // Divide failure
 
    //
+   // DBM Inputs
+   //
+   // Details:
    //  In this mode, the Control ROM NUMBER field is multiplexed
    //  onto the dbm bus.  The definiton of these bits are as
    //  follows:
@@ -133,13 +136,15 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    wire dbmADFLAGS   = dbm[17];                 // Update Flags from ALU[see cromADFLAGS
    
    //
-   // dp bus:
-   //    When dbmADFLAGS is asserted, the dp bus has the contents
-   //    of the last ALU operation.  In this mode dpOV, dpCRY0,
-   //    dpCRY1, are use to update the flags.
+   // DP Inputs
    //
-   //    When dbmLDFLAGS is asserted, the dp bus is used to
-   //    modify the flags.
+   // Details
+   //  When dbmADFLAGS is asserted, the dp bus has the contents of
+   //  the last ALU operation.  In this mode dpOV, dpCRY0, dpCRY1,
+   //  are use to update the flags.
+   //
+   //  When dbmLDFLAGS is asserted, the dp bus is used to modify
+   //  the flags.
    //
    
    wire dpOV         = dp[ 0];                  // Overflow flag
@@ -180,6 +185,8 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
 
    //
    // JFCL Skip
+   //
+   // Trace
    //  DPE9/E77
    //
    
@@ -187,6 +194,8 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
 
    //
    // Overflow Flag (OV)
+   //
+   // Notes
    //  Arithmetic Overflow occurs if CRY0 and CRY1 differ.
    //
 
@@ -296,6 +305,8 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    
    //
    // First Part Done Flag (FPD)
+   //
+   // Note
    //  The Clear operation has priority over the Set operation.
    //  The Set operation has priority over the Load operation.
    //
@@ -372,6 +383,8 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
  
    //
    // TRAP1 Flag
+   //
+   // Notes
    //  An arithmetic overflow occurs if CRY0 and CRY1 differ which
    //  also sets the TRAP1 flag.
    //

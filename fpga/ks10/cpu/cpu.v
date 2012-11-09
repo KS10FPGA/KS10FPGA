@@ -449,6 +449,7 @@ module CPU(clk, rst, clken,
    //
    // INTF
    //  Console Interface
+   //
 
    INTF uINTF
      (.clk(clk),
