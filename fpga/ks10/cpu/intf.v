@@ -73,10 +73,12 @@ module INTF(clk, rst, clken, crom,
    //  CRA2/E97
    //
 
-   wire consEN = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_CONS);
+   wire specCONS = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_CONS);
 
    //
    // HALT Status
+   //
+   // Trace
    //  CSL4/E161
    //  CSL4/E162
    //  CSL4/E168
@@ -86,17 +88,19 @@ module INTF(clk, rst, clken, crom,
      begin
         if (rst)
           cpuHALT <= 1'b0;
-        else if (clken & consEN)
+        else if (clken)
           begin
-             if (`cromCONS_SET_HALT)
+             if (specCONS & `cromCONS_SET_HALT)
                cpuHALT <= 1'b1;
-             else if (`cromCONS_CLR_HALT)
+             else if (specCONS & `cromCONS_CLR_HALT)
                cpuHALT <= 1'b0;
           end
      end
 
    //
    // RUN Status
+   //
+   // Trace
    //  CSL4/E98
    //  CSL4/E135
    //
@@ -105,17 +109,19 @@ module INTF(clk, rst, clken, crom,
      begin
         if (rst)
           cpuRUN <= 1'b0;
-        else if (clken & consEN)
+        else if (clken)
           begin
              if (consRUN)
                cpuRUN <= 1'b1;
-             else if (`cromCONS_CLR_RUN)
+             else if (specCONS & `cromCONS_CLR_RUN)
                cpuRUN <= 1'b0;
           end
      end
 
    //
    // EXECUTE Status
+   //
+   // Trace
    //  CSL4/E149
    //  CSL4/E168
    //
@@ -124,17 +130,19 @@ module INTF(clk, rst, clken, crom,
      begin
         if (rst)
           cpuEXEC <= 1'b0;
-        else if (clken & consEN)
+        else if (clken)
           begin
              if (consEXEC)
                cpuEXEC <= 1'b1;
-             else if (`cromCONS_CLR_EXEC)
+             else if (specCONS & `cromCONS_CLR_EXEC)
                cpuEXEC <= 1'b0;
           end
      end
 
    //
    // CONTINUE Status
+   //
+   // Trace
    //  CSL4/E168
    //  CSL4/E171
    //
@@ -143,11 +151,11 @@ module INTF(clk, rst, clken, crom,
      begin
         if (rst)
           cpuCONT <= 1'b0;
-        else if (clken & consEN)
+        else if (clken)
           begin
              if (consCONT)
                cpuCONT <= 1'b1;
-             else if (`cromCONS_CLR_CONT)
+             else if (specCONS & `cromCONS_CLR_CONT)
                cpuCONT <= 1'b0;
           end
      end

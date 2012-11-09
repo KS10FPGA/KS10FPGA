@@ -10,7 +10,7 @@
 //! \todo
 //!
 //! \file
-//!      ir.v
+//!      cons.v
 //!
 //! \author
 //!      Rob Doyle - doyle (at) cox (dot) net
@@ -44,47 +44,19 @@
 // Comments are formatted for doxygen
 //
 
-module CONS(clk, rst, pwr_fail,
+module CONS(clk, clken, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA, consDATA, consACK);
 
-            bus_request,
-            bus_grant,
+   input          clk;      	// Clock
+   input          clken;        // Clock enable
+   input          cpuREAD;	// Memory/IO Read
+   input          cpuWRITE;     // Memory/IO Write
+   input          cpuIO;	// Memory/IO Select
+   input  [14:35] cpuADDR;      // CPU Address
+   input  [ 0:35] cpuDATA;      // CONS data in
+   output [ 0:35] consDATA;     // CONS data out
+   output         consACK;      // CONS ACK
 
-            bus_uba_busy,
-            bus_addr_cycle_in,  bus_addr_cycle_out,
-            bus_data_cycle_in,  bus_data_cycle_out,
-            bus_io_cycle_in,    bus_io_cycle_out,
-            bus_mem_busy_in,    bus_mem_busy_out,
-            bus_pi_lvl,         bus_pi_current,
-            bus_data_in,        bus_data_out,
-            rxd, txd
-            );
+   assign consDATA = 36'bx;
+   assign consACK  = 1'b0;
 
-   input         clk;        		// Clock
-   input         rst;          		// Reset
-   input         pwr_fail;		//
-
-   output        bus_request;		//
-   input         bus_grant;		//
-   
-   input         bus_uba_busy;		// Unibus Busy
-   input         bus_addr_cycle_in;	//
-   output        bus_addr_cycle_out;	//
-   input         bus_data_cycle_in;	//
-   output        bus_data_cycle_out;	//
-   input         bus_io_cycle_in;	//
-   output        bus_io_cycle_out;	//
-   input         bus_mem_busy_in;	//
-   output        bus_mem_busy_out;	// Never Asserted
-
-   input  [1: 7] bus_pi_lvl;		//
-   input  [0: 2] bus_pi_current;	//
-   
-   input  [0:35] bus_data_in;		//
-   output [0:35] bus_data_out;		//
-   input         rxd;
-   output        txd;
-   
-   assign bus_mem_busy_out = 1'b0;
-   
-   
 endmodule

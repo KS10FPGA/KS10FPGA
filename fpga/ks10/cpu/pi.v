@@ -50,7 +50,7 @@
 
 `include "useq/crom.vh"
 
-module INTR(clk, rst, clken, crom, dp, ubiIRQ,  pi_new, pi_current, cpuIRQ, pi_on);
+module INTR(clk, rst, clken, crom, dp, ubaIRQ,  pi_new, pi_current, cpuIRQ, pi_on);
             
    parameter cromWidth = `CROM_WIDTH;
 
@@ -59,7 +59,7 @@ module INTR(clk, rst, clken, crom, dp, ubiIRQ,  pi_new, pi_current, cpuIRQ, pi_o
    input                      clken;            // Clock enable
    input      [0:cromWidth-1] crom;             // Control ROM Data
    input      [0:35]          dp;               // Data path
-   input      [1: 7]          ubiIRQ; 		// Unibus request
+   input      [1: 7]          ubaIRQ; 		// Unibus request
    output     [0: 2]          pi_new;           // New Prioity Interrupt number
    output     [0: 2]          pi_current;       // Current Prioity Interrupt number
    output reg                 cpuIRQ;    	// Interrupt Request
@@ -76,9 +76,9 @@ module INTR(clk, rst, clken, crom, dp, ubiIRQ,  pi_new, pi_current, cpuIRQ, pi_o
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          pi_bus <= 7'b000_0000;
+          pi_bus <= 7'b0;
         else if (clken)
-          pi_bus <= ubiIRQ;
+          pi_bus <= ubaIRQ;
      end
 
    //

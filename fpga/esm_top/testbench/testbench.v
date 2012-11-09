@@ -4,10 +4,20 @@ module testbench;
    reg clk;
    reg reset;
 
-   //wire cpuCONT;
+   //
+   // Switches
+   //
+   
+   reg  swCONT;
+   wire swEXEC = 1'b0;
+   wire swRUN  = 1'b1;
+
+   //
+   // LED Outputs
+   //
+   
    wire cpuHALT;
-   //wire cpuRUN;
-   //wire conTXD;
+   wire cpuRUN;
 
    //
    // Initialization
@@ -16,7 +26,7 @@ module testbench;
    initial
      begin
         $display("KS10 Simulation Starting");
-        clk = 1'b0;             // initial state of clock
+        clk   = 1'b0;             // initial state of clock
         reset = 1'b1;             // initial state of reset
         #95 reset = 1'b0;         // release reset at 95 nS
      end
@@ -33,12 +43,16 @@ module testbench;
    //
    
    KS10 UUT
-     (.clk(clk),
-      .reset(reset),
-      .pwrFAIL(1'b0),
-      .conRXD(1'b1),
-      .conTXD(conTXD),
-      .cpuHALT(cpuHALT)
+     (.clk	(clk),
+      .reset	(reset),
+      .pwrFAIL	(1'b0),
+      .swCONT	(swCONT),
+      .swEXEC	(swEXEC),
+      .swRUN	(swRUN),
+      .conRXD	(1'b1),
+      .conTXD	(conTXD),
+      .cpuHALT	(cpuHALT),
+      .cpuRUN	(cpuRUN2)
       );
 
    //
@@ -59,5 +73,17 @@ module testbench;
              lastHALT = cpuHALT;
           end
      end
-   
+
+
+   always @(posedge cpuHALT or posedge reset )
+     begin
+        if (reset)
+          swCONT <= 1'b0;
+        else if ($time > 12000 && $time < 14000)
+          begin
+             #500 swCONT <= 1'b1;
+             #600 swCONT <= 1'b0;
+          end
+     end
+       
 endmodule

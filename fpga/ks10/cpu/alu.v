@@ -66,7 +66,7 @@
 module ALU(clk, rst, clken, crom, feSIGN, aluIN,
            aluLZero, aluRZero, aluLSign, aluRSign,
            aluAOV, aluCRY0, aluCRY1, aluCRY2,
-           aluQR37, aluOUT);
+           aluQR37, aluOUT, debugADDR, debugDATA);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -86,9 +86,13 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    output                 aluCRY2;              // ALU Carry 2
    output                 aluQR37;              // ALU QR37
    output [0:35]          aluOUT;               // ALU Output
+   input  [0: 3]          debugADDR;		// DEBUG Address
+   output [0:35]          debugDATA;		// DEBUG Data
 
    //
    // Microcode fields
+   //
+   // Note
    //  These temporaries are created so I can see the microcode fields
    //  in the simulator.  The synthesis optimizer deletes them.
    //
@@ -109,6 +113,10 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    //
    // ALU Register Write
    //
+   // Note
+   //  The following Destination write data into the ALU
+   //  registers.
+   //
    
    wire write = ((dest ==`cromDST_RAMA)  ||
                  (dest ==`cromDST_RAMF)  ||
@@ -118,39 +126,57 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
                  (dest ==`cromDST_RAMU));
 
    //
-   // DST[1] is inverted on DPE5/E62
-   //  Note on the am2901's during shifts, the dst[1] pin
-   //  selects right shifts from left shifts.  In the KS10,
-   //  the dst[1] also selects tri-state muxes for attaching
-   //  the right-shift and left-shift operations.  This isn't
-   //  necessary on the FPGA implementation because this
-   //  version of the am2901 doesn't have tri-stated inputs.
+   // Destination Address Munging
+   //
+   // Note
+   //  DST[1] is inverted on DPE5/E62
+   //
+   //  When the ALU is configured for shift operations, the
+   //  dst[1] pin selects between right shifts and left shifts.
+   //
+   //  In the KS10, the dst[1] selects tri-state muxes that
+   //  implement the right-shift and left-shift operations.
+   //  This isn't necessary on the FPGA implementation because
+   //  there aren't any tristate pins on the ALU.  I just don't
+   //  want to change the microcode.   So it stays.
    //
 
    wire [0:2] dest = {dst[0], ~dst[1], dst[2]};
 
    //
-   // FUN[2] is munged on DPE5
-   //  Note on the am2901's, when fun[0] and fun[1] are both
-   //  zero, fun[2] selects between add and subract ops.
-   //  This is used in the divide and multiprecision ops.
+   // Function Munging
+   //
+   // Note
+   //  FUN[2] is munged on DPE5
+   //
+   //  When fun[0] and fun[1] are both zero, fun[2] selects
+   //  between add and subract ops. This is used in the divide
+   //  and multiprecision ops.
    //
 
    wire [0:2] func = {fun[0], fun[1], funct_02};
 
    //
-   // In the KS10, the ALU is 40-bits wide.  Sign extend input
-   // from 36 bits to 38 bits and add two bits padding on right.
+   // Input Sign Extension
+   //
+   // Details
+   //  In the KS10, the ALU is 40-bits wide.  Sign extend input
+   //  from 36 bits to 38 bits and add two bits padding on right.
    //
 
    wire [0:39] dd = {aluIN[0], aluIN[0], aluIN[0:35], 2'b00};
 
    //
    // Shifter Operations:
+   //
+   // Details
    //  The am2901s are wired together to perform specific shift
    //  operation controlled by the cromSPEC_SHSTYLE microcode
    //  field.  The ASCII art pictures below detail the various
    //  shifter modes.
+   //
+   // Note
+   //  All of the F shifer logic is external to the am2901s.
    //
    //  Shift Left Operations
    //
@@ -269,11 +295,12 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    //             +----+       +----------+     |      +----+    |  +----------+
    //                                           |                |
    //                                           +----------------+
-   // DPE1/E12
-   // DPE1/E20
-   // DPE1/E41
-   // DPE1/E48
-   // DPE1/E71
+   // Trace:
+   //  DPE1/E12
+   //  DPE1/E20
+   //  DPE1/E41
+   //  DPE1/E48
+   //  DPE1/E71
    //
 
    reg [0:39] bdi;
@@ -322,7 +349,9 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
      end
 
    //
-   // ALU Register File Write Port
+   // ALU RAM Write Port
+   //
+   // Note
    //  The left side and right side of the ALU can be independantly
    //  clocked and updated.
    //
@@ -347,29 +376,40 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
                aluRAM[ba][20:39] <= bdi[20:39];
           end
      end
-   
+  
    //
-   // ALU Register File Read Port(s)
+   // ALU RAM Read Port(s)
+   //
+   // Details
    //  The am2901 latches the addresses when the clock is low. These latches
    //  would be a problem for an FPGA design.  Latching the address lines is
    //  not necessary anyway because the RAM address lines come directly from
    //  the CROM which is already registered.   We'll abosorb the address latch
    //  into the CROM register.
    //
-   //  Note: this asynchronous read (and asynchronous reset) causes the RAM
-   //  to be built out of distributed RAM or flip-flops.   If this turns into
-   //  a too wasteful (576 flip-flops), we can pipeline the CROM register:
-   //  use the early CROM to set the read address the synchronous RAM and use
-   //  the pipelined delayed CROM for everything else.   When combined, the
-   //  clock delayed output of the synchronous RAM would be pipelined correctly
+   // Note:
+   //  This asynchronous read (and asynchronous reset) causes the RAM to be
+   //  built out of distributed RAM or flip-flops.   If this turns into a too
+   //  wasteful (576 flip-flops), we can pipeline the CROM register: use the
+   //  early CROM to set the read address the synchronous RAM and use the
+   //  pipelined delayed CROM for everything else.   When combined, the clock
+   //  delayed output of the synchronous RAM would be pipelined correctly
    //  with the rest of the CROM.
+   //
+   //  Since the registers are implemented in flip-flops, it is no problem
+   //  to add a third port to the ALU RAM for debugging or a front panel
+   //  interface.
    //
     
    wire [0:39] ad = aluRAM[aa];
    wire [0:39] bd = aluRAM[ba];
+   wire [0:35] cd = aluRAM[debugADDR][2:37];
    
    //
    // Q Register Shifter
+   //
+   // Note:
+   //  All of the Q shifer logic is external to the am2901s.
    //
 
    reg [0:39] qi;
@@ -420,9 +460,11 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
             qi <= q;
         endcase
      end
-
+  
    //
    // Q Register
+   //
+   // Details
    //  The left side and right side of the Q Register can be
    //  independantly clocked and updated.  I'm not sure
    //  if the microcode does that, or not.
@@ -448,6 +490,10 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    //
    // ALU Left R Source Selector
    //
+   // Details
+   //  This selects source for the "R" input to the left-half of
+   //  the ALU.
+   //
 
    reg [0:39] r;
    always @(ad or dd or lsrc)
@@ -471,6 +517,10 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    //
    // ALU Right R Source Selector
    //
+   // Details
+   //  This selects source for the "R" input to the right-half of
+   //  the ALU.
+   //
 
    always @(ad or dd or rsrc)
      begin
@@ -492,6 +542,10 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
 
    //
    // ALU Left S Source Selector
+   //
+   // Details
+   //  This selects source for the "S" input to the left-half of
+   //  the ALU.
    //
 
    reg [0:39] s;
@@ -520,6 +574,10 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    //
    // ALU Right S Source Selector
    //
+   // Details
+   //  This selects source for the "S" input to the right-half of
+   //  the ALU.
+   //
 
    always @(ad or bd or q or rsrc)
      begin
@@ -545,6 +603,8 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
 
    //
    // ALU Proper
+   //
+   // Details
    //  The ALU is somewhat optimized so that the carry chain can
    //  be optimized.  Instead of adding logic into the middle of
    //  of the carry to separate the left half and the right half
@@ -631,7 +691,13 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    assign aluRZero = f[20:39] == 20'b0;
 
    //
-   // aluAOV
+   // Arithmetic Overflow (aluAOV)
+   //
+   // Details
+   //  Arithmetic overflow occurs when the sign is different
+   //  than the MSB
+   //
+   // Trace
    //  DPE9/E26
    //
 
@@ -639,13 +705,15 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
 
    //
    // aluCRY0
+   //
+   // Details
    //  This is the carry form ALU bit -2 (Verilog bit 0).
    //  In this KS10, this signal comes from the carry skippers,
    //  which doesn't work well with an FPGA implementation. In
    //  this implementation, 'co' signal comes directly from
    //  the ALU calculation.
    //
-   //  Technically, this should be aluCRY(-2).  See usage in
+   //  Technically, this should be called aluCRY(-2).  See usage in
    //  microcode.
    //
 
@@ -653,12 +721,16 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
 
    //
    // aluCRY1
+   //
+   // Trace:
    //  DPE9/E26
    //
 
    assign aluCRY1 = aluAOV != aluCRY0;
 
    // aluCRY2:
+   //
+   // Details
    //  This is the carry from ALU bit 2 into ALU bit 1.  In
    //  Verilog numbering (see notes at top of file), this is a
    //  carry from ALU bit 4 into ALU bit 3.   We don't really
@@ -672,6 +744,8 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
 
    //
    // FLAG Logic
+   //
+   // Trace
    //  DPE5/E4
    //  DPE5/E5
    //  DPE5/E6
@@ -688,7 +762,12 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
                     (fun[2]));
 
    //
-   // Flag Register
+   // ALU Flag Register
+   //
+   // These register facilate multi-word shifts as well as
+   // mutiplication and divide operations.
+   //
+   // Trace
    //  DPE5/E28
    //
 
@@ -724,11 +803,17 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    assign aluQR37 = flag_qr37;
    
    //
+   // Multishift
    //
-   // DPE5/E4
-   // DPE5/E6
-   // DPE5/E62
-   // DPE5/E70
+   // Details
+   //  The ALU has special provisions for multi-word shifts and a
+   //  special connection to the SCAD to perform division.
+   //
+   // Trace
+   //  DPE5/E4
+   //  DPE5/E6
+   //  DPE5/E62
+   //  DPE5/E70
    //
 
    wire multi_shift  = flag_fl02   & `cromMULTIPREC;
@@ -736,10 +821,18 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
 
    //
    // ALU Destination Selector
+   //
+   // Details
    //  Select ALU output and truncate output bus from 40 bits
    //  to 36 bits.
    //
 
    assign aluOUT = (dest ==`cromDST_RAMA) ? ad[2:37] : f[2:37];
 
+   //
+   // ALU Register Debug Data
+   //
+   
+   assign debugDATA = cd;
+   
 endmodule

@@ -50,8 +50,8 @@
 module CPU(clk, rst, clken,
            consTIMEREN,
            consSTEP, consRUN, consEXEC, consCONT, consHALT, consTRAPEN, consCACHEEN,
-           cpuADDR, pwrIRQ, consIRQ, ubiIRQ, nxmIRQ,
-           cpuDIN, cpuDOUT, cpuWRITE, cpuREAD,
+           cpuADDR, pwrIRQ, consIRQ, ubaIRQ, nxmIRQ,
+           cpuDIN, cpuACK, cpuDOUT, cpuWRITE, cpuREAD, cpuIO,
            cpuCONT, cpuHALT, cpuRUN);
    
    parameter cromWidth = `CROM_WIDTH;
@@ -70,13 +70,15 @@ module CPU(clk, rst, clken,
    input          consCACHEEN;  // Enable Cache
    input          pwrIRQ;       // Power Fail Interrupt Request
    input          consIRQ;      // Console Interrupt Request
-   input  [ 1: 7] ubiIRQ;       // Unibus Interrupt Request
+   input  [ 1: 7] ubaIRQ;       // Unibus Interrupt Request
    input          nxmIRQ;       // Memory (non-existant) Request
+   input          cpuACK;	// 
    input  [ 0:35] cpuDIN;       //
    output [14:35] cpuADDR;      //
    output [ 0:35] cpuDOUT;      //
-   output         cpuWRITE;     //
-   output         cpuREAD;      //
+   output         cpuWRITE;     // Memory/IO Write
+   output         cpuREAD;      // Memory/IO Read
+   output         cpuIO;	// Memory / IO
    output         cpuCONT;      //
    output         cpuHALT;      //
    output         cpuRUN;       //
@@ -273,9 +275,9 @@ module CPU(clk, rst, clken,
    //
 
    wire skipJFCL;
-   wire [1:7] skip40 = {aluCRY0,   aluLZero,  aluRZero, flagUSER,   flagFPD,   regACZERO, cpuIRQ};
+   wire [1:7] skip40 = {aluCRY0,   aluLZero,  aluRZero, ~flagUSER,  flagFPD,   regACZERO, cpuIRQ};
    wire [1:7] skip20 = {aluCRY2,   aluLSign,  aluRSign, flagUSERIO, skipJFCL,  aluCRY1,   txxx};
-   wire [1:7] skip10 = {trapCYCLE, aluZERO,   scSIGN,   cpuEXEC,    iolatch,   ~cpuCONT,  timerIRQ};
+   wire [1:7] skip10 = {trapCYCLE, aluZERO,   scSIGN,   cpuEXEC,    iolatch,   ~cpuCONT,  ~timerIRQ};
 
    //
    // DBM inputs
@@ -386,6 +388,21 @@ module CPU(clk, rst, clken,
       );
 
    //
+   // DEBUG
+   //
+
+/*
+   DEBUG uDEBUG
+      (.clk(clk),
+       .rst(rst),
+       .clken(clken),
+       .crom(crom),
+       .dp(dp),
+       .debug(debug)
+       );
+ */
+      
+   //
    // DBUS MUX
    //
 
@@ -422,7 +439,7 @@ module CPU(clk, rst, clken,
       .clken(clken),
       .crom(crom),
       .dp(dp),
-      .ubiIRQ(ubiIRQ),
+      .ubaIRQ(ubaIRQ),
       .cpuIRQ(cpuIRQ),
       .pi_new(pi_new),
       .pi_current(bus_pi_current),
@@ -675,6 +692,7 @@ module CPU(clk, rst, clken,
    assign mb       = cpuDIN;
    assign cpuREAD  = vmaREADCYCLE;
    assign cpuWRITE = vmaWRITECYCLE;
+   assign cpuIO    = vmaIOCYCLE;
    assign cpuDOUT  = dp;
    
 endmodule

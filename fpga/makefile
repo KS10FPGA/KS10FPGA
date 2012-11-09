@@ -32,6 +32,7 @@ SRC := \
 	$(CPU)/ni_disp.v \
 	$(CPU)/page_tables.v \
 	$(CPU)/pcflags.v \
+	$(CPU)/pf_disp.v \
 	$(CPU)/pxct.v \
 	$(CPU)/ram1kx36.v \
 	$(CPU)/ramfile.v \
@@ -43,6 +44,7 @@ SRC := \
 	$(CPU)/cpu.v \
 	$(CON)/cons.v \
 	$(MEM)/mem.v \
+	$(MEM)/dskaa.dat \
 	$(ARB)/arb.v \
 	$(UBA)/uba.v \
 	rst.v \
@@ -53,11 +55,14 @@ SRC := \
 asdf : $(SRC)
 	echo $(SRC)
 
-$(UC)/crom.dat : $(UC)/ks10.mcr $(UC)/crom.awk makefile
+$(UC)/crom.dat $(UC)/crom.v : $(UC)/ks10.mcr $(UC)/crom.awk makefile
 	awk -f $(UC)/crom.awk $(UC)/ks10.mcr > $(UC)/crom.dat
 
-$(UC)/drom.dat : $(UC)/ks10.mcr $(UC)/drom.awk makefile
+$(UC)/drom.dat $(UC)/drom.v : $(UC)/ks10.mcr $(UC)/drom.awk makefile
 	awk -f $(UC)/drom.awk $(UC)/ks10.mcr > $(UC)/drom.dat
+
+$(MEM)/dskaa.dat $(MEM)/ram32kx36.v : $(MEM)/MAINDEC-10-DSKAA.lst $(MEM)/dskaa.awk
+	awk -f $(MEM)/dskaa.awk $(MEM)/MAINDEC-10-DSKAA.lst > $(MEM)/dskaa.dat
 
 clean: 
 	rcsclean *
@@ -68,6 +73,7 @@ clean:
 	rcsclean $(UBA)/*
 	rcsclean $(UC)/*
 	rm -f    $(UC)/*.dat
+	rm -f    $(MEM)/*.dat
 	find . -type f -name "*~" | xargs rm -fv
 
 archive_src: $(SRC)

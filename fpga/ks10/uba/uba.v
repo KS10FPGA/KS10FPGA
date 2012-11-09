@@ -44,25 +44,19 @@
 // Comments are formatted for doxygen
 //
 
-module UBA(clk, rst, pwr_fail, 
-           bus_addr_cycle_in, bus_addr_cycle_out,
-           bus_data_cycle_in, bus_data_cycle_out,
-           bus_io_cycle_in,   bus_io_cycle_out,
-           bus_mem_busy_in,   bus_mem_busy_out,
-           bus_data_in,       bus_data_out);
-   
-   input         clk;        		// Clock
-   input         rst;          		// Reset
-   input         pwr_fail;		//
-   input         bus_addr_cycle_in;	//
-   output        bus_addr_cycle_out;	//
-   input         bus_data_cycle_in;	//
-   output        bus_data_cycle_out;	//
-   input         bus_io_cycle_in;	//
-   output        bus_io_cycle_out;	//
-   input         bus_mem_busy_in;	//
-   output        bus_mem_busy_out;	//
-   input  [0:35] bus_data_in;		//
-   output [0:35] bus_data_out;		//
-   
- endmodule
+module UBA(clk, clken, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA, ubaDATA, ubaACK);
+
+   input          clk;          // Clock
+   input          clken;        // Clock enable
+   input          cpuREAD;	// Memory/IO Read
+   input          cpuWRITE;     // Memory/IO Write
+   input          cpuIO;	// Memory/IO Select
+   input  [14:35] cpuADDR;      // Address
+   input  [ 0:35] cpuDATA;      // Unibus data in
+   output [ 0:35] ubaDATA;      // Unibus data out
+   output         ubaACK;       // Unibus ACK
+
+   assign ubaDATA = 36'bx;
+   assign ubaACK  = 1'b0;
+
+endmodule

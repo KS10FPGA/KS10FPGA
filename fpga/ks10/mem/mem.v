@@ -44,14 +44,19 @@
 // Comments are formatted for doxygen
 //
 
-module MEM(clk, clken, memWRITE, memADDR, memDIN, memDOUT, memACK);
+`include "../cpu/config.vh"
+
+module MEM(clk, clken, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA,
+           memDATA, memACK);
 
    input          clk;          // Clock
    input          clken;        // Clock enable
-   input          memWRITE;     // Write
-   input  [14:35] memADDR;      // Address
-   input  [ 0:35] memDIN;       // Data in
-   output [ 0:35] memDOUT;      // Data out
+   input          cpuREAD;	// Memory/IO Read
+   input          cpuWRITE;     // Memory/IO Write
+   input          cpuIO;	// Memory/IO Select
+   input  [14:35] cpuADDR;      // Address
+   input  [ 0:35] cpuDATA;      // Data in
+   output [ 0:35] memDATA;      // Data out
    output         memACK;       // Memory ACK
 
    //
@@ -61,7 +66,7 @@ module MEM(clk, clken, memWRITE, memADDR, memDIN, memDOUT, memACK);
    //  Only 32K implemented.
    //
 
-   wire [0:14] addr = memADDR[21:35];
+   wire [0:14] addr = cpuADDR[21:35];
 
    //
    // PDP10 Memory Initialization
@@ -97,23 +102,25 @@ module MEM(clk, clken, memWRITE, memADDR, memDIN, memDOUT, memACK);
    //  This is temporary and won't synthesize well.  Notice the clock
    //  polarity.
    //
+   
+   reg [0:14] rd_addr;
 
    always @(negedge clk)
      begin
-        if (clken)
+        if (clken & ~cpuIO)
           begin
-             if (memWRITE && (memADDR != 0))
-               RAM[memADDR] <= memDIN;
-             rd_addr <= memADDR;
+             if (cpuWRITE && (cpuADDR > 10))
+               RAM[cpuADDR] <= cpuDATA;
+             rd_addr <= cpuADDR;
           end
      end
 
-   assign memDOUT = RAM[rd_addr];
+   assign memDATA = RAM[rd_addr];
 
    //
    // ACK the memory if implemented.x
    //
 
-   assign memACK = memADDR < 32768;
+   assign memACK = ~cpuIO & (cpuADDR < 32768);
 
 endmodule
