@@ -56,7 +56,21 @@ module CONS(clk, clken, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA, consDATA, co
    output [ 0:35] consDATA;     // CONS data out
    output         consACK;      // CONS ACK
 
-   assign consDATA = 36'bx;
-   assign consACK  = 1'b0;
+   //
+   // Execute/Start 'Vector'
+   //
+   // Details:
+   //  When the 'execute switch' is asserted at power-up the
+   //  microcode will perform a read at IO address o200000
+   //  and then execute that instruction.  In the KS10, this
+   //  IO address was handled by the Console.  Therefore the
+   /// Console could set the start address.
+   //
+   //  This is normally a JRST instruction which causes the
+   //  code to jump to the entry point of the code/bootloader.
+   //
+   
+   assign consACK  = cpuIO & cpuREAD & (cpuADDR == 18'o200000);
+   assign consDATA = consACK ? 36'o254000030600 : 36'bx;
 
 endmodule

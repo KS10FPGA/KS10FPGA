@@ -9,7 +9,7 @@ module testbench;
    //
    
    reg  swCONT;
-   wire swEXEC = 1'b0;
+   wire swEXEC = 1'b1;
    wire swRUN  = 1'b1;
 
    //

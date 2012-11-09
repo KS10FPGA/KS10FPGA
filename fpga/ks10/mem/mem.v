@@ -109,7 +109,7 @@ module MEM(clk, clken, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA,
      begin
         if (clken & ~cpuIO)
           begin
-             if (cpuWRITE && (cpuADDR > 10))
+             if (cpuWRITE)
                RAM[cpuADDR] <= cpuDATA;
              rd_addr <= cpuADDR;
           end
