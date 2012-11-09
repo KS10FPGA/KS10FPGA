@@ -167,18 +167,18 @@ module SCAD(clk, rst, clken, crom, dp, scad, dispSCAD, scSIGN, feSIGN);
    //  microcode into the ALU function.
    //
    // Notes:
-   //   This is positive logic.  Be sure to use the right table in
-   //   the 74ls181 data sheet.
+   //  This is positive logic.  Be sure to use the right table in
+   //  the 74ls181 data sheet.
    //
-   //   Be sure to notice that the CY# input to the ALU is tied to
-   //   FUN2
+   //  Be sure to notice that the CY# input to the ALU is tied to
+   //  FUN2
    //
-   //   The SCAD Carry Skipper DPM4/E704 does not need to be
-   //   implemented.  The FPGA carry logic does not require
-   //   parallel carries for this level of performance.
+   //  The SCAD Carry Skipper DPM4/E704 does not need to be
+   //  implemented.  The FPGA carry logic does not require
+   //  parallel carries for this level of performance.
    //
-   //   The following truth table is derived from the circuit
-   //   diagram.
+   //  The following truth table is derived from the circuit
+   //  diagram.
    //
    //   +-------------+-+-------------------------+---------------+
    //   | FUN FUN FUN | | ALU ALU ALU ALU ALU ALU |               |

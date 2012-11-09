@@ -76,7 +76,13 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
    wire flagPCU  = pcFLAGS[6];      		// Previous Context User
    
    //
-   // VMA Logic
+   // Microcode Decode
+   //
+   // Note
+   //  The cache clear and the previous selection are exclusive
+   //  operations.
+   //
+   // Trace
    //  DPE5/E76
    //  DPE6/E53
    //
@@ -86,6 +92,8 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
 
    //
    // VMA Register
+   //
+   // Trace
    //  DPE3/E53
    //  DPM4/E55
    //  DPM4/E56
@@ -183,6 +191,12 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
 
    //
    // Memory Cycle Control
+   //
+   // Details
+   //  The type of memory cycle can controlled by the microcode or
+   //  can be controlled by the Dispatch ROM.
+   //
+   // Trace
    //  DPM5/E48
    //  DPM5/E66
    //  DPM5/E33

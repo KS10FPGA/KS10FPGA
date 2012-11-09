@@ -61,17 +61,25 @@ module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, JRST0);
    output                     JRST0;	// JRST Instruction
 
    //
-   // Instruction Register and AC Selection.
-   //  Note: Both parts of the IR register can be loaded simultaneously.
+   // Microcode Decode
    //
+   // Note:
+   //  'loadIR' and 'loadXR' can occur simultaneously.  Therefore
+   //  both parts of the IR register can be loaded simultaneously.
+   //
+   
+   wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
+   wire loadXR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADXR);
+   
+   //
+   // Instruction Register and AC Selection.
+   //
+   // Trace
    //  DPEA/E55
    //  DPEA/E64
    //  DPEA/E93
    //  DPEA/E99
    //  
-
-   wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
-   wire loadXR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADXR);
     
    always @(posedge clk or posedge rst)
     begin
@@ -96,6 +104,11 @@ module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, JRST0);
    
    //
    // JRST 0 decode
+   //
+   // Details
+   //  This decodes a JRST 0 instruction.
+   //
+   // Trace
    //  DPEA/E54
    //  DPEA/E61
    //  DPE1/E62

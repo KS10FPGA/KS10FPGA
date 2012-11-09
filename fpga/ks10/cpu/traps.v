@@ -73,9 +73,12 @@ module TRAPS(clk, rst, clken, crom, pcFLAGS, aprFLAGS, consTRAPEN, trapCYCLE);
 
    //
    // Trap Cycle
+   //
+   // Notes
    //  The schematic uses NICOND_09.  This is the same logic but
    //  a little more straight forward.
    //
+   // Trace
    //  CRA2/E159
    //
 
