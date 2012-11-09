@@ -3,7 +3,7 @@
 //! KS-10 Processor
 //!
 //! \brief
-//!      Microcontroller
+//!      Microsequencer
 //!
 //! \details
 //!      This file implements the KS10 microsequencer.
@@ -89,6 +89,14 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
 
    //
    // Skip Logic
+   //
+   // Details
+   //  The skip logic allows the sequencer to conditionally
+   //  jump forward one micro-instruction.
+   //
+   // Note:
+   //  Like the dispatch, the skip logic can only set bits.
+   //  The skip must take place on an even address.
    //
 
    wire [0:11] skipADDR;
