@@ -84,12 +84,12 @@ module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, JRST0);
           begin
              if (loadIR)
                begin
-                  regIR <= dbus[ 0:12];
+                  regIR[ 0:12] <= dbus[ 0:12];
                end
              if (loadXR)
                begin
-                  regIR  <= dbus[13:17];
-                  xrPREV <= prevEN;
+                  regIR[13:17] <= dbus[13:17];
+                  xrPREV       <= prevEN;
                end
           end
     end
