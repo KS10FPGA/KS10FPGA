@@ -122,7 +122,6 @@ module CPU(clk, rst, clken,
    wire memory_cycle            = 1'b0;                 // FIXME
    wire cpuIRQ;                                         // Extenal Interrupt
    wire iolatch;
-   wire forceRAMFILE            = 1'b0;                 // FIXME
    wire JRST0;
    wire indirect;
 
@@ -408,7 +407,8 @@ module CPU(clk, rst, clken,
 
    DBUS uDBUS
      (.crom(crom),
-      .forceRAMFILE(forceRAMFILE),
+      .vmaFLAGS(vmaFLAGS),
+      .vmaADDR(vmaADDR),
       .pcFLAGS({pcFLAGS, 1'b0, pi_new, 4'b1111, vmaADDR[26:35]}),
       .dp(dp),
       .ramfile(ramfile),

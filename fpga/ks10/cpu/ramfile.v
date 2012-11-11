@@ -128,9 +128,9 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
    // AC Reference
    //
    // Details:
-   //  True when addressing lowest 16 addresses using
-   //  physical addressing.  References to the ACs
-   //  are always physical.
+   //  True when addressing lowest 16 addresses using and not
+   //  physical addressing.  References to the ACs are never
+   //  physical.
    //
    // Trace
    //  DPM4/E160
@@ -138,7 +138,7 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
    //  DPM4/E191
    //
 
-   wire vmaACREF = vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
+   wire vmaACREF = ~vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
 
    //
    // AC Blocks

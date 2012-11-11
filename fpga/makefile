@@ -36,7 +36,7 @@ SRC := \
 	$(CPU)/pxct.v \
 	$(CPU)/ram1kx36.v \
 	$(CPU)/ramfile.v \
-	$(CPU)/regIR.v \
+	$(CPU)/regir.v \
 	$(CPU)/scad.v \
 	$(CPU)/timer.v \
 	$(CPU)/traps.v \

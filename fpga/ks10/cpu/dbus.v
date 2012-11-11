@@ -46,47 +46,60 @@
 
 `include "useq/crom.vh"
 
-module DBUS(crom, forceRAMFILE, pcFLAGS, dp, ramfile, dbm, dbus);
+module DBUS(crom, vmaADDR, vmaFLAGS, pcFLAGS, dp, ramfile, dbm, dbus);
 
    parameter  cromWidth = `CROM_WIDTH;
 
    input      [0:cromWidth-1] crom;             // Control ROM Data
-   input                      forceRAMFILE;     // Force Ramfile
-   input      [0:35]          pcFLAGS;         	// PC Flags in Left Half
-   input      [0:35]          dp;               // Datapath
-   input      [0:35]          ramfile;          // Ramfile
-   input      [0:35]          dbm;              // Databus Mux
-   output reg [0:35]          dbus;             // DBus
+   input      [ 0:13]         vmaFLAGS;         // Virtual Memory Flags
+   input      [14:35]         vmaADDR;          // Virtual Memory Address
+   input      [ 0:35]         pcFLAGS;          // PC Flags in Left Half
+   input      [ 0:35]         dp;               // Datapath
+   input      [ 0:35]         ramfile;          // Ramfile
+   input      [ 0:35]         dbm;              // Databus Mux
+   output reg [ 0:35]         dbus;             // DBus
 
    //
-   // Microcode Decode
+   // VMA Flags
    //
-   
-   wire [0:1] cromDBUS_SEL = `cromDBUS_SEL;
+
+   wire vmaREADCYCLE = vmaFLAGS[3];
+   wire vmaPHYSICAL  = vmaFLAGS[8];
+
+   //
+   // AC Reference
+   //
+   // Details:
+   //  True when addressing lowest 16 addresses using and not
+   //  physical addressing.  References to the ACs are never
+   //  physical.
+   //
+   // Trace
+   //  DPM4/E160
+   //  DPM4/E168
+   //  DPM4/E191
+   //
+
+   wire vmaACREF = ~vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
 
    //
    // Force RAMFILE
    //
+   // Details
+   //  This signal is asserted on an AC reference or a cache hit.
+   //  When asserted during a read cycle, the DBM mux causes the
+   //  RAMFILE to be read instead of main memory.
+   //
    // Trace
-   //  DPE3/E70 (force ramfile)
+   //  DPM5/E14
+   //  DPM5/E38
    //
 
-   wire [0:1] dbusSEL = cromDBUS_SEL;
-   
-/*
-   FIXME: forceRAMFILE is broken and is stubbed out
- 
-   reg [0:1] dbusSEL;
+   wire cacheHIT     = 1'b0;            // FIXME
 
-   always @(cromDBUS_SEL or forceRAMFILE)
-     begin
-	if (forceRAMFILE && (cromDBUS_SEL == `cromDBUS_SEL_DBM))
-	  dbusSEL <= `cromDBUS_SEL_RAM;
-        else
-	  dbusSEL <= cromDBUS_SEL;
-     end
-*/	
-     
+   wire forceRAMFILE = ((vmaACREF & vmaREADCYCLE) |
+                        (cacheHIT & vmaREADCYCLE));
+
    //
    // DBM
    //
@@ -95,27 +108,31 @@ module DBUS(crom, forceRAMFILE, pcFLAGS, dp, ramfile, dbm, dbus);
    //
    // Trace
    //  DPE3/E34
-   //  DPE3/E72
    //  DPE3/E35
-   //  DPE3/E73
-   //  DPE3/E56
-   //  DPE3/E100
-   //  DPE3/E63
-   //  DPE3/E87
    //  DPE3/E40
+   //  DPE3/E56
+   //  DPE3/E63
+   //  DPE3/E70
+   //  DPE3/E72
+   //  DPE3/E73
+   //  DPE3/E87
+   //  DPE3/E100
    //
-   
-   always @(dbusSEL or pcFLAGS or dp or ramfile or dbm)
+
+   always @(`cromDBUS_SEL or pcFLAGS or dp or ramfile or dbm or forceRAMFILE)
      begin
-        case (dbusSEL)
+        case (`cromDBUS_SEL)
           `cromDBUS_SEL_FLAGS:
             dbus = pcFLAGS;
           `cromDBUS_SEL_DP:
             dbus = dp;
-          `cromDBUS_SEL_RAM:
+          `cromDBUS_SEL_RAMFILE:
             dbus = ramfile;
           `cromDBUS_SEL_DBM:
-            dbus = dbm;
+            if (forceRAMFILE)
+              dbus = ramfile;
+            else
+              dbus = dbm;
         endcase
      end
 
