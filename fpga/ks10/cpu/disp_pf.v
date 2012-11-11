@@ -130,8 +130,9 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    // AC Reference
    //
    // Details
-   //  True when addressing the lowest 16 addresses (the ACs) using
-   //  physical addressing.
+   //  True when addressing lowest 16 addresses using and not
+   //  physical addressing.  References to the ACs are never
+   //  physical.
    //
    // Trace
    //  DPM4/E160
@@ -139,7 +140,7 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    //  DPM4/E191
    //
 
-   wire vmaACREF       = vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
+   wire vmaACREF       = ~vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
 
    //
    // Memory Cycles

@@ -232,16 +232,16 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
              if (`cromMEM_AREAD)
                if (`cromMEM_DPFUNC)
                  begin
-                    vmaREADCYCLE   <= `dromREADCYCLE;
-                    vmaWRTESTCYCLE <= `dromWRTESTCYCLE;
-                    vmaWRITECYCLE  <= `dromWRITECYCLE;
+                    vmaREADCYCLE   <= 1'b0;
+                    vmaWRTESTCYCLE <= 1'b0;
+                    vmaWRITECYCLE  <= 1'b0;
                     vmaCACHEINH    <= 1'b0;
                  end
                else
                  begin
-                    vmaREADCYCLE   <= 1'b0;
-                    vmaWRTESTCYCLE <= 1'b0;
-                    vmaWRITECYCLE  <= 1'b0;
+                    vmaREADCYCLE   <= `dromREADCYCLE;
+                    vmaWRTESTCYCLE <= `dromWRTESTCYCLE;
+                    vmaWRITECYCLE  <= `dromWRITECYCLE;
                     vmaCACHEINH    <= 1'b0;
                  end
              else
