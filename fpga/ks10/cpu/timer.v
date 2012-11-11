@@ -25,10 +25,12 @@
 //!      by updated microcode.
 //!
 //! \note
-//!      This timer code has be extensively re-written to clean
-//!      up metastaility issues from the independant timer clock.
+//!      This timer code has been extensively re-written to remove
+//!      the 4.1 MHz clock and use the 50 MHz master clock.
 //!
-//! \todo
+//!      IF YOU CHANGE THE CLOCK FREQUENCY FROM 50 MHZ YOU MUST
+//!      CHANGE THE CONSTANTS IN THIS MODULE FOR THE TIMER TO
+//!      WORK CORRECTLY.
 //!
 //! \file
 //!      timer.v
@@ -80,87 +82,54 @@ module TIMER(clk, rst, clken, crom, timerEN, timerIRQ, timerCOUNT);
    output [18:35]         timerCOUNT;   // Timer output
 
    //
-   // CLKGEN
+   // Frequency Divider
    //
-   // Details:
-   //  The Timer requires a 4.1 MHz clock.  This design uses a PLL
-   //  instead of an oscillator.
-   //
-   // Note:
-   //  Actually, the timerCLK runs at 8.2 MHz instead of 4.1 MHZ
-   //  because of a PLL limitation (can't divide by a large enough
-   //  number).  Therefore there is an extra counter stage in the
-   //  timer.
-   //
-   // Trace:
-   //  DPMC/E198
-   //
-
-   wire timerCLK;
-
-   CLKGEN uCLKGEN
-     (.clk(clk),
-      .rst(rst),
-      .timerCLK(timerCLK)
-      );
-
-   //
-   // Timer Clock Synchronization
-   //
-   // Details:
-   //  Synchronize timerCLK to the CPU clock domain.  I.e., treat
-   //  timerCLK as an asynchronous input to the CPU.  This 'clock'
-   //  input is synchronized by multiple levels of flip-flops to
-   //  mitgate meta-stability issues.
+   // Detail:
+   //  This creates the required 4.1 MHz 'clock' for the KS10 timer.
    //
    // Note:
-   //  timerINC is asserted for one clock cycle on the falling
-   //  edge of timerCLK.
+   //  This is an implementation of a Fractional N divider using an
+   //  accumulator.
    //
-   // Trace:
-   //  The KS10 does this very differently any probably has
-   //  metastability issues.  In fact, the microcode reads the timer
-   //  twice to ensure that it gets the same answer!  See the RDTIME
-   //  entry point in the microcode.
+   //  32-bit was chosen because at 32-bits, the frequency error
+   //  from the frequency division approximation is less than the
+   //  frequency error of the clock generator crystal.
+   //
+   //  increment = round-to-integer(2**32 * 4.1 MHz / 50.0 MHz)
+   //
+   //  Everytime this 32-bit counter overflow, it is time to
+   //  increment the interval timer.
+   //
+   //  The use of an accumulator instead of divider keeps the
+   //  average output frequency correct.  IOW, the accumulator
+   //  maintains the fractional time when the count overflows.
    //
 
-   reg [0:2] d;
-   reg timerINC;
+   reg  [0:31] accum;
+   reg         carry;
+   wire [0:31] incr = 32'd352187318;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          begin
-             d[0]     <= 1'b0;
-             d[1]     <= 1'b0;
-             d[2]     <= 1'b0;
-             timerINC <= 1'b0;
-          end
+          {carry, accum} = 33'b0;
         else
-          begin
-             d[0]     <= timerCLK;
-             d[1]     <= d[0];
-             d[2]     <= d[1];
-             timerINC <= ~d[2] & d[1];
-          end
+          {carry, accum} = {1'b0, accum} + {1'b0, incr};
      end
+
+   wire timerINC = carry;
 
    //
    // Timer
    //
    // Details:
    //  This is the one millisecond interval timer.  Most of the
-   //  timer is implemented in microcode...
+   //  timer is implemented in microcode.
    //
    // Note:
-   //  The timer has the up/down pin wired to the reset signal.
-   //  This doesn't make any sense.  I have not implemented this.
-   //
-   //  The timer is 13 bits instead of 12 bits because one bit
-   //  has been added to the LSB because the clock frequency is
-   //  8.2 MHz instead of 4.1 MHz.
-   //
-   //  This extra bit is used internally by the timer module only.
+   //  In the KS10, the timer has the up/down pin wired to the
+   //  reset signal. This doesn't make any sense.  I have not
+   //  implemented this.
    //
    // Trace:
    //  DPMC/E180
@@ -168,12 +137,12 @@ module TIMER(clk, rst, clken, crom, timerEN, timerIRQ, timerCOUNT);
    //  DPMC/E189
    //
 
-   reg [0:12] count;
+   reg [0:11] count;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          count <= 13'b0;
+          count <= 12'b0;
         else if (timerEN & timerINC)
           count <= count + 1'b1;
      end
@@ -182,8 +151,8 @@ module TIMER(clk, rst, clken, crom, timerEN, timerIRQ, timerCOUNT);
    // Timer Interrupt
    //
    // Details
-   //  The timerIRQ signal is asserted on a timer overflow;
-   //  i.e., when MSB changes from '1' to '0'.
+   //  The timerIRQ signal is asserted on a timer overflow;  i.e.,
+   //  when MSB changes from '1' to '0'.
    //
    // Note:
    //  Resetting the interrupt has priority over setting the
@@ -218,14 +187,13 @@ module TIMER(clk, rst, clken, crom, timerEN, timerIRQ, timerCOUNT);
 
    //
    // Fixups
-   //  The KS10 does not use the two LSBS of the timer.
-   //  The upper 6-bits are also not significant.
-   //  The microcode seems to read all of the bits and does
-   //  not perform any masking.
+   //  The KS10 does not use the two LSBS of the timer.  The upper
+   //  6-bits are also not significant.  The microcode seems to
+   //  read all of the bits and does not perform any masking.
    //
 
    assign timerCOUNT[18:23] = 6'b0;
-   assign timerCOUNT[24:33] = count[1:10];
+   assign timerCOUNT[24:33] = count[0:9];
    assign timerCOUNT[34:35] = 2'b0;
    assign timerIRQ          = intr;
 
