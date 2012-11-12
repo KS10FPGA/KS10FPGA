@@ -274,9 +274,9 @@ module CPU(clk, rst, clken,
    //
 
    wire skipJFCL;
-   wire [1:7] skip40 = {aluCRY0,   aluLZero,  aluRZero, ~flagUSER,  flagFPD,   regACZERO, cpuIRQ};
-   wire [1:7] skip20 = {aluCRY2,   aluLSign,  aluRSign, flagUSERIO, skipJFCL,  aluCRY1,   txxx};
-   wire [1:7] skip10 = {trapCYCLE, aluZERO,   scSIGN,   cpuEXEC,    iolatch,   ~cpuCONT,  ~timerIRQ};
+   wire [1:7] skip40 = {aluCRY0,   aluLZero, aluRZero, ~flagUSER,  flagFPD,  regACZERO, cpuIRQ};
+   wire [1:7] skip20 = {aluCRY2,   aluLSign, aluRSign, flagUSERIO, skipJFCL, aluCRY1,   txxx};
+   wire [1:7] skip10 = {trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    iolatch,  ~cpuCONT,  ~timerIRQ};
 
    //
    // DBM inputs

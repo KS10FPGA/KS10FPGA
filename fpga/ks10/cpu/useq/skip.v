@@ -70,104 +70,119 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
    input  [1:7]           skip20;	// Skip 20 bits
    input  [1:7]           skip10;	// Skip 10 bits
    output [0:11]          skipADDR;	// Skip Address
-   
+
    //
-   // Control ROM Skip Address
+   // SKIP 40
    //
-   // Details:
-   //  A skip always advances the microsequencer program counter
-   //  from an even address to the next odd address.
+   // Details
+   //  When this mux is selected, the mux can generate
+   //  a skip if the selected input is asserted.
    //
-   // Trace:
-   //  DPEA/E38
+   // Trace
    //  DPEA/E45
+   //
+   
+   reg skip0;
+   
+   always @(`cromSKIP_EN_40 or `cromSKIP_SEL or skip40)
+     begin
+        if (`cromSKIP_EN_40)
+          case (`cromSKIP_SEL)
+            3'b001:
+              skip0 = skip40[1];
+            3'b010:
+              skip0 = skip40[2];
+            3'b011:
+              skip0 = skip40[3];
+            3'b100:
+              skip0 = skip40[4];
+            3'b101:
+              skip0 = skip40[5];
+            3'b110:
+              skip0 = skip40[6];
+            3'b111:
+              skip0 = skip40[7];
+            default:
+              skip0 = 1'b0;
+          endcase
+        else
+          skip0 = 1'b0;
+     end
+
+   //
+   // SKIP 20
+   //
+   // Details
+   //  When this mux is selected, the mux can generate
+   //  a skip if the selected input is asserted.
+   //
+   // Trace
+   //  DPEA/E38
+   //
+   
+   reg skip1;
+   
+   always @(`cromSKIP_EN_20 or `cromSKIP_SEL or skip20)
+     begin
+        if (`cromSKIP_EN_20)
+          case (`cromSKIP_SEL)
+            3'b001:
+              skip1 = skip20[1];
+            3'b010:
+              skip1 = skip20[2];
+            3'b011:
+              skip1 = skip20[3];
+            3'b100:
+              skip1 = skip20[4];
+            3'b101:
+              skip1 = skip20[5];
+            3'b110:
+              skip1 = skip20[6];
+            3'b111:
+              skip1 = skip20[7];
+            default:
+              skip1 = 1'b0;
+           endcase
+        else
+          skip1 = 1'b0;
+     end
+
+   //
+   // SKIP 40
+   //
+   // Details
+   //  When this mux is selected, the mux can generate
+   //  a skip if the selected input is asserted.
+   //
+   // Trace
    //  CRA2/E85
    //
+
+   reg skip2;
    
-   reg skip;
-   
-   always @(`cromSKIP or skip40 or skip20 or skip10)
+   always @(`cromSKIP_EN_10 or `cromSKIP_SEL or skip10)
      begin
-	
-        skip = 1'b0;
-        
-        //
-        // DPEA/E45
-        //
-        
-        if (`cromSKIP_EN_40)
-          begin
-             case (`cromSKIP_SEL)
-               3'b000:
-                 skip = 1'b0;
-               3'b001:
-                 skip = skip40[1];
-               3'b010:
-                 skip = skip40[2];
-               3'b011:
-                 skip = skip40[3];
-               3'b100:
-                 skip = skip40[4];
-               3'b101:
-                 skip = skip40[5];
-               3'b110:
-                 skip = skip40[6];
-               3'b111:
-                 skip = skip40[7];
-             endcase
-          end
-
-        //
-        // DPEA/E38
-        //
-        
-        if (`cromSKIP_EN_20)
-          begin
-             case (`cromSKIP_SEL)
-               3'b000:
-                 skip = 1'b0;
-               3'b001:
-                 skip = skip20[1];
-               3'b010:
-                 skip = skip20[2];
-               3'b011:
-                 skip = skip20[3];
-               3'b100:
-                 skip = skip20[4];
-               3'b101:
-                 skip = skip20[5];
-               3'b110:
-                 skip = skip20[6];
-               3'b111:
-                 skip = skip20[7];
-             endcase
-          end
-
-        //
-        // CRA2/E85
-        //
-        
         if (`cromSKIP_EN_10)
-          begin
-             case (`cromSKIP_SEL)
-               3'b000:
-                 skip = 1'b0;
-               3'b001:
-                 skip = skip10[1];
-               3'b010:
-                 skip = skip10[2];
-               3'b011:
-                 skip = skip10[3];
-               3'b100:
-                 skip = skip10[4];
-               3'b101:
-                 skip = skip10[5];
-               3'b110:
-                 skip = skip10[6];
-               3'b111:
-                 skip = skip10[7];
-             endcase
-          end
+          case (`cromSKIP_SEL)
+            3'b001:
+              skip2 = skip10[1];
+            3'b010:
+              skip2 = skip10[2];
+            3'b011:
+              skip2 = skip10[3];
+            3'b100:
+              skip2 = skip10[4];
+            3'b101:
+              skip2 = skip10[5];
+            3'b110:
+              skip2 = skip10[6];
+            3'b111:
+              skip2 = skip10[7];
+            default:
+              skip2 = 1'b0;
+          endcase
+        else
+          skip2 = 1'b0;
      end
 
    //
@@ -180,7 +195,8 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
    // Trace
    //  CRA1/E111
    //  CRA1/E121
-   
-   assign skipADDR = (skip) ? 12'b000_000_000_001 : 12'b000_000_000_000;
+   //
+
+   assign skipADDR = (skip0 | skip1 | skip2) ? 12'b000_000_000_001 : 12'b000_000_000_000;
    
 endmodule

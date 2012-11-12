@@ -23,7 +23,6 @@ SRC := \
 	$(CPU)/bus.v \
 	$(CPU)/byte_disp.v \
 	$(CPU)/cache.v \
-	$(CPU)/clkgen.v \
 	$(CPU)/dbm.v \
 	$(CPU)/dbus.v \
 	$(CPU)/intf.v \
@@ -55,13 +54,13 @@ SRC := \
 asdf : $(SRC)
 	echo $(SRC)
 
-$(UC)/crom.dat $(UC)/crom.v : $(UC)/ks10.mcr $(UC)/crom.awk makefile
+$(UC)/crom.dat  : $(UC)/ks10.mcr $(UC)/crom.awk makefile
 	awk -f $(UC)/crom.awk $(UC)/ks10.mcr > $(UC)/crom.dat
 
-$(UC)/drom.dat $(UC)/drom.v : $(UC)/ks10.mcr $(UC)/drom.awk makefile
+$(UC)/drom.dat  : $(UC)/ks10.mcr $(UC)/drom.awk makefile
 	awk -f $(UC)/drom.awk $(UC)/ks10.mcr > $(UC)/drom.dat
 
-$(MEM)/dskaa.dat $(MEM)/ram32kx36.v : $(MEM)/MAINDEC-10-DSKAA.lst $(MEM)/dskaa.awk
+$(MEM)/dskaa.dat : $(MEM)/MAINDEC-10-DSKAA.lst $(MEM)/dskaa.awk
 	awk -f $(MEM)/dskaa.awk $(MEM)/MAINDEC-10-DSKAA.lst > $(MEM)/dskaa.dat
 
 clean: 

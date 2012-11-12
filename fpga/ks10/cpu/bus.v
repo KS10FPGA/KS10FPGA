@@ -48,39 +48,70 @@
 
 `include "useq/crom.vh"
 
-module BUS(clk, rst, clken, crom, dp, vmaFLAGS, vmaADDR, pcFLAGS,
-           cpu_bus_in, cpu_bus_out);
+module BUS(clk, rst, clken, crom, dp,
+           vmaFLAGS, vmaADDR, pcFLAGS,
+           busADDR, busDIN, busDOUT);
    
    parameter  cromWidth = `CROM_WIDTH;
-   input                      clk;              // Clock
-   input                      rst;              // Reset
-   input                      clken;            // Clock enable
-   input      [0:cromWidth-1] crom;             // Control ROM Data
-   input      [0:35]          dp;               // Data path
-   input      [ 0:13]         vmaFLAGS;		// VMA Flags
-   input      [14:35]         vmaADDR;  	// Virtual Memory Address
-   input      [0:35]          pcFLAGS;         	// PC Flags in Left Half
-   input [0:35]               cpu_bus_in;	//
-   output reg [0:35]          cpu_bus_out;      // KS10 Bus Out
+   input                   clk;         // Clock
+   input                   rst;         // Reset
+   input                   clken;     	// Clock enable
+   
+   input  [ 0:cromWidth-1] crom;        // Control ROM Data
+   input  [ 0:35]          dp;          // Data path
+   input  [ 0:13]          vmaFLAGS;	// VMA Flags
+   input  [14:35]          vmaADDR;  	// Virtual Memory Address
+   input  [16:26]          pageADDR;    // Page Address
+   
+   
+   output [ 0:35]          busADDR;	// Bus Address
+   input  [ 0:35]          busDIN;	// Bus In
+   output [ 0:35]          busDOUT; 	// Bus Out
 
    //
-   //
-   //
-   
- //  wire [0: 1] cromBUS_SEL  = `cromBUS_SEL;
-   
-   //
-   // vma Flags
+   // VMA Extended
    //
 
-   wire        vmaREADCYCLE   = vmaFLAGS[ 3];		// 1 = Read Cycle
-   wire        vmaWRITECYCLE  = vmaFLAGS[ 5];		// 1 = Write Cycle
-   wire        vmaIOCYCLE     = vmaFLAGS[10];		// 0 = Memory Cycle, 1 = IO Cycle
-   wire        vmaWRUCYCLE    = vmaFLAGS[11];		// 1 = Read interrupt controller number
-   wire        vmaVECTORCYCLE = vmaFLAGS[12];		// 1 = Read interrupt vector 
-   wire        vmaIOBYTECYCLE = vmaFLAGS[13];		// 1 = Unibus Byte IO Operation
+   wire vmaEXTENDED = 1'b1;
    
-   wire [0: 6] commandBITS    = {vmaIOCYCLE, vmaREADCYCLE, vmaWRITECYCLE, 1'b0, vmaWRUCYCLE, vmaVECTORCYCLE, vmaIOBYTECYCLE};
+   //
+   // Page Write
+   //
+
+   wire pageWRITE = 1'b0;
+
+   //
+   // Paged Reference
+   //
+
+   wire pagedREF = 1'b0;
+   
+   //
+   // Data Output
+   //
+   
+   always @(dp or pageWRITE)
+     begin
+        if (pageWRITE)
+          busDOUT[0:35] <= {dp[0:18], 2'b0, dp[21:22], 2'b0, dp[25:35]};
+        else
+          busDOUT[0:35] <= dp[0:35];
+     end
+
+   //
+   // Address Output
+   //
+
+   always @(pagedREF or vmaEXTENDED or vmaFLAGS or vmaADDR or pageADDR)
+     begin
+        if (pagedREF)
+          busADDR <= {vmaFLAGS, vmaADDR[14:15], pageADDR[16:26], vmaADDR[27:35]};
+        else
+          if (vmaEXTENDED)
+            busADDR <= {vmaFLAGS, vmaADDR};         
+          else
+            busADDR <= {vmaFLAGS, vmaADDR} & 36'o777760_777777;
+     end
    
    //
    // The first 7 bis are the Bus Command Bits
@@ -157,10 +188,6 @@ module BUS(clk, rst, clken, crom, dp, vmaFLAGS, vmaADDR, pcFLAGS,
        else
          busTX[0:35] <= {commandBITS, 11'b0, vmaADDR[18:35]};
    else
-     if (pageWRITE)
-       busTX[0:35] <= {dp[0:18], 2'b0, dp[21:22], 2'b0, dp[25:35]};
-     else
-       busTX[0:35] <= dp[0:35];
        
 
    
