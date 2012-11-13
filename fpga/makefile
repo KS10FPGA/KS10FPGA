@@ -1,8 +1,12 @@
-ARB := arb
-CON := cons
-CPU := cpu
-MEM := mem
-UBA := uba
+RTL := rtl
+ISE := ISE
+
+ARB := $(RTL)/arb
+CON := $(RTL)/cons
+CPU := $(RTL)/cpu
+ISE := $(ISE)
+MEM := $(RTL)/mem
+UBA := $(RTL)/uba
 UC  := $(CPU)/useq
 
 SRC := \
@@ -43,16 +47,22 @@ SRC := \
 	$(CPU)/cpu.v \
 	$(CON)/cons.v \
 	$(MEM)/mem.v \
-	$(MEM)/dskaa.dat \
+	$(MEM)/mem.dat \
 	$(ARB)/arb.v \
 	$(UBA)/uba.v \
-	rst.v \
-	ks10.v \
-	ks10.ucf \
-	testbench.v
+	$(RTL)/rst.v \
+	$(RTL)/ks10.v \
+	$(RTL)/ks10.ucf \
+	$(RTL)/testbench.v
 
-asdf : $(SRC)
-	echo $(SRC)
+BLD := \
+	$(ISE)/ks10.xise \
+	$(ISE)/ks10.gise \
+	$(ISE)/ks10.wcfg \
+	$(ISE)/dskaa.wcfg
+
+asdf : $(SRC) $(BLD)
+	echo $(SRC) $(BLD)
 
 $(UC)/crom.dat  : $(UC)/ks10.mcr $(UC)/crom.awk makefile
 	awk -f $(UC)/crom.awk $(UC)/ks10.mcr > $(UC)/crom.dat
@@ -60,11 +70,11 @@ $(UC)/crom.dat  : $(UC)/ks10.mcr $(UC)/crom.awk makefile
 $(UC)/drom.dat  : $(UC)/ks10.mcr $(UC)/drom.awk makefile
 	awk -f $(UC)/drom.awk $(UC)/ks10.mcr > $(UC)/drom.dat
 
-$(MEM)/dskaa.dat : $(MEM)/MAINDEC-10-DSKAA.lst $(MEM)/dskaa.awk
-	awk -f $(MEM)/dskaa.awk $(MEM)/MAINDEC-10-DSKAA.lst > $(MEM)/dskaa.dat
+$(MEM)/mem.dat : $(MEM)/MAINDEC-10-DSKAA.lst $(MEM)/mem.awk
+	awk -f $(MEM)/mem.awk $(MEM)/MAINDEC-10-DSKAA.lst > $(MEM)/mem.dat
 
 clean: 
-	rcsclean *
+	rcsclean $(RTL)/*
 	rcsclean $(ARB)/*
 	rcsclean $(CON)/*
 	rcsclean $(CPU)/*
@@ -80,3 +90,20 @@ archive_src: $(SRC)
 
 archive_all:
 	tar -czvf ks10_all_`date '+%y%m%d'`.tgz *
+
+fuse := /cygdrive/c/Xilinx/13.3/ISE_DS/ISE/bin/nt64/fuse.exe
+
+testbench_isim_beh.exe fuse :
+	cd ise;$(fuse) \
+	-intstyle ise \
+	-incremental \
+	-lib unisims_ver \
+	-lib unimacro_ver \
+	-lib xilinxcorelib_ver \
+	-lib secureip \
+	-o E:/PDPx/pdp10/KS10/fpga/ise/testbench_isim_beh.exe \
+	-prj E:/PDPx/pdp10/KS10/fpga/ise/testbench_beh.prj \
+	work.testbench
+
+testbench :
+	ise/testbench_isim_beh.exe -gui

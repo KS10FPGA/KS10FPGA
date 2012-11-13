@@ -92,7 +92,7 @@ module MEM(clk, clken, busREQI, busACKO, busADDRI, busDATAI, busDATAO);
    initial
      begin
        `ifdef INITMEM
-         `include "dskaa.dat"
+         `include "mem.dat"
        `endif
      end
 
