@@ -44,19 +44,23 @@
 // Comments are formatted for doxygen
 //
 
-module UBA(clk, clken, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA, ubaDATA, ubaACK);
+module UBA(clk, clken, busREQI, busREQO, busACKI, busACKO,
+           busADDRI, busADDRO, busDATAI, busDATAO);
 
-   input          clk;          // Clock
-   input          clken;        // Clock enable
-   input          cpuREAD;	// Memory/IO Read
-   input          cpuWRITE;     // Memory/IO Write
-   input          cpuIO;	// Memory/IO Select
-   input  [14:35] cpuADDR;      // Address
-   input  [ 0:35] cpuDATA;      // Unibus data in
-   output [ 0:35] ubaDATA;      // Unibus data out
-   output         ubaACK;       // Unibus ACK
+   input         clk;          	// Clock
+   input         clken;        	// Clock enable
+   input         busREQI;       // Unibus Request In
+   output        busREQO;       // Unibus Request Out
+   input         busACKI;       // Unibus Acknowledge In
+   output        busACKO;       // Unibus Acknowledge Out
+   input  [0:35] busADDRI;     	// Bus Address In
+   output [0:35] busADDRO;      // Bus Address Out
+   input  [0:35] busDATAI;      // Unibus Data In
+   output [0:35] busDATAO;      // Unibus Data Out
 
-   assign ubaDATA = 36'bx;
-   assign ubaACK  = 1'b0;
+   assign busREQO  = 1'b0;
+   assign busACKO  = 1'b0;
+   assign busADDRO = 36'bx;
+   assign busDATAO = 36'bx;
 
 endmodule

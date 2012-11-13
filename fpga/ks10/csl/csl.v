@@ -10,7 +10,7 @@
 //! \todo
 //!
 //! \file
-//!      cons.v
+//!      con.v
 //!
 //! \author
 //!      Rob Doyle - doyle (at) cox (dot) net
@@ -44,19 +44,30 @@
 // Comments are formatted for doxygen
 //
 
-module CONS(clk, clken, cpuPHYSICAL, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA, consDATA, consACK);
+module CON(clk, clken,
+           busREQI,  busREQO,  busACKI,  busACKO,
+           busADDRI, busADDRO, busDATAI, busDATAO);
 
-   input          clk;      	// Clock
-   input          clken;        // Clock enable
-   input          cpuPHYSICAL;	// Physical Addressing
-   input          cpuREAD;	// Memory/IO Read
-   input          cpuWRITE;     // Memory/IO Write
-   input          cpuIO;	// Memory/IO Select
-   input  [14:35] cpuADDR;      // CPU Address
-   input  [ 0:35] cpuDATA;      // CONS data in
-   output [ 0:35] consDATA;     // CONS data out
-   output         consACK;      // CONS ACK
+   input         clk;      	// Clock
+   input         clken;         // Clock enable
+   input         busREQI;	// Bus Request In
+   output        busREQO;	// Bus Request Out
+   output        busACKI;	// Bus Acknowledge In
+   output        busACKO;	// Bus Acknowledge Out
+   input  [0:35] busADDRI;      // Bus Address In
+   output [0:35] busADDRO;      // Bus Address Out
+   input  [0:35] busDATAI;      // Bus Data In
+   output [0:35] busDATAO; 	// Bus Data Out
 
+   //
+   // Memory Flags
+   //
+   
+   wire busREAD     = busADDRI[ 3]; 
+   wire busWRITE    = busADDRI[ 5];
+   wire busPHYSICAL = busADDRI[ 8];
+   wire busIO       = busADDRI[10];
+   
    //
    // Execute/Start 'Vector'
    //
@@ -71,22 +82,25 @@ module CONS(clk, clken, cpuPHYSICAL, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA,
    //  code to jump to the entry point of the code/bootloader.
    //
    
-   assign consACK  = cpuIO & cpuREAD & (cpuADDR == 18'o200000);
-   assign consDATA = consACK ? 36'o254000030600 : 36'bx;
-
+   assign busREQO  = 1'b0;
+   assign busACKO  = busIO & busREAD & busPHYSICAL & (busADDRI[18:35] == 18'o200000);
+   assign busDATAO = busACKO ? 36'o254000030600 : 36'bx;
+   assign busADDRO = 36'bx;
+   
    //
    // Print the Halt Status Block
+   // synthesis translate_off
    //
    
    always @(posedge clk)
      begin
-        if (cpuWRITE & ~cpuIO & cpuPHYSICAL)
+        if (busWRITE & ~busIO & busPHYSICAL)
           begin
-             case (cpuADDR)
+             case (busADDRI)
                18'o000000 :
                  begin
                   $display("");
-                  case (cpuDATA[24:35])
+                  case (busDATAI[24:35])
                     12'o0000 : $display("Microcode Startup.");
                     12'o0001 : $display("Halt Instruction.");
                     12'o0002 : $display("Console Halt.");
@@ -98,27 +112,29 @@ module CONS(clk, clken, cpuPHYSICAL, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA,
                     default  : $display("Unknown Halt Cause.");
                   endcase
                end
-               18'o000001 : $display("PC  is %06o", cpuDATA);
-               18'o376000 : $display("MAG is %06o", cpuDATA);
-               18'o376001 : $display("PC  is %06o", cpuDATA);
-               18'o376002 : $display("HR  is %06o", cpuDATA);
-               18'o376003 : $display("AR  is %06o", cpuDATA);
-               18'o376004 : $display("ARX is %06o", cpuDATA);
-               18'o376005 : $display("BR  is %06o", cpuDATA);
-               18'o376006 : $display("BRX is %06o", cpuDATA);
-               18'o376007 : $display("ONE is %06o", cpuDATA);
-               18'o376010 : $display("EBR is %06o", cpuDATA);
-               18'o376011 : $display("UBR is %06o", cpuDATA);
-               18'o376012 : $display("MSK is %06o", cpuDATA);
-               18'o376013 : $display("FLG is %06o", cpuDATA);
-               18'o376014 : $display("PI  is %06o", cpuDATA);
-               18'o376015 : $display("X1  is %06o", cpuDATA);
-               18'o376016 : $display("TO  is %06o", cpuDATA);
-               18'o376017 : $display("T1  is %06o", cpuDATA);
-               18'o376020 : $display("VMA is %06o", cpuDATA);
-               18'o376021 : $display("FE  is %06o", cpuDATA);
+               18'o000001 : $display("PC  is %06o", busDATAI);
+               18'o376000 : $display("MAG is %06o", busDATAI);
+               18'o376001 : $display("PC  is %06o", busDATAI);
+               18'o376002 : $display("HR  is %06o", busDATAI);
+               18'o376003 : $display("AR  is %06o", busDATAI);
+               18'o376004 : $display("ARX is %06o", busDATAI);
+               18'o376005 : $display("BR  is %06o", busDATAI);
+               18'o376006 : $display("BRX is %06o", busDATAI);
+               18'o376007 : $display("ONE is %06o", busDATAI);
+               18'o376010 : $display("EBR is %06o", busDATAI);
+               18'o376011 : $display("UBR is %06o", busDATAI);
+               18'o376012 : $display("MSK is %06o", busDATAI);
+               18'o376013 : $display("FLG is %06o", busDATAI);
+               18'o376014 : $display("PI  is %06o", busDATAI);
+               18'o376015 : $display("X1  is %06o", busDATAI);
+               18'o376016 : $display("TO  is %06o", busDATAI);
+               18'o376017 : $display("T1  is %06o", busDATAI);
+               18'o376020 : $display("VMA is %06o", busDATAI);
+               18'o376021 : $display("FE  is %06o", busDATAI);
              endcase
           end
      end
    
+   // synthesis translate_on
+
 endmodule

@@ -46,7 +46,8 @@
 
 `include "useq/crom.vh"
 
-module DBUS(crom, vmaADDR, vmaFLAGS, pcFLAGS, dp, ramfile, dbm, dbus);
+module DBUS(crom, vmaADDR, vmaFLAGS, pcFLAGS, cacheHIT, dp,
+            ramfile, dbm, dbus);
 
    parameter  cromWidth = `CROM_WIDTH;
 
@@ -54,6 +55,7 @@ module DBUS(crom, vmaADDR, vmaFLAGS, pcFLAGS, dp, ramfile, dbm, dbus);
    input      [ 0:13]         vmaFLAGS;         // Virtual Memory Flags
    input      [14:35]         vmaADDR;          // Virtual Memory Address
    input      [ 0:35]         pcFLAGS;          // PC Flags in Left Half
+   input                      cacheHIT;         // Cache Hit
    input      [ 0:35]         dp;               // Datapath
    input      [ 0:35]         ramfile;          // Ramfile
    input      [ 0:35]         dbm;              // Databus Mux
@@ -94,8 +96,6 @@ module DBUS(crom, vmaADDR, vmaFLAGS, pcFLAGS, dp, ramfile, dbm, dbus);
    //  DPM5/E14
    //  DPM5/E38
    //
-
-   wire cacheHIT     = 1'b0;            // FIXME
 
    wire forceRAMFILE = ((vmaACREF & vmaREADCYCLE) |
                         (cacheHIT & vmaREADCYCLE));

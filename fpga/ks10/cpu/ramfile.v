@@ -192,6 +192,12 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
    //  6.  Access to RAMFILE storage.
    //  7.  Access to the cache
    //
+   // Note:
+   //  The KS10 used {dbm[26:28], dbm[11:17]} for the
+   //  cromRAMADDR_SEL_NUM case below.  Since the number
+   //  field in on both halves of the dbm, this is
+   //  equivalent to dbm[8:17].
+   //
    // Trace
    //  DPE6/E3
    //  DPE6/E6
@@ -245,12 +251,10 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
                else
                  addr = {1'b1, vmaADDR[27:35]};
             end
-          `cromRAMADDR_SEL_SPARE5:
-            addr = 9'b0;
           `cromRAMADDR_SEL_RAM:
             addr = vmaADDR[26:35];
           `cromRAMADDR_SEL_NUM:
-            addr = {dbm[26:28], dbm[11:17]};
+            addr = dbm[8:17];
           default:
             addr = 9'b0;
         endcase
@@ -276,14 +280,16 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
                    (CRA6_MEMORY_FUNCTION & `cromMEM_WAIT   &              )
                    (CRA6_MEMORY_FUNCTION & `cromMEM_BWRITE & dromCOND_FUNC));
 
+   ramfileWRITE = ( vmaACREF & ~MEM_READ        & memory_cycle & mem_wait) |
+                  (~vmaACREF & STOP_MAIN_MEMORY & memory_cycle & mem_wait) |
+ 
 */
 
-   wire ramfileWRITE = (
-                   /*
-                    ( vmaACREF & ~MEM_READ        & memory_cycle & mem_wait) |
-                    (~vmaACREF & STOP_MAIN_MEMORY & memory_cycle & mem_wait) |
-                    */
-                   (`cromFMWRITE));
+   //
+   // RAMFILE Write
+   //
+   
+   wire ramfileWRITE = `cromFMWRITE;
 
    //
    // RAMFILE MEMORY

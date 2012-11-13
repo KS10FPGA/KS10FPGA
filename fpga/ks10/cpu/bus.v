@@ -8,8 +8,8 @@
 //! \details
 //!
 //! \todo
+//!
 //! \note
-//!      For bus protocol information see
 //!
 //! \file
 //!      bus.v
@@ -49,69 +49,95 @@
 `include "useq/crom.vh"
 
 module BUS(clk, rst, clken, crom, dp,
-           vmaFLAGS, vmaADDR, pcFLAGS,
-           busADDR, busDIN, busDOUT);
+           vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR, aprFLAGS, 
+           busREQ, busACK, busDATAO, busADDRO);
    
    parameter  cromWidth = `CROM_WIDTH;
    input                   clk;         // Clock
    input                   rst;         // Reset
-   input                   clken;     	// Clock enable
-   
+   input                   clken;       // Clock enable
    input  [ 0:cromWidth-1] crom;        // Control ROM Data
    input  [ 0:35]          dp;          // Data path
-   input  [ 0:13]          vmaFLAGS;	// VMA Flags
-   input  [14:35]          vmaADDR;  	// Virtual Memory Address
+   input                   vmaEXTENDED; // Extended VMA
+   input  [ 0:13]          vmaFLAGS;    // VMA Flags
+   input  [14:35]          vmaADDR;     // Virtual Memory Address
    input  [16:26]          pageADDR;    // Page Address
-   
-   
-   output [ 0:35]          busADDR;	// Bus Address
-   input  [ 0:35]          busDIN;	// Bus In
-   output [ 0:35]          busDOUT; 	// Bus Out
+   input  [22:35]          aprFLAGS;    // APR Flags
+   output                  busREQ;      // Bus Request
+   input                   busACK;      // Bus Acknowledge                  
+   output [ 0:35]          busDATAO;    // Bus Out
+   output [ 0:35]          busADDRO;    // Bus Address
 
    //
-   // VMA Extended
+   // Control ROM Decode
    //
 
-   wire vmaEXTENDED = 1'b1;
+   wire pageWRITE = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
    
    //
-   // Page Write
+   // APR Flags
    //
 
-   wire pageWRITE = 1'b0;
+   wire flagPAGEEN = aprFLAGS[23];
+
+   //
+   // VMA Flags
+   //
+   
+   wire vmaPHYSICAL = vmaFLAGS[8];
+   
+   //
+   // FIXME
+   //
+
+   wire DPM5_BUS_REQUEST = 1'b0;
 
    //
    // Paged Reference
    //
 
-   wire pagedREF = 1'b0;
+   wire pagedREF = DPM5_BUS_REQUEST & ~vmaPHYSICAL & flagPAGEEN;
    
    //
    // Data Output
    //
+   // FIXME:
+   //  Is the mux necessary?  It just zeros out dp[19:20] and dp[23:24].
+   //
+
+   reg [0:35] busDATAO;
    
    always @(dp or pageWRITE)
      begin
         if (pageWRITE)
-          busDOUT[0:35] <= {dp[0:18], 2'b0, dp[21:22], 2'b0, dp[25:35]};
+          busDATAO[0:35] <= {dp[0:18], 2'b0, dp[21:22], 2'b0, dp[25:35]};
         else
-          busDOUT[0:35] <= dp[0:35];
+          busDATAO[0:35] <= dp[0:35];
      end
 
    //
    // Address Output
    //
 
+   reg [0:35] busADDRO;
+   
    always @(pagedREF or vmaEXTENDED or vmaFLAGS or vmaADDR or pageADDR)
      begin
         if (pagedREF)
-          busADDR <= {vmaFLAGS, vmaADDR[14:15], pageADDR[16:26], vmaADDR[27:35]};
+          busADDRO <= {vmaFLAGS, vmaADDR[14:15], pageADDR[16:26], vmaADDR[27:35]};
         else
           if (vmaEXTENDED)
-            busADDR <= {vmaFLAGS, vmaADDR};         
+            busADDRO <= {vmaFLAGS, vmaADDR};         
           else
-            busADDR <= {vmaFLAGS, vmaADDR} & 36'o777760_777777;
+            busADDRO <= {vmaFLAGS, vmaADDR} & 36'o777760_777777;
      end
+
+   //
+   // This is OK.  The CPU has the lowest priority.
+   //
+   
+   assign busREQ = 1'b1;
+   
    
    //
    // The first 7 bis are the Bus Command Bits
@@ -161,7 +187,7 @@ module BUS(clk, rst, clken, crom, dp,
 /*   
    reg busREQUEST;
    reg pagedREF;
-   reg pageWRITE;			// Load page tables on external device
+   reg pageWRITE;                       // Load page tables on external device
    reg vmaEXTENDED;
    
    always @(posedge clk or posedge rst)
@@ -360,9 +386,9 @@ module BUS(clk, rst, clken, crom, dp,
        busTX[16:17] <= pageADDR[16:17];
      else
        if (vmaEXTENDED)       
-	 busTX[16:17] <= vmaADDR[16:17];
+         busTX[16:17] <= vmaADDR[16:17];
        else
-	 busTX[16:17] <= 2'b0;
+         busTX[16:17] <= 2'b0;
    else
      if (pagedREF)
        busTX[16:17] <= 2'b0;
@@ -375,14 +401,14 @@ module BUS(clk, rst, clken, crom, dp,
    if (busREQUEST)
      if (vmaEXTENDED)       
        if (pagedREF)
-	 busTX[16:17] <= pageADDR[16:17];
+         busTX[16:17] <= pageADDR[16:17];
        else
-	 busTX[16:17] <= vmaADDR[16:17];
+         busTX[16:17] <= vmaADDR[16:17];
      else
        if (pagedREF)
-	 busTX[16:17] <= pageADDR[16:17];
+         busTX[16:17] <= pageADDR[16:17];
        else
-	 busTX[16:17] <= 2'b0;
+         busTX[16:17] <= 2'b0;
    else
      if (pagedREF)
        busTX[16:17] <= 2'b0;

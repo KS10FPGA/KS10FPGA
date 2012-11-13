@@ -50,9 +50,9 @@
 module CPU(clk, rst, clken,
            consTIMEREN,
            consSTEP, consRUN, consEXEC, consCONT, consHALT, consTRAPEN, consCACHEEN,
-           cpuADDR, pwrIRQ, consIRQ, ubaIRQ, nxmIRQ,
-           cpuDIN, cpuACK, cpuDOUT, cpuWRITE, cpuREAD, cpuIO,
-           cpuCONT, cpuHALT, cpuRUN);
+           pwrIRQ, consIRQ, ubaIRQ,
+           busREQ, busACK, busDATAI, busDATAO, busADDRO,
+           cpuHALT, cpuRUN);
    
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -71,15 +71,11 @@ module CPU(clk, rst, clken,
    input          pwrIRQ;       // Power Fail Interrupt Request
    input          consIRQ;      // Console Interrupt Request
    input  [ 1: 7] ubaIRQ;       // Unibus Interrupt Request
-   input          nxmIRQ;       // Memory (non-existant) Request
-   input          cpuACK;	// 
-   input  [ 0:35] cpuDIN;       //
-   output [14:35] cpuADDR;      //
-   output [ 0:35] cpuDOUT;      //
-   output         cpuWRITE;     // Memory/IO Write
-   output         cpuREAD;      // Memory/IO Read
-   output         cpuIO;	// Memory / IO
-   output         cpuCONT;      //
+   output         busREQ;	// Bus Request
+   input          busACK;	// Bus Acknowledge
+   input  [ 0:35] busDATAI;     // Bus Data Input 
+   output [ 0:35] busDATAO;     // Bus Data Output
+   output [ 0:35] busADDRO;     // Bus Addr and Flags
    output         cpuHALT;      //
    output         cpuRUN;       //
 
@@ -121,9 +117,11 @@ module CPU(clk, rst, clken,
    wire stop_main_memory;
    wire memory_cycle            = 1'b0;                 // FIXME
    wire cpuIRQ;                                         // Extenal Interrupt
-   wire iolatch;
+   wire iolatch;					// FIXME
+   wire cpuCONT;      					//
+   wire nxmIRQ = 1'b0;					// FIXME
    wire JRST0;
-   wire indirect;
+   wire trapCYCLE;
 
    //
    // Interrupt Registers
@@ -232,13 +230,18 @@ module CPU(clk, rst, clken,
    wire         prevEN;
 
    //
+   // Cache
+   //
+
+   wire         cacheHIT = 1'b0;			// FIXME: Cache not implemented.
+
+   //
    // Busses
    //
 
    wire [ 0:35] dp;                                     // ALU output bus
    wire [ 0:35] dbus;                                   //
    wire [ 0:35] dbm;                                    //
-   wire [ 0:35] mb;                                     // Memory Buffer
    wire [ 0:35] ramfile;                                // RAMFILE output
 
    //
@@ -249,12 +252,6 @@ module CPU(clk, rst, clken,
    wire         scadSIGN = scad[0];                     // SCAD Sign
    wire         scSIGN;                                 // Step Count Sign
    wire         feSIGN;                                 // Floating-point exponent Sign
-
-   //
-   // Traps
-   //
-
-   wire         trapCYCLE;
 
    //
    // Dispatches
@@ -274,8 +271,8 @@ module CPU(clk, rst, clken,
    //
 
    wire skipJFCL;
-   wire [1:7] skip40 = {aluCRY0,   aluLZero, aluRZero, ~flagUSER,  flagFPD,  regACZERO, cpuIRQ};
-   wire [1:7] skip20 = {aluCRY2,   aluLSign, aluRSign, flagUSERIO, skipJFCL, aluCRY1,   txxx};
+   wire [1:7] skip40 = {aluCRY0,   aluLZero, aluRZero, ~flagUSER,  flagFPD,  regACZERO, cpuIRQ   };
+   wire [1:7] skip20 = {aluCRY2,   aluLSign, aluRSign, flagUSERIO, skipJFCL, aluCRY1,   txxx     };
    wire [1:7] skip10 = {trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    iolatch,  ~cpuCONT,  ~timerIRQ};
 
    //
@@ -288,7 +285,7 @@ module CPU(clk, rst, clken,
    wire [0:35] dbm3 = dp[0:35];
    wire [0:35] dbm4 = {dp[18:35], dp[0:17]};
    wire [0:35] dbm5 = {vmaFLAGS[0:13], vmaADDR[14:35]};
-   wire [0:35] dbm6 = mb[0:35];
+   wire [0:35] dbm6 = busDATAI;
    wire [0:35] dbm7 = {`cromNUM, `cromNUM};
 
    //
@@ -353,22 +350,27 @@ module CPU(clk, rst, clken,
       .dispBYTE(dispBYTE)
       );
 
-/*
-
    //
-   // KS10 Bus
+   // Memory/IO Bus
    //
 
    BUS uBUS
      (.clk(clk),
       .rst(rst),
       .clken(clken),
+      .crom(crom),
       .dp(dp),
+      .vmaEXTENDED(vmaEXTENDED),
       .vmaFLAGS(vmaFLAGS),
-      .busDATA(busDATA)
+      .vmaADDR(vmaADDR),
+      .pageADDR(pageADDR),
+      .aprFLAGS(aprFLAGS),
+      .busREQ(busREQ),
+      .busACK(busACK),
+      .busDATAO(busDATAO),
+      .busADDRO(busADDRO)
       );
- */
-
+   
    //
    // Data Bus
    //
@@ -410,6 +412,7 @@ module CPU(clk, rst, clken,
       .vmaFLAGS(vmaFLAGS),
       .vmaADDR(vmaADDR),
       .pcFLAGS({pcFLAGS, 1'b0, pi_new, 4'b1111, vmaADDR[26:35]}),
+      .cacheHIT(cacheHIT),
       .dp(dp),
       .ramfile(ramfile),
       .dbm(dbm),
@@ -687,13 +690,5 @@ module CPU(clk, rst, clken,
       .vmaFLAGS(vmaFLAGS),
       .vmaADDR(vmaADDR)
       );
-
-
-   assign cpuADDR  = vmaADDR;
-   assign mb       = cpuDIN;
-   assign cpuREAD  = vmaREADCYCLE;
-   assign cpuWRITE = vmaWRITECYCLE;
-   assign cpuIO    = vmaIOCYCLE;
-   assign cpuDOUT  = dp;
    
 endmodule

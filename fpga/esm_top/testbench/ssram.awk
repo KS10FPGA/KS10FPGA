@@ -112,14 +112,10 @@ BEGIN {
 
 END {
    for (i = 0; i < 040000; i++) { 
-       if (i == 0) {
-	   printf "         RAM[%05d] = 36'o%s;	// %06o (jump to entry point)\n", i, "254000030600", i
+       if (map[i] != "") {
+           printf "         RAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
        } else {
-	   if (map[i] != "") {
-               printf "         RAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
-           } else {
-	       printf "         RAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
-	   }
+           printf "         RAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
        }
    }
 }

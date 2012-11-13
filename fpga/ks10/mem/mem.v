@@ -46,18 +46,15 @@
 
 `include "../cpu/config.vh"
 
-module MEM(clk, clken, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA,
-           memDATA, memACK);
+module MEM(clk, clken, busREQI, busACKO, busADDRI, busDATAI, busDATAO);
 
    input          clk;          // Clock
    input          clken;        // Clock enable
-   input          cpuREAD;	// Memory/IO Read
-   input          cpuWRITE;     // Memory/IO Write
-   input          cpuIO;	// Memory/IO Select
-   input  [14:35] cpuADDR;      // Address
-   input  [ 0:35] cpuDATA;      // Data in
-   output [ 0:35] memDATA;      // Data out
-   output         memACK;       // Memory ACK
+   input          busREQI;      // Memory Request In
+   output         busACKO;      // Memory Acknowledge Out
+   input  [0:35]  busADDRI;     // Address Address In
+   input  [0:35]  busDATAI;     // Data in
+   output [0:35]  busDATAO;     // Data out
 
    //
    // Address bus resize
@@ -66,8 +63,19 @@ module MEM(clk, clken, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA,
    //  Only 32K implemented.
    //
 
-   wire [0:14] addr = cpuADDR[21:35];
+   wire [0:14] addr = busADDRI[21:35];
 
+   //
+   // Memory flags
+   //
+   // Details:
+   //  busADDRI[0:13] is flags
+   //
+
+   wire busREAD  = busADDRI[ 3];
+   wire busWRITE = busADDRI[ 5];
+   wire busIO    = busADDRI[10];
+   
    //
    // PDP10 Memory Initialization
    //
@@ -107,20 +115,20 @@ module MEM(clk, clken, cpuREAD, cpuWRITE, cpuIO, cpuADDR, cpuDATA,
 
    always @(negedge clk)
      begin
-        if (clken & ~cpuIO)
+        if (clken & ~busIO)
           begin
-             if (cpuWRITE)
-               RAM[cpuADDR] <= cpuDATA;
-             rd_addr <= cpuADDR;
+             if (busWRITE)
+               RAM[busADDRI] <= busDATAI;
+             rd_addr <= busADDRI[21:35];
           end
      end
 
-   assign memDATA = RAM[rd_addr];
+   assign busDATAO = RAM[rd_addr];
 
    //
-   // ACK the memory if implemented.x
+   // ACK the memory if implemented.
    //
 
-   assign memACK = ~cpuIO & (cpuADDR < 32768);
+   assign busACKO = ~busIO & (busADDRI[14:35] < 32768);
 
 endmodule

@@ -54,64 +54,72 @@ module KS10(clk, reset, pwrFAIL,
    // System Interfaces
    //
 
-   input        clk;            // Clock
-   input        reset;          // Reset
-   input        pwrFAIL;        // Power Fail
-   input        swCONT;         // Continue Switch
-   input        swEXEC;         // Exec Switch
-   input        swRUN;          // Run Switch
-   output       cpuHALT;        // Halt LED
-   output       cpuRUN;         // Run LED
+   input       clk;             // Clock
+   input       reset;           // Reset
+   input       pwrFAIL;         // Power Fail
+   input       swCONT;          // Continue Switch
+   input       swEXEC;          // Exec Switch
+   input       swRUN;           // Run Switch
+   output      cpuHALT;         // Halt LED
+   output      cpuRUN;          // Run LED
 
    //
    // Console Interfaces
    //
 
-   input        conRXD;         // Console RXD
-   output       conTXD;         // Console TXD
+   input       conRXD;          // Console RXD
+   output      conTXD;          // Console TXD
 
    //
    // Bus Arbiter Outputs
    //
 
-   wire [ 0:35] arbDATA;        // Arbiter Data
-   wire         arbACK;         // Arbiter ACK
-   wire         arbNXMIRQ;      //
+   wire [0:35] arbADDRO;	// Arbiter Address Out
 
    //
    // Console Interfaces
    //
 
-   wire [ 0:35] consDATA;       // Console Data
-   wire         consACK;        // Console ACK
+
+   wire        conREQI;         // Console Bus Request In
+   wire        conREQO;         // Console Bus Request Out
+   wire        conACKI;         // Console Bus Acknowledge In
+   wire        conACKO;         // Console Bus Acknowledge Out
+   wire [0:35] conADDRI;        // Console Address In
+   wire [0:35] conADDRO;        // Console Address Out        
+   wire [0:35] conDATAI;        // Console Data In
+   wire [0:35] conDATAO;       	// Console Data Out
 
    //
    // CPU Outputs
    //
 
-   wire         cpuWRITE;       // Memory/IO Write
-   wire         cpuREAD;        // Memory/IO Read
-   wire         cpuIO;          // IO
-
-   wire         cpuCONT;        //
-   wire         cpuHALT;        //
-   wire         cpuRUN;         //
-   wire [14:35] cpuADDR;        // Memory Address
-   wire [ 0:35] cpuDATA;        // Memory Data
+   wire        cpuHALT;         //
+   wire        cpuRUN;          //
+   wire        cpuREQ;          // CPU Bus Request
+   wire        cpuACK;          // CPU Bus Acknowledge
+   wire [0:35] cpuADDRO;        // CPU Address Out
+   wire [0:35] cpuDATAI;        // CPU Data In
+   wire [0:35] cpuDATAO;        // CPU Data Out
 
    //
    // Memory Outputs
    //
 
-   wire [ 0:35] memDATA;        // Memory Data Output
-   wire         memACK;         // Memory ACK
+   wire [0:35] memDATAI;       // Memory Data In
+   wire [0:35] memDATAO;       // Memory Data Out
+   wire        memACK;         // Memory ACK
 
    //
    // Unibus Interface
    //
 
-   wire [ 0:35] ubaDATA;        // Unibus Data Output
-   wire         ubaACK;         // Unibus ACK
+   wire        ubaREQ;         	// Unibus Bus Request
+   wire        ubaACK;         	// Unibus Bus Acknowledge
+   wire [0:35] ubaADDRI;        // Unibus Address In
+   wire [0:35] ubaADDRO;        // Unibus Address Out
+   wire [0:35] ubaDATAI;        // Unibus Data In
+   wire [0:35] ubaDATAO;        // Unibus Data Out
 
    //
    // Reset
@@ -126,6 +134,42 @@ module KS10(clk, reset, pwrFAIL,
      (.clk              (clk),
       .reset            (reset),
       .rst              (rst)
+      );
+
+   //
+   // Bus Arbiter
+   //
+
+   ARB uARB
+     (// CPU
+      .cpuREQI          (cpuREQ),
+      .cpuACKO          (cpuACK),
+      .cpuADDRI         (cpuADDRO),
+      .cpuDATAI         (cpuDATAO),
+      .cpuDATAO         (cpuDATAI),
+      // Console
+      .conREQI          (conREQO),
+      .conREQO          (conREQI),
+      .conACKI          (conACKO),
+      .conACKO          (conACKI),
+      .conADDRI         (conADDRO),
+      .conDATAI         (conDATAO),
+      .conDATAO         (conDATAI),
+      // Unibus
+      .ubaREQI          (ubaREQO),
+      .ubaREQO          (ubaREQI),
+      .ubaACKI          (ubaACKO),
+      .ubaACKO          (ubaACKI),
+      .ubaADDRI         (ubaADDRO),
+      .ubaDATAI         (ubaDATAO),
+      .ubaDATAO         (ubaDATAI),
+      // Memory
+      .memREQO          (memREQ),
+      .memACKI          (memACK),
+      .memDATAI         (memDATAO),
+      .memDATAO         (memDATAI),
+      // Arb
+      .arbADDRO         (arbADDRO)
       );
 
    //
@@ -147,51 +191,30 @@ module KS10(clk, reset, pwrFAIL,
       .pwrIRQ           (pwrFAIL),
       .consIRQ          (1'b0),
       .ubaIRQ           (7'b0),
-      .nxmIRQ           (arbNXMIRQ),
-      .cpuADDR          (cpuADDR),
-      .cpuDIN           (arbDATA),
-      .cpuACK           (arbACK),
-      .cpuDOUT          (cpuDATA),
-      .cpuWRITE         (cpuWRITE),
-      .cpuREAD          (cpuREAD),
-      .cpuIO            (cpuIO),
-      .cpuCONT          (cpuCONT),
+      .busREQ           (cpuREQ),
+      .busACK           (cpuACK),
+      .busADDRO         (cpuADDRO),
+      .busDATAI         (cpuDATAI),
+      .busDATAO         (cpuDATAO),
       .cpuHALT          (cpuHALT),
       .cpuRUN           (cpuRUN)
-      );
-
-   //
-   // Bus Arbiter
-   //
-
-   ARB uARB
-     (.memACK           (memACK),
-      .memDATA          (memDATA),
-      .consACK          (consACK),
-      .consDATA         (consDATA),
-      .ubaACK           (ubaACK),
-      .ubaDATA          (ubaDATA),
-      .arbACK           (arbACK),
-      .arbDATA          (arbDATA)
       );
 
    //
    // Console Interface
    //
 
-   wire cpuPHYSICAL = 1'b1;     // FIXME
-
-   CONS uCONS
+   CON uCON
      (.clk              (clk),
-      .clken            (cpuIO),
-      .cpuPHYSICAL      (cpuPHYSICAL),
-      .cpuREAD          (cpuREAD),
-      .cpuWRITE         (cpuWRITE),
-      .cpuIO            (cpuIO),
-      .cpuADDR          (cpuADDR),
-      .cpuDATA          (cpuDATA),
-      .consDATA         (consDATA),
-      .consACK          (consACK)
+      .clken            (1'b1),
+      .busREQI          (conREQI),
+      .busREQO          (conREQO),
+      .busACKI          (conACKI),
+      .busACKO          (conACKO),
+      .busADDRI         (arbADDRO),
+      .busADDRO         (conADDRO),
+      .busDATAI         (conDATAI),
+      .busDATAO         (conDATAO)
       );
 
    //
@@ -201,13 +224,11 @@ module KS10(clk, reset, pwrFAIL,
    MEM uMEM
      (.clk              (clk),
       .clken            (1'b1),
-      .cpuREAD          (cpuREAD),
-      .cpuWRITE         (cpuWRITE),
-      .cpuIO            (cpuIO),
-      .cpuADDR          (cpuADDR),
-      .cpuDATA          (cpuDATA),
-      .memDATA          (memDATA),
-      .memACK           (memACK)
+      .busREQI		(memREQ),
+      .busACKO          (memACK),
+      .busADDRI         (arbADDRO),
+      .busDATAI 	(memDATAI),
+      .busDATAO         (memDATAO)
       );
 
    //
@@ -217,15 +238,14 @@ module KS10(clk, reset, pwrFAIL,
    UBA uUBA
      (.clk              (clk),
       .clken            (1'b1),
-      .cpuREAD          (cpuREAD),
-      .cpuWRITE         (cpuWRITE),
-      .cpuIO            (cpuIO),
-      .cpuADDR          (cpuADDR),
-      .cpuDATA          (cpuDATA),
-      .ubaDATA          (ubaDATA),
-      .ubaACK           (ubaACK)
+      .busREQI          (ubaREQI),
+      .busREQO          (ubaREQO),
+      .busACKI          (ubaACKI),
+      .busACKO          (ubaACKO),
+      .busADDRI         (arbADDRO),
+      .busADDRO         (ubaADDRO),
+      .busDATAI         (ubaDATAI),
+      .busDATAO         (ubaDATAO)
       );
-
-    assign arbNXMIRQ = ~arbACK & ~cpuIO;
 
 endmodule
