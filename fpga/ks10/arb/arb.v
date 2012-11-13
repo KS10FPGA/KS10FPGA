@@ -136,29 +136,23 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
              ubaACKO  = 1'b0;
              memREQO  = 1'b1;
              arbADDRO = conADDRI;
+             cpuDATAO = conDATAI;
+             memDATAO = conDATAI;
+             ubaDATAO = conDATAI;
              if (memACKI)
                begin
                   conACKO  = 1'b1;
                   conDATAO = memDATAI;
-                  cpuDATAO = 36'bx;
-                  memDATAO = conDATAI;
-                  ubaDATAO = 36'bx;
                end
              else if (ubaACKI)
                begin
                   conACKO  = 1'b1;
                   conDATAO = ubaDATAI;
-                  cpuDATAO = 36'bx;
-                  memDATAO = 36'bx;
-                  ubaDATAO = conDATAI;
                end
              else
                begin
                   conACKO  = 1'b0;
                   conDATAO = 36'bx;
-                  cpuDATAO = 36'bx;
-                  memDATAO = 36'bx;
-                  ubaDATAO = 36'bx;
                end
           end
 
@@ -177,20 +171,17 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
              ubaREQO  = 1'b0;
              memREQO  = 1'b1;
              arbADDRO = ubaADDRI;
+             conDATAO = ubaDATAI;
+             cpuDATAO = ubaDATAI;
+             memDATAO = ubaDATAI;
              if (memACKI)
                begin
                   ubaACKO  = 1'b1;
-                  conDATAO = 36'bx;
-                  cpuDATAO = 36'bx;
-                  memDATAO = ubaDATAI;
                   ubaDATAO = memDATAI;
                end
              else
                begin
                   ubaACKO  = 1'b0;
-                  conDATAO = 36'bx;
-                  cpuDATAO = 36'bx;
-                  memDATAO = 36'bx;
                   ubaDATAO = 36'bx;
                end
           end
@@ -211,37 +202,28 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
              ubaACKO  = 1'b0;
              memREQO  = 1'b1;
              arbADDRO = cpuADDRI;
+             conDATAO = cpuDATAI;
+             memDATAO = cpuDATAI;
+             ubaDATAO = cpuDATAI;
              if (memACKI)
                begin
                   cpuACKO  = 1'b1;
-                  conDATAO = 36'bx;
                   cpuDATAO = memDATAI;
-                  memDATAO = cpuDATAI;
-                  ubaDATAO = 36'bx;
                end
              else if (ubaACKI)
                begin
                   cpuACKO  = 1'b1;
-                  conDATAO = 36'bx;
                   cpuDATAO = ubaDATAI;
-                  memDATAO = 36'bx;
-                  ubaDATAO = cpuDATAI;
                end
              else if (conACKI)
                begin
                   cpuACKO  = 1'b1;
-                  conDATAO = cpuDATAO;
                   cpuDATAO = conDATAI;
-                  memDATAO = 36'bx;
-                  ubaDATAO = 36'bx;
                end
              else
                begin
-                  ubaACKO  = 1'b0;
-                  conDATAO = 36'bx;
+                  cpuACKO  = 1'b0;
                   cpuDATAO = 36'bx;
-                  memDATAO = 36'bx;
-                  ubaDATAO = 36'bx;
                end
           end
      end

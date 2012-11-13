@@ -52,7 +52,7 @@ module CON(clk, clken,
    input         clken;         // Clock enable
    input         busREQI;	// Bus Request In
    output        busREQO;	// Bus Request Out
-   output        busACKI;	// Bus Acknowledge In
+   input         busACKI;	// Bus Acknowledge In
    output        busACKO;	// Bus Acknowledge Out
    input  [0:35] busADDRI;      // Bus Address In
    output [0:35] busADDRO;      // Bus Address Out
@@ -60,13 +60,14 @@ module CON(clk, clken,
    output [0:35] busDATAO; 	// Bus Data Out
 
    //
-   // Memory Flags
+   // Memory Address and Flags
    //
    
-   wire busREAD     = busADDRI[ 3]; 
-   wire busWRITE    = busADDRI[ 5];
-   wire busPHYSICAL = busADDRI[ 8];
-   wire busIO       = busADDRI[10];
+   wire         busREAD     = busADDRI[ 3]; 
+   wire         busWRITE    = busADDRI[ 5];
+   wire         busPHYSICAL = busADDRI[ 8];
+   wire         busIO       = busADDRI[10];
+   wire [18:35] busADDR     = busADDRI[18:35];
    
    //
    // Execute/Start 'Vector'
@@ -83,7 +84,7 @@ module CON(clk, clken,
    //
    
    assign busREQO  = 1'b0;
-   assign busACKO  = busIO & busREAD & busPHYSICAL & (busADDRI[18:35] == 18'o200000);
+   assign busACKO  = busIO & busREAD & busPHYSICAL & (busADDR == 18'o200000);
    assign busDATAO = busACKO ? 36'o254000030600 : 36'bx;
    assign busADDRO = 36'bx;
    
@@ -96,7 +97,7 @@ module CON(clk, clken,
      begin
         if (busWRITE & ~busIO & busPHYSICAL)
           begin
-             case (busADDRI)
+             case (busADDR)
                18'o000000 :
                  begin
                   $display("");

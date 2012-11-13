@@ -57,24 +57,17 @@ module MEM(clk, clken, busREQI, busACKO, busADDRI, busDATAI, busDATAO);
    output [0:35]  busDATAO;     // Data out
 
    //
-   // Address bus resize
-   //
-   // Note
-   //  Only 32K implemented.
-   //
-
-   wire [0:14] addr = busADDRI[21:35];
-
-   //
    // Memory flags
    //
    // Details:
    //  busADDRI[0:13] is flags
+   //  Only 32K of memory is implemented.
    //
 
-   wire busREAD  = busADDRI[ 3];
-   wire busWRITE = busADDRI[ 5];
-   wire busIO    = busADDRI[10];
+   wire         busREAD  = busADDRI[ 3];
+   wire         busWRITE = busADDRI[ 5];
+   wire         busIO    = busADDRI[10];
+   wire [21:35] busADDR  = busADDRI[16:35];
    
    //
    // PDP10 Memory Initialization
@@ -111,15 +104,16 @@ module MEM(clk, clken, busREQI, busACKO, busADDRI, busDATAI, busDATAO);
    //  polarity.
    //
    
-   reg [0:14] rd_addr;
+   reg  [0:14] rd_addr;
+   wire [0:14] wr_addr = busADDR[21:35];
 
    always @(negedge clk)
      begin
         if (clken & ~busIO)
           begin
              if (busWRITE)
-               RAM[busADDRI] <= busDATAI;
-             rd_addr <= busADDRI[21:35];
+               RAM[wr_addr] <= busDATAI;
+             rd_addr <= wr_addr;
           end
      end
 
@@ -129,6 +123,6 @@ module MEM(clk, clken, busREQI, busACKO, busADDRI, busDATAI, busDATAO);
    // ACK the memory if implemented.
    //
 
-   assign busACKO = ~busIO & (busADDRI[14:35] < 32768);
+   assign busACKO = ~busIO & (busADDR < 32768);
 
 endmodule

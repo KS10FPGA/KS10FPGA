@@ -89,18 +89,21 @@
 //
 
 `include "useq/crom.vh"
+`include "useq/drom.vh"
 
-module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
+module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
                vmaFLAGS, vmaADDR, acBLOCK,
-               //memory_cycle, mem_wait, mem_read, stop_main_memory,
                ramfile);
 
    parameter cromWidth = `CROM_WIDTH;
+   parameter dromWidth = `DROM_WIDTH;
 
    input                   clk;                 // Clock
    input                   rst;                 // Reset
    input                   clken;               // Clock enable
    input  [ 0:cromWidth-1] crom;                // Control ROM Data
+   input  [ 0:dromWidth-1] drom;                // Dispatch ROM Data
+   input  [ 0:35]          dp;                  // DP Input
    input  [ 0:35]          dbus;                // DBUS Input
    input  [ 0:35]          dbm;                 // DBM Input
    input  [ 0:17]          regIR;               // Instruction Register
@@ -120,9 +123,11 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
    //
    // VMA Flags
    //
-
-   wire vmaPHYSICAL = vmaFLAGS[8];              // VMA Physical
-   wire vmaPREVIOUS = vmaFLAGS[9];              // VMA Previous
+   
+   wire vmaREADCYCLE  = vmaFLAGS[3];
+   wire vmaWRITECYCLE = vmaFLAGS[5];
+   wire vmaPHYSICAL   = vmaFLAGS[8];
+   wire vmaPREVIOUS   = vmaFLAGS[9];
 
    //
    // AC Reference
@@ -264,7 +269,7 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
    // RAMFILE WRITE
    //
    // Todo
-   //  FIXME: This is a stub.
+   //  FIXME: This is a work-in-progess.
    //
    // Trace
    //  DPE5/E119
@@ -272,25 +277,64 @@ module RAMFILE(clk, rst, clken, crom, dbus, dbm, regIR, xrPREV,
    //  DPMA/E54
    //
 
-/*
-   // FIXME
-   start_cycle =  ((`cromMEM_READCYCLE & `cromMEM_WRITECYCLE & ~stop_main_memory) &
-                   (READ_EN | WRITE_EN) &
-
-                   (CRA6_MEMORY_FUNCTION & `cromMEM_WAIT   &              )
-                   (CRA6_MEMORY_FUNCTION & `cromMEM_BWRITE & dromCOND_FUNC));
-
-   ramfileWRITE = ( vmaACREF & ~MEM_READ        & memory_cycle & mem_wait) |
-                  (~vmaACREF & STOP_MAIN_MEMORY & memory_cycle & mem_wait) |
- 
-*/
-
-   //
-   // RAMFILE Write
-   //
+   reg DPM5_READ_EN;
+   reg DPM5_WRITE_EN;
+   always @(crom or drom or dp )
+     begin
+        case (`cromMEM_CYCLE_SEL)
+          0:
+            begin
+               DPM5_READ_EN  = `cromMEM_READCYCLE;
+               DPM5_WRITE_EN = `cromMEM_WRITECYCLE;
+            end
+          1:
+            begin
+               DPM5_READ_EN  = dp[3];
+               DPM5_WRITE_EN = dp[5];
+            end
+          2:
+            begin
+               DPM5_READ_EN  = `dromREADCYCLE;
+               DPM5_WRITE_EN = `dromWRITECYCLE;
+            end
+          default:
+            begin
+               DPM5_READ_EN  = 1'b0;
+               DPM5_WRITE_EN = 1'b0;
+            end
+        endcase
+     end
    
-   wire ramfileWRITE = `cromFMWRITE;
+   wire STOP_MAIN_MEMORY = 1'b0;
+   
+   wire specMEM_WAIT = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMWAIT);
+   wire specMEM_CLR  = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
+   
+   wire DPM5_MEM_EN = ((`cromMEM_CYCLE & `cromMEM_WAIT                   ) |
+                       (`cromMEM_CYCLE & `cromMEM_BWRITE & `dromCOND_FUNC));
 
+   wire DPM5_MEM_WAIT = DPM5_MEM_EN | specMEM_WAIT | specMEM_CLR;
+
+   wire DPM5_RPW_CYCLE = vmaREADCYCLE & vmaWRITECYCLE & ~STOP_MAIN_MEMORY; 
+   
+   //wire DPM5_START_CYCLE = ~DPM5_RPW_CYCLE & (DPM5_READ_EN | DPM5_WRITE_EN) & DPM5_MEM_EN;
+   
+   wire DPM5_START_CYCLE = ((DPM5_READ_EN  & DPM5_MEM_EN & ~DPM5_RPW_CYCLE) |
+                            (DPM5_WRITE_EN & DPM5_MEM_EN & ~DPM5_RPW_CYCLE));
+   
+   reg DPM6_MEMORY_CYCLE;
+   always @(posedge clk or posedge rst)
+    begin
+        if (rst)
+          DPM6_MEMORY_CYCLE <= 1'b0;
+        else if (clken)
+          DPM6_MEMORY_CYCLE <= DPM5_START_CYCLE;
+    end
+ 
+   wire ramfileWRITE = (( vmaACREF & ~vmaREADCYCLE    & DPM6_MEMORY_CYCLE & DPM5_MEM_WAIT) |
+                        (~vmaACREF & STOP_MAIN_MEMORY & DPM6_MEMORY_CYCLE & DPM5_MEM_WAIT) |
+                        (`cromFMWRITE));
+   
    //
    // RAMFILE MEMORY
    //

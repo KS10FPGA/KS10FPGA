@@ -315,6 +315,7 @@
 `define cromMEM_PXCTSEL         crom[99:101]    // Which PXCT bits to look at
 `define cromMEM_AREAD           crom[102]       // Let DROM select cycle type and VMA load
 `define cromMEM_DPFUNC          crom[103]       // Use dp[0:13] instead of cromNUM[0:13]
+`define cromMEM_CYCLE_SEL       crom[102:103]	// See above.  Select Cycle type as a group.
 `define cromMEM_LOADVMA         crom[104]       // Load the VMA
 `define cromMEM_EXTADDR         crom[105]       // Put VMA[14:17] Bits onto Bus
 `define cromMEM_WAIT            crom[106]       // Start memory or IO cycle

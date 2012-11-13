@@ -267,6 +267,16 @@ module CPU(clk, rst, clken,
    wire [ 0:11] dispDIAG = 12'b0;                               // Diagnostic Dispatch
 
    //
+   // DEBUG
+   // synthesis translate_off
+   //
+
+   wire [0: 3]  debugADDR;				// DEBUG Address
+   wire [0:35]  debugDATA;				// DEBUG Data
+   
+   // synthesis translate_on
+   
+   //
    // Skips
    //
 
@@ -321,7 +331,9 @@ module CPU(clk, rst, clken,
       .aluCRY1(aluCRY1),
       .aluCRY2(aluCRY2),
       .aluQR37(aluQR37),
-      .aluOUT(dp)
+      .aluOUT(dp),
+      .debugADDR(debugADDR),
+      .debugDATA(debugDATA)
       );
 
    //
@@ -390,18 +402,18 @@ module CPU(clk, rst, clken,
 
    //
    // DEBUG
+   // synthesis translate_off
    //
 
-/*
    DEBUG uDEBUG
       (.clk(clk),
        .rst(rst),
        .clken(clken),
-       .crom(crom),
-       .dp(dp),
-       .debug(debug)
+       .debugDATA(debugDATA),
+       .debugADDR(debugADDR)
        );
- */
+ 
+   // synthesis translate_on
       
    //
    // DBUS MUX
@@ -615,6 +627,8 @@ module CPU(clk, rst, clken,
       .rst(rst),
       .clken(1'b1),
       .crom(crom),
+      .drom(drom),
+      .dp(dp),
       .dbus(dbus),
       .dbm(dbm),
       .regIR(regIR),
