@@ -84,7 +84,7 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
    
    reg skip0;
    
-   always @(`cromSKIP_EN_40 or `cromSKIP_SEL or skip40)
+   always @(crom or skip40)
      begin
         if (`cromSKIP_EN_40)
           case (`cromSKIP_SEL)
@@ -122,7 +122,7 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
    
    reg skip1;
    
-   always @(`cromSKIP_EN_20 or `cromSKIP_SEL or skip20)
+   always @(crom or skip20)
      begin
         if (`cromSKIP_EN_20)
           case (`cromSKIP_SEL)
@@ -160,7 +160,7 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
 
    reg skip2;
    
-   always @(`cromSKIP_EN_10 or `cromSKIP_SEL or skip10)
+   always @(crom or skip10)
      begin
         if (`cromSKIP_EN_10)
           case (`cromSKIP_SEL)
