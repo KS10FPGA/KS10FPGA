@@ -1,13 +1,14 @@
-RTL := rtl
-ISE := ISE
+RTL  := rtl
+ISE  := ISE
 
-ARB := $(RTL)/arb
-CON := $(RTL)/cons
-CPU := $(RTL)/cpu
-ISE := $(ISE)
-MEM := $(RTL)/mem
-UBA := $(RTL)/uba
-UC  := $(CPU)/useq
+ARB  := $(RTL)/arb
+CON  := $(RTL)/cons
+CPU  := $(RTL)/cpu
+ISE  := $(ISE)
+MEM  := $(RTL)/mem
+UBA  := $(RTL)/uba
+UC   := $(CPU)/useq
+LOAD := MAINDEC-10-DSKAA.txt
 
 SRC := \
 	$(UC)/crom.vh  \
@@ -29,6 +30,7 @@ SRC := \
 	$(CPU)/cache.v \
 	$(CPU)/dbm.v \
 	$(CPU)/dbus.v \
+	$(CPU)/debug.v \
 	$(CPU)/intf.v \
 	$(CPU)/intr.v \
 	$(CPU)/iolatch.v \
@@ -70,8 +72,8 @@ $(UC)/crom.dat  : $(UC)/ks10.mcr $(UC)/crom.awk makefile
 $(UC)/drom.dat  : $(UC)/ks10.mcr $(UC)/drom.awk makefile
 	awk -f $(UC)/drom.awk $(UC)/ks10.mcr > $(UC)/drom.dat
 
-$(MEM)/mem.dat : $(MEM)/MAINDEC-10-DSKAA.lst $(MEM)/mem.awk
-	awk -f $(MEM)/mem.awk $(MEM)/MAINDEC-10-DSKAA.lst > $(MEM)/mem.dat
+$(MEM)/mem.dat : $(MEM)/$(LOAD) $(MEM)/mem.awk
+	awk -f $(MEM)/mem.awk $(MEM)/$(LOAD) > $(MEM)/mem.dat
 
 clean: 
 	rcsclean $(RTL)/*
