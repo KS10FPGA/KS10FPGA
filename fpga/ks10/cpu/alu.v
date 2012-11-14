@@ -632,7 +632,7 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    reg       go;                        // Partial sum for calculating CRY2
    wire      ci  = carry_in;            // Carry into left half
    reg       bb;                        // Bit Bucket
-
+   
    always @(r or s or ci or specCRY18INH or func)
      begin
         co  = 1'b0;
@@ -654,28 +654,28 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
             end
           `cromFUN_SUBR:
             begin
-               {go, g[ 0: 3]} = {1'b1, ~r[ 0: 3]} + {1'b0, s[ 0: 3]};
+               {go, g[ 0: 3]} = {1'b0, ~r[ 0: 3]} + {1'b0, s[ 0: 3]};
                if (specCRY18INH)
                  begin
-                    {bb, f[20:39]} = {1'b1, ~r[20:39]} + {1'b0, s[20:39]} + ci;         // Right Half
-                    {co, f[ 0:19]} = {1'b1, ~r[ 0:19]} + {1'b0, s[ 0:19]};              // Left Half (assumes no carry)
+                    {bb, f[20:39]} = {1'b0, ~r[20:39]} + {1'b0, s[20:39]} + ci;         // Right Half
+                    {co, f[ 0:19]} = {1'b0, ~r[ 0:19]} + {1'b0, s[ 0:19]};              // Left Half (assumes no carry)
                  end
                else
                  begin
-                    {co, f[ 0:39]} = {1'b1, ~r[ 0:39]} + {1'b0, s[ 0:39]} + ci;         // Whole ACC
+                    {co, f[ 0:39]} = {1'b0, ~r[ 0:39]} + {1'b0, s[ 0:39]} + ci;         // Whole ACC
                  end
             end
           `cromFUN_SUBS:
             begin
-               {go, g[ 0: 3]} = {1'b0, r[ 0: 3]} + {1'b1, ~s[ 0: 3]};
+               {go, g[ 0: 3]} = {1'b0, r[ 0: 3]} + {1'b0, ~s[ 0: 3]};
                if (specCRY18INH)
                  begin
-                    {bb, f[20:39]} = {1'b0, r[20:39]} + {1'b1, ~s[20:39]} + ci;         // Right Half
-                    {co, f[ 0:19]} = {1'b0, r[ 0:19]} + {1'b1, ~s[ 0:19]};              // Left Half (assumes no carry)
+                    {bb, f[20:39]} = {1'b0, r[20:39]} + {1'b0, ~s[20:39]} + ci;         // Right Half
+                    {co, f[ 0:19]} = {1'b0, r[ 0:19]} + {1'b0, ~s[ 0:19]};              // Left Half (assumes no carry)
                  end
                else
                  begin
-                    {co, f[ 0:39]} = {1'b0, r[ 0:39]} + {1'b1, ~s[ 0:39]} + ci;         // Whole ACC
+                    {co, f[ 0:39]} = {1'b0, r[ 0:39]} + {1'b0, ~s[ 0:39]} + ci;         // Whole ACC
                  end
             end
           `cromFUN_ORRS:
@@ -728,8 +728,11 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    //  this implementation, 'co' signal comes directly from
    //  the ALU calculation.
    //
-   //  Technically, this should be called aluCRY(-2).  See usage in
-   //  microcode.
+   //  Note that the CRY0 doesn't actually come from bit 0:
+   //  it comes from bit (-2).  Because the top two bits are
+   //  sign extensions, they are equivalent.   A carry from
+   //  bit 0 will cause a carry from bit (-1) and a carry
+   //  from bit (-2).
    //
 
    assign aluCRY0 = co;
