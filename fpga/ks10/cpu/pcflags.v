@@ -193,10 +193,22 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    assign skipJFCL = JFCL[9] | JFCL[10] | JFCL[11] | JFCL[12];
 
    //
-   // Overflow Flag (OV)
+   // Arithmetic Overflow Flag (AOV)
    //
-   // Notes
-   //  Arithmetic Overflow occurs if CRY0 and CRY1 differ.
+   // Details:
+   //  AOV is set on an ALU overflow. Arithmetic Overflow occurs
+   //   if CRY0 and CRY1 differ
+   //  AOV is set by SETAOV in microcode.
+   //  AOV is cleared by JFCL 9.
+   //  AOV is modified by dp.
+   //
+   // Trace
+   //  DPE9/E17
+   //  DPE9/E26
+   //  DPE9/E33
+   //  DPE9/E78
+   //  DPE9/E92
+   //  DPE8/E98
    //
 
    always @(posedge clk or posedge rst)
@@ -216,14 +228,9 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
                   else if (dbmADFLAGS)
                     flagAOV <= aluAOV;
                   else if (JFCL[9])
-                    begin
-                       if (dbmLDFLAGS)
-                         flagAOV <= dpOV;
-                       else
-                         flagAOV <= flagAOV;
-                    end
-                  else
                     flagAOV <= 1'b0;
+                  else if (dbmLDFLAGS)
+                    flagAOV <= dpOV;
                end
           end
      end
@@ -231,7 +238,17 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    //
    // Carry 0 Flag (CRY0)
    //
-
+   // Details:
+   //  CRY 0 is set on an ALU carry 0.
+   //  CRY 0 is cleared by JFCL 10
+   //  CRY 0 is modified by dp.
+   //
+   // Trace
+   //  DPE9/E17
+   //  DPE9/E25
+   //  DPE9/E32
+   //
+   
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -241,21 +258,26 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
              if (dbmADFLAGS)
                flagCRY0 <= aluCRY0;
              else if (JFCL[10])
-               begin
-                  if (dbmLDFLAGS)
-                    flagCRY0 <= dpCRY0;
-                  else
-                    flagCRY0 <= flagCRY0;
-               end
-             else
                flagCRY0 <= 1'b0;
+             else if (dbmLDFLAGS)
+               flagCRY0 <= dpCRY0;
           end
      end
 
    //
    // Carry 1 Flag (CRY1)
    //
-
+   // Details:
+   //  CRY 1 is set on an ALU carry 1.
+   //  CRY 1 is cleared by JFCL 11
+   //  CRY 1 is modified by dp.
+   //
+   // Trace
+   //  DPE9/E17
+   //  DPE9/E25
+   //  DPE9/E32
+   // 
+   
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -265,21 +287,27 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
              if (dbmADFLAGS)
                flagCRY1 <= aluCRY1;
              else if (JFCL[11])
-               begin
-                  if (dbmLDFLAGS)
-                    flagCRY1 <= dpCRY1;
-                  else
-                    flagCRY1 <= flagCRY1;
-               end
-             else
                flagCRY1 <= 1'b0;
+             else if (dbmLDFLAGS)
+               flagCRY1 <= dpCRY1;
           end
      end
    
    //
    // Floating-point Overflow Flag (FOV)
    //
-
+   // Details:
+   //  FOV is set on an Floating-point overflow
+   //  FOV is cleared by JFCL 12
+   //  FOV is modified by dp.
+   //
+   // Trace
+   //  DPE9/E26
+   //  DPE9/E33
+   //  DPE9/E32
+   //  DPE9/E78
+   //
+ 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -291,14 +319,9 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
              else if (selPCFLAGS)
                begin
                   if (JFCL[12])
-                    begin
-                       if (dbmLDFLAGS)
-                         flagFOV <= dpFOV;
-                       else
-                         flagFOV <= flagFOV;
-                    end
-                  else
                     flagFOV <= 1'b0;
+                  else if (dbmLDFLAGS)
+                    flagFOV <= dpFOV;
                end
           end
      end
