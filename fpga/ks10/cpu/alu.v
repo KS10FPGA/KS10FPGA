@@ -108,7 +108,15 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    wire [0: 3] aa      = `cromALU_A;            // ALU DPRAM A Address
    wire [0: 3] ba      = `cromALU_B;            // ALU DPRAM B Address
    wire [0: 2] shstyle = `cromSPEC_SHSTYLE;     // ALU Shift Mode
-   wire cry18inh       = `cromSPEC_SEL_CRY18INH;// Inhibit carry from right half to left half
+
+   //
+   // Carry Inhibit
+   //
+   // Details
+   //   Inhibit carry from right half to left half
+   //
+   
+   wire specCRY18INH = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_CRY18INH);
 
    //
    // ALU Register Write
@@ -129,7 +137,7 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    // Destination Address Munging
    //
    // Note
-   //  DST[1] is inverted on DPE5/E62
+   //  DST[1] is inverted.
    //
    //  When the ALU is configured for shift operations, the
    //  dst[1] pin selects between right shifts and left shifts.
@@ -139,6 +147,9 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    //  This isn't necessary on the FPGA implementation because
    //  there aren't any tristate pins on the ALU.  I just don't
    //  want to change the microcode.   So it stays.
+   //
+   // Trace
+   //  DPE5/E62
    //
 
    wire [0:2] dest = {dst[0], ~dst[1], dst[2]};
@@ -152,6 +163,10 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    //  When fun[0] and fun[1] are both zero, fun[2] selects
    //  between add and subract ops. This is used in the divide
    //  and multiprecision ops.
+   //
+   // Trace
+   //  DPE5/E62
+   //  DPE5/E5
    //
 
    wire [0:2] func = {fun[0], fun[1], funct_02};
@@ -618,7 +633,7 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    wire      ci  = carry_in;            // Carry into left half
    reg       bb;                        // Bit Bucket
 
-   always @(r or s or ci or cry18inh or func)
+   always @(r or s or ci or specCRY18INH or func)
      begin
         co  = 1'b0;
         go  = 1'b0;
@@ -627,7 +642,7 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
           `cromFUN_ADD:
             begin
                {go, g[ 0: 3]} = {1'b0, r[ 0: 3]} + {1'b0, s[ 0: 3]};
-               if (cry18inh)
+               if (specCRY18INH)
                  begin
                     {bb, f[20:39]} = {1'b0, r[20:39]} + {1'b0, s[20:39]} + ci;          // Right Half
                     {co, f[ 0:19]} = {1'b0, r[ 0:19]} + {1'b0, s[ 0:19]};               // Left Half (assumes no carry)
@@ -640,7 +655,7 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
           `cromFUN_SUBR:
             begin
                {go, g[ 0: 3]} = {1'b1, ~r[ 0: 3]} + {1'b0, s[ 0: 3]};
-               if (cry18inh)
+               if (specCRY18INH)
                  begin
                     {bb, f[20:39]} = {1'b1, ~r[20:39]} + {1'b0, s[20:39]} + ci;         // Right Half
                     {co, f[ 0:19]} = {1'b1, ~r[ 0:19]} + {1'b0, s[ 0:19]};              // Left Half (assumes no carry)
@@ -653,7 +668,7 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
           `cromFUN_SUBS:
             begin
                {go, g[ 0: 3]} = {1'b0, r[ 0: 3]} + {1'b1, ~s[ 0: 3]};
-               if (cry18inh)
+               if (specCRY18INH)
                  begin
                     {bb, f[20:39]} = {1'b0, r[20:39]} + {1'b1, ~s[20:39]} + ci;         // Right Half
                     {co, f[ 0:19]} = {1'b0, r[ 0:19]} + {1'b1, ~s[ 0:19]};              // Left Half (assumes no carry)
