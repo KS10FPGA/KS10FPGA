@@ -277,6 +277,7 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
    //  DPMA/E54
    //
 
+/*   
    reg DPM5_READ_EN;
    reg DPM5_WRITE_EN;
    always @(crom or drom or dp )
@@ -334,7 +335,12 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
    wire ramfileWRITE = (( vmaACREF & ~vmaREADCYCLE    & DPM6_MEMORY_CYCLE & DPM5_MEM_WAIT) |
                         (~vmaACREF & STOP_MAIN_MEMORY & DPM6_MEMORY_CYCLE & DPM5_MEM_WAIT) |
                         (`cromFMWRITE));
-   
+
+*/
+
+    wire ramfileWRITE = ((vmaACREF & vmaWRITECYCLE) |
+                         (`cromFMWRITE));
+    
    //
    // RAMFILE MEMORY
    //

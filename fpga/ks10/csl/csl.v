@@ -7,7 +7,17 @@
 //!
 //! \details
 //!
-//! \todo
+//! \notes:
+//!      Important memory areas:
+//!       0000030 Halt Switch
+//!       0000031 Keep Alive
+//!       0000032 Console Input
+//!       0000033 Console Output
+//!       0000034 Klinik Input
+//!       0000035 Klinik Output
+//!       0000036 RH11 Address
+//!       0000037 Unit Number
+//!       0000040 Magtape Params
 //!
 //! \file
 //!      con.v

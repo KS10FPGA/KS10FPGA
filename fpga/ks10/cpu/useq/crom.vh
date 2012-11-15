@@ -161,9 +161,9 @@
 `define cromSPEC_EN_20          crom[52]        //  SPEC Select 20
 `define cromSPEC_EN_10          crom[53]        //  SPEC Select 10
 `define cromSPEC_SEL            crom[54:56]     //  SPEC Select
-`define cromSPEC_SEL_CRY18INH   3'b000          //   10: Carry into Left Half inhibit
+`define cromSPEC_SEL_CONS       3'b000          //   10: Console
 `define cromSPEC_SEL_PREVIOUS   3'b000          //   20: Force Previous Context
-`define cromSPEC_SEL_CONS       3'b000          //   40: Console
+`define cromSPEC_SEL_CRY18INH   3'b000          //   40: Inhibit Carry into Left Half
 `define cromSPEC_SEL_LOADIR     3'b001          //   10: Load IR
 `define cromSPEC_SEL_LOADXR     3'b001          //   20: Load XR
 `define cromSPEC_SEL_CLR1MSEC   3'b001          //   40: CLR Interval Timer
