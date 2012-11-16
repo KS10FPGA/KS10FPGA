@@ -46,8 +46,6 @@
 
 
 module DEBUG(clk, rst, clken, debugDATA, debugADDR);
-
-   // synthesis translate_off
    
    input         clk;      	// Clock
    input         rst;      	// Reset
@@ -59,10 +57,11 @@ module DEBUG(clk, rst, clken, debugDATA, debugADDR);
    // PC is at Address 1 in the ALU
    //
    
-   assign debugADDR = "0001";
+   assign debugADDR = 4'b0001;
 
    //
    // Print the PC
+   // synthesis translate_off
    //
    
    reg [0:35] last;

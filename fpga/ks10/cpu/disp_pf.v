@@ -66,7 +66,7 @@
 `include "useq/drom.vh"
 
 module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
-	       aprFLAGS, pageFLAGS, cpuIRQ, nxmIRQ, timerIRQ,
+               aprFLAGS, pageFLAGS, cpuINTR, nxmINTR, timerINTR,
                dispPF
                );
 
@@ -74,19 +74,19 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
 
-   input                  clk;          	// Clock
-   input                  rst;          	// Reset
-   input                  clken;        	// Clock Enable
-   input [ 0:cromWidth-1] crom;         	// Control ROM Data
-   input [ 0:dromWidth-1] drom;         	// Dispatch ROM Data
-   input [ 0:13]          vmaFLAGS;     	// Virtual Memory Flags
-   input [14:35]          vmaADDR;      	// Virtual Memory Address
-   input [22:35]          aprFLAGS;     	// APR Flags
-   input [ 0: 4] 	  pageFLAGS;    	// Page Flags
-   input                  timerIRQ;     	// Timer Interrupt
-   input                  cpuIRQ;      		// CPU Interrupt
-   input                  nxmIRQ;       	// NXM Interrupt
-   output reg [ 0: 3]     dispPF;      		// Page Fail Dispatch
+   input                  clk;                  // Clock
+   input                  rst;                  // Reset
+   input                  clken;                // Clock Enable
+   input [ 0:cromWidth-1] crom;                 // Control ROM Data
+   input [ 0:dromWidth-1] drom;                 // Dispatch ROM Data
+   input [ 0:13]          vmaFLAGS;             // Virtual Memory Flags
+   input [14:35]          vmaADDR;              // Virtual Memory Address
+   input [22:35]          aprFLAGS;             // APR Flags
+   input [ 0: 4]          pageFLAGS;            // Page Flags
+   input                  timerINTR;            // Timer Interrupt
+   input                  cpuINTR;              // CPU Interrupt
+   input                  nxmINTR;              // NXM Interrupt
+   output reg [ 0: 3]     dispPF;               // Page Fail Dispatch
 
    //
    // Microcode decode
@@ -180,8 +180,8 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
           end
         else if (clken & memWAIT)
           begin
-             intCPU <= cpuIRQ;
-             intTIM <= timerIRQ;
+             intCPU <= cpuINTR;
+             intTIM <= timerINTR;
           end
      end
 
@@ -189,11 +189,11 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    // FIXME
 
    wire startCYCLE  = 1'b0;
-   
+
    //
    // Memory Cycle
    //
-   
+
    reg memCYCLE;
 
    always @(posedge clk or posedge rst)
@@ -203,7 +203,7 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
         else if (clken & memWAIT)
           memCYCLE <= startCYCLE;
      end
-   
+
    //
    // Page Logic
    //
@@ -244,7 +244,7 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    //  when not enabled.  This translates to "001" when the inverters
    //  are added.
    //
-   //  Notice also the nxmIRQ generates a dispatch but disables the
+   //  Notice also the nxmINTR generates a dispatch but disables the
    //  priority encoder - so the two kinds of dispatches (interrupts
    //  and paging errors) are independant.
    //
@@ -254,10 +254,10 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    //  DPM6/E115
    //  DPM6/E124
 
-   always @(nxmIRQ or pagingOK or pageVALID or pageUSER or
+   always @(nxmINTR or pagingOK or pageVALID or pageUSER or
             vmaWRTESTCYCLE or vmaUSER or pageWRITEABLE)
      begin
-        if (nxmIRQ)
+        if (nxmINTR)
           dispPF = 4'b0101;
         else if (pagingOK)
           begin

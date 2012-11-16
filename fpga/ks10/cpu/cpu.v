@@ -47,10 +47,9 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module CPU(clk, rst, clken,
-           consTIMEREN,
-           consSTEP, consRUN, consEXEC, consCONT, consHALT, consTRAPEN, consCACHEEN,
-           pwrIRQ, consIRQ, ubaIRQ,
+module CPU(clk, rst,
+           consTIMEREN, consSTEP, consRUN, consEXEC, consCONT, consHALT, consTRAPEN, consCACHEEN,
+           pwrINTR, consINTR, ubaINTR, ubaINTA,
            busREQ, busACK, busDATAI, busDATAO, busADDRO,
            cpuHALT, cpuRUN);
    
@@ -59,7 +58,6 @@ module CPU(clk, rst, clken,
 
    input          clk;          // Clock
    input          rst;          // Reset
-   input          clken;        // Clock enable
    input          consTIMEREN;  // Timer Enable
    input          consSTEP;     // Single Step
    input          consRUN;      // Run
@@ -68,9 +66,10 @@ module CPU(clk, rst, clken,
    input          consCONT;     // Continue
    input          consTRAPEN;   // Enable Traps
    input          consCACHEEN;  // Enable Cache
-   input          pwrIRQ;       // Power Fail Interrupt Request
-   input          consIRQ;      // Console Interrupt Request
-   input  [ 1: 7] ubaIRQ;       // Unibus Interrupt Request
+   input          pwrINTR;      // Power Fail Interrupt Request
+   input          consINTR;     // Console Interrupt Request
+   input  [ 1: 7] ubaINTR;      // Unibus Interrupt Request
+   output [ 1: 7] ubaINTA;      // Unibus Interrupt Acknowledge
    output         busREQ;	// Bus Request
    input          busACK;	// Bus Acknowledge
    input  [ 0:35] busDATAI;     // Bus Data Input 
@@ -83,7 +82,6 @@ module CPU(clk, rst, clken,
    // FIXME
    //
    
-   wire [1: 7] bus_pi_req_out;  // FIXME
    wire [0: 2] bus_pi_current;  // FIXME
    
    //
@@ -106,7 +104,7 @@ module CPU(clk, rst, clken,
    wire aluCRY2;                                        // ALU carry into bit 2
    wire aluQR37;                                        // Q Register LSB
    wire aluZERO = aluLZero & aluRZero;                  // ALU (both halves) is zero
-   wire txxx = (aluZERO != `dromTXXXEN);                // Test Instruction Results
+   wire txxx    = aluZERO != `dromTXXXEN;               // Test Instruction Results
 
    //
    // flags
@@ -115,11 +113,11 @@ module CPU(clk, rst, clken,
    wire apr_int_req;
    wire mem_wait;
    wire stop_main_memory;
-   wire memory_cycle            = 1'b0;                 // FIXME
-   wire cpuIRQ;                                         // Extenal Interrupt
+   wire memory_cycle = 1'b0;                 		// FIXME
+   wire cpuINTR;                                        // Extenal Interrupt
    wire iolatch;					// FIXME
    wire cpuCONT;      					//
-   wire nxmIRQ = 1'b0;					// FIXME
+   wire nxmINTR = 1'b0;					// FIXME
    wire JRST0;
    wire trapCYCLE;
 
@@ -207,7 +205,7 @@ module CPU(clk, rst, clken,
    // Timer
    //
 
-   wire         timerIRQ;                               // Timer Interrupt
+   wire         timerINTR;                               // Timer Interrupt
    wire [18:35] timerCOUNT;                             // Millisecond timer
 
    //
@@ -227,7 +225,7 @@ module CPU(clk, rst, clken,
    // PXCT
    //
 
-   wire         prevEN;
+   wire         prevEN;					// Conditionally use previous context
 
    //
    // Cache
@@ -257,33 +255,33 @@ module CPU(clk, rst, clken,
    // Dispatches
    //
 
-   wire [ 8:11] dispNI;                                         // Next Instruction dispatch
-   wire [ 8:11] dispPF;                                         // Page Fail dispatch
-   wire [ 8:11] dispBYTE;                                       // Byte dispatch
-   wire [ 8:11] dispSCAD;                                       // SCAD dispatch
-   wire [ 8:11] dispMUL  = {1'b0, aluQR37, 1'b0, 1'b0};         // Multiply dispatch
-   wire [ 8:11] dispNORM = {aluZERO, dp[8:9], aluLSign};        // Normalize dispatch
-   wire [ 8:11] dispEA   = {~JRST0, regIR_I, regXRZERO, 1'b0};  // EA Dispatch
-   wire [ 0:11] dispDIAG = 12'b0;                               // Diagnostic Dispatch
+   wire [ 8:11] dispNI;                                 // Next Instruction dispatch
+   wire [ 8:11] dispPF;                                 // Page Fail dispatch
+   wire [ 8:11] dispBYTE;                               // Byte dispatch
+   wire [ 8:11] dispSCAD;                               // SCAD dispatch
+   wire [ 8:11] dispMUL  = {1'b0, aluQR37,         	// Multiply dispatch
+                            1'b0, 1'b0};
+   wire [ 8:11] dispNORM = {aluZERO, dp[8:9],        	// Normalize dispatch
+                            aluLSign};
+   wire [ 8:11] dispEA   = {~JRST0, regIR_I,  		// EA Dispatch
+                            regXRZERO, 1'b0};
+   wire [ 0:11] dispDIAG = 12'b0;                       // Diagnostic Dispatch
 
    //
    // DEBUG
-   // synthesis translate_off
    //
 
    wire [0: 3]  debugADDR;				// DEBUG Address
    wire [0:35]  debugDATA;				// DEBUG Data
-   
-   // synthesis translate_on
    
    //
    // Skips
    //
 
    wire skipJFCL;
-   wire [1:7] skip40 = {aluCRY0,   aluLZero, aluRZero, ~flagUSER,  flagFPD,  regACZERO, cpuIRQ   };
-   wire [1:7] skip20 = {aluCRY2,   aluLSign, aluRSign, flagUSERIO, skipJFCL, aluCRY1,   txxx     };
-   wire [1:7] skip10 = {trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    iolatch,  ~cpuCONT,  ~timerIRQ};
+   wire [1:7] skip40 = {aluCRY0,   aluLZero, aluRZero, ~flagUSER,  flagFPD,  regACZERO, cpuINTR   };
+   wire [1:7] skip20 = {aluCRY2,   aluLSign, aluRSign, flagUSERIO, skipJFCL, aluCRY1,   txxx      };
+   wire [1:7] skip10 = {trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    iolatch,  ~cpuCONT,  ~timerINTR};
 
    //
    // DBM inputs
@@ -298,6 +296,19 @@ module CPU(clk, rst, clken,
    wire [0:35] dbm6 = busDATAI;
    wire [0:35] dbm7 = {`cromNUM, `cromNUM};
 
+   //
+   // Timing
+   // 
+
+   wire clken;
+   TIMING uTIMING
+     (.clk(clk),
+      .rst(rst),
+      .crom(crom),
+      .vmaFLAGS(vmaFLAGS),
+      .clken(clken)
+      );
+   
    //
    // AC Block
    //
@@ -346,11 +357,10 @@ module CPU(clk, rst, clken,
       .clken(clken),
       .crom(crom),
       .dp(dp),
-      .pwrIRQ(pwrIRQ),
-      .nxmIRQ(nxmIRQ),
-      .consIRQ(consIRQ),
-      .aprFLAGS(aprFLAGS),
-      .bus_pi_req_out(bus_pi_req_out)
+      .pwrINTR(pwrINTR),
+      .nxmINTR(nxmINTR),
+      .consINTR(consINTR),
+      .aprFLAGS(aprFLAGS)
       );
 
    //
@@ -402,7 +412,6 @@ module CPU(clk, rst, clken,
 
    //
    // DEBUG
-   // synthesis translate_off
    //
 
    DEBUG uDEBUG
@@ -413,18 +422,16 @@ module CPU(clk, rst, clken,
        .debugADDR(debugADDR)
        );
  
-   // synthesis translate_on
-      
    //
    // DBUS MUX
    //
 
    DBUS uDBUS
      (.crom(crom),
+      .cacheHIT(cacheHIT),
       .vmaFLAGS(vmaFLAGS),
       .vmaADDR(vmaADDR),
       .pcFLAGS({pcFLAGS, 1'b0, pi_new, 4'b1111, vmaADDR[26:35]}),
-      .cacheHIT(cacheHIT),
       .dp(dp),
       .ramfile(ramfile),
       .dbm(dbm),
@@ -454,8 +461,10 @@ module CPU(clk, rst, clken,
       .clken(clken),
       .crom(crom),
       .dp(dp),
-      .ubaIRQ(ubaIRQ),
-      .cpuIRQ(cpuIRQ),
+      .flagINTREQ(flagINTREQ),
+      .ubaINTR(ubaINTR),
+      .ubaINTA(ubaINTA),
+      .cpuINTR(cpuINTR),
       .pi_new(pi_new),
       .pi_current(bus_pi_current),
       .pi_on(pi_on)
@@ -599,9 +608,9 @@ module CPU(clk, rst, clken,
       .vmaADDR(vmaADDR),
       .aprFLAGS(aprFLAGS),
       .pageFLAGS(pageFLAGS),
-      .cpuIRQ(cpuIRQ),
-      .nxmIRQ(nxmIRQ),
-      .timerIRQ(timerIRQ),
+      .cpuINTR(cpuINTR),
+      .nxmINTR(nxmINTR),
+      .timerINTR(timerINTR),
       .dispPF(dispPF)
       );
    
@@ -666,7 +675,7 @@ module CPU(clk, rst, clken,
       .clken(clken),
       .crom(crom),
       .timerEN(consTIMEREN),
-      .timerIRQ(timerIRQ),
+      .timerINTR(timerINTR),
       .timerCOUNT(timerCOUNT)
       );
 

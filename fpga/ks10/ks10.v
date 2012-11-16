@@ -114,6 +114,8 @@ module KS10(clk, reset, pwrFAIL,
    // Unibus Interface
    //
 
+   wire [1: 7] ubaINTR;		// Unibus Interrupt Request
+   wire [1: 7] ubaINTA;		// Unibus Interrupt Acknowledge
    wire        ubaREQ;         	// Unibus Bus Request
    wire        ubaACK;         	// Unibus Bus Acknowledge
    wire [0:35] ubaADDRI;        // Unibus Address In
@@ -179,7 +181,6 @@ module KS10(clk, reset, pwrFAIL,
    CPU uCPU
      (.clk              (clk),
       .rst              (rst),
-      .clken            (1'b1),
       .consTIMEREN      (1'b1),
       .consSTEP         (1'b0),
       .consRUN          (swRUN),
@@ -188,9 +189,10 @@ module KS10(clk, reset, pwrFAIL,
       .consHALT         (1'b0),
       .consTRAPEN       (1'b1),
       .consCACHEEN      (1'b0),
-      .pwrIRQ           (pwrFAIL),
-      .consIRQ          (1'b0),
-      .ubaIRQ           (7'b0),
+      .pwrINTR          (pwrFAIL),
+      .consINTR         (1'b0),
+      .ubaINTR          (ubaINTR),
+      .ubaINTA          (ubaINTA),
       .busREQ           (cpuREQ),
       .busACK           (cpuACK),
       .busADDRO         (cpuADDRO),
@@ -238,6 +240,8 @@ module KS10(clk, reset, pwrFAIL,
    UBA uUBA
      (.clk              (clk),
       .clken            (1'b1),
+      .ubaINTR		(ubaINTR),
+      .ubaINTA          (ubaINTA),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO),
       .busACKI          (ubaACKI),

@@ -44,11 +44,14 @@
 // Comments are formatted for doxygen
 //
 
-module UBA(clk, clken, busREQI, busREQO, busACKI, busACKO,
+module UBA(clk, clken, ubaINTR, ubaINTA,  
+           busREQI, busREQO, busACKI, busACKO,
            busADDRI, busADDRO, busDATAI, busDATAO);
 
    input         clk;          	// Clock
    input         clken;        	// Clock enable
+   output [1: 7] ubaINTR;	// Unibus Interrupt Request
+   input  [1: 7] ubaINTA;	// Unibus Interrupt Acknowledge
    input         busREQI;       // Unibus Request In
    output        busREQO;       // Unibus Request Out
    input         busACKI;       // Unibus Acknowledge In
@@ -62,5 +65,6 @@ module UBA(clk, clken, busREQI, busREQO, busACKI, busACKO,
    assign busACKO  = 1'b0;
    assign busADDRO = 36'bx;
    assign busDATAO = 36'bx;
+   assign ubiINTR  = 7'b0;
 
 endmodule

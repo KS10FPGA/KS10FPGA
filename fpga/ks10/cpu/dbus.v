@@ -46,16 +46,16 @@
 
 `include "useq/crom.vh"
 
-module DBUS(crom, vmaADDR, vmaFLAGS, pcFLAGS, cacheHIT, dp,
+module DBUS(crom, cacheHIT, vmaADDR, vmaFLAGS, pcFLAGS, dp,
             ramfile, dbm, dbus);
 
    parameter  cromWidth = `CROM_WIDTH;
 
    input      [0:cromWidth-1] crom;             // Control ROM Data
+   input                      cacheHIT;         // Cache Hit
    input      [ 0:13]         vmaFLAGS;         // Virtual Memory Flags
    input      [14:35]         vmaADDR;          // Virtual Memory Address
    input      [ 0:35]         pcFLAGS;          // PC Flags in Left Half
-   input                      cacheHIT;         // Cache Hit
    input      [ 0:35]         dp;               // Datapath
    input      [ 0:35]         ramfile;          // Ramfile
    input      [ 0:35]         dbm;              // Databus Mux

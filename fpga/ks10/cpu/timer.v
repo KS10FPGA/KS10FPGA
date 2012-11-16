@@ -69,7 +69,7 @@
 
 `include "useq/crom.vh"
 
-module TIMER(clk, rst, clken, crom, timerEN, timerIRQ, timerCOUNT);
+module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -78,7 +78,7 @@ module TIMER(clk, rst, clken, crom, timerEN, timerIRQ, timerCOUNT);
    input                  clken;        // Clock Enable
    input  [0:cromWidth-1] crom;         // Control ROM Data
    input                  timerEN;      // Timer Enable
-   output                 timerIRQ;     // Timer Interrupt
+   output                 timerINTR;    // Timer Interrupt
    output [18:35]         timerCOUNT;   // Timer output
 
    //
@@ -151,7 +151,7 @@ module TIMER(clk, rst, clken, crom, timerEN, timerIRQ, timerCOUNT);
    // Timer Interrupt
    //
    // Details
-   //  The timerIRQ signal is asserted on a timer overflow;  i.e.,
+   //  The timerINTR signal is asserted on a timer overflow;  i.e.,
    //  when MSB changes from '1' to '0'.
    //
    // Note:
@@ -195,6 +195,6 @@ module TIMER(clk, rst, clken, crom, timerEN, timerIRQ, timerCOUNT);
    assign timerCOUNT[18:23] = 6'b0;
    assign timerCOUNT[24:33] = count[0:9];
    assign timerCOUNT[34:35] = 2'b0;
-   assign timerIRQ          = intr;
+   assign timerINTR         = intr;
 
 endmodule

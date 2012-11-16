@@ -190,45 +190,41 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
       .dispDROM_B(dromB),
       .dispADDR(dispADDR)
       );
-
-   //
-   // CROM Reset
-   //
-   // Details:
-   //  The CROM registers have been absorbed by the synchronous FPGA ROM.
-   //  Therefore the initial state of the microcode (address zero) must
-   //  be handled explicitly.   This synchronizes the reset negation.
-   //
-   // Notes:
-   //  This implementation is different than the KS10 implementation.
-   //
-
-   reg reset;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          reset <= 1'b1;
-        else if (clken)
-          reset <= 1'b0;
-     end;
-
+   
    //
    // Address 'MUX'
    //
    // Details
-   //  Per comments above, this mux is modified to force the CROM
-   //  address to zero at reset.
+   //  The CROM registers have been absorbed by the synchronous FPGA ROM.
+   //  Therefore the initial state of the microcode (address zero) must
+   //  be handled explicitly.
    //
    //  The Microcode should begin execution at address o0000.
    //
-   //  The Page Fail address is hard coded to address o3777
-   //  in the microcode.
+   //  The microsequencer continuously re-executes instruction at address
+   //  o0000 while the rst signal is asserted.  It can only execute the
+   //  second instruction after the 'rst' signal is negated.
+   //
+   //  This process assumes that the 'rst' negation is synchronized to
+   //  the clock and that the 'rst' signal is asserted for a few clock
+   //  cycles minimum to ensure that the instruction at address o0000
+   //  is executed at least once.
+   //
+   //  The synchronous 'rst' negation is handled earlier in the design
+   //  heirarchy.
+   //
+   //  The Page Fail address is hard coded to address o3777 in the
+   //  microcode.
    //
    // Notes:
-   //  Note that the microcode address space is 12-bits but only
-   //  11-bits (2048 microcode words) are actually implemented.
-   //  That will allow us to double the amount of microcode without
-   //  changing the micro-architecture.
+   //  The microcode address space is 12-bits but only 11-bits (2048
+   //  microcode words) are actually implemented.  Therefore the amount
+   //  of microcode can be easily doubled without changing the micro-
+   //  architecture.
+   //
+   //  If all 12-bits of the microcode ROM are implemented, the PAGE FAIL
+   //  code will have to be moved to address o7777 or otherwise dealt
+   //  with.
    //
    // Trace:
    //  CRA1/E9
@@ -245,7 +241,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //  CRA1/E186
    //
 
-   assign addr = (reset)    ? 12'b000_000_000_000 :
+   assign addr = (rst)      ? 12'b000_000_000_000 :
                  (pageFAIL) ? 12'b111_111_111_111 :
                  (dispADDR | skipADDR | `cromJ);
 

@@ -47,29 +47,26 @@
 `include "config.vh"
 `include "useq/crom.vh"
 
-module APR(clk, rst, clken, crom, dp,
-           pwrIRQ, nxmIRQ, consIRQ,
-           aprFLAGS, bus_pi_req_out);
+module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
 
    parameter cromWidth = `CROM_WIDTH;
 
-   input                       clk;             // Clock
-   input                       rst;             // Reset
-   input                       clken;           // Clock Enable
-   input      [ 0:cromWidth-1] crom;            // Control ROM Data
-   input      [ 0:35]          dp;              // Data path
-   input                       pwrIRQ;         // Power Failure interrupt
-   input                       nxmIRQ;         // Non existant memory interrupt
-   input                       consIRQ;        // Interrupt 10
-   output     [22:35]          aprFLAGS;        // APR Flags
-   output reg [ 1: 7]          bus_pi_req_out;  // Bus PI Request Out
+   input                   clk;         // Clock
+   input                   rst;         // Reset
+   input                   clken;       // Clock Enable
+   input  [ 0:cromWidth-1] crom;        // Control ROM Data
+   input  [ 0:35]          dp;         	// Data path
+   input                   pwrINTR;     // Power Failure interrupt
+   input                   nxmINTR;     // Non existant memory interrupt
+   input                   consINTR;    // Console Interrupt
+   output [22:35]          aprFLAGS;    // APR Flags
 
    //
-   // Decode APR Flags Enable microcode
+   // Microcode Decode
    //
 
+   wire specLOADAPR  = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADAPR);
    wire specAPRFLAGS = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_APRFLAGS);
-   wire specAPREN    = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADAPR);
 
    //
    // APR Flag Register 24
@@ -98,17 +95,17 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          `ifdef INITRAM
           flag25 <= 1'b0;
-          `else
-          flag25 <= 1'bx;
-          `endif
         else if (clken & specAPRFLAGS)
           flag25 <= dp[25];
      end
 
    //
    // APR Flag Register 26
+   //
+   // Note
+   //  On a KS10, this flag indicates that an power fail condition
+   //  exists.
    //
    // Trace
    //  DPMB/E815
@@ -118,13 +115,9 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          `ifdef INITRAM
-            flagPWR <= 1'b0;
-          `else
-            flagPWR <= 1'bx;
-          `endif
+          flagPWR <= 1'b0;
         else if (clken & specAPRFLAGS)
-          if (pwrIRQ)
+          if (pwrINTR)
             flagPWR <= 1'b1;
           else
             flagPWR <= dp[26];
@@ -132,6 +125,9 @@ module APR(clk, rst, clken, crom, dp,
 
    //
    // APR Flag Register 27
+   //
+   // Note
+   //  Non-existant memory interrupt.
    //
    // Trace
    //  DPMB/E815
@@ -141,13 +137,9 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          `ifdef INITRAM
-            flagNXM <= 1'b0;
-          `else
-            flagNXM <= 1'bx;
-          `endif
+          flagNXM <= 1'b0;
         else if (clken & specAPRFLAGS)
-          if (nxmIRQ)
+          if (nxmINTR)
             flagNXM <= 1'b1;
           else
             flagNXM <= dp[27];
@@ -156,42 +148,42 @@ module APR(clk, rst, clken, crom, dp,
    //
    // APR Flag Register 28
    //
+   // Note
+   //  On a KS10, this flag indicates that an uncorrectable memory
+   //  error has occurred.   This is not implemented in the FPGA.
+   //
    // Trace
    //  DPMB/E914
    //  DPMB/E915
    //
 
-   reg flagBADDATA;
+   reg flag28;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          `ifdef INITRAM
-            flagBADDATA <= 1'b0;
-          `else
-            flagBADDATA <= 1'bx;
-          `endif
+          flag28 <= 1'b0;
         else if (clken & specAPRFLAGS)
-          flagBADDATA <= dp[28];
+          flag28 <= dp[28];
      end
 
    //
    // APR Flag Register 29
    //
+   // Note
+   //  On a KS10, this flag indicates that an correctable memory
+   //  error has occurred.   This is not implemented in the FPGA.
+   //
    // Trace
    //  DPMB/E914
    //
 
-   reg flagCORDATA;
+   reg flag29;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          `ifdef INITRAM
-            flagCORDATA <= 1'b0;
-          `else
-            flagCORDATA <= 1'bx;
-         `endif
+          flag29 <= 1'b0;
         else if (clken & specAPRFLAGS)
-          flagCORDATA <= dp[29];
+          flag29 <= dp[29];
      end
 
    //
@@ -205,17 +197,17 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          `ifdef INITRAM
-            flag30 <= 1'b0;
-          `else
-            flag30 <= 1'bx;
-          `endif
+          flag30 <= 1'b0;
         else if (clken & specAPRFLAGS)
           flag30 <= dp[30];
      end
 
    //
    // APR Flag Register 31
+   //
+   // Note
+   //  On a KS10, this flag indicates that a Console Interrupt
+   //  has occurred.
    //
    // Trace
    //  DPMB/E915
@@ -225,13 +217,9 @@ module APR(clk, rst, clken, crom, dp,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          `ifdef INITRAM
-            flagCONS <= 1'b0;
-          `else
-            flagCONS <= 1'bx;
-          `endif
+          flagCONS <= 1'b0;
         else if (clken & specAPRFLAGS)
-          if (consIRQ)
+          if (consINTR)
             flagCONS <= 1'b1;
           else
             flagCONS <= dp[31];
@@ -246,81 +234,51 @@ module APR(clk, rst, clken, crom, dp,
    //  DPEB/E173
    //
 
-   reg         flagTRAPEN;
-   reg         flagPAGEEN;
-   reg [24:31] flagAPREN;
-   reg         flagSWINT;
-   reg [ 0: 2] reqOUT;
+   reg         flagTRAPEN;	// Trap Enable
+   reg         flagPAGEEN;	// Paging Enable
+   reg [24:31] flagAPREN;	// APR Enable
+   reg         flagSWINT;	// Software Interrupt
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-            `ifdef INITRAM
-               flagTRAPEN <= 1'b0;
-               flagPAGEEN <= 1'b0;
-               flagAPREN  <= 8'b0;
-               flagSWINT  <= 1'b0;
-               reqOUT     <= 3'b0;
-            `else
-               flagTRAPEN <= 1'bx;
-               flagPAGEEN <= 1'bx;
-               flagAPREN  <= 8'bx;
-               flagSWINT  <= 1'bx;
-               reqOUT     <= 3'bx;
-            `endif
+             flagTRAPEN <= 1'b0;
+             flagPAGEEN <= 1'b0;
+             flagAPREN  <= 8'b0;
+             flagSWINT  <= 1'b0;
           end
-        else if (clken & specAPREN)
+        else if (clken & specLOADAPR)
           begin
              flagTRAPEN <= dp[22];
              flagPAGEEN <= dp[23];
              flagAPREN  <= dp[24:31];
              flagSWINT  <= dp[32];
-             reqOUT     <= dp[33:35];
           end
     end
 
    //
    // APR Interrupt Mask
+   //
+   // Details
+   //  This masks the disabled interrupts.
+   //
+   // Trace
    //  DPMB/E817
    //  DPMB/E917
    //  DPMB/E121
    //  DPMB/E309
    //
 
-   wire flagINTREQ = ((flag24      & flagAPREN[24]) ||
-                      (flag25      & flagAPREN[25]) ||
-                      (flagPWR     & flagAPREN[26]) ||
-                      (flagNXM     & flagAPREN[27]) ||
-                      (flagBADDATA & flagAPREN[28]) ||
-                      (flagCORDATA & flagAPREN[29]) ||
-                      (flag30      & flagAPREN[30]) ||
-                      (flagCONS    & flagAPREN[31]) ||
+   wire flagINTREQ = ((flag24   & flagAPREN[24]) ||
+                      (flag25   & flagAPREN[25]) ||
+                      (flagPWR  & flagAPREN[26]) ||
+                      (flagNXM  & flagAPREN[27]) ||
+                      (flag28   & flagAPREN[28]) ||
+                      (flag29   & flagAPREN[29]) ||
+                      (flag30   & flagAPREN[30]) ||
+                      (flagCONS & flagAPREN[31]) ||
                       (flagSWINT));
-
-   //
-   // PI Request Output Decoder
-   //
-   // Trace
-   //  DPEB/E166
-   //
-
-   always @(reqOUT or flagINTREQ)
-     begin
-        if (flagINTREQ)
-          case (reqOUT)
-            3'b000 : bus_pi_req_out <= 7'b0000000;
-            3'b001 : bus_pi_req_out <= 7'b1000000;
-            3'b010 : bus_pi_req_out <= 7'b0100000;
-            3'b011 : bus_pi_req_out <= 7'b0010000;
-            3'b100 : bus_pi_req_out <= 7'b0001000;
-            3'b101 : bus_pi_req_out <= 7'b0000100;
-            3'b110 : bus_pi_req_out <= 7'b0000010;
-            3'b111 : bus_pi_req_out <= 7'b0000001;
-          endcase
-        else
-          bus_pi_req_out <= 7'b0000000;
-     end
 
    //
    // FIXUPS
@@ -332,8 +290,8 @@ module APR(clk, rst, clken, crom, dp,
    assign aprFLAGS[25] = flag25;
    assign aprFLAGS[26] = flagPWR;
    assign aprFLAGS[27] = flagNXM;
-   assign aprFLAGS[28] = flagBADDATA;
-   assign aprFLAGS[29] = flagCORDATA;
+   assign aprFLAGS[28] = flag28;
+   assign aprFLAGS[29] = flag29;
    assign aprFLAGS[30] = flag30;
    assign aprFLAGS[31] = flagCONS;
    assign aprFLAGS[32] = flagINTREQ;
