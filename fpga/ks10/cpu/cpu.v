@@ -49,10 +49,10 @@
 
 module CPU(clk, rst,
            consTIMEREN, consSTEP, consRUN, consEXEC, consCONT, consHALT, consTRAPEN, consCACHEEN,
-           pwrINTR, consINTR, ubaINTR, ubaINTA,
+           pwrINTR, consINTR, ubaINTR, curINTR_NUM,
            busREQ, busACK, busDATAI, busDATAO, busADDRO,
            cpuHALT, cpuRUN);
-   
+
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
 
@@ -69,21 +69,15 @@ module CPU(clk, rst,
    input          pwrINTR;      // Power Fail Interrupt Request
    input          consINTR;     // Console Interrupt Request
    input  [ 1: 7] ubaINTR;      // Unibus Interrupt Request
-   output [ 1: 7] ubaINTA;      // Unibus Interrupt Acknowledge
-   output         busREQ;	// Bus Request
-   input          busACK;	// Bus Acknowledge
-   input  [ 0:35] busDATAI;     // Bus Data Input 
+   output [ 0: 2] curINTR_NUM;  // Current Interrupt Priority
+   output         busREQ;       // Bus Request
+   input          busACK;       // Bus Acknowledge
+   input  [ 0:35] busDATAI;     // Bus Data Input
    output [ 0:35] busDATAO;     // Bus Data Output
    output [ 0:35] busADDRO;     // Bus Addr and Flags
    output         cpuHALT;      //
    output         cpuRUN;       //
 
-   //
-   // FIXME
-   //
-   
-   wire [0: 2] bus_pi_current;  // FIXME
-   
    //
    // ROMS
    //
@@ -110,22 +104,22 @@ module CPU(clk, rst,
    // flags
    //
 
-   wire apr_int_req;
    wire mem_wait;
    wire stop_main_memory;
-   wire memory_cycle = 1'b0;                 		// FIXME
-   wire cpuINTR;                                        // Extenal Interrupt
-   wire iolatch;					// FIXME
-   wire cpuCONT;      					//
-   wire nxmINTR = 1'b0;					// FIXME
+   wire memory_cycle = 1'b0;                            // FIXME
+   wire iolatch;                                        // FIXME
+   wire cpuCONT;                                        //
    wire JRST0;
    wire trapCYCLE;
 
    //
-   // Interrupt Registers
+   // Interrupts
    //
 
-   wire [ 0: 2] pi_new;
+   wire cpuINTR;                                        // Extenal Interrupt
+   wire nxmINTR = 1'b0;                                 // FIXME
+   wire [ 0: 2] newINTR_NUM;                            // New Interrupt Number
+   wire [ 1: 7] aprINTR;                                // APR Interrupt Request
 
    //
    // AC Blocks
@@ -225,13 +219,13 @@ module CPU(clk, rst,
    // PXCT
    //
 
-   wire         prevEN;					// Conditionally use previous context
+   wire         prevEN;                                 // Conditionally use previous context
 
    //
    // Cache
    //
 
-   wire         cacheHIT = 1'b0;			// FIXME: Cache not implemented.
+   wire         cacheHIT = 1'b0;                        // FIXME: Cache not implemented.
 
    //
    // Busses
@@ -259,11 +253,11 @@ module CPU(clk, rst,
    wire [ 8:11] dispPF;                                 // Page Fail dispatch
    wire [ 8:11] dispBYTE;                               // Byte dispatch
    wire [ 8:11] dispSCAD;                               // SCAD dispatch
-   wire [ 8:11] dispMUL  = {1'b0, aluQR37,         	// Multiply dispatch
+   wire [ 8:11] dispMUL  = {1'b0, aluQR37,              // Multiply dispatch
                             1'b0, 1'b0};
-   wire [ 8:11] dispNORM = {aluZERO, dp[8:9],        	// Normalize dispatch
+   wire [ 8:11] dispNORM = {aluZERO, dp[8:9],           // Normalize dispatch
                             aluLSign};
-   wire [ 8:11] dispEA   = {~JRST0, regIR_I,  		// EA Dispatch
+   wire [ 8:11] dispEA   = {~JRST0, regIR_I,            // EA Dispatch
                             regXRZERO, 1'b0};
    wire [ 0:11] dispDIAG = 12'b0;                       // Diagnostic Dispatch
 
@@ -271,9 +265,9 @@ module CPU(clk, rst,
    // DEBUG
    //
 
-   wire [0: 3]  debugADDR;				// DEBUG Address
-   wire [0:35]  debugDATA;				// DEBUG Data
-   
+   wire [0: 3]  debugADDR;                              // DEBUG Address
+   wire [0:35]  debugDATA;                              // DEBUG Data
+
    //
    // Skips
    //
@@ -298,7 +292,7 @@ module CPU(clk, rst,
 
    //
    // Timing
-   // 
+   //
 
    wire clken;
    TIMING uTIMING
@@ -308,7 +302,7 @@ module CPU(clk, rst,
       .vmaFLAGS(vmaFLAGS),
       .clken(clken)
       );
-   
+
    //
    // AC Block
    //
@@ -392,7 +386,7 @@ module CPU(clk, rst,
       .busDATAO(busDATAO),
       .busADDRO(busADDRO)
       );
-   
+
    //
    // Data Bus
    //
@@ -421,7 +415,7 @@ module CPU(clk, rst,
        .debugDATA(debugDATA),
        .debugADDR(debugADDR)
        );
- 
+
    //
    // DBUS MUX
    //
@@ -431,7 +425,7 @@ module CPU(clk, rst,
       .cacheHIT(cacheHIT),
       .vmaFLAGS(vmaFLAGS),
       .vmaADDR(vmaADDR),
-      .pcFLAGS({pcFLAGS, 1'b0, pi_new, 4'b1111, vmaADDR[26:35]}),
+      .pcFLAGS({pcFLAGS, 1'b0, newINTR_NUM, 4'b1111, vmaADDR[26:35]}),
       .dp(dp),
       .ramfile(ramfile),
       .dbm(dbm),
@@ -462,12 +456,11 @@ module CPU(clk, rst,
       .crom(crom),
       .dp(dp),
       .flagINTREQ(flagINTREQ),
+      .aprINTR(aprINTR),
       .ubaINTR(ubaINTR),
-      .ubaINTA(ubaINTA),
-      .cpuINTR(cpuINTR),
-      .pi_new(pi_new),
-      .pi_current(bus_pi_current),
-      .pi_on(pi_on)
+      .newINTR_NUM(newINTR_NUM),
+      .curINTR_NUM(curINTR_NUM),
+      .cpuINTR(cpuINTR)
       );
 
    //
@@ -490,7 +483,7 @@ module CPU(clk, rst,
       .cpuHALT(cpuHALT)
       );
 
-   // 
+   //
    // IO Latch
    //
 
@@ -597,7 +590,7 @@ module CPU(clk, rst,
    //
    // Page Fail Dispatch
    //
-   
+
    PF_DISP uPF_DISP
      (.clk(clk),
       .rst(rst),
@@ -613,7 +606,7 @@ module CPU(clk, rst,
       .timerINTR(timerINTR),
       .dispPF(dispPF)
       );
-   
+
    //
    // PXCT
    //  Previous context
@@ -713,5 +706,5 @@ module CPU(clk, rst,
       .vmaFLAGS(vmaFLAGS),
       .vmaADDR(vmaADDR)
       );
-   
+
 endmodule

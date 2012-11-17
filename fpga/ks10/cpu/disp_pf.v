@@ -67,26 +67,24 @@
 
 module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
                aprFLAGS, pageFLAGS, cpuINTR, nxmINTR, timerINTR,
-               dispPF
-               );
-
+               dispPF);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
 
-   input                  clk;                  // Clock
-   input                  rst;                  // Reset
-   input                  clken;                // Clock Enable
-   input [ 0:cromWidth-1] crom;                 // Control ROM Data
-   input [ 0:dromWidth-1] drom;                 // Dispatch ROM Data
-   input [ 0:13]          vmaFLAGS;             // Virtual Memory Flags
-   input [14:35]          vmaADDR;              // Virtual Memory Address
-   input [22:35]          aprFLAGS;             // APR Flags
-   input [ 0: 4]          pageFLAGS;            // Page Flags
-   input                  timerINTR;            // Timer Interrupt
-   input                  cpuINTR;              // CPU Interrupt
-   input                  nxmINTR;              // NXM Interrupt
-   output reg [ 0: 3]     dispPF;               // Page Fail Dispatch
+   input                   clk;         // Clock
+   input                   rst;         // Reset
+   input                   clken;       // Clock Enable
+   input  [ 0:cromWidth-1] crom;        // Control ROM Data
+   input  [ 0:dromWidth-1] drom;        // Dispatch ROM Data
+   input  [ 0:13]          vmaFLAGS;    // Virtual Memory Flags
+   input  [14:35]          vmaADDR;     // Virtual Memory Address
+   input  [22:35]          aprFLAGS;    // APR Flags
+   input  [ 0: 4]          pageFLAGS;   // Page Flags
+   input                   timerINTR;   // Timer Interrupt
+   input                   cpuINTR;     // CPU Interrupt
+   input                   nxmINTR;     // NXM Interrupt
+   output [ 0: 3]     	   dispPF;   	// Page Fail Dispatch
 
    //
    // Microcode decode
@@ -100,31 +98,31 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    //
 
    wire specMEMCLR     = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
-   wire specMEMWAIT    = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMWAIT);
+   wire specMEMWAIT    = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMWAIT);
 
    //
    // aprFLAGS
    //
 
-   wire flagPAGEEN     = aprFLAGS[23];          // Paging is enabled
+   wire flagPAGEEN     = aprFLAGS[23];	// Paging is enabled
 
    //
    // vmaFLAGS
    //
 
-   wire vmaUSER        = vmaFLAGS[0];           // VMA User
-   wire vmaWRTESTCYCLE = vmaFLAGS[4];           // Write Test Cycle
-   wire vmaWRITECYCLE  = vmaFLAGS[5];           // Write Cycle
-   wire vmaPHYSICAL    = vmaFLAGS[8];           // VMA Physical
+   wire vmaUSER        = vmaFLAGS[0];   // VMA User
+   wire vmaWRTESTCYCLE = vmaFLAGS[4];   // Write Test Cycle
+   wire vmaWRITECYCLE  = vmaFLAGS[5];   // Write Cycle
+   wire vmaPHYSICAL    = vmaFLAGS[8];   // VMA Physical
 
    //
    // Page Flags
    //
 
-   wire pageVALID      = pageFLAGS[0];          // Page is valid
-   wire pageWRITEABLE  = pageFLAGS[1];          // Page is writeable
-   wire pageCACHEABLE  = pageFLAGS[2];          // Page is cacheable
-   wire pageUSER       = pageFLAGS[3];          // Page is user mode
+   wire pageVALID      = pageFLAGS[0];  // Page is valid
+   wire pageWRITEABLE  = pageFLAGS[1];  // Page is writeable
+   wire pageCACHEABLE  = pageFLAGS[2];  // Page is cacheable
+   wire pageUSER       = pageFLAGS[3];  // Page is user mode
 
    //
    // AC Reference
@@ -253,7 +251,9 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    //  DPM6/E47
    //  DPM6/E115
    //  DPM6/E124
-
+   //
+   
+   reg [ 0: 3] dispPF;
    always @(nxmINTR or pagingOK or pageVALID or pageUSER or
             vmaWRTESTCYCLE or vmaUSER or pageWRITEABLE)
      begin

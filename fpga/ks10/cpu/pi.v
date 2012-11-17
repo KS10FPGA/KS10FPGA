@@ -50,52 +50,36 @@
 
 `include "useq/crom.vh"
 
-module INTR(clk, rst, clken, crom, dp, flagINTREQ, ubaINTR, ubaINTA,
-            pi_new, pi_current, cpuINTR, pi_on);
+module INTR(clk, rst, clken, crom, dp, flagINTREQ,
+            ubaINTR, aprINTR, newINTR_NUM, curINTR_NUM, cpuINTR);
 
    parameter cromWidth = `CROM_WIDTH;
 
-   input                  clk;        	// Clock
+   input                  clk;          // Clock
    input                  rst;          // Reset
    input                  clken;        // Clock enable
    input  [0:cromWidth-1] crom;         // Control ROM Data
    input  [0:35]          dp;           // Data path
-   input                  flagINTREQ;	// Interrupt Request
+   input                  flagINTREQ;   // Interrupt Request
+   input  [1: 7]          aprINTR;      // Arithmetic Processor request
    input  [1: 7]          ubaINTR;      // Unibus request
-   output [1: 7]          ubaINTA;  	// Interrupt Acknowledge
-   output [0: 2]          pi_new;       // New Prioity Interrupt number
-   output [0: 2]          pi_current;   // Current Prioity Interrupt number
+   output [0: 2]          newINTR_NUM;  // New Prioity Interrupt number
+   output [0: 2]          curINTR_NUM;  // Current Prioity Interrupt number
    output                 cpuINTR;      // Interrupt Request
-   output                 pi_on;        // PI is on
 
    //
    // Microcode Decode
    //
-   
+
    wire specLOADPI  = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADPI);
    wire specLOADAPR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADAPR);
-   
-   //
-   // Bus Request In
-   //
-   // Details
-   //  This synchronizes bus-based interrupt requests
-   //
-   // Trace
-   //  DPEB/E167
-   //
-
-   reg [1:7] pi_bus;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          pi_bus <= 7'b0;
-        else if (clken)
-          pi_bus <= ubaINTR;
-     end
 
    //
    // Datapath Interface
+   //
+   // Details
+   //  The microcode keeps track of the current interrupt priority
+   //  and the interrupt mask.
    //
    // Trace
    //  DPEB/E175
@@ -103,31 +87,37 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ, ubaINTR, ubaINTA,
    //  DPEB/E140
    //
 
-   reg pi_on;		// PI is active
-   reg [1:7] pi_act;    // active pi level
-   reg [1:7] pi_cur;    // current pi level
-   reg [1:7] pi_sw;     // software pi level
+   reg intrEN;                          // Interrupts are enabled
+   reg [1:7] actINTR;                   // Interrupt mask
+   reg [1:7] curINTR;                   // Current interrupt level
+   reg [1:7] swINTR;                    // Software interrupt
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             pi_act <= 7'b0;
-             pi_on  <= 1'b0;
-             pi_cur <= 7'b0;
-             pi_sw  <= 7'b0;
+             actINTR <= 7'b0;
+             intrEN  <= 1'b0;
+             curINTR <= 7'b0;
+             swINTR  <= 7'b0;
           end
         else if (clken & specLOADPI)
           begin
-             pi_act <= ~dp[29:35];
-             pi_on  <= ~dp[28];
-             pi_cur <= ~dp[21:27];
-             pi_sw  <= ~dp[11:17];
+             actINTR <= ~dp[29:35];
+             intrEN  <= ~dp[28];
+             curINTR <= ~dp[21:27];
+             swINTR  <= ~dp[11:17];
           end
      end
 
    //
-   // Interrupt enable logic
+   // Interrupt Enable / Masking
+   //
+   // Details
+   //  Interrupts come from Unibus (UBA) or the Arithmetic
+   //  Processor (APR), or the microcode software (SW).
+   //
+   //  The software interrupts are not masked.
    //
    // Trace
    //  DPEB/E174
@@ -136,42 +126,48 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ, ubaINTR, ubaINTA,
    //  DPEB/E161
    //
 
-   wire [1:7] pi_req = (pi_bus & pi_act) | pi_sw;
+   wire [1:7] newINTR = ((ubaINTR[1:7] | aprINTR[1:7]) & actINTR[1:7]) | swINTR[1:7];
 
    //
-   // Interrupt Request Priority Encoder
+   // New Interrupt Priority
    //
    // Trace
    //  DPEB/E147
    //
 
-   wire [0:3] pi_req_num = (pi_req[1] ? 4'b0001 :       // Highest priority
-                            pi_req[2] ? 4'b0010 :
-                            pi_req[3] ? 4'b0011 :
-                            pi_req[4] ? 4'b0100 :
-                            pi_req[5] ? 4'b0101 :
-                            pi_req[6] ? 4'b0110 :
-                            pi_req[7] ? 4'b0111 :
-                            4'b1000);                   // Lowest priority
+   assign newINTR_NUM = (~intrEN    ? 4'b1000 :         // Disabled
+                         newINTR[1] ? 4'b0001 :         // Highest priority
+                         newINTR[2] ? 4'b0010 :
+                         newINTR[3] ? 4'b0011 :
+                         newINTR[4] ? 4'b0100 :
+                         newINTR[5] ? 4'b0101 :
+                         newINTR[6] ? 4'b0110 :
+                         newINTR[7] ? 4'b0111 :
+                         4'b1000);                      // Lowest priority
 
    //
-   // Current Interrupt Priority Encoder
+   // Current Interrupt Priority
    //
    // Trace
    //  DPEB/E134
    //
 
-   wire [0:3] pi_cur_num = (pi_cur[1] ? 4'b0001 :       // Highest priority
-                            pi_cur[2] ? 4'b0010 :
-                            pi_cur[3] ? 4'b0011 :
-                            pi_cur[4] ? 4'b0100 :
-                            pi_cur[5] ? 4'b0101 :
-                            pi_cur[6] ? 4'b0110 :
-                            pi_cur[7] ? 4'b0111 :
-                            4'b1000);                   // Lowest priority
+   assign curINTR_NUM = (curINTR[1] ? 4'b0001 :         // Highest priority
+                         curINTR[2] ? 4'b0010 :
+                         curINTR[3] ? 4'b0011 :
+                         curINTR[4] ? 4'b0100 :
+                         curINTR[5] ? 4'b0101 :
+                         curINTR[6] ? 4'b0110 :
+                         curINTR[7] ? 4'b0111 :
+                         4'b1000);                      // Lowest priority
 
    //
    // Interrupt Request
+   //
+   // Details
+   //  The priority of the current interrupt input is compared to
+   //  the priority of the active interrupt.  If the currrent input
+   //  is a higher priority, an interrupt to the CPU is generated.
    //
    // Trace
    //  DPEB/E148
@@ -184,53 +180,7 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ, ubaINTR, ubaINTA,
         if (rst)
           cpuINTR <= 1'b0;
         else if (clken)
-          begin
-             cpuINTR <= (pi_req_num < pi_cur_num);
-          end
+          cpuINTR <= (newINTR_NUM < curINTR_NUM);
      end
-
-   //
-   // Interrupt Acknowledge
-   
-   reg [0: 2] intrACK;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          `ifdef INITRAM
-             intrACK <= 3'b0;
-          `else
-             intrACK <= 3'bx;
-          `endif
-          else if (clken & specLOADAPR)
-            intrACK <= dp[33:35];
-     end
-          
-   //
-   // PI Request Output Decoder
-   //
-   // Trace
-   //  DPEB/E166
-   //
-
-   reg [1:7] ubaINTA;
-   always @(intrACK or flagINTREQ)
-     begin
-        if (flagINTREQ)
-          case (intrACK)
-            3'b000 : ubaINTA <= 7'b0000000;
-            3'b001 : ubaINTA <= 7'b1000000;
-            3'b010 : ubaINTA <= 7'b0100000;
-            3'b011 : ubaINTA <= 7'b0010000;
-            3'b100 : ubaINTA <= 7'b0001000;
-            3'b101 : ubaINTA <= 7'b0000100;
-            3'b110 : ubaINTA <= 7'b0000010;
-            3'b111 : ubaINTA <= 7'b0000001;
-          endcase
-        else
-          ubaINTA <= 7'b0000000;
-     end
-
-   assign pi_new     = pi_req_num[1:3];
-   assign pi_current = pi_cur_num[1:3];
 
 endmodule

@@ -55,19 +55,24 @@ module NI_DISP (aprFLAGS, pcFLAGS, consTRAPEN, cpuRUN, memory_cycle, dispNI);
    output [ 8:11] dispNI;               // Next Instruction dispatch
 
    //
-   // Trap Enable Flag
+   // APR Flag
    //
 
    wire flagTRAPEN = aprFLAGS[22];
 
    //
-   // Trap Flags
+   // PC Flags
    //
 
    wire flagTRAP2 = pcFLAGS[ 9];
    wire flagTRAP1 = pcFLAGS[10];
-   wire [0:1] trapSEL = {flagTRAP2, flagTRAP1};
+
+   //
+   // Trap Selection
+   //
+   
    reg  [1:3] traps;
+   wire [0:1] trapSEL = {flagTRAP2, flagTRAP1};
 
    always @(consTRAPEN or flagTRAPEN or trapSEL)
      begin

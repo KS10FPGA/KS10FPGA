@@ -47,7 +47,7 @@
 `include "config.vh"
 `include "useq/crom.vh"
 
-module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
+module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprINTR);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -55,11 +55,12 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
    input                   rst;         // Reset
    input                   clken;       // Clock Enable
    input  [ 0:cromWidth-1] crom;        // Control ROM Data
-   input  [ 0:35]          dp;         	// Data path
+   input  [ 0:35]          dp;          // Data path
    input                   pwrINTR;     // Power Failure interrupt
    input                   nxmINTR;     // Non existant memory interrupt
    input                   consINTR;    // Console Interrupt
    output [22:35]          aprFLAGS;    // APR Flags
+   output [ 1: 7]          aprINTR;     // APR Interrupt Request
 
    //
    // Microcode Decode
@@ -72,7 +73,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
    // APR Flag Register 24
    //
    // Trace
-   //  DPMB/E814
+   //  DPMB/E159
    //
 
    reg flag24;
@@ -88,7 +89,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
    // APR Flag Register 25
    //
    // Trace
-   //  DPMB/E814
+   //  DPMB/E159
    //
 
    reg flag25;
@@ -108,7 +109,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
    //  exists.
    //
    // Trace
-   //  DPMB/E815
+   //  DPMB/E158
    //
 
    reg flagPWR;
@@ -130,7 +131,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
    //  Non-existant memory interrupt.
    //
    // Trace
-   //  DPMB/E815
+   //  DPMB/E139
    //
 
    reg flagNXM;
@@ -153,8 +154,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
    //  error has occurred.   This is not implemented in the FPGA.
    //
    // Trace
-   //  DPMB/E914
-   //  DPMB/E915
+   //  DPMB/E139
    //
 
    reg flag28;
@@ -174,7 +174,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
    //  error has occurred.   This is not implemented in the FPGA.
    //
    // Trace
-   //  DPMB/E914
+   //  DPMB/E147
    //
 
    reg flag29;
@@ -190,7 +190,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
    // APR Flag Register 30
    //
    // Trace
-   //  DPMB/E915
+   //  DPMB/E147
    //
 
    reg flag30;
@@ -210,7 +210,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
    //  has occurred.
    //
    // Trace
-   //  DPMB/E915
+   //  DPMB/E158
    //
 
    reg flagCONS;
@@ -229,15 +229,16 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
    // APR Enable Register
    //
    // Trace
-   //  DPMB/E816
-   //  DPMB/E916
+   //  DPMB/E123
+   //  DPMB/E132
    //  DPEB/E173
    //
 
-   reg         flagTRAPEN;	// Trap Enable
-   reg         flagPAGEEN;	// Paging Enable
-   reg [24:31] flagAPREN;	// APR Enable
-   reg         flagSWINT;	// Software Interrupt
+   reg         flagTRAPEN;      // Trap Enable
+   reg         flagPAGEEN;      // Paging Enable
+   reg [24:31] flagAPREN;       // APR Enable
+   reg         flagSWINT;       // Software Interrupt
+   reg [ 1: 7] flagINTR;        // APR Interrupt Request
 
    always @(posedge clk or posedge rst)
      begin
@@ -247,6 +248,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
              flagPAGEEN <= 1'b0;
              flagAPREN  <= 8'b0;
              flagSWINT  <= 1'b0;
+             flagINTR   <= 7'b0;
           end
         else if (clken & specLOADAPR)
           begin
@@ -254,6 +256,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
              flagPAGEEN <= dp[23];
              flagAPREN  <= dp[24:31];
              flagSWINT  <= dp[32];
+             flagINTR   <= dp[33:35];
           end
     end
 
@@ -264,10 +267,10 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
    //  This masks the disabled interrupts.
    //
    // Trace
-   //  DPMB/E817
-   //  DPMB/E917
-   //  DPMB/E121
-   //  DPMB/E309
+   //  DPMB/E154
+   //  DPMB/E161
+   //  DPMB/E168
+   //  DPMB/E174
    //
 
    wire flagINTREQ = ((flag24   & flagAPREN[24]) ||
@@ -279,6 +282,34 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS);
                       (flag30   & flagAPREN[30]) ||
                       (flagCONS & flagAPREN[31]) ||
                       (flagSWINT));
+
+   //
+   // APR Interrupt Request
+   //
+   // Details
+   //  The APR can request interrupts.
+   //
+   // Trace
+   //  DPEB/E166
+   //
+
+   reg [1:7] aprINTR;
+   always @(posedge clk or posedge rst)
+     begin
+        if (flagINTREQ)
+          case (flagINTR)
+            3'b000 : aprINTR <= 7'b0000000;
+            3'b001 : aprINTR <= 7'b1000000;
+            3'b010 : aprINTR <= 7'b0100000;
+            3'b011 : aprINTR <= 7'b0010000;
+            3'b100 : aprINTR <= 7'b0001000;
+            3'b101 : aprINTR <= 7'b0000100;
+            3'b110 : aprINTR <= 7'b0000010;
+            3'b111 : aprINTR <= 7'b0000001;
+          endcase
+        else
+          aprINTR <= 7'b0000000;
+     end
 
    //
    // FIXUPS
