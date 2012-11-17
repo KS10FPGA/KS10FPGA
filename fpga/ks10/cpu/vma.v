@@ -44,7 +44,6 @@
 // Comments are formatted for doxygen
 //
 
-`include "config.vh"
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
@@ -129,31 +128,17 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
      begin
         if (rst)
           begin
-            `ifdef INITREGS
-               vmaADDR        <= 22'b0;
-               vmaSWEEP       <=  1'b0;
-               vmaEXTENDED    <=  1'b0;
-               vmaUSER        <=  1'b0;
-               vmaFETCH       <=  1'b0;
-               vmaPHYSICAL    <=  1'b0;
-               vmaPREVIOUS    <=  1'b0;
-               vmaIOCYCLE     <=  1'b0;
-               vmaWRUCYCLE    <=  1'b0;
-               vmaVECTORCYCLE <=  1'b0;
-               vmaIOBYTECYCLE <=  1'b0;
-            `else
-               vmaADDR        <= 22'bx;
-               vmaSWEEP       <=  1'bx;
-               vmaEXTENDED    <=  1'bx;
-               vmaUSER        <=  1'bx;
-               vmaFETCH       <=  1'bx;
-               vmaPHYSICAL    <=  1'bx;
-               vmaPREVIOUS    <=  1'bx;
-               vmaIOCYCLE     <=  1'bx;
-               vmaWRUCYCLE    <=  1'bx;
-               vmaVECTORCYCLE <=  1'bx;
-               vmaIOBYTECYCLE <=  1'bx;
-            `endif
+             vmaADDR        <= 22'b0;
+             vmaSWEEP       <=  1'b0;
+             vmaEXTENDED    <=  1'b0;
+             vmaUSER        <=  1'b0;
+             vmaFETCH       <=  1'b0;
+             vmaPHYSICAL    <=  1'b0;
+             vmaPREVIOUS    <=  1'b0;
+             vmaIOCYCLE     <=  1'b0;
+             vmaWRUCYCLE    <=  1'b0;
+             vmaVECTORCYCLE <=  1'b0;
+             vmaIOBYTECYCLE <=  1'b0;
           end
         else if (clken & vmaEN)
           begin
@@ -215,35 +200,20 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
      begin
         if (rst)
           begin
-            `ifdef INITREGS
-               vmaREADCYCLE   <= 1'b0;
-               vmaWRTESTCYCLE <= 1'b0;
-               vmaWRITECYCLE  <= 1'b0;
-               vmaCACHEINH    <= 1'b0;
-            `else
-               vmaREADCYCLE   <= 1'bx;
-               vmaWRTESTCYCLE <= 1'bx;
-               vmaWRITECYCLE  <= 1'bx;
-               vmaCACHEINH    <= 1'bx;
-            `endif
+             vmaREADCYCLE   <= 1'b0;
+             vmaWRTESTCYCLE <= 1'b0;
+             vmaWRITECYCLE  <= 1'b0;
+             vmaCACHEINH    <= 1'b0;
           end
         else if (clken & memEN)
           begin
              if (`cromMEM_AREAD)
-               if (`cromMEM_DPFUNC)
-                 begin
-                    vmaREADCYCLE   <= 1'b0;
-                    vmaWRTESTCYCLE <= 1'b0;
-                    vmaWRITECYCLE  <= 1'b0;
-                    vmaCACHEINH    <= 1'b0;
-                 end
-               else
-                 begin
-                    vmaREADCYCLE   <= `dromREADCYCLE;
-                    vmaWRTESTCYCLE <= `dromWRTESTCYCLE;
-                    vmaWRITECYCLE  <= `dromWRITECYCLE;
-                    vmaCACHEINH    <= 1'b0;
-                 end
+	       begin
+		  vmaREADCYCLE   <= `dromREADCYCLE;
+		  vmaWRTESTCYCLE <= `dromWRTESTCYCLE;
+		  vmaWRITECYCLE  <= `dromWRITECYCLE;
+		  vmaCACHEINH    <= 1'b0;
+               end
              else
                if (`cromMEM_DPFUNC)
                  begin

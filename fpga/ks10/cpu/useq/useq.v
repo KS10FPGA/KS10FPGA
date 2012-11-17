@@ -153,15 +153,30 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    wire [0: 3] dromA        = `dromA;
    wire [0: 3] dromB        = `dromB;
 
+   //
+   // Jump Dispatch
+   //
+
+   reg [0:11] dispJ;
+
+   always @(dromACDISP, regIR_AC, dromJ)
+     begin
+        if (dromACDISP)                                 // Dispatch Address Range:
+          dispJ = {dromJ[0:7], regIR_AC};               // 1400 to 1777  (4 upper address were hardwired)
+        else
+          dispJ = {dromJ[0:7], dromJ[8:11]};            // 1400 to 1777  (4 upper address were hardwired)
+     end
+
+   //
+   // AREAD Dispatch
+   //
+
    reg [0:11] dispAREAD;
 
-   always @(dromAEQJ, dromACDISP, dromJ, dromA, regIR_AC)
+   always @(dromAEQJ, dispJ, dromA)
      begin
         if (dromAEQJ)                                   // Dispatch Address Range:
-          if (dromACDISP)
-            dispAREAD = {dromJ[0:7], regIR_AC};         // 1400 to 1777  (4 upper address were hardwired)
-          else
-            dispAREAD = {dromJ[0:7], dromJ[8:11]};      // 1400 to 1777  (4 upper address were hardwired)
+          dispAREAD = dispJ;                            // 1400 to 1777  (4 upper address were hardwired)
         else
           dispAREAD = {8'b00000010, dromA};             // 0040 to 0057
      end
@@ -177,7 +192,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
       .dp(dp),
       .dispDIAG(dispDIAG),
       .dispRET(dispRET),
-      .dispJ(dromJ),
+      .dispJ(dispJ),
       .dispAREAD(dispAREAD),
       .dispMUL(dispMUL),
       .dispPF(dispPF),
@@ -190,7 +205,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
       .dispDROM_B(dromB),
       .dispADDR(dispADDR)
       );
-   
+
    //
    // Address 'MUX'
    //

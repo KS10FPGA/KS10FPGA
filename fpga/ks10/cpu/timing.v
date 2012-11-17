@@ -49,42 +49,62 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module TIMING(clk, rst, crom, vmaFLAGS, clken);
+module TIMING(clk, rst, crom, drom, dp, clken);
 
    parameter cromWidth = `CROM_WIDTH;
+   parameter dromWidth = `DROM_WIDTH;
 
-   input                  clk;                 	// Clock
-   input                  rst;                 	// Reset
-   input  [0:cromWidth-1] crom;                	// Control ROM Data
-   input  [0:13]          vmaFLAGS;     	// VMA Flags
-   output 		  clken;		// Clock Enable
+   input                  clk;          // Clock
+   input                  rst;          // Reset
+   input  [0:cromWidth-1] crom;         // Control ROM Data
+   input  [0:dromWidth-1] drom;         // Control ROM Data
+   input  [0:35]          dp;           // Data path
+   output                 clken;        // Clock Enable
 
    //
-   // VMA Flags
    //
+   //
+/*   
+   wire memEN     = (( `cromMEM_CYCLE &  `cromMEM_WAIT                       ) |
+                     ( `cromMEM_CYCLE &  `cromMEM_BWRITE & `dromCOND_FUNC    ));
+
+   wire readCYCLE = (( `cromMEM_AREAD &  `dromREADCYCLE                      ) |
+                     (~`cromMEM_AREAD &  `cromMEM_DPFUNC & dp[3]             ) |
+                     (~`cromMEM_AREAD & ~`cromMEM_DPFUNC & `cromMEM_READCYCLE));
+   //
+   // Wait State Machine
+   //
+
+   reg [0:1] state;
    
-   wire vmaREADCYCLE  = vmaFLAGS[3];
-   wire vmaWRITECYCLE = vmaFLAGS[5];
-
-   //
-   //
-   //
-   
-   wire memWAIT = vmaREADCYCLE | vmaWRITECYCLE | `cromFMWRITE;
-
-   //
-   //
-   //
-
-   reg 	asdf;
-   always @(posedge rst or posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-       if (rst)
-	 asdf <= 1'b0;
-       else
-	 asdf <= memWAIT;
+        if (rst)
+          state <= 0;
+        else
+          case (state)
+            0: if (memEN & readCYCLE)
+              state <= 1;
+            1: state <= 2;
+            2: state <= 0;
+            3: state <= 0;
+          endcase
      end
+   
+   assign clken = ((state == 0) |
 
-   assign clken = 1'b1;//~memWAIT | asdf;
+   reg clken;
+   
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          clken <= 1'b1;
+        else
+          clken <= ~clken;
+     end
+                   (state == 2));
+*/
+
+   assign clken = 1'b1;
    
 endmodule

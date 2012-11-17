@@ -299,7 +299,8 @@ module CPU(clk, rst,
      (.clk(clk),
       .rst(rst),
       .crom(crom),
-      .vmaFLAGS(vmaFLAGS),
+      .drom(drom),
+      .dp(dp),
       .clken(clken)
       );
 
@@ -354,7 +355,8 @@ module CPU(clk, rst,
       .pwrINTR(pwrINTR),
       .nxmINTR(nxmINTR),
       .consINTR(consINTR),
-      .aprFLAGS(aprFLAGS)
+      .aprFLAGS(aprFLAGS),
+      .aprINTR(aprINTR)
       );
 
    //
