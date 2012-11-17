@@ -115,7 +115,6 @@ module KS10(clk, reset, pwrFAIL,
    //
 
    wire [1: 7] ubaINTR;		// Unibus Interrupt Request
-   wire [1: 7] ubaINTA;		// Unibus Interrupt Acknowledge
    wire        ubaREQ;         	// Unibus Bus Request
    wire        ubaACK;         	// Unibus Bus Acknowledge
    wire [0:35] ubaADDRI;        // Unibus Address In
@@ -124,12 +123,13 @@ module KS10(clk, reset, pwrFAIL,
    wire [0:35] ubaDATAO;        // Unibus Data Out
 
    //
-   // Reset
+   // Interrupts
    //
-   // Details
-   //  The reset signal (rst) needs to be asserted for a few clock
-   //  cycles (min) for the hardware to initialize.  It also needs
-   //  to by synchronously negated.
+   
+   wire [0: 2] curINTR_NUM;	// Current Interrupt Priority
+   
+   //
+   // Reset
    //
 
    RST uRST
@@ -192,7 +192,7 @@ module KS10(clk, reset, pwrFAIL,
       .pwrINTR          (pwrFAIL),
       .consINTR         (1'b0),
       .ubaINTR          (ubaINTR),
-      .ubaINTA          (ubaINTA),
+      .curINTR_NUM      (curINTR_NUM),
       .busREQ           (cpuREQ),
       .busACK           (cpuACK),
       .busADDRO         (cpuADDRO),
@@ -241,7 +241,7 @@ module KS10(clk, reset, pwrFAIL,
      (.clk              (clk),
       .clken            (1'b1),
       .ubaINTR		(ubaINTR),
-      .ubaINTA          (ubaINTA),
+      .curINTR_NUM      (curINTR_NUM),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO),
       .busACKI          (ubaACKI),

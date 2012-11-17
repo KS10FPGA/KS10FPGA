@@ -8,7 +8,7 @@ ISE  := $(ISE)
 MEM  := $(RTL)/mem
 UBA  := $(RTL)/uba
 UC   := $(CPU)/useq
-LOAD := MAINDEC-10-DSKAA.txt
+LOAD := MAINDEC-10-DSKAH.txt
 
 SRC := \
 	$(UC)/crom.vh  \
@@ -44,6 +44,7 @@ SRC := \
 	$(CPU)/regir.v \
 	$(CPU)/scad.v \
 	$(CPU)/timer.v \
+	$(CPU)/timing.v \
 	$(CPU)/traps.v \
 	$(CPU)/vma.v \
 	$(CPU)/cpu.v \
@@ -55,6 +56,7 @@ SRC := \
 	$(RTL)/rst.v \
 	$(RTL)/ks10.v \
 	$(RTL)/ks10.ucf \
+	$(RTL)/status.txt \
 	$(RTL)/testbench.v
 
 BLD := \

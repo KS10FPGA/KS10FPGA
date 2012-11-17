@@ -14,6 +14,28 @@ BEGIN {
 }
 
 #
+# IO Instructions
+#
+#  These looks like:
+#
+#" xxx	xxxxxx	7 xxx xx x xx xxxxxx 
+/^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7] [0-7][0-7][0-7] [0-7][0-7] [0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
+    data1 = strtonum("0" substr($3,  1, 1));
+    data2 = strtonum("0" substr($3,  3, 3));
+    data3 = strtonum("0" substr($3,  7, 2));
+    data4 = strtonum("0" substr($3, 10, 1));
+    data5 = strtonum("0" substr($3, 12, 2));
+    data6 = substr($3, 15, 6);
+    #print $2 " # " $3;
+    data = sprintf("%06o%s", data1*0100000+data2*0100+data3*010+data4*020+data5, data6);
+    i = strtonum("0" $2)
+    map[i] = data;
+}
+
+
+
+
+#
 # Sixbit 
 #
 #  These looks like:
@@ -111,11 +133,22 @@ BEGIN {
 #
 
 END {
-   for (i = 0; i < 040000; i++) { 
+   for (i = 0; i < 384; i++) { 
        if (map[i] != "") {
            printf "         RAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
        } else {
            printf "         RAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
        }
    }
+
+   for (i = 12288; i < 16896; i++) { 
+       if (map[i] != "") {
+           printf "         RAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
+       } else {
+           printf "         RAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
+       }
+   }
+
+
+
 }
