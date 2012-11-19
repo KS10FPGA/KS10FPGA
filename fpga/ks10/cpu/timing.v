@@ -49,7 +49,7 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module TIMING(clk, rst, crom, drom, dp, clken);
+module TIMING(clk, rst, crom, drom, dp, fe, clken, clkenUSEQ);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -59,11 +59,16 @@ module TIMING(clk, rst, crom, drom, dp, clken);
    input  [0:cromWidth-1] crom;         // Control ROM Data
    input  [0:dromWidth-1] drom;         // Control ROM Data
    input  [0:35]          dp;           // Data path
+   input  [0: 9]          fe;		// FE
    output                 clken;        // Clock Enable
+   output                 clkenUSEQ;    // Clock Enable Microsequencer
 
    //
    //
    //
+
+
+   
 /*   
    wire memEN     = (( `cromMEM_CYCLE &  `cromMEM_WAIT                       ) |
                      ( `cromMEM_CYCLE &  `cromMEM_BWRITE & `dromCOND_FUNC    ));
@@ -105,6 +110,29 @@ module TIMING(clk, rst, crom, drom, dp, clken);
                    (state == 2));
 */
 
+
+   reg ready;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          ready = 1'b0;
+        else
+          ready = 1'b1;
+     end
+   
+   //
+   // Fast Shift
+   //
+   // Note
+   //  The KS10 fast shifts while the FE is negative.  For some reason
+   //  the FPGA shifts one too many times.
+   //
+   // FIXME:
+   //  I don't really understand why this needs to be different than the
+   //  KS10.
+   //
+   
+   assign clkenUSEQ = ~(`cromMULTISHIFT & (fe != 10'b1_111_111_111) & ready);
    assign clken = 1'b1;
    
 endmodule

@@ -242,8 +242,10 @@ module CPU(clk, rst,
 
    wire [ 0: 9] scad;
    wire         scadSIGN = scad[0];                     // SCAD Sign
-   wire         scSIGN;                                 // Step Count Sign
-   wire         feSIGN;                                 // Floating-point exponent Sign
+   wire [ 0: 9] sc;					// Step Count
+   wire         scSIGN = sc[0];                         // Step Count Sign
+   wire [ 0: 9] fe;					// Floating-point exponent
+   wire         feSIGN = fe[0];                         // Floating-point exponent Sign
 
    //
    // Dispatches
@@ -295,13 +297,17 @@ module CPU(clk, rst,
    //
 
    wire clken;
+   wire clkenUSEQ;
+   
    TIMING uTIMING
      (.clk(clk),
       .rst(rst),
       .crom(crom),
       .drom(drom),
       .dp(dp),
-      .clken(clken)
+      .fe(fe),
+      .clken(clken),
+      .clkenUSEQ(clkenUSEQ)
       );
 
    //
@@ -326,7 +332,6 @@ module CPU(clk, rst,
       .rst(rst),
       .clken(clken),
       .crom(crom),
-      .feSIGN(feSIGN),
       .aluIN(dbus),
       .aluLZero(aluLZero),
       .aluRZero(aluRZero),
@@ -520,7 +525,7 @@ module CPU(clk, rst,
    USEQ uUSEQ
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenUSEQ),
       .pageFAIL(pageFAIL),
       .dp(dp),
       .dispDIAG(dispDIAG),
@@ -654,11 +659,10 @@ module CPU(clk, rst,
       .crom(crom),
       .dp(dp),
       .scad(scad),
-      .dispSCAD(dispSCAD),
-      .scSIGN(scSIGN),
-      .feSIGN(feSIGN)
+      .sc(sc),
+      .fe(fe),
+      .dispSCAD(dispSCAD)
       );
-
 
    //
    // One millisecond (more or less) interval timer.
