@@ -46,31 +46,19 @@
 
 `include "useq/crom.vh"
 
-module SCAD(clk, rst, clken, crom, dp, scad, dispSCAD, scSIGN, feSIGN);
+module SCAD(clk, rst, clken, crom, dp, scad, fe, sc, dispSCAD);
 
    parameter  cromWidth = `CROM_WIDTH;
 
-   input                      clk;      // Clock
-   input                      rst;      // Reset
-   input                      clken;    // Clock Enable
-   input      [0:cromWidth-1] crom;     // Control ROM Data
-   input      [0:35]          dp;       // Data path
-   output reg [0: 9]          scad;     // SCAD
-   output     [8:11]          dispSCAD; // SCAD Dispatch
-   output                     scSIGN;	// SC Sign
-   output                     feSIGN;	// FE Sign
-
-   //
-   // Floating-point exponent
-   //
-   
-   reg [0:9] fe;
-
-   //
-   // Step Counter
-   //
-
-   reg [0:9] sc;
+   input                  clk;      	// Clock
+   input                  rst;      	// Reset
+   input                  clken;    	// Clock Enable
+   input  [0:cromWidth-1] crom;     	// Control ROM Data
+   input  [0:35]          dp;       	// Data path
+   output [0: 9]          scad;     	// SCAD
+   output [0: 9]          fe;		// FE
+   output [0: 9]          sc;		// FE
+   output [8:11]          dispSCAD; 	// SCAD Dispatch
    
    //
    // CROM interface
@@ -103,7 +91,6 @@ module SCAD(clk, rst, clken, crom, dp, scad, dispSCAD, scSIGN, feSIGN);
    //
 
    reg [0: 9] scadA;
-
    always @(asel or sc or snum or dp)
      begin
         case (asel)
@@ -140,7 +127,6 @@ module SCAD(clk, rst, clken, crom, dp, scad, dispSCAD, scSIGN, feSIGN);
    //
 
    reg [0:9] scadB;
-
    always @(bsel or fe or dp)
      begin
         case (bsel)
@@ -204,6 +190,7 @@ module SCAD(clk, rst, clken, crom, dp, scad, dispSCAD, scSIGN, feSIGN);
    //  DPM3/E24
    //
 
+   reg [0:9] scad;
    always @(fun or scadA or scadB)
      begin
         case (fun)
@@ -230,13 +217,14 @@ module SCAD(clk, rst, clken, crom, dp, scad, dispSCAD, scSIGN, feSIGN);
    // FE Register
    //
    // Details:
-   //  This contains the floating-point exponent
+   //  Floating-point exponent
    //
    // Trace
    //  DPM4/E44
    //  DPM4/E52
    //
 
+   reg [0:9] fe;
    always @(posedge clk or posedge rst)
     begin
         if (rst)
@@ -249,13 +237,14 @@ module SCAD(clk, rst, clken, crom, dp, scad, dispSCAD, scSIGN, feSIGN);
    // SC Register
    //
    // Details:
-   //  This contains the Step Counter
+   //  Step Counter
    //
    // Trace
    //  DPM4/E35
    //  DPM4/E43
    //
  
+   reg [0:9] sc;
    always @(posedge clk or posedge rst)
     begin
         if (rst)
@@ -269,12 +258,5 @@ module SCAD(clk, rst, clken, crom, dp, scad, dispSCAD, scSIGN, feSIGN);
    //
 
    assign dispSCAD = (scad[0]) ? 4'b0010 : 4'b0000;
-
-   //
-   // Signs
-   //
-   
-   assign scSIGN   = sc[0];
-   assign feSIGN   = fe[0];
 
 endmodule

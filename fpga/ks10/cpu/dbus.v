@@ -92,12 +92,16 @@ module DBUS(crom, cacheHIT, vmaADDR, vmaFLAGS, pcFLAGS, dp,
    //  When asserted during a read cycle, the DBM mux causes the
    //  RAMFILE to be read instead of main memory.
    //
+   // Fixme
+   //  I'm not sure why I had to hack this to exclude address
+   //  1146.
+   //
    // Trace
    //  DPM5/E14
    //  DPM5/E38
    //
 
-   wire forceRAMFILE = ((vmaACREF & vmaREADCYCLE) |
+   wire forceRAMFILE = ((vmaACREF & vmaREADCYCLE & (crom[0:11] != 12'o1146)) |
                         (cacheHIT & vmaREADCYCLE));
 
    //

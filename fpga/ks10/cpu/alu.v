@@ -63,7 +63,7 @@
 `include "config.vh"
 `include "useq/crom.vh"
 
-module ALU(clk, rst, clken, crom, feSIGN, aluIN,
+module ALU(clk, rst, clken, crom, aluIN,
            aluLZero, aluRZero, aluLSign, aluRSign,
            aluAOV, aluCRY0, aluCRY1, aluCRY2,
            aluQR37, aluOUT, debugADDR, debugDATA);
@@ -74,7 +74,6 @@ module ALU(clk, rst, clken, crom, feSIGN, aluIN,
    input                  rst;                  // Reset
    input                  clken;                // Clock enable
    input  [0:cromWidth-1] crom;                 // Control ROM Data
-   input                  feSIGN;               // Floating-point Exponent Sign
    input  [0:35]          aluIN;                // Bus input
    output                 aluLZero;             // ALU left half Zero
    output                 aluRZero;             // ALU right half Zero
