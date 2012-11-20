@@ -8,7 +8,7 @@ ISE  := $(ISE)
 MEM  := $(RTL)/mem
 UBA  := $(RTL)/uba
 UC   := $(CPU)/useq
-LOAD := MAINDEC-10-DSKAH.txt
+LOAD := MAINDEC-10-DSKAK.txt
 
 SRC := \
 	$(UC)/crom.vh  \
@@ -74,7 +74,7 @@ $(UC)/crom.dat  : $(UC)/ks10.mcr $(UC)/crom.awk makefile
 $(UC)/drom.dat  : $(UC)/ks10.mcr $(UC)/drom.awk makefile
 	awk -f $(UC)/drom.awk $(UC)/ks10.mcr > $(UC)/drom.dat
 
-$(MEM)/mem.dat : $(MEM)/$(LOAD) $(MEM)/mem.awk
+$(MEM)/mem.dat : $(MEM)/$(LOAD) $(MEM)/mem.awk makefile
 	awk -f $(MEM)/mem.awk $(MEM)/$(LOAD) > $(MEM)/mem.dat
 
 clean: 

@@ -157,7 +157,7 @@ END {
        }
    }
 
-   for (i = 12288; i < 16896; i++) { 
+   for (i = 030000; i < 047000; i++) { 
        if (map[i] != "") {
            printf "         RAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
        } else {
