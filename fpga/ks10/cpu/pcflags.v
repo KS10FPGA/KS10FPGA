@@ -8,12 +8,12 @@
 //! \details
 //!      The KS10 flags are defined as:
 //!
-//!         00   01   02   03   04   05   06   07   08   09   10   11   12   13   14   15   16   17 
+//!         00   01   02   03   04   05   06   07   08   09   10   11   12   13   14   15   16   17
 //!       +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
-//!  USER |AOV |CRY0|CRY1| FOV| FPD|USER|USER| PUB|    |TRAP|TRAP| FXU| NO |    |    |    |    |    |   
+//!  USER |AOV |CRY0|CRY1| FOV| FPD|USER|USER| PUB|    |TRAP|TRAP| FXU| NO |    |    |    |    |    |
 //!       |    |    |    |    |    |    | IO |    |    |  2 |  1 |    | DIV|    |    |    |    |    |
 //!       +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
-//!  EXEC | PCP|CRY0|CRY1| FOV| FPD|USER| PCU| PUB|    |TRAP|TRAP| FXU| NO |    |    |    |    |    |   
+//!  EXEC | PCP|CRY0|CRY1| FOV| FPD|USER| PCU| PUB|    |TRAP|TRAP| FXU| NO |    |    |    |    |    |
 //!       |  * |    |    |    |    |    |    |    |    |  2 |  1 |    | DIV|    |    |    |    |    |
 //!       +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
 //!
@@ -23,7 +23,7 @@
 //!       FOV    - Floating-point overflow.
 //!       FPD    - First part done.
 //!       USER   -
-//!       USERIO - 
+//!       USERIO -
 //!       PUB    - Public.
 //!                Not implemented on the KS10.  Bit seven always
 //!                indicates 0.
@@ -39,8 +39,16 @@
 //!       Overflow occurs if CRY0 and CRY1 differ.
 //!
 //! \note
-//!       The logic can be simplified by recognizing that selPCFLAGS, selEXPTEST,
-//!       and selASHTEST are mutually exclusive.
+//!       The logic has been simplified by recognizing that
+//!       selPCFLAGS, selEXPTEST, and selASHTEST are mutually
+//!       exclusive.
+//!
+//! \note
+//!       In the original circuitry the Control ROM (microcode)
+//!       was supplied to this module via the dbm input.  This
+//!       has been replaced by a direct connection to the Control
+//!       ROM. Presumably this was done because of circuit board
+//!       interconnection limitations.
 //!
 //! \file
 //!      flags.v
@@ -78,19 +86,18 @@
 
 `include "useq/crom.vh"
 
-module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
+module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
                aluAOV, aluCRY0, aluCRY1, pcFLAGS, skipJFCL);
-             
+
    parameter cromWidth = `CROM_WIDTH;
-             
+
    input                  clk;                  // Clock
    input                  rst;                  // Reset
    input                  clken;                // Clock Enable
    input  [0:cromWidth-1] crom;                 // Control ROM Data
    input  [0:35]          dp;                   // Data path
-   input  [0:35]          dbm;                  // DBM
    input  [0: 9]          scad;                 // SCAD
-   input  [0:17]          regIR;             	// Instruction Register
+   input  [0:17]          regIR;                // Instruction Register
    input                  aluAOV;               // ALU Arithmetic Overflow
    input                  aluCRY0;              // ALU Carry 0
    input                  aluCRY1;              // ALU Carry 1
@@ -114,39 +121,17 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    reg flagNODIV;                               // Divide failure
 
    //
-   // DBM Inputs
-   //
-   // Details:
-   //  In this mode, the Control ROM NUMBER field is multiplexed
-   //  onto the dbm bus.  The definiton of these bits are as
-   //  follows:
-   //
-
-   wire dbmSETOV     = dbm[ 0];                 // Set flagAOV          [see cromSETOV]
-   wire dbmSETFOV    = dbm[ 1];                 // Set flagFOV          [see cromSETFOV]
-   wire dbmSETNODIV  = dbm[ 2];                 // Set flagNODIV        [see cromSETNDV]
-   wire dbmCLRFPD    = dbm[ 3];                 // Clr flagFPD          [see cromCLRFPD]
-   wire dbmSETFPD    = dbm[ 4];                 // Set flagFPD          [see cromSETFPD]
-   wire dbmHOLDUSER  = dbm[ 5];                 // Hold flagUSER        [see cromHOLDUSER]
-   wire dbmSETTRAP2  = dbm[ 7];                 // Set flagTRAP2        [see cromSETTRAP2]
-   wire dbmSETTRAP1  = dbm[ 8];                 // Set flagTRAP1        [see cromSETTRAP1]
-   wire dbmSETPCU    = dbm[ 9];                 // Set flagPCU          [see cromSETPCU]
-   wire dbmJFCLFLAGS = dbm[14];                 // Load Flags from JFCL [see cromJFCLFLAG]
-   wire dbmLDFLAGS   = dbm[15];                 // Load Flags from DP   [see cromLDFLAGS]
-   wire dbmADFLAGS   = dbm[17];                 // Update Flags from ALU[see cromADFLAGS
-   
-   //
    // DP Inputs
    //
    // Details
-   //  When dbmADFLAGS is asserted, the dp bus has the contents of
+   //  When `cromADFLAGS is asserted, the dp bus has the contents of
    //  the last ALU operation.  In this mode dpOV, dpCRY0, dpCRY1,
    //  are use to update the flags.
    //
-   //  When dbmLDFLAGS is asserted, the dp bus is used to modify
-   //  the flags.
+   //  When `cromLDFLAGS is asserted, the dp bus is used by the
+   //  microcode to directly modify the flags.
    //
-   
+
    wire dpOV         = dp[ 0];                  // Overflow flag
    wire dpCRY0       = dp[ 1];                  // Carry 0
    wire dpCRY1       = dp[ 2];                  // Carry 1
@@ -158,12 +143,12 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    wire dpTRAP1      = dp[10];                  // Trap 1
    wire dpFXU        = dp[11];                  // Floating-point underflow
    wire dpNODIV      = dp[12];                  // No divide
-   
+
    //
    // DPE9/E27
    // DPE9/E83
    //
-   
+
    wire selPCFLAGS  = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_PCFLAGS);
    wire selEXPTEST  = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_EXPTEST);
    wire selASHTEST  = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_ASHTEST);
@@ -177,11 +162,11 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
 
    wire [9:12] JFCL;
    wire [9:12] regIR_AC = regIR[9:12];
-   
-   assign JFCL[ 9]  = selPCFLAGS & dbmJFCLFLAGS & flagAOV  & regIR_AC[ 9];
-   assign JFCL[10]  = selPCFLAGS & dbmJFCLFLAGS & flagCRY0 & regIR_AC[10];
-   assign JFCL[11]  = selPCFLAGS & dbmJFCLFLAGS & flagCRY1 & regIR_AC[11];
-   assign JFCL[12]  = selPCFLAGS & dbmJFCLFLAGS & flagFOV  & regIR_AC[12];
+
+   assign JFCL[ 9]  = selPCFLAGS & `cromJFCLFLAGS & flagAOV  & regIR_AC[ 9];
+   assign JFCL[10]  = selPCFLAGS & `cromJFCLFLAGS & flagCRY0 & regIR_AC[10];
+   assign JFCL[11]  = selPCFLAGS & `cromJFCLFLAGS & flagCRY1 & regIR_AC[11];
+   assign JFCL[12]  = selPCFLAGS & `cromJFCLFLAGS & flagFOV  & regIR_AC[12];
 
    //
    // JFCL Skip
@@ -189,7 +174,7 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    // Trace
    //  DPE9/E77
    //
-   
+
    assign skipJFCL = JFCL[9] | JFCL[10] | JFCL[11] | JFCL[12];
 
    //
@@ -223,18 +208,18 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
                flagAOV <= scad[1];
              else if (selPCFLAGS)
                begin
-                  if (dbmSETOV)
+                  if (`cromSETOV)
                     flagAOV <= 1'b1;
-                  else if (dbmADFLAGS)
+                  else if (`cromADFLAGS)
                     flagAOV <= aluAOV;
                   else if (JFCL[9])
                     flagAOV <= 1'b0;
-                  else if (dbmLDFLAGS)
+                  else if (`cromLDFLAGS)
                     flagAOV <= dpOV;
                end
           end
      end
-   
+
    //
    // Carry 0 Flag (CRY0)
    //
@@ -248,18 +233,18 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    //  DPE9/E25
    //  DPE9/E32
    //
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           flagCRY0 <= 1'b0;
         else if (clken & selPCFLAGS)
           begin
-             if (dbmADFLAGS)
+             if (`cromADFLAGS)
                flagCRY0 <= aluCRY0;
              else if (JFCL[10])
                flagCRY0 <= 1'b0;
-             else if (dbmLDFLAGS)
+             else if (`cromLDFLAGS)
                flagCRY0 <= dpCRY0;
           end
      end
@@ -276,23 +261,23 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    //  DPE9/E17
    //  DPE9/E25
    //  DPE9/E32
-   // 
-   
+   //
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           flagCRY1 <= 1'b0;
         else if (clken & selPCFLAGS)
           begin
-             if (dbmADFLAGS)
+             if (`cromADFLAGS)
                flagCRY1 <= aluCRY1;
              else if (JFCL[11])
                flagCRY1 <= 1'b0;
-             else if (dbmLDFLAGS)
+             else if (`cromLDFLAGS)
                flagCRY1 <= dpCRY1;
           end
      end
-   
+
    //
    // Floating-point Overflow Flag (FOV)
    //
@@ -307,7 +292,7 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    //  DPE9/E32
    //  DPE9/E78
    //
- 
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -320,12 +305,14 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
                begin
                   if (JFCL[12])
                     flagFOV <= 1'b0;
-                  else if (dbmLDFLAGS)
+                  else if (`cromSETFOV)
+                    flagFOV <= 1'b1;
+                  else if (`cromLDFLAGS)
                     flagFOV <= dpFOV;
                end
           end
      end
-   
+
    //
    // First Part Done Flag (FPD)
    //
@@ -333,18 +320,18 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    //  The Clear operation has priority over the Set operation.
    //  The Set operation has priority over the Load operation.
    //
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
            flagFPD <= 1'b0;
         else if (clken & selPCFLAGS)
           begin
-             if (dbmCLRFPD)
+             if (`cromCLRFPD)
                flagFPD <= 1'b0;
-             else if (dbmSETFPD)
+             else if (`cromSETFPD)
                flagFPD <= 1'b1;
-             else if (dbmLDFLAGS)
+             else if (`cromLDFLAGS)
                flagFPD <= dpFPD;
              else
                flagFPD <= flagFPD;
@@ -361,9 +348,9 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
           flagUSER <= 1'b0;
         else if (clken & selPCFLAGS)
           begin
-             if (dbmLDFLAGS)
+             if (`cromLDFLAGS)
                flagUSER <= dpUSER;
-             else if (dbmHOLDUSER)
+             else if (`cromHOLDUSER)
                flagUSER <= flagUSER;
              else
                flagUSER <= 1'b0;
@@ -379,10 +366,10 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
         if (rst)
           flagUSERIO <= 1'b0;
         else if (clken & selPCFLAGS)
-          flagUSERIO <= ((flagUSER   & dpUSERIO               & dbmLDFLAGS ) |
-                         (flagUSERIO                          & dbmLDFLAGS ) |
-                         (flagUSER   & dbmSETPCU                           ) |
-                         (flagUSERIO & dpUSERIO & dbmHOLDUSER & dbmLDFLAGS ));
+          flagUSERIO <= ((flagUSER   & dpUSERIO                 & `cromLDFLAGS ) |
+                         (flagUSERIO                            & `cromLDFLAGS ) |
+                         (flagUSER              & `cromSETPCU                  ) |
+                         (flagUSERIO & dpUSERIO & `cromHOLDUSER & `cromLDFLAGS ));
      end
 
    //
@@ -395,15 +382,15 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
           flagTRAP2 <= 1'b0;
         else if (clken & selPCFLAGS)
           begin
-             if (dbmSETTRAP2)
+             if (`cromSETTRAP2)
                flagTRAP2 <= 1'b1;
-             else if (dbmLDFLAGS)
+             else if (`cromLDFLAGS)
                flagTRAP2 <= dpTRAP2;
              else
                flagTRAP2 <= 1'b0;
           end
      end
- 
+
    //
    // TRAP1 Flag
    //
@@ -411,7 +398,7 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    //  An arithmetic overflow occurs if CRY0 and CRY1 differ which
    //  also sets the TRAP1 flag.
    //
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -424,12 +411,12 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
                flagTRAP1 <= scad[1];
              else if (selPCFLAGS)
                begin
-                  if (dbmSETTRAP1)
+                  if (`cromSETTRAP1)
                     flagTRAP1 <= 1'b1;
-                  else if (aluAOV & dbmADFLAGS)
-                    flagTRAP1 <= 1'b1;
-                  else if (dpTRAP1 & dbmLDFLAGS)
-                    flagTRAP1 <= 1'b1;
+                  else if (`cromADFLAGS)
+                    flagTRAP1 <= aluAOV;
+                  else if (`cromLDFLAGS)
+                    flagTRAP1 <= dpTRAP1;
                   else
                     flagTRAP1 <= 1'b0;
                end
@@ -438,7 +425,7 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
 
    //
    // Floating-point Underflow Flag (FXU)
-   // 
+   //
 
    always @(posedge clk or posedge rst)
      begin
@@ -450,7 +437,7 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
                flagFXU <= scad[0];
              else if (selPCFLAGS)
                begin
-                  if (dbmLDFLAGS)
+                  if (`cromLDFLAGS)
                     flagFXU <= dpFXU;
                   else
                     flagFXU <= flagFXU;
@@ -468,9 +455,9 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
           flagNODIV <= 1'b0;
         else if (clken & selPCFLAGS)
           begin
-             if (dbmSETNODIV)
+             if (`cromSETNODIV)
                flagNODIV <= 1'b1;
-             else if (dbmLDFLAGS)
+             else if (`cromLDFLAGS)
                flagNODIV <= dpNODIV;
              else
                flagNODIV <= flagNODIV;
@@ -499,5 +486,5 @@ module PCFLAGS(clk, rst, clken, crom, dp, dbm, scad, regIR,
    assign pcFLAGS[15] = 1'b0;
    assign pcFLAGS[16] = 1'b0;
    assign pcFLAGS[17] = 1'b0;
-   
+
 endmodule

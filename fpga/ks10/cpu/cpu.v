@@ -232,8 +232,8 @@ module CPU(clk, rst,
    //
 
    wire [ 0:35] dp;                                     // ALU output bus
-   wire [ 0:35] dbus;                                   //
-   wire [ 0:35] dbm;                                    //
+   wire [ 0:35] dbus;                                   // DBUS Mux output
+   wire [ 0:35] dbm;                                    // DBM Mux output
    wire [ 0:35] ramfile;                                // RAMFILE output
 
    //
@@ -242,9 +242,9 @@ module CPU(clk, rst,
 
    wire [ 0: 9] scad;
    wire         scadSIGN = scad[0];                     // SCAD Sign
-   wire [ 0: 9] sc;					// Step Count
+   wire [ 0: 9] sc;                                     // Step Count
    wire         scSIGN = sc[0];                         // Step Count Sign
-   wire [ 0: 9] fe;					// Floating-point exponent
+   wire [ 0: 9] fe;                                     // Floating-point exponent
    wire         feSIGN = fe[0];                         // Floating-point exponent Sign
 
    //
@@ -280,25 +280,12 @@ module CPU(clk, rst,
    wire [1:7] skip10 = {trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    iolatch,  ~cpuCONT,  ~timerINTR};
 
    //
-   // DBM inputs
-   //
-
-   wire [0:35] dbm0 = {scad[1:9], 8'b11111111, scadSIGN, dispPF, aprFLAGS};
-   wire [0:35] dbm1 = {scad[1:7], scad[1:7], scad[1:7], scad[1:7], scad[1:7], dp[35]};
-   wire [0:35] dbm2 = {1'b0, scad[2:9], dp[9:17], timerCOUNT[18:35]};
-   wire [0:35] dbm3 = dp[0:35];
-   wire [0:35] dbm4 = {dp[18:35], dp[0:17]};
-   wire [0:35] dbm5 = {vmaFLAGS[0:13], vmaADDR[14:35]};
-   wire [0:35] dbm6 = busDATAI;
-   wire [0:35] dbm7 = {`cromNUM, `cromNUM};
-
-   //
    // Timing
    //
 
    wire clken;
    wire clkenUSEQ;
-   
+
    TIMING uTIMING
      (.clk(clk),
       .rst(rst),
@@ -400,14 +387,14 @@ module CPU(clk, rst,
 
    DBM uDBM
      (.crom(crom),
-      .dbm0(dbm0),
-      .dbm1(dbm1),
-      .dbm2(dbm2),
-      .dbm3(dbm3),
-      .dbm4(dbm4),
-      .dbm5(dbm5),
-      .dbm6(dbm6),
-      .dbm7(dbm7),
+      .dp(dp),
+      .scad(scad),
+      .dispPF(dispPF),
+      .aprFLAGS(aprFLAGS),
+      .timerCOUNT(timerCOUNT),
+      .vmaFLAGS(vmaFLAGS),
+      .vmaADDR(vmaADDR),
+      .busDATAI(busDATAI),
       .dbm(dbm)
       );
 
@@ -584,7 +571,6 @@ module CPU(clk, rst,
       .clken(clken),
       .crom(crom),
       .dp(dp),
-      .dbm(dbm),
       .scad(scad),
       .regIR(regIR),
       .aluAOV(aluAOV),
@@ -639,7 +625,6 @@ module CPU(clk, rst,
       .drom(drom),
       .dp(dp),
       .dbus(dbus),
-      .dbm(dbm),
       .regIR(regIR),
       .xrPREV(xrPREV),
       .vmaFLAGS(vmaFLAGS),

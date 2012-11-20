@@ -3,7 +3,7 @@
 //! KS-10 Processor
 //!
 //! \brief
-//!      DBUS Multiplexor
+//!      DBUS Multiplexer
 //!
 //! \details
 //!
@@ -139,5 +139,4 @@ module DBUS(crom, cacheHIT, vmaADDR, vmaFLAGS, pcFLAGS, dp,
               dbus = dbm;
         endcase
      end
-
 endmodule

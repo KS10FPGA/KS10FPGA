@@ -6,7 +6,7 @@
 //      Control ROM (CROM) Definitions
 //
 // \details
-//      This file contains the Control ROM microcode field 
+//      This file contains the Control ROM microcode field
 //      definitions.
 //
 //      Include it everywhere you need to access the Control ROM.
@@ -116,7 +116,7 @@
 `define cromRAMADDR_SEL_ACOPNUM 3'b001          //  AC OP #
 `define cromRAMADDR_SEL_XR      3'b010          //  XR
 `define cromRAMADDR_SEL_SPARE3  3'b011          //  Not used
-`define cromRAMADDR_SEL_VMA     3'b100          //  
+`define cromRAMADDR_SEL_VMA     3'b100          //
 `define cromRAMADDR_SEL_SPARE5  3'b101          //  Not used
 `define cromRAMADDR_SEL_RAM     3'b110          //
 `define cromRAMADDR_SEL_NUM     3'b111          //  Number Field
@@ -196,7 +196,12 @@
 `define cromSPEC_SHSTYLE_DIV    3'b110          //   DIV
 `define cromSPEC_SHSTYLE_ROTC   3'b111          //   ROTC
 
-`define cromSPEC_BYTE           crom[54:56]     // Byte Select
+`define cromSPEC_SELBYTE        crom[54:56]     //  Byte Select
+`define cromSPEC_SELBYTE_1      3'b001          //   Byte Select Byte 1
+`define cromSPEC_SELBYTE_2      3'b010          //   Byte Select Byte 2
+`define cromSPEC_SELBYTE_3      3'b011          //   Byte Select Byte 3
+`define cromSPEC_SELBYTE_4      3'b100          //   Byte Select Byte 4
+`define cromSPEC_SELBYTE_5      3'b101          //   Byte Select Byte 5
 
 //
 // Displacement Select
@@ -294,14 +299,14 @@
 
 //
 // State Field
-//  Overloaded with Number Field 
+//  Overloaded with Number Field
 //
 
 `define cromSTATE               crom[90:107]    //
 
 //
 // Memory Cycle Control
-//  Overloaded with Number Field 
+//  Overloaded with Number Field
 //
 
 `define cromMEM_FORCEUSER       crom[90]        // Force user mode reference
@@ -315,7 +320,7 @@
 `define cromMEM_PXCTSEL         crom[99:101]    // Which PXCT bits to look at
 `define cromMEM_AREAD           crom[102]       // Let DROM select cycle type and VMA load
 `define cromMEM_DPFUNC          crom[103]       // Use dp[0:13] instead of cromNUM[0:13]
-`define cromMEM_CYCLE_SEL       crom[102:103]	// See above.  Select Cycle type as a group.
+`define cromMEM_CYCLE_SEL       crom[102:103]   // See above.  Select Cycle type as a group.
 `define cromMEM_LOADVMA         crom[104]       // Load the VMA
 `define cromMEM_EXTADDR         crom[105]       // Put VMA[14:17] Bits onto Bus
 `define cromMEM_WAIT            crom[106]       // Start memory or IO cycle
@@ -330,12 +335,12 @@
 
 //
 // Flag Manipulation
-//  Overloaded with Number Field 
+//  Overloaded with Number Field
 //
 
 `define cromSETOV               crom[90]        // Set arithmetic overflow
 `define cromSETFOV              crom[91]        // Set floating point overflow
-`define cromSETNDV              crom[92]        // Set no divide
+`define cromSETNODIV            crom[92]        // Set no divide
 `define cromCLRFPD              crom[93]        // Clear first part done
 `define cromSETFPD              crom[94]        // Set first part done
 `define cromHOLDUSER            crom[95]        // Do not update USER
@@ -347,7 +352,7 @@
 `define cromSPARE3              crom[101]       // Spare
 `define cromSPARE4              crom[102]       // Spare
 `define cromSPARE5              crom[103]       // Spare
-`define cromJFCLFLAG            crom[104]       // JFCL instruction
+`define cromJFCLFLAGS           crom[104]       // JFCL instruction
 `define cromLDFLAGS             crom[105]       // Load flags from DP bus
 `define cromSPARE6              crom[106]       // Spare
 `define cromADFLAGS             crom[107]       // Update Carry Flags
@@ -367,12 +372,12 @@
 `define cromACALU_FUN           crom[98:103]    // AC ALU Function
 `define cromACALU_NUM           crom[104:107]   // AC ALU Number
 
-`define cromACALU_FUN_NUM       6'o25;		// NUM
-`define cromACALU_FUN_ADDAC     6'o62;		// AC + NUM
+`define cromACALU_FUN_NUM       6'o25;          // NUM
+`define cromACALU_FUN_ADDAC     6'o62;          // AC + NUM
 
 //
 // Priority Interrupt (PI) bits
-//  Overloaded with Number Field 
+//  Overloaded with Number Field
 //
 
 `define cromPI_ZER              crom[90:92]     // (Not used)
@@ -394,11 +399,11 @@
 
 //
 // Console Interface
-//  Overloaded with Number Field 
+//  Overloaded with Number Field
 //  This usage is not very well documented in the microcode listing.
 //  See "SET HALT", "CLEAR CONTINUE", "CLEAR EXECUTE", "CLEAR RUN"
 //  and "UNHALT" macros in the microcode listing.
-//  
+//
 
 `define cromCONS_CLR_CONT       crom[102]       // Clear Continue
 `define cromCONS_CLR_EXEC       crom[103]       // Clear Execute
@@ -409,7 +414,7 @@
 
 //
 // Workspace Address Field
-//  Overloaded with Number Field 
+//  Overloaded with Number Field
 //
 
 `define cromWORK                crom[98:107]    // Workspace Address

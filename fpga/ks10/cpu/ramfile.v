@@ -51,6 +51,13 @@
 //!     | 0000 |                |
 //!     +------+----------------+
 //!
+//! \note
+//!       In the original circuitry the Control ROM (microcode)
+//!       was supplied to this module via the dbm input.  This
+//!       has been replaced by a direct connection to the Control
+//!       ROM. Presumably this was done because of circuit board
+//!       interconnection limitations.
+//!
 //! \todo
 //!
 //! \file
@@ -91,7 +98,7 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
+module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, regIR, xrPREV,
                vmaFLAGS, vmaADDR, acBLOCK,
                ramfile);
 
@@ -105,7 +112,6 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
    input  [ 0:dromWidth-1] drom;                // Dispatch ROM Data
    input  [ 0:35]          dp;                  // DP Input
    input  [ 0:35]          dbus;                // DBUS Input
-   input  [ 0:35]          dbm;                 // DBM Input
    input  [ 0:17]          regIR;               // Instruction Register
    input                   xrPREV;              // XR Previous
    input  [ 0:13]          vmaFLAGS;            // Virtual Memory Flags
@@ -123,7 +129,7 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
    //
    // VMA Flags
    //
-   
+
    wire vmaREADCYCLE  = vmaFLAGS[3];
    wire vmaWRITECYCLE = vmaFLAGS[5];
    wire vmaPHYSICAL   = vmaFLAGS[8];
@@ -153,36 +159,14 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
    wire [0:2] prevBLOCK = acBLOCK[3:5];         // Previous AC Block
 
    //
-   // RAMFILE Address Index
-   //
-   // Details
-   //  Access to the RAMFILE ACs are selected using the
-   //  AC field of the instruction.
-   //
-   // Notes
-   //  This was a 74LS181 ALU in the KS10.  Only the part of
-   //  that device that is used is implemented.  This adder is
-   //  controlled by one of the overloaded usages of the CROM
-   //  number field.   See cromACALU_FUN and cromACALU_NUM.
-   //  I'm not exactly certain why this is controlled by the
-   //  DBM instead of directly by the microcode.  It is
-   //  probably just because of the way the boards were
-   //  partitioned.
-   //
-   // Trace
-   //  DPE6/E79
-   //
-
-   wire [0:5] acFUN    = dbm[ 8:13];
-   wire [0:2] acNUM    = dbm[14:17];
-   wire [0:3] acOFFSET = regIR_AC + acNUM;
-
-   //
    // Address Mux
    //
    // Details
    //  This mux provide the address for various RAMFILE
    //  operations.   Operations can be:
+   //
+   //  Access to the RAMFILE ACs are selected using the
+   //  AC field of the instruction.
    //
    //  1.  Access to an AC in the current context using
    //      the AC field of the instruction.
@@ -201,7 +185,13 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
    //  The KS10 used {dbm[26:28], dbm[11:17]} for the
    //  cromRAMADDR_SEL_NUM case below.  Since the number
    //  field in on both halves of the dbm, this is
-   //  equivalent to dbm[8:17].
+   //  equivalent to dbm[8:17].  This has been replaced
+   //  by a direct connection to the CROM.
+   //
+   //  This was a 74LS181 ALU in the KS10.  Only the part of
+   //  that device that is used is implemented.  This adder is
+   //  controlled by one of the overloaded usages of the CROM
+   //  number field.
    //
    // Trace
    //  DPE6/E3
@@ -216,26 +206,25 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
    //  DPE6/E22
    //  DPE6/E23
    //  DPE6/E24
+   //  DPE6/E79
    //
 
    reg  [0:9] addr;
-   wire [0:2] selRAMADDR = `cromRAMADDR_SEL;
 
-   always@(selRAMADDR or currBLOCK or prevBLOCK or regIR_AC or
-           regIR_XR or acOFFSET or acFUN or acNUM or xrPREV or
-           vmaACREF or vmaPREVIOUS or vmaADDR or dbm)
+   always@(crom or currBLOCK or prevBLOCK or regIR_AC or regIR_XR or
+           xrPREV or vmaACREF or vmaPREVIOUS or vmaADDR)
      begin
-        case(selRAMADDR)
+        case(`cromRAMADDR_SEL)
           `cromRAMADDR_SEL_AC:
             addr = {3'b0, currBLOCK, regIR_AC };
           `cromRAMADDR_SEL_ACOPNUM:
-            case (acFUN)
+            case (`cromACALU_FUN)
               6'o25  :
-                addr = {3'b0, currBLOCK, acNUM};
+                addr = {3'b0, currBLOCK, `cromACALU_NUM};
               6'o62  :
-                addr = {3'b0, currBLOCK, acOFFSET};
+                addr = {3'b0, currBLOCK, `cromACALU_NUM + regIR_AC};
               default:
-                addr = {3'b0, currBLOCK, acNUM};
+                addr = {3'b0, currBLOCK, `cromACALU_NUM};
             endcase
           `cromRAMADDR_SEL_XR:
             begin
@@ -259,7 +248,7 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
           `cromRAMADDR_SEL_RAM:
             addr = vmaADDR[26:35];
           `cromRAMADDR_SEL_NUM:
-            addr = dbm[8:17];
+            addr = `cromSNUM;
           default:
             addr = 9'b0;
         endcase
@@ -277,7 +266,7 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
    //  DPMA/E54
    //
 
-/*   
+/*
    reg DPM5_READ_EN;
    reg DPM5_WRITE_EN;
    always @(crom or drom or dp )
@@ -305,24 +294,24 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
             end
         endcase
      end
-   
+
    wire STOP_MAIN_MEMORY = 1'b0;
-   
+
    wire specMEM_WAIT = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMWAIT);
    wire specMEM_CLR  = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
-   
+
    wire DPM5_MEM_EN = ((`cromMEM_CYCLE & `cromMEM_WAIT                   ) |
                        (`cromMEM_CYCLE & `cromMEM_BWRITE & `dromCOND_FUNC));
 
    wire DPM5_MEM_WAIT = DPM5_MEM_EN | specMEM_WAIT | specMEM_CLR;
 
-   wire DPM5_RPW_CYCLE = vmaREADCYCLE & vmaWRITECYCLE & ~STOP_MAIN_MEMORY; 
-   
+   wire DPM5_RPW_CYCLE = vmaREADCYCLE & vmaWRITECYCLE & ~STOP_MAIN_MEMORY;
+
    //wire DPM5_START_CYCLE = ~DPM5_RPW_CYCLE & (DPM5_READ_EN | DPM5_WRITE_EN) & DPM5_MEM_EN;
-   
+
    wire DPM5_START_CYCLE = ((DPM5_READ_EN  & DPM5_MEM_EN & ~DPM5_RPW_CYCLE) |
                             (DPM5_WRITE_EN & DPM5_MEM_EN & ~DPM5_RPW_CYCLE));
-   
+
    reg DPM6_MEMORY_CYCLE;
    always @(posedge clk or posedge rst)
     begin
@@ -331,7 +320,7 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
         else if (clken)
           DPM6_MEMORY_CYCLE <= DPM5_START_CYCLE;
     end
- 
+
    wire ramfileWRITE = (( vmaACREF & ~vmaREADCYCLE    & DPM6_MEMORY_CYCLE & DPM5_MEM_WAIT) |
                         (~vmaACREF & STOP_MAIN_MEMORY & DPM6_MEMORY_CYCLE & DPM5_MEM_WAIT) |
                         (`cromFMWRITE));
@@ -340,7 +329,7 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, dbm, regIR, xrPREV,
 
     wire ramfileWRITE = ((vmaACREF & vmaWRITECYCLE) |
                          (`cromFMWRITE));
-    
+
    //
    // RAMFILE MEMORY
    //

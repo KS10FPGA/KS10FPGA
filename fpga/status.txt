@@ -17,7 +17,5 @@ TODO:
 1.  NI_DISP : fix memory cycle.
 2.  CPU     : fix memory timing.
 3.  MEM     : move mem to test bench
-4.  RAMFILE : fix to use cROM instead of DBUS
-5.  pcFLAGS : fix to use cROM instead of DBM
-6.  mem.awk : fix to work on sixbit and DSKAHA0
+4.  mem.awk : fix to work on sixbit
 
