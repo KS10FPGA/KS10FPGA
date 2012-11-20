@@ -95,6 +95,7 @@ module CON(clk, clken,
    
    assign busREQO  = 1'b0;
    assign busACKO  = busIO & busREAD & busPHYSICAL & (busADDR == 18'o200000);
+// assign busDATAO = busACKO ? 36'o254000030624 : 36'bx;
    assign busDATAO = busACKO ? 36'o254000030600 : 36'bx;
    assign busADDRO = 36'bx;
    

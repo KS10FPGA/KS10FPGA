@@ -98,9 +98,13 @@ module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
      end
 
    //
-   // Last Address
+   // Current Address
    //
    // Details
+   //  This delay generates the current microcode address.  The
+   //  'addr' register that is supplied to this module always
+   //  has the address of the /NEXT/ instruction.
+   //
    //  This is a simple one-clock delay to get the proper address.
    //
    // Trace
@@ -109,14 +113,14 @@ module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
    //  CRA3/E161
    //
 
-   reg [0:11] lastADDR;
+   reg [0:11] currADDR;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          lastADDR <= 12'b0;
+          currADDR <= 12'b0;
         else if (clken)
-          lastADDR <= addrIN;
+          currADDR <= addrIN;
      end
 
    //
@@ -181,7 +185,7 @@ module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
               stack[i] <= 12'b0;
           end
         else if (clken & call)
-          stack[wp] <= lastADDR;
+          stack[wp] <= currADDR;
      end
 
    //

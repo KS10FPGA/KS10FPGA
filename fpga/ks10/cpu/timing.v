@@ -62,77 +62,31 @@ module TIMING(clk, rst, crom, drom, dp, fe, clken, clkenUSEQ);
    input  [0: 9]          fe;		// FE
    output                 clken;        // Clock Enable
    output                 clkenUSEQ;    // Clock Enable Microsequencer
-
-   //
-   //
-   //
-
-
-   
-/*   
-   wire memEN     = (( `cromMEM_CYCLE &  `cromMEM_WAIT                       ) |
-                     ( `cromMEM_CYCLE &  `cromMEM_BWRITE & `dromCOND_FUNC    ));
-
-   wire readCYCLE = (( `cromMEM_AREAD &  `dromREADCYCLE                      ) |
-                     (~`cromMEM_AREAD &  `cromMEM_DPFUNC & dp[3]             ) |
-                     (~`cromMEM_AREAD & ~`cromMEM_DPFUNC & `cromMEM_READCYCLE));
-   //
-   // Wait State Machine
-   //
-
-   reg [0:1] state;
-   
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          state <= 0;
-        else
-          case (state)
-            0: if (memEN & readCYCLE)
-              state <= 1;
-            1: state <= 2;
-            2: state <= 0;
-            3: state <= 0;
-          endcase
-     end
-   
-   assign clken = ((state == 0) |
-
-   reg clken;
-   
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          clken <= 1'b1;
-        else
-          clken <= ~clken;
-     end
-                   (state == 2));
-*/
-
-
-   reg ready;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          ready = 1'b0;
-        else
-          ready = 1'b1;
-     end
-   
+  
    //
    // Fast Shift
    //
-   // Note
-   //  The KS10 fast shifts while the FE is negative.  For some reason
-   //  the FPGA shifts one too many times.
+   // Details:
+   //  The KS10 fast shifts while the FE is negative.  Be careful:
+   //  when the shift count is zero (FE = -1 or 1777) no shifts
+   //  should be peformed.
    //
    // FIXME:
-   //  I don't really understand why this needs to be different than the
-   //  KS10.
+   //  This crazy fast shift stuff should be replaced by a microcode hack.
+   //  The FPGA doesn't really require this fast shift implementation.
    //
+   // 
    
-   assign clkenUSEQ = ~(`cromMULTISHIFT & (fe != 10'b1_111_111_111) & ready);
-   assign clken = 1'b1;
-   
+   reg done;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          done = 1'b0;
+        else
+          done = fe[0] & `cromMULTISHIFT;
+     end
+
+   assign clkenUSEQ = ~(`cromMULTISHIFT & fe[0]);
+   assign clken = ~((done & clkenUSEQ) | (~fe[0] & `cromMULTISHIFT));
+  
 endmodule

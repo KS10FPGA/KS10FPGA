@@ -19,6 +19,7 @@ BEGIN {
 #  These looks like:
 #
 #" xxx	xxxxxx	7 xxx xx x xx xxxxxx 
+
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7] [0-7][0-7][0-7] [0-7][0-7] [0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
     data1 = strtonum("0" substr($3,  1, 1));
     data2 = strtonum("0" substr($3,  3, 3));
@@ -32,8 +33,23 @@ BEGIN {
     map[i] = data;
 }
 
+#
+# CLRAPR Instructions
+#
+#  These looks like:
+#
+#" xxx	xxxxxx	xxx xx xx xx xxxxxx 
 
-
+/^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] [0-7][0-7] [0-7][0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
+    data1 = strtonum("0" substr($3,  1, 3));
+    data2 = strtonum("0" substr($3,  5, 2));
+    data3 = strtonum("0" substr($3,  8, 2));
+    data4 = strtonum("0" substr($3, 11, 2));
+    data5 = substr($3, 14, 6);
+    data  = sprintf("%03o%03o%s", data1, or(data2*010, or(data3,data4)), data5);
+    i = strtonum("0" $2)
+    map[i] = data;
+}
 
 #
 # Sixbit 
