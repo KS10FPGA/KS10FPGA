@@ -1,0 +1,77 @@
+
+This is revision 0.0.1 of the KS10 FPGA Code.
+
+It is mostly configured for running instruction set
+diagnostics and not much else.  I haven't sythesized
+it in a long time and it probably will need some work
+before it will synthesize.  I'm still mostly trying
+to get it to simulate and get familar with the KS10
+design.  First things first!
+
+For status see the file ./status.txt
+
+The KS10 console provides the starting address for the
+KS10 CPU.  For now this is hardwired by some code
+in the console.  To change the starting address, change
+the code in ./cons/cons.v.   In that file you will find
+a line (approximately line 100) that looks like:
+
+assign busDATAO = busACKO ? 36'o254000030600 : 36'bx;
+
+Where 36'o254000030600 is a PDP10 instruction.  I.e.,
+"254000030600" is a JRST to address 30600.  See notes
+in that file.
+
+The following diagnostics have the following starting
+addresses:
+
+  MAINDEC-10-DSKAA.txt
+  MAINDEC-10-DSKAB.txt
+  MAINDEC-10-DSKAC.txt
+  MAINDEC-10-DSKAD.txt
+  MAINDEC-10-DSKAE.txt
+  MAINDEC-10-DSKAF.txt
+  MAINDEC-10-DSKAG.txt
+  MAINDEC-10-DSKAH.txt
+    Starting address 030600
+
+  MAINDEC-10-DSKAI.txt
+  MAINDEC-10-DSKAJ.txt
+  MAINDEC-10-DSKAK.txt
+    Starting address 030624
+
+I have been using cygwin and windows to do development
+on this.  You'll need 'make' and 'awk' to do much
+development.  I also use 'rcs' for configuration
+management.  You will note RCS directories in the
+directory tree - but unless you're interested in history
+you can ignore the RCS files.
+
+To change the diagnostic program that is being executed:
+
+(1) edit the makefile and change the line:
+    LOAD := MAINDEC-10-DSKAK.txt
+    to whatever MAINDEC you'd like to run.
+(2) Execute make.  Make will extract the Control ROM
+    code and Dispatch ROM code from the microcode
+    listing file.  It will also extract the executable
+    from the MAINDEC listing file.
+
+This .tgz file is configured to execute MAINDEC-10-DSKAA.
+
+To run the simultion is Xilinx ISE webpack (GUI):
+
+(1) install ISE per Xilinx Instructions
+(2) Start ISE Project Navigator
+(3) Open  KS10.xise project (File->Open Project)
+    KS10.xise is in ../ise
+
+Have fun.  If you have questions contact me.
+
+I'll add instructions on how to run the simulator later.
+There is a waveform configuration file "ks10.wcfg" in
+the ISE that I use for viewing simulation results.
+
+Rob Doyle
+
+doyle (at) cox (dot) net
