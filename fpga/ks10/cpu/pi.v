@@ -131,42 +131,52 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
    //
    // New Interrupt Priority
    //
+   // Details
+   //  The MSB is present to represent that no interrupt is active.
+   //
    // Trace
    //  DPEB/E147
    //
 
-   assign newINTR_NUM = (~intrEN    ? 4'b1000 :         // Disabled
-                         newINTR[1] ? 4'b0001 :         // Highest priority
-                         newINTR[2] ? 4'b0010 :
-                         newINTR[3] ? 4'b0011 :
-                         newINTR[4] ? 4'b0100 :
-                         newINTR[5] ? 4'b0101 :
-                         newINTR[6] ? 4'b0110 :
-                         newINTR[7] ? 4'b0111 :
-                         4'b1000);                      // Lowest priority
+   wire [0:3] newINTRNUM = (~intrEN    ? 4'b1000 :      // Disabled
+                            newINTR[1] ? 4'b0001 :      // Highest priority
+                            newINTR[2] ? 4'b0010 :
+                            newINTR[3] ? 4'b0011 :
+                            newINTR[4] ? 4'b0100 :
+                            newINTR[5] ? 4'b0101 :
+                            newINTR[6] ? 4'b0110 :
+                            newINTR[7] ? 4'b0111 :
+                            4'b1000);                   // Lowest priority
+
+   assign newINTR_NUM = newINTRNUM[1:3];
 
    //
    // Current Interrupt Priority
+   //
+   // Details
+   //  The MSB is present to represent that no interrupt is active.
    //
    // Trace
    //  DPEB/E134
    //
 
-   assign curINTR_NUM = (curINTR[1] ? 4'b0001 :         // Highest priority
-                         curINTR[2] ? 4'b0010 :
-                         curINTR[3] ? 4'b0011 :
-                         curINTR[4] ? 4'b0100 :
-                         curINTR[5] ? 4'b0101 :
-                         curINTR[6] ? 4'b0110 :
-                         curINTR[7] ? 4'b0111 :
-                         4'b1000);                      // Lowest priority
+   wire [0:3] curINTRNUM = (curINTR[1] ? 4'b0001 :      // Highest priority
+                            curINTR[2] ? 4'b0010 :
+                            curINTR[3] ? 4'b0011 :
+                            curINTR[4] ? 4'b0100 :
+                            curINTR[5] ? 4'b0101 :
+                            curINTR[6] ? 4'b0110 :
+                            curINTR[7] ? 4'b0111 :
+                            4'b1000);                   // Lowest priority
+
+   assign curINTR_NUM = curINTRNUM[1:3];
 
    //
    // Interrupt Request
    //
    // Details
-   //  The priority of the current interrupt input is compared to
-   //  the priority of the active interrupt.  If the currrent input
+   //  The priority of the new interrupt level is compared to the
+   //  priority of the current interrupt level.  If the current input
    //  is a higher priority, an interrupt to the CPU is generated.
    //
    // Trace

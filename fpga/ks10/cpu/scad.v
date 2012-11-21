@@ -46,7 +46,7 @@
 
 `include "useq/crom.vh"
 
-module SCAD(clk, rst, clken, crom, dp, scad, fe, sc, dispSCAD);
+module SCAD(clk, rst, clken, crom, dp, feSIGN, scSIGN, scad, dispSCAD);
 
    parameter  cromWidth = `CROM_WIDTH;
 
@@ -55,9 +55,9 @@ module SCAD(clk, rst, clken, crom, dp, scad, fe, sc, dispSCAD);
    input                  clken;    	// Clock Enable
    input  [0:cromWidth-1] crom;     	// Control ROM Data
    input  [0:35]          dp;       	// Data path
+   output 		  feSIGN;	// FE Sign
+   output 		  scSIGN;	// SC Sign
    output [0: 9]          scad;     	// SCAD
-   output [0: 9]          fe;		// FE
-   output [0: 9]          sc;		// FE
    output [8:11]          dispSCAD; 	// SCAD Dispatch
    
    //
@@ -254,9 +254,16 @@ module SCAD(clk, rst, clken, crom, dp, scad, fe, sc, dispSCAD);
     end
 
    //
+   // FE Sign and SC Sign
+   //
+   
+   assign feSIGN = fe[0];
+   assign scSIGN = sc[0];
+
+   //
    // SCAD Dispatch
    //
 
    assign dispSCAD = (scad[0]) ? 4'b0010 : 4'b0000;
-
+   
 endmodule

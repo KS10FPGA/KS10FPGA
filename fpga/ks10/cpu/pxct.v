@@ -72,7 +72,6 @@
 // Comments are formatted for doxygen
 //
 
-`include "config.vh"
 `include "useq/crom.vh"
 
 module PXCT(clk, rst, clken, crom, dp, prevEN);
@@ -119,13 +118,8 @@ module PXCT(clk, rst, clken, crom, dp, prevEN);
      begin
         if (rst)
           begin
-             `ifdef INITREGS
-               enPXCT <= 1'b0;                  // Enable PXCT
-               pxct   <= 4'b0;                  // PXCT Bits
-             `else
-               enPXCT <= 1'bx;                  // Enable PXCT
-               pxct   <= 4'bx;                  // PXCT Bits
-             `endif
+             enPXCT <= 1'b0;                    // Enable PXCT
+             pxct   <= 4'b0;                    // PXCT Bits
           end
         else if (clken & specPXCTEN)
           begin

@@ -89,15 +89,15 @@ module CPU(clk, rst,
    // ALU
    //
 
-   wire aluLZero;                                       // ALU left-half is zero
-   wire aluRZero;                                       // ALU right-half is zero
-   wire aluLSign;                                       // ALU left-half sign
-   wire aluRSign;                                       // ALU right-half sign
+   wire aluLZERO;                                       // ALU left-half is zero
+   wire aluRZERO;                                       // ALU right-half is zero
+   wire aluLSIGN;                                       // ALU left-half sign
+   wire aluRSIGN;                                       // ALU right-half sign
    wire aluCRY0;                                        // ALU carry into bit 0
    wire aluCRY1;                                        // ALU carry into bit 1
    wire aluCRY2;                                        // ALU carry into bit 2
    wire aluQR37;                                        // Q Register LSB
-   wire aluZERO = aluLZero & aluRZero;                  // ALU (both halves) is zero
+   wire aluZERO = aluLZERO & aluRZERO;                  // ALU (both halves) is zero
    wire txxx    = aluZERO != `dromTXXXEN;               // Test Instruction Results
 
    //
@@ -242,10 +242,8 @@ module CPU(clk, rst,
 
    wire [ 0: 9] scad;
    wire         scadSIGN = scad[0];                     // SCAD Sign
-   wire [ 0: 9] sc;                                     // Step Count
-   wire         scSIGN = sc[0];                         // Step Count Sign
-   wire [ 0: 9] fe;                                     // Floating-point exponent
-   wire         feSIGN = fe[0];                         // Floating-point exponent Sign
+   wire         scSIGN;                         	// Step Count Sign
+   wire         feSIGN;                         	// Floating-point exponent Sign
 
    //
    // Dispatches
@@ -258,7 +256,7 @@ module CPU(clk, rst,
    wire [ 8:11] dispMUL  = {1'b0, aluQR37,              // Multiply dispatch
                             1'b0, 1'b0};
    wire [ 8:11] dispNORM = {aluZERO, dp[8:9],           // Normalize dispatch
-                            aluLSign};
+                            aluLSIGN};
    wire [ 8:11] dispEA   = {~JRST0, regIR_I,            // EA Dispatch
                             regXRZERO, 1'b0};
    wire [ 0:11] dispDIAG = 12'b0;                       // Diagnostic Dispatch
@@ -275,16 +273,16 @@ module CPU(clk, rst,
    //
 
    wire skipJFCL;
-   wire [1:7] skip40 = {aluCRY0,   aluLZero, aluRZero, ~flagUSER,  flagFPD,  regACZERO, cpuINTR   };
-   wire [1:7] skip20 = {aluCRY2,   aluLSign, aluRSign, flagUSERIO, skipJFCL, aluCRY1,   txxx      };
+   wire [1:7] skip40 = {aluCRY0,   aluLZERO, aluRZERO, ~flagUSER,  flagFPD,  regACZERO, cpuINTR   };
+   wire [1:7] skip20 = {aluCRY2,   aluLSIGN, aluRSIGN, flagUSERIO, skipJFCL, aluCRY1,   txxx      };
    wire [1:7] skip10 = {trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    iolatch,  ~cpuCONT,  ~timerINTR};
 
    //
    // Timing
    //
 
-   wire clken;
-   wire clkenUSEQ;
+   wire clkenDP;					// Clock Enable for Datapaths
+   wire clkenCR;					// Clock Enable for Control ROM
 
    TIMING uTIMING
      (.clk(clk),
@@ -292,9 +290,9 @@ module CPU(clk, rst,
       .crom(crom),
       .drom(drom),
       .dp(dp),
-      .fe(fe),
-      .clken(clken),
-      .clkenUSEQ(clkenUSEQ)
+      .feSIGN(feSIGN),
+      .clkenDP(clkenDP),
+      .clkenCR(clkenCR)
       );
 
    //
@@ -304,7 +302,7 @@ module CPU(clk, rst,
    AC_BLOCK uAC_BLOCK
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .dp(dp),
       .acBLOCK(acBLOCK)
@@ -317,13 +315,13 @@ module CPU(clk, rst,
    ALU uALU
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .aluIN(dbus),
-      .aluLZero(aluLZero),
-      .aluRZero(aluRZero),
-      .aluLSign(aluLSign),
-      .aluRSign(aluRSign),
+      .aluLZERO(aluLZERO),
+      .aluRZERO(aluRZERO),
+      .aluLSIGN(aluLSIGN),
+      .aluRSIGN(aluRSIGN),
       .aluAOV(aluAOV),
       .aluCRY0(aluCRY0),
       .aluCRY1(aluCRY1),
@@ -341,7 +339,7 @@ module CPU(clk, rst,
    APR uAPR
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .dp(dp),
       .pwrINTR(pwrINTR),
@@ -367,7 +365,7 @@ module CPU(clk, rst,
    BUS uBUS
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .dp(dp),
       .vmaEXTENDED(vmaEXTENDED),
@@ -405,7 +403,7 @@ module CPU(clk, rst,
    DEBUG uDEBUG
       (.clk(clk),
        .rst(rst),
-       .clken(clken),
+       .clken(clkenDP),
        .debugDATA(debugDATA),
        .debugADDR(debugADDR)
        );
@@ -433,7 +431,7 @@ module CPU(clk, rst,
    DROM uDROM
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .dbus(dbus),
       .crom(crom),
       .drom(drom)
@@ -446,7 +444,7 @@ module CPU(clk, rst,
    INTR uINTR
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .dp(dp),
       .flagINTREQ(flagINTREQ),
@@ -465,7 +463,7 @@ module CPU(clk, rst,
    INTF uINTF
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .consRUN(consRUN),
       .consCONT(consCONT),
@@ -484,7 +482,7 @@ module CPU(clk, rst,
    IOLATCH uIOLATCH
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .iolatch(iolatch)
       );
@@ -496,7 +494,7 @@ module CPU(clk, rst,
    regIR uIR
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .dbus(dbus),
       .prevEN(prevEN),
@@ -512,7 +510,7 @@ module CPU(clk, rst,
    USEQ uUSEQ
      (.clk(clk),
       .rst(rst),
-      .clken(clkenUSEQ),
+      .clken(clkenCR),
       .pageFAIL(pageFAIL),
       .dp(dp),
       .dispDIAG(dispDIAG),
@@ -551,7 +549,7 @@ module CPU(clk, rst,
    PAGE_TABLES uPAGE_TABLES
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .drom(drom),
       .dp(dp),
@@ -568,7 +566,7 @@ module CPU(clk, rst,
    PCFLAGS uPCFLAGS
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .dp(dp),
       .scad(scad),
@@ -587,7 +585,7 @@ module CPU(clk, rst,
    PF_DISP uPF_DISP
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .drom(drom),
       .vmaFLAGS(vmaFLAGS),
@@ -607,7 +605,7 @@ module CPU(clk, rst,
    PXCT uPXCT
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .dp(dp),
       .prevEN(prevEN)
@@ -640,12 +638,12 @@ module CPU(clk, rst,
    SCAD uSCAD
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .dp(dp),
+      .scSIGN(scSIGN),
+      .feSIGN(feSIGN),
       .scad(scad),
-      .sc(sc),
-      .fe(fe),
       .dispSCAD(dispSCAD)
       );
 
@@ -656,7 +654,7 @@ module CPU(clk, rst,
    TIMER uTIMER
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .timerEN(consTIMEREN),
       .timerINTR(timerINTR),
@@ -670,7 +668,7 @@ module CPU(clk, rst,
    TRAPS uTRAPS
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .pcFLAGS(pcFLAGS),
       .aprFLAGS(aprFLAGS),
@@ -685,7 +683,7 @@ module CPU(clk, rst,
    VMA uVMA
      (.clk(clk),
       .rst(rst),
-      .clken(clken),
+      .clken(clkenDP),
       .crom(crom),
       .drom(drom),
       .dp(dp),

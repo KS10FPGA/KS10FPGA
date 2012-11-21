@@ -84,10 +84,11 @@ module CON(clk, clken,
    //
    // Details:
    //  When the 'execute switch' is asserted at power-up the
-   //  microcode will perform a read at IO address o200000
-   //  and then execute that instruction.  In the KS10, this
-   //  IO address was handled by the Console.  Therefore the
-   /// Console could set the start address.
+   //  KS10 microcode performs a 'read' at IO address o200000
+   //  and then executes that instruction.  In the KS10, this
+   //  IO address was handled by the Console.  This mechanism
+   //  allowed the Console set the address that the KS10
+   //  began execution.
    //
    //  This is normally a JRST instruction which causes the
    //  code to jump to the entry point of the code/bootloader.

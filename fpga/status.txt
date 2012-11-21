@@ -1,3 +1,5 @@
+Test Status
+
 DSKAAA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 1)   Test Pass
 DSKABA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 2)   Test Pass
 DSKACA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 3)   Test Pass
@@ -18,4 +20,6 @@ TODO:
 2.  CPU     : fix memory timing.
 3.  MEM     : move mem to test bench
 4.  mem.awk : fix to work on sixbit
+5.  Search for FIXME is the code.
+
 

@@ -21,7 +21,7 @@
 //!      separately to form two independant registers.
 //!
 //! \note
-//!      The ALU bit numbering on the schematic is [-2,-1,0,1:37].
+//!      The ALU bit numbering on the schematic is [-2,-1,0:37].
 //!      This doesn't work at all for verilog.   Therefore the
 //!      bit numbering is [0:39].
 //!
@@ -60,11 +60,10 @@
 // Comments are formatted for doxygen
 //
 
-`include "config.vh"
 `include "useq/crom.vh"
 
 module ALU(clk, rst, clken, crom, aluIN,
-           aluLZero, aluRZero, aluLSign, aluRSign,
+           aluLZERO, aluRZERO, aluLSIGN, aluRSIGN,
            aluAOV, aluCRY0, aluCRY1, aluCRY2,
            aluQR37, aluOUT, debugADDR, debugDATA);
 
@@ -75,18 +74,18 @@ module ALU(clk, rst, clken, crom, aluIN,
    input                  clken;                // Clock enable
    input  [0:cromWidth-1] crom;                 // Control ROM Data
    input  [0:35]          aluIN;                // Bus input
-   output                 aluLZero;             // ALU left half Zero
-   output                 aluRZero;             // ALU right half Zero
-   output                 aluLSign;             // ALU left half Sign
-   output                 aluRSign;             // ALU right half Sign
+   output                 aluLZERO;             // ALU left half Zero
+   output                 aluRZERO;             // ALU right half Zero
+   output                 aluLSIGN;             // ALU left half Sign
+   output                 aluRSIGN;             // ALU right half Sign
    output                 aluAOV;               // ALU Arithmetic Overflow
    output                 aluCRY0;              // ALU Carry 0
    output                 aluCRY1;              // ALU Carry 1
    output                 aluCRY2;              // ALU Carry 2
    output                 aluQR37;              // ALU QR37
    output [0:35]          aluOUT;               // ALU Output
-   input  [0: 3]          debugADDR;		// DEBUG Address
-   output [0:35]          debugDATA;		// DEBUG Data
+   input  [0: 3]          debugADDR;            // DEBUG Address
+   output [0:35]          debugDATA;            // DEBUG Data
 
    //
    // Microcode fields
@@ -112,19 +111,20 @@ module ALU(clk, rst, clken, crom, aluIN,
    // Carry Inhibit
    //
    // Details
-   //   Inhibit carry from right half to left half
+   //  Inhibit the carry from right half of the ALU to left half of
+   //  the ALU
    //
-   
+
    wire specCRY18INH = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_CRY18INH);
 
    //
    // ALU Register Write
    //
    // Note
-   //  The following Destination write data into the ALU
+   //  The following ALU destinations write data into the ALU
    //  registers.
    //
-   
+
    wire write = ((dest ==`cromDST_RAMA)  ||
                  (dest ==`cromDST_RAMF)  ||
                  (dest ==`cromDST_RAMQD) ||
@@ -138,8 +138,8 @@ module ALU(clk, rst, clken, crom, aluIN,
    // Note
    //  DST[1] is inverted.
    //
-   //  When the ALU is configured for shift operations, the
-   //  dst[1] pin selects between right shifts and left shifts.
+   //  When the ALU is configured for shift operations, the dst[1]
+   //  signal selects between right shifts and left shifts.
    //
    //  In the KS10, the dst[1] selects tri-state muxes that
    //  implement the right-shift and left-shift operations.
@@ -160,8 +160,9 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  FUN[2] is munged on DPE5
    //
    //  When fun[0] and fun[1] are both zero, fun[2] selects
-   //  between add and subract ops. This is used in the divide
-   //  and multiprecision ops.
+   //  between add and subract operations. This is used in
+   //  the divide implementation and the multiprecision
+   //  operations.
    //
    // Trace
    //  DPE5/E62
@@ -174,8 +175,13 @@ module ALU(clk, rst, clken, crom, aluIN,
    // Input Sign Extension
    //
    // Details
-   //  In the KS10, the ALU is 40-bits wide.  Sign extend input
-   //  from 36 bits to 38 bits and add two bits padding on right.
+   //  The ALU is 40-bits wide.  The input is sign extended from
+   //  36 bits to 38 bits and two bits of zero padding are added to
+   //  the right.
+   //
+   // Trace
+   //  DPE1/E29  (MSB/Sign Extension)
+   //  DPE2/E157 (LSB/Zero pad)
    //
 
    wire [0:39] dd = {aluIN[0], aluIN[0], aluIN[0:35], 2'b00};
@@ -375,13 +381,8 @@ module ALU(clk, rst, clken, crom, aluIN,
 
    always @(posedge clk or posedge rst)
      begin
-        if (rst)
-          for (i = 0; i < 16; i = i + 1)
-            `ifdef INITRAM
-              aluRAM[i] <= 40'b0;
-            `else
-              aluRAM[i] <= 40'bx;
-            `endif
+	     if (rst)
+		    ;
         else if (clken)
           begin
              if (lclken & write)
@@ -390,7 +391,7 @@ module ALU(clk, rst, clken, crom, aluIN,
                aluRAM[ba][20:39] <= bdi[20:39];
           end
      end
-  
+
    //
    // ALU RAM Read Port(s)
    //
@@ -414,11 +415,11 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  to add a third port to the ALU RAM for debugging or a front panel
    //  interface.
    //
-    
+
    wire [0:39] ad = aluRAM[aa];
    wire [0:39] bd = aluRAM[ba];
    wire [0:35] cd = aluRAM[debugADDR][2:37];
-   
+
    //
    // Q Register Shifter
    //
@@ -430,51 +431,59 @@ module ALU(clk, rst, clken, crom, aluIN,
    always @(f or q or dest or shstyle or divide_shift)
      begin
         case (dest)
-         `cromDST_RAMQU:
+          `cromDST_RAMQU:
             case (shstyle)
               `cromSPEC_SHSTYLE_NORM:
-                qi <= {q[1:39], 1'b0};
+		qi <= {q[1:39], 1'b0};
               `cromSPEC_SHSTYLE_ZERO:
-                qi <= {q[1:39], 1'b0};
+		qi <= {q[1:39], 1'b0};
               `cromSPEC_SHSTYLE_ONES:
-                qi <= {q[1:39], 1'b1};
+		qi <= {q[1:39], 1'b1};
               `cromSPEC_SHSTYLE_ROT:
-                qi <= {q[1:39], q[4]};
+		qi <= {q[1:39], q[4]};
               `cromSPEC_SHSTYLE_ASHC:
-                qi <= {q[1:39], 1'b0};
+		qi <= {q[1:39], 1'b0};
               `cromSPEC_SHSTYLE_LSHC:
-                qi <= {q[1:39], 1'b0};
+		qi <= {q[1:39], 1'b0};
               `cromSPEC_SHSTYLE_DIV:
-                qi <= {q[1:39], divide_shift};
+		qi <= {q[1:39], divide_shift};
               `cromSPEC_SHSTYLE_ROTC:
-                qi <= {q[1:39], f[4]};
+		qi <= {q[1:39], f[4]};
             endcase
-         `cromDST_RAMQD:
+          `cromDST_RAMQD:
             case (shstyle)
               `cromSPEC_SHSTYLE_NORM:
-                qi <= {1'b0, q[0:2], q[3],  q[4:38]};
+		qi <= {1'b0, q[0:2], q[3],  q[4:38]};
               `cromSPEC_SHSTYLE_ZERO:
-                qi <= {1'b0, q[0:2], 1'b0,  q[4:38]};
+		qi <= {1'b0, q[0:2], 1'b0,  q[4:38]};
               `cromSPEC_SHSTYLE_ONES:
-                qi <= {1'b0, q[0:2], 1'b1,  q[4:38]};
+		qi <= {1'b0, q[0:2], 1'b1,  q[4:38]};
               `cromSPEC_SHSTYLE_ROT:
-                qi <= {1'b0, q[0:2], q[39], q[4:38]};
+		qi <= {1'b0, q[0:2], q[39], q[4:38]};
               `cromSPEC_SHSTYLE_ASHC:
-                qi <= {1'b0, q[0:2], f[39], q[4:38]};
+		qi <= {1'b0, q[0:2], f[39], q[4:38]};
               `cromSPEC_SHSTYLE_LSHC:
-                qi <= {1'b0, q[0:2], f[39], q[4:38]};
+		qi <= {1'b0, q[0:2], f[39], q[4:38]};
               `cromSPEC_SHSTYLE_DIV:
-                qi <= {1'b0, q[0:2], f[39], q[4:38]};
+		qi <= {1'b0, q[0:2], f[39], q[4:38]};
               `cromSPEC_SHSTYLE_ROTC:
-                qi <= {1'b0, q[0:2], f[39], q[4:38]};
+		qi <= {1'b0, q[0:2], f[39], q[4:38]};
             endcase
-         `cromDST_QREG:
+          `cromDST_QREG:
             qi <= f;
-          default:
+	  `cromDST_NOP:
+            qi <= q;
+	  `cromDST_RAMA:
+            qi <= q;
+	  `cromDST_RAMF:
+            qi <= q;
+	  `cromDST_RAMD:
+            qi <= q;
+	  `cromDST_RAMU:
             qi <= q;
         endcase
      end
-  
+
    //
    // Q Register
    //
@@ -487,11 +496,7 @@ module ALU(clk, rst, clken, crom, aluIN,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          `ifdef INITREGS
-            q[ 0:39] <= 40'b0;
-          `else
-            q[ 0:39] <= 40'bx;
-          `endif
+          q[ 0:39] <= 40'b0;
         else if (clken)
           begin
              if (lclken)
@@ -523,7 +528,11 @@ module ALU(clk, rst, clken, crom, aluIN,
             r[0:19] = 20'b0;
           `cromSRC_ZA:
             r[0:19] = 20'b0;
-          default:
+          `cromSRC_DA:
+            r[0:19] = dd[0:19];
+          `cromSRC_DQ:
+            r[0:19] = dd[0:19];
+          `cromSRC_DZ:
             r[0:19] = dd[0:19];
         endcase
      end
@@ -549,7 +558,11 @@ module ALU(clk, rst, clken, crom, aluIN,
             r[20:39] = 20'b0;
           `cromSRC_ZA:
             r[20:39] = 20'b0;
-          default:
+          `cromSRC_DA:
+            r[20:39] = dd[20:39];
+          `cromSRC_DQ:
+            r[20:39] = dd[20:39];
+          `cromSRC_DZ:
             r[20:39] = dd[20:39];
         endcase
      end
@@ -580,7 +593,7 @@ module ALU(clk, rst, clken, crom, aluIN,
             s[0:19] = ad[0:19];
           `cromSRC_DA:
             s[0:19] = ad[0:19];
-          default:
+          `cromSRC_DZ:
             s[0:19] = 20'b0;
         endcase
      end
@@ -610,7 +623,7 @@ module ALU(clk, rst, clken, crom, aluIN,
             s[20:39] = ad[20:39];
           `cromSRC_DA:
             s[20:39] = ad[20:39];
-          default:
+          `cromSRC_DZ:
             s[20:39] = 20'b0;
         endcase
      end
@@ -629,9 +642,9 @@ module ALU(clk, rst, clken, crom, aluIN,
    reg [0:3] g;                         // ALU Partial Sum
    reg       co;                        // Carry out of left half
    reg       go;                        // Partial sum for calculating CRY2
-   wire      ci  = carry_in;            // Carry into left half
+   wire      ci  = carry_in;            // Carry into right half
    reg       bb;                        // Bit Bucket
-   
+
    always @(r or s or ci or specCRY18INH or func)
      begin
         co  = 1'b0;
@@ -694,15 +707,15 @@ module ALU(clk, rst, clken, crom, aluIN,
    // ALU Sign outputs
    //
 
-   assign aluLSign = f[ 0];
-   assign aluRSign = f[20];
+   assign aluLSIGN = f[ 0];
+   assign aluRSIGN = f[20];
 
    //
    // ALU Zero outputs
    //
 
-   assign aluLZero = f[ 0:19] == 20'b0;
-   assign aluRZero = f[20:39] == 20'b0;
+   assign aluLZERO = f[ 0:19] == 20'b0;
+   assign aluRZERO = f[20:39] == 20'b0;
 
    //
    // Arithmetic Overflow (aluAOV)
@@ -715,7 +728,7 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  DPE9/E26
    //
 
-   assign aluAOV = aluLSign != f[2];
+   assign aluAOV = aluLSIGN != f[2];
 
    //
    // aluCRY0
@@ -739,6 +752,10 @@ module ALU(clk, rst, clken, crom, aluIN,
    //
    // aluCRY1
    //
+   // Details
+   //  A carry from bit 1 must have occured if the Arithmetic
+   //  Overflow bit is different than the carry from bit 0.
+   //
    // Trace:
    //  DPE9/E26
    //
@@ -754,7 +771,9 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  have access to the carry from ALU bit 4, but we infer
    //  it by recalculating the 4 MSBs with the carry cleared,
    //  and checking to see if it yields the same results as
-   //  the full calculation.
+   //  the full calculation.  If either the carry or the top
+   //  four bits are different, there must have been a
+   //  carry from ALU bit 2.
    //
 
    assign aluCRY2 = ((go != co) | (f[0:3] != g[0:3]));
@@ -770,18 +789,18 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  DPE5/E70
    //
 
-   wire carry_in = ((flag_carry_02  & `cromMULTIPREC) |
-                    (flag_carry_out & `cromDIVIDE   ) |
+   wire carry_in = ((`cromMULTIPREC & flag_carry_02 ) |
+                    (`cromDIVIDE    & flag_carry_out) |
                     (`cromCRY38));
 
-   wire funct_02 = ((flag_funct_02  & `cromMULTIPREC) |
-                    (flag_carry_out & `cromDIVIDE   ) |
+   wire funct_02 = ((`cromMULTIPREC & flag_funct_02 ) |
+                    (`cromDIVIDE    & flag_carry_out) |
                     (fun[2]));
 
    //
    // ALU Flag Register
    //
-   // These register facilate multi-word shifts as well as
+   // These registers facilate multi-word shifts as well as
    // mutiplication and divide operations.
    //
    // Trace
@@ -789,7 +808,6 @@ module ALU(clk, rst, clken, crom, aluIN,
    //
 
    reg flag_fl02;
- //reg flag_ql02;
    reg flag_qr37;
    reg flag_carry_02;
    reg flag_funct_02;
@@ -800,7 +818,6 @@ module ALU(clk, rst, clken, crom, aluIN,
         if (rst)
           begin
              flag_fl02      <= 1'b0;
-           //flag_ql02      <= 1'b0;
              flag_qr37      <= 1'b0;
              flag_carry_02  <= 1'b0;
              flag_funct_02  <= 1'b0;
@@ -809,7 +826,6 @@ module ALU(clk, rst, clken, crom, aluIN,
         else
           begin
              flag_fl02      <= bdi[4];
-           //flag_ql02      <= qi[4];
              flag_qr37      <= qi[39];
              flag_carry_02  <= aluCRY2;
              flag_funct_02  <= funct_02;
@@ -818,7 +834,7 @@ module ALU(clk, rst, clken, crom, aluIN,
      end
 
    assign aluQR37 = flag_qr37;
-   
+
    //
    // Multishift
    //
@@ -833,8 +849,8 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  DPE5/E70
    //
 
-   wire multi_shift  = flag_fl02   & `cromMULTIPREC;
-   wire divide_shift = `cromDIVIDE & flag_carry_out;
+   wire multi_shift  = `cromMULTIPREC  & flag_fl02;
+   wire divide_shift = `cromDIVIDE     & flag_carry_out;
 
    //
    // ALU Destination Selector
@@ -849,7 +865,7 @@ module ALU(clk, rst, clken, crom, aluIN,
    //
    // ALU Register Debug Data
    //
-   
+
    assign debugDATA = cd;
-   
+
 endmodule

@@ -44,7 +44,6 @@
 // Comments are formatted for doxygen
 //
 
-`include "config.vh"
 `include "useq/crom.vh"
 
 module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprINTR);
@@ -294,7 +293,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    //
 
    reg [1:7] aprINTR;
-   always @(posedge clk or posedge rst)
+   always @(flagINTREQ or flagINTR)
      begin
         if (flagINTREQ)
           case (flagINTR)

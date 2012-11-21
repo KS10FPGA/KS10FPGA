@@ -173,7 +173,7 @@ module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaFLAGS,
               `cromSPEC_SELBYTE_4 :
                 dbm = {scad[1:7], scad[1:7], scad[1:7], dp[21:27], scad[1:7], dp[35]};
               `cromSPEC_SELBYTE_5 :
-                dbm = {scad[1:7], scad[1:7], scad[1:7], scad[1:7], dp[28:35], dp[35]};
+                dbm = {scad[1:7], scad[1:7], scad[1:7], scad[1:7], dp[28:34], dp[35]};
               default:
                 dbm = {scad[1:7], scad[1:7], scad[1:7], scad[1:7], scad[1:7], dp[35]};
             endcase

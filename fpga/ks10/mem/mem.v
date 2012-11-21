@@ -44,8 +44,6 @@
 // Comments are formatted for doxygen
 //
 
-`include "../cpu/config.vh"
-
 module MEM(clk, clken, busREQI, busACKO, busADDRI, busDATAI, busDATAO);
 
    input          clk;          // Clock
@@ -84,9 +82,7 @@ module MEM(clk, clken, busREQI, busACKO, busADDRI, busDATAI, busDATAO);
    reg [0:35] RAM [0:32767];
    initial
      begin
-       `ifdef INITMEM
-         `include "mem.dat"
-       `endif
+       `include "mem.dat"
      end
 
    //

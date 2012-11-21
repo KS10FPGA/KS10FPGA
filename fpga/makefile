@@ -8,7 +8,7 @@ ISE  := $(ISE)
 MEM  := $(RTL)/mem
 UBA  := $(RTL)/uba
 UC   := $(CPU)/useq
-LOAD := MAINDEC-10-DSKAK.txt
+LOAD := MAINDEC-10-DSKAA.txt
 
 SRC := \
 	$(UC)/crom.vh  \
@@ -21,7 +21,6 @@ SRC := \
 	$(UC)/stack.v  \
 	$(UC)/dispatch.v   \
 	$(UC)/useq.v \
-	$(CPU)/config.vh \
 	$(CPU)/ac_block.v \
 	$(CPU)/alu.v \
 	$(CPU)/apr.v \
@@ -62,8 +61,7 @@ SRC := \
 BLD := \
 	$(ISE)/ks10.xise \
 	$(ISE)/ks10.gise \
-	$(ISE)/ks10.wcfg \
-	$(ISE)/dskaa.wcfg
+	$(ISE)/ks10.wcfg
 
 asdf : $(SRC) $(BLD)
 	echo $(SRC) $(BLD)
@@ -75,7 +73,7 @@ $(UC)/drom.dat  : $(UC)/ks10.mcr $(UC)/drom.awk makefile
 	awk -f $(UC)/drom.awk $(UC)/ks10.mcr > $(UC)/drom.dat
 
 $(MEM)/mem.dat : $(MEM)/$(LOAD) $(MEM)/mem.awk makefile
-	awk -f $(MEM)/mem.awk $(MEM)/$(LOAD) > $(MEM)/mem.dat
+	awk -f $(MEM)/mem.awk -vfilename=$(LOAD) $(MEM)/$(LOAD) > $(MEM)/mem.dat
 
 clean: 
 	rcsclean $(RTL)/*
