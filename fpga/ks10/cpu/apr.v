@@ -71,6 +71,9 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    //
    // APR Flag Register 24
    //
+   // Note
+   //  This is strictly a software interrupt.
+   //
    // Trace
    //  DPMB/E159
    //
@@ -86,6 +89,10 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
 
    //
    // APR Flag Register 25
+   //
+   // Note
+   //  This KS10 can set this bit to generate an interrupt to the
+   //  KS10 console.
    //
    // Trace
    //  DPMB/E159
@@ -104,7 +111,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    // APR Flag Register 26
    //
    // Note
-   //  On a KS10, this flag indicates that an power fail condition
+   //  This interrupt indicates that an power fail condition
    //  exists.
    //
    // Trace
@@ -127,7 +134,8 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    // APR Flag Register 27
    //
    // Note
-   //  Non-existant memory interrupt.
+   //  This interrupt indicates that non-existant memory has been
+   //  accessed.
    //
    // Trace
    //  DPMB/E139
@@ -149,8 +157,8 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    // APR Flag Register 28
    //
    // Note
-   //  On a KS10, this flag indicates that an uncorrectable memory
-   //  error has occurred.   This is not implemented in the FPGA.
+   //  This interrupt indicates that an uncorrectable memory error
+   //  has occurred.  This is not implemented in the FPGA.
    //
    // Trace
    //  DPMB/E139
@@ -169,8 +177,8 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    // APR Flag Register 29
    //
    // Note
-   //  On a KS10, this flag indicates that an correctable memory
-   //  error has occurred.   This is not implemented in the FPGA.
+   //  This interrupt indicates that an correctable memory error
+   //  has occurred.   This is not implemented in the FPGA.
    //
    // Trace
    //  DPMB/E147
@@ -187,6 +195,10 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
 
    //
    // APR Flag Register 30
+   //
+   // Note
+   //  This interrupt indicates that an interval timer interrup
+   //  has occurred.   This microcode manages this bit.
    //
    // Trace
    //  DPMB/E147
@@ -205,7 +217,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    // APR Flag Register 31
    //
    // Note
-   //  On a KS10, this flag indicates that a Console Interrupt
+   //  This interrupt indicates that a Console Interrupt
    //  has occurred.
    //
    // Trace
@@ -295,6 +307,7 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    reg [1:7] aprINTR;
    always @(flagINTREQ or flagINTR)
      begin
+        aprINTR <= 7'b0000000;
         if (flagINTREQ)
           case (flagINTR)
             3'b000 : aprINTR <= 7'b0000000;
@@ -306,8 +319,6 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
             3'b110 : aprINTR <= 7'b0000010;
             3'b111 : aprINTR <= 7'b0000001;
           endcase
-        else
-          aprINTR <= 7'b0000000;
      end
 
    //

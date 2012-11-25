@@ -5,6 +5,14 @@ module testbench;
    reg reset;
 
    //
+   // SSRAM
+   //
+
+   wire [0:22] ssramADDR;
+   wire [0:35] ssramDATA;
+   wire        ssramWR;
+   
+   //
    // Switches
    //
    
@@ -43,16 +51,19 @@ module testbench;
    //
    
    KS10 UUT
-     (.clk	(clk),
-      .reset	(reset),
-      .pwrFAIL	(1'b0),
-      .swCONT	(swCONT),
-      .swEXEC	(swEXEC),
-      .swRUN	(swRUN),
-      .conRXD	(1'b1),
-      .conTXD	(conTXD),
-      .cpuHALT	(cpuHALT),
-      .cpuRUN	(cpuRUN2)
+     (.clk      (clk),
+      .reset    (reset),
+      .ssramADDR(ssramADDR),
+      .ssramDATA(ssramDATA),
+      .ssramWR  (ssramWR),
+      .pwrFAIL  (1'b0),
+      .swCONT   (swCONT),
+      .swEXEC   (swEXEC),
+      .swRUN    (swRUN),
+      .conRXD   (1'b1),
+      .conTXD   (conTXD),
+      .cpuHALT  (cpuHALT),
+      .cpuRUN   (cpuRUN2)
       );
 
    //
@@ -74,7 +85,10 @@ module testbench;
           end
      end
 
-
+   //
+   //
+   //
+   
    always @(posedge cpuHALT or posedge reset )
      begin
         if (reset)
@@ -85,5 +99,52 @@ module testbench;
              #600 swCONT <= 1'b0;
           end
      end
+
+   //
+   // PDP10 Memory Initialization
+   //
+   // Note:
+   //  We initialize the PDP10 memory with the diagnostic
+   //  code.  This saves having to figure out how to load
+   //  the code into memory by some other means.
+   //
+   //  Object code is extracted from the listing file by a
+   //  'simple' AWK script and is included below.
+   //
+
+   reg [0:35] SSRAM [0:32767];
+   initial
+     begin
+       `include "ssram.dat"
+     end
+
+   //
+   // Synchronous RAM
+   //
+   // Details
+   //  This is PDP10 memory.
+   //
+   // Note:
+   //  Only 32K is implemented.  This is sufficient to run the
+   //  MAINDEC diagnostics.  Adding more memory makes the
+   //  simulation run very slow.
+   //
+   // FIXME
+   //  This is temporary
+   //
+   
+   reg  [0:14] rd_addr;
+   wire [0:14] wr_addr = ssramADDR[8:22];
+
+   always @(negedge clk or posedge reset)
+     begin
+        if (reset)
+          ;
+        else if (ssramWR)
+          SSRAM[wr_addr] <= ssramDATA;
+        rd_addr <= wr_addr;
+     end
+   
+   assign ssramDATA = (ssramWR) ? 36'bz : SSRAM[rd_addr];
        
 endmodule

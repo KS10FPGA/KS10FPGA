@@ -381,8 +381,8 @@ module ALU(clk, rst, clken, crom, aluIN,
 
    always @(posedge clk or posedge rst)
      begin
-	     if (rst)
-		    ;
+        if (rst)
+          ;
         else if (clken)
           begin
              if (lclken & write)
@@ -434,52 +434,52 @@ module ALU(clk, rst, clken, crom, aluIN,
           `cromDST_RAMQU:
             case (shstyle)
               `cromSPEC_SHSTYLE_NORM:
-		qi <= {q[1:39], 1'b0};
+                qi <= {q[1:39], 1'b0};
               `cromSPEC_SHSTYLE_ZERO:
-		qi <= {q[1:39], 1'b0};
+                qi <= {q[1:39], 1'b0};
               `cromSPEC_SHSTYLE_ONES:
-		qi <= {q[1:39], 1'b1};
+                qi <= {q[1:39], 1'b1};
               `cromSPEC_SHSTYLE_ROT:
-		qi <= {q[1:39], q[4]};
+                qi <= {q[1:39], q[4]};
               `cromSPEC_SHSTYLE_ASHC:
-		qi <= {q[1:39], 1'b0};
+                qi <= {q[1:39], 1'b0};
               `cromSPEC_SHSTYLE_LSHC:
-		qi <= {q[1:39], 1'b0};
+                qi <= {q[1:39], 1'b0};
               `cromSPEC_SHSTYLE_DIV:
-		qi <= {q[1:39], divide_shift};
+                qi <= {q[1:39], divide_shift};
               `cromSPEC_SHSTYLE_ROTC:
-		qi <= {q[1:39], f[4]};
+                qi <= {q[1:39], f[4]};
             endcase
           `cromDST_RAMQD:
             case (shstyle)
               `cromSPEC_SHSTYLE_NORM:
-		qi <= {1'b0, q[0:2], q[3],  q[4:38]};
+                qi <= {1'b0, q[0:2], q[3],  q[4:38]};
               `cromSPEC_SHSTYLE_ZERO:
-		qi <= {1'b0, q[0:2], 1'b0,  q[4:38]};
+                qi <= {1'b0, q[0:2], 1'b0,  q[4:38]};
               `cromSPEC_SHSTYLE_ONES:
-		qi <= {1'b0, q[0:2], 1'b1,  q[4:38]};
+                qi <= {1'b0, q[0:2], 1'b1,  q[4:38]};
               `cromSPEC_SHSTYLE_ROT:
-		qi <= {1'b0, q[0:2], q[39], q[4:38]};
+                qi <= {1'b0, q[0:2], q[39], q[4:38]};
               `cromSPEC_SHSTYLE_ASHC:
-		qi <= {1'b0, q[0:2], f[39], q[4:38]};
+                qi <= {1'b0, q[0:2], f[39], q[4:38]};
               `cromSPEC_SHSTYLE_LSHC:
-		qi <= {1'b0, q[0:2], f[39], q[4:38]};
+                qi <= {1'b0, q[0:2], f[39], q[4:38]};
               `cromSPEC_SHSTYLE_DIV:
-		qi <= {1'b0, q[0:2], f[39], q[4:38]};
+                qi <= {1'b0, q[0:2], f[39], q[4:38]};
               `cromSPEC_SHSTYLE_ROTC:
-		qi <= {1'b0, q[0:2], f[39], q[4:38]};
+                qi <= {1'b0, q[0:2], f[39], q[4:38]};
             endcase
           `cromDST_QREG:
             qi <= f;
-	  `cromDST_NOP:
+          `cromDST_NOP:
             qi <= q;
-	  `cromDST_RAMA:
+          `cromDST_RAMA:
             qi <= q;
-	  `cromDST_RAMF:
+          `cromDST_RAMF:
             qi <= q;
-	  `cromDST_RAMD:
+          `cromDST_RAMD:
             qi <= q;
-	  `cromDST_RAMU:
+          `cromDST_RAMU:
             qi <= q;
         endcase
      end
@@ -642,7 +642,7 @@ module ALU(clk, rst, clken, crom, aluIN,
    reg [0:3] g;                         // ALU Partial Sum
    reg       co;                        // Carry out of left half
    reg       go;                        // Partial sum for calculating CRY2
-   wire      ci  = carry_in;            // Carry into right half
+   wire      ci = carry_in;             // Carry into right half
    reg       bb;                        // Bit Bucket
 
    always @(r or s or ci or specCRY18INH or func)
@@ -849,8 +849,8 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  DPE5/E70
    //
 
-   wire multi_shift  = `cromMULTIPREC  & flag_fl02;
-   wire divide_shift = `cromDIVIDE     & flag_carry_out;
+   wire multi_shift  = `cromMULTIPREC & flag_fl02;
+   wire divide_shift = `cromDIVIDE    & flag_carry_out;
 
    //
    // ALU Destination Selector

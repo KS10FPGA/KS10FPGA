@@ -6,6 +6,7 @@
 //!      KS-10 Memory Interface
 //!
 //! \details
+//!      This module is simply a wrapper for the external memory.
 //!
 //! \todo
 //!
@@ -44,79 +45,55 @@
 // Comments are formatted for doxygen
 //
 
-module MEM(clk, clken, busREQI, busACKO, busADDRI, busDATAI, busDATAO);
+module MEM(clk, clken,
+           busREQI, busACKO, busADDRI, busDATAI, busDATAO,
+           ssramCLK, ssramADDR, ssramDATA, ssramADV, ssramWR);
 
-   input          clk;          // Clock
-   input          clken;        // Clock enable
-   input          busREQI;      // Memory Request In
-   output         busACKO;      // Memory Acknowledge Out
-   input  [0:35]  busADDRI;     // Address Address In
-   input  [0:35]  busDATAI;     // Data in
-   output [0:35]  busDATAO;     // Data out
-
+   input         clk;           // Clock
+   input         clken;         // Clock enable
+   input         busREQI;       // Memory Request In
+   output        busACKO;       // Memory Acknowledge Out
+   input  [0:35] busADDRI;      // Address Address In
+   input  [0:35] busDATAI;      // Data in
+   output [0:35] busDATAO;      // Data out
+   output        ssramCLK;      // SSRAM Clock
+   output [0:22] ssramADDR;     // SSRAM Address Bus
+   inout  [0:35] ssramDATA;     // SSRAM Data Bus
+   output        ssramADV;      // SSRAM Advance (burst)
+   output        ssramWR;       // SSRAM Write
+   
    //
    // Memory flags
    //
    // Details:
-   //  busADDRI[0:13] is flags
-   //  Only 32K of memory is implemented.
+   //  busADDRI[ 0:13] is flags
+   //  busADDRI[14:35] is address
    //
 
    wire         busREAD  = busADDRI[ 3];
    wire         busWRITE = busADDRI[ 5];
    wire         busIO    = busADDRI[10];
-   wire [21:35] busADDR  = busADDRI[16:35];
-   
-   //
-   // PDP10 Memory Initialization
-   //
-   // Note:
-   //  We initialize the PDP10 memory with the diagnostic
-   //  code.  This saves having to figure out how to load
-   //  the code into memory by some other means.
-   //
-   //  Object code is extracted from the listing file by a
-   //  'simple' AWK script and is included below.
-   //
-
-   reg [0:35] RAM [0:32767];
-   initial
-     begin
-       `include "mem.dat"
-     end
+   wire [16:35] busADDR  = busADDRI[16:35];
 
    //
-   // Synchronous RAM
+   // SSRAM Interface
    //
-   // Details
-   //  This is PDP10 memory.
+   // FIXME:
+   //  Right now this is not setup for SSRAM.
    //
-   // Note:
-   //  Only 32K is implemented.  This is sufficient to run the
-   //  MAINDEC diagnostics.
-   //
-   // FIXME
-   //  This is temporary and won't synthesize well.  Notice the clock
-   //  polarity.
-   //
-   
-   reg  [0:14] rd_addr;
-   wire [0:14] wr_addr = busADDR[21:35];
 
-   always @(negedge clk)
-     begin
-        if (clken & ~busIO)
-          begin
-             if (busWRITE)
-               RAM[wr_addr] <= busDATAI;
-             rd_addr <= wr_addr;
-          end
-     end
-
-   assign busDATAO = RAM[rd_addr];
+   assign ssramCLK  = clk;
+   assign ssramADV  = 1'b0;
+   assign ssramWR   = busWRITE & ~busIO;
+   assign ssramADDR = {3'b0, busADDR[16:35]};
+   assign ssramDATA = (ssramWR) ? busDATAI : 36'bz;
+   assign busDATAO  = ssramDATA;
 
    //
    // ACK the memory if implemented.
+   //
+   // FIXME:
+   //  Right now, only 32K of memory is implemented.
    //
 
    assign busACKO = ~busIO & (busADDR < 32768);

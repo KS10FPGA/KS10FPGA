@@ -150,17 +150,17 @@ BEGIN {
 END {
    for (i = 0; i < 384; i++) { 
        if (map[i] != "") {
-           printf "         RAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
+           printf "         SSRAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
        } else {
-           printf "         RAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
+           printf "         SSRAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
        }
    }
 
    for (i = 030000; i < 047000; i++) { 
        if (map[i] != "") {
-           printf "         RAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
+           printf "         SSRAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
        } else {
-           printf "         RAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
+           printf "         SSRAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
        }
    }
 

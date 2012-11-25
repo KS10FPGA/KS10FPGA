@@ -46,6 +46,7 @@
 //
 
 module KS10(clk, reset, pwrFAIL,
+	    ssramCLK, ssramADDR, ssramDATA, ssramWR, ssramADV,
             swCONT, swEXEC, swRUN,
             conRXD, conTXD,
             cpuHALT, cpuRUN);
@@ -54,21 +55,21 @@ module KS10(clk, reset, pwrFAIL,
    // System Interfaces
    //
 
-   input       clk;             // Clock
-   input       reset;           // Reset
-   input       pwrFAIL;         // Power Fail
-   input       swCONT;          // Continue Switch
-   input       swEXEC;          // Exec Switch
-   input       swRUN;           // Run Switch
-   output      cpuHALT;         // Halt LED
-   output      cpuRUN;          // Run LED
-
-   //
-   // Console Interfaces
-   //
-
-   input       conRXD;          // Console RXD
-   output      conTXD;          // Console TXD
+   input         clk;           // Clock
+   input         reset;         // Reset
+   output 	 ssramCLK;	// SSRAM Clock
+   output [0:22] ssramADDR;	// SSRAM Address Bus
+   inout  [0:35] ssramDATA;	// SSRAM Data Bus
+   output        ssramWR;	// SSRAM Write
+   output 	 ssramADV;	// SSRAM Advance
+   input         pwrFAIL;       // Power Fail
+   input         swCONT;        // Continue Switch
+   input         swEXEC;        // Exec Switch
+   input         swRUN;         // Run Switch
+   output        cpuHALT;       // Halt LED
+   output        cpuRUN;        // Run LED
+   input         conRXD;        // Console RXD
+   output        conTXD;      	// Console TXD
 
    //
    // Bus Arbiter Outputs
@@ -230,7 +231,12 @@ module KS10(clk, reset, pwrFAIL,
       .busACKO          (memACK),
       .busADDRI         (arbADDRO),
       .busDATAI 	(memDATAI),
-      .busDATAO         (memDATAO)
+      .busDATAO         (memDATAO),
+      .ssramCLK 	(ssramCLK),
+      .ssramADDR	(ssramADDR),
+      .ssramDATA 	(ssramDATA),
+      .ssramADV		(ssramADV),
+      .ssramWR 		(ssramWR)
       );
 
    //
