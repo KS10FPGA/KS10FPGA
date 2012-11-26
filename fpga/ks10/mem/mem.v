@@ -8,6 +8,9 @@
 //! \details
 //!      This module is simply a wrapper for the external memory.
 //!
+//!      Important IO addresses:
+//!          100000: Memory Status Register
+//!
 //! \todo
 //!
 //! \file
@@ -61,7 +64,7 @@ module MEM(clk, clken,
    inout  [0:35] ssramDATA;     // SSRAM Data Bus
    output        ssramADV;      // SSRAM Advance (burst)
    output        ssramWR;       // SSRAM Write
-   
+
    //
    // Memory flags
    //
@@ -87,15 +90,67 @@ module MEM(clk, clken,
    assign ssramWR   = busWRITE & ~busIO;
    assign ssramADDR = {3'b0, busADDR[16:35]};
    assign ssramDATA = (ssramWR) ? busDATAI : 36'bz;
-   assign busDATAO  = ssramDATA;
+
+   //
+   // Memory Status Register (IO Address 100000)
+   //  See Page 5-69
+   //
+   //
+   //           0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+   //         +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+   //   Write |EH|  |RE|PE|EE|                    |PF|              |                                                     |
+   //   (LH)  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+   //
+   //          18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+   //         +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+   //   Write |                             |       FCB          |ED|
+   //   (RH)  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+   //
+   //
+   //  EH  : Error Hold          - Writes ignored (not implemented).
+   //  RE  : Refresh Error       - Writes ignored (not implemented).
+   //  PE  : Parity Error        - Writes sets/clears bit 3,
+   //                              otherwise not implemented.
+   //  PF  : Power Failure       - Writing zero clears bit 12,
+   //                              otherwise not implemented.
+   //  FCB : Force Check Bits    - Write ignored (not implemented).
+   //  ED  : ECC Disable         - Writing zero sets bit 4,
+   //                              Writing one clears bit 4,
+   //                              otherwise not implemented.
+   //
+   //
+   //           0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+   //         +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+   //    Read |EH|UE|RE|PE|EE|         ECP        |PF| 0|   ERA     |                                                      |
+   //    (LH) +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+   //
+   //          18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+   //         +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+   //   Write |                     ERA                             |
+   //   (RH)  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+   //
+   //  EH  : Error Hold          - Always read as 0 (not implemented).
+   //  UE  : Uncorrectable Error - Always read as 0 (not implemented).
+   //  RE  : Refresh Error       - Always read as 0 (not implemented).
+   //  PE  : Parity Error        - Reads back value set by write to bit 3.
+   //  EE  : ECC Enable          - Reads back inverse value set by
+   //                              write to bit 35.
+   //  ECP : Error Cor  Parity   - Always read as zero. (not implemented).
+   //  PF  : Power Failure       - Initialized to 1 at power-up
+   //                            - Cleared by writing 0 to bit 12
+   //  ERA : Error Read Address  - Always read as 0 (not implemented).
+   //
+
 
    //
    // ACK the memory if implemented.
    //
    // FIXME:
    //  Right now, only 32K of memory is implemented.
+   //  Memory Status Register is not implemented.
    //
 
-   assign busACKO = ~busIO & (busADDR < 32768);
+   assign busACKO  = ~busIO & (busADDR < 32768);
+   assign busDATAO = ssramDATA;
 
 endmodule

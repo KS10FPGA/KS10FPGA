@@ -9,15 +9,18 @@
 //!
 //! \notes:
 //!      Important memory areas:
-//!       0000030 Halt Switch
-//!       0000031 Keep Alive
-//!       0000032 Console Input
-//!       0000033 Console Output
-//!       0000034 Klinik Input
-//!       0000035 Klinik Output
-//!       0000036 RH11 Address
-//!       0000037 Unit Number
-//!       0000040 Magtape Params
+//!        IO Addresses:
+//!          0200000 Console Instruction Register
+//!        Memory Addresses:
+//!          0000030 Halt Switch
+//!          0000031 Keep Alive
+//!          0000032 Console Input
+//!          0000033 Console Output
+//!          0000034 Klinik Input
+//!          0000035 Klinik Output
+//!          0000036 RH11 Address
+//!          0000037 Unit Number
+//!          0000040 Magtape Params
 //!
 //! \file
 //!      con.v
@@ -80,24 +83,25 @@ module CON(clk, clken,
    wire [18:35] busADDR     = busADDRI[18:35];
    
    //
-   // Execute/Start 'Vector'
+   // Console Instruction Register (IO Address 200000)
    //
    // Details:
    //  When the 'execute switch' is asserted at power-up the
-   //  KS10 microcode performs a 'read' at IO address o200000
-   //  and then executes that instruction.  In the KS10, this
-   //  IO address was handled by the Console.  This mechanism
-   //  allowed the Console set the address that the KS10
-   //  began execution.
+   //  KS10 microcode performs a IO read of the Console Instruction
+   //  Register (cslIR) at IO address o200000 and then executes that
+   //  instruction.  This mechanism allowed the Console set the
+   //  address that the KS10 began execution.
    //
    //  This is normally a JRST instruction which causes the
    //  code to jump to the entry point of the code/bootloader.
    //
-   
+
+   wire [0:35] cslIR = 36'o254000030624;
+// wire [0:35] cslIR = 36'o254000030600;
+
    assign busREQO  = 1'b0;
    assign busACKO  = busIO & busREAD & busPHYSICAL & (busADDR == 18'o200000);
-// assign busDATAO = busACKO ? 36'o254000030624 : 36'bx;
-   assign busDATAO = busACKO ? 36'o254000030600 : 36'bx;
+   assign busDATAO = busACKO ? cslIR : 36'bx;
    assign busADDRO = 36'bx;
    
    //
