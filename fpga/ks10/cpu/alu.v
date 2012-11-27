@@ -721,8 +721,8 @@ module ALU(clk, rst, clken, crom, aluIN,
    // Arithmetic Overflow (aluAOV)
    //
    // Details
-   //  Arithmetic overflow occurs when the sign is different
-   //  than the MSB
+   //  Arithmetic overflow occurs when the sign is different than
+   //  the MSB
    //
    // Trace
    //  DPE9/E26
@@ -735,15 +735,15 @@ module ALU(clk, rst, clken, crom, aluIN,
    //
    // Details
    //  This is the carry form ALU bit -2 (Verilog bit 0).
-   //  In the KS10, this signal comes from the carry skippers,
-   //  In the FPGA implementation, the 'co' signal comes
-   //  directly from the ALU serial carry from the MSB.
+   //  In the KS10, this signal comes from the carry skippers. In
+   //  the FPGA implementation, the 'co' signal comes directly from
+   //  the ALU serial carry from the MSB.
    //
-   //  Note that the CRY0 doesn't actually come from bit 0:
-   //  it comes from bit (-2) using KS10 numbering.  Because
-   //  the top two bits are sign extensions, they are equivalent.
-   //  A carry from bit 0 will cause a carry into bit (-1) and
-   //  a carry from bit (-1) will cause a carry into bit (-2).
+   //  Note that the CRY0 doesn't actually come from bit 0: it comes
+   //  from bit (-2) using KS10 numbering.  Because the top two bits
+   //  are sign extensions, they are equivalent.  A carry from bit 0
+   //  will cause a carry into bit (-1) and a carry from bit (-1)
+   //  will cause a carry into bit (-2).
    //
 
    assign aluCRY0 = co;
@@ -764,15 +764,14 @@ module ALU(clk, rst, clken, crom, aluIN,
    // aluCRY2:
    //
    // Details
-   //  This is the carry from ALU bit 2 into ALU bit 1.  In
-   //  Verilog numbering (see notes at top of file), this is a
-   //  carry from ALU bit 4 into ALU bit 3.   We don't really
-   //  have access to the carry from ALU bit 4, but we infer
-   //  it by recalculating the 4 MSBs with the carry cleared,
-   //  and checking to see if it yields the same results as
-   //  the full calculation.  If either the carry or the top
-   //  four bits are different, there must have been a
-   //  carry from ALU bit 2.
+   //  This is the carry from ALU bit 2 into ALU bit 1.  In Verilog
+   //  numbering (see notes at top of file), this is a carry from
+   //  ALU bit 4 into ALU bit 3.   We don't really have access to
+   //  the carry from ALU bit 4, but we infer it by recalculating
+   //  the 4 MSBs with the carry cleared, and checking to see if it
+   //  yields the same results as the full calculation.  If either
+   //  the carry or the top four bits are different, there must have
+   //  been a carry from ALU bit 2.
    //
 
    assign aluCRY2 = ((go != co) | (f[0:3] != g[0:3]));
@@ -781,10 +780,9 @@ module ALU(clk, rst, clken, crom, aluIN,
    // ALU Flag State Register
    //
    // Details
-   //  These registers store ALU state from one microinstruction
-   //  to the next.  This state facilates the implementation of
-   //  multi-word shifts as well as mutiplication and divide
-   //  operations.
+   //  These registers store ALU state from one microinstruction to
+   //  the next.  This state facilates the implementation of multi-
+   //  word shifts as well as mutiplication and divide operations.
    //
    // Trace
    //  DPE5/E28
@@ -823,8 +821,8 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  This logic contains special connections to the shifter that
    //  support multishift and divide operations.
    //
-   //  The special operations are controlled by the
-   //  `cromMULTIPREC and `cromDIVIDE microcode fields.
+   //  The special operations are controlled by the `cromMULTIPREC
+   //  and `cromDIVIDE microcode fields.
    //
    // Trace
    //  DPE5/E4
@@ -884,10 +882,10 @@ module ALU(clk, rst, clken, crom, aluIN,
    // QR37
    //
    // Details
-   //  This is what is shifted out of the LSB of the Q Register
-   //  and is used by the multiplication implementation.  I.e.,
-   //  it goes to the multiplication dispatch logic to control
-   //  whether to add (or not) the partial product.
+   //  This is what is shifted out of the LSB of the Q Register and
+   //  is used by the multiplication implementation.  I.e., it goes
+   //  to the multiplication dispatch logic to control whether to
+   //  add (or not) the partial product.
    //
    // Note
    //  This is actually QR39 using Verilog numbering.
@@ -899,8 +897,8 @@ module ALU(clk, rst, clken, crom, aluIN,
    // ALU Destination Selector
    //
    // Details
-   //  Select ALU output and truncate output bus from 40 bits
-   //  to 36 bits.
+   //  Select ALU output and truncate output bus from 40 bits to 36
+   //  bits.
    //
 
    assign aluOUT = (dest ==`cromDST_RAMA) ? ad[2:37] : f[2:37];

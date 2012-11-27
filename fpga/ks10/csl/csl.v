@@ -86,14 +86,14 @@ module CON(clk, clken,
    // Console Instruction Register (IO Address 200000)
    //
    // Details:
-   //  When the 'execute switch' is asserted at power-up the
-   //  KS10 microcode performs a IO read of the Console Instruction
+   //  When the 'execute switch' is asserted at power-up the KS10
+   //  microcode performs a IO read of the Console Instruction
    //  Register (cslIR) at IO address o200000 and then executes that
    //  instruction.  This mechanism allowed the Console set the
    //  address that the KS10 began execution.
    //
-   //  This is normally a JRST instruction which causes the
-   //  code to jump to the entry point of the code/bootloader.
+   //  This is normally a JRST instruction which causes the code to
+   //  jump to the entry point of the code/bootloader.
    //
 
    wire [0:35] cslIR = 36'o254000030624;

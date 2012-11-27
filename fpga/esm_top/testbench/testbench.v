@@ -53,10 +53,12 @@ module testbench;
    KS10 UUT
      (.clk      (clk),
       .reset    (reset),
+      .pwrFAIL  (1'b0),
+      .ssramCLK (ssramCLK),
       .ssramADDR(ssramADDR),
       .ssramDATA(ssramDATA),
       .ssramWR  (ssramWR),
-      .pwrFAIL  (1'b0),
+      .ssramADV (ssramADV),
       .swCONT   (swCONT),
       .swEXEC   (swEXEC),
       .swRUN    (swRUN),

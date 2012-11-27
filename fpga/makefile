@@ -8,7 +8,7 @@ ISE  := $(ISE)
 MEM  := $(RTL)/mem
 UBA  := $(RTL)/uba
 UC   := $(CPU)/useq
-LOAD := MAINDEC-10-DSKAA.txt
+LOAD := MAINDEC-10-DSKAM.txt
 
 SRC := \
 	$(UC)/crom.vh  \
@@ -49,13 +49,13 @@ SRC := \
 	$(CPU)/cpu.v \
 	$(CON)/cons.v \
 	$(MEM)/mem.v \
-	$(MEM)/mem.dat \
 	$(ARB)/arb.v \
 	$(UBA)/uba.v \
 	$(RTL)/rst.v \
 	$(RTL)/ks10.v \
 	$(RTL)/ks10.ucf \
 	$(RTL)/status.txt \
+	$(RTL)/ssram.dat \
 	$(RTL)/testbench.v
 
 BLD := \
@@ -72,8 +72,8 @@ $(UC)/crom.dat  : $(UC)/ks10.mcr $(UC)/crom.awk makefile
 $(UC)/drom.dat  : $(UC)/ks10.mcr $(UC)/drom.awk makefile
 	awk -f $(UC)/drom.awk $(UC)/ks10.mcr > $(UC)/drom.dat
 
-$(MEM)/mem.dat : $(MEM)/$(LOAD) $(MEM)/mem.awk makefile
-	awk -f $(MEM)/mem.awk -vfilename=$(LOAD) $(MEM)/$(LOAD) > $(MEM)/mem.dat
+$(RTL)/ssram.dat : $(RTL)/$(LOAD) $(RTL)/ssram.awk makefile
+	awk -f $(RTL)/ssram.awk -vfilename=$(LOAD) $(RTL)/$(LOAD) > $(RTL)/ssram.dat
 
 clean: 
 	rcsclean $(RTL)/*
@@ -84,7 +84,7 @@ clean:
 	rcsclean $(UBA)/*
 	rcsclean $(UC)/*
 	rm -f    $(UC)/*.dat
-	rm -f    $(MEM)/*.dat
+	rm -f    $(RTL)/*.dat
 	find . -type f -name "*~" | xargs rm -fv
 
 archive_src: $(SRC)

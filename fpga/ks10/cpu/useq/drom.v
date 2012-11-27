@@ -96,7 +96,7 @@ module DROM(clk, rst, clken, dbus, crom, drom);
    //  absorb a copy of the OPCODE portion of IR directly into Dispatch ROM
    //  addressing.
    //
-   //  Simply put: when we load the IR, we also syncrhronously lookup the 
+   //  Simply put: when we load the IR, we also synchronously lookup the 
    //  contents of the Dispatch ROM.
    //
    // Trace:
