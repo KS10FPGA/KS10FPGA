@@ -181,8 +181,10 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    // Arithmetic Overflow Flag (AOV)
    //
    // Details:
-   //  AOV is set on an ALU overflow. Arithmetic Overflow occurs
-   //   if CRY0 and CRY1 differ
+   //  AOV is set on an ALU overflow. Arithmetic Overflow occurs if
+   //   CRY0 and CRY1 differ.  A subsequent operation that does not
+   //  generate an ALU Overflow will not clear the AOV flag.
+   //   flag.
    //  AOV is set by SETAOV in microcode.
    //  AOV is cleared by JFCL 9.
    //  AOV is modified by dp.
@@ -210,8 +212,8 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
                begin
                   if (`cromSETOV)
                     flagAOV <= 1'b1;
-                  else if (`cromADFLAGS)
-                    flagAOV <= aluAOV;
+                  else if (`cromADFLAGS & aluAOV)
+                    flagAOV <= 1'b1;
                   else if (JFCL[9])
                     flagAOV <= 1'b0;
                   else if (`cromLDFLAGS)
@@ -224,7 +226,9 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    // Carry 0 Flag (CRY0)
    //
    // Details:
-   //  CRY 0 is set on an ALU carry 0.
+   //  CRY 0 is set on an ALU Carry 0.   A subsequent operation that
+   //   does not generate an ALU Carry 0 will not clear the CRY0
+   //   flag.
    //  CRY 0 is cleared by JFCL 10
    //  CRY 0 is modified by dp.
    //
@@ -240,8 +244,8 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
           flagCRY0 <= 1'b0;
         else if (clken & selPCFLAGS)
           begin
-             if (`cromADFLAGS)
-               flagCRY0 <= aluCRY0;
+             if (`cromADFLAGS & aluCRY0)
+               flagCRY0 <= 1'b1;
              else if (JFCL[10])
                flagCRY0 <= 1'b0;
              else if (`cromLDFLAGS)
@@ -253,7 +257,9 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    // Carry 1 Flag (CRY1)
    //
    // Details:
-   //  CRY 1 is set on an ALU carry 1.
+   //  CRY 1 is set on an ALU Carry 1.  A subsequent operation that
+   //   does not generate an ALU Carry 1 will not clear the CRY1
+   //   flag.
    //  CRY 1 is cleared by JFCL 11
    //  CRY 1 is modified by dp.
    //
@@ -269,8 +275,8 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
           flagCRY1 <= 1'b0;
         else if (clken & selPCFLAGS)
           begin
-             if (`cromADFLAGS)
-               flagCRY1 <= aluCRY1;
+             if (`cromADFLAGS & aluCRY1)
+               flagCRY1 <= 1'b1;
              else if (JFCL[11])
                flagCRY1 <= 1'b0;
              else if (`cromLDFLAGS)
@@ -282,7 +288,8 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    // Floating-point Overflow Flag (FOV)
    //
    // Details:
-   //  FOV is set on an Floating-point overflow
+   //  FOV is set on an Floating-point overflow.  A floatint-point
+   //   oerration that does not overflow will not clear the FOV flag.
    //  FOV is cleared by JFCL 12
    //  FOV is modified by dp.
    //
