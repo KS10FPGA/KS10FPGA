@@ -7,13 +7,54 @@
 //!
 //! \details
 //!
-//! \notes:
-//!      Important memory areas:
-//!        IO Addresses:
-//!          0200000 Console Instruction Register
-//!        Memory Addresses:
+//!      Console Instruction Register (Device 0, IO Address 0200000)
+//!
+//!      Console Status Register (Memory Addresss 0000031)
+//!
+//!                 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (LH)  |                             |CE|ME|TE|MM|           |
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!   
+//!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (RH)  |     |      Keep Alive       |           |BS|PF|FR|KF|
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!
+//!              MM - Maintenance Mode : 
+//!           
+//!      Console Input Register (Memory Addresss 0000032)
+//!
+//!                 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (LH)  |                                                     |
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!   
+//!                18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (RH)  |                          |P |    Character          |
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!
+//!              P  - Pending : When set indicates that a charactiver is
+//!                             available to the CTY
+//!
+//!      Console Output Register (Memory Addresss 0000033)
+//!
+//!                 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (LH)  |                                                     |
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!   
+//!                18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (RH)  |                          |P |    Character          |
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!
+//!              P  - Pending : When set indicates that a charactiver is
+//!                             available from the CTY
+//!
 //!          0000030 Halt Switch
-//!          0000031 Keep Alive
+//!          0000031 Console Status Word
 //!          0000032 Console Input
 //!          0000033 Console Output
 //!          0000034 Klinik Input
@@ -73,6 +114,12 @@ module CON(clk, clken,
    output [0:35] busDATAO; 	// Bus Data Out
 
    //
+   // Console is Device 0
+   //
+
+   wire [ 0: 3] ubaDEV      = 4'b0000;
+   
+   //
    // Memory Address and Flags
    //
    
@@ -80,6 +127,7 @@ module CON(clk, clken,
    wire         busWRITE    = busADDRI[ 5];
    wire         busPHYSICAL = busADDRI[ 8];
    wire         busIO       = busADDRI[10];
+   wire [14:17] busDEV      = busADDRI[14:17];
    wire [18:35] busADDR     = busADDRI[18:35];
    
    //
@@ -96,13 +144,26 @@ module CON(clk, clken,
    //  jump to the entry point of the code/bootloader.
    //
 
-   wire [0:35] cslIR = 36'o254000030624;
+// wire [0:35] cslIR = 36'o254000034531;
+   wire [0:35] cslIR = 36'o254000030600;
+   
+// wire [0:35] cslIR = 36'o254000030624;
 // wire [0:35] cslIR = 36'o254000030600;
 
    assign busREQO  = 1'b0;
-   assign busACKO  = busIO & busREAD & busPHYSICAL & (busADDR == 18'o200000);
+   assign busACKO  = busIO & busREAD & busPHYSICAL & (busDEV == ubaDEV) & (busADDR == 18'o200000);
    assign busDATAO = busACKO ? cslIR : 36'bx;
    assign busADDRO = 36'bx;
+
+   //
+   // Console UART Interface
+   //
+   
+
+   //
+   // Klinik UART Interface
+   //
+     
    
    //
    // Print the Halt Status Block

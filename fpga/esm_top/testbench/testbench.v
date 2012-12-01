@@ -5,11 +5,22 @@ module testbench;
    reg reset;
 
    //
+   // Console Serial Data
+   //
+
+   wire conTXD;
+   wire conRXD;
+   wire [0:3] RXD;
+   wire [0:3] TXD;
+
+   //
    // SSRAM
    //
 
    wire [0:22] ssramADDR;
    wire [0:35] ssramDATA;
+   wire        ssramCLK;
+   wire        ssramADV;
    wire        ssramWR;
    
    //
@@ -24,6 +35,7 @@ module testbench;
    // LED Outputs
    //
    
+   wire cpuEXEC;
    wire cpuHALT;
    wire cpuRUN;
 
@@ -53,6 +65,8 @@ module testbench;
    KS10 UUT
      (.clk      (clk),
       .reset    (reset),
+      .RXD      (RXD),
+      .TXD      (TXD),
       .pwrFAIL  (1'b0),
       .ssramCLK (ssramCLK),
       .ssramADDR(ssramADDR),
@@ -64,8 +78,9 @@ module testbench;
       .swRUN    (swRUN),
       .conRXD   (1'b1),
       .conTXD   (conTXD),
+      .cpuEXEC  (cpuEXEC),
       .cpuHALT  (cpuHALT),
-      .cpuRUN   (cpuRUN2)
+      .cpuRUN   (cpuRUN)
       );
 
    //

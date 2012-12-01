@@ -8,56 +8,51 @@
 //! \details
 //!      This module is simply a wrapper for the external memory.
 //!
-//!      Important IO addresses:
-//!          100000: Memory Status Register
-//!
-//!  Memory Status Register Details
-//!     See Page 5-69
+//!      Memory Status Register Write (IO addresses o100000)
 //!
 //!              0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//!            +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!      Write |EH|  |RE|PE|EE|                    |PF|              |                                                     |
-//!      (LH)  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!       (LH)  |EH|UE|RE|PE|                       |PF|              |
+//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!   
 //!             18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//!            +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!      Write |                             |       FCB          |ED|
-//!      (RH)  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!       (RH)  |                             |       FCB          |ED|
+//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!   
-//!   
-//!     EH  : Error Hold          - Writes ignored (not implemented).
-//!     RE  : Refresh Error       - Writes ignored (not implemented).
-//!     PE  : Parity Error        - Writes sets/clears bit 3,
-//!                                 otherwise not implemented.
-//!     PF  : Power Failure       - Writing zero clears bit 12,
-//!                                 otherwise not implemented.
-//!     FCB : Force Check Bits    - Write ignored (not implemented).
-//!     ED  : ECC Disable         - Writing zero sets bit 4,
-//!                                 Writing one clears bit 4,
-//!                                 otherwise not implemented.
-//!   
+//!      Memory Status Register Read (IO addresses o100000)
 //!   
 //!              0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//!            +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!       Read |EH|UE|RE|PE|EE|         ECP        |PF| 0|   ERA     |
-//!       (LH) +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!       (LH)  |EH|UE|RE|PE|EE|         ECP        |PF| 0|   ERA     |
+//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!   
-//!             18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//!            +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!      Write |                     ERA                             |
-//!      (RH)  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!              18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!       (RH)  |                     ERA                             |
+//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!
 //!   
-//!     EH  : Error Hold          - Always read as 0 (not implemented).
-//!     UE  : Uncorrectable Error - Always read as 0 (not implemented).
-//!     RE  : Refresh Error       - Always read as 0 (not implemented).
-//!     PE  : Parity Error        - Reads back value set by write to bit 3.
-//!     EE  : ECC Enable          - Reads back inverse value set by
-//!                                 write to bit 35.
-//!     ECP : Error Cor  Parity   - Always read as zero. (not implemented).
-//!     PF  : Power Failure       - Initialized to 1 at power-up
-//!                               - Cleared by writing 0 to bit 12
-//!     ERA : Error Read Address  - Always read as 0 (not implemented).
-//!   
+//!             EH  : Error Hold          - Always read as 0.  Writes
+//!                                         ignored.
+//!             UE  : Uncorrectable Error - Always read as 0.  Writes
+//!                                         ignored.
+//!             RE  : Refresh Error       - Always read as 0.  Writes
+//!                                         ignored.
+//!             PE  : Parity Error        - Read/Writes PE bit.
+//!             EE  : ECC Enable          - Reads back inverse value set
+//!                                         by write to bit ED bit.
+//!                                         Writes ignored. See ED bit
+//!                                         below.
+//!             PF  : Power Failure       - Initialized to 1 at power-up,
+//!                                         Writing zero clears PF.
+//!             ED  : ECC Disable         - Always read as 0.
+//!                                         Writing zero sets EE bit,
+//!                                         Writing one clears EE bit.
+//!             FCB : Force Check Bits    - Always read as 0.  Writes
+//!                                         ignored.
+//!             ERA : Error Read Address  - Always read as 0.  Writes
+//!                                         ignored.
 //! \todo
 //!
 //! \file
@@ -95,11 +90,12 @@
 // Comments are formatted for doxygen
 //
 
-module MEM(clk, clken,
+module MEM(clk, rst, clken,
            busREQI, busACKO, busADDRI, busDATAI, busDATAO,
            ssramCLK, ssramADDR, ssramDATA, ssramADV, ssramWR);
 
    input         clk;           // Clock
+   input         rst;           // Reset
    input         clken;         // Clock enable
    input         busREQI;       // Memory Request In
    output        busACKO;       // Memory Acknowledge Out
@@ -111,7 +107,13 @@ module MEM(clk, clken,
    inout  [0:35] ssramDATA;     // SSRAM Data Bus
    output        ssramADV;      // SSRAM Advance (burst)
    output        ssramWR;       // SSRAM Write
+   
+   //
+   // Memory Status is Device 0
+   //
 
+   wire [ 0: 3] ubaDEV   = 4'b0000;
+ 
    //
    // Memory flags
    //
@@ -123,46 +125,71 @@ module MEM(clk, clken,
    wire         busREAD  = busADDRI[ 3];
    wire         busWRITE = busADDRI[ 5];
    wire         busIO    = busADDRI[10];
+   wire [ 0: 3] busDEV   = busADDRI[14:17];
    wire [16:35] busADDR  = busADDRI[16:35];
-
-   //
-   // SSRAM Interface
-   //
-   // FIXME:
-   //  Right now this is not setup for SSRAM.
-   //
-
-   assign ssramCLK  = clk;
-   assign ssramADV  = 1'b0;
-   assign ssramWR   = busWRITE & ~busIO;
-   assign ssramADDR = {3'b0, busADDR[16:35]};
-   assign ssramDATA = (ssramWR) ? busDATAI : 36'bz;
 
    //
    // Memory Status Register (IO Address 100000)
    //
    // Details
+   //  Only the PE, EE, and PF change... and they are not really
+   //  implemented.
    //
    // FIXME:
-   //  Right now, only 32K of memory is implemented.
-   //  Memory Status Register is not implemented and I'm not sure
-   //  if it needs to be implmented.  For now it will whine if
-   //  accessed.
+   //  SIMH igores writes to this register and reads zeros
+   //  always
    //
+   
+   reg statPE;          // Parity Error
+   reg statEE;          // ECC Enabled
+   reg statPF;          // Power Failure
+   
+   always @(negedge clk or posedge rst)
+     begin
+        if (rst)
+          begin
+             statPE <= 1'b0;
+             statEE <= 1'b1;
+             statPF <= 1'b1;
+          end
+        else if (clken)
+          begin
+             if (busIO & busWRITE  & (busDEV[0:3] == ubaDEV) & (busADDR == 18'o100000))
+               begin
+                  statPE <=  busDATAI[ 3];
+                  statPF <=  busDATAI[12] & statPF;
+                  statEE <= ~busDATAI[35];
+               end
+          end
+     end
 
+   wire statREG = {3'b0, statPE, statEE, 7'b0, statPF, 23'b0};
+   
+   //
+   // Bus Multiplexer
+   //
+   // Details
+   //  This selects between SSRAM and the Memory Status Register.
+   //
+   // FIXME
+   //  Only 32K of memory is implemented.
+   //
+ 
    reg busACKO;
    reg [0:35] busDATAO;
    
-   always @(busIO or busADDR or busREAD or busWRITE or ssramDATA)
+   always @(busIO or busADDR or busREAD or busWRITE or ssramDATA or statREG)
      begin
         if (busIO & (busADDR == 18'o100000))
           begin
              busACKO  <= 1'b1;
-             busDATAO <= ssramDATA;
+             busDATAO <= statREG;
+// synthesis translate_off
              if (busREAD)
                $display("Memory Status Register Read.\n");
              else if (busWRITE)
                $display("Memory Status Register Written.\n");
+// synthesis translate_on
           end
         else if (~busIO & (busADDR < 32768))
           begin
@@ -175,5 +202,18 @@ module MEM(clk, clken,
              busDATAO <= ssramDATA;
           end
      end
+
+   //
+   // SSRAM Interface
+   //
+   // FIXME:
+   //  This is not setup for SSRAM.
+   //
+
+   assign ssramCLK  = clk;
+   assign ssramADV  = 1'b0;
+   assign ssramWR   = busWRITE & ~busIO;
+   assign ssramADDR = {3'b0, busADDR[16:35]};
+   assign ssramDATA = (ssramWR) ? busDATAI : 36'bz;
 
 endmodule
