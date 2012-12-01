@@ -84,6 +84,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 
 module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
@@ -183,8 +184,7 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    // Details:
    //  AOV is set on an ALU overflow. Arithmetic Overflow occurs if
    //   CRY0 and CRY1 differ.  A subsequent operation that does not
-   //  generate an ALU Overflow will not clear the AOV flag.
-   //   flag.
+   //   generate an ALU Overflow will not clear the AOV flag.
    //  AOV is set by SETAOV in microcode.
    //  AOV is cleared by JFCL 9.
    //  AOV is modified by dp.

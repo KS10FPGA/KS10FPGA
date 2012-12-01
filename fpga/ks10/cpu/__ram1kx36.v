@@ -46,6 +46,8 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
+
 module RAM1Kx36(clk, clken, wr, addr, din, dout);
 
    input         clk;           // Clock

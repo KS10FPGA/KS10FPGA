@@ -44,6 +44,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 
 module DBUS(crom, cacheHIT, vmaADDR, vmaFLAGS, pcFLAGS, dp,
@@ -139,4 +140,5 @@ module DBUS(crom, cacheHIT, vmaADDR, vmaFLAGS, pcFLAGS, dp,
               dbus = dbm;
         endcase
      end
+
 endmodule

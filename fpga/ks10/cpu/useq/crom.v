@@ -59,6 +59,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "crom.vh"
 
 module CROM(clk, rst, clken, addr, crom);

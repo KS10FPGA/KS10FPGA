@@ -44,6 +44,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 
 module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprINTR);

@@ -43,6 +43,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 
 module TRAPS(clk, rst, clken, crom, pcFLAGS, aprFLAGS, consTRAPEN, trapCYCLE);

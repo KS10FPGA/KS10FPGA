@@ -46,6 +46,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 
 module INTF(clk, rst, clken, crom,

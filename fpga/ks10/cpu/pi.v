@@ -48,10 +48,11 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 
 module INTR(clk, rst, clken, crom, dp, flagINTREQ,
-            ubaINTR, aprINTR, newINTR_NUM, curINTR_NUM, cpuINTR);
+            busINTR, aprINTR, newINTR_NUM, curINTR_NUM, cpuINTR);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -62,7 +63,7 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
    input  [0:35]          dp;           // Data path
    input                  flagINTREQ;   // Interrupt Request
    input  [1: 7]          aprINTR;      // Arithmetic Processor request
-   input  [1: 7]          ubaINTR;      // Unibus request
+   input  [1: 7]          busINTR;      // Unibus request
    output [0: 2]          newINTR_NUM;  // New Prioity Interrupt number
    output [0: 2]          curINTR_NUM;  // Current Prioity Interrupt number
    output                 cpuINTR;      // Interrupt Request
@@ -126,7 +127,7 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
    //  DPEB/E161
    //
 
-   wire [1:7] newINTR = ((ubaINTR[1:7] | aprINTR[1:7]) & actINTR[1:7]) | swINTR[1:7];
+   wire [1:7] newINTR = ((busINTR[1:7] | aprINTR[1:7]) & actINTR[1:7]) | swINTR[1:7];
 
    //
    // New Interrupt Priority

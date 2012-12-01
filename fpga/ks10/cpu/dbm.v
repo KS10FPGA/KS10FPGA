@@ -46,6 +46,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 
 module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaFLAGS,

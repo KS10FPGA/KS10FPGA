@@ -44,6 +44,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 
 module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, JRST0);

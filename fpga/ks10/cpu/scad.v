@@ -44,6 +44,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 
 module SCAD(clk, rst, clken, crom, dp, feSIGN, scSIGN, scad, dispSCAD);

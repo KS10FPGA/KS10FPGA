@@ -58,6 +58,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "crom.vh"
 `include "drom.vh"
 

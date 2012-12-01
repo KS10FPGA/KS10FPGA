@@ -67,6 +67,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 
 module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);

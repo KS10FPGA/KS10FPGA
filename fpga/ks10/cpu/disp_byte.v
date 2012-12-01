@@ -48,6 +48,8 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
+
 module BYTE_DISP(dp, dispBYTE);
 
    input      [0:35] dp;                // Data path

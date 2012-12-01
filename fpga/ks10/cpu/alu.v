@@ -60,6 +60,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 
 module ALU(clk, rst, clken, crom, aluIN,
@@ -471,14 +472,10 @@ module ALU(clk, rst, clken, crom, aluIN,
             endcase
           `cromDST_QREG:
             qi <= f;
-          `cromDST_NOP:
-            qi <= q;
-          `cromDST_RAMA:
-            qi <= q;
-          `cromDST_RAMF:
-            qi <= q;
-          `cromDST_RAMD:
-            qi <= q;
+          `cromDST_NOP,
+          `cromDST_RAMA,
+          `cromDST_RAMF,
+          `cromDST_RAMD,
           `cromDST_RAMU:
             qi <= q;
         endcase
@@ -518,20 +515,15 @@ module ALU(clk, rst, clken, crom, aluIN,
    always @(ad or dd or lsrc)
      begin
         case (lsrc)
-          `cromSRC_AQ:
-            r[0:19] = ad[0:19];
+          `cromSRC_AQ,
           `cromSRC_AB:
             r[0:19] = ad[0:19];
-          `cromSRC_ZQ:
-            r[0:19] = 20'b0;
-          `cromSRC_ZB:
-            r[0:19] = 20'b0;
+          `cromSRC_ZQ,
+          `cromSRC_ZB,
           `cromSRC_ZA:
             r[0:19] = 20'b0;
-          `cromSRC_DA:
-            r[0:19] = dd[0:19];
-          `cromSRC_DQ:
-            r[0:19] = dd[0:19];
+          `cromSRC_DA,
+          `cromSRC_DQ,
           `cromSRC_DZ:
             r[0:19] = dd[0:19];
         endcase
@@ -548,20 +540,15 @@ module ALU(clk, rst, clken, crom, aluIN,
    always @(ad or dd or rsrc)
      begin
         case (rsrc)
-          `cromSRC_AQ:
-            r[20:39] = ad[20:39];
+          `cromSRC_AQ,
           `cromSRC_AB:
             r[20:39] = ad[20:39];
-          `cromSRC_ZQ:
-            r[20:39] = 20'b0;
-          `cromSRC_ZB:
-            r[20:39] = 20'b0;
+          `cromSRC_ZQ,
+          `cromSRC_ZB,
           `cromSRC_ZA:
             r[20:39] = 20'b0;
-          `cromSRC_DA:
-            r[20:39] = dd[20:39];
-          `cromSRC_DQ:
-            r[20:39] = dd[20:39];
+          `cromSRC_DA,
+          `cromSRC_DQ,
           `cromSRC_DZ:
             r[20:39] = dd[20:39];
         endcase
@@ -579,18 +566,14 @@ module ALU(clk, rst, clken, crom, aluIN,
    always @(ad or bd or q or lsrc)
      begin
         case (lsrc)
-          `cromSRC_AQ:
-            s[0:19] = q[0:19];
-          `cromSRC_ZQ:
-            s[0:19] = q[0:19];
+          `cromSRC_AQ,
+          `cromSRC_ZQ,
           `cromSRC_DQ:
             s[0:19] = q[0:19];
-          `cromSRC_AB:
-            s[0:19] = bd[0:19];
+          `cromSRC_AB,
           `cromSRC_ZB:
             s[0:19] = bd[0:19];
-          `cromSRC_ZA:
-            s[0:19] = ad[0:19];
+          `cromSRC_ZA,
           `cromSRC_DA:
             s[0:19] = ad[0:19];
           `cromSRC_DZ:
@@ -609,18 +592,14 @@ module ALU(clk, rst, clken, crom, aluIN,
    always @(ad or bd or q or rsrc)
      begin
         case (rsrc)
-          `cromSRC_AQ:
-            s[20:39] = q[20:39];
-          `cromSRC_ZQ:
-            s[20:39] = q[20:39];
+          `cromSRC_AQ,
+          `cromSRC_ZQ,
           `cromSRC_DQ:
             s[20:39] = q[20:39];
-          `cromSRC_AB:
-            s[20:39] = bd[20:39];
+          `cromSRC_AB,
           `cromSRC_ZB:
             s[20:39] = bd[20:39];
-          `cromSRC_ZA:
-            s[20:39] = ad[20:39];
+          `cromSRC_ZA,
           `cromSRC_DA:
             s[20:39] = ad[20:39];
           `cromSRC_DZ:

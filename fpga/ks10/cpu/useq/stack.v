@@ -56,6 +56,7 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "crom.vh"
 
 module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);

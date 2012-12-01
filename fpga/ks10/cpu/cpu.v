@@ -44,14 +44,15 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
 module CPU(clk, rst,
            consTIMEREN, consSTEP, consRUN, consEXEC, consCONT, consHALT, consTRAPEN, consCACHEEN,
-           pwrINTR, consINTR, ubaINTR, curINTR_NUM,
+           pwrINTR, consINTR, busINTR, curINTR_NUM,
            busREQ, busACK, busDATAI, busDATAO, busADDRO,
-           cpuHALT, cpuRUN);
+           cpuEXEC, cpuHALT, cpuRUN);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -68,13 +69,14 @@ module CPU(clk, rst,
    input          consCACHEEN;  // Enable Cache
    input          pwrINTR;      // Power Fail Interrupt Request
    input          consINTR;     // Console Interrupt Request
-   input  [ 1: 7] ubaINTR;      // Unibus Interrupt Request
+   input  [ 1: 7] busINTR;      // Unibus Interrupt Request
    output [ 0: 2] curINTR_NUM;  // Current Interrupt Priority
    output         busREQ;       // Bus Request
    input          busACK;       // Bus Acknowledge
    input  [ 0:35] busDATAI;     // Bus Data Input
    output [ 0:35] busDATAO;     // Bus Data Output
    output [ 0:35] busADDRO;     // Bus Addr and Flags
+   output         cpuEXEC;      // 
    output         cpuHALT;      //
    output         cpuRUN;       //
 
@@ -93,6 +95,7 @@ module CPU(clk, rst,
    wire aluRZERO;                                       // ALU right-half is zero
    wire aluLSIGN;                                       // ALU left-half sign
    wire aluRSIGN;                                       // ALU right-half sign
+   wire aluAOV;                                         // ALU arithmetic overflow
    wire aluCRY0;                                        // ALU carry into bit 0
    wire aluCRY1;                                        // ALU carry into bit 1
    wire aluCRY2;                                        // ALU carry into bit 2
@@ -167,7 +170,7 @@ module CPU(clk, rst,
 
    wire [14:35] vmaADDR;                                // VMA Address
    wire [ 0:13] vmaFLAGS;                               // VMA Flags
-   wire         vmaUSER        = vmaFLAGS[ 0];          //  1 = Use Mode
+   wire         vmaUSER        = vmaFLAGS[ 0];          //  1 = User Mode
    wire         vmaEXEC        = vmaFLAGS[ 1];          //  1 = Exec Mode
    wire         vmaFETCH       = vmaFLAGS[ 2];          //  1 = Instruction fetch
    wire         vmaREADCYCLE   = vmaFLAGS[ 3];          //  1 = Read Cycle (IO or Memory)
@@ -181,7 +184,8 @@ module CPU(clk, rst,
    wire         vmaWRUCYCLE    = vmaFLAGS[11];          //  1 = Read interrupt controller number
    wire         vmaVECTORCYCLE = vmaFLAGS[12];          //  1 = Read interrupt vector
    wire         vmaIOBYTECYCLE = vmaFLAGS[13];          //  1 = Unibus Byte IO Operation
-
+   wire         vmaEXTENDED;                            //  Extended VMA
+   
    //
    // Paging
    //
@@ -242,8 +246,8 @@ module CPU(clk, rst,
 
    wire [ 0: 9] scad;
    wire         scadSIGN = scad[0];                     // SCAD Sign
-   wire         scSIGN;                         	// Step Count Sign
-   wire         feSIGN;                         	// Floating-point exponent Sign
+   wire         scSIGN;                                 // Step Count Sign
+   wire         feSIGN;                                 // Floating-point exponent Sign
 
    //
    // Dispatches
@@ -281,8 +285,8 @@ module CPU(clk, rst,
    // Timing
    //
 
-   wire clkenDP;					// Clock Enable for Datapaths
-   wire clkenCR;					// Clock Enable for Control ROM
+   wire clkenDP;                                        // Clock Enable for Datapaths
+   wire clkenCR;                                        // Clock Enable for Control ROM
 
    TIMING uTIMING
      (.clk(clk),
@@ -449,7 +453,7 @@ module CPU(clk, rst,
       .dp(dp),
       .flagINTREQ(flagINTREQ),
       .aprINTR(aprINTR),
-      .ubaINTR(ubaINTR),
+      .busINTR(busINTR),
       .newINTR_NUM(newINTR_NUM),
       .curINTR_NUM(curINTR_NUM),
       .cpuINTR(cpuINTR)
@@ -690,7 +694,6 @@ module CPU(clk, rst,
       .cpuEXEC(cpuEXEC),
       .prevEN(prevEN),
       .pcFLAGS(pcFLAGS),
-      .vmaSWEEP(vmaSWEEP),
       .vmaEXTENDED(vmaEXTENDED),
       .vmaFLAGS(vmaFLAGS),
       .vmaADDR(vmaADDR)

@@ -44,36 +44,36 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
 module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
-           vmaSWEEP, vmaEXTENDED, vmaFLAGS, vmaADDR);
+           vmaEXTENDED, vmaFLAGS, vmaADDR);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
 
-   input                       clk;          	// Clock
-   input                       rst;          	// Reset
-   input                       clken;        	// Clock Enable
-   input      [ 0:cromWidth-1] crom;         	// Control ROM Data
-   input      [ 0:dromWidth-1] drom;         	// Dispatch ROM Data
-   input      [ 0:35]          dp;           	// Data path
-   input                       cpuEXEC;      	// Execute
-   input                       prevEN;       	// Previous Enable
-   input      [ 0:17]          pcFLAGS;      	// PC Flags
-   output reg                  vmaSWEEP;     	// VMA Sweep
-   output reg                  vmaEXTENDED;  	// VMA Extended
-   output     [ 0:13]          vmaFLAGS;     	// VMA Flags
-   output reg [14:35]          vmaADDR;		// Virtual Memory Address
+   input                   clk;         // Clock
+   input                   rst;         // Reset
+   input                   clken;       // Clock Enable
+   input  [ 0:cromWidth-1] crom;        // Control ROM Data
+   input  [ 0:dromWidth-1] drom;        // Dispatch ROM Data
+   input  [ 0:35]          dp;          // Data path
+   input                   cpuEXEC;     // Execute
+   input                   prevEN;      // Previous Enable
+   input  [ 0:17]          pcFLAGS;     // PC Flags
+   output                  vmaEXTENDED; // VMA Extended
+   output [ 0:13]          vmaFLAGS;    // VMA Flags
+   output [14:35]          vmaADDR;     // Virtual Memory Address
 
    //
    // PC Flags
    //
-   
-   wire flagUSER = pcFLAGS[5];      		// User
-   wire flagPCU  = pcFLAGS[6];      		// Previous Context User
-   
+
+   wire flagUSER = pcFLAGS[5];          // User
+   wire flagPCU  = pcFLAGS[6];          // Previous Context User
+
    //
    // Microcode Decode
    //
@@ -111,6 +111,8 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
    //  DPM4/E183
    //
 
+   reg [14:35] vmaADDR;
+   reg vmaEXTENDED;
    reg vmaUSER;
    reg vmaFETCH;
    reg vmaPHYSICAL;
@@ -129,7 +131,6 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
         if (rst)
           begin
              vmaADDR        <= 22'b0;
-             vmaSWEEP       <=  1'b0;
              vmaEXTENDED    <=  1'b0;
              vmaUSER        <=  1'b0;
              vmaFETCH       <=  1'b0;
@@ -143,7 +144,6 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
         else if (clken & vmaEN)
           begin
              vmaADDR     <= dp[14:35];
-             vmaSWEEP    <= cacheSWEEP;
              vmaEXTENDED <= `cromMEM_EXTADDR;
              if (`cromMEM_DPFUNC)
                begin
@@ -160,8 +160,8 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
                begin
                   vmaUSER        <= ((~`cromMEM_FORCEEXEC & flagUSER & ~cpuEXEC) |
                                      (`cromMEM_FETCHCYCLE & flagUSER           ) |
-                                     (prevEN      & flagPCU) |
-                                     (selPREVIOUS & flagPCU) |
+                                     (prevEN              & flagPCU            ) |
+                                     (selPREVIOUS         & flagPCU            ) |
                                      (`cromMEM_FORCEUSER));
                   vmaFETCH       <= `cromMEM_FETCHCYCLE;
                   vmaPHYSICAL    <= `cromMEM_PHYSICAL;
@@ -193,7 +193,7 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
    reg vmaWRITECYCLE;
    reg vmaCACHEINH;
 
-   wire memEN = ((`cromMEM_CYCLE  & `cromMEM_WAIT ) |
+   wire memEN = ((`cromMEM_CYCLE  & `cromMEM_WAIT                   ) |
                  (`cromMEM_CYCLE  & `cromMEM_BWRITE & `dromCOND_FUNC));
 
    always @(posedge clk or posedge rst)
@@ -208,11 +208,11 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
         else if (clken & memEN)
           begin
              if (`cromMEM_AREAD)
-	       begin
-		  vmaREADCYCLE   <= `dromREADCYCLE;
-		  vmaWRTESTCYCLE <= `dromWRTESTCYCLE;
-		  vmaWRITECYCLE  <= `dromWRITECYCLE;
-		  vmaCACHEINH    <= 1'b0;
+               begin
+                  vmaREADCYCLE   <= `dromREADCYCLE;
+                  vmaWRTESTCYCLE <= `dromWRTESTCYCLE;
+                  vmaWRITECYCLE  <= `dromWRITECYCLE;
+                  vmaCACHEINH    <= 1'b0;
                end
              else
                if (`cromMEM_DPFUNC)

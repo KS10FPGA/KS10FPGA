@@ -45,6 +45,8 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
+
 module NI_DISP (aprFLAGS, pcFLAGS, consTRAPEN, cpuRUN, memory_cycle, dispNI);
 
    input  [ 0:17] pcFLAGS;              // PC Flags
