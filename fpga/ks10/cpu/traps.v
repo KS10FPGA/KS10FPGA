@@ -46,7 +46,7 @@
 `default_nettype none
 `include "useq/crom.vh"
 
-module TRAPS(clk, rst, clken, crom, pcFLAGS, aprFLAGS, consTRAPEN, trapCYCLE);
+module TRAPS(clk, rst, clken, crom, pcFLAGS, aprFLAGS, cslTRAPEN, trapCYCLE);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -56,7 +56,7 @@ module TRAPS(clk, rst, clken, crom, pcFLAGS, aprFLAGS, consTRAPEN, trapCYCLE);
    input [ 0:cromWidth-1] crom;         // Control ROM Data
    input [ 0:17]          pcFLAGS;      // PC Flags
    input [22:35]          aprFLAGS;     // APR Flags
-   input                  consTRAPEN;   // Console Trap Enable
+   input                  cslTRAPEN;    // Console Trap Enable
    output reg             trapCYCLE;    // Trap Cycle
 
    //
@@ -84,8 +84,8 @@ module TRAPS(clk, rst, clken, crom, pcFLAGS, aprFLAGS, consTRAPEN, trapCYCLE);
    //
 
    wire specNICOND = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADNICOND);
-   wire trapEN     = ((consTRAPEN & flagTRAPEN & flagTRAP2) |
-                      (consTRAPEN & flagTRAPEN & flagTRAP1));
+   wire trapEN     = ((cslTRAPEN & flagTRAPEN & flagTRAP2) |
+                      (cslTRAPEN & flagTRAPEN & flagTRAP1));
 
    always @(posedge clk or posedge rst)
      begin

@@ -9,7 +9,7 @@
 //!     The page table translates virtual addresses/page numbers to
 //!     phyical addresses/page numbers.  There are 512 virtual pages
 //!     which map to 2048 pages.
-//!   
+//!
 //!          18                26 27                    35
 //!         +--------------------+------------------------+
 //!         |Virtual Page Number |        Word Number     |
@@ -30,13 +30,13 @@
 //!      16                    26 27                    35
 //!
 //!
-//! \note   
+//! \note
 //!     The Page Tables use asynchronous memory which won't work
 //!     in an FPGA.  Since the Page Table is addressed by the VMA
 //!     register and the VMA register is loaded synchronously, we
 //!     can absorb the VMA register into the Page Table Memory
 //!     addressing.
-//!   
+//!
 //! \file
 //!      page_table.v
 //!
@@ -77,50 +77,50 @@
 `include "useq/drom.vh"
 
 module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
-		   pageFLAGS, pageADDR);
+                   pageFLAGS, pageADDR);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
-   
-   input 		   clk;        		// Clock
-   input 		   rst;         	// Reset
-   input 	 	   clken;       	// Clock Enable
-   input  [ 0:cromWidth-1] crom;		// Control ROM Data
-   input  [ 0:dromWidth-1] drom;		// Dispatch ROM Data
-   input  [ 0:35]          dp;          	// Data path
-   input  [0 :13]          vmaFLAGS;		//
-   input  [14:35]          vmaADDR;		// Virtural address
-   output [ 0: 4]          pageFLAGS;		// Page Flags
-   output [16:26]          pageADDR;		// Page Address
+
+   input                   clk;                 // Clock
+   input                   rst;                 // Reset
+   input                   clken;               // Clock Enable
+   input  [ 0:cromWidth-1] crom;                // Control ROM Data
+   input  [ 0:dromWidth-1] drom;                // Dispatch ROM Data
+   input  [ 0:35]          dp;                  // Data path
+   input  [0 :13]          vmaFLAGS;            //
+   input  [14:35]          vmaADDR;             // Virtural address
+   output [ 0: 4]          pageFLAGS;           // Page Flags
+   output [16:26]          pageADDR;            // Page Address
 
    //
    // vmaFLAGS
-   // 
+   //
 
    wire vmaUSER = vmaFLAGS[0];
-   
+
    //
    // VMA Logic
    //  DPE5/E76
    //  DPE6/E53
    //
-   
+
    wire sweep     = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE );
    wire pageWRITE = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
-   wire vmaEN     = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) | 
+   wire vmaEN     = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) |
                      (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA));
-   
+
    wire [0: 8] virtPAGE = vmaADDR[18:26];
    wire [0:15] din = {dp[18], dp[21:22], vmaUSER, 1'b0, dp[25:35]};
- 
+
    //
    // Page memory
    //
    // Notes
-   //  This has been converted to synchronous memory.  
+   //  This has been converted to synchronous memory.
    //  The page table address is set when the vma address is set
    //
-   //  The page table is interleaved with add and even memories
+   //  The page table is interleaved with odd and even memories
    //  so that the memory can be swept two entries at a time.
    //
    //  Page parity is not implemented.
@@ -137,11 +137,11 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    //   DPM6/E176
    //   DPM6/E192
    //
-   
+
    reg  [0: 8] readADDR;
    reg  [0:15] pageTABLE1[0:255];
    reg  [0:15] pageTABLE2[0:255];
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -151,25 +151,25 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
              readADDR <= virtPAGE;
              if (pageWRITE)
                begin
-                  if (~virtPAGE[0] | sweep) 
+                  if (~virtPAGE[0] | sweep)
                     pageTABLE1[virtPAGE[1:8]] <= din;
                   if ( virtPAGE[0] | sweep)
                     pageTABLE2[virtPAGE[1:8]] <= din;
                end
           end
      end
-   
+
    //
    // Page Table Read
    //
-   
+
    wire [0:15] dout = (readADDR[0]) ? pageTABLE2[readADDR[1:8]] : pageTABLE1[readADDR[1:8]];
 
    //
    // Fixup Page RAM data
    //
-               
+
    assign pageFLAGS = dout[0: 4];
    assign pageADDR  = dout[5:15];
-   
+
 endmodule

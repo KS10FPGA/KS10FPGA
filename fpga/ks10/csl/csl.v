@@ -9,6 +9,29 @@
 //!
 //!      Console Instruction Register (Device 0, IO Address 0200000)
 //!
+//!      Status register:
+//!
+//!                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (LH)  |                                            |SR|SS|SE| 
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!   
+//!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (RH)  |SC|SH|              |TE|RE|CE|                 |KI|KR|
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!
+//!              SR : Run Switch
+//!              SS : Single Step Switch
+//!              SE : Execute Switch
+//!              SC : Continue Switch
+//!              SH : Halt Switch
+//!              TE : Timer Enable
+//!              RE : Trap Enable
+//!              CE : Cache Enable
+//!              KI : KS10 Interrupt
+//!              KR : KS10 Reset
+//!
 //!      Console Status Register (Memory Addresss 0000031)
 //!
 //!                 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
@@ -64,7 +87,7 @@
 //!          0000040 Magtape Params
 //!
 //! \file
-//!      con.v
+//!      csl.v
 //!
 //! \author
 //!      Rob Doyle - doyle (at) cox (dot) net
@@ -98,27 +121,47 @@
 // Comments are formatted for doxygen
 //
 
-module CON(clk, clken,
+module CSL(clk, reset,
+           cslALE, cslAD, cslRD_N, cslWR_N,
            busREQI,  busREQO,  busACKI,  busACKO,
-           busADDRI, busADDRO, busDATAI, busDATAO);
+           busADDRI, busADDRO, busDATAI, busDATAO,
+           cpuHALT,
+           cslSTEP, cslRUN, cslEXEC, cslCONT, cslHALT,
+           cslTIMEREN, cslTRAPEN, cslCACHEEN,
+           ks10INTR, ks10RESET
+           );
 
-   input         clk;      	// Clock
-   input         clken;         // Clock enable
-   input         busREQI;	// Bus Request In
-   output        busREQO;	// Bus Request Out
-   input         busACKI;	// Bus Acknowledge In
-   output        busACKO;	// Bus Acknowledge Out
+   input         clk;           // Clock
+   input         reset;         // Reset
+   input         cslALE;        // Address Latch Enable
+   inout  [7: 0] cslAD;         // Multiplexed Address/Data Bus
+   input         cslRD_N;       // Read Strobe
+   input         cslWR_N;       // Write Strobe
+   input         busREQI;       // Bus Request In
+   output        busREQO;       // Bus Request Out
+   input         busACKI;       // Bus Acknowledge In
+   output        busACKO;       // Bus Acknowledge Out
    input  [0:35] busADDRI;      // Bus Address In
    output [0:35] busADDRO;      // Bus Address Out
    input  [0:35] busDATAI;      // Bus Data In
-   output [0:35] busDATAO; 	// Bus Data Out
+   output [0:35] busDATAO;      // Bus Data Out
+   input         cpuHALT;       // CPU Halt Status
+   output        cslSTEP;       // Step Switch
+   output        cslRUN;        // Run Switch
+   output        cslEXEC;       // Execute Switch
+   output        cslCONT;       // Continue Switch
+   output        cslHALT;       // Halt switch
+   output        cslTIMEREN;    // Timer Enable
+   output        cslTRAPEN;     // Trap Enable
+   output        cslCACHEEN;    // Cache Enable
+   output        ks10INTR;      // KS10 Interrupt
+   output        ks10RESET;     // KS10 Reset
 
    //
    // Console is Device 0
    //
-
-   wire [ 0: 3] ubaDEV      = 4'b0000;
    
+   wire [ 0: 3] ubaDEV      = 4'b0000;
    //
    // Memory Address and Flags
    //
@@ -129,6 +172,168 @@ module CON(clk, clken,
    wire         busIO       = busADDRI[10];
    wire [14:17] busDEV      = busADDRI[14:17];
    wire [18:35] busADDR     = busADDRI[18:35];
+
+   //
+   // Synchronize Write signal to Console Processor
+   //
+
+   reg wr;
+   reg cslWR;
+   
+   always @(posedge clk or posedge reset)
+     begin
+        if (reset)
+          begin
+             wr    <= 1'b0;
+             cslWR <= 1'b0;
+          end
+        else
+          begin
+             wr    <= ~cslWR_N;
+             cslWR <= wr;
+          end
+     end
+   
+   //
+   // Console Bus Address Latch
+   //
+
+   reg [0:7] cslADDR;
+   always @(posedge cslALE)
+     begin
+        cslADDR <= cslAD;
+     end
+   
+   //
+   // Write Decoder
+   //
+   
+   reg [0:35] regIR;
+   reg [0:35] regDATA;
+   reg [0:35] regSTAT;
+   reg [0:35] regADDR;
+
+   always @(posedge clk or posedge reset)
+     begin
+        if (reset)
+          begin
+//           regIR   <= 36'b0;
+             regIR   <= 36'o254000030600;
+//           regIR   <= 36'o254000030624;
+             regDATA <= 36'b0;
+             regSTAT <= 36'b0;
+             regADDR <= 36'b0;
+          end
+        else
+          if (cslWR)
+            case (cslADDR)
+            
+              //
+              // Address Register
+              //
+            
+              8'h03 : regADDR[ 0: 3] <= cslAD[3:0];
+              8'h04 : regADDR[ 4:11] <= cslAD[7:0];
+              8'h05 : regADDR[12:19] <= cslAD[7:0];
+              8'h06 : regADDR[20:27] <= cslAD[7:0];
+              8'h07 : regADDR[28:35] <= cslAD[7:0];
+
+              //
+              // Data Register
+              //
+            
+              8'h13 : regDATA[ 0: 3] <= cslAD[3:0];
+              8'h14 : regDATA[ 4:11] <= cslAD[7:0];
+              8'h15 : regDATA[12:19] <= cslAD[7:0];
+              8'h16 : regDATA[20:27] <= cslAD[7:0];
+              8'h17 : regDATA[28:35] <= cslAD[7:0];
+
+              //
+              // Control/Status Register
+              //
+
+              8'h23 : regSTAT[ 0: 3] <= cslAD[3:0];
+              8'h24 : regSTAT[ 4:11] <= cslAD[7:0];
+              8'h25 : regSTAT[12:19] <= cslAD[7:0];
+              8'h26 : regSTAT[20:27] <= cslAD[7:0];
+              8'h27 : regSTAT[28:35] <= cslAD[7:0];
+            
+              //
+              // Console Instruction Register
+              //
+            
+              8'h33 : regIR[ 0: 3] <= cslAD[3:0];
+              8'h34 : regIR[ 4:11] <= cslAD[7:0];
+              8'h35 : regIR[12:19] <= cslAD[7:0];
+              8'h36 : regIR[20:27] <= cslAD[7:0];
+              8'h37 : regIR[28:35] <= cslAD[7:0];
+              
+            endcase
+     end
+
+   //
+   // Read Decoder
+   //
+
+   reg [7:0] adOUT;
+   
+   always @(cslADDR or regADDR or regDATA or regSTAT or regIR)
+        
+        case (cslADDR)
+            
+          //
+          // Address Register
+          //
+            
+          8'h03 : adOUT <= {4'b0, regADDR[0:3]};
+          8'h04 : adOUT <= regADDR[ 4:11];
+          8'h05 : adOUT <= regADDR[12:19];
+          8'h06 : adOUT <= regADDR[20:27];
+          8'h07 : adOUT <= regADDR[28:35];
+
+          //
+          // Data Register
+          //
+            
+          8'h13 : adOUT <= {4'b0, regDATA[0:3]};
+          8'h14 : adOUT <= regDATA[ 4:11];
+          8'h15 : adOUT <= regDATA[12:19];
+          8'h16 : adOUT <= regDATA[20:27];
+          8'h17 : adOUT <= regDATA[28:35];
+
+          //
+          // Control/Status Register
+          //
+          
+          8'h23 : adOUT <= {4'b0, regSTAT[0:3]};
+          8'h24 : adOUT <= regSTAT[ 4:11];
+          8'h25 : adOUT <= regSTAT[12:19];
+          8'h26 : adOUT <= regSTAT[20:27];
+          8'h27 : adOUT <= regSTAT[28:35];
+            
+          //
+          // Console Instruction Register
+          //
+          
+          8'h33 : adOUT <= {4'b0, regIR[0:3]};
+          8'h34 : adOUT <= regIR[ 4:11];
+          8'h35 : adOUT <= regIR[12:19];
+          8'h36 : adOUT <= regIR[20:27];
+          8'h37 : adOUT <= regIR[28:35];
+
+          //
+          // Everything else
+          //
+          
+          default : adOUT <= 8'b0;
+          
+        endcase
+
+   //
+   // Handle bi-directional bus output
+   //
+   
+   assign cslAD = (~cslRD_N) ? adOUT : 8'bz;
    
    //
    // Console Instruction Register (IO Address 200000)
@@ -136,7 +341,7 @@ module CON(clk, clken,
    // Details:
    //  When the 'execute switch' is asserted at power-up the KS10
    //  microcode performs a IO read of the Console Instruction
-   //  Register (cslIR) at IO address o200000 and then executes that
+   //  Register (regIR) at IO address o200000 and then executes that
    //  instruction.  This mechanism allowed the Console set the
    //  address that the KS10 began execution.
    //
@@ -144,26 +349,25 @@ module CON(clk, clken,
    //  jump to the entry point of the code/bootloader.
    //
 
-// wire [0:35] cslIR = 36'o254000034531;
-   wire [0:35] cslIR = 36'o254000030600;
-   
-// wire [0:35] cslIR = 36'o254000030624;
-// wire [0:35] cslIR = 36'o254000030600;
-
    assign busREQO  = 1'b0;
    assign busACKO  = busIO & busREAD & busPHYSICAL & (busDEV == ubaDEV) & (busADDR == 18'o200000);
-   assign busDATAO = busACKO ? cslIR : 36'bx;
+   assign busDATAO = busACKO ? regIR : 36'bx;
    assign busADDRO = 36'bx;
 
    //
-   // Console UART Interface
+   // Status Register
    //
-   
 
-   //
-   // Klinik UART Interface
-   //
-     
+   assign cslRUN     =  regSTAT[15];
+   assign cslSTEP    =  regSTAT[16];
+   assign cslEXEC    =  regSTAT[17];
+   assign cslCONT    =  regSTAT[18];
+   assign cslHALT    =  regSTAT[19];
+   assign cslTIMEREN =  regSTAT[25];
+   assign cslTRAPEN  =  regSTAT[26];
+   assign cslCACHEEN =  regSTAT[27];
+   assign ks10INTR   =  regSTAT[34];
+   assign ks10RESET  = ~regSTAT[35];
    
    //
    // Print the Halt Status Block

@@ -1,122 +1,155 @@
 
 module testbench;
 
-   reg clk;
-   reg reset;
+   reg clk;                     // Clock
+   reg reset;                   // Reset
+   wire runLED;                 // Run LED
 
    //
-   // Console Serial Data
+   // Console Interfaces
    //
 
-   wire conTXD;
-   wire conRXD;
-   wire [0:3] RXD;
-   wire [0:3] TXD;
+   wire [7:0] cslAD; 		// Multiplexed Address/Data Bus
+   reg  [7:0] cslADOUT;         // Address/Data Bus Out
+   wire [7:0] cslADIN;		// Data Bus In
+   reg        cslALE;           // Address Latch Enable
+   reg        cslRD_N;          // Read Strobe
+   reg        cslWR_N;          // Write Strobe
+   wire       cslINTR_N;        // Console Interrupt
+
+   //
+   // DZ11 Serial Interface
+   //
+
+   wire [0:3] RXD;              // Received RS-232 Data
+   wire [0:3] TXD;              // Transmitted RS-232 Data
 
    //
    // SSRAM
    //
 
-   wire [0:22] ssramADDR;
-   wire [0:35] ssramDATA;
-   wire        ssramCLK;
-   wire        ssramADV;
-   wire        ssramWR;
-   
-   //
-   // Switches
-   //
-   
-   reg  swCONT;
-   wire swEXEC = 1'b1;
-   wire swRUN  = 1'b1;
-
-   //
-   // LED Outputs
-   //
-   
-   wire cpuEXEC;
-   wire cpuHALT;
-   wire cpuRUN;
+   wire        ssramCLK;        // SSRAM Clock
+   wire [0:22] ssramADDR;       // SSRAM Address Bus
+   wire [0:35] ssramDATA;       // SSRAM Data Bus
+   wire        ssramADV;        // SSRAM Advance
+   wire        ssramWR;         // SSRAM Write
 
    //
    // Initialization
    //
-   
+
    initial
      begin
         $display("KS10 Simulation Starting");
-        clk   = 1'b0;             // initial state of clock
-        reset = 1'b1;             // initial state of reset
-        #95 reset = 1'b0;         // release reset at 95 nS
+
+        // Initial state
+        
+        clk     = 0;
+        reset   = 1;
+        cslALE  = 0;
+        cslWR_N = 1;
+        cslRD_N = 1;
+
+        //
+        // Release reset at 95 nS
+        //
+        
+        #95 reset = 1'b0;
+
+        //
+        // Write to regSTAT[12:19]
+        //
+        
+        #5  cslADOUT = 8'h25;
+        #5  cslALE   = 1;
+        #5  cslADOUT = 8'h16;
+        #5  cslALE   = 0;
+        #5  cslWR_N  = 0;
+        #50 cslWR_N  = 1;
+        #5  cslRD_N  = 0;
+        #50 cslRD_N  = 1;
+        
+        //
+        // Write to regSTAT[20:27]
+        //
+
+        #5  cslADOUT = 8'h26;
+        #5  cslALE   = 1;
+        #5  cslADOUT = 8'h06;
+        #5  cslALE   = 0;
+        #5  cslWR_N  = 0;
+        #50 cslWR_N  = 1;
+        #5  cslRD_N  = 0;
+        #50 cslRD_N  = 1;
+        
+        //
+        // Write to regSTAT[28:35]
+        //
+
+        #5  cslADOUT = 8'h27;
+        #5  cslALE   = 1;
+        #5  cslADOUT = 8'h01;
+        #5  cslALE   = 0;
+        #5  cslWR_N  = 0;
+        #50 cslWR_N  = 1;
+        #5  cslRD_N  = 0;
+        #50 cslRD_N  = 1;
+        
      end
 
    //
    // Clock generator
    //
-   
+   // Details
+   //  Clock is inverted every ten nS
+   //
+
    always
-     #10 clk = ~clk;            // clock is inverted every ten nS
+     #10 clk = ~clk;
+
+   assign cslAD = (~cslRD_N) ? 8'bz : cslADOUT;
 
    //
    // UUT
    //
-   
+
    KS10 UUT
-     (.clk      (clk),
-      .reset    (reset),
-      .RXD      (RXD),
-      .TXD      (TXD),
-      .pwrFAIL  (1'b0),
-      .ssramCLK (ssramCLK),
-      .ssramADDR(ssramADDR),
-      .ssramDATA(ssramDATA),
-      .ssramWR  (ssramWR),
-      .ssramADV (ssramADV),
-      .swCONT   (swCONT),
-      .swEXEC   (swEXEC),
-      .swRUN    (swRUN),
-      .conRXD   (1'b1),
-      .conTXD   (conTXD),
-      .cpuEXEC  (cpuEXEC),
-      .cpuHALT  (cpuHALT),
-      .cpuRUN   (cpuRUN)
+     (.clk              (clk),
+      .reset            (reset),
+      .RXD              (RXD),
+      .TXD              (TXD),
+      .cslALE           (cslALE),
+      .cslAD            (cslAD),
+      .cslRD_N          (cslRD_N),
+      .cslWR_N          (cslWR_N),
+      .cslINTR_N        (cslINTR_N),
+      .ssramCLK         (ssramCLK),
+      .ssramADDR        (ssramADDR),
+      .ssramDATA        (ssramDATA),
+      .ssramWR          (ssramWR),
+      .ssramADV         (ssramADV),
+      .runLED           (runLED)
       );
 
    //
    // Display of Processor Status
    //
-   
-   reg lastHALT;
+
+   reg lastRUN;
    always @(posedge clk or posedge reset)
      begin
         if (reset)
-          lastHALT = 1'b0;
+          lastRUN = 1'b0;
         else
           begin
-             if (cpuHALT & ~lastHALT)
-               $display("KS10 CPU Halted at t = %f us", $time / 1.0e3);
-             else if (~cpuHALT & lastHALT)
-               $display("KS10 CPU Unhalted at t = %f us.", $time / 1.0e3);
-             lastHALT = cpuHALT;
+             if (runLED & ~lastRUN)
+               $display("KS10 CPU Unhalted at t = %f us", $time / 1.0e3);
+             else if (~runLED & lastRUN)
+               $display("KS10 CPU Halted at t = %f us.", $time / 1.0e3);
+             lastRUN = runLED;
           end
      end
-
-   //
-   //
-   //
-   
-   always @(posedge cpuHALT or posedge reset )
-     begin
-        if (reset)
-          swCONT <= 1'b0;
-        else if ($time > 12000 && $time < 14000)
-          begin
-             #500 swCONT <= 1'b1;
-             #600 swCONT <= 1'b0;
-          end
-     end
-
+ 
    //
    // PDP10 Memory Initialization
    //
@@ -149,7 +182,7 @@ module testbench;
    // FIXME
    //  This is temporary
    //
-   
+
    reg  [0:14] rd_addr;
    wire [0:14] wr_addr = ssramADDR[8:22];
 
@@ -161,7 +194,7 @@ module testbench;
           SSRAM[wr_addr] <= ssramDATA;
         rd_addr <= wr_addr;
      end
-   
+
    assign ssramDATA = (ssramWR) ? 36'bz : SSRAM[rd_addr];
-       
+
 endmodule

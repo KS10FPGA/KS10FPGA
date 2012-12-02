@@ -47,19 +47,19 @@
 `default_nettype none
 `include "useq/crom.vh"
 
-module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, JRST0);
-   
+module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, opJRST0);
+
    parameter cromWidth = `CROM_WIDTH;
 
-   input                      clk;      // Clock
-   input                      rst;      // Reset
-   input                      clken;    // Clock Enable
-   input      [0:cromWidth-1] crom;   	// Control ROM Data
-   input      [0:35]          dbus;     // Input Bus
-   input      		      prevEN;	// Previous Enable
-   output reg [0:17]          regIR;    // Instruction register
-   output reg 		      xrPREV;	// XR Previous
-   output                     JRST0;	// JRST Instruction
+   input                  clk;          // Clock
+   input                  rst;          // Reset
+   input                  clken;        // Clock Enable
+   input  [0:cromWidth-1] crom;         // Control ROM Data
+   input  [0:35]          dbus;         // Input Bus
+   input                  prevEN;       // Previous Enable
+   output [0:17]          regIR;        // Instruction register
+   output                 xrPREV;       // XR Previous
+   output                 opJRST0;      // JRST Instruction
 
    //
    // Microcode Decode
@@ -68,10 +68,10 @@ module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, JRST0);
    //  'loadIR' and 'loadXR' can occur simultaneously.  Therefore
    //  both parts of the IR register can be loaded simultaneously.
    //
-   
+
    wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
    wire loadXR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADXR);
-   
+
    //
    // Instruction Register and AC Selection.
    //
@@ -80,8 +80,11 @@ module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, JRST0);
    //  DPEA/E64
    //  DPEA/E93
    //  DPEA/E99
-   //  
-    
+   //
+
+   reg [0:17] regIR;
+   reg        xrPREV;
+
    always @(posedge clk or posedge rst)
     begin
         if (rst)
@@ -102,7 +105,7 @@ module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, JRST0);
                end
           end
     end
-   
+
    //
    // JRST 0 decode
    //
@@ -118,6 +121,6 @@ module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, JRST0);
    wire irOPCODE = regIR[0: 8];
    wire irAC     = regIR[9:12];
 
-   assign JRST0 = ((irOPCODE == 9'o254) & (irAC == 4'b0));
-   
+   assign opJRST0 = ((irOPCODE == 9'o254) & (irAC == 4'b0));
+
  endmodule

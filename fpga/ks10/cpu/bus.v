@@ -130,18 +130,12 @@ module BUS(clk, rst, clken, crom, dp,
    //
    
    wire vmaPHYSICAL = vmaFLAGS[8];
-   
-   //
-   // FIXME
-   //
-
-   wire DPM5_BUS_REQUEST = 1'b0;
 
    //
    // Paged Reference
    //
 
-   wire pagedREF = DPM5_BUS_REQUEST & ~vmaPHYSICAL & flagPAGEEN;
+   wire pagedREF = ~vmaPHYSICAL & flagPAGEEN;
    
    //
    // Data Output

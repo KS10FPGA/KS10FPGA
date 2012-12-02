@@ -50,9 +50,8 @@
 `include "useq/crom.vh"
 
 module INTF(clk, rst, clken, crom,
-            consRUN, consCONT, consEXEC, consHALT,
-            cpuRUN,  cpuCONT,  cpuEXEC, cpuHALT
-            );
+            cslRUN, cslCONT, cslEXEC, cslHALT,
+            cpuRUN, cpuCONT, cpuEXEC, cpuHALT);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -60,10 +59,10 @@ module INTF(clk, rst, clken, crom,
    input                 rst;                   // reset
    input                 clken;                 // clock enable
    input [0:cromWidth-1] crom;                  // Control ROM Data
-   input                 consRUN;               // Console Run Switch
-   input                 consCONT;              // Console Continue Switch
-   input                 consEXEC;              // Console Execute Switch
-   input                 consHALT;              // Console Halt Switch
+   input                 cslRUN;                // Console Run Switch
+   input                 cslCONT;               // Console Continue Switch
+   input                 cslEXEC;               // Console Execute Switch
+   input                 cslHALT;               // Console Halt Switch
    output reg            cpuRUN;                // CPU Run Status
    output reg            cpuCONT;               // CPU Continue Status
    output reg            cpuEXEC;               // CPU Execute Status
@@ -112,7 +111,7 @@ module INTF(clk, rst, clken, crom,
           cpuRUN <= 1'b0;
         else if (clken)
           begin
-             if (consRUN)
+             if (cslRUN)
                cpuRUN <= 1'b1;
              else if (specCONS & `cromCONS_CLR_RUN)
                cpuRUN <= 1'b0;
@@ -133,7 +132,7 @@ module INTF(clk, rst, clken, crom,
           cpuEXEC <= 1'b0;
         else if (clken)
           begin
-             if (consEXEC)
+             if (cslEXEC)
                cpuEXEC <= 1'b1;
              else if (specCONS & `cromCONS_CLR_EXEC)
                cpuEXEC <= 1'b0;
@@ -154,7 +153,7 @@ module INTF(clk, rst, clken, crom,
           cpuCONT <= 1'b0;
         else if (clken)
           begin
-             if (consCONT)
+             if (cslCONT)
                cpuCONT <= 1'b1;
              else if (specCONS & `cromCONS_CLR_CONT)
                cpuCONT <= 1'b0;

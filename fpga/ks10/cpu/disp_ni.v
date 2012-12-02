@@ -47,11 +47,11 @@
 
 `default_nettype none
 
-module NI_DISP (aprFLAGS, pcFLAGS, consTRAPEN, cpuRUN, memory_cycle, dispNI);
+module NI_DISP (aprFLAGS, pcFLAGS, cslTRAPEN, cpuRUN, memory_cycle, dispNI);
 
    input  [ 0:17] pcFLAGS;              // PC Flags
    input  [22:35] aprFLAGS;             // APR Flags
-   input          consTRAPEN;           // Console Trap Enable
+   input          cslTRAPEN;            // Console Trap Enable
    input          cpuRUN;               // Run
    input          memory_cycle;         // Memory Cycle
    output [ 8:11] dispNI;               // Next Instruction dispatch
@@ -72,13 +72,13 @@ module NI_DISP (aprFLAGS, pcFLAGS, consTRAPEN, cpuRUN, memory_cycle, dispNI);
    //
    // Trap Selection
    //
-   
+
    reg  [1:3] traps;
    wire [0:1] trapSEL = {flagTRAP2, flagTRAP1};
 
-   always @(consTRAPEN or flagTRAPEN or trapSEL)
+   always @(cslTRAPEN or flagTRAPEN or trapSEL)
      begin
-        if (consTRAPEN & flagTRAPEN)
+        if (cslTRAPEN & flagTRAPEN)
           case (trapSEL)
             0: traps = 3'b000;
             1: traps = 3'b001;

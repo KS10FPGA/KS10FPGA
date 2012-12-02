@@ -45,58 +45,67 @@
 // Comments are formatted for doxygen
 //
 
-module KS10(clk, reset, pwrFAIL,
-	    ssramCLK, ssramADDR, ssramDATA, ssramWR, ssramADV,
-            swCONT, swEXEC, swRUN,
-            conRXD, conTXD,
-            cpuHALT, cpuRUN);
+module KS10(clk, reset, TXD, RXD,
+            cslALE, cslAD, cslRD_N, cslWR_N, cslINTR_N,
+            ssramCLK, ssramADDR, ssramDATA, ssramWR, ssramADV,
+            runLED);
 
    //
    // System Interfaces
    //
-
+   
    input         clk;           // Clock
    input         reset;         // Reset
-   output 	 ssramCLK;	// SSRAM Clock
-   output [0:22] ssramADDR;	// SSRAM Address Bus
-   inout  [0:35] ssramDATA;	// SSRAM Data Bus
-   output        ssramWR;	// SSRAM Write
-   output 	 ssramADV;	// SSRAM Advance
-   input         pwrFAIL;       // Power Fail
-   input         swCONT;        // Continue Switch
-   input         swEXEC;        // Exec Switch
-   input         swRUN;         // Run Switch
-   output        cpuHALT;       // Halt LED
-   output        cpuRUN;        // Run LED
-   input         conRXD;        // Console RXD
-   output        conTXD;      	// Console TXD
+   input  [0: 3] RXD;           // Received RS-232 Data
+   input  [0: 3] TXD;           // Transmitted RS-232 Data
+   input         cslALE;        // Address Latch Enable
+   inout  [7: 0] cslAD;         // Multiplexed Address/Data Bus
+   input         cslRD_N;       // Read Strobe
+   input         cslWR_N;       // Write Strobe
+   output        cslINTR_N;     // Console Interrupt
+   output        ssramCLK;      // SSRAM Clock
+   output [0:22] ssramADDR;     // SSRAM Address Bus
+   inout  [0:35] ssramDATA;     // SSRAM Data Bus
+   output        ssramWR;       // SSRAM Write
+   output        ssramADV;      // SSRAM Advance
+   output        runLED;        // RUN LED
 
    //
    // Bus Arbiter Outputs
    //
 
-   wire [0:35] arbADDRO;	// Arbiter Address Out
+   wire [0:35] arbADDRO;        // Arbiter Address Out
 
    //
    // Console Interfaces
    //
 
 
-   wire        conREQI;         // Console Bus Request In
-   wire        conREQO;         // Console Bus Request Out
-   wire        conACKI;         // Console Bus Acknowledge In
-   wire        conACKO;         // Console Bus Acknowledge Out
-   wire [0:35] conADDRI;        // Console Address In
-   wire [0:35] conADDRO;        // Console Address Out        
-   wire [0:35] conDATAI;        // Console Data In
-   wire [0:35] conDATAO;       	// Console Data Out
+   wire        cslREQI;         // Console Bus Request In
+   wire        cslREQO;         // Console Bus Request Out
+   wire        cslACKI;         // Console Bus Acknowledge In
+   wire        cslACKO;         // Console Bus Acknowledge Out
+   wire [0:35] cslADDRI;        // Console Address In
+   wire [0:35] cslADDRO;        // Console Address Out        
+   wire [0:35] cslDATAI;        // Console Data In
+   wire [0:35] cslDATAO;        // Console Data Out
+   wire        cslSTEP;         // Console Single Step Switch
+   wire        cslCONT;         // Console Continue Switch
+   wire        cslRUN;          // Console Run Switch
+   wire        cslEXEC;         // Console Exec Switch
+   wire        cslHALT;         // Console Halt Switch
+   wire        cslTRAPEN;       // Console Trap Enable
+   wire        cslTIMEREN;      // Console Timer Enable
+   wire        cslCACHEEN;      // Console Cache Enable
+   wire        cslINTR;         // KS10 Interrupt to Console
+   wire        ks10INTR;        // KS10 Interrupt
+   wire        ks10RESET;       // KS10 Reset
 
    //
    // CPU Outputs
    //
 
-   wire        cpuHALT;         //
-   wire        cpuRUN;          //
+   wire        cpuHALT;         // CPU Halt Status
    wire        cpuREQ;          // CPU Bus Request
    wire        cpuACK;          // CPU Bus Acknowledge
    wire [0:35] cpuADDRO;        // CPU Address Out
@@ -107,17 +116,20 @@ module KS10(clk, reset, pwrFAIL,
    // Memory Outputs
    //
 
-   wire [0:35] memDATAI;       // Memory Data In
-   wire [0:35] memDATAO;       // Memory Data Out
-   wire        memACK;         // Memory ACK
+   wire [0:35] memDATAI;        // Memory Data In
+   wire [0:35] memDATAO;        // Memory Data Out
+   wire        memREQ;          // Memory REQ
+   wire        memACK;          // Memory ACK
 
    //
    // Unibus Interface
    //
 
-   wire [1: 7] ubaINTR;		// Unibus Interrupt Request
-   wire        ubaREQ;         	// Unibus Bus Request
-   wire        ubaACK;         	// Unibus Bus Acknowledge
+   wire [1: 7] busINTR;         // Unibus Interrupt Request
+   wire        ubaREQI;         // Unibus Bus Request In
+   wire        ubaREQO;         // Unibus Bus Request Out
+   wire        ubaACKI;         // Unibus Bus Acknowledge In
+   wire        ubaACKO;         // Unibus Bus Acknowledge Out
    wire [0:35] ubaADDRI;        // Unibus Address In
    wire [0:35] ubaADDRO;        // Unibus Address Out
    wire [0:35] ubaDATAI;        // Unibus Data In
@@ -127,17 +139,7 @@ module KS10(clk, reset, pwrFAIL,
    // Interrupts
    //
    
-   wire [0: 2] curINTR_NUM;	// Current Interrupt Priority
-   
-   //
-   // Reset
-   //
-
-   RST uRST
-     (.clk              (clk),
-      .reset            (reset),
-      .rst              (rst)
-      );
+   wire [0: 2] curINTR_NUM;     // Current Interrupt Priority
 
    //
    // Bus Arbiter
@@ -151,13 +153,13 @@ module KS10(clk, reset, pwrFAIL,
       .cpuDATAI         (cpuDATAO),
       .cpuDATAO         (cpuDATAI),
       // Console
-      .conREQI          (conREQO),
-      .conREQO          (conREQI),
-      .conACKI          (conACKO),
-      .conACKO          (conACKI),
-      .conADDRI         (conADDRO),
-      .conDATAI         (conDATAO),
-      .conDATAO         (conDATAI),
+      .cslREQI          (cslREQO),
+      .cslREQO          (cslREQI),
+      .cslACKI          (cslACKO),
+      .cslACKO          (cslACKI),
+      .cslADDRI         (cslADDRO),
+      .cslDATAI         (cslDATAO),
+      .cslDATAO         (cslDATAI),
       // Unibus
       .ubaREQI          (ubaREQO),
       .ubaREQO          (ubaREQI),
@@ -181,43 +183,58 @@ module KS10(clk, reset, pwrFAIL,
 
    CPU uCPU
      (.clk              (clk),
-      .rst              (rst),
-      .consTIMEREN      (1'b1),
-      .consSTEP         (1'b0),
-      .consRUN          (swRUN),
-      .consEXEC         (swEXEC),
-      .consCONT         (swCONT),
-      .consHALT         (1'b0),
-      .consTRAPEN       (1'b1),
-      .consCACHEEN      (1'b0),
-      .pwrINTR          (pwrFAIL),
-      .consINTR         (1'b0),
-      .ubaINTR          (ubaINTR),
+      .rst              (ks10RESET),
+      .cslSTEP          (cslSTEP),
+      .cslRUN           (cslRUN),
+      .cslEXEC          (cslEXEC),
+      .cslCONT          (cslCONT),
+      .cslHALT          (cslHALT),
+      .cslTIMEREN       (cslTIMEREN),
+      .cslTRAPEN        (cslTRAPEN),
+      .cslCACHEEN       (cslCACHEEN),
+      .ks10INTR         (ks10INTR),
+      .cslINTR          (cslINTR),
+      .busINTR          (busINTR),
       .curINTR_NUM      (curINTR_NUM),
       .busREQ           (cpuREQ),
       .busACK           (cpuACK),
       .busADDRO         (cpuADDRO),
       .busDATAI         (cpuDATAI),
       .busDATAO         (cpuDATAO),
-      .cpuHALT          (cpuHALT),
-      .cpuRUN           (cpuRUN)
+      .cpuHALT          (cpuHALT)
       );
 
    //
    // Console Interface
    //
 
-   CON uCON
+   CSL uCSL
      (.clk              (clk),
-      .clken            (1'b1),
-      .busREQI          (conREQI),
-      .busREQO          (conREQO),
-      .busACKI          (conACKI),
-      .busACKO          (conACKO),
+      .reset            (reset),
+      .cslALE           (cslALE),
+      .cslAD            (cslAD),
+      .cslRD_N          (cslRD_N),
+      .cslWR_N          (cslWR_N),
+      .busREQI          (cslREQI),
+      .busREQO          (cslREQO),
+      .busACKI          (cslACKI),
+      .busACKO          (cslACKO),
       .busADDRI         (arbADDRO),
-      .busADDRO         (conADDRO),
-      .busDATAI         (conDATAI),
-      .busDATAO         (conDATAO)
+      .busADDRO         (cslADDRO),
+      .busDATAI         (cslDATAI),
+      .busDATAO         (cslDATAO),
+      .cpuHALT          (cpuHALT),
+      // Console Interfaces
+      .cslSTEP          (cslSTEP),
+      .cslRUN           (cslRUN),
+      .cslEXEC          (cslEXEC),
+      .cslCONT          (cslCONT),
+      .cslHALT          (cslHALT),
+      .cslTIMEREN       (cslTIMEREN),
+      .cslTRAPEN        (cslTRAPEN),
+      .cslCACHEEN       (cslCACHEEN),
+      .ks10INTR         (ks10INTR),
+      .ks10RESET        (ks10RESET)
       );
 
    //
@@ -226,27 +243,31 @@ module KS10(clk, reset, pwrFAIL,
 
    MEM uMEM
      (.clk              (clk),
+      .rst              (reset),
       .clken            (1'b1),
-      .busREQI		(memREQ),
+      .busREQI          (memREQ),
       .busACKO          (memACK),
       .busADDRI         (arbADDRO),
-      .busDATAI 	(memDATAI),
+      .busDATAI         (memDATAI),
       .busDATAO         (memDATAO),
-      .ssramCLK 	(ssramCLK),
-      .ssramADDR	(ssramADDR),
-      .ssramDATA 	(ssramDATA),
-      .ssramADV		(ssramADV),
-      .ssramWR 		(ssramWR)
+      .ssramCLK         (ssramCLK),
+      .ssramADDR        (ssramADDR),
+      .ssramDATA        (ssramDATA),
+      .ssramADV         (ssramADV),
+      .ssramWR          (ssramWR)
       );
 
    //
    // Unibus Interface
    //
 
-   UBA uUBA
+   DZ11 uDZ11
      (.clk              (clk),
+      .rst              (reset),
       .clken            (1'b1),
-      .ubaINTR		(ubaINTR),
+      .TXD              (TXD),
+      .RXD              (RXD),
+      .busINTR          (busINTR),
       .curINTR_NUM      (curINTR_NUM),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO),
@@ -258,4 +279,11 @@ module KS10(clk, reset, pwrFAIL,
       .busDATAO         (ubaDATAO)
       );
 
+   //
+   // Console Interrupt fixup
+   //
+   
+   assign cslINTR_N = ~cslINTR;
+   assign runLED    = ~cpuHALT;
+   
 endmodule

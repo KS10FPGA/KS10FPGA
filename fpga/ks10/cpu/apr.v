@@ -47,7 +47,7 @@
 `default_nettype none
 `include "useq/crom.vh"
 
-module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprINTR);
+module APR(clk, rst, clken, crom, dp, nxmINTR, ks10INTR, aprFLAGS, aprINTR);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -56,9 +56,8 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    input                   clken;       // Clock Enable
    input  [ 0:cromWidth-1] crom;        // Control ROM Data
    input  [ 0:35]          dp;          // Data path
-   input                   pwrINTR;     // Power Failure interrupt
    input                   nxmINTR;     // Non existant memory interrupt
-   input                   consINTR;    // Console Interrupt
+   input                   ks10INTR;     // Console In Interrupt
    output [22:35]          aprFLAGS;    // APR Flags
    output [ 1: 7]          aprINTR;     // APR Interrupt Request
 
@@ -113,22 +112,19 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    //
    // Note
    //  This interrupt indicates that an power fail condition
-   //  exists.
+   //  exists.  This interrupt is not implemented.
    //
    // Trace
    //  DPMB/E158
    //
 
-   reg flagPWR;
+   reg flag26;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flagPWR <= 1'b0;
+          flag26 <= 1'b0;
         else if (clken & specAPRFLAGS)
-          if (pwrINTR)
-            flagPWR <= 1'b1;
-          else
-            flagPWR <= dp[26];
+          flag26 <= dp[26];
      end
 
    //
@@ -142,16 +138,15 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    //  DPMB/E139
    //
 
-   reg flagNXM;
+   reg flag27;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flagNXM <= 1'b0;
+          flag27 <= 1'b0;
+        else if (nxmINTR)
+          flag27 <= 1'b1;
         else if (clken & specAPRFLAGS)
-          if (nxmINTR)
-            flagNXM <= 1'b1;
-          else
-            flagNXM <= dp[27];
+          flag27 <= dp[27];
      end
 
    //
@@ -218,23 +213,22 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    // APR Flag Register 31
    //
    // Note
-   //  This interrupt indicates that a Console Interrupt
-   //  has occurred.
+   //  This interrupt indicates that the Console has requested
+   //  a KS10 Interrupt.
    //
    // Trace
    //  DPMB/E158
    //
 
-   reg flagCONS;
+   reg flag31;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flagCONS <= 1'b0;
+          flag31 <= 1'b0;
+        else if (ks10INTR)
+          flag31 <= 1'b1;
         else if (clken & specAPRFLAGS)
-          if (consINTR)
-            flagCONS <= 1'b1;
-          else
-            flagCONS <= dp[31];
+          flag31 <= dp[31];
      end
 
    //
@@ -286,13 +280,13 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    //
 
    wire flagINTREQ = ((flag24   & flagAPREN[24]) ||
-                      (flag25   & flagAPREN[25]) ||
-                      (flagPWR  & flagAPREN[26]) ||
-                      (flagNXM  & flagAPREN[27]) ||
+                      (flag25 & flagAPREN[25]) ||
+                      (flag26  & flagAPREN[26]) ||
+                      (flag27  & flagAPREN[27]) ||
                       (flag28   & flagAPREN[28]) ||
                       (flag29   & flagAPREN[29]) ||
                       (flag30   & flagAPREN[30]) ||
-                      (flagCONS & flagAPREN[31]) ||
+                      (flag31 & flagAPREN[31]) ||
                       (flagSWINT));
 
    //
@@ -330,12 +324,12 @@ module APR(clk, rst, clken, crom, dp, pwrINTR, nxmINTR, consINTR, aprFLAGS, aprI
    assign aprFLAGS[23] = flagPAGEEN;
    assign aprFLAGS[24] = flag24;
    assign aprFLAGS[25] = flag25;
-   assign aprFLAGS[26] = flagPWR;
-   assign aprFLAGS[27] = flagNXM;
+   assign aprFLAGS[26] = flag26;
+   assign aprFLAGS[27] = flag27;
    assign aprFLAGS[28] = flag28;
    assign aprFLAGS[29] = flag29;
    assign aprFLAGS[30] = flag30;
-   assign aprFLAGS[31] = flagCONS;
+   assign aprFLAGS[31] = flag31;
    assign aprFLAGS[32] = flagINTREQ;
    assign aprFLAGS[33] = 1'b1;
    assign aprFLAGS[34] = 1'b1;

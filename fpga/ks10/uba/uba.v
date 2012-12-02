@@ -297,9 +297,9 @@ module UBA(clk, rst, clken,
    //           PIL : Lo level PIA        - R/W
    //
    
-   reg statNM;
-   reg statND;
-   reg statDX;
+   reg 	     statNM;
+   reg 	     statND;
+   reg 	     statDX;
    reg [0:2] statPIH;
    reg [0:2] statPIL;
    
@@ -367,7 +367,7 @@ module UBA(clk, rst, clken,
    //
 
    wire [ 0:35] pagDATAO;       // Paging RAM to KS10 Data
-   wire [15:35] pagADDRO;	// Pager output
+   wire [16:35] pagADDRO;	// Pager output
    
    UBAPAG uUBAPAG
       (.clk(clk),

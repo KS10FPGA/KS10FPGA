@@ -2,13 +2,13 @@ RTL  := rtl
 ISE  := ISE
 
 ARB  := $(RTL)/arb
-CON  := $(RTL)/cons
+CSL  := $(RTL)/csl
 CPU  := $(RTL)/cpu
 ISE  := $(ISE)
 MEM  := $(RTL)/mem
 UBA  := $(RTL)/uba
 UC   := $(CPU)/useq
-LOAD := MAINDEC-10-DSKAM.txt
+LOAD := MAINDEC-10-DSKAA.txt
 
 SRC := \
 	$(UC)/crom.vh  \
@@ -47,11 +47,19 @@ SRC := \
 	$(CPU)/traps.v \
 	$(CPU)/vma.v \
 	$(CPU)/cpu.v \
-	$(CON)/cons.v \
+	$(CSL)/csl.v \
 	$(MEM)/mem.v \
 	$(ARB)/arb.v \
+	$(UBA)/dz11/uart/demet.vhd \
+	$(UBA)/dz11/uart/ascii_types.vhd \
+	$(UBA)/dz11/uart/uart_types.vhd \
+	$(UBA)/dz11/uart/uart_brg.vhd \
+	$(UBA)/dz11/uart/uart_rx.vhd \
+	$(UBA)/dz11/uart/uart_tx.vhd \
+	$(UBA)/dz11/fifo.v \
+	$(UBA)/dz11/dz11.v \
+	$(UBA)/ubapag.v \
 	$(UBA)/uba.v \
-	$(RTL)/rst.v \
 	$(RTL)/ks10.v \
 	$(RTL)/ks10.ucf \
 	$(RTL)/status.txt \
@@ -78,9 +86,11 @@ $(RTL)/ssram.dat : $(RTL)/$(LOAD) $(RTL)/ssram.awk makefile
 clean: 
 	rcsclean $(RTL)/*
 	rcsclean $(ARB)/*
-	rcsclean $(CON)/*
+	rcsclean $(CSL)/*
 	rcsclean $(CPU)/*
 	rcsclean $(MEM)/*
+	rcsclean $(UBA)/dz11/uart/*
+	rcsclean $(UBA)/dz11/*
 	rcsclean $(UBA)/*
 	rcsclean $(UC)/*
 	rm -f    $(UC)/*.dat
