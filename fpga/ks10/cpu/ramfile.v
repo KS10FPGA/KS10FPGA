@@ -267,67 +267,6 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, regIR, xrPREV,
    //  DPMA/E54
    //
 
-/*
-   reg DPM5_READ_EN;
-   reg DPM5_WRITE_EN;
-   always @(crom or drom or dp )
-     begin
-        case (`cromMEM_CYCLE_SEL)
-          0:
-            begin
-               DPM5_READ_EN  = `cromMEM_READCYCLE;
-               DPM5_WRITE_EN = `cromMEM_WRITECYCLE;
-            end
-          1:
-            begin
-               DPM5_READ_EN  = dp[3];
-               DPM5_WRITE_EN = dp[5];
-            end
-          2:
-            begin
-               DPM5_READ_EN  = `dromREADCYCLE;
-               DPM5_WRITE_EN = `dromWRITECYCLE;
-            end
-          default:
-            begin
-               DPM5_READ_EN  = 1'b0;
-               DPM5_WRITE_EN = 1'b0;
-            end
-        endcase
-     end
-
-   wire STOP_MAIN_MEMORY = 1'b0;
-
-   wire specMEM_WAIT = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMWAIT);
-   wire specMEM_CLR  = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
-
-   wire DPM5_MEM_EN = ((`cromMEM_CYCLE & `cromMEM_WAIT                   ) |
-                       (`cromMEM_CYCLE & `cromMEM_BWRITE & `dromCOND_FUNC));
-
-   wire DPM5_MEM_WAIT = DPM5_MEM_EN | specMEM_WAIT | specMEM_CLR;
-
-   wire DPM5_RPW_CYCLE = vmaREADCYCLE & vmaWRITECYCLE & ~STOP_MAIN_MEMORY;
-
-   //wire DPM5_START_CYCLE = ~DPM5_RPW_CYCLE & (DPM5_READ_EN | DPM5_WRITE_EN) & DPM5_MEM_EN;
-
-   wire DPM5_START_CYCLE = ((DPM5_READ_EN  & DPM5_MEM_EN & ~DPM5_RPW_CYCLE) |
-                            (DPM5_WRITE_EN & DPM5_MEM_EN & ~DPM5_RPW_CYCLE));
-
-   reg DPM6_MEMORY_CYCLE;
-   always @(posedge clk or posedge rst)
-    begin
-        if (rst)
-          DPM6_MEMORY_CYCLE <= 1'b0;
-        else if (clken)
-          DPM6_MEMORY_CYCLE <= DPM5_START_CYCLE;
-    end
-
-   wire ramfileWRITE = (( vmaACREF & ~vmaREADCYCLE    & DPM6_MEMORY_CYCLE & DPM5_MEM_WAIT) |
-                        (~vmaACREF & STOP_MAIN_MEMORY & DPM6_MEMORY_CYCLE & DPM5_MEM_WAIT) |
-                        (`cromFMWRITE));
-
-*/
-
     wire ramfileWRITE = ((vmaACREF & vmaWRITECYCLE) |
                          (`cromFMWRITE));
 

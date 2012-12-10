@@ -50,7 +50,7 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module TIMING(clk, rst, crom, drom, dp, feSIGN, clkenDP, clkenCR);
+module TIMING(clk, rst, crom, drom, dp, feSIGN, busREQ, busACK, clkenDP, clkenCR, memWAIT);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -61,23 +61,26 @@ module TIMING(clk, rst, crom, drom, dp, feSIGN, clkenDP, clkenCR);
    input  [0:dromWidth-1] drom;         // Control ROM Data
    input  [0:35]          dp;           // Data path
    input                  feSIGN;       // FE Sign
+   output                 busREQ;       // Bus Request
+   input                  busACK;       // Bus Acknowledge
    output                 clkenDP;      // Clock Enable
    output                 clkenCR;      // Clock Enable Microsequencer
-  
+   input                  memWAIT;      // Memory Wait
+
    //
    // Fast Shift
    //
    // Details:
    //  The KS10 fast shifts while the FE is negative.
-   //  
+   //
    // Note:
    //  The obvious implementation shifts one count too many and
    //  shifts by one when the count is zero.  This is very counter-
    //  intuitive.
-   // 
+   //
    //  Be careful.  When the shift count is zero (FE = -1 or 1777)
    //  no shifts should be peformed.
-   // 
+   //
    // FIXME:
    //  This crazy fast shift stuff should be replaced by a microcode hack.
    //  The FPGA doesn't really require this fast shift implementation.
@@ -91,7 +94,7 @@ module TIMING(clk, rst, crom, drom, dp, feSIGN, clkenDP, clkenCR);
    //  CSL5/E54
    //  CSL5/E71
    //
-   
+
    reg done;
    always @(posedge clk or posedge rst)
      begin
@@ -112,8 +115,8 @@ module TIMING(clk, rst, crom, drom, dp, feSIGN, clkenDP, clkenCR);
    //  CSL5/E33
    //  CSL5/E54
    //
-   
-   assign clkenCR = ~(`cromMULTISHIFT & feSIGN);
-   assign clkenDP = ~((`cromMULTISHIFT & ~feSIGN) | (done & clkenCR));
-  
+
+   assign clkenCR = ~((`cromMULTISHIFT &  feSIGN)                    | memWAIT);
+   assign clkenDP = ~((`cromMULTISHIFT & ~feSIGN) | (done & clkenCR) | memWAIT);
+
 endmodule

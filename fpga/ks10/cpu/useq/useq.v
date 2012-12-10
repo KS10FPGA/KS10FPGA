@@ -1,19 +1,19 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Microsequencer
-//!
-//! \details
-//!      This file implements the KS10 microsequencer.
-//!
-//! \file
-//!      useq.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// brief
+//      Microsequencer
+//
+// details
+//      This file implements the KS10 microsequencer.
+//
+// file
+//      useq.v
+//
+// author
+//      Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -39,9 +39,6 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `include "crom.vh"
 `include "drom.vh"
@@ -120,9 +117,11 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //  I've hooked all data lines up and will let the optimizer do
    //  it's thing.  The optimizer will determine that these lines
    //  never change and replace the DROM columns with hardwired
-   //  constants.  Done this way, the address constants are obvious
-   //  and not embedded in the logic: therefore the intent is more
-   //  evident.  Watch the index numbering on DROM_J!
+   //  constants.  This design approach makes the design intent
+   //  much more obvious.
+   //
+   // Notes
+   //  Watch the index numbering on DROM_J!
    //
    //  AREAD does dispatch to address 40-57 or address 1400-1777
    //
@@ -147,14 +146,17 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //  CRA2/E158
    //
 
-   wire        dromAEQJ     = `dromAEQJ;
-   wire        dromACDISP   = `dromACDISP;
-   wire [0:11] dromJ        = `dromJ;
-   wire [0: 3] dromA        = `dromA;
-   wire [0: 3] dromB        = `dromB;
+   wire        dromAEQJ   = `dromAEQJ;
+   wire        dromACDISP = `dromACDISP;
+   wire [0:11] dromJ      = `dromJ;
+   wire [0: 3] dromA      = `dromA;
+   wire [0: 3] dromB      = `dromB;
 
    //
    // Jump Dispatch
+   //
+   // Trace
+   //  DPEA/E111
    //
 
    reg [0:11] dispJ;
@@ -169,6 +171,10 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
 
    //
    // AREAD Dispatch
+   //
+   // Trace
+   //  CRA2/E158
+   //  DPEA/E153
    //
 
    reg [0:11] dispAREAD;
@@ -188,22 +194,22 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    wire [0:11] dispADDR;
 
    DISPATCH uDISPATCH
-     (.crom(crom),
-      .dp(dp),
-      .dispDIAG(dispDIAG),
-      .dispRET(dispRET),
-      .dispJ(dispJ),
-      .dispAREAD(dispAREAD),
-      .dispMUL(dispMUL),
-      .dispPF(dispPF),
-      .dispNI(dispNI),
-      .dispBYTE(dispBYTE),
-      .dispEA(dispEA),
-      .dispSCAD(dispSCAD),
-      .dispNORM(dispNORM),
-      .dispDROM_A(dromA),
-      .dispDROM_B(dromB),
-      .dispADDR(dispADDR)
+     (.crom             (crom),
+      .dp               (dp),
+      .dispDIAG         (dispDIAG),
+      .dispRET          (dispRET),
+      .dispJ            (dispJ),
+      .dispAREAD        (dispAREAD),
+      .dispMUL          (dispMUL),
+      .dispPF           (dispPF),
+      .dispNI           (dispNI),
+      .dispBYTE         (dispBYTE),
+      .dispEA           (dispEA),
+      .dispSCAD         (dispSCAD),
+      .dispNORM         (dispNORM),
+      .dispDROM_A       (dromA),
+      .dispDROM_B       (dromB),
+      .dispADDR         (dispADDR)
       );
 
    //
@@ -256,8 +262,8 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //  CRA1/E186
    //
 
-   assign addr = (rst)      ? 12'b000_000_000_000 :
-                 (pageFAIL) ? 12'b111_111_111_111 :
+   assign addr = (rst)      ? 12'o0000 :
+                 (pageFAIL) ? 12'o7777 :
                  (dispADDR | skipADDR | `cromJ);
 
    //
@@ -265,11 +271,11 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
 
    CROM uCROM
-     (.clk(clk),
-      .clken(clken),
-      .rst(rst),
-      .addr(addr),
-      .crom(crom)
+     (.clk      (clk),
+      .clken    (clken),
+      .rst      (rst),
+      .addr     (addr),
+      .crom     (crom)
       );
 
    //
@@ -303,13 +309,13 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
 
    STACK uSTACK
-     (.clk(clk),
-      .rst(rst),
-      .clken(clken),
-      .call(call),
-      .ret(ret),
-      .addrIN(addr),
-      .addrOUT(dispRET)
+     (.clk      (clk),
+      .rst      (rst),
+      .clken    (clken),
+      .call     (call),
+      .ret      (ret),
+      .addrIN   (addr),
+      .addrOUT  (dispRET)
       );
 
 endmodule

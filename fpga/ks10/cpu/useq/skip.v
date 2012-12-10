@@ -1,34 +1,34 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Microcontroller Skip Logic
-//!
-//! \details
-//!      This section of the microcontroller controls the SKIP
-//!      field selection.
-//!
-//!      The microcontroller can execute simple branches based
-//!      on a selected boolean input value.  Because the branch
-//!      logic is implemented as an OR gate, the skip logic can
-//!      only change the LSB of the control ROM address from a
-//!      zero to a one - this means that the 'skip not taken'
-//!      must be an even address and that the 'skip taken'
-//!      address must be the following odd address.
-//!
-//!      The microcode assemler handles all the details regarding
-//!      how microcode addresses are selected.
-//!
-//!      See the description of the dispatch logic and the
-//!      microcontroller for addtional details.
-//!
-//! \file
-//!      skip.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// brief
+//      Microcontroller Skip Logic
+//
+// details
+//      This section of the microcontroller controls the SKIP
+//      field selection.
+//
+//      The microcontroller can execute simple branches based
+//      on a selected boolean input value.  Because the branch
+//      logic is implemented as an OR gate, the skip logic can
+//      only change the LSB of the control ROM address from a
+//      zero to a one - this means that the 'skip not taken'
+//      must be an even address and that the 'skip taken'
+//      address must be the following odd address.
+//
+//      The microcode assembler handles all the details regarding
+//      how microcode addresses are selected.
+//
+//      See the description of the dispatch logic and the
+//      microcontroller for addtional details.
+//
+// file
+//      skip.v
+//
+// author
+//      Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -54,9 +54,6 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
 `include "crom.vh"
@@ -198,6 +195,6 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
    //  CRA1/E121
    //
 
-   assign skipADDR = (skip0 | skip1 | skip2) ? 12'b000_000_000_001 : 12'b000_000_000_000;
+   assign skipADDR = (skip0 | skip1 | skip2) ? 12'o0001 : 12'o0000;
    
 endmodule
