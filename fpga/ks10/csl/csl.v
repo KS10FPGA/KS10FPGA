@@ -9,18 +9,48 @@
 //!
 //!      Console Instruction Register (Device 0, IO Address 0200000)
 //!
-//!      Status register:
+//!          When the 'execute switch' is asserted at power-up the KS10
+//!          microcode performs a IO read of the Console Instruction
+//!          Register (regIR) at IO address o200000 and then executes
+//!          that instruction.
+//!
+//!          The Console Instruction Register is normally initialized
+//!          with a JRST instruction which causes the code to jump to
+//!          the entry point of the code/bootloader.
+//!
+//!          This mechanism allowes the Console set the address that
+//!          the KS10 began execution.
+//!
+//!          The JRST opcode is 0254.
 //!
 //!                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (LH)  |                                            |SR|SS|SE| 
+//!        (LH)  |0 |1 |0 |1 |0 |1 |1 |0 |0 |0 |0 |0 |0 |0 |0 |0 |0 |0 |
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!   
+//!
+//!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (RH)  |                     ADDRESS                         |
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!
+//!      Console Control/Status register:
+//!
+//!          The Console Control/Status register controls the operation
+//!          of the KS10 and allows the Console to be cognizant of the
+//!          status of the KS10 CPU.
+//!
+//!                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (LH)  |                             |NX|GO|        |SR|SS|SE|
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!
 //!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!        (RH)  |SC|SH|              |TE|RE|CE|                 |KI|KR|
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!
+//!              NX : Non-existant memory timeout (Read Only)
+//!              GO : Start Read or Write Transaction
 //!              SR : Run Switch
 //!              SS : Single Step Switch
 //!              SE : Execute Switch
@@ -32,60 +62,101 @@
 //!              KI : KS10 Interrupt
 //!              KR : KS10 Reset
 //!
-//!      Console Status Register (Memory Addresss 0000031)
+//!      Console Address Register:
 //!
-//!                 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//!          The console can read from or write to KS10 memory and/or IO.
+//!          The address of the memory or IO location to be accessed is
+//!          placed in the Console Address Register prior to starting
+//!          the access.
+//! 
+//!          The format of the Console Address Register during Memory
+//!          Operations is:
+//!
+//!                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (LH)  |                             |CE|ME|TE|MM|           |
+//!        (LH)  |0 |0 |0 |RD|0 |WR|0 |0 |0 |0 |0 |0 |0 |0 |0 |0 |Addr |
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!   
+//!
 //!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (RH)  |     |      Keep Alive       |           |BS|PF|FR|KF|
+//!        (RH)  |                      Memory Address                 |
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!
-//!              MM - Maintenance Mode : 
-//!           
-//!      Console Input Register (Memory Addresss 0000032)
+//!          The format of the Console Address Register during IO
+//!          Operations is:
 //!
-//!                 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//!                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (LH)  |                                                     |
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!   
-//!                18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (RH)  |                          |P |    Character          |
+//!        (LH)  |0 |0 |0 |RD|0 |WR|0 |0 |0 |0 |1 |0 |0 |0 |  DEV NO   |
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!
-//!              P  - Pending : When set indicates that a charactiver is
-//!                             available to the CTY
-//!
-//!      Console Output Register (Memory Addresss 0000033)
-//!
-//!                 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (LH)  |                                                     |
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!   
-//!                18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (RH)  |                          |P |    Character          |
+//!        (RH)  |                     IO Address                      |
 //!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!
-//!              P  - Pending : When set indicates that a charactiver is
-//!                             available from the CTY
+//!          Note: Bit 10 is asserted during IO operations and is
+//!          negated during Memory Operations.
 //!
-//!          0000030 Halt Switch
-//!          0000031 Console Status Word
-//!          0000032 Console Input
-//!          0000033 Console Output
-//!          0000034 Klinik Input
-//!          0000035 Klinik Output
-//!          0000036 RH11 Address
-//!          0000037 Unit Number
-//!          0000040 Magtape Params
+//!          Note: 20-bit addressing of memory is supported.
 //!
+//!      Console Data Register:
+//!
+//!          Data to be written to Memory or IO is placed in the Console
+//!          Data Register.   Similarly data that has been read from 
+//!          from Memory or IO is placed in the Console Data Register.
+//!
+//!                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (LH)  |                      DATA                           |
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!
+//!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!        (RH)  |                      DATA                           |
+//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//!
+//!       Console Memory Read Procedure
+//!
+//!          The KS10 memory is read using the following procedure:
+//!             1.  The memory address is written to the Console Address
+//!                 Register.   The 'RD' bit should be asserted.  The 'WR'
+//!                 bit and the 'IO' bit should be negated.
+//!             2.  After the Console Address Register initialized, the
+//!                 'GO' bit of the Console Control/Status register should
+//!                 be asserted.
+//!             3.  The state machine performs a read from memory and
+//!                 places the results in the Console Data Register.  The
+//!                 'GO' bit will remain asserted while the memory
+//!                 transaction is active and will negate when the memory
+//!                 transaction is completed.
+//!
+//!       Console Memory Write Procedure
+//!
+//!          The KS10 memory is written using the following procedure:
+//!             1.  The memory address is written to the Console Address
+//!                 Register.   The 'RD' bit should be asserted.  The 'WR'
+//!                 bit and the 'IO' bit should be negated.
+//!             2.  The data to be written to memory is written to the
+//!                 Console Data Register.
+//!             3.  After the Console Address Register and Console Data
+//!                 Register are both initialized, the 'GO' bit of the
+//!                 Console Control/Status register should be asserted.
+//!             4.  The state machine performs a write to memory.  The
+//!                 'GO' bit will remain asserted while the memory
+//!                 transaction is active and will negate when the
+//!                 memory transaction is completed.
+//!
+//!       Console IO Read and Write Procedure
+//!          Console IO operations are similar to Console Memory
+//!          operations except that the IO bit in the Console
+//!          Address Register must be asserted and the IO address
+//!          must include the IO Device Number - which may be zero.
+//!
+//!          Unibus IO Device Numbers are non-zero.  Unibus IO
+//!          addresses are limited to 16-bits and therefore
+//!          Unibus IO addresses bits 18 and 19 must be zero.
+//!        
 //! \file
 //!      csl.v
 //!
@@ -158,15 +229,33 @@ module CSL(clk, reset,
    output        ks10RESET;     // KS10 Reset
 
    //
+   // Console Instruction Register Address
+   //
+
+   parameter [18:36] addrCIR = 18'o200000;
+
+   //
+   // State Machine States
+   //
+
+   parameter stateIDLE      = 0;
+   parameter stateCHECK     = 1;
+   parameter stateREAD      = 2;
+   parameter stateWRITE     = 3;
+   parameter stateFAIL      = 4;
+   parameter stateDONE      = 5;
+
+   //
    // Console is Device 0
    //
-   
+
    wire [ 0: 3] ubaDEV      = 4'b0000;
+
    //
    // Memory Address and Flags
    //
-   
-   wire         busREAD     = busADDRI[ 3]; 
+
+   wire         busREAD     = busADDRI[ 3];
    wire         busWRITE    = busADDRI[ 5];
    wire         busPHYSICAL = busADDRI[ 8];
    wire         busIO       = busADDRI[10];
@@ -179,7 +268,7 @@ module CSL(clk, reset,
 
    reg wr;
    reg cslWR;
-   
+
    always @(posedge clk or posedge reset)
      begin
         if (reset)
@@ -193,7 +282,7 @@ module CSL(clk, reset,
              cslWR <= wr;
           end
      end
-   
+
    //
    // Console Bus Address Latch
    //
@@ -203,11 +292,18 @@ module CSL(clk, reset,
      begin
         cslADDR <= cslAD;
      end
-   
+
    //
    // Write Decoder
    //
-   
+   // Details:
+   //  This device decodes writes from the console processor and builds
+   //  36-bit registers.
+   //
+   // Notes:
+   //  The status register is inititalized at power-up with the KS10 reset.
+   //
+
    reg [0:35] regIR;
    reg [0:35] regDATA;
    reg [0:35] regSTAT;
@@ -217,58 +313,66 @@ module CSL(clk, reset,
      begin
         if (reset)
           begin
-//           regIR   <= 36'b0;
-             regIR   <= 36'o254000030600;
-//           regIR   <= 36'o254000030624;
-             regDATA <= 36'b0;
-             regSTAT <= 36'b0;
-             regADDR <= 36'b0;
+             regIR   <= 36'o000000_000000;
+             regDATA <= 36'o000000_000000;
+             regSTAT <= 36'o000000_000001;
+             regADDR <= 36'b000000_000000;
           end
         else
-          if (cslWR)
-            case (cslADDR)
-            
-              //
-              // Address Register
-              //
-            
-              8'h03 : regADDR[ 0: 3] <= cslAD[3:0];
-              8'h04 : regADDR[ 4:11] <= cslAD[7:0];
-              8'h05 : regADDR[12:19] <= cslAD[7:0];
-              8'h06 : regADDR[20:27] <= cslAD[7:0];
-              8'h07 : regADDR[28:35] <= cslAD[7:0];
+          begin
+             if (cslWR)
+               case (cslADDR)
 
-              //
-              // Data Register
-              //
-            
-              8'h13 : regDATA[ 0: 3] <= cslAD[3:0];
-              8'h14 : regDATA[ 4:11] <= cslAD[7:0];
-              8'h15 : regDATA[12:19] <= cslAD[7:0];
-              8'h16 : regDATA[20:27] <= cslAD[7:0];
-              8'h17 : regDATA[28:35] <= cslAD[7:0];
+                 //
+                 // Address Register
+                 //
 
-              //
-              // Control/Status Register
-              //
+                 8'h03 : regADDR[ 0: 3] <= cslAD[3:0];
+                 8'h04 : regADDR[ 4:11] <= cslAD[7:0];
+                 8'h05 : regADDR[12:19] <= cslAD[7:0];
+                 8'h06 : regADDR[20:27] <= cslAD[7:0];
+                 8'h07 : regADDR[28:35] <= cslAD[7:0];
 
-              8'h23 : regSTAT[ 0: 3] <= cslAD[3:0];
-              8'h24 : regSTAT[ 4:11] <= cslAD[7:0];
-              8'h25 : regSTAT[12:19] <= cslAD[7:0];
-              8'h26 : regSTAT[20:27] <= cslAD[7:0];
-              8'h27 : regSTAT[28:35] <= cslAD[7:0];
-            
-              //
-              // Console Instruction Register
-              //
-            
-              8'h33 : regIR[ 0: 3] <= cslAD[3:0];
-              8'h34 : regIR[ 4:11] <= cslAD[7:0];
-              8'h35 : regIR[12:19] <= cslAD[7:0];
-              8'h36 : regIR[20:27] <= cslAD[7:0];
-              8'h37 : regIR[28:35] <= cslAD[7:0];
-              
-            endcase
+                 //
+                 // Data Register
+                 //
+
+                 8'h13 : regDATA[ 0: 3] <= cslAD[3:0];
+                 8'h14 : regDATA[ 4:11] <= cslAD[7:0];
+                 8'h15 : regDATA[12:19] <= cslAD[7:0];
+                 8'h16 : regDATA[20:27] <= cslAD[7:0];
+                 8'h17 : regDATA[28:35] <= cslAD[7:0];
+
+                 //
+                 // Control/Status Register
+                 //
+
+                 8'h23 : regSTAT[ 0: 3] <= cslAD[3:0];
+                 8'h24 : regSTAT[ 4:11] <= cslAD[7:0];
+                 8'h25 : regSTAT[12:19] <= cslAD[7:0];
+                 8'h26 : regSTAT[20:27] <= cslAD[7:0];
+                 8'h27 : regSTAT[28:35] <= cslAD[7:0];
+
+                 //
+                 // Console Instruction Register
+                 //
+
+                 8'h33 : regIR[ 0: 3] <= cslAD[3:0];
+                 8'h34 : regIR[ 4:11] <= cslAD[7:0];
+                 8'h35 : regIR[12:19] <= cslAD[7:0];
+                 8'h36 : regIR[20:27] <= cslAD[7:0];
+                 8'h37 : regIR[28:35] <= cslAD[7:0];
+
+               endcase
+             case(state)
+               stateREAD:
+                 regDATA <= busDATAI;
+               stateDONE:
+                 regSTAT[11] <= 0;              // Clear GO when done
+               stateFAIL:
+                 regSTAT[10] <= 1;              // Non-existant Memory
+             endcase
+          end
      end
 
    //
@@ -276,15 +380,15 @@ module CSL(clk, reset,
    //
 
    reg [7:0] adOUT;
-   
+
    always @(cslADDR or regADDR or regDATA or regSTAT or regIR)
-        
+
         case (cslADDR)
-            
+
           //
           // Address Register
           //
-            
+
           8'h03 : adOUT <= {4'b0, regADDR[0:3]};
           8'h04 : adOUT <= regADDR[ 4:11];
           8'h05 : adOUT <= regADDR[12:19];
@@ -294,7 +398,7 @@ module CSL(clk, reset,
           //
           // Data Register
           //
-            
+
           8'h13 : adOUT <= {4'b0, regDATA[0:3]};
           8'h14 : adOUT <= regDATA[ 4:11];
           8'h15 : adOUT <= regDATA[12:19];
@@ -304,17 +408,17 @@ module CSL(clk, reset,
           //
           // Control/Status Register
           //
-          
+
           8'h23 : adOUT <= {4'b0, regSTAT[0:3]};
           8'h24 : adOUT <= regSTAT[ 4:11];
           8'h25 : adOUT <= regSTAT[12:19];
           8'h26 : adOUT <= regSTAT[20:27];
           8'h27 : adOUT <= regSTAT[28:35];
-            
+
           //
           // Console Instruction Register
           //
-          
+
           8'h33 : adOUT <= {4'b0, regIR[0:3]};
           8'h34 : adOUT <= regIR[ 4:11];
           8'h35 : adOUT <= regIR[12:19];
@@ -324,56 +428,122 @@ module CSL(clk, reset,
           //
           // Everything else
           //
-          
+
           default : adOUT <= 8'b0;
-          
+
         endcase
 
    //
    // Handle bi-directional bus output
    //
-   
+
    assign cslAD = (~cslRD_N) ? adOUT : 8'bz;
-   
+
    //
-   // Console Instruction Register (IO Address 200000)
-   //
-   // Details:
-   //  When the 'execute switch' is asserted at power-up the KS10
-   //  microcode performs a IO read of the Console Instruction
-   //  Register (regIR) at IO address o200000 and then executes that
-   //  instruction.  This mechanism allowed the Console set the
-   //  address that the KS10 began execution.
-   //
-   //  This is normally a JRST instruction which causes the code to
-   //  jump to the entry point of the code/bootloader.
+   // Bus Address Out is always set by Address Register
    //
 
-   assign busREQO  = 1'b0;
-   assign busACKO  = busIO & busREAD & busPHYSICAL & (busDEV == ubaDEV) & (busADDR == 18'o200000);
-   assign busDATAO = busACKO ? regIR : 36'bx;
-   assign busADDRO = 36'bx;
+   assign busADDRO = regADDR;
+
+   //
+   // Read/Write State Machine
+   //
+   // Details
+   //  This creates 'backplane' bus cycles for the console to
+   //  read or write to KS10 IO or or KS10 memory.
+   //
+   //  Like the KS10, the upper bits of the address bus are
+   //  used to control read/write and IO/memory.
+   //
+
+   reg [0:2] state;
+   reg [0:9] timeout;
+
+   always @(posedge clk or posedge reset)
+     begin
+        if (reset)
+          begin
+             timeout <= 0;
+             state   <= stateIDLE;
+          end
+        else
+          case (state)
+            stateIDLE :
+              begin
+                 timeout <= 0;
+                 if ((regSTAT[11] & regADDR[3]) |
+                     (regSTAT[11] & regADDR[5]))
+                   state <= stateCHECK;
+              end
+            stateCHECK :
+              if (timeout == 1023)
+                state <= stateFAIL;
+              else if (busACKI & regADDR[3])
+                state <= stateREAD;
+              else if (busACKI & regADDR[5])
+                state <= stateWRITE;
+              else
+                timeout <= timeout + 1'b1;
+            stateREAD :
+              state <= stateDONE;
+            stateWRITE :
+              state <= stateDONE;
+            stateFAIL :
+              state <= stateDONE;
+            stateDONE :
+              state <= stateIDLE;
+          endcase
+     end
+
+   //
+   // Bus REQ
+   //
+   
+   assign busREQO = ((state == stateCHECK) ||
+                     (state == stateREAD ) ||
+                     (state == stateWRITE));
+   
+   //
+   // Bus ACK
+   //
+
+   assign busACKO = busIO & busREAD & (busDEV == ubaDEV) & (busADDR == addrCIR);
+
+   //
+   // Bus MUX
+   //
+
+   reg [0:35] busDATAO;
+   always @(busACKO or state or regIR or regDATA)
+     begin
+        if (busACKO)
+          busDATAO = regIR;
+        else if (state == stateWRITE)
+          busDATAO = regDATA;
+        else
+          busDATAO = 36'bx;
+     end
 
    //
    // Status Register
    //
 
-   assign cslRUN     =  regSTAT[15];
-   assign cslSTEP    =  regSTAT[16];
-   assign cslEXEC    =  regSTAT[17];
-   assign cslCONT    =  regSTAT[18];
-   assign cslHALT    =  regSTAT[19];
-   assign cslTIMEREN =  regSTAT[25];
-   assign cslTRAPEN  =  regSTAT[26];
-   assign cslCACHEEN =  regSTAT[27];
-   assign ks10INTR   =  regSTAT[34];
-   assign ks10RESET  = ~regSTAT[35];
-   
+   assign cslRUN     = regSTAT[15];
+   assign cslSTEP    = regSTAT[16];
+   assign cslEXEC    = regSTAT[17];
+   assign cslCONT    = regSTAT[18];
+   assign cslHALT    = regSTAT[19];
+   assign cslTIMEREN = regSTAT[25];
+   assign cslTRAPEN  = regSTAT[26];
+   assign cslCACHEEN = regSTAT[27];
+   assign ks10INTR   = regSTAT[34];
+   assign ks10RESET  = regSTAT[35];
+
    //
    // Print the Halt Status Block
    // synthesis translate_off
    //
-   
+
    always @(posedge clk)
      begin
         if (busWRITE & ~busIO & busPHYSICAL)
@@ -416,7 +586,7 @@ module CSL(clk, reset,
              endcase
           end
      end
-   
+
    // synthesis translate_on
 
 endmodule

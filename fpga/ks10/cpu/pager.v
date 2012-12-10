@@ -3,7 +3,7 @@
 //! KS-10 Processor
 //!
 //! \brief
-//!      Page Tables
+//!      Pager
 //!
 //! \details
 //!     The page table translates virtual addresses/page numbers to
@@ -38,7 +38,7 @@
 //!     addressing.
 //!
 //! \file
-//!      page_table.v
+//!      pager.v
 //!
 //! \author
 //!      Rob Doyle - doyle (at) cox (dot) net
@@ -76,8 +76,8 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
-                   pageFLAGS, pageADDR);
+module PAGER(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
+             pageFLAGS, pageADDR);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -97,24 +97,69 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    // vmaFLAGS
    //
 
-   wire vmaUSER = vmaFLAGS[0];
+   wire pageUSER = vmaFLAGS[0];
 
    //
    // VMA Logic
+   //
+   // Details
+   //  During a page table sweep, both specPAGESWEEP and specPAGEWRITE are asserted
+   //  simultaneously.
+   //
+   // Trace
    //  DPE5/E76
    //  DPE6/E53
    //
 
-   wire sweep     = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE );
-   wire pageWRITE = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
-   wire vmaEN     = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) |
-                     (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA));
+   wire specPAGESWEEP = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE );
+   wire specPAGEWRITE = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
 
-   wire [0: 8] virtPAGE = vmaADDR[18:26];
-   wire [0:15] din = {dp[18], dp[21:22], vmaUSER, 1'b0, dp[25:35]};
+   //
+   // Sweep and Page Write
+   //
+   // Details:
+   //   These signals occur on the cycle before they are required.
+   //
+   // Trace:
+   //  DPM4/E184
+   //  DPMC/E3
+   //
+
+   reg pageSWEEP;
+   reg pageWRITE;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          begin
+             pageSWEEP <= 0;
+             pageWRITE <= 0;
+          end
+        else if (clken)
+          begin
+             pageSWEEP <= specPAGESWEEP;
+             pageWRITE <= specPAGEWRITE;
+          end
+      end
+
+   //
+   // Page Table Contents
+   //
+
+   wire [18:26] pageVIRTADDR  = vmaADDR[18:26];
+   wire         pageVALID     = dp[18];
+   wire         pageWRITEABLE = dp[21];
+   wire         pageCACHEABLE = dp[22];
+   wire [16:26] pagePHYSADDR  = dp[25:35];
+   wire [ 0:14] pageDATAIN    = {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER, pagePHYSADDR};
 
    //
    // Page memory
+   //
+   // Details
+   //  The page tables perform the virtual address to physical
+   //  address translation using a lookup table that is addressed
+   //  by the virtual address.
    //
    // Notes
    //  This has been converted to synchronous memory.
@@ -138,24 +183,17 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    //   DPM6/E192
    //
 
-   reg  [0: 8] readADDR;
-   reg  [0:15] pageTABLE1[0:255];
-   reg  [0:15] pageTABLE2[0:255];
+   reg  [0:14] pageTABLE1[0:255];
+   reg  [0:14] pageTABLE2[0:255];
 
-   always @(posedge clk or posedge rst)
+   always @(pageVIRTADDR or pageSWEEP or pageDATAIN)
      begin
-        if (rst)
-          readADDR <= 9'b0;
-        else if (clken & vmaEN)
+        if (pageWRITE)
           begin
-             readADDR <= virtPAGE;
-             if (pageWRITE)
-               begin
-                  if (~virtPAGE[0] | sweep)
-                    pageTABLE1[virtPAGE[1:8]] <= din;
-                  if ( virtPAGE[0] | sweep)
-                    pageTABLE2[virtPAGE[1:8]] <= din;
-               end
+             if (~pageVIRTADDR[18] | pageSWEEP)
+               pageTABLE1[pageVIRTADDR[19:26]] <= pageDATAIN;
+             if ( pageVIRTADDR[18] | pageSWEEP)
+               pageTABLE2[pageVIRTADDR[19:26]] <= pageDATAIN;
           end
      end
 
@@ -163,13 +201,14 @@ module PAGE_TABLES(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    // Page Table Read
    //
 
-   wire [0:15] dout = (readADDR[0]) ? pageTABLE2[readADDR[1:8]] : pageTABLE1[readADDR[1:8]];
+   wire [18:26] readADDR    = pageVIRTADDR;
+   wire [ 0:14] pageDATAOUT = (readADDR[18]) ? pageTABLE2[readADDR[19:26]] : pageTABLE1[readADDR[19:26]];
 
    //
    // Fixup Page RAM data
    //
 
-   assign pageFLAGS = dout[0: 4];
-   assign pageADDR  = dout[5:15];
+   assign pageFLAGS = pageDATAOUT[0: 3];
+   assign pageADDR  = pageDATAOUT[4:14];
 
 endmodule

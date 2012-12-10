@@ -205,6 +205,7 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
              cslDATAO = cpuDATAI;
              memDATAO = cpuDATAI;
              ubaDATAO = cpuDATAI;
+
              if (memACKI)
                begin
                   cpuACKO  = 1'b1;
@@ -227,5 +228,5 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
                end
           end
      end
-   
+
 endmodule

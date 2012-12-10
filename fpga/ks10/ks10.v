@@ -205,7 +205,7 @@ module KS10(clk, reset, TXD, RXD,
       );
 
    //
-   // Console Interface
+   // Console
    //
 
    CSL uCSL
@@ -238,7 +238,7 @@ module KS10(clk, reset, TXD, RXD,
       );
 
    //
-   // Memory Interface
+   // Memory
    //
 
    MEM uMEM
@@ -258,7 +258,7 @@ module KS10(clk, reset, TXD, RXD,
       );
 
    //
-   // Unibus Interface
+   // DZ11 on Unibus
    //
 
    DZ11 uDZ11

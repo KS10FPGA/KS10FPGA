@@ -9,47 +9,47 @@
 //!      The protocol is not the same as the KS10
 //!
 //!        The first 7 bis are the Bus Command Bits
-//!    
+//!
 //!                      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!       Memory Write |                 VMA Flags               |                      Memory Address                             |
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!    
+//!
 //!                      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!        Memory Read |                 VMA Flags               |                      Memory Address                             |
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!    
+//!
 //!                      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!         RMW Memory |                 VMA Flags               |                      Memory Address                             |
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!    
+//!
 //!                      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!           IO Write |                 VMA Flags               |  DEV NO   |             Register Address                        |
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!    
+//!
 //!                      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!      IO Write Byte |                 VMA Flags               |  DEV NO   |             Register Address                        |
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!    
+//!
 //!                      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!            IO Read |                 VMA Flags               |  DEV NO   |             Register Address                        |
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!    
+//!
 //!                      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //!                    +-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!     Read Controller|                 VMA Flags               |  |  PI NO |                 Unused                              |
 //!         Number     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!    
+//!
 //!                      0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //!     Read Intr Vect |                 VMA Flags               |  DEV NO   |                 Unused                              |
 //!                    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!  
+//!
 //!
 //! \todo
 //!
@@ -94,9 +94,9 @@
 `include "useq/crom.vh"
 
 module BUS(clk, rst, clken, crom, dp,
-           vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR, aprFLAGS, 
-           busREQ, busACK, busDATAO, busADDRO);
-   
+           vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR, aprFLAGS,
+           busDATAO, busADDRO, busREQ, busACK, memWAIT);
+
    parameter  cromWidth = `CROM_WIDTH;
    input                   clk;         // Clock
    input                   rst;         // Reset
@@ -108,17 +108,18 @@ module BUS(clk, rst, clken, crom, dp,
    input  [14:35]          vmaADDR;     // Virtual Memory Address
    input  [16:26]          pageADDR;    // Page Address
    input  [22:35]          aprFLAGS;    // APR Flags
-   output                  busREQ;      // Bus Request
-   input                   busACK;      // Bus Acknowledge                  
    output [ 0:35]          busDATAO;    // Bus Out
    output [ 0:35]          busADDRO;    // Bus Address
+   output                  busREQ;      // Bus Request
+   input                   busACK;      // Bus Acknowledge
+   output                  memWAIT;     // Wait for Memory
 
    //
    // Control ROM Decode
    //
 
    wire pageWRITE = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
-   
+
    //
    // APR Flags
    //
@@ -128,15 +129,18 @@ module BUS(clk, rst, clken, crom, dp,
    //
    // VMA Flags
    //
-   
-   wire vmaPHYSICAL = vmaFLAGS[8];
+
+   wire vmaREADCYCLE   = vmaFLAGS[3];
+   wire vmaWRTESTCYCLE = vmaFLAGS[4];
+   wire vmaWRITECYCLE  = vmaFLAGS[5];
+   wire vmaPHYSICAL    = vmaFLAGS[8];
 
    //
    // Paged Reference
    //
 
    wire pagedREF = ~vmaPHYSICAL & flagPAGEEN;
-   
+
    //
    // Data Output
    //
@@ -145,7 +149,7 @@ module BUS(clk, rst, clken, crom, dp,
    //
 
    reg [0:35] busDATAO;
-   
+
    always @(dp or pageWRITE)
      begin
         if (pageWRITE)
@@ -159,23 +163,28 @@ module BUS(clk, rst, clken, crom, dp,
    //
 
    reg [0:35] busADDRO;
-   
+
    always @(pagedREF or vmaEXTENDED or vmaFLAGS or vmaADDR or pageADDR)
      begin
         if (pagedREF)
           busADDRO <= {vmaFLAGS, vmaADDR[14:15], pageADDR[16:26], vmaADDR[27:35]};
         else
           if (vmaEXTENDED)
-            busADDRO <= {vmaFLAGS, vmaADDR};         
+            busADDRO <= {vmaFLAGS, vmaADDR};
           else
             busADDRO <= {vmaFLAGS, vmaADDR} & 36'o777760_777777;
      end
 
    //
-   // This is OK.  The CPU has the lowest priority.
+   // Bus Request on the various cycles
    //
-   
-   assign busREQ = 1'b1;
-   
-   
+
+   assign busREQ = vmaREADCYCLE | vmaWRITECYCLE | vmaWRTESTCYCLE;
+
+   //
+   // Wait for memory (REQ with no ACK)
+   //
+
+   assign memWAIT = busREQ & ~busACK;
+
 endmodule

@@ -44,39 +44,57 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
+`include "useq/crom.vh"
 
-module DEBUG(clk, rst, clken, debugDATA, debugADDR);
+  module DEBUG(clk, rst, clken, crom, debugDATA, debugADDR);
    
-   input         clk;      	// Clock
-   input         rst;      	// Reset
-   input         clken;    	// Clock Enable
-   input  [0:35] debugDATA;	// DEBUG Data
-   output [0: 3] debugADDR;	// DEBUG Address
-
-   //
-   // PC is at Address 1 in the ALU
-   //
+   parameter cromWidth = `CROM_WIDTH;
    
-   assign debugADDR = 4'b0001;
+   input                  clk;          // Clock
+   input                  rst;          // Reset
+   input                  clken;        // Clock Enable
+   input  [0:cromWidth-1] crom;         // Control ROM Data
+   input  [0:35]          debugDATA;    // DEBUG Data
+   output [0: 3]          debugADDR;    // DEBUG Address
 
    //
-   // Print the PC
+   // Print the Program Counter
+   //
+   // Details:
+   //  The program counter is modified by instructions in various
+   //  stages of the microcode.  A modified PC does not mean that
+   //  the instruction was actually executed.  For example, the
+   //  PC is always incremented after the instruction is fetched
+   //  but the PC may be modified (again) later by a branch
+   //  instruction.
+   //
+   //  This code prints the program counter when the instruction
+   //  register is loaded.  This occurs once during the instruction
+   //  execution.
+   //
    // synthesis translate_off
    //
-   
-   reg [0:35] last;
+
+   wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
+   reg [18:35] PC;
    
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          last = 36'bx;
-        else if (clken)
+          PC <= 18'b0;
+        else if (loadIR)
           begin
-             if (debugDATA != last)
-              $display("debug: PC is %06o", debugDATA);
-             last = debugDATA;
+             PC <= debugDATA;
+             $display("debug: PC is %06o", debugDATA[18:35]);
           end
      end
+   
+   //
+   // PC is Register #1 in the ALU
+   //
+   
+   assign debugADDR = 4'b0001;
    
    // synthesis translate_on
    

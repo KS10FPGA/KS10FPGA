@@ -294,6 +294,11 @@
 
    wire clkenDP;                                        // Clock Enable for Datapaths
    wire clkenCR;                                        // Clock Enable for Control ROM
+   wire memWAIT;                                        // Wait for memory
+
+   //
+   // Timing and Wait States
+   //
 
    TIMING uTIMING
      (.clk              (clk),
@@ -302,8 +307,11 @@
       .drom             (drom),
       .dp               (dp),
       .feSIGN           (feSIGN),
+      .busREQ           (busREQ),
+      .busACK           (busACK),
       .clkenDP          (clkenDP),
-      .clkenCR          (clkenCR)
+      .clkenCR          (clkenCR),
+      .memWAIT          (memWAIT)
       );
 
    //
@@ -383,10 +391,11 @@
       .vmaADDR          (vmaADDR),
       .pageADDR         (pageADDR),
       .aprFLAGS         (aprFLAGS),
+      .busDATAO         (busDATAO),
+      .busADDRO         (busADDRO),
       .busREQ           (busREQ),
       .busACK           (busACK),
-      .busDATAO         (busDATAO),
-      .busADDRO         (busADDRO)
+      .memWAIT          (memWAIT)
       );
 
    //
@@ -414,6 +423,7 @@
       (.clk             (clk),
        .rst             (rst),
        .clken           (clkenDP),
+       .crom            (crom),
        .debugDATA       (debugDATA),
        .debugADDR       (debugADDR)
        );
@@ -556,7 +566,7 @@
    // Page Tables
    //
 
-   PAGE_TABLES uPAGE_TABLES
+   PAGER uPAGER
      (.clk              (clk),
       .rst              (rst),
       .clken            (clkenDP),

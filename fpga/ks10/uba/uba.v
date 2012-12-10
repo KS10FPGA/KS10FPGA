@@ -188,13 +188,12 @@ module UBA(clk, rst, clken,
    //  UBA3/E182
    //
    
-   reg [7:4] ubaINTRL;
+   reg [1:7] ubaINTRL;
    always @(statINTLO or statPIL)
      begin
-        ubaINTRH <= 7'b0;
         if (statINTLO)
           case (statPIL)
-            0: ubaINTRH <= 7'b0000000;
+            0: ubaINTRL <= 7'b0000000;
             1: ubaINTRL <= 7'b1000000;
             2: ubaINTRL <= 7'b0100000;
             3: ubaINTRL <= 7'b0010000;
@@ -390,7 +389,7 @@ module UBA(clk, rst, clken,
 
    reg busACKO;
    reg [0:35] busDATAO;
-   always @(pageREAD or pagDATAO or statREAD or regSTAT or vectREAD or ubaVECT or wruREAD)
+   always @(pageREAD or pagDATAO or statREAD or regSTAT or vectREAD or ubaVECT or wruREAD or ubaWRU)
      begin
         busACKO  = 1'b0;             
         busDATAO = 36'bx;
@@ -415,5 +414,11 @@ module UBA(clk, rst, clken,
              busDATAO = {18'b0, ubaWRU};
           end
      end
+
+   //
+   // Bus Request
+   //
+   
+   assign busREQO = 0;
    
 endmodule

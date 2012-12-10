@@ -1,6 +1,58 @@
+////////////////////////////////////////////////////////////////////
+//!
+//! KS-10 Processor Testbench
+//!
+//! \brief
+//!
+//! \details
+//!
+//! \todo
+//!
+//! \file
+//!      testbench.v
+//!
+//! \author
+//!      Rob Doyle - doyle (at) cox (dot) net
+//!
+////////////////////////////////////////////////////////////////////
+//
+//  Copyright (C) 2012 Rob Doyle
+//
+// This source file may be used and distributed without
+// restriction provided that this copyright statement is not
+// removed from the file and that any derivative work contains
+// the original copyright notice and the associated disclaimer.
+//
+// This source file is free software; you can redistribute it
+// and/or modify it under the terms of the GNU Lesser General
+// Public License as published by the Free Software Foundation;
+// version 2.1 of the License.
+//
+// This source is distributed in the hope that it will be
+// useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE. See the GNU Lesser General Public License for more
+// details.
+//
+// You should have received a copy of the GNU Lesser General
+// Public License along with this source; if not, download it
+// from http://www.gnu.org/licenses/lgpl.txt
+//
+////////////////////////////////////////////////////////////////////
+//
+// Comments are formatted for doxygen
+//
+
+`undef SIMCTY
+`undef SIMSSMON
+`define EOF 32'hFFFF_FFFF
 
 module testbench;
-
+   
+   //
+   // Clock an things
+   //
+   
    reg clk;                     // Clock
    reg reset;                   // Reset
    wire runLED;                 // Run LED
@@ -9,14 +61,15 @@ module testbench;
    // Console Interfaces
    //
 
-   wire [7:0] cslAD; 		// Multiplexed Address/Data Bus
+   wire [7:0] cslAD;            // Multiplexed Address/Data Bus
    reg  [7:0] cslADOUT;         // Address/Data Bus Out
-   wire [7:0] cslADIN;		// Data Bus In
+   wire [7:0] cslADIN;          // Data Bus In
    reg        cslALE;           // Address Latch Enable
    reg        cslRD_N;          // Read Strobe
    reg        cslWR_N;          // Write Strobe
    wire       cslINTR_N;        // Console Interrupt
-
+   wire       cslINTR = ~cslINTR_N;
+   
    //
    // DZ11 Serial Interface
    //
@@ -35,14 +88,146 @@ module testbench;
    wire        ssramWR;         // SSRAM Write
 
    //
-   // Initialization
+   // Data to KS10
    //
 
+   parameter [0:35] valREGSTATUS = 36'o000005_003000;
+`ifdef SIMSSMON
+   parameter [0:35] valREGCIR    = 36'o254000_020000;
+`else
+// parameter [0:35] valREGCIR    = 36'o254000_030600;
+// parameter [0:35] valREGCIR    = 36'o254000_030660;
+   parameter [0:35] valREGCIR    = 36'o254000_030622;
+`endif   
+   
+   //
+   // Register Addresses
+   //
+   
+   parameter [7:0] addrREGADDR   = 8'h00;
+   parameter [7:0] addrREGDATA   = 8'h10;
+   parameter [7:0] addrREGSTATUS = 8'h20;
+   parameter [7:0] addrREGCIR    = 8'h30;
+
+   //
+   // Task to write to KS10 memory
+   //
+   // Details
+   //  Write address.  Write data.
+   //
+   
+   task cslWRKS10MEM;
+      input [18:35] address;
+      input [ 0:35] data;
+      begin
+         cslWRITE (addrREGADDR, {18'o010000, address});
+         cslWRITE (addrREGDATA, data);
+         cslWRITEb(addrREGSTATUS+4, 8'h01);
+      end
+   endtask
+   
+   //
+   // Task to read from KS10 memory
+   //
+   
+   task cslRDKS10MEM;
+      input  [18:35] address;
+      output [ 0:35] data;
+      begin
+         cslWRITE (addrREGADDR, {18'o040000, address});
+         cslWRITEb(addrREGSTATUS+4, 8'h01);
+         #40;
+         cslREAD  (addrREGDATA, data);
+      end
+   endtask
+   
+   //
+   // Task to write a word to console register
+   //
+   // Note:
+   //  A 36-bit write requires 5 byte operations.
+   //
+
+   task cslWRITE;
+      input [7: 0] addr;
+      input [0:35] data;
+      begin
+         cslWRITEb(addr+3, {4'b0, data[0:3]});
+         cslWRITEb(addr+4, data[ 4:11]);
+         cslWRITEb(addr+5, data[12:19]);
+         cslWRITEb(addr+6, data[20:27]);
+         cslWRITEb(addr+7, data[28:35]);
+         #100;
+      end
+   endtask
+   
+   //
+   // Task to read word from console register
+   //
+   // Note:
+   //  A 36-bit read requires 5 byte operations.
+   //
+   
+   task cslREAD;
+      input [7:0] addr;
+      output reg [0:35] data;
+      begin
+         cslREADb(addr+3, data[ 0: 3]);
+         cslREADb(addr+4, data[ 4:11]);
+         cslREADb(addr+5, data[12:19]);
+         cslREADb(addr+6, data[20:27]);
+         cslREADb(addr+7, data[28:35]);
+         #100;
+      end
+   endtask
+    
+   //
+   // Task to write byte to console register
+   //
+   
+   task cslWRITEb;
+      input [7:0] addr;
+      input [7:0] data;
+      begin
+         #50 cslADOUT = addr;
+         #5  cslALE   = 1;
+         #5  cslADOUT = data;
+         #5  cslALE   = 0;
+         #5  cslWR_N  = 0;
+         #50 cslWR_N  = 1;
+      end
+   endtask;
+
+   //
+   // Task to read byte from console register
+   //
+   
+   task cslREADb;
+      input [7:0] addr;
+      output reg [7:0] data;
+      begin
+        #5  cslADOUT = addr;
+        #5  cslALE   = 1;
+        #5  cslALE   = 0;
+        #5  cslRD_N  = 0;
+        #25 data     = cslAD;
+        #25 cslRD_N  = 1;
+      end
+   endtask;
+
+   //
+   // Initialization
+   //
+        
+   reg [0:35] temp;
+   
    initial
      begin
         $display("KS10 Simulation Starting");
 
+        //
         // Initial state
+        //
         
         clk     = 0;
         reset   = 1;
@@ -57,43 +242,34 @@ module testbench;
         #95 reset = 1'b0;
 
         //
-        // Write to regSTAT[12:19]
+        //  Write to Console Instruction Register
         //
-        
-        #5  cslADOUT = 8'h25;
-        #5  cslALE   = 1;
-        #5  cslADOUT = 8'h16;
-        #5  cslALE   = 0;
-        #5  cslWR_N  = 0;
-        #50 cslWR_N  = 1;
-        #5  cslRD_N  = 0;
-        #50 cslRD_N  = 1;
-        
+       
+        cslWRITE(addrREGCIR, valREGCIR);
+
         //
-        // Write to regSTAT[20:27]
+        // Write to Control/Status Register
+        //  Set EXEC, RUN, and release RESET
         //
 
-        #5  cslADOUT = 8'h26;
-        #5  cslALE   = 1;
-        #5  cslADOUT = 8'h06;
-        #5  cslALE   = 0;
-        #5  cslWR_N  = 0;
-        #50 cslWR_N  = 1;
-        #5  cslRD_N  = 0;
-        #50 cslRD_N  = 1;
-        
+        cslWRITE(addrREGSTATUS, valREGSTATUS);
+
         //
-        // Write to regSTAT[28:35]
+        // Readback Console Instruction Register
         //
 
-        #5  cslADOUT = 8'h27;
-        #5  cslALE   = 1;
-        #5  cslADOUT = 8'h01;
-        #5  cslALE   = 0;
-        #5  cslWR_N  = 0;
-        #50 cslWR_N  = 1;
-        #5  cslRD_N  = 0;
-        #50 cslRD_N  = 1;
+        cslREAD(addrREGCIR, temp);
+
+        //
+        // Initialize Console Status
+        //
+
+        cslWRKS10MEM(18'o000031, 36'b0);
+        cslWRKS10MEM(18'o000036, 36'b0);
+        cslWRKS10MEM(18'o025741, 36'b0);
+        cslWRKS10MEM(18'o026040, 36'b0);
+        cslWRKS10MEM(18'o030024, 36'b0);
+        cslWRKS10MEM(18'o030037, 36'b0);
         
      end
 
@@ -130,23 +306,33 @@ module testbench;
       .ssramADV         (ssramADV),
       .runLED           (runLED)
       );
-
+   
    //
-   // Display of Processor Status
+   // Display run/halt status
    //
 
-   reg lastRUN;
-   always @(posedge clk or posedge reset)
+   always @(negedge runLED)
+     $display("KS10 CPU Halted at t = %f us.", $time / 1.0e3);
+   
+   always @(posedge runLED)
+     $display("KS10 CPU Unhalted at t = %f us", $time / 1.0e3);
+   
+   //
+   // Handle Startup.
+   //
+   // Details
+   //  The Microcode will always halt at startup.  Catch the halt
+   //  at startup (only).  When this occurs momentarily push the
+   //  continue button to continue execution.  Otherwise let the
+   //  KS10 halt.
+   //
+   
+   always @(negedge runLED)
      begin
-        if (reset)
-          lastRUN = 1'b0;
-        else
+        if ($time > 13000 && $time < 15000)
           begin
-             if (runLED & ~lastRUN)
-               $display("KS10 CPU Unhalted at t = %f us", $time / 1.0e3);
-             else if (~runLED & lastRUN)
-               $display("KS10 CPU Halted at t = %f us.", $time / 1.0e3);
-             lastRUN = runLED;
+             cslWRITEb(8'h25, 8'h16);
+             cslWRITEb(8'h25, 8'h14);
           end
      end
  
@@ -172,7 +358,7 @@ module testbench;
    // Synchronous RAM
    //
    // Details
-   //  This is PDP10 memory.
+   //  This is KS10 memory.
    //
    // Note:
    //  Only 32K is implemented.  This is sufficient to run the
@@ -197,4 +383,69 @@ module testbench;
 
    assign ssramDATA = (ssramWR) ? 36'bz : SSRAM[rd_addr];
 
+`ifdef SIMCTY
+   
+   //
+   // File IO
+   //
+   
+   integer cty_ofile;
+   integer cty_ifile;
+   
+   initial
+     begin
+        cty_ofile = $fopen("cty_out.txt", "w");
+        cty_ifile = $fopen("cty_in.txt",  "r");
+        #1500000;
+        $fclose(cty_ofile);
+        $fclose(cty_ifile);
+        $finish;
+     end
+   
+   //
+   //  CTY Output Processing
+   //
+   //  Note:
+   //   A Console Interrupt (cslINTR asserted) may indicate that a
+   //   character is available to print or that a character can be
+   //   accepted by the KS10, or both, or neither.
+   //
+   
+   reg [0:35] dataCOUT;
+   parameter [18:35] addrCOUT = 18'o000033;
+   
+   always @(posedge clk or posedge reset)
+     begin
+        if (reset)
+          dataCOUT <= 36'b0;
+        else if (cslINTR)
+          begin
+             
+             //$display("KS10 CPU has interrupted the console at t = %f us", $time / 1.0e3);
+             
+             //
+             // Read CTYOUT Memory Location
+             //
+             
+             cslRDKS10MEM(addrCOUT, dataCOUT);
+
+             //
+             // Print character if character is available.
+             // Zero the flag when done printing.
+             //
+             
+             if (dataCOUT[27])
+               begin
+                  if ((dataCOUT[28:35] >= 8'h20) && (dataCOUT[28:35] < 8'h7f))
+                    $display("KS10 CTY Output: \"%s\"", dataCOUT[28:35]);
+                  else
+                    $display("KS10 CTY Output: \"%02x\"", dataCOUT[28:35]);
+                  $fwrite(cty_ofile, "%s", dataCOUT[28:35]);
+                  cslWRKS10MEM(addrCOUT, 36'b0);
+               end
+          end
+     end
+
+`endif
+   
 endmodule

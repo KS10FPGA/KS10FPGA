@@ -1,4 +1,9 @@
 #
+# This script reads a DEC listing file and extracts the object
+#  code.
+#  
+
+#
 # Start
 #
 
@@ -45,13 +50,14 @@ BEGIN {
     data3 = strtonum("0" substr($3,  8, 2));
     data4 = strtonum("0" substr($3, 11, 2));
     data5 = substr($3, 14, 6);
-    data  = sprintf("%03o%03o%s", data1, or(data2*010, or(data3,data4)), data5);
+    data  = sprintf("%03o%03o%s", data1, or(data2*010, or(data3, data4)), data5);
     i = strtonum("0" $2)
     map[i] = data;
 }
 
 #
 # Sixbit 
+#  6x 6-bit characters span the 36-bit word
 #
 #  These looks like:
 #
@@ -72,28 +78,41 @@ BEGIN {
 
 #
 # ASCII
+#  5x 7-bit characters are left justified in the 36-bit word.
 #
 #  These looks like:
 #
 #" xxx	aaaaaa	ddd ddd ddd ddd ddd "
+# 
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] [0-7][0-7][0-7] [0-7][0-7][0-7] [0-7][0-7][0-7] [0-7][0-7][0-7].*/ {
-    data1 = and(strtonum("0" substr($3,  1, 3)), 0177)
-    data2 = and(strtonum("0" substr($3,  5, 3)), 0177)
-    data3 = and(strtonum("0" substr($3,  9, 3)), 0177)
-    data4 = and(strtonum("0" substr($3, 13, 3)), 0177)
-    data5 = and(strtonum("0" substr($3, 17, 3)), 0177)
-    dig1  = and(rshift(data1, 1), 077);
-    dig2  = and(lshift(data1, 2), 037) + and(lshift(data1, 6), 040);
-    dig3  = and(rshift(data3, 3), 017) + and(lshift(data2, 5), 060);
-    dig4  = and(rshift(data4, 4), 007) + and(lshift(data3, 4), 070);
-    dig5  = and(rshift(data5, 5), 003) + and(lshift(data4, 3), 074);
-
-    data = sprintf(" %02o,%02o ...", dig1, dig2);
-
-    #print ($2 data)
-    #print $2, (data1 " " data2 " "   data3 " "  data4 " "  data5)
+    data1 = lshift(and(strtonum("0" substr($3,  1, 3)), 0177), 29)
+    data2 = lshift(and(strtonum("0" substr($3,  5, 3)), 0177), 22)
+    data3 = lshift(and(strtonum("0" substr($3,  9, 3)), 0177), 15)
+    data4 = lshift(and(strtonum("0" substr($3, 13, 3)), 0177),  8)
+    data5 = lshift(and(strtonum("0" substr($3, 17, 3)), 0177),  1)
+    data  = sprintf("%012o", or(data1, or(data2, or(data3, or(data4, data5)))))
+    #print $2 " " data
+    i = strtonum("0" $2)
+    map[i] = data
 }
+
+#
+# BYTE
+#  1x 8-bit byte is left justified in the 36-bit word.
+#
+#  These looks like:
+#
+#" xxx	aaaaaa	ddd 0000000000 "
+#
+
+/^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] 0000000000.*/ {
+    data = sprintf("%012o", lshift(and(strtonum("0" substr($3,  1, 3)), 0177), 28))
+    #print $2 " " data
+    i = strtonum("0" $2)
+    map[i] = data
+}
+
 
 #
 # 030651 123 124 122 125 103 
@@ -144,26 +163,15 @@ BEGIN {
 }
 
 #
-#
+# Write Sorted output to file
 #
 
 END {
-   for (i = 0; i < 384; i++) { 
+   for (i = 0; i < 077777; i++) { 
        if (map[i] != "") {
            printf "         SSRAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
        } else {
-           printf "         SSRAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
+           #printf "         SSRAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
        }
    }
-
-   for (i = 030000; i < 047000; i++) { 
-       if (map[i] != "") {
-           printf "         SSRAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
-       } else {
-           printf "         SSRAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
-       }
-   }
-
-
-
 }
