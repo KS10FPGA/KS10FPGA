@@ -286,10 +286,10 @@ module testbench;
    assign cslAD = (~cslRD_N) ? 8'bz : cslADOUT;
 
    //
-   // UUT
+   // KS10
    //
 
-   KS10 UUT
+   KS10 uKS10
      (.clk              (clk),
       .reset            (reset),
       .RXD              (RXD),

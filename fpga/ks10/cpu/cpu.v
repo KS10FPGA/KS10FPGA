@@ -114,8 +114,6 @@
    // flags
    //
 
-   wire mem_wait;
-   wire stop_main_memory;
    wire memory_cycle = 1'b0;                            // FIXME
    wire iolatch;                                        // FIXME
    wire opJRST0;                                        // JRST 0 instruction
