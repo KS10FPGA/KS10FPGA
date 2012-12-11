@@ -8,7 +8,8 @@ ISE  := $(ISE)
 MEM  := $(RTL)/mem
 UBA  := $(RTL)/uba
 UC   := $(CPU)/useq
-LOAD := MAINDEC-10-DSKAA.txt
+LOAD := MAINDEC-10-DSKEA.txt
+#LOAD := smmon.txt
 
 SRC := \
 	$(UC)/crom.vh  \
@@ -34,7 +35,7 @@ SRC := \
 	$(CPU)/intr.v \
 	$(CPU)/iolatch.v \
 	$(CPU)/ni_disp.v \
-	$(CPU)/page_tables.v \
+	$(CPU)/pager.v \
 	$(CPU)/pcflags.v \
 	$(CPU)/pf_disp.v \
 	$(CPU)/pxct.v \
