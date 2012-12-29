@@ -1,20 +1,20 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Debug Hack
-//!
-//! \details
-//!
-//! \todo
-//!
-//! \file
-//!      debug.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   Debug Hack
+//
+// Details
+//
+// Todo
+//
+// File
+//   debug.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -40,9 +40,6 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
 `include "useq/crom.vh"
@@ -59,6 +56,14 @@
    output [0: 3]          debugADDR;    // DEBUG Address
 
    //
+   // Microcode Decode
+   //
+   // synthesis translate_off
+   //
+   
+   wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
+
+   //
    // Print the Program Counter
    //
    // Details:
@@ -73,10 +78,7 @@
    //  register is loaded.  This occurs once during the instruction
    //  execution.
    //
-   // synthesis translate_off
-   //
 
-   wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
    reg [18:35] PC;
    
    always @(posedge clk or posedge rst)

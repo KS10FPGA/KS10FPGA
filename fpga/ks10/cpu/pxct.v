@@ -1,48 +1,48 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      PXCT
-//!
-//! \details
-//!
-//! \note
-//!     For a really good explanation of these bits see Mike Eulers
-//!     Interoffice Memorandum on Extended Addressing.
-//!
-//!     It is available from:
-//!     <http://bitsavers.trailing-edge.com/pdf/dec/pdp10/
-//!     KC10_Jupiter/ExtendedAddressing_Jul83.pdf>
-//!
-//!     The following information is extracted from that document
-//!     verbatim.
-//!
-//!        Bit      References made in previous context if bit is 1
-//!
-//!        9  (E1)  Effective address calculation of instruction
-//!                 (index registers, indirect words).
-//!
-//!        10 (D1)  Memory operands specified by EA, whether fetch
-//!                 or store (e.g, PUSH source, POP or BLT
-//!                 destination); byte pointer.
-//!
-//!        11 (E2)  Effective address calculation of byte pointer;
-//!                 source in EXTEND (e.g., XBLT or MOVSLJ source);
-//!                 effective address calculation of source byte
-//!                 pointer in EXTEND (MOVSLJ).
-//!
-//!        12 (D2)  Byte data; source in BLT; destination in EXTEND
-//!                 (e.g., XBLT or MOVSLJ destination); effective
-//!                 address calculation of destination byte pointer
-//!                 in EXTEND (MOVSLJ).
-//!
-//! \file
-//!      pxct.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   PXCT
+//
+// Details
+//
+// Note
+//   For a really good explanation of these bits see Mike Eulers
+//   Interoffice Memorandum on Extended Addressing.
+//
+//   It is available from:
+//   <http://bitsavers.trailing-edge.com/pdf/dec/pdp10/
+//   KC10_Jupiter/ExtendedAddressing_Jul83.pdf>
+//
+//   The following information is extracted from that document
+//   verbatim.
+//
+//   Bit       References made in previous context if bit is 1
+//
+//    9  (E1)  Effective address calculation of instruction
+//             (index registers, indirect words).
+//
+//   10  (D1)  Memory operands specified by EA, whether fetch
+//             or store (e.g, PUSH source, POP or BLT
+//             destination); byte pointer.
+//
+//   11  (E2)  Effective address calculation of byte pointer;
+//             source in EXTEND (e.g., XBLT or MOVSLJ source);
+//             effective address calculation of source byte
+//             pointer in EXTEND (MOVSLJ).
+//
+//   12  (D2)  Byte data; source in BLT; destination in EXTEND
+//             (e.g., XBLT or MOVSLJ destination); effective
+//             address calculation of destination byte pointer
+//             in EXTEND (MOVSLJ).
+//
+// File
+//   pxct.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -68,14 +68,11 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
 `include "useq/crom.vh"
 
-module PXCT(clk, rst, clken, crom, dp, prevEN);
+module PXCT(clk, rst, clken, crom, dp, prevEN, acBLOCK);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -84,15 +81,46 @@ module PXCT(clk, rst, clken, crom, dp, prevEN);
    input                  clken;                // clock enable
    input  [0:cromWidth-1] crom;                 // Control ROM Data
    input  [0:35]          dp;                   // Data Path
-   output reg             prevEN;               // Previous Enable
+   output                 prevEN;               // Previous Enable
+   output [0: 5]          acBLOCK;              // Blocks
 
    //
    // Microcode fields
    //
 
-   wire       specPXCTEN  = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PXCTEN );
-   wire       specPXCTOFF = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_PXCTOFF);
+   wire       specACBLK   = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADACBLK);
+   wire       specPXCTEN  = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PXCTEN   );
+   wire       specPXCTOFF = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_PXCTOFF  );
    wire [0:2] memPXCTSEL  = `cromMEM_PXCTSEL;
+
+   //
+   // AC Block Selection
+   //
+   // Details
+   //  This register holds the current AC block and the
+   //  previous AC block.  The PXCT selects between the
+   //  two.
+   //
+   // Trace
+   //  DPE5/E308
+   //
+
+   reg [0: 2] currBLOCK;                        // Current Block
+   reg [0: 2] prevBLOCK;                        // Previous Block
+
+   always @(posedge clk or posedge rst)
+    begin
+        if (rst)
+          begin
+             currBLOCK <= 3'b0;
+             prevBLOCK <= 3'b0;
+          end
+        else if (clken & specACBLK)
+          begin
+             currBLOCK <= dp[6: 8];
+             prevBLOCK <= dp[9:11];
+          end
+    end
 
    //
    // PCXT Register
@@ -153,6 +181,7 @@ module PXCT(clk, rst, clken, crom, dp, prevEN);
    //  DPMA/E63
    //
 
+   reg prevEN;
    always @(pxct or enPXCT or memPXCTSEL)
      begin
         if (enPXCT)
@@ -174,4 +203,12 @@ module PXCT(clk, rst, clken, crom, dp, prevEN);
           prevEN <= 1'b0;                       // Current
      end
 
+
+   //
+   // Fixups
+   //
+
+   assign acBLOCK[0:2] = currBLOCK;
+   assign acBLOCK[3:5] = prevBLOCK;
+   
 endmodule

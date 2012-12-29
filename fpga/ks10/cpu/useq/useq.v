@@ -44,9 +44,10 @@
 `include "drom.vh"
 
 module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
-            dispMUL, dispPF, dispNI, dispBYTE,
-            dispEA, dispSCAD, dispNORM, skip40,
-            skip20, skip10, regIR, drom, crom);
+            cpuINTR, cpuEXEC, cpuCONT, iolatch, timerINTR,
+            skipJFCL, opJRST0, trapCYCLE, scSIGN, aluFLAGS,
+            dispPF, dispNI, dispBYTE, dispSCAD,
+            regIR, pcFLAGS, drom, crom);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -57,25 +58,55 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    input                  pageFAIL;     // Page Fail
    input  [0:35]          dp;           // Datapath
    input  [0:11]          dispDIAG;     // Diagnostic Addr
-   input  [0: 3]          dispMUL;      // Multiply Dispatch
+   input                  cpuINTR;      // Extenal Interrupt
+   input                  cpuEXEC;      // Execute Switch Active
+   input                  cpuCONT;      // Continue Switch Active
+   input                  iolatch;      // IO Latch
+   input                  timerINTR;    // Timer Interrupt
+   input                  trapCYCLE;    // Trap Cycle
+   input                  scSIGN;       // SC Sign
+   input  [0: 8]          aluFLAGS;     // ALU Flags
+   input                  skipJFCL;     // JFCL Instruction
+   input                  opJRST0;      // JRST 0 Instruction
    input  [0: 3]          dispPF;       // Page Fail Dispatch
    input  [0: 3]          dispNI;       // Next Instruction Dispatch
    input  [0: 3]          dispBYTE;     // Byte Size/Position Dispatch
-   input  [0: 3]          dispEA;       // Effective Address Mode Dispatch
    input  [0: 3]          dispSCAD;     // SCAD Dispatch
-   input  [0: 3]          dispNORM;     // Normalize Dispatch
-   input  [1: 7]          skip40;       // Skip 40
-   input  [1: 7]          skip20;       // Skip 20
-   input  [1: 7]          skip10;       // Skip 10
    input  [0:17]          regIR;        // Instruction Register
+   input  [0:17]          pcFLAGS;      // PC Flags
    input  [0:dromWidth-1] drom;         // Dispatch ROM Data
    output [0:cromWidth-1] crom;         // Control ROM Data
 
    //
-   // Instruction Register AC field
+   // ALU Flags
    //
 
-   wire [ 9:12] regIR_AC = regIR[ 9:12];
+   wire aluQR37    = aluFLAGS[0];
+   wire aluLZERO   = aluFLAGS[1];
+   wire aluRZERO   = aluFLAGS[2];
+   wire aluLSIGN   = aluFLAGS[3];
+   wire aluRSIGN   = aluFLAGS[4];
+   wire aluCRY0    = aluFLAGS[6];
+   wire aluCRY1    = aluFLAGS[7];
+   wire aluCRY2    = aluFLAGS[8];
+
+   //
+   // PC Flags
+   //
+
+   wire flagFPD    = pcFLAGS[ 4];
+   wire flagUSER   = pcFLAGS[ 5];
+   wire flagUSERIO = pcFLAGS[ 6];
+
+   //
+   // Instruction Register
+   //
+
+   wire [ 9:12] regIR_AC  = regIR[ 9:12];
+   wire         regIR_I   = regIR[   13];
+   wire [14:17] regIR_XR  = regIR[14:17];
+   wire         regACZERO = (regIR_AC == 4'b0000);
+   wire         regXRZERO = (regIR_XR == 4'b0000);
 
    //
    // Control ROM Address
@@ -83,6 +114,23 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
 
    wire [0:11] addr;
    wire [0:11] dispRET;
+   wire [0:11] skipADDR;
+   wire [0:11] dispADDR;
+
+   //
+   // ALU Zero
+   //
+
+   wire aluZERO = aluLZERO & aluRZERO;                  // ALU (both halves) is zero
+   wire txxx    = aluZERO != `dromTXXXEN;               // Test Instruction Results
+
+   //
+   // Dispatch Addresses
+   //
+   
+   wire [8:11] dispMUL  = {1'b0,     aluQR37, 1'b0,      1'b0};
+   wire [8:11] dispEA   = {~opJRST0, regIR_I, regXRZERO, 1'b0};
+   wire [8:11] dispNORM = {aluZERO,  dp[8:9], aluLSIGN};
 
    //
    // Skip Logic
@@ -96,13 +144,11 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //  The skip must take place on an even address.
    //
 
-   wire [0:11] skipADDR;
-
    SKIP uSKIP
      (.crom(crom),
-      .skip40(skip40),
-      .skip20(skip20),
-      .skip10(skip10),
+      .skip40({aluCRY0,   aluLZERO, aluRZERO, ~flagUSER,  flagFPD,  regACZERO, cpuINTR   }),
+      .skip20({aluCRY2,   aluLSIGN, aluRSIGN, flagUSERIO, skipJFCL, aluCRY1,   txxx      }),
+      .skip10({trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    iolatch,  ~cpuCONT,  ~timerINTR}),
       .skipADDR(skipADDR)
       );
 
@@ -160,7 +206,6 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
 
    reg [0:11] dispJ;
-
    always @(dromACDISP, regIR_AC, dromJ)
      begin
         if (dromACDISP)                                 // Dispatch Address Range:
@@ -178,7 +223,6 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
 
    reg [0:11] dispAREAD;
-
    always @(dromAEQJ, dispJ, dromA)
      begin
         if (dromAEQJ)                                   // Dispatch Address Range:
@@ -190,9 +234,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
    // Dispatch MUX
    //
-
-   wire [0:11] dispADDR;
-
+           
    DISPATCH uDISPATCH
      (.crom             (crom),
       .dp               (dp),
@@ -264,7 +306,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
 
    assign addr = (rst)      ? 12'o0000 :
                  (pageFAIL) ? 12'o7777 :
-                 (dispADDR | skipADDR | `cromJ);
+                 (dispADDR  | skipADDR | `cromJ);
 
    //
    // Control ROM

@@ -1,20 +1,20 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      KS10 CPU
-//!
-//! \details
-//!
-//! \todo
-//!
-//! \file
-//!      cpu.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   KS10 CPU
+//
+// Details
+//
+// Todo
+//
+// File
+//   cpu.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -40,9 +40,6 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
 `include "useq/crom.vh"
@@ -59,14 +56,14 @@ module CPU(clk, rst,
 
    input          clk;          // Clock
    input          rst;          // Reset
-   input          cslSTEP;     // Single Step
-   input          cslRUN;      // Run
-   input          cslEXEC;     // Execute
-   input          cslCONT;     // Continue
-   input          cslHALT;     // HALT
-   input          cslTIMEREN;  // Timer Enable
-   input          cslTRAPEN;   // Enable Traps
-   input          cslCACHEEN;  // Enable Cache
+   input          cslSTEP;      // Single Step
+   input          cslRUN;       // Run
+   input          cslEXEC;      // Execute
+   input          cslCONT;      // Continue
+   input          cslHALT;      // HALT
+   input          cslTIMEREN;   // Timer Enable
+   input          cslTRAPEN;    // Enable Traps
+   input          cslCACHEEN;   // Enable Cache
    input          ks10INTR;     // Console Interrupt to KS10
    output         cslINTR;      // KS10 Interrupt to Console
    input  [ 1: 7] busINTR;      // Unibus Interrupt Request
@@ -85,22 +82,6 @@ module CPU(clk, rst,
    wire [0:dromWidth-1] drom;                           // Dispatch ROM
 
    //
-   // ALU
-   //
-
-   wire aluLZERO;                                       // ALU left-half is zero
-   wire aluRZERO;                                       // ALU right-half is zero
-   wire aluLSIGN;                                       // ALU left-half sign
-   wire aluRSIGN;                                       // ALU right-half sign
-   wire aluAOV;                                         // ALU arithmetic overflow
-   wire aluCRY0;                                        // ALU carry into bit 0
-   wire aluCRY1;                                        // ALU carry into bit 1
-   wire aluCRY2;                                        // ALU carry into bit 2
-   wire aluQR37;                                        // Q Register LSB
-   wire aluZERO = aluLZERO & aluRZERO;                  // ALU (both halves) is zero
-   wire txxx    = aluZERO != `dromTXXXEN;               // Test Instruction Results
-
-   //
    // Processor State
    //
 
@@ -109,13 +90,14 @@ module CPU(clk, rst,
    wire cpuEXEC;                                        // Execute Switch Active
 
    //
-   // flags
+   // Flags
    //
 
    wire memory_cycle = 1'b0;                            // FIXME
    wire iolatch;                                        // FIXME
-   wire opJRST0;                                        // JRST 0 instruction
-   wire trapCYCLE;
+   wire opJRST0;                                        // JRST 0 Instruction
+   wire skipJFCL;                                       // JFCL Instruction
+   wire trapCYCLE;                                      // Trap Cycle
 
    //
    // Interrupts
@@ -128,12 +110,28 @@ module CPU(clk, rst,
    wire [ 1: 7] aprINTR;                                // APR Interrupt Request
 
    //
-   // AC Blocks
+   // PXCT
    //
 
+   wire         prevEN;                                 // Conditionally use Previous Context
    wire [ 0: 5] acBLOCK;                                // AC Block
    wire [ 0: 2] currBLOCK = acBLOCK[0:2];               //  Current AC Block
    wire [ 0: 2] prevBLOCK = acBLOCK[3:5];               //  Previous AC Block
+
+   //
+   // ALU
+   //
+
+   wire [ 0: 8] aluFLAGS;                               // ALU Flags
+   wire         aluQR37        = aluFLAGS[0];           //  ALU Q Register LSB
+   wire         aluLZERO       = aluFLAGS[1];           //  ALU left-half is zero
+   wire         aluRZERO       = aluFLAGS[2];           //  ALU right-half is zero
+   wire         aluLSIGN       = aluFLAGS[3];           //  ALU left-half sign
+   wire         aluRSIGN       = aluFLAGS[4];           //  ALU right-half sign
+   wire         aluAOV         = aluFLAGS[5];           //  ALU arithmetic overflow
+   wire         aluCRY0        = aluFLAGS[6];           //  ALU carry into bit 0
+   wire         aluCRY1        = aluFLAGS[7];           //  ALU carry into bit 1
+   wire         aluCRY2        = aluFLAGS[8];           //  ALU carry into bit 2
 
    //
    // PC Flags
@@ -172,7 +170,7 @@ module CPU(clk, rst,
    assign       cslINTR        = flagCSL;               //  KS10 Interrupt to Console
 
    //
-   // A Registers
+   // VMA Registers
    //
 
    wire [14:35] vmaADDR;                                // VMA Address
@@ -210,7 +208,7 @@ module CPU(clk, rst,
    // Timer
    //
 
-   wire         timerINTR;                               // Timer Interrupt
+   wire         timerINTR;                              // Timer Interrupt
    wire [18:35] timerCOUNT;                             // Millisecond timer
 
    //
@@ -225,12 +223,6 @@ module CPU(clk, rst,
    wire         regACZERO    = (regIR_AC == 4'b0000);   //  AC is zero
    wire         regXRZERO    = (regIR_XR == 4'b0000);   //  XR is zero
    wire         xrPREV;                                 //  XR is previous
-
-   //
-   // PXCT
-   //
-
-   wire         prevEN;                                 // Conditionally use previous context
 
    //
    // Cache
@@ -260,13 +252,10 @@ module CPU(clk, rst,
    // Dispatches
    //
 
-   wire [ 8:11] dispNI;                                 // Next Instruction dispatch
-   wire [ 8:11] dispPF;                                 // Page Fail dispatch
-   wire [ 8:11] dispBYTE;                               // Byte dispatch
-   wire [ 8:11] dispSCAD;                               // SCAD dispatch
-   wire [ 8:11] dispMUL  = {1'b0, aluQR37, 1'b0, 1'b0}; // Multiply dispatch
-   wire [ 8:11] dispNORM = {aluZERO, dp[8:9], aluLSIGN};// Normalize dispatch
-   wire [ 8:11] dispEA   = {~opJRST0, regIR_I, regXRZERO, 1'b0}; // EA Dispatch
+   wire [ 8:11] dispNI;                                 // Next Instruction Dispatch
+   wire [ 8:11] dispPF;                                 // Page Fail Dispatch
+   wire [ 8:11] dispBYTE;                               // Byte Dispatch
+   wire [ 8:11] dispSCAD;                               // SCAD Dispatch
    wire [ 0:11] dispDIAG = 12'b0;                       // Diagnostic Dispatch
 
    //
@@ -275,15 +264,6 @@ module CPU(clk, rst,
 
    wire [0: 3]  debugADDR;                              // DEBUG Address
    wire [0:35]  debugDATA;                              // DEBUG Data
-
-   //
-   // Skips
-   //
-
-   wire skipJFCL;
-   wire [1:7] skip40 = {aluCRY0,   aluLZERO, aluRZERO, ~flagUSER,  flagFPD,  regACZERO, cpuINTR   };
-   wire [1:7] skip20 = {aluCRY2,   aluLSIGN, aluRSIGN, flagUSERIO, skipJFCL, aluCRY1,   txxx      };
-   wire [1:7] skip10 = {trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    iolatch,  ~cpuCONT,  ~timerINTR};
 
    //
    // Timing
@@ -308,19 +288,6 @@ module CPU(clk, rst,
       );
 
    //
-   // AC Block
-   //
-
-   AC_BLOCK uAC_BLOCK
-     (.clk              (clk),
-      .rst              (rst),
-      .clken            (clkenDP),
-      .crom             (crom),
-      .dp               (dp),
-      .acBLOCK          (acBLOCK)
-      );
-
-   //
    // Arithmetic Logic Unit
    //
 
@@ -330,15 +297,7 @@ module CPU(clk, rst,
       .clken            (clkenDP),
       .crom             (crom),
       .aluIN            (dbus),
-      .aluLZERO         (aluLZERO),
-      .aluRZERO         (aluRZERO),
-      .aluLSIGN         (aluLSIGN),
-      .aluRSIGN         (aluRSIGN),
-      .aluAOV           (aluAOV),
-      .aluCRY0          (aluCRY0),
-      .aluCRY1          (aluCRY1),
-      .aluCRY2          (aluCRY2),
-      .aluQR37          (aluQR37),
+      .aluFLAGS         (aluFLAGS),
       .aluOUT           (dp),
       .debugADDR        (debugADDR),
       .debugDATA        (debugDATA)
@@ -430,9 +389,10 @@ module CPU(clk, rst,
    DBUS uDBUS
      (.crom             (crom),
       .cacheHIT         (cacheHIT),
+      .reqINTP          (reqINTP),
       .vmaFLAGS         (vmaFLAGS),
       .vmaADDR          (vmaADDR),
-      .pcFLAGS          ({pcFLAGS, 1'b0, reqINTP, 4'b1111, vmaADDR[26:35]}),
+      .pcFLAGS          (pcFLAGS),
       .dp               (dp),
       .ramfile          (ramfile),
       .dbm              (dbm),
@@ -526,20 +486,25 @@ module CPU(clk, rst,
      (.clk              (clk),
       .rst              (rst),
       .clken            (clkenCR),
-      .pageFAIL         (pageFAIL),
       .dp               (dp),
+      .pageFAIL         (pageFAIL),
+      .cpuINTR          (cpuINTR),
+      .cpuEXEC          (cpuEXEC),
+      .cpuCONT          (cpuCONT),
+      .iolatch          (iolatch),
+      .timerINTR        (timerINTR),
+      .trapCYCLE        (trapCYCLE),
+      .scSIGN           (scSIGN),
+      .aluFLAGS         (aluFLAGS),
+      .opJRST0          (opJRST0),
+      .skipJFCL         (skipJFCL),
       .dispDIAG         (dispDIAG),
-      .dispMUL          (dispMUL),
       .dispPF           (dispPF),
       .dispNI           (dispNI),
       .dispBYTE         (dispBYTE),
-      .dispEA           (dispEA),
       .dispSCAD         (dispSCAD),
-      .dispNORM         (dispNORM),
-      .skip40           (skip40),
-      .skip20           (skip20),
-      .skip10           (skip10),
       .regIR            (regIR),
+      .pcFLAGS          (pcFLAGS),
       .drom             (drom),
       .crom             (crom)
       );
@@ -623,7 +588,8 @@ module CPU(clk, rst,
       .clken            (clkenDP),
       .crom             (crom),
       .dp               (dp),
-      .prevEN           (prevEN)
+      .prevEN           (prevEN),
+      .acBLOCK          (acBLOCK)
       );
 
    //

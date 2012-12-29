@@ -47,16 +47,17 @@
 `default_nettype none
 `include "useq/crom.vh"
 
-module DBUS(crom, cacheHIT, vmaADDR, vmaFLAGS, pcFLAGS, dp,
+module DBUS(crom, cacheHIT, reqINTP, vmaADDR, vmaFLAGS, pcFLAGS, dp,
             ramfile, dbm, dbus);
 
    parameter  cromWidth = `CROM_WIDTH;
 
    input      [0:cromWidth-1] crom;             // Control ROM Data
    input                      cacheHIT;         // Cache Hit
+   input      [ 0: 2]         reqINTP;		// Requested Interrupt Priority
    input      [ 0:13]         vmaFLAGS;         // Virtual Memory Flags
    input      [14:35]         vmaADDR;          // Virtual Memory Address
-   input      [ 0:35]         pcFLAGS;          // PC Flags in Left Half
+   input      [ 0:17]         pcFLAGS;          // PC Flags in Left Half
    input      [ 0:35]         dp;               // Datapath
    input      [ 0:35]         ramfile;          // Ramfile
    input      [ 0:35]         dbm;              // Databus Mux
@@ -128,7 +129,7 @@ module DBUS(crom, cacheHIT, vmaADDR, vmaFLAGS, pcFLAGS, dp,
      begin
         case (`cromDBUS_SEL)
           `cromDBUS_SEL_FLAGS:
-            dbus = pcFLAGS;
+            dbus = {pcFLAGS, 1'b0, reqINTP, 4'b1111, vmaADDR[26:35]};
           `cromDBUS_SEL_DP:
             dbus = dp;
           `cromDBUS_SEL_RAMFILE:

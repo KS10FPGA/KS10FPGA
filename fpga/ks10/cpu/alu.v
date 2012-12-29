@@ -1,36 +1,36 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      AM2901 ALU
-//!
-//! \details
-//!
-//! \note
-//!      The KS10 ALU implementation uses ten cascaded am2901 4-bit
-//!      slices.  Some quick study showed that this did not work
-//!      well with an FPGA implemenation.  Most FPGAs have optimized
-//!      (very fast) carry logic to support counters and adders.  It
-//!      turns out that the synthesis tools can't infer from the
-//!      description of the 4-bit slices that a single 40-bit carry
-//!      chain exists from the LSB to the MSB.  Therefore this ALU
-//!      is implemented as two 20-bit ALUs.   The two 20-bit ALUs
-//!      are required because the two ALU halves must operate
-//!      together forming a single 40-bit ALU and must operate
-//!      separately to form two independant registers.
-//!
-//! \note
-//!      The ALU bit numbering on the schematic is [-2,-1,0:37].
-//!      This doesn't work at all for verilog.   Therefore the
-//!      bit numbering is [0:39].
-//!
-//! \file
-//!      alu.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   AM2901 ALU
+//
+// Details
+//
+// Note
+//   The KS10 ALU implementation uses ten cascaded am2901 4-bit
+//   slices.  Some quick study showed that this did not work
+//   well with an FPGA implemenation.  Most FPGAs have optimized
+//   (very fast) carry logic to support counters and adders.  It
+//   turns out that the synthesis tools can't infer from the
+//   description of the 4-bit slices that a single 40-bit carry
+//   chain exists from the LSB to the MSB.  Therefore this ALU
+//   is implemented as two 20-bit ALUs.   The two 20-bit ALUs
+//   are required because the two ALU halves must operate
+//   together forming a single 40-bit ALU and must operate
+//   separately to form two independant registers.
+//
+// Note
+//   The ALU bit numbering on the schematic is [-2,-1,0:37].
+//   This doesn't work at all for verilog.   Therefore the
+//   bit numbering is [0:39].
+//
+// File
+//   alu.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -56,17 +56,12 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
 `include "useq/crom.vh"
 
-module ALU(clk, rst, clken, crom, aluIN,
-           aluLZERO, aluRZERO, aluLSIGN, aluRSIGN,
-           aluAOV, aluCRY0, aluCRY1, aluCRY2,
-           aluQR37, aluOUT, debugADDR, debugDATA);
+module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
+           debugADDR, debugDATA);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -75,15 +70,7 @@ module ALU(clk, rst, clken, crom, aluIN,
    input                  clken;                // Clock enable
    input  [0:cromWidth-1] crom;                 // Control ROM Data
    input  [0:35]          aluIN;                // Bus input
-   output                 aluLZERO;             // ALU left half Zero
-   output                 aluRZERO;             // ALU right half Zero
-   output                 aluLSIGN;             // ALU left half Sign
-   output                 aluRSIGN;             // ALU right half Sign
-   output                 aluAOV;               // ALU Arithmetic Overflow
-   output                 aluCRY0;              // ALU Carry 0
-   output                 aluCRY1;              // ALU Carry 1
-   output                 aluCRY2;              // ALU Carry 2
-   output                 aluQR37;              // ALU QR37
+   output [0: 8]          aluFLAGS;		// ALU Flags
    output [0:35]          aluOUT;               // ALU Output
    input  [0: 3]          debugADDR;            // DEBUG Address
    output [0:35]          debugDATA;            // DEBUG Data
@@ -685,15 +672,15 @@ module ALU(clk, rst, clken, crom, aluIN,
    // ALU Sign outputs
    //
 
-   assign aluLSIGN = f[ 0];
-   assign aluRSIGN = f[20];
+   wire aluLSIGN = f[ 0];
+   wire aluRSIGN = f[20];
 
    //
    // ALU Zero outputs
    //
 
-   assign aluLZERO = f[ 0:19] == 20'b0;
-   assign aluRZERO = f[20:39] == 20'b0;
+   wire aluLZERO = f[ 0:19] == 20'b0;
+   wire aluRZERO = f[20:39] == 20'b0;
 
    //
    // Arithmetic Overflow (aluAOV)
@@ -706,7 +693,7 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  DPE9/E26
    //
 
-   assign aluAOV = aluLSIGN != f[2];
+   wire aluAOV = aluLSIGN != f[2];
 
    //
    // aluCRY0
@@ -724,7 +711,7 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  will cause a carry into bit (-2).
    //
 
-   assign aluCRY0 = co;
+   wire aluCRY0 = co;
 
    //
    // aluCRY1
@@ -737,7 +724,7 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  DPE9/E26
    //
 
-   assign aluCRY1 = aluAOV != aluCRY0;
+   wire aluCRY1 = aluAOV != aluCRY0;
 
    // aluCRY2:
    //
@@ -752,8 +739,23 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  been a carry from ALU bit 2.
    //
 
-   assign aluCRY2 = ((go != co) | (f[0:3] != g[0:3]));
+   wire aluCRY2 = ((go != co) | (f[0:3] != g[0:3]));
 
+   //
+   // QR37
+   //
+   // Details
+   //  This is what is shifted out of the LSB of the Q Register and
+   //  is used by the multiplication implementation.  I.e., it goes
+   //  to the multiplication dispatch logic to control whether to
+   //  add (or not) the partial product.
+   //
+   // Note
+   //  This is actually QR39 using Verilog numbering.
+   //
+
+   reg flagQR37;
+   
    //
    // ALU Flag State Register
    //
@@ -766,29 +768,28 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  DPE5/E28
    //
 
-   reg flag_fl02;
-   reg flag_qr37;
-   reg flag_carry_02;
-   reg flag_funct_02;
-   reg flag_carry_out;
+   reg flagFL02;
+   reg flagCARRY02;
+   reg flagFUNCT02;
+   reg flagCARRYOUT;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             flag_fl02      <= 1'b0;
-             flag_qr37      <= 1'b0;
-             flag_carry_02  <= 1'b0;
-             flag_funct_02  <= 1'b0;
-             flag_carry_out <= 1'b0;
+             flagFL02     <= 1'b0;
+             flagQR37     <= 1'b0;
+             flagCARRY02  <= 1'b0;
+             flagFUNCT02  <= 1'b0;
+             flagCARRYOUT <= 1'b0;
           end
         else
           begin
-             flag_fl02      <= bdi[4];
-             flag_qr37      <= q[39];
-             flag_carry_02  <= aluCRY2;
-             flag_funct_02  <= funct_02;
-             flag_carry_out <= aluCRY0;
+             flagFL02     <= bdi[4];
+             flagQR37     <= q[39];
+             flagCARRY02  <= aluCRY2;
+             flagFUNCT02  <= funct_02;
+             flagCARRYOUT <= aluCRY0;
          end
      end
  
@@ -815,7 +816,7 @@ module ALU(clk, rst, clken, crom, aluIN,
    reg carry_in;
    reg funct_02;
  
-   always @(crom or flag_fl02 or flag_carry_02 or flag_funct_02 or flag_carry_out or fun[2])
+   always @(crom or flagFL02 or flagCARRY02 or flagFUNCT02 or flagCARRYOUT or fun[2])
    begin
  
      //
@@ -824,10 +825,10 @@ module ALU(clk, rst, clken, crom, aluIN,
  
      if (`cromMULTIPREC)
        begin
-         multi_shift  <= flag_fl02;
+         multi_shift  <= flagFL02;
          divide_shift <= 1'b0;
-         carry_in     <= flag_carry_02;
-         funct_02     <= flag_funct_02;
+         carry_in     <= flagCARRY02;
+         funct_02     <= flagFUNCT02;
        end
  
      //
@@ -837,9 +838,9 @@ module ALU(clk, rst, clken, crom, aluIN,
      else if (`cromDIVIDE)
        begin
          multi_shift  <= 1'b0;
-         divide_shift <= flag_carry_out;
-         carry_in     <= flag_carry_out; 
-         funct_02     <= flag_carry_out;
+         divide_shift <= flagCARRYOUT;
+         carry_in     <= flagCARRYOUT; 
+         funct_02     <= flagCARRYOUT;
        end
  
      //
@@ -855,21 +856,6 @@ module ALU(clk, rst, clken, crom, aluIN,
          funct_02     <= fun[2];
        end
    end
-
-   //
-   // QR37
-   //
-   // Details
-   //  This is what is shifted out of the LSB of the Q Register and
-   //  is used by the multiplication implementation.  I.e., it goes
-   //  to the multiplication dispatch logic to control whether to
-   //  add (or not) the partial product.
-   //
-   // Note
-   //  This is actually QR39 using Verilog numbering.
-   //
-   
-   assign aluQR37 = flag_qr37;
    
    //
    // ALU Destination Selector
@@ -886,5 +872,19 @@ module ALU(clk, rst, clken, crom, aluIN,
    //
 
    assign debugDATA = cd;
+
+   //
+   // ALU Flags
+   //
+   
+   assign aluFLAGS[0] = flagQR37;
+   assign aluFLAGS[1] = aluLZERO;
+   assign aluFLAGS[2] = aluRZERO;
+   assign aluFLAGS[3] = aluLSIGN;
+   assign aluFLAGS[4] = aluRSIGN;
+   assign aluFLAGS[5] = aluAOV;
+   assign aluFLAGS[6] = aluCRY0;
+   assign aluFLAGS[7] = aluCRY1;
+   assign aluFLAGS[8] = aluCRY2;
    
 endmodule

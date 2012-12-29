@@ -51,11 +51,11 @@ module IOLATCH(clk, rst, clken, crom, iolatch);
    
    parameter cromWidth = `CROM_WIDTH;
 
-   input                      clk;      // Clock
-   input                      rst;      // Reset
-   input                      clken;    // Clock Enable
-   input      [0:cromWidth-1] crom;  	// Control ROM Data
-   output reg                 iolatch;
+   input                  clk;  	// Clock
+   input                  rst;      	// Reset
+   input                  clken;    	// Clock Enable
+   input  [0:cromWidth-1] crom;  	// Control ROM Data
+   output                 iolatch;	// IO Latch
 
    //
    // IO Latch
@@ -65,6 +65,7 @@ module IOLATCH(clk, rst, clken, crom, iolatch);
    //  DPEA/E93
    //
 
+   reg iolatch;
    wire latch = 1'b0;	// FIXME
    
    always @(posedge clk or posedge rst)
