@@ -51,12 +51,25 @@ SRC := \
 	$(CSL)/csl.v \
 	$(MEM)/mem.v \
 	$(ARB)/arb.v \
+	$(UBA)/dz11/uart/uart_brg.vh \
 	$(UBA)/dz11/uart/uart_brg.v \
 	$(UBA)/dz11/uart/uart_rx.v \
 	$(UBA)/dz11/uart/uart_tx.v \
+	$(UBA)/dz11/uart/uart_buftx.v \
 	$(UBA)/dz11/dzfifo.v \
+	$(UBA)/dz11/dz11.vh \
 	$(UBA)/dz11/dz11.v \
+	$(UBA)/rh11/sd/sdspi.vh \
+	$(UBA)/rh11/sd/sdspi.v \
+	$(UBA)/rh11/sd/sd.vh \
+	$(UBA)/rh11/sd/sd.v \
+	$(UBA)/rh11/rpxx.vh \
+	$(UBA)/rh11/rpxx.v \
+	$(UBA)/rh11/sdaddr.v \
+	$(UBA)/rh11/rh11.vh \
+	$(UBA)/rh11/rh11.v \
 	$(UBA)/uba.v \
+	$(RTL)/ks10.vh \
 	$(RTL)/ks10.v \
 	$(RTL)/ks10.ucf \
 	$(RTL)/status.txt \
@@ -88,6 +101,8 @@ clean:
 	rcsclean $(MEM)/*
 	rcsclean $(UBA)/dz11/uart/*
 	rcsclean $(UBA)/dz11/*
+	rcsclean $(UBA)/rh11/sd/*
+	rcsclean $(UBA)/rh11/*
 	rcsclean $(UBA)/*
 	rcsclean $(UC)/*
 	rm -f    $(UC)/*.dat
