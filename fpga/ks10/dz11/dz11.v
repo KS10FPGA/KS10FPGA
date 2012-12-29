@@ -1,21 +1,25 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      KS-10 DZ11 
-//!
-//! \details
-//!      Important addresses:
-//!
-//! \todo
-//!
-//! \file
-//!      dz11.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   KS-10 DZ11 
+//
+// Details
+//
+// Notes
+//   Unibus is little-endian and uses [15:0] notation
+//   KS10 is big-endian and uses [0:35] notation.
+//
+//   The addressing big-endian from the KS10.
+//   The data bus little-endian from Unibus. Confusing? Sorry.
+//
+// File
+//   dz11.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -41,126 +45,183 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
+`include "dz11.vh"
+`include "uart/uart_brg.vh"
   
-module DZ11(clk, rst, clken, TXD, RXD, curINTR_NUM,
-            busINTR, busREQI, busREQO, busACKI, busACKO,
-            busADDRI, busADDRO, busDATAI, busDATAO);
-             
-   input         clk;           // Clock
-   input         rst;           // Reset
-   input         clken;         // Clock enable
-   input  [0: 3] RXD;           // Received Serial Data
-   output [0: 3] TXD;           // Transmitted Serial Data
-   input  [0: 2] curINTR_NUM;   // Current Interrupt Priority
-   output [1: 7] busINTR;       // Unibus Interrupt Request
-   input         busREQI;       // Unibus Request In
-   output        busREQO;       // Unibus Request Out
-   input         busACKI;       // Unibus Acknowledge In
-   output        busACKO;       // Unibus Acknowledge Out
-   input  [0:35] busADDRI;      // Bus Address In
-   output [0:35] busADDRO;      // Bus Address Out
-   input  [0:35] busDATAI;      // Unibus Data In
-   output [0:35] busDATAO;      // Unibus Data Out
+module DZ11(clk, rst, clken,
+            dz11TXD, dz11RXD, dz11CO, dz11RI, dz11DTR,
+            devRESET, devINTR,  devINTA,
+            devREQI,  devACKO,  devADDRI,
+            devREQO,  devACKI,  devADDRO,
+            devDATAI, devDATAO);
+
+   input          clk;                          // Clock
+   input          rst;                          // Reset
+   input          clken;                        // Clock enable
+   // DZ11 External Interfaces
+   output [ 7: 0] dz11TXD;                      // DZ11 Transmitter Serial Data
+   input  [ 7: 0] dz11RXD;                      // DZ11 Receiver Serial Data
+   input  [ 7: 0] dz11CO;                       // DZ11 Carrier Detect Input
+   input  [ 7: 0] dz11RI;                       // DZ11 Ring Indicator Input
+   output [ 7: 0] dz11DTR;                      // DZ11 DTR Output
+   // Reset
+   input          devRESET;                     // IO Bus Bridge Reset
+   // Interrupt
+   output [ 7: 4] devINTR;                      // Interrupt Request
+   input  [ 7: 4] devINTA;                      // Interrupt Acknowledge
+   // Target
+   input          devREQI;                      // Device Request In
+   output         devACKO;                      // Device Acknowledge Out
+   input  [ 0:35] devADDRI;                     // Device Address In
+   // Initiator
+   output         devREQO;                      // Device Request Out
+   input          devACKI;                      // Device Acknowledge In
+   output [ 0:35] devADDRO;                     // Device Address Out
+   // Data
+   input  [ 0:35] devDATAI;                     // Data In
+   output [ 0:35] devDATAO;                     // Data Out
 
    //
-   // DZ Unibus Parameters
+   // DZ Parameters
    //
 
-   parameter [14:17] dz1DEV   = 4'd3;           // Device 3
-   parameter [18:35] dz1VECT  = 18'o000340;     // Interrupt Vector
-   parameter [18:35] dz1WRU   = 18'o200000;     // WRU Response
-   parameter [ 7: 4] dz1INTR  = 4'b0010;        // Interrupt 5
-   parameter [18:35] csrADDR  = 18'o760010;     // CSR Address
-   parameter [18:35] rbufADDR = 18'o760012;     // RBUF Address
-   parameter [18:35] lprADDR  = 18'o760014;     // LPR Address
-   parameter [18:35] tcrADDR  = 18'o760014;     // TCR Address
-   parameter [18:35] msrADDR  = 18'o760016;     // MSR Address
-   parameter [18:35] tdrADDR  = 18'o760016;     // TDR Address
+   parameter [ 7: 4] dzINTR  = `dzINTR;         // Interrupt 5
+   parameter [14:17] dzDEV   = `dzDEV;          // Device 3
+   parameter [18:35] dzADDR  = `dz1ADDR;        // DZ11 Base Address
 
+   //
+   // DZ Register Addresses
+   //
+   
+   parameter [18:35] csrADDR = dzADDR + `csrOFFSET;
+   parameter [18:35] rbfADDR = dzADDR + `rbfOFFSET;
+   parameter [18:35] lprADDR = dzADDR + `lprOFFSET;
+   parameter [18:35] tcrADDR = dzADDR + `tcrOFFSET;
+   parameter [18:35] msrADDR = dzADDR + `msrOFFSET;
+   parameter [18:35] tdrADDR = dzADDR + `tdrOFFSET;
+   
    //
    // Memory Address and Flags
    //
    // Details:
-   //  busADDRI[ 0:13] is flags
-   //  busADDRI[14:35] is address
+   //  devADDRI[ 0:13] is flags
+   //  devADDRI[14:35] is address
    //
    
-   wire         busREAD   = busADDRI[ 3];       // 1 = Read Cycle (IO or Memory)
-   wire         busWRITE  = busADDRI[ 5];       // 1 = Write Cycle (IO or Memory)
-   wire         busIO     = busADDRI[10];       // 1 = IO Cycle, 0 = Memory Cycle
-   wire         busIOBYTE = busADDRI[13];       // 1 = Unibus Byte IO Operation
-   wire [14:17] busDEV    = busADDRI[14:17];    // Unibus Device Number
-   wire [18:35] busADDR   = busADDRI[18:35];    // Unibus Address
+   wire         devREAD   = devADDRI[ 3];       // 1 = Read Cycle (IO or Memory)
+   wire         devWRITE  = devADDRI[ 5];       // 1 = Write Cycle (IO or Memory)
+   wire         devIO     = devADDRI[10];       // 1 = IO Cycle, 0 = Memory Cycle
+   wire         devIOBYTE = devADDRI[13];       // 1 = Byte IO Operation
+   wire [14:17] devDEV    = devADDRI[14:17];    // Device Number
+   wire [18:35] devADDR   = devADDRI[18:35];    // Device Address
+   wire         devHIBYTE = devADDRI[35];       // Register High Byte
+   wire         devLOBYTE = ~devHIBYTE;         // Register Low Byte
+   
+   //
+   // Address Decoding
+   //
+   
+   wire csrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR[18:34] == csrADDR[18:34]);
+   wire csrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR[18:34] == csrADDR[18:34]);
+   wire rbfREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR[18:34] == rbfADDR[18:34]) & ~devIOBYTE;
+   wire lprWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR[18:34] == lprADDR[18:34]) & ~devIOBYTE;
+   wire tcrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR[18:34] == tcrADDR[18:34]);
+   wire tcrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR[18:34] == tcrADDR[18:34]);
+   wire msrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR[18:34] == msrADDR[18:34]);
+   wire tdrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR[18:34] == tdrADDR[18:34]);
+
+   wire csrWRITEH = ((csrWRITE & devIOBYTE & devHIBYTE) | (csrWRITE & ~devIOBYTE));
+   wire csrWRITEL = ((csrWRITE & devIOBYTE & devLOBYTE) | (csrWRITE & ~devIOBYTE));
+   wire tcrWRITEH = ((tcrWRITE & devIOBYTE & devHIBYTE) | (tcrWRITE & ~devIOBYTE));
+   wire tcrWRITEL = ((tcrWRITE & devIOBYTE & devLOBYTE) | (tcrWRITE & ~devIOBYTE));
+   wire tdrWRITEH = ((tdrWRITE & devIOBYTE & devHIBYTE) | (tdrWRITE & ~devIOBYTE));
+   wire tdrWRITEL = ((tdrWRITE & devIOBYTE & devLOBYTE) | (tdrWRITE & ~devIOBYTE));
 
    //
-   // Unibus Reset
+   // Big-endian to little-endian data bus swap
    //
-
-   wire ubaRESET;
+   
+   wire [35:0] dzDATAI = devDATAI[0:35];
    
    //
    // CSR Register
    //
    // Details
-   //  CSR is read/write and can be accessed as bytes or words
-   //
-   // Note
-   //  The LSB decodes bytes
+   //  The CSR is read/write and can be accessed as bytes or words.
    //
    
-   wire csrREAD   = busIO & busREAD  & (busDEV == dz1DEV) & (busADDR[18:34] == csrADDR[18:34]);
-   wire csrWRITE  = busIO & busWRITE & (busDEV == dz1DEV) & (busADDR[18:34] == csrADDR[18:34]);
-   wire csrWRITEH = ((csrWRITE & busIOBYTE & (busADDRI[35] == 1'b1)) | (csrWRITE & ~busIOBYTE));
-   wire csrWRITEL = ((csrWRITE & busIOBYTE & (busADDRI[35] == 1'b0)) | (csrWRITE & ~busIOBYTE));
-
-   reg csrTIE;
-   reg csrSAE;
-   reg csrRIE;
-   reg csrMSE;
-   reg csrCLR;
-   reg csrMAINT;
+   reg       csrTRDY;
+   reg       csrTIE;
+   reg       csrSAE;
+   reg       csrRIE;
+   reg       csrMSE;
+   reg [2:0] csrTLINE;
+   reg       csrMAINT;
+   reg [9:0] clrCOUNT;
    
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | (csrWRITEL & dzDATAI[4]))
           begin
-             csrTIE   <= 1'b0;
-             csrSAE   <= 1'b0;
-             csrRIE   <= 1'b0;
-             csrMSE   <= 1'b0;
-             csrCLR   <= 1'b0;
-             csrMAINT <= 1'b0;
+             csrTRDY  <= 0;
+             csrTIE   <= 0;
+             csrSAE   <= 1;
+             csrRIE   <= 0;
+             csrMSE   <= 0;
+             csrTLINE <= 0;
+             csrMAINT <= 0;
+             clrCOUNT <= 1023;
           end
         else
           begin
+
+             //
+             // Write to high byte
+             //
+             
              if (csrWRITEH)
                begin
-                  csrTIE   <= busDATAI[21];
-                  csrSAE   <= busDATAI[23];
+                  csrTIE   <= dzDATAI[14];
+                  csrSAE   <= dzDATAI[12];
                end
+
+             //
+             // Write to low byte
+             //
+             
              if (csrWRITEL)
                begin
-                  csrRIE   <= busDATAI[29];
-                  csrMSE   <= busDATAI[30];
-                  csrCLR   <= busDATAI[31];
-                  csrMAINT <= busDATAI[32];
+                  csrRIE   <= dzDATAI[ 6];
+                  csrMSE   <= dzDATAI[ 5];
+                  csrMAINT <= dzDATAI[ 3];
+               end
+
+             //
+             // Decrement CLR one-shot time if not zero already
+             //
+             
+             if (csrCLR)
+               clrCOUNT <= clrCOUNT - 1'b1;
+
+             //
+             // Transmitter Scan
+             //
+
+             if (csrTRDY & tdrWRITEL)
+               csrTRDY <= 0;
+             else if (tcrLIN[scanMUX] & ~ttyTXEMPTY[scanMUX])
+               begin
+                  csrTRDY  <= 1;
+                  csrTLINE <= scan;
                end
           end
      end              
-
-   wire [2:0] csrTLINE = 3'b0;
-   wire       csrRDONE = csrRIE & csrSAE;
-   wire       csrSA    = 1'b0;
-   wire       csrTRDY  = 1'b0;
    
-   wire [0:35] regCSR = {20'b0,
-                         csrTRDY,  csrTIE, csrSA, csrSAE,  1'b0, csrTLINE[2:0], 
-                         csrRDONE, csrRIE, csrMSE, csrCLR, csrMAINT, 3'b0};
+   wire        csrCLR   = (clrCOUNT != 0);
+   wire [15:0] regCSR   = {csrTRDY,  csrTIE, csrSA, csrSAE,  1'b0, csrTLINE, 
+                           csrRDONE, csrRIE, csrMSE, csrCLR, csrMAINT, 3'b0};
    
    //
    // RBUF Register
@@ -168,46 +229,46 @@ module DZ11(clk, rst, clken, TXD, RXD, curINTR_NUM,
    // Details
    //  RBUF is read only and can only be read as words
    //
-   // Note
-   //  The LSB decodes bytes
-   //
 
-   wire        rxfifoEMPTY;
-   wire        rxfifoFULL;
-   wire [0:10] rxfifoDOUT;
-   wire rbufREAD       = busIO & busREAD  & ~busIOBYTE & (busDEV == dz1DEV) & (busADDR[18:34] == rbufADDR[18:34]);
-   wire [0:15] regRBUF = {~rxfifoEMPTY, 4'b0, rxfifoDOUT};
+   wire [15:0] regRBUF  = {rbufVALID, 4'b0, rbufDATA};
 
    //
    // LPR Register
    //
    // Details
-   //  LPR is write only and can only be written as words
-   //
-   // Note
-   //  The LSB decodes bytes
+   //  LPR is write-only and can only be written as words
    //
    
-   wire lprWRITE  = busIO & busWRITE & ~busIOBYTE & (busDEV == dz1DEV) & (busADDR[18:34] == lprADDR [18:34]);
-
    reg lprRXON;
-   reg [0:3] lprBR[0:3];
+   reg [3:0] lprBR[7:0];
    
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | csrCLR)
           begin
-             lprRXON  <= 1'b0;
-             lprBR[0] <= 4'b0;
-             lprBR[1] <= 4'b0;
-             lprBR[2] <= 4'b0;
-             lprBR[3] <= 4'b0;
+             lprRXON  <= 0;
+             lprBR[7] <= 0;
+             lprBR[6] <= 0;
+             lprBR[5] <= 0;
+             lprBR[4] <= 0;
+             lprBR[3] <= 0;
+             lprBR[2] <= 0;
+             lprBR[1] <= 0;
+             lprBR[0] <= 0;
           end
         else if (lprWRITE)
           begin
-             lprRXON <= busDATAI[23];
-             if (busDATAI[33] == 1'b0)
-               lprBR[busDATAI[33:34]] <= busDATAI[24:27];
+             lprRXON <= dzDATAI[12];
+             case (dzDATAI[2:0])
+               7: lprBR[7] <= dzDATAI[11:8];
+               6: lprBR[6] <= dzDATAI[11:8];
+               5: lprBR[5] <= dzDATAI[11:8];
+               4: lprBR[4] <= dzDATAI[11:8];
+               3: lprBR[3] <= dzDATAI[11:8];
+               2: lprBR[2] <= dzDATAI[11:8];
+               1: lprBR[1] <= dzDATAI[11:8];
+               0: lprBR[0] <= dzDATAI[11:8];
+             endcase
           end
      end
  
@@ -217,212 +278,321 @@ module DZ11(clk, rst, clken, TXD, RXD, curINTR_NUM,
    // Details
    //  TCR is read/write and can be accessed as bytes or words
    //
-   // Note
-   //  The LSB decodes bytes
+   //  The DTR registers are not reset by CSR[CLR].
    //
  
-   wire tcrREAD   = busIO & busREAD  & (busDEV == dz1DEV) & (busADDR[18:34] == tcrADDR[18:34]);
-   wire tcrWRITE  = busIO & busWRITE & (busDEV == dz1DEV) & (busADDR[18:34] == tcrADDR[18:34]);
-   wire tcrWRITEH = ((tcrWRITE & busIOBYTE & (busADDRI[35] == 1'b1)) | (tcrWRITE & ~busIOBYTE));
-   wire tcrWRITEL = ((tcrWRITE & busIOBYTE & (busADDRI[35] == 1'b0)) | (tcrWRITE & ~busIOBYTE));
-
-   reg [16:0] regTCR;
-   
-   always @(posedge clk or posedge rst)
+   reg [7:0] tcrDTR;
+   reg [7:0] tcrLIN;
+   always @(posedge clk)
      begin
-        if (rst)
-          regTCR <= 16'b0;
+        if (rst | devRESET)
+          begin
+             tcrDTR <= 0;
+             tcrLIN <= 0;
+          end
+        else if (csrCLR)
+          begin
+             tcrLIN <= 0;
+          end
         else
           begin
              if (tcrWRITEH)
-               regTCR[16:8] <= busDATAI[20:27];
+               tcrDTR <= dzDATAI[15:8];
              if (tcrWRITEL)
-               regTCR[ 7:0] <= busDATAI[28:35];
+               tcrLIN <= dzDATAI[ 7:0];
           end
      end
-        
+
+   wire [15:0] regTCR = {tcrDTR, tcrLIN};
+   assign dz11DTR = tcrDTR;
+   
    //
    // MSR Register
    //
    // Details
    //  MSR can be accessed as bytes or words
    //
-   // Note
-   //  The LSB decodes bytes
-   //
          
-   wire msrREAD = busIO & busREAD  & (busDEV == dz1DEV) & (busADDR[18:34] == msrADDR[18:34]);
-   wire [0:35] regMSR = 36'b0;
+   wire [15:0] regMSR = {dz11CO, dz11RI};
 
    //
    // TDR Register
    //
    // Details
-   //  TDR can be accessed as bytes or words
+   //  TDR is write-only and can be accessed as bytes or words
    //
    // Note
-   //  The LSB decodes bytes
+   //  The Break circuitry is not implemented
+   //
+
+   wire [7:0] tdrDATA = dzDATAI[7:0];
+   wire [7:0] tdrLOAD = (tdrWRITEL) ? tlineMUX : 8'b0;
+                 
+   //
+   // Maintenance Loopback
    //
    
-   wire tdrWRITE  = busIO & busWRITE & (busDEV == dz1DEV) & (busADDR[18:34] == tdrADDR[18:34]);
-   wire tdrWRITEH = ((tdrWRITE & busIOBYTE & (busADDRI[35] == 1'b1)) | (tdrWRITE & ~busIOBYTE));
-   wire tdrWRITEL = ((tdrWRITE & busIOBYTE & (busADDRI[35] == 1'b0)) | (tdrWRITE & ~busIOBYTE));
+   wire [0:7] loopRXD = (csrMAINT) ? dz11TXD : dz11RXD;
 
    //
-   // KS10 Interface
+   // UART Baud Rate Generators
+   //
+   // Details
+   //  For now the UARTS are fixed programmed to 9600 baud
    //
 
-   wire         ubaACKO;
-   wire [ 0:35] ubaDATAO;
-   wire [17: 0] ubaADDRI;
-   wire         pageVALID;
-   wire         forceRPW;
-   wire         fastMODE;
-   wire         enable16;
-
-   wire [7:4]   ubaINTA;
-                
-   UBA DZUBA
-     (.clk              (clk),
-      .rst              (rst),
-      .clken            (clken),
-      .ubaDEV           (dz1DEV),
-      .ubaVECT          (dz1VECT),
-      .ubaWRU           (dz1WRU),
-      .ubaINTR          (dz1INTR),
-      .ubaINTA          (ubaINTA),
-      .ubaRESET         (ubaRESET),
-      .busREQI          (busREQI),
-      .busREQO          (busREQO),
-      .busACKI          (busACKI),
-      .busACKO          (ubaACKO),
-      .busADDRI         (busADDRI),
-      .busADDRO         (busADDRO),
-      .busDATAI         (busDATAI),
-      .busDATAO         (ubaDATAO),
-      .busINTR 		(busINTR),
-      .ubaADDRI         (ubaADDRI),
-      .pageVALID        (pageVALID),
-      .forceRPW         (forceRPW),
-      .fastMODE         (fastMODE),
-      .enable16         (enable16)
+   wire clkBR;
+   UART_BRG ttyBRG
+     (.clk        (clk),
+      .rst        (rst | devRESET),
+      .brgSEL     (`BR9600),
+      .brgCLKEN   (clkBR)
       );
-
-   //
-   // UART Interfaces
-   //
-
-   wire [0:7] ttyTXDATA[0:3];
-   wire [0:7] ttyRXDATA[0:3];
-   wire       clkBR    [0:3];
-   wire       ttyTXLOAD[0:3];
-   wire       ttyTXINTR[0:3];
-   wire       ttyRXINTR[0:3];
 
    //
    // Generate Array of UARTS
    //
-   
-   genvar i;
+   // Details
+   //  The 'generate' loops below builds 8 UARTS.
+   //
+
+   wire [0:7] ttyRXINTR;                // UART Receiver has data
+   wire [0:7] ttyRXDATA[0:7];           // UART RX received data
+   wire [0:7] ttyTXEMPTY;               // UART Transmitter buffer is empty
+   genvar     i;
 
    generate
       
-      for (i = 0; i < 4; i = i+1)
+      for (i = 0; i < 8; i = i + 1)
         
-        begin : uartINTF
-
-           //
-           // UART Baud Rate Generators
-           //
-
-           eUART_BRG ttyBRG
-           (.clk        (clk),
-            .rst        (rst),
-            .uartBR     (lprBR[i]),
-            .clkBR      (clkBR[i])
-            );
+        begin : uart_loop
            
            //
            // UART Transmitters
            //
            
-           eUART_TX ttyTX
+           UART_BUFTX ttyTX
              (.clk      (clk),
-              .rst      (rst),
-              .clkBR    (clkBR[i]),
-              .data     (ttyTXDATA[i]),
-              .load     (ttyTXLOAD[i]),
-              .intr     (ttyTXINTR[i]),
-              .txd      (TXD[i])
+              .rst      (rst | devRESET),
+              .clkBR    (lprRXON & clkBR),
+              .load     (tdrLOAD[i]),
+              .data     (tdrDATA),
+              .full     (),
+              .empty    (ttyTXEMPTY[i]),
+              .txd      (dz11TXD[i])
               );
 
            //
            // UART Receivers
            //
            
-           eUART_RX ttyRX
+           UART_RX ttyRX
              (.clk      (clk),
-              .rst      (rst),
-              .clkBR    (clkBR[i]),
-              .rxd      (RXD[i]),
+              .rst      (rst | devRESET),
+              .clkBR    (clkBR),
+              .rxd      (loopRXD[i]),
               .intr     (ttyRXINTR[i]),
               .data     (ttyRXDATA[i])
               );
         end
       
    endgenerate
-
+   
    //
    // RBUF FIFO
    //
+
+   wire fifoEMPTY;
+   wire [10:0] rbufDATA;
+   wire csrSA;
+   reg  [2:0] scan;
+   reg  [7:0] scanMUX;
    
-   fifo64x11 rxfifo
+   dzfifo rxfifo
      (.clk      (clk),
-      .rst      (rst),
+      .rst      (rst | csrCLR | devRESET),
       .clken    (clken),
-      .din      (),
-      .wr       (),
-      .dout     (),
-      .rd       (),
-      .full     (rxfifoFULL),
-      .empty    (rxfifoEMPTY)
+      .din      ({scan, ttyRXDATA[scanMUX]}),
+      .wr       (ttyRXINTR[scanMUX]),
+      .dout     (rbufDATA),
+      .rd       (rbfREAD),
+      .full     (),
+      .alarm    (csrSA),
+      .empty    (fifoEMPTY)
       );
 
+   wire csrRDONE  = ~fifoEMPTY;
+   wire rbufVALID = ~fifoEMPTY;
+   
    //
+   // Scanner
    //
+   // Details
+   //  This just increments the scan signal.
    //
 
-   reg busACKO;
-   reg [0:35] busDATAO;
-   
-   always @(csrREAD or regCSR or rbufREAD or regRBUF or tcrREAD or regTCR or msrREAD or regMSR or ubaACKO or ubaDATAO)
+   //reg [2:0] scan;
+   always @(posedge clk)
      begin
-        busACKO  = 1'b0;             
-        busDATAO = 36'bx;
+        if (rst | csrCLR)
+          scan <= 0;
+        else if (csrMSE)
+          scan <= scan + 1'b1;
+     end
+
+   //
+   // Scan Decoder
+   //
+   
+   //reg [7:0] scanMUX;
+   always @(scan)
+     begin
+        case (scan)
+          0: scanMUX <= 8'b0000_0001;
+          1: scanMUX <= 8'b0000_0010;
+          2: scanMUX <= 8'b0000_0100;
+          3: scanMUX <= 8'b0000_1000;
+          4: scanMUX <= 8'b0001_0000;
+          5: scanMUX <= 8'b0010_0000;
+          6: scanMUX <= 8'b0100_0000;
+          7: scanMUX <= 8'b1000_0000;
+        endcase
+     end
+
+   //
+   // Line Enable Decoder
+   //
+
+   reg [7:0] tlineMUX;
+   always @(csrTLINE)
+     begin
+        case (csrTLINE)
+          0: tlineMUX <= 8'b0000_0001;
+          1: tlineMUX <= 8'b0000_0010;
+          2: tlineMUX <= 8'b0000_0100;
+          3: tlineMUX <= 8'b0000_1000;
+          4: tlineMUX <= 8'b0001_0000;
+          5: tlineMUX <= 8'b0010_0000;
+          6: tlineMUX <= 8'b0100_0000;
+          7: tlineMUX <= 8'b1000_0000;
+        endcase
+     end
+   
+   //
+   // Bus Mux and little-endian to big-endian bus swap.
+   //
+
+   reg devACKO;
+   reg [0:35] devDATAO;
+   
+   always @(csrREAD or regCSR or rbfREAD or regRBUF or
+            tcrREAD or regTCR or msrREAD or regMSR)
+     begin
+        devACKO  = 0;             
+        devDATAO = 36'bx;
         if (csrREAD)
           begin
-             busACKO  = 1'b1;             
-             busDATAO = regCSR;
+             devACKO  = 1;             
+             devDATAO = {20'b0, regCSR};
           end
-        if (rbufREAD)
+        if (rbfREAD)
           begin
-             busACKO  = 1'b1;             
-             busDATAO = regRBUF;
+             devACKO  = 1;             
+             devDATAO = {20'b0, regRBUF};
           end
         if (tcrREAD)
           begin
-             busACKO  = 1'b1;             
-             busDATAO = regTCR;
+             devACKO  = 1;             
+             devDATAO = {20'b0, regTCR};
           end
         if (msrREAD)
           begin
-             busACKO  = 1'b1;             
-             busDATAO = regMSR;
+             devACKO  = 1;             
+             devDATAO = {20'b0, regMSR};
           end
-        if (ubaACKO)
+     end
+
+   //
+   // RX Interrupts
+   //
+
+   reg intSA;
+   reg intRDONE;
+   reg dzRXINTR;
+   
+   always @(posedge clk)
+     begin
+        if (rst | csrCLR | devRESET)
           begin
-             busACKO  = ubaACKO;
-             busDATAO = ubaDATAO;
+             intSA    <= 0;
+             intRDONE <= 0;
+             dzRXINTR <= 0;
+          end
+        else if (clken)
+          begin
+             if (csrRIE)
+               begin
+                  if (csrSAE)
+                    begin
+                       if (~intSA & csrSA)
+                         dzRXINTR <= 1;
+                       else if (~intRDONE & csrRDONE)
+                         dzRXINTR <= 1;
+                    end
+               end
+             else
+               begin
+                  dzRXINTR <= 0;
+               end
+             intSA    <= csrSA;
+             intRDONE <= csrRDONE;
+          end
+     end
+   
+   //
+   // TX Interrupts
+   //
+
+   reg dzTXINTR;
+   reg intTRDY;
+   
+   always @(posedge clk)
+     begin
+        if (rst | csrCLR | devRESET)
+          begin
+             dzTXINTR <= 0;
+             intTRDY  <= 0;
+          end
+        else if (clken)
+          begin
+             if (csrTIE)
+               begin
+                  if (~intTRDY & csrTRDY)
+                    dzTXINTR <= 1;
+               end
+             else
+               begin
+                  dzTXINTR <= 0;
+               end
+             intTRDY <= csrTRDY;
+          end
+     end
+   
+   //
+   // DZ11 Interrupt
+   //
+
+   reg [7:4] devINTR;
+   always @(posedge clk)
+     begin
+        if (rst | csrCLR | devRESET)
+          devINTR <= 0;
+        else if (clken)
+          begin
+             if (dzRXINTR | dzTXINTR)
+               devINTR <= dzINTR;
+             else if (devINTA & dzINTR)
+               devINTR <= 0;
           end
      end
    

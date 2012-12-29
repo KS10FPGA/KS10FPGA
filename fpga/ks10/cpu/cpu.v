@@ -48,12 +48,11 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-  module CPU(clk, rst,
-             cslSTEP, cslRUN, cslEXEC, cslCONT, cslHALT, cslTIMEREN, cslTRAPEN, cslCACHEEN,
-             ks10INTR, cslINTR, busINTR, curINTR_NUM,
-             busREQ, busACK, busDATAI, busDATAO, busADDRO,
-             cpuHALT
-             );
+module CPU(clk, rst,
+           cslSTEP, cslRUN, cslEXEC, cslCONT, cslHALT, cslTIMEREN, cslTRAPEN, cslCACHEEN,
+           ks10INTR, cslINTR, busINTR,
+           busREQ, busACK, busDATAI, busDATAO, busADDRO,
+           cpuHALT);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -71,7 +70,6 @@
    input          ks10INTR;     // Console Interrupt to KS10
    output         cslINTR;      // KS10 Interrupt to Console
    input  [ 1: 7] busINTR;      // Unibus Interrupt Request
-   output [ 0: 2] curINTR_NUM;  // Current Interrupt Priority
    output         busREQ;       // Bus Request
    input          busACK;       // Bus Acknowledge
    input  [ 0:35] busDATAI;     // Bus Data Input
@@ -124,8 +122,9 @@
    //
 
    wire cpuINTR;                                        // Extenal Interrupt
-   wire nxmINTR = 1'b0;                                 // FIXME
-   wire [ 0: 2] newINTR_NUM;                            // New Interrupt Number
+   wire nxmINTR;                                        // Non-existent memory interrupt
+   wire [ 0: 2] reqINTP;                                // Requested Interrupt Priority
+   wire [ 0: 2] curINTP;                                // Current Interrupt Priority
    wire [ 1: 7] aprINTR;                                // APR Interrupt Request
 
    //
@@ -184,7 +183,7 @@
    wire         vmaREADCYCLE   = vmaFLAGS[ 3];          //  1 = Read Cycle (IO or Memory)
    wire         vmaWRTESTCYCLE = vmaFLAGS[ 4];          //  1 = Perform write test for page fail
    wire         vmaWRITECYCLE  = vmaFLAGS[ 5];          //  1 = Write Cycle (IO or Memory)
-   wire         vmaIORDWR      = vmaFLAGS[ 6];          //
+   wire         vmaUNUSED      = vmaFLAGS[ 6];          //  Spare/Unused bit
    wire         vmaCACHEIHN    = vmaFLAGS[ 7];          //  1 = Cache is inhibited
    wire         vmaPHYSICAL    = vmaFLAGS[ 8];          //  1 = Physical reference
    wire         vmaPREVIOUS    = vmaFLAGS[ 9];          //  1 = VMA Previous Context
@@ -302,11 +301,7 @@
      (.clk              (clk),
       .rst              (rst),
       .crom             (crom),
-      .drom             (drom),
-      .dp               (dp),
       .feSIGN           (feSIGN),
-      .busREQ           (busREQ),
-      .busACK           (busACK),
       .clkenDP          (clkenDP),
       .clkenCR          (clkenCR),
       .memWAIT          (memWAIT)
@@ -393,7 +388,9 @@
       .busADDRO         (busADDRO),
       .busREQ           (busREQ),
       .busACK           (busACK),
-      .memWAIT          (memWAIT)
+      .curINTP          (curINTP),
+      .memWAIT          (memWAIT),
+      .nxmINTR          (nxmINTR)
       );
 
    //
@@ -435,7 +432,7 @@
       .cacheHIT         (cacheHIT),
       .vmaFLAGS         (vmaFLAGS),
       .vmaADDR          (vmaADDR),
-      .pcFLAGS          ({pcFLAGS, 1'b0, newINTR_NUM, 4'b1111, vmaADDR[26:35]}),
+      .pcFLAGS          ({pcFLAGS, 1'b0, reqINTP, 4'b1111, vmaADDR[26:35]}),
       .dp               (dp),
       .ramfile          (ramfile),
       .dbm              (dbm),
@@ -468,8 +465,8 @@
       .flagINTREQ       (flagINTREQ),
       .aprINTR          (aprINTR),
       .busINTR          (busINTR),
-      .newINTR_NUM      (newINTR_NUM),
-      .curINTR_NUM      (curINTR_NUM),
+      .reqINTP          (reqINTP),
+      .curINTP          (curINTP),
       .cpuINTR          (cpuINTR)
       );
 
@@ -639,7 +636,6 @@
       .clken            (1'b1),
       .crom             (crom),
       .drom             (drom),
-      .dp               (dp),
       .dbus             (dbus),
       .regIR            (regIR),
       .xrPREV           (xrPREV),

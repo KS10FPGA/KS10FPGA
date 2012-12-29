@@ -70,8 +70,8 @@ module BYTE_DISP(dp, dispBYTE);
    //  DPE3/E9
    //
 
-   wire pos  = dp[0: 5];
-   wire size = dp[6:11];
+   wire [0:5] pos  = dp[0: 5];
+   wire [0:5] size = dp[6:11];
 
    always @(pos, size)
      begin

@@ -244,7 +244,7 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, ks10INTR, aprFLAGS, aprINTR);
    reg         flagPAGEEN;      // Paging Enable
    reg [24:31] flagAPREN;       // APR Enable
    reg         flagSWINT;       // Software Interrupt
-   reg [ 1: 7] flagINTR;        // APR Interrupt Request
+   reg [ 0: 2] flagINTR;        // APR Interrupt Request
 
    always @(posedge clk or posedge rst)
      begin
@@ -254,7 +254,7 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, ks10INTR, aprFLAGS, aprINTR);
              flagPAGEEN <= 1'b0;
              flagAPREN  <= 8'b0;
              flagSWINT  <= 1'b0;
-             flagINTR   <= 7'b0;
+             flagINTR   <= 3'b0;
           end
         else if (clken & specLOADAPR)
           begin
@@ -279,13 +279,13 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, ks10INTR, aprFLAGS, aprINTR);
    //  DPMB/E174
    //
 
-   wire flagINTREQ = ((flag24   & flagAPREN[24]) ||
+   wire flagINTREQ = ((flag24 & flagAPREN[24]) ||
                       (flag25 & flagAPREN[25]) ||
-                      (flag26  & flagAPREN[26]) ||
-                      (flag27  & flagAPREN[27]) ||
-                      (flag28   & flagAPREN[28]) ||
-                      (flag29   & flagAPREN[29]) ||
-                      (flag30   & flagAPREN[30]) ||
+                      (flag26 & flagAPREN[26]) ||
+                      (flag27 & flagAPREN[27]) ||
+                      (flag28 & flagAPREN[28]) ||
+                      (flag29 & flagAPREN[29]) ||
+                      (flag30 & flagAPREN[30]) ||
                       (flag31 & flagAPREN[31]) ||
                       (flagSWINT));
 
@@ -313,6 +313,7 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, ks10INTR, aprFLAGS, aprINTR);
             3'b101 : aprINTR <= 7'b0000100;
             3'b110 : aprINTR <= 7'b0000010;
             3'b111 : aprINTR <= 7'b0000001;
+                                default: aprINTR <= 7'b0000000;
           endcase
      end
 

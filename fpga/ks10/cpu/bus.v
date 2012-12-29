@@ -95,7 +95,7 @@
 
 module BUS(clk, rst, clken, crom, dp,
            vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR, aprFLAGS,
-           busDATAO, busADDRO, busREQ, busACK, memWAIT);
+           busDATAO, busADDRO, busREQ, busACK, curINTP, memWAIT, nxmINTR);
 
    parameter  cromWidth = `CROM_WIDTH;
    input                   clk;         // Clock
@@ -112,13 +112,9 @@ module BUS(clk, rst, clken, crom, dp,
    output [ 0:35]          busADDRO;    // Bus Address
    output                  busREQ;      // Bus Request
    input                   busACK;      // Bus Acknowledge
+   input  [ 0: 2]          curINTP;     // Current Interrupt Priority
    output                  memWAIT;     // Wait for Memory
-
-   //
-   // Control ROM Decode
-   //
-
-   wire pageWRITE = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
+   output                  nxmINTR;     // Non-existant Memory Interrupt
 
    //
    // APR Flags
@@ -130,10 +126,12 @@ module BUS(clk, rst, clken, crom, dp,
    // VMA Flags
    //
 
-   wire vmaREADCYCLE   = vmaFLAGS[3];
-   wire vmaWRTESTCYCLE = vmaFLAGS[4];
-   wire vmaWRITECYCLE  = vmaFLAGS[5];
-   wire vmaPHYSICAL    = vmaFLAGS[8];
+   wire vmaREADCYCLE   = vmaFLAGS[ 3];
+   wire vmaWRTESTCYCLE = vmaFLAGS[ 4];
+   wire vmaWRITECYCLE  = vmaFLAGS[ 5];
+   wire vmaPHYSICAL    = vmaFLAGS[ 8];
+   wire vmaWRUCYCLE    = vmaFLAGS[11];
+   wire vmaVECTORCYCLE = vmaFLAGS[12];
 
    //
    // Paged Reference
@@ -144,16 +142,22 @@ module BUS(clk, rst, clken, crom, dp,
    //
    // Data Output
    //
+   // Details
+   //  The current interrupt priority is asserted onto bus[15:17] during a
+   //  WRU cycle.
+   //
    // FIXME:
-   //  Is the mux necessary?  It just zeros out dp[19:20] and dp[23:24].
+   //  Is the pageWRITE mux necessary?  It just zeros out dp[19:20] and dp[23:24].
+   //  if (pageWRITE)
+   //     busDATAO[0:35] <= {dp[0:18], 2'b0, dp[21:22], 2'b0, dp[25:35]};
    //
 
    reg [0:35] busDATAO;
 
-   always @(dp or pageWRITE)
+   always @(dp or vmaWRUCYCLE or curINTP)
      begin
-        if (pageWRITE)
-          busDATAO[0:35] <= {dp[0:18], 2'b0, dp[21:22], 2'b0, dp[25:35]};
+        if (vmaWRUCYCLE)
+          busDATAO[0:35] <= {15'b0, curINTP, 18'b0};
         else
           busDATAO[0:35] <= dp[0:35];
      end
@@ -169,22 +173,50 @@ module BUS(clk, rst, clken, crom, dp,
         if (pagedREF)
           busADDRO <= {vmaFLAGS, vmaADDR[14:15], pageADDR[16:26], vmaADDR[27:35]};
         else
-          if (vmaEXTENDED)
-            busADDRO <= {vmaFLAGS, vmaADDR};
-          else
-            busADDRO <= {vmaFLAGS, vmaADDR} & 36'o777760_777777;
+          begin
+             if (vmaEXTENDED)
+               busADDRO <= {vmaFLAGS, vmaADDR};
+             else
+               busADDRO <= {vmaFLAGS, vmaADDR} & 36'o777760_777777;
+          end
      end
 
    //
    // Bus Request on the various cycles
    //
 
-   assign busREQ = vmaREADCYCLE | vmaWRITECYCLE | vmaWRTESTCYCLE;
+   assign busREQ = vmaREADCYCLE | vmaWRITECYCLE | vmaWRTESTCYCLE | vmaWRUCYCLE | vmaVECTORCYCLE;
 
    //
    // Wait for memory (REQ with no ACK)
    //
 
    assign memWAIT = busREQ & ~busACK;
+
+   //
+   // Bus Monitor
+   //
+   // Details
+   //  Generate a NXM Interrupt on a bus timeout
+   //
+
+   reg [0:3] timeout;
+   always @(posedge clk)
+     begin
+        if (rst)
+          timeout <= 0;
+        else
+          begin
+             if (memWAIT)
+               begin
+                  if (timeout != 15)
+                    timeout <= timeout + 1'b1;
+               end
+             else
+               timeout <= 0;
+          end
+     end
+
+   assign nxmINTR = (timeout == 14);
 
 endmodule

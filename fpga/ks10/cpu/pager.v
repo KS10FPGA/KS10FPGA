@@ -186,9 +186,11 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    reg  [0:14] pageTABLE1[0:255];
    reg  [0:14] pageTABLE2[0:255];
 
-   always @(pageVIRTADDR or pageSWEEP or pageDATAIN)
+   always @(posedge clk)
      begin
-        if (pageWRITE)
+        if (rst)
+          ;
+        else if (pageWRITE)
           begin
              if (~pageVIRTADDR[18] | pageSWEEP)
                pageTABLE1[pageVIRTADDR[19:26]] <= pageDATAIN;

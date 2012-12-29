@@ -92,10 +92,9 @@
    
    //
    // PC is Register #1 in the ALU
+   // synthesis translate_on
    //
    
    assign debugADDR = 4'b0001;
-   
-   // synthesis translate_on
    
  endmodule

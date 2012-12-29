@@ -1,20 +1,20 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      FIFO
-//!
-//! \details
-//!
-//! \todo
-//!
-//! \file
-//!      fifo64x11.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// brief
+//      DZ-11 SILO FIFO
+//
+// details
+//
+// todo
+//
+// file
+//      fifo64x11.v
+//
+// author
+//      Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -40,14 +40,10 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
 
-module fifo64x11(clk, rst, clken,
-                 din, wr, dout, rd, full, empty);
+module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
 
    input         clk;           // Clock
    input         rst;           // Reset
@@ -57,55 +53,52 @@ module fifo64x11(clk, rst, clken,
    output [0:10] dout;          // Data Output
    input         rd;            // Pop Data from FIFO
    output        full;          // FIFO full
+   output        alarm;         // FIFO full enough
    output        empty;         // FIFO empty
 
    //
    // Write Pointer
    //
 
-   reg [0:5] wr_pointer;
-   always @ (posedge clk or posedge rst)
+   reg [0:5] wr_curr;
+   
+   always @(posedge clk)
    begin
      if (rst)
-       wr_pointer <= 0;
-     else if (wr)
-       wr_pointer <= wr_pointer + 6'b1;
+       wr_curr <= 0;
+     else if (clken & wr)
+       wr_curr <= wr_curr + 1'b1;
    end
 
    //
    // Read Pointer
    //
 
-   reg [0:5] rd_pointer;
-   always @ (posedge clk or posedge rst)
+   reg [0:5] rd_curr;
+   
+   always @(posedge clk)
    begin
      if (rst)
-       rd_pointer <= 0;
-     else if (rd)
-       rd_pointer <= rd_pointer + 6'b1;
+       rd_curr <= 0;
+     else if (clken & rd)
+       rd_curr <= rd_curr + 1'b1;
    end
 
    //
-   // FIFO Empty
-   //
-   // Details
-   //  The FIFO is empty when the read pointer is the same as
-   //  the write pointer.
+   // FIFO Depth
    //
 
-   assign empty = (rd_pointer == wr_pointer);
-
-   //
-   // FIFO Full
-   //
-   // Details
-   //  The FIFO is full when the write pointer is one behind
-   //  the read pointer.  I.e., if you add another item to
-   //  the FIFO, the FIFO will indicate empty.
-   //
-
-   wire [0:6] next = wr_pointer + 1'b1;
-   assign full = (rd_pointer == next);
+   reg [0:5] depth;
+   
+   always @(posedge clk)
+   begin
+     if (rst)
+       depth <= 0;
+     else if (clken & rd & ~wr & (depth !=  0))
+       depth <= depth - 1'b1;
+     else if (clken & wr & ~rd & (depth != 63))
+       depth <= depth + 1'b1;
+   end
 
    //
    // Dual Port RAM
@@ -113,14 +106,33 @@ module fifo64x11(clk, rst, clken,
 
    reg [0:10] DPRAM[0:63];
    reg [0:10] dout;
+   
    always @(posedge clk)
      begin
         if (clken)
           begin
              if (wr)
-               DPRAM[wr_pointer] = din;
-             dout <= DPRAM[rd_pointer];
+               DPRAM[wr_curr] <= din;
+             dout <= DPRAM[rd_curr];
           end
      end
+   
+   //
+   // FIFO Empty
+   //
+
+   assign empty = (depth == 0);
+
+   //
+   // FIFO Full
+   //
+
+   assign full = (depth == 63);
+
+   //
+   // FIFO Alarm
+   //
+   
+   assign alarm = (depth > 16);
 
 endmodule

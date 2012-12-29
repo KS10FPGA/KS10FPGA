@@ -52,7 +52,7 @@
 `include "useq/crom.vh"
 
 module INTR(clk, rst, clken, crom, dp, flagINTREQ,
-            busINTR, aprINTR, newINTR_NUM, curINTR_NUM, cpuINTR);
+            busINTR, aprINTR, reqINTP, curINTP, cpuINTR);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -64,16 +64,15 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
    input                  flagINTREQ;   // Interrupt Request
    input  [1: 7]          aprINTR;      // Arithmetic Processor request
    input  [1: 7]          busINTR;      // Unibus request
-   output [0: 2]          newINTR_NUM;  // New Prioity Interrupt number
-   output [0: 2]          curINTR_NUM;  // Current Prioity Interrupt number
+   output [0: 2]          reqINTP;      // Requested Interrupt Priority
+   output [0: 2]          curINTP;      // Current Prioity Interrupt number
    output                 cpuINTR;      // Interrupt Request
 
    //
    // Microcode Decode
    //
 
-   wire specLOADPI  = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADPI);
-   wire specLOADAPR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADAPR);
+   wire specLOADPI = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADPI);
 
    //
    // Datapath Interface
@@ -97,10 +96,10 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
      begin
         if (rst)
           begin
-             actINTR <= 7'b0;
-             intrEN  <= 1'b0;
-             curINTR <= 7'b0;
-             swINTR  <= 7'b0;
+             actINTR <= 0;
+             intrEN  <= 0;
+             curINTR <= 0;
+             swINTR  <= 0;
           end
         else if (clken & specLOADPI)
           begin
@@ -127,10 +126,10 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
    //  DPEB/E161
    //
 
-   wire [1:7] newINTR = ((busINTR[1:7] | aprINTR[1:7]) & actINTR[1:7]) | swINTR[1:7];
+   wire [1:7] reqINTR = ((busINTR[1:7] | aprINTR[1:7]) & actINTR[1:7]) | swINTR[1:7];
 
    //
-   // New Interrupt Priority
+   // Requested Interrupt Priority
    //
    // Details
    //  The MSB is present to represent that no interrupt is active.
@@ -139,17 +138,17 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
    //  DPEB/E147
    //
 
-   wire [0:3] newINTRNUM = (~intrEN    ? 4'b1000 :      // Disabled
-                            newINTR[1] ? 4'b0001 :      // Highest priority
-                            newINTR[2] ? 4'b0010 :
-                            newINTR[3] ? 4'b0011 :
-                            newINTR[4] ? 4'b0100 :
-                            newINTR[5] ? 4'b0101 :
-                            newINTR[6] ? 4'b0110 :
-                            newINTR[7] ? 4'b0111 :
-                            4'b1000);                   // Lowest priority
+   wire [0:3] reqPRIORITY = (~intrEN    ? 4'b1000 :     // Disabled
+                             reqINTR[1] ? 4'b0001 :     // Highest priority
+                             reqINTR[2] ? 4'b0010 :
+                             reqINTR[3] ? 4'b0011 :
+                             reqINTR[4] ? 4'b0100 :
+                             reqINTR[5] ? 4'b0101 :
+                             reqINTR[6] ? 4'b0110 :
+                             reqINTR[7] ? 4'b0111 :   	// Lowest priority
+                             4'b1000);             	// Nothing active
 
-   assign newINTR_NUM = newINTRNUM[1:3];
+   assign reqINTP = reqPRIORITY[1:3];
 
    //
    // Current Interrupt Priority
@@ -161,24 +160,24 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
    //  DPEB/E134
    //
 
-   wire [0:3] curINTRNUM = (curINTR[1] ? 4'b0001 :      // Highest priority
-                            curINTR[2] ? 4'b0010 :
-                            curINTR[3] ? 4'b0011 :
-                            curINTR[4] ? 4'b0100 :
-                            curINTR[5] ? 4'b0101 :
-                            curINTR[6] ? 4'b0110 :
-                            curINTR[7] ? 4'b0111 :
-                            4'b1000);                   // Lowest priority
+   wire [0:3] curPRIORITY = (curINTR[1] ? 4'b0001 :     // Highest priority
+                             curINTR[2] ? 4'b0010 :
+                             curINTR[3] ? 4'b0011 :
+                             curINTR[4] ? 4'b0100 :
+                             curINTR[5] ? 4'b0101 :
+                             curINTR[6] ? 4'b0110 :
+                             curINTR[7] ? 4'b0111 :	// Lowest priority
+                             4'b1000);                 	// Nothing active	
 
-   assign curINTR_NUM = curINTRNUM[1:3];
+   assign curINTP = curPRIORITY[1:3];
 
    //
    // Interrupt Request
    //
    // Details
-   //  The priority of the new interrupt level is compared to the
-   //  priority of the current interrupt level.  If the current input
-   //  is a higher priority, an interrupt to the CPU is generated.
+   //  If the requested interrupt priority is higher than the
+   //  current interrupt priority, an interrupt to the CPU is
+   //  generated.
    //
    // Trace
    //  DPEB/E148
@@ -189,9 +188,9 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          cpuINTR <= 1'b0;
+          cpuINTR <= 0;
         else if (clken)
-          cpuINTR <= (newINTR_NUM < curINTR_NUM);
+          cpuINTR <= (reqINTP < curINTP);
      end
 
 endmodule

@@ -377,7 +377,6 @@ module ALU(clk, rst, clken, crom, aluIN,
    //  clocked and updated.
    //
 
-   integer i;
    reg [0:39] aluRAM [0:15];
 
    always @(posedge clk or posedge rst)

@@ -99,7 +99,7 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, regIR, xrPREV,
+module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
                vmaFLAGS, vmaADDR, acBLOCK,
                ramfile);
 
@@ -111,7 +111,6 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, regIR, xrPREV,
    input                   clken;               // Clock enable
    input  [ 0:cromWidth-1] crom;                // Control ROM Data
    input  [ 0:dromWidth-1] drom;                // Dispatch ROM Data
-   input  [ 0:35]          dp;                  // DP Input
    input  [ 0:35]          dbus;                // DBUS Input
    input  [ 0:17]          regIR;               // Instruction Register
    input                   xrPREV;              // XR Previous
@@ -131,7 +130,6 @@ module RAMFILE(clk, rst, clken, crom, drom, dp, dbus, regIR, xrPREV,
    // VMA Flags
    //
 
-   wire vmaREADCYCLE  = vmaFLAGS[3];
    wire vmaWRITECYCLE = vmaFLAGS[5];
    wire vmaPHYSICAL   = vmaFLAGS[8];
    wire vmaPREVIOUS   = vmaFLAGS[9];

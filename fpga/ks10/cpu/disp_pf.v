@@ -122,7 +122,6 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
 
    wire pageVALID      = pageFLAGS[0];  // Page is valid
    wire pageWRITEABLE  = pageFLAGS[1];  // Page is writeable
-   wire pageCACHEABLE  = pageFLAGS[2];  // Page is cacheable
    wire pageUSER       = pageFLAGS[3];  // Page is user mode
 
    //
