@@ -50,7 +50,7 @@
 module testbench;
    
    //
-   // Clock an things
+   // Clock and things
    //
    
    reg clk;                     // Clock
@@ -74,9 +74,20 @@ module testbench;
    // DZ11 Serial Interface
    //
 
-   wire [0:3] RXD;              // Received RS-232 Data
-   wire [0:3] TXD;              // Transmitted RS-232 Data
+   wire [0:7] dz11RXD;          // DZ11 Received RS-232 Data
+   wire [0:7] dz11TXD;        	// DZ11 Transmitted RS-232 Data
 
+   //
+   // RH11 Secure Digital Interface
+   //
+   
+   wire        rh11CD;        	// RH11 Card Detect
+   wire        rh11WP;        	// RH11 Write Protect
+   wire        rh11MISO;      	// RH11 Data In
+   wire        rh11MOSI;      	// RH11 Data Out
+   wire        rh11SCLK;      	// RH11 Clock
+   wire        rh11CS;        	// SD11 Chip Select
+   
    //
    // SSRAM
    //
@@ -95,9 +106,11 @@ module testbench;
 `ifdef SIMSSMON
    parameter [0:35] valREGCIR    = 36'o254000_020000;
 `else
+   parameter [0:35] valREGCIR    = 36'o254000_030624;
 // parameter [0:35] valREGCIR    = 36'o254000_030600;
 // parameter [0:35] valREGCIR    = 36'o254000_030660;
-   parameter [0:35] valREGCIR    = 36'o254000_030622;
+// parameter [0:35] valREGCIR    = 36'o254000_030620;
+// parameter [0:35] valREGCIR    = 36'o254000_030622;
 `endif   
    
    //
@@ -196,7 +209,7 @@ module testbench;
          #5  cslWR_N  = 0;
          #50 cslWR_N  = 1;
       end
-   endtask;
+   endtask
 
    //
    // Task to read byte from console register
@@ -213,7 +226,7 @@ module testbench;
         #25 data     = cslAD;
         #25 cslRD_N  = 1;
       end
-   endtask;
+   endtask
 
    //
    // Initialization
@@ -281,7 +294,9 @@ module testbench;
    //
 
    always
-     #10 clk = ~clk;
+     begin
+        #10 clk = ~clk;
+     end
 
    assign cslAD = (~cslRD_N) ? 8'bz : cslADOUT;
 
@@ -292,8 +307,14 @@ module testbench;
    KS10 uKS10
      (.clk              (clk),
       .reset            (reset),
-      .RXD              (RXD),
-      .TXD              (TXD),
+      .dz11RXD          (dz11RXD),
+      .dz11TXD          (dz11TXD),
+      .rh11CD           (rh11CD),
+      .rh11WP           (rh11WP),
+      .rh11MISO         (rh11MISO),
+      .rh11MOSI         (rh11MOSI),
+      .rh11SCLK         (rh11SCLK),
+      .rh11CS           (rh11CS),
       .cslALE           (cslALE),
       .cslAD            (cslAD),
       .cslRD_N          (cslRD_N),

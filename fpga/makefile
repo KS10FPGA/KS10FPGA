@@ -8,7 +8,8 @@ ISE  := $(ISE)
 MEM  := $(RTL)/mem
 UBA  := $(RTL)/uba
 UC   := $(CPU)/useq
-LOAD := MAINDEC-10-DSKEA.txt
+LOAD := MAINDEC-10-DSKAM.txt
+#LOAD := MAINDEC-10-DSKEA.txt
 #LOAD := smmon.txt
 
 SRC := \
@@ -27,7 +28,6 @@ SRC := \
 	$(CPU)/apr.v \
 	$(CPU)/bus.v \
 	$(CPU)/byte_disp.v \
-	$(CPU)/cache.v \
 	$(CPU)/dbm.v \
 	$(CPU)/dbus.v \
 	$(CPU)/debug.v \
@@ -51,15 +51,11 @@ SRC := \
 	$(CSL)/csl.v \
 	$(MEM)/mem.v \
 	$(ARB)/arb.v \
-	$(UBA)/dz11/uart/demet.vhd \
-	$(UBA)/dz11/uart/ascii_types.vhd \
-	$(UBA)/dz11/uart/uart_types.vhd \
-	$(UBA)/dz11/uart/uart_brg.vhd \
-	$(UBA)/dz11/uart/uart_rx.vhd \
-	$(UBA)/dz11/uart/uart_tx.vhd \
-	$(UBA)/dz11/fifo.v \
+	$(UBA)/dz11/uart/uart_brg.v \
+	$(UBA)/dz11/uart/uart_rx.v \
+	$(UBA)/dz11/uart/uart_tx.v \
+	$(UBA)/dz11/dzfifo.v \
 	$(UBA)/dz11/dz11.v \
-	$(UBA)/ubapag.v \
 	$(UBA)/uba.v \
 	$(RTL)/ks10.v \
 	$(RTL)/ks10.ucf \
