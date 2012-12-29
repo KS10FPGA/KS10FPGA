@@ -69,10 +69,13 @@
 
 `default_nettype none
 `include "useq/crom.vh"
+`include "../ks10.vh"  
 
 module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
 
    parameter cromWidth = `CROM_WIDTH;
+   parameter CLKFRQ    = `CLKFRQ;
+   parameter TIMFRQ    = 4.1e6;
 
    input                  clk;          // Clock
    input                  rst;          // Reset
@@ -96,9 +99,9 @@ module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
    //  from the frequency division approximation is less than the
    //  frequency error of the clock generator crystal.
    //
-   //  increment = round-to-integer(2**32 * 4.1 MHz / 50.0 MHz)
+   //  Increment = round-to-integer(2**32 * 4.1 MHz / 50.0 MHz)
    //
-   //  Everytime this 32-bit counter overflow, it is time to
+   //  Everytime this 32-bit counter overflows, it is time to
    //  increment the interval timer.
    //
    //  The use of an accumulator instead of divider keeps the
@@ -108,7 +111,7 @@ module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
 
    reg  [0:31] accum;
    reg         carry;
-   wire [0:31] incr = 32'd352187318;
+   wire [0:31] incr = (2.0**32.0) * TIMFRQ / CLKFRQ;
 
    always @(posedge clk or posedge rst)
      begin
@@ -173,15 +176,15 @@ module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
      begin
         if (rst)
           begin
-             intr     <= 1'b0;
-             timerMSB <= 1'b0;
+             intr     <= 0;
+             timerMSB <= 0;
           end
         else if (clken)
           begin
              if (timerRST)
-               intr <= 1'b0;
+               intr <= 0;
              else if (timerEN & ~count[0] & timerMSB)
-               intr <= 1'b1;
+               intr <= 1;
              timerMSB <= count[0];
           end
      end

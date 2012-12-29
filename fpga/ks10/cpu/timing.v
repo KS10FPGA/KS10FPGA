@@ -50,7 +50,7 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module TIMING(clk, rst, crom, drom, dp, feSIGN, busREQ, busACK, clkenDP, clkenCR, memWAIT);
+module TIMING(clk, rst, crom, feSIGN, clkenDP, clkenCR, memWAIT);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -58,11 +58,7 @@ module TIMING(clk, rst, crom, drom, dp, feSIGN, busREQ, busACK, clkenDP, clkenCR
    input                  clk;          // Clock
    input                  rst;          // Reset
    input  [0:cromWidth-1] crom;         // Control ROM Data
-   input  [0:dromWidth-1] drom;         // Control ROM Data
-   input  [0:35]          dp;           // Data path
    input                  feSIGN;       // FE Sign
-   output                 busREQ;       // Bus Request
-   input                  busACK;       // Bus Acknowledge
    output                 clkenDP;      // Clock Enable
    output                 clkenCR;      // Clock Enable Microsequencer
    input                  memWAIT;      // Memory Wait
@@ -118,5 +114,5 @@ module TIMING(clk, rst, crom, drom, dp, feSIGN, busREQ, busACK, clkenDP, clkenCR
 
    assign clkenCR = ~((`cromMULTISHIFT &  feSIGN)                    | memWAIT);
    assign clkenDP = ~((`cromMULTISHIFT & ~feSIGN) | (done & clkenCR) | memWAIT);
-
+ 
 endmodule

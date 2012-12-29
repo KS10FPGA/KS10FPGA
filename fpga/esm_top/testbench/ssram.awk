@@ -18,6 +18,24 @@ BEGIN {
 }
 
 #
+# Pointers
+#
+#  These looks like:
+#
+#" xxx	xxxxxx	xx xx x xx xxxxxx 	
+
+/^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7] [0-7][0-7] [0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
+    data1 = lshift(strtonum("0" substr($3,  1, 2)), 30);
+    data2 = lshift(strtonum("0" substr($3,  4, 2)), 24);
+    data3 = lshift(strtonum("0" substr($3,  7, 1)), 22);
+    data4 = lshift(strtonum("0" substr($3,  9, 2)), 18);
+    data5 = lshift(strtonum("0" substr($3, 12, 6)), 0);
+    data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5);
+    i = strtonum("0" $2)
+    map[i] = data;
+}
+
+#
 # IO Instructions
 #
 #  These looks like:
@@ -25,32 +43,49 @@ BEGIN {
 #" xxx	xxxxxx	7 xxx xx x xx xxxxxx 
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7] [0-7][0-7][0-7] [0-7][0-7] [0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
-    data1 = strtonum("0" substr($3,  1, 1));
-    data2 = strtonum("0" substr($3,  3, 3));
-    data3 = strtonum("0" substr($3,  7, 2));
-    data4 = strtonum("0" substr($3, 10, 1));
-    data5 = strtonum("0" substr($3, 12, 2));
-    data6 = substr($3, 15, 6);
-    #print $2 " # " $3;
-    data = sprintf("%06o%s", data1*0100000+data2*0100+data3*010+data4*020+data5, data6);
+    data1 = lshift(strtonum("0" substr($3,  1, 1)), 33);
+    data2 = lshift(strtonum("0" substr($3,  3, 3)), 24);
+    data3 = lshift(strtonum("0" substr($3,  7, 2)), 21);
+    data4 = lshift(strtonum("0" substr($3, 10, 1)), 22);
+    data5 = lshift(strtonum("0" substr($3, 12, 2)), 18);
+    data6 = lshift(strtonum("0" substr($3, 15, 6)),  0);
+    data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5 + data6);
     i = strtonum("0" $2)
     map[i] = data;
 }
 
 #
-# CLRAPR Instructions
+# IO Instructions
+#
+#  These looks like:
+#
+#" xxx	xxxxxx	7 xxx x x xx xxxxxx 
+/^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7] [0-7][0-7][0-7] [0-7] [0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
+    data1 = lshift(strtonum("0" substr($3,  1, 1)), 33);
+    data2 = lshift(strtonum("0" substr($3,  3, 3)), 24);
+    data3 = lshift(strtonum("0" substr($3,  7, 1)), 23);
+    data4 = lshift(strtonum("0" substr($3,  9, 1)), 22);
+    data5 = lshift(strtonum("0" substr($3, 11, 2)), 18);
+    data6 = lshift(strtonum("0" substr($3, 14, 6)),  0);
+    data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5 + data6);
+    i = strtonum("0" $2)
+    map[i] = data;
+}
+
+#
+# CONO Instructions
 #
 #  These looks like:
 #
 #" xxx	xxxxxx	xxx xx xx xx xxxxxx 
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] [0-7][0-7] [0-7][0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
-    data1 = strtonum("0" substr($3,  1, 3));
-    data2 = strtonum("0" substr($3,  5, 2));
-    data3 = strtonum("0" substr($3,  8, 2));
-    data4 = strtonum("0" substr($3, 11, 2));
-    data5 = substr($3, 14, 6);
-    data  = sprintf("%03o%03o%s", data1, or(data2*010, or(data3, data4)), data5);
+    data1 = lshift(strtonum("0" substr($3,  1, 3)), 27);
+    data2 = lshift(strtonum("0" substr($3,  5, 2)), 21)
+    data3 = lshift(strtonum("0" substr($3,  8, 2)), 18);
+    data4 = lshift(strtonum("0" substr($3, 11, 2)), 18);
+    data5 = lshift(strtonum("0" substr($3, 14, 6)),  0);
+    data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5);
     i = strtonum("0" $2)
     map[i] = data;
 }
@@ -91,7 +126,7 @@ BEGIN {
     data3 = lshift(and(strtonum("0" substr($3,  9, 3)), 0177), 15)
     data4 = lshift(and(strtonum("0" substr($3, 13, 3)), 0177),  8)
     data5 = lshift(and(strtonum("0" substr($3, 17, 3)), 0177),  1)
-    data  = sprintf("%012o", or(data1, or(data2, or(data3, or(data4, data5)))))
+    data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5);
     #print $2 " " data
     i = strtonum("0" $2)
     map[i] = data
@@ -107,22 +142,11 @@ BEGIN {
 #
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] 0000000000.*/ {
-    data = sprintf("%012o", lshift(and(strtonum("0" substr($3,  1, 3)), 0177), 28))
-    #print $2 " " data
+    data1 = lshift(and(strtonum("0" substr($3,  1, 3)), 0377), 29);
+    data = sprintf("%012o", data1)
     i = strtonum("0" $2)
     map[i] = data
 }
-
-
-#
-# 030651 123 124 122 125 103 
-#   1   2   3   1   2   4   1   2   2   1   2   5   1    0   3
-#  001 010 011 001 010 100 001 010 010 001 010 101 001 000 011
-#  xx          xx          xx          xx          xx
-#
-#  1 010 011 1 010 100 1 010 010 1 010 101 1 000 011
-#  101 001 110 101 001 010 010 101 010 110 000 11x
-
 
 #
 # OPCODES
@@ -133,17 +157,12 @@ BEGIN {
 #
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] [0-7][0-7] [0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
-    data1 = substr($3,  1, 3)
-    data2 = substr($3,  5, 2)
-    data3 = substr($3,  8, 1)
-    data4 = substr($3, 10, 2)
-    data5 = substr($3, 13, 6)
-    val2  = strtonum("0" data2)
-    val3  = strtonum("0" data3)
-    val4  = strtonum("0" data4)
-    val   = val2 * 32 + val3 * 16 + val4;
-    data  = sprintf("%s%03o%s", data1, val, data5);
-    #print $2, data
+    data1 = lshift(strtonum("0" substr($3,  1, 3)), 27);
+    data2 = lshift(strtonum("0" substr($3,  5, 2)), 23);
+    data3 = lshift(strtonum("0" substr($3,  8, 1)), 22);
+    data4 = lshift(strtonum("0" substr($3, 10, 2)), 18);
+    data5 = lshift(strtonum("0" substr($3, 13, 6)),  0);
+    data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5);
     i = strtonum("0" $2)
     map[i] = data
 }

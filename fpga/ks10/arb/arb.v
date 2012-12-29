@@ -47,39 +47,48 @@
 
 module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
            cslREQI,  cslREQO,  cslACKI,  cslACKO,  cslADDRI, cslDATAI, cslDATAO,
-           ubaREQI,  ubaREQO,  ubaACKI,  ubaACKO,  ubaADDRI, ubaDATAI, ubaDATAO,
+           ubaREQO,  ubaDATAO,
+           uba1REQI,    uba1ACKI,  uba1ACKO,  uba1ADDRI, uba1DATAI,
+           uba3REQI,    uba3ACKI,  uba3ACKO,  uba3ADDRI, uba3DATAI,
            memREQO,  memACKI,  memDATAI, memDATAO,
            arbADDRO);
-   
-   input         cpuREQI;	// CPU Bus Request
-   output        cpuACKO;	// CPU Bus Acknowledge
-   input  [0:35] cpuADDRI;	// CPU Address
-   input  [0:35] cpuDATAI;	// CPU Data In
-   output [0:35] cpuDATAO;	// CPU Data Out
-        
-   input         cslREQI;	// CSL Bus Request In
-   output        cslREQO;	// CSL Bus Request Out
-   input	 cslACKI;     	// CSL Bus Acknowledge In
-   output        cslACKO;	// CSL Bus Acknowledge Out
-   input  [0:35] cslADDRI;	// CSL Address In
-   input  [0:35] cslDATAI;	// CSL Data In
-   output [0:35] cslDATAO;	// CSL Data Out
-        
-   input         ubaREQI;	// UBA Bus RequestIn
-   output        ubaREQO;	// UBA Bus Request Out
-   input	 ubaACKI;     	// UBA Bus Acknowledge In
-   output        ubaACKO;	// UBA Bus Acknowledge Out
-   input  [0:35] ubaADDRI;	// UBA Address In
-   input  [0:35] ubaDATAI;	// UBA Data In
-   output [0:35] ubaDATAO;	// UBA Data Out
 
-   output	 memREQO;	// MEM Bus Request Out
-   input         memACKI;	// MEM Bus Acknowledge In
-   input  [0:35] memDATAI;	// MEM Data In
-   output [0:35] memDATAO;	// MEM Data Out
+   input         cpuREQI;       // CPU Bus Request
+   output        cpuACKO;       // CPU Bus Acknowledge
+   input  [0:35] cpuADDRI;      // CPU Address
+   input  [0:35] cpuDATAI;      // CPU Data In
+   output [0:35] cpuDATAO;      // CPU Data Out
 
-   output [0:35] arbADDRO;	// ARB Address
-   
+   input         cslREQI;       // CSL Bus Request In
+   output        cslREQO;       // CSL Bus Request Out
+   input         cslACKI;       // CSL Bus Acknowledge In
+   output        cslACKO;       // CSL Bus Acknowledge Out
+   input  [0:35] cslADDRI;      // CSL Address In
+   input  [0:35] cslDATAI;      // CSL Data In
+   output [0:35] cslDATAO;      // CSL Data Out
+
+   output        ubaREQO;       // UBA Bus Request Out
+   output [0:35] ubaDATAO;      // UBA Data Out
+
+   input         uba1REQI;      // UBA1 Bus RequestIn
+   input         uba1ACKI;      // UBA1 Bus Acknowledge In
+   input  [0:35] uba1ADDRI;     // UBA1 Address In
+   input  [0:35] uba1DATAI;     // UBA1 Data In
+   output        uba1ACKO;      // UBA1 Bus Acknowledge Out
+
+   input         uba3REQI;      // UBA3 Bus RequestIn
+   input         uba3ACKI;      // UBA3 Bus Acknowledge In
+   input  [0:35] uba3ADDRI;     // UBA3 Address In
+   input  [0:35] uba3DATAI;     // UBA3 Data In
+   output        uba3ACKO;      // UBA3 Bus Acknowledge Out
+
+   output        memREQO;       // MEM Bus Request Out
+   input         memACKI;       // MEM Bus Acknowledge In
+   input  [0:35] memDATAI;      // MEM Data In
+   output [0:35] memDATAO;      // MEM Data Out
+
+   output [0:35] arbADDRO;      // ARB Address
+
    //
    // Bus Request Arbitration
    //
@@ -88,31 +97,34 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
    //  Unibus has next priority
    //  CPU has lowest priority
    //
-   
+
    reg cpuACKO;
    reg cslACKO;
    reg cslREQO;
    reg memREQO;
    reg ubaREQO;
-   reg ubaACKO;
+   reg uba1ACKO;
+   reg uba3ACKO;
    reg [0:35] cslDATAO;
    reg [0:35] cpuDATAO;
    reg [0:35] memDATAO;
    reg [0:35] ubaDATAO;
    reg [0:35] arbADDRO;
-   
-   always @(cpuREQI or cpuADDRI or cpuDATAI or cpuDATAO or
-            cslREQI or cslACKI  or cslADDRI or cslDATAI or 
-            ubaREQI or ubaACKI  or ubaADDRI or ubaDATAI or
-            memACKI or memDATAI)
+
+   always @(cpuREQI  or cpuADDRI  or cpuDATAI  or cpuDATAO  or
+            cslREQI  or cslACKI   or cslADDRI  or cslDATAI  or
+            uba1REQI or uba1ACKI  or uba1ADDRI or uba1DATAI or
+            uba3REQI or uba3ACKI  or uba3ADDRI or uba3DATAI or
+            memACKI  or memDATAI)
 
      begin
 
         cpuACKO  = 1'b0;
         cslREQO  = 1'b0;
         cslACKO  = 1'b0;
-        ubaREQO  = 1'b0;
-        ubaACKO  = 1'b0;
+        ubaREQO = 1'b0;
+        uba1ACKO = 1'b0;
+        uba3ACKO = 1'b0;
         memREQO  = 1'b0;
         arbADDRO = 36'bx;
         cslDATAO = 36'bx;
@@ -120,20 +132,21 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
         memDATAO = 36'bx;
         ubaDATAO = 36'bx;
         arbADDRO = 36'bx;
-        
+
         //
         // Bus Request from the Console
         //
         // Details
         //  The console can access the memory or the unibus
         //
-        
+
         if (cslREQI)
           begin
              cpuACKO  = 1'b0;
              cslREQO  = 1'b0;
              ubaREQO  = 1'b1;
-             ubaACKO  = 1'b0;
+             uba1ACKO = 1'b0;
+             uba3ACKO = 1'b0;
              memREQO  = 1'b1;
              arbADDRO = cslADDRI;
              cpuDATAO = cslDATAI;
@@ -144,10 +157,15 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
                   cslACKO  = 1'b1;
                   cslDATAO = memDATAI;
                end
-             else if (ubaACKI)
+             else if (uba1ACKI)
                begin
                   cslACKO  = 1'b1;
-                  cslDATAO = ubaDATAI;
+                  cslDATAO = uba1DATAI;
+               end
+             else if (uba3ACKI)
+               begin
+                  cslACKO  = 1'b1;
+                  cslDATAO = uba3DATAI;
                end
              else
                begin
@@ -157,31 +175,61 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
           end
 
         //
-        // Bus Request from the Unibus
+        // Bus Request from the Unibus #1
         //
         // Details
         //  The unibus can access the memory
         //
-        
-        else if (ubaREQI)
+
+        else if (uba1REQI)
           begin
              cpuACKO  = 1'b0;
              cslREQO  = 1'b0;
              cslACKO  = 1'b0;
              ubaREQO  = 1'b0;
              memREQO  = 1'b1;
-             arbADDRO = ubaADDRI;
-             cslDATAO = ubaDATAI;
-             cpuDATAO = ubaDATAI;
-             memDATAO = ubaDATAI;
+             arbADDRO = uba1ADDRI;
+             cslDATAO = uba1DATAI;
+             cpuDATAO = uba1DATAI;
+             memDATAO = uba1DATAI;
              if (memACKI)
                begin
-                  ubaACKO  = 1'b1;
+                  uba1ACKO = 1'b1;
                   ubaDATAO = memDATAI;
                end
              else
                begin
-                  ubaACKO  = 1'b0;
+                  uba1ACKO  = 1'b0;
+                  ubaDATAO = 36'bx;
+               end
+          end
+
+        //
+        // Bus Request from the Unibus #3
+        //
+        // Details
+        //  The unibus can access the memory
+        //
+
+        else if (uba3REQI)
+          begin
+             cpuACKO  = 1'b0;
+             cslREQO  = 1'b0;
+             cslACKO  = 1'b0;
+             ubaREQO  = 1'b0;
+             memREQO  = 1'b1;
+             arbADDRO = uba3ADDRI;
+             cslDATAO = uba3DATAI;
+             cpuDATAO = uba3DATAI;
+             memDATAO = uba3DATAI;
+             if (memACKI)
+               begin
+                  uba3ACKO = 1'b1;
+                  ubaDATAO = memDATAI;
+               end
+             else
+               begin
+                  uba3ACKO  = 1'b0;
                   ubaDATAO = 36'bx;
                end
           end
@@ -193,13 +241,14 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
         //  The CPU can access the memory, unibus or
         //  console.
         //
-        
+
         else if (cpuREQI)
           begin
              cslREQO  = 1'b1;
              cslACKO  = 1'b0;
              ubaREQO  = 1'b1;
-             ubaACKO  = 1'b0;
+             uba1ACKO = 1'b0;
+             uba3ACKO = 1'b0;
              memREQO  = 1'b1;
              arbADDRO = cpuADDRI;
              cslDATAO = cpuDATAI;
@@ -211,10 +260,15 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
                   cpuACKO  = 1'b1;
                   cpuDATAO = memDATAI;
                end
-             else if (ubaACKI)
+             else if (uba1ACKI)
                begin
                   cpuACKO  = 1'b1;
-                  cpuDATAO = ubaDATAI;
+                  cpuDATAO = uba1DATAI;
+               end
+             else if (uba3ACKI)
+               begin
+                  cpuACKO  = 1'b1;
+                  cpuDATAO = uba3DATAI;
                end
              else if (cslACKI)
                begin

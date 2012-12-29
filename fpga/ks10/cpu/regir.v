@@ -118,8 +118,8 @@ module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, opJRST0);
    //  DPE1/E62
    //
 
-   wire irOPCODE = regIR[0: 8];
-   wire irAC     = regIR[9:12];
+   wire [0: 8] irOPCODE = regIR[0: 8];
+   wire [9:12] irAC     = regIR[9:12];
 
    assign opJRST0 = ((irOPCODE == 9'o254) & (irAC == 4'b0));
 

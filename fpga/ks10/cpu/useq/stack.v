@@ -139,7 +139,7 @@ module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
    //  CRA3/E17
    //
 
-   wire [0: 3] wp = sp + 1;
+   wire [0: 3] wp = sp + 1'b1;
 
    //
    // Dual Ported Stack
@@ -181,10 +181,8 @@ module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          begin
-            for (i = 0; i < 16; i = i + 1)
-              stack[i] <= 12'b0;
-          end
+          for (i = 0; i < 16; i = i + 1)
+            stack[i] <= 12'b0;
         else if (clken & call)
           stack[wp] <= currADDR;
      end

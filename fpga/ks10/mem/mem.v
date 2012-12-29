@@ -163,7 +163,7 @@ module MEM(clk, rst, clken,
           end
      end
 
-   wire statREG = {3'b0, statPE, statEE, 7'b0, statPF, 23'b0};
+   wire [0:35] statREG = {3'b0, statPE, statEE, 7'b0, statPF, 23'b0};
    
    //
    // Bus Multiplexer
