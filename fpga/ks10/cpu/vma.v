@@ -1,20 +1,18 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Virtual Memory Address
-//!
-//! \details
-//!
-//! \todo
-//!
-//! \file
-//!      vma.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   Virtual Memory Address
+//
+// Details
+//
+// File
+//   vma.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -40,11 +38,9 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
+`include "pcflags.vh"
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
@@ -71,8 +67,8 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
    // PC Flags
    //
 
-   wire flagUSER = pcFLAGS[5];          // User
-   wire flagPCU  = pcFLAGS[6];          // Previous Context User
+   wire flagUSER = `flagUSER(pcFLAGS);   // User
+   wire flagPCU  = `flagPCU(pcFLAGS);    // Previous Context User
 
    //
    // Microcode Decode
@@ -91,6 +87,10 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
 
    //
    // VMA Register
+   //
+   // Details
+   //  The VMA is loaded when cromMEM_CYCLE is active and
+   //  the VMA is loaded.
    //
    // Trace
    //  DPE3/E53
@@ -179,7 +179,8 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
    //
    // Details
    //  The type of memory cycle can controlled by the microcode or
-   //  can be controlled by the Dispatch ROM.
+   //  can be controlled by the Dispatch ROM.  The Cycle Control is
+   //  loaded when cromMEM_CYCLE is active.
    //
    // Trace
    //  DPM5/E48

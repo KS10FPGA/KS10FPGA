@@ -2,20 +2,20 @@
 //
 // KS-10 Processor
 //
-// \brief
-//      Dispatch ROM (DROM) Definitions
+// Brief
+//   Dispatch ROM (DROM) Definitions
 //
-// \details
-//      The Dispatch ROM is addressed by the instruction OPCODE and
-//      provides a microcode dispatch address to handle the
-//      instruction as well as some other instruction specific
-//      information.
+// Details
+//   The Dispatch ROM is addressed by the instruction OPCODE and
+//   provides a microcode dispatch address to handle the
+//   instruction as well as some other instruction specific
+//   information.
 //
-// \file
-//      drom.vh
+// File
+//   drom.vh
 //
-// \author
-//      Rob Doyle - doyle (at) cox (dot) net
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -42,9 +42,9 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
+
+`ifndef __DROM_VH
+`define __DROM_VH
 
 `define DROM_WIDTH      36              // DROM Width
 
@@ -98,3 +98,5 @@
 `define dromCOND_FUNC   drom[28]        // Start a memory cycle on BWRITE
 `define dromVMA         drom[29]        // Load the VMA on AREAD
 `define dromWRITECYCLE  drom[30]        // Start a write on AREAD
+
+`endif

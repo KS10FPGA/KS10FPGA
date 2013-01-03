@@ -1,43 +1,43 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Timer
-//!
-//! \details
-//!      The original KS10 interval timer was 12 bits and operated
-//!      with a 4.096 MHz clock.  The 12-bit timer generates an
-//!      interrupt exactly every one millisecond.
-//!
-//!      This did not work well in practice.  The RDTIME instruction
-//!      needs to convert timer output to time in 10 us increment
-//!      which would require a division by 40.96.  Therefore the
-//!      timer frequency was changed to 4.100 MHz and the microcode
-//!      does a division by 41 to support the RDTIME instruction.
-//!
-//!      You can find the details of KS10 timer design (and it's
-//!      problems) in a DEC memo authored by Dan Murphy entitled
-//!      "Clocks for Dolphin" on bitsavers.org
-//!
-//!      The KS10 would benefit from two timers, one clocked every
-//!      10 microseconds and another clocked every 1 ms, supported
-//!      by updated microcode.
-//!
-//! \note
-//!      This timer code has been extensively re-written to remove
-//!      the 4.1 MHz clock and use the 50 MHz master clock.
-//!
-//!      IF YOU CHANGE THE CLOCK FREQUENCY FROM 50 MHZ YOU MUST
-//!      CHANGE THE CONSTANTS IN THIS MODULE FOR THE TIMER TO
-//!      WORK CORRECTLY.
-//!
-//! \file
-//!      timer.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   Timer
+//
+// Details
+//   The original KS10 interval timer was 12 bits and operated
+//   with a 4.096 MHz clock.  The 12-bit timer generates an
+//   interrupt exactly every one millisecond.
+//
+//   This did not work well in practice.  The RDTIME instruction
+//   needs to convert timer output to time in 10 us increment
+//   which would require a division by 40.96.  Therefore the
+//   timer frequency was changed to 4.100 MHz and the microcode
+//   does a division by 41 to support the RDTIME instruction.
+//
+//   You can find the details of KS10 timer design (and it's
+//   problems) in a DEC memo authored by Dan Murphy entitled
+//   "Clocks for Dolphin" on bitsavers.org
+//
+//   The KS10 would benefit from two timers, one clocked every
+//   10 microseconds and another clocked every 1 ms, supported
+//   by updated microcode.
+//
+// Note
+//   This timer code has been extensively re-written to remove
+//   the 4.1 MHz clock and use the 50 MHz master clock.
+//
+//   IF YOU CHANGE THE CLOCK FREQUENCY FROM 50 MHZ YOU MUST
+//   CHANGE THE CONSTANTS ks10.vh FOR THE TIMER TO WORK
+//   CORRECTLY.
+//
+// File
+//   timer.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -85,6 +85,12 @@ module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
    output                 timerINTR;    // Timer Interrupt
    output [18:35]         timerCOUNT;   // Timer output
 
+   //
+   // Microcode Decode
+   //
+
+   wire timerRST = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_CLR1MSEC);
+   
    //
    // Frequency Divider
    //
@@ -168,9 +174,8 @@ module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
    //  DPMC/E56
    //
 
-   wire timerRST = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_CLR1MSEC);
-   reg  timerMSB;
-   reg  intr;
+   reg timerMSB;
+   reg intr;
 
    always @(posedge clk or posedge rst)
      begin

@@ -1,20 +1,18 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      APR Device
-//!
-//! \details
-//!
-//! \todo
-//!
-//! \file
-//!      apr.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   APR Device
+//
+// Details
+//
+// File
+//   apr.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -40,9 +38,6 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
 `include "useq/crom.vh"
@@ -313,7 +308,7 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, ks10INTR, aprFLAGS, aprINTR);
             3'b101 : aprINTR <= 7'b0000100;
             3'b110 : aprINTR <= 7'b0000010;
             3'b111 : aprINTR <= 7'b0000001;
-                                default: aprINTR <= 7'b0000000;
+            default: aprINTR <= 7'b0000000;
           endcase
      end
 

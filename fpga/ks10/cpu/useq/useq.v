@@ -42,6 +42,9 @@
 
 `include "crom.vh"
 `include "drom.vh"
+`include "../alu.vh"
+`include "../pcflags.vh"
+`include "../regir.vh"
 
 module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
             cpuINTR, cpuEXEC, cpuCONT, iolatch, timerINTR,
@@ -81,32 +84,33 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    // ALU Flags
    //
 
-   wire aluQR37    = aluFLAGS[0];
-   wire aluLZERO   = aluFLAGS[1];
-   wire aluRZERO   = aluFLAGS[2];
-   wire aluLSIGN   = aluFLAGS[3];
-   wire aluRSIGN   = aluFLAGS[4];
-   wire aluCRY0    = aluFLAGS[6];
-   wire aluCRY1    = aluFLAGS[7];
-   wire aluCRY2    = aluFLAGS[8];
+   wire aluQR37    = `aluQR37(aluFLAGS);
+   wire aluLZERO   = `aluLZERO(aluFLAGS);
+   wire aluRZERO   = `aluRZERO(aluFLAGS);
+   wire aluLSIGN   = `aluLSIGN(aluFLAGS);
+   wire aluRSIGN   = `aluRSIGN(aluFLAGS);
+   wire aluCRY0    = `aluCRY0(aluFLAGS);
+   wire aluCRY1    = `aluCRY1(aluFLAGS);
+   wire aluCRY2    = `aluCRY2(aluFLAGS);
+   wire aluZERO    = `aluZERO(aluFLAGS);
 
    //
    // PC Flags
    //
 
-   wire flagFPD    = pcFLAGS[ 4];
-   wire flagUSER   = pcFLAGS[ 5];
-   wire flagUSERIO = pcFLAGS[ 6];
+   wire flagFPD    = `flagFPD(pcFLAGS);
+   wire flagUSER   = `flagUSER(pcFLAGS);
+   wire flagUSERIO = `flagUSERIO(pcFLAGS);
 
    //
    // Instruction Register
    //
 
-   wire [ 9:12] regIR_AC  = regIR[ 9:12];
-   wire         regIR_I   = regIR[   13];
-   wire [14:17] regIR_XR  = regIR[14:17];
-   wire         regACZERO = (regIR_AC == 4'b0000);
-   wire         regXRZERO = (regIR_XR == 4'b0000);
+   wire [ 9:12] regIR_AC  = `IR_AC(regIR);
+   wire         regIR_I   = `IR_I(regIR);
+   wire [14:17] regIR_XR  = `IR_XR(regIR);
+   wire         regACZERO = `acZERO(regIR);
+   wire         regXRZERO = `xrZERO(regIR);
 
    //
    // Control ROM Address
@@ -121,7 +125,6 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    // ALU Zero
    //
 
-   wire aluZERO = aluLZERO & aluRZERO;                  // ALU (both halves) is zero
    wire txxx    = aluZERO != `dromTXXXEN;               // Test Instruction Results
 
    //

@@ -2,20 +2,20 @@
 //
 // KS-10 Processor
 //
-// \brief
-//      Control ROM (CROM) Definitions
+// Brief
+//   Control ROM (CROM) Definitions
 //
-// \details
-//      This file contains the Control ROM microcode field
-//      definitions.
+// Details
+//   This file contains the Control ROM microcode field
+//   definitions.
 //
-//      Include it everywhere you need to access the Control ROM.
+//   Include it everywhere you need to access the Control ROM.
 //
-// \file
-//      crom.vh
+// File
+//   crom.vh
 //
-// \author
-//      Rob Doyle - doyle (at) cox (dot) net
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -42,9 +42,10 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
+
+`ifndef __CROM_VH
+`define __CROM_VH
+
 
 `define CROM_WIDTH              108             // CROM Width
 
@@ -424,3 +425,5 @@
 //
 
 `define cromDT                  crom[109:111]   // Not used
+
+`endif
