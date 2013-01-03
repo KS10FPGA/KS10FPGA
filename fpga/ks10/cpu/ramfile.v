@@ -96,12 +96,16 @@
 //
 
 `default_nettype none
+`include "vma.vh"
+`include "pxct.vh"
+`include "regir.vh"
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
+
+
 module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
-               vmaFLAGS, vmaADDR, acBLOCK,
-               ramfile);
+               vmaFLAGS, vmaADDR, acBLOCK, ramfile);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -123,16 +127,16 @@ module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
    // IR Fields
    //
 
-   wire [ 9:12] regIR_AC = regIR[ 9:12];        // Instruction Register AC Field
-   wire [14:17] regIR_XR = regIR[14:17];        // Instruction Register XR Field
+   wire [ 9:12] regIR_AC = `IR_AC(regIR);       // Instruction Register AC Field
+   wire [14:17] regIR_XR = `IR_XR(regIR);       // Instruction Register XR Field
 
    //
    // VMA Flags
    //
 
-   wire vmaWRITECYCLE = vmaFLAGS[5];
-   wire vmaPHYSICAL   = vmaFLAGS[8];
-   wire vmaPREVIOUS   = vmaFLAGS[9];
+   wire vmaWRITECYCLE = `vmaWRITECYCLE(vmaFLAGS);
+   wire vmaPHYSICAL   = `vmaPHYSICAL(vmaFLAGS);
+   wire vmaPREVIOUS   = `vmaPREVIOUS(vmaFLAGS);
 
    //
    // AC Reference
@@ -154,8 +158,8 @@ module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
    // AC Blocks
    //
 
-   wire [0:2] currBLOCK = acBLOCK[0:2];         // Current AC Block
-   wire [0:2] prevBLOCK = acBLOCK[3:5];         // Previous AC Block
+   wire [0:2] currBLOCK = `currBLOCK(acBLOCK);	// Current AC Block
+   wire [0:2] prevBLOCK = `prevBLOCK(acBLOCK);  // Previous AC Block
 
    //
    // Address Mux
@@ -272,13 +276,15 @@ module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
    // RAMFILE MEMORY
    //
 
+   wire [0:35] dout;
    RAM1Kx36 uRAM1Kx36
      (.clk(clk),
+      .rst(rst),
       .clken(clken),
       .wr(ramfileWRITE),
       .addr(addr),
       .din(dbus),
       .dout(ramfile)
       );
-
+   
 endmodule

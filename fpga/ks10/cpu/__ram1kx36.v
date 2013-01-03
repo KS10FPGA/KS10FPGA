@@ -48,9 +48,10 @@
 
 `default_nettype none
 
-module RAM1Kx36(clk, clken, wr, addr, din, dout);
+module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
 
    input         clk;           // Clock
+   input         rst;		// Reset
    input         clken;         // Clock enable
    input         wr;            // Write
    input  [0: 9] addr;          // Address
@@ -65,6 +66,12 @@ module RAM1Kx36(clk, clken, wr, addr, din, dout);
    //  for simulation and until I figure out what to do here.
    //  It will create synthesis issues.
    //
+   // Note:
+   //  There are places when the KS10 microcode reads uninitialized
+   //  RAMFILE contents (TTG, for one).  This halts the simulation.
+   //  Therefore this implementation includes code to initialized
+   //  the RAMFILE contents for simulation purposes.
+   //
    // Trace
    //  DPE7/E906, DPE7/E907, DPE7/E908, DPE7/E909, DPE7/E910, DPE7/E911
    //  DPE7/E912, DPE7/E913, DPE7/E914, DPE7/E915, DPE7/E916, DPE7/E917
@@ -74,12 +81,27 @@ module RAM1Kx36(clk, clken, wr, addr, din, dout);
    //  DPE7/E818, DPE7/E819, DPE7/E820, DPE7/E821, DPE7/E822, DPE7/E823
    //
 
+`ifndef SYNTHESIS
+   integer i;
+`endif
+   
    reg [0:35] ram [0:1023];
    reg [0: 9] rd_addr;
 
    always @(negedge clk)
      begin
-        if (clken)
+        if (rst)
+          begin
+`ifdef SYNTHESIS
+             ;
+`else             
+             for (i = 0; i < 1024; i = i + 1)
+             begin
+                ram[i] = 0;
+             end
+`endif
+          end
+        else if (clken)
           begin
              if (wr)
                ram[addr] <= din;

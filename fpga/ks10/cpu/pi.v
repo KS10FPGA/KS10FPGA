@@ -1,24 +1,22 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Priority Interrupt
-//!
-//! \details
-//!
-//! \note
-//!      The highest priority is interrupt 1, the lower priority is
-//!      interrupt 7.
-//!
-//! \todo
-//!
-//! \file
-//!      intr.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   Priority Interrupt
+//
+// Details
+//
+// Note
+//   The highest priority is interrupt 1, the lower priority is
+//   interrupt 7.
+//
+// File
+//   intr.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -190,7 +188,7 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
         if (rst)
           cpuINTR <= 0;
         else if (clken)
-          cpuINTR <= (reqINTP < curINTP);
+          cpuINTR <= (reqPRIORITY < curPRIORITY);
      end
 
 endmodule
