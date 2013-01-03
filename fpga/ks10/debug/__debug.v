@@ -58,8 +58,8 @@
    //
    // Microcode Decode
    //
-   // synthesis translate_off
-   //
+   
+`ifndef SYNTHESIS
    
    wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
 
@@ -91,10 +91,10 @@
              $display("debug: PC is %06o", debugDATA[18:35]);
           end
      end
+`endif
    
    //
    // PC is Register #1 in the ALU
-   // synthesis translate_on
    //
    
    assign debugADDR = 4'b0001;

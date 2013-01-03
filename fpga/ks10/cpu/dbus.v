@@ -45,6 +45,7 @@
 //
 
 `default_nettype none
+`include "vma.vh"
 `include "useq/crom.vh"
 
 module DBUS(crom, cacheHIT, reqINTP, vmaADDR, vmaFLAGS, pcFLAGS, dp,
@@ -67,8 +68,8 @@ module DBUS(crom, cacheHIT, reqINTP, vmaADDR, vmaFLAGS, pcFLAGS, dp,
    // VMA Flags
    //
 
-   wire vmaREADCYCLE = vmaFLAGS[3];
-   wire vmaPHYSICAL  = vmaFLAGS[8];
+   wire vmaREADCYCLE = `vmaREADCYCLE(vmaFLAGS);
+   wire vmaPHYSICAL  = `vmaPHYSICAL(vmaFLAGS);
 
    //
    // AC Reference
@@ -103,7 +104,7 @@ module DBUS(crom, cacheHIT, reqINTP, vmaADDR, vmaFLAGS, pcFLAGS, dp,
    //  DPM5/E38
    //
 
-   wire forceRAMFILE = ((vmaACREF & vmaREADCYCLE & (crom[0:11] != 12'o1146)) |
+   wire forceRAMFILE = ((vmaACREF & vmaREADCYCLE & (crom[0:11] != 12'o1146) & (crom[0:11] != 12'o3666)) |
                         (cacheHIT & vmaREADCYCLE));
 
    //

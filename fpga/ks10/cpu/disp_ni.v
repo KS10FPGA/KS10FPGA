@@ -1,21 +1,21 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Next Instruction Dispatch
-//!
-//! \details
-//!      This is a 16-way dispatch base on the next instruction.
-//!
-//! \todo
-//!
-//! \file
-//!      ni_disp.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//    Next Instruction Dispatch
+//
+// Details
+//    This is a 16-way dispatch base on the next instruction.
+//
+// Todo
+//
+// File
+//    ni_disp.v
+//
+// Author
+//    Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -41,53 +41,47 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
+`include "apr.vh"
+`include "pcflags.vh"
+`include "useq/crom.vh"
+  
+module NI_DISP (clk, rst, clken, crom, aprFLAGS, pcFLAGS, cslTRAPEN,
+                cpuRUN, memory_cycle, dispNI, trapCYCLE);
+   
+   parameter cromWidth = `CROM_WIDTH;
 
-module NI_DISP (aprFLAGS, pcFLAGS, cslTRAPEN, cpuRUN, memory_cycle, dispNI);
-
-   input  [ 0:17] pcFLAGS;              // PC Flags
-   input  [22:35] aprFLAGS;             // APR Flags
-   input          cslTRAPEN;            // Console Trap Enable
-   input          cpuRUN;               // Run
-   input          memory_cycle;         // Memory Cycle
-   output [ 8:11] dispNI;               // Next Instruction dispatch
+   input                   clk;         // Clock
+   input                   rst;         // Reset
+   input                   clken;       // Clock Enable
+   input  [ 0:cromWidth-1] crom;        // Control ROM Data
+   input  [ 0:17]          pcFLAGS;   	// PC Flags
+   input  [22:35]          aprFLAGS;    // APR Flags
+   input                   cslTRAPEN;   // Console Trap Enable
+   input                   cpuRUN;      // Run
+   input                   memory_cycle;// Memory Cycle
+   output [ 8:11]          dispNI;      // Next Instruction dispatch
+   output                  trapCYCLE;   // Trap Cycle
+ 
+   //
+   // Microcode Decode
+   //
+   
+   wire specNICOND = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADNICOND);
 
    //
-   // APR Flag
+   // APR Flags
    //
 
-   wire flagTRAPEN = aprFLAGS[22];
+   wire flagTRAPEN = `flagTRAPEN(aprFLAGS);
 
    //
    // PC Flags
    //
 
-   wire flagTRAP2 = pcFLAGS[ 9];
-   wire flagTRAP1 = pcFLAGS[10];
-
-   //
-   // Trap Selection
-   //
-
-   reg  [1:3] traps;
-   wire [0:1] trapSEL = {flagTRAP2, flagTRAP1};
-
-   always @(cslTRAPEN or flagTRAPEN or trapSEL)
-     begin
-        if (cslTRAPEN & flagTRAPEN)
-          case (trapSEL)
-            0: traps = 3'b000;
-            1: traps = 3'b001;
-            2: traps = 3'b010;
-            3: traps = 3'b100;
-          endcase
-        else
-          traps = 3'b000;
-     end
+   wire flagTRAP2 = `flagTRAP2(pcFLAGS);
+   wire flagTRAP1 = `flagTRAP1(pcFLAGS);
 
    //
    // NICOND Dispatch
@@ -96,10 +90,45 @@ module NI_DISP (aprFLAGS, pcFLAGS, cslTRAPEN, cpuRUN, memory_cycle, dispNI);
    //  CRA2/E147
    //
 
-   assign dispNI[8] = memory_cycle;     // Fetch in progress
-   assign dispNI[9:11] = ((traps[3]) ? 3'o1 :
-                          (traps[2]) ? 3'o2 :
-                          (traps[1]) ? 3'o3 :
-                          (~cpuRUN ) ? 3'o5 : 3'o7);
+   reg [8:11] dispNI;
+   always @(cslTRAPEN or flagTRAP1 or flagTRAP2 or cpuRUN or memory_cycle)
+     begin
+        if (cslTRAPEN & flagTRAPEN)
+          if (flagTRAP1 & flagTRAP2)
+            dispNI[9:11] = 3'd1;
+          else if (flagTRAP2)
+            dispNI[9:11] = 3'd2;
+          else if (flagTRAP1)
+            dispNI[9:11] = 3'd3;
+          else if (~cpuRUN)
+            dispNI[9:11] = 3'd5;
+          else
+            dispNI[9:11] = 3'd7;
+        else
+          dispNI[9:11] = 3'd7;
+        dispNI[8] = memory_cycle;
+     end
 
+   //
+   // Trap Cycle
+   //
+   // Trace
+   //  CRA2/E159
+   //
+
+   reg trapCYCLE;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          trapCYCLE <= 0;
+        else if (clken & specNICOND)
+          begin
+             if ((cslTRAPEN & flagTRAPEN & flagTRAP1) |
+                 (cslTRAPEN & flagTRAPEN & flagTRAP2))
+               trapCYCLE <= 1;
+             else
+               trapCYCLE <= 0;
+          end
+     end
+   
 endmodule

@@ -1,62 +1,62 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      PC Flags
-//!
-//! \details
-//!      The KS10 flags are defined as:
-//!
-//!         00   01   02   03   04   05   06   07   08   09   10   11   12   13   14   15   16   17
-//!       +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
-//!  USER |AOV |CRY0|CRY1| FOV| FPD|USER|USER| PUB|    |TRAP|TRAP| FXU| NO |    |    |    |    |    |
-//!       |    |    |    |    |    |    | IO |    |    |  2 |  1 |    | DIV|    |    |    |    |    |
-//!       +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
-//!  EXEC | PCP|CRY0|CRY1| FOV| FPD|USER| PCU| PUB|    |TRAP|TRAP| FXU| NO |    |    |    |    |    |
-//!       |  * |    |    |    |    |    |    |    |    |  2 |  1 |    | DIV|    |    |    |    |    |
-//!       +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
-//!
-//!       AOV    - Overflow
-//!       CRY0   - Carry out of bit 0.
-//!       CRY1   - Carry out of bit 1.
-//!       FOV    - Floating-point overflow.
-//!       FPD    - First part done.
-//!       USER   -
-//!       USERIO -
-//!       PUB    - Public.
-//!                Not implemented on the KS10.  Bit seven always
-//!                indicates 0.
-//!       TRAP2  - Trap 2.
-//!       TRAP1  - Trap 1.
-//!       FXU    - Floating-point underflow.
-//!       NODIV  - No Divide.
-//!      *PCP    - Previous Context Public
-//!                Not implemented on the KS10.  Bit zero always
-//!                indicates AOV.
-//!       PCU    - Previous Context User
-//!
-//!       Overflow occurs if CRY0 and CRY1 differ.
-//!
-//! \note
-//!       The logic has been simplified by recognizing that
-//!       selPCFLAGS, selEXPTEST, and selASHTEST are mutually
-//!       exclusive.
-//!
-//! \note
-//!       In the original circuitry the Control ROM (microcode)
-//!       was supplied to this module via the dbm input.  This
-//!       has been replaced by a direct connection to the Control
-//!       ROM. Presumably this was done because of circuit board
-//!       interconnection limitations.
-//!
-//! \file
-//!      flags.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
- ////////////////////////////////////////////////////////////////////
+//
+// KS-10 Processor
+//
+// Brief
+//   PC Flags
+//
+// Details
+//   The KS10 flags are defined as:
+//
+//         00   01   02   03   04   05   06   07   08   09   10   11   12   13   14   15   16   17
+//       +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+//  USER |AOV |CRY0|CRY1| FOV| FPD|USER|USER| PUB|    |TRAP|TRAP| FXU| NO |    |    |    |    |    |
+//       |    |    |    |    |    |    | IO |    |    |  2 |  1 |    | DIV|    |    |    |    |    |
+//       +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+//  EXEC | PCP|CRY0|CRY1| FOV| FPD|USER| PCU| PUB|    |TRAP|TRAP| FXU| NO |    |    |    |    |    |
+//       |  * |    |    |    |    |    |    |    |    |  2 |  1 |    | DIV|    |    |    |    |    |
+//       +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+//
+//       AOV    - Overflow
+//       CRY0   - Carry out of bit 0.
+//       CRY1   - Carry out of bit 1.
+//       FOV    - Floating-point overflow.
+//       FPD    - First part done.
+//       USER   -
+//       USERIO -
+//       PUB    - Public.
+//                Not implemented on the KS10.  Bit seven always
+//                indicates 0.
+//       TRAP2  - Trap 2.
+//       TRAP1  - Trap 1.
+//       FXU    - Floating-point underflow.
+//       NODIV  - No Divide.
+//      *PCP    - Previous Context Public
+//                Not implemented on the KS10.  Bit zero always
+//                indicates AOV.
+//       PCU    - Previous Context User
+//
+//       Overflow occurs if CRY0 and CRY1 differ.
+//
+// Note
+//   The logic has been simplified by recognizing that
+//   selPCFLAGS, selEXPTEST, and selASHTEST are mutually
+//   exclusive.
+//
+// Note
+//   In the original circuitry the Control ROM (microcode)
+//   was supplied to this module via the dbm input.  This
+//   has been replaced by a direct connection to the Control
+//   ROM. Presumably this was done because of circuit board
+//   interconnection limitations.
+//
+// File
+//   pcflags.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
+////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
 //
@@ -80,15 +80,14 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
 `include "useq/crom.vh"
-
+`include "alu.vh"
+`include "regir.vh"
+  
 module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
-               aluAOV, aluCRY0, aluCRY1, pcFLAGS, skipJFCL);
+               aluFLAGS, pcFLAGS, skipJFCL);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -99,12 +98,18 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    input  [0:35]          dp;                   // Data path
    input  [0: 9]          scad;                 // SCAD
    input  [0:17]          regIR;                // Instruction Register
-   input                  aluAOV;               // ALU Arithmetic Overflow
-   input                  aluCRY0;              // ALU Carry 0
-   input                  aluCRY1;              // ALU Carry 1
+   input  [0: 8]          aluFLAGS;             // ALU Flags
    output [0:17]          pcFLAGS;              // Flags
    output                 skipJFCL;             // JFCL Skip
 
+   //
+   // ALU Flags
+   //
+
+   wire aluAOV  = `aluAOV(aluFLAGS);
+   wire aluCRY0 = `aluCRY0(aluFLAGS);
+   wire aluCRY1 = `aluCRY1(aluFLAGS);
+   
    //
    // Flags Registers
    //
@@ -162,7 +167,7 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    //
 
    wire [9:12] JFCL;
-   wire [9:12] regIR_AC = regIR[9:12];
+   wire [9:12] regIR_AC = `IR_AC(regIR);
 
    assign JFCL[ 9]  = selPCFLAGS & `cromJFCLFLAGS & flagAOV  & regIR_AC[ 9];
    assign JFCL[10]  = selPCFLAGS & `cromJFCLFLAGS & flagCRY0 & regIR_AC[10];

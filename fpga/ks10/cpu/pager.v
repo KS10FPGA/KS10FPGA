@@ -1,48 +1,48 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Pager
-//!
-//! \details
-//!     The page table translates virtual addresses/page numbers to
-//!     phyical addresses/page numbers.  There are 512 virtual pages
-//!     which map to 2048 pages.
-//!
-//!          18                26 27                    35
-//!         +--------------------+------------------------+
-//!         |Virtual Page Number |        Word Number     |
-//!         +--------------------+------------------------+
-//!                  |                       |
-//!                  |                       |
-//!                 \ /                      |
-//!          +-------+-------+               |
-//!          |      Page     |               |
-//!          |  Translation  |               |
-//!          +-------+-------+               |
-//!                  |                       |
-//!                  |                       |
-//!                 \ /                     \ /
-//!     +------------------------+------------------------+
-//!     |  Physical Page Number  |        Word Number     |
-//!     +------------------------+------------------------+
-//!      16                    26 27                    35
-//!
-//!
-//! \note
-//!     The Page Tables use asynchronous memory which won't work
-//!     in an FPGA.  Since the Page Table is addressed by the VMA
-//!     register and the VMA register is loaded synchronously, we
-//!     can absorb the VMA register into the Page Table Memory
-//!     addressing.
-//!
-//! \file
-//!      pager.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//    Pager
+//
+// Details
+//   The page table translates virtual addresses/page numbers to
+//   phyical addresses/page numbers.  There are 512 virtual pages
+//   which map to 2048 pages.
+//
+//        18                26 27                    35
+//       +--------------------+------------------------+
+//       |Virtual Page Number |        Word Number     |
+//       +--------------------+------------------------+
+//                |                       |
+//                |                       |
+//               \ /                      |
+//        +-------+-------+               |
+//        |      Page     |               |
+//        |  Translation  |               |
+//        +-------+-------+               |
+//                |                       |
+//                |                       |
+//               \ /                     \ /
+//   +------------------------+------------------------+
+//   |  Physical Page Number  |        Word Number     |
+//   +------------------------+------------------------+
+//    16                    26 27                    35
+//
+//
+// Note
+//   The Page Tables use asynchronous memory which won't work
+//   in an FPGA.  Since the Page Table is addressed by the VMA
+//   register and the VMA register is loaded synchronously, we
+//   can absorb the VMA register into the Page Table Memory
+//   addressing.
+//
+// File
+//   pager.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -68,11 +68,9 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
+`include "vma.vh"
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
@@ -97,7 +95,7 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    // vmaFLAGS
    //
 
-   wire pageUSER = vmaFLAGS[0];
+   wire pageUSER = `vmaUSER(vmaFLAGS);
 
    //
    // VMA Logic
