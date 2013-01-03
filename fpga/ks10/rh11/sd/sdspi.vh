@@ -41,6 +41,9 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+`ifndef __SDSPI_VH
+`define __SDSPI_VH
+
 //
 // SD SPI Operations
 //
@@ -51,3 +54,5 @@
 `define spiFAST   3'd3
 `define spiSLOW   3'd4
 `define spiTR     3'd5
+
+`endif

@@ -50,6 +50,7 @@
 ////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`include "uba.vh"
 `include "../ks10.vh"
   
 module UBA(clk, rst, clken, ctlNUM,
@@ -105,10 +106,14 @@ module UBA(clk, rst, clken, ctlNUM,
    // IO Bridge Configuration
    //
    
+   parameter [14:17] ctlNUM0 = `ctlNUM0;	// IO Bridge Device 0
    parameter [14:17] ctlNUM1 = `ctlNUM1;	// IO Bridge Device 1
+   parameter [14:17] ctlNUM2 = `ctlNUM2;	// IO Bridge Device 2
    parameter [14:17] ctlNUM3 = `ctlNUM3;	// IO Bridge Device 3
-   parameter [18:35] devWRU1 = 18'o200000;  	// IO Bridge Device 1 WRU Response (bit 19)
-   parameter [18:35] devWRU3 = 18'o040000;  	// IO Bridge Device 3 WRU Response (bit 21)
+   parameter [18:35] wruNUM0 = `wruNUM0;  	// IO Bridge Device 0 WRU Response (bit 18)
+   parameter [18:35] wruNUM1 = `wruNUM1;  	// IO Bridge Device 1 WRU Response (bit 19)
+   parameter [18:35] wruNUM2 = `wruNUM2;  	// IO Bridge Device 2 WRU Response (bit 20)
+   parameter [18:35] wruNUM3 = `wruNUM3;  	// IO Bridge Device 3 WRU Response (bit 21)
    
    //
    // IO Addresses
@@ -133,8 +138,8 @@ module UBA(clk, rst, clken, ctlNUM,
    wire         busWRU    = busADDRI[11];       // 1 = Read interrupting controller number
    wire         busVECT   = busADDRI[12];       // 1 = Read interrupt vector
    wire         busIOBYTE = busADDRI[13];       // 1 = IO Bridge Byte IO Operation
-   wire [15:17] busPI     = busADDRI[15:17];	   // 1 = IO Bridge PI Request
-   wire [14:17] busCTL    = busADDRI[14:17];    // 1 = IO Bridge Device Number
+   wire [15:17] busPI     = busADDRI[15:17];	// IO Bridge PI Request
+   wire [14:17] busCTL    = busADDRI[14:17];    // IO Bridge Device Number
    wire [18:35] busADDR   = busADDRI[18:35];    // IO Address
 
    //
@@ -526,7 +531,7 @@ module UBA(clk, rst, clken, ctlNUM,
    always @(pageREAD or pageDATAO or
             statREAD or regSTAT   or
             vectREAD or dev1VECT  or
-            wruREAD  or devWRU1   or devWRU3  or ctlNUM    or
+            wruREAD  or wruNUM1   or wruNUM3  or ctlNUM    or
             devREAD  or dev1ACKI  or dev2ACKI or dev1DATAI or dev2DATAI)
      begin
         busACKO  = 1'b0;             
@@ -546,15 +551,22 @@ module UBA(clk, rst, clken, ctlNUM,
              busACKO  = 1'b1;
              busDATAO = {18'b0, dev1VECT};
           end
-        if (wruREAD)
+        if ((wruREAD & statINTHI & (busPI == statPIH)) |
+            (wruREAD & statINTLO & (busPI == statPIL)))
           begin
              busACKO  = 1'b1;
-             if (ctlNUM == ctlNUM1)
-               busDATAO = {18'b0, devWRU1};
-             else if (ctlNUM == ctlNUM3)
-               busDATAO = {18'b0, devWRU3};
-             else
-               busDATAO = 36'b0;
+             case (ctlNUM)
+               ctlNUM0:
+                 busDATAO = {18'b0, wruNUM0};
+               ctlNUM1:
+                 busDATAO = {18'b0, wruNUM1};
+               ctlNUM2:
+                 busDATAO = {18'b0, wruNUM2};
+               ctlNUM3:
+                 busDATAO = {18'b0, wruNUM3};
+               default:
+                 busDATAO = 36'b0;
+             endcase
           end
         if (devREAD)
           begin

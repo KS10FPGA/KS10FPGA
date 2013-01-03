@@ -41,6 +41,9 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+`ifndef __RPXX_VH
+`define __RPXX_VH
+
 //
 // RP Serial Numbers
 //
@@ -99,3 +102,5 @@
 `define rp06LASTSECT    5'd19           // 20 sectors per track numbered 0 to 19
 `define rp06LASTSURF    5'd18           // 19 tracks per cylinder numbered 0 to 18
 `define rp06LASTCYL     10'd814         // 815 Cylinders
+
+`endif

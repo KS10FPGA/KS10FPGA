@@ -41,6 +41,10 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+`ifndef __RH11_VH
+`define __RH11_VH
+
+
 //
 // RH Device and Interrupt
 //
@@ -85,3 +89,5 @@
 
 `define rh1VECT   18'o000254     	// Interrupt Vector
 `define rh1ADDR   18'o776700     	// Base Address
+
+`endif

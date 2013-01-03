@@ -41,6 +41,10 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+`ifndef __DZ11_VH
+`define __DZ11_VH
+
+
 //
 // DZ Device and Interrupt
 //
@@ -86,3 +90,5 @@
 
 `define dz4VECT   18'o000370     	// Interrupt Vector
 `define dz4ADDR   18'o760040     	// Base Address
+
+`endif

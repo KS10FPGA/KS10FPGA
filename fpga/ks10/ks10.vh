@@ -41,6 +41,9 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+`ifndef __KS10_VH
+`define __KS10_VH
+
 `define CLKFRQ  50000000	// Clock Speed
-`define ctlNUM1 4'd1		// IO Bridge Controller #1
-`define ctlNUM3 4'd3		// IO Bridge Controller #3
+
+`endif

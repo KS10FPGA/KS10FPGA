@@ -179,17 +179,17 @@ module MEM(clk, rst, clken,
    reg [0:35] busDATAO;
    
    always @(busIO or busADDR or busREAD or busWRITE or ssramDATA or statREG)
-     begin
+      begin
         if (busIO & (busADDR == 18'o100000))
           begin
              busACKO  <= 1'b1;
              busDATAO <= statREG;
-// synthesis translate_off
+`ifndef SYNTHESIS
              if (busREAD)
                $display("Memory Status Register Read.\n");
              else if (busWRITE)
                $display("Memory Status Register Written.\n");
-// synthesis translate_on
+`endif
           end
         else if (~busIO & (busADDR < 32768))
           begin

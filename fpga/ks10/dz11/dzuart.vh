@@ -41,6 +41,9 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+`ifndef __UART_BRG_VH
+`define __UART_BRG_VH
+
 `define CLKDIV  16
 
 `define BR1200   3'd0
@@ -52,3 +55,4 @@
 `define BR57600  3'd6
 `define BR115200 3'd7
 
+`endif

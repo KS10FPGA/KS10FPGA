@@ -1,168 +1,168 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      KS-10 Console
-//!
-//! \details
-//!
-//!      Console Instruction Register (Device 0, IO Address 0200000)
-//!
-//!          When the 'execute switch' is asserted at power-up the KS10
-//!          microcode performs a IO read of the Console Instruction
-//!          Register (regIR) at IO address o200000 and then executes
-//!          that instruction.
-//!
-//!          The Console Instruction Register is normally initialized
-//!          with a JRST instruction which causes the code to jump to
-//!          the entry point of the code/bootloader.
-//!
-//!          This mechanism allowes the Console set the address that
-//!          the KS10 began execution.
-//!
-//!          The JRST opcode is 0254.
-//!
-//!                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (LH)  |0 |1 |0 |1 |0 |1 |1 |0 |0 |0 |0 |0 |0 |0 |0 |0 |0 |0 |
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!
-//!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (RH)  |                     ADDRESS                         |
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!
-//!      Console Control/Status register:
-//!
-//!          The Console Control/Status register controls the operation
-//!          of the KS10 and allows the Console to be cognizant of the
-//!          status of the KS10 CPU.
-//!
-//!                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (LH)  |                             |NX|GO|        |SR|SS|SE|
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!
-//!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (RH)  |SC|SH|              |TE|RE|CE|                 |KI|KR|
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!
-//!              NX : Non-existant memory timeout (Read Only)
-//!              GO : Start Read or Write Transaction
-//!              SR : Run Switch
-//!              SS : Single Step Switch
-//!              SE : Execute Switch
-//!              SC : Continue Switch
-//!              SH : Halt Switch
-//!              TE : Timer Enable
-//!              RE : Trap Enable
-//!              CE : Cache Enable
-//!              KI : KS10 Interrupt
-//!              KR : KS10 Reset
-//!
-//!      Console Address Register:
-//!
-//!          The console can read from or write to KS10 memory and/or IO.
-//!          The address of the memory or IO location to be accessed is
-//!          placed in the Console Address Register prior to starting
-//!          the access.
-//! 
-//!          The format of the Console Address Register during Memory
-//!          Operations is:
-//!
-//!                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (LH)  |0 |0 |0 |RD|0 |WR|0 |0 |0 |0 |0 |0 |0 |0 |0 |0 |Addr |
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!
-//!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (RH)  |                      Memory Address                 |
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!
-//!          The format of the Console Address Register during IO
-//!          Operations is:
-//!
-//!                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (LH)  |0 |0 |0 |RD|0 |WR|0 |0 |0 |0 |1 |0 |0 |0 |  DEV NO   |
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!
-//!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (RH)  |                     IO Address                      |
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!
-//!          Note: Bit 10 is asserted during IO operations and is
-//!          negated during Memory Operations.
-//!
-//!          Note: 20-bit addressing of memory is supported.
-//!
-//!      Console Data Register:
-//!
-//!          Data to be written to Memory or IO is placed in the Console
-//!          Data Register.   Similarly data that has been read from 
-//!          from Memory or IO is placed in the Console Data Register.
-//!
-//!                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (LH)  |                      DATA                           |
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!
-//!               18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!        (RH)  |                      DATA                           |
-//!              +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!
-//!       Console Memory Read Procedure
-//!
-//!          The KS10 memory is read using the following procedure:
-//!             1.  The memory address is written to the Console Address
-//!                 Register.   The 'RD' bit should be asserted.  The 'WR'
-//!                 bit and the 'IO' bit should be negated.
-//!             2.  After the Console Address Register initialized, the
-//!                 'GO' bit of the Console Control/Status register should
-//!                 be asserted.
-//!             3.  The state machine performs a read from memory and
-//!                 places the results in the Console Data Register.  The
-//!                 'GO' bit will remain asserted while the memory
-//!                 transaction is active and will negate when the memory
-//!                 transaction is completed.
-//!
-//!       Console Memory Write Procedure
-//!
-//!          The KS10 memory is written using the following procedure:
-//!             1.  The memory address is written to the Console Address
-//!                 Register.   The 'RD' bit should be asserted.  The 'WR'
-//!                 bit and the 'IO' bit should be negated.
-//!             2.  The data to be written to memory is written to the
-//!                 Console Data Register.
-//!             3.  After the Console Address Register and Console Data
-//!                 Register are both initialized, the 'GO' bit of the
-//!                 Console Control/Status register should be asserted.
-//!             4.  The state machine performs a write to memory.  The
-//!                 'GO' bit will remain asserted while the memory
-//!                 transaction is active and will negate when the
-//!                 memory transaction is completed.
-//!
-//!       Console IO Read and Write Procedure
-//!          Console IO operations are similar to Console Memory
-//!          operations except that the IO bit in the Console
-//!          Address Register must be asserted and the IO address
-//!          must include the IO Device Number - which may be zero.
-//!
-//!          Unibus IO Device Numbers are non-zero.  Unibus IO
-//!          addresses are limited to 16-bits and therefore
-//!          Unibus IO addresses bits 18 and 19 must be zero.
-//!        
-//! \file
-//!      csl.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   KS-10 Console
+//
+// Details
+//
+//   Console Instruction Register (Device 0, IO Address 0200000)
+//
+//       When the 'execute switch' is asserted at power-up the KS10
+//       microcode performs a IO read of the Console Instruction
+//       Register (regIR) at IO address o200000 and then executes
+//       that instruction.
+//
+//       The Console Instruction Register is normally initialized
+//       with a JRST instruction which causes the code to jump to
+//       the entry point of the code/bootloader.
+//
+//       This mechanism allowes the Console set the address that
+//       the KS10 began execution.
+//
+//       The JRST opcode is 0254.
+//
+//             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (LH)  |0 |1 |0 |1 |0 |1 |1 |0 |0 |0 |0 |0 |0 |0 |0 |0 |0 |0 |
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//            18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (RH)  |                     ADDRESS                         |
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//   Console Control/Status register:
+//
+//       The Console Control/Status register controls the operation
+//       of the KS10 and allows the Console to be cognizant of the
+//       status of the KS10 CPU.
+//
+//             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (LH)  |                             |NX|GO|        |SR|SS|SE|
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//            18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (RH)  |SC|SH|              |TE|RE|CE|                 |KI|KR|
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//           NX : Non-existant memory timeout (Read Only)
+//           GO : Start Read or Write Transaction
+//           SR : Run Switch
+//           SS : Single Step Switch
+//           SE : Execute Switch
+//           SC : Continue Switch
+//           SH : Halt Switch
+//           TE : Timer Enable
+//           RE : Trap Enable
+//           CE : Cache Enable
+//           KI : KS10 Interrupt
+//           KR : KS10 Reset
+//
+//   Console Address Register:
+//
+//       The console can read from or write to KS10 memory and/or IO.
+//       The address of the memory or IO location to be accessed is
+//       placed in the Console Address Register prior to starting
+//       the access.
+//
+//       The format of the Console Address Register during Memory
+//       Operations is:
+//
+//             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (LH)  |0 |0 |0 |RD|0 |WR|0 |0 |0 |0 |0 |0 |0 |0 |0 |0 |Addr |
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//            18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (RH)  |                      Memory Address                 |
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//       The format of the Console Address Register during IO
+//       Operations is:
+//
+//             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (LH)  |0 |0 |0 |RD|0 |WR|0 |0 |0 |0 |1 |0 |0 |0 |  DEV NO   |
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//            18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (RH)  |                     IO Address                      |
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//       Note: Bit 10 is asserted during IO operations and is
+//       negated during Memory Operations.
+//
+//       Note: 20-bit addressing of memory is supported.
+//
+//   Console Data Register:
+//
+//       Data to be written to Memory or IO is placed in the Console
+//       Data Register.   Similarly data that has been read from
+//       from Memory or IO is placed in the Console Data Register.
+//
+//             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (LH)  |                      DATA                           |
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//            18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (RH)  |                      DATA                           |
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//    Console Memory Read Procedure
+//
+//       The KS10 memory is read using the following procedure:
+//          1.  The memory address is written to the Console Address
+//              Register.   The 'RD' bit should be asserted.  The 'WR'
+//              bit and the 'IO' bit should be negated.
+//          2.  After the Console Address Register initialized, the
+//              'GO' bit of the Console Control/Status register should
+//              be asserted.
+//          3.  The state machine performs a read from memory and
+//              places the results in the Console Data Register.  The
+//              'GO' bit will remain asserted while the memory
+//              transaction is active and will negate when the memory
+//              transaction is completed.
+//
+//    Console Memory Write Procedure
+//
+//       The KS10 memory is written using the following procedure:
+//          1.  The memory address is written to the Console Address
+//              Register.   The 'RD' bit should be asserted.  The 'WR'
+//              bit and the 'IO' bit should be negated.
+//          2.  The data to be written to memory is written to the
+//              Console Data Register.
+//          3.  After the Console Address Register and Console Data
+//              Register are both initialized, the 'GO' bit of the
+//              Console Control/Status register should be asserted.
+//          4.  The state machine performs a write to memory.  The
+//              'GO' bit will remain asserted while the memory
+//              transaction is active and will negate when the
+//              memory transaction is completed.
+//
+//    Console IO Read and Write Procedure
+//       Console IO operations are similar to Console Memory
+//       operations except that the IO bit in the Console
+//       Address Register must be asserted and the IO address
+//       must include the IO Device Number - which may be zero.
+//
+//       Unibus IO Device Numbers are non-zero.  Unibus IO
+//       addresses are limited to 16-bits and therefore
+//       Unibus IO addresses bits 18 and 19 must be zero.
+//
+// File
+//   csl.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -188,9 +188,6 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 module CSL(clk, reset,
            cslALE, cslAD, cslRD_N, cslWR_N,
@@ -498,11 +495,11 @@ module CSL(clk, reset,
    //
    // Bus REQ
    //
-   
+
    assign busREQO = ((state == stateCHECK) ||
                      (state == stateREAD ) ||
                      (state == stateWRITE));
-   
+
    //
    // Bus ACK
    //
@@ -541,8 +538,9 @@ module CSL(clk, reset,
 
    //
    // Print the Halt Status Block
-   // synthesis translate_off
    //
+
+`ifndef SYNTHESIS
 
    always @(posedge clk)
      begin
@@ -587,6 +585,6 @@ module CSL(clk, reset,
           end
      end
 
-   // synthesis translate_on
+`endif
 
 endmodule

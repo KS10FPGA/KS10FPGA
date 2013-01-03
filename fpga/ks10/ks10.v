@@ -2,19 +2,19 @@
 //
 // KS-10 Processor
 //
-// \brief
-//      KS10 System.   The system consists of a CPU, a Bus Aribter,
-//      Memory, and a Unibus Interface.
+// Brief
+//   KS10 System.   The system consists of a CPU, a Bus Aribter,
+//   Memory, and a Unibus Interface.
 //
-// \details
+// Details
 //
-// \todo
+// Todo
 //
-// \file
-//      ks10.v
+// File
+//   ks10.v
 //
-// \author
-//      Rob Doyle - doyle (at) cox (dot) net
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -43,6 +43,7 @@
 ////////////////////////////////////////////////////////////////////
 
 `include "ks10.vh"
+`include "uba/uba.vh"
 `include "uba/dz11/dz11.vh"
 `include "uba/rh11/rh11.vh"
 

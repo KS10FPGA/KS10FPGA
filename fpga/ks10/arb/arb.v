@@ -1,6 +1,4 @@
-////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
+ Processor
 //!
 //! \brief
 //!      KS10 Bus Arbiter
@@ -45,11 +43,13 @@
 // Comments are formatted for doxygen
 //
 
+`include "../cpu/vma.vh"
+
 module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
            cslREQI,  cslREQO,  cslACKI,  cslACKO,  cslADDRI, cslDATAI, cslDATAO,
            ubaREQO,  ubaDATAO,
-           uba1REQI,    uba1ACKI,  uba1ACKO,  uba1ADDRI, uba1DATAI,
-           uba3REQI,    uba3ACKI,  uba3ACKO,  uba3ADDRI, uba3DATAI,
+           uba1REQI, uba1ACKI, uba1ACKO, uba1ADDRI, uba1DATAI,
+           uba3REQI, uba3ACKI, uba3ACKO, uba3ADDRI, uba3DATAI,
            memREQO,  memACKI,  memDATAI, memDATAO,
            arbADDRO);
 
@@ -89,6 +89,15 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
 
    output [0:35] arbADDRO;      // ARB Address
 
+   //
+   // Bus Address Flags
+   //
+
+   wire vmaPHYSICAL    = `vmaPHYSICAL(cpuADDRI);
+   wire vmaIOCYCLE     = `vmaIOCYCLE(cpuADDRI);
+   wire vmaVECTORCYCLE = `vmaVECTORCYCLE(cpuADDRI);
+   wire vmaWRUCYCLE    = `vmaWRUCYCLE(cpuADDRI);
+   
    //
    // Bus Request Arbitration
    //
@@ -275,6 +284,22 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
                   cpuACKO  = 1'b1;
                   cpuDATAO = cslDATAI;
                end
+             
+             //
+             // Ack an otherwise un-acked WRU cycle
+             // WRU Cycles really aren't arbitrated.
+             //
+             
+             else if (vmaPHYSICAL & vmaIOCYCLE & vmaWRUCYCLE)
+               begin
+                  cpuACKO  = 1'b1;
+                  cpuDATAO = 36'b0;
+               end
+
+	     //
+	     // Everything else
+	     //
+	     
              else
                begin
                   cpuACKO  = 1'b0;
