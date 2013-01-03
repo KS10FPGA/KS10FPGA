@@ -1,19 +1,19 @@
- Processor
-//!
-//! \brief
-//!      KS10 Bus Arbiter
-//!
-//! \details
-//!      This device is the KS10 Bus Arbiter and Bus Multiplexer
-//!
-//! \todo
-//!
-//! \file
-//!      arb.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+////////////////////////////////////////////////////////////////////
+//
+// KS-10 Processor
+//
+// Brief
+//   KS10 Bus Arbiter
+//
+// Details
+//   This device is the KS10 Bus Arbiter and Bus Multiplexer
+//
+// File
+//   arb.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -39,9 +39,6 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `include "../cpu/vma.vh"
 

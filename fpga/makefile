@@ -9,6 +9,7 @@ MEM  := $(RTL)/mem
 UBA  := $(RTL)/uba
 UC   := $(CPU)/useq
 LOAD := MAINDEC-10-DSKAM.txt
+#LOAD := MAINDEC-10-DSKAH.txt
 #LOAD := MAINDEC-10-DSKEA.txt
 #LOAD := smmon.txt
 
@@ -23,8 +24,9 @@ SRC := \
 	$(UC)/stack.v  \
 	$(UC)/dispatch.v   \
 	$(UC)/useq.v \
-	$(CPU)/ac_block.v \
+	$(CPU)/alu.vh \
 	$(CPU)/alu.v \
+	$(CPU)/apr.vh \
 	$(CPU)/apr.v \
 	$(CPU)/bus.v \
 	$(CPU)/byte_disp.v \
@@ -35,17 +37,21 @@ SRC := \
 	$(CPU)/intr.v \
 	$(CPU)/iolatch.v \
 	$(CPU)/ni_disp.v \
+	$(CPU)/pager.vh \
 	$(CPU)/pager.v \
+	$(CPU)/pcflags.vh \
 	$(CPU)/pcflags.v \
 	$(CPU)/pf_disp.v \
+	$(CPU)/pxct.vh \
 	$(CPU)/pxct.v \
 	$(CPU)/ram1kx36.v \
 	$(CPU)/ramfile.v \
+	$(CPU)/regir.vh \
 	$(CPU)/regir.v \
 	$(CPU)/scad.v \
 	$(CPU)/timer.v \
 	$(CPU)/timing.v \
-	$(CPU)/traps.v \
+	$(CPU)/vma.vh \
 	$(CPU)/vma.v \
 	$(CPU)/cpu.v \
 	$(CSL)/csl.v \
@@ -68,6 +74,7 @@ SRC := \
 	$(UBA)/rh11/sdaddr.v \
 	$(UBA)/rh11/rh11.vh \
 	$(UBA)/rh11/rh11.v \
+	$(UBA)/uba.vh \
 	$(UBA)/uba.v \
 	$(RTL)/ks10.vh \
 	$(RTL)/ks10.v \
