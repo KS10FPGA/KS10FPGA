@@ -86,16 +86,16 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    input  [ 0:cromWidth-1] crom;                // Control ROM Data
    input  [ 0:dromWidth-1] drom;                // Dispatch ROM Data
    input  [ 0:35]          dp;                  // Data path
-   input  [0 :13]          vmaFLAGS;            //
+   input  [0 :13]          vmaFLAGS;            // VMA Flags
    input  [14:35]          vmaADDR;             // Virtural address
-   output [ 0: 4]          pageFLAGS;           // Page Flags
+   output [ 0: 3]          pageFLAGS;           // Page Flags
    output [16:26]          pageADDR;            // Page Address
 
    //
    // vmaFLAGS
    //
 
-   wire pageUSER = `vmaUSER(vmaFLAGS);
+   wire pageinUSER = `vmaUSER(vmaFLAGS);
 
    //
    // VMA Logic
@@ -112,6 +112,15 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    wire specPAGESWEEP = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE );
    wire specPAGEWRITE = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
 
+   //
+   //
+   //
+   
+   wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) |
+                 (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA) |
+                 (specPAGESWEEP));
+   
+   
    //
    // Sweep and Page Write
    //
@@ -141,18 +150,17 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
       end
 
    //
-   // Page Table Contents
+   // Page Table Write
    //
 
-   wire [18:26] pageVIRTADDR  = vmaADDR[18:26];
-   wire         pageVALID     = dp[18];
-   wire         pageWRITEABLE = dp[21];
-   wire         pageCACHEABLE = dp[22];
-   wire [16:26] pagePHYSADDR  = dp[25:35];
-   wire [ 0:14] pageDATAIN    = {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER, pagePHYSADDR};
+   wire         pageinVALID     = dp[18];
+   wire         pageinWRITEABLE = dp[21];
+   wire         pageinCACHEABLE = dp[22];
+   wire [16:26] pageinADDR      = dp[25:35];
+   wire [ 0: 3] pageinFLAGS     = {pageinVALID, pageinWRITEABLE, pageinCACHEABLE, pageinUSER};
 
    //
-   // Page memory
+   // Page Table Write
    //
    // Details
    //  The page tables perform the virtual address to physical
@@ -181,19 +189,22 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    //   DPM6/E192
    //
 
-   reg  [0:14] pageTABLE1[0:255];
-   reg  [0:14] pageTABLE2[0:255];
-
-   always @(posedge clk)
+   reg [ 0:14] pageTABLE1[0:255];
+   reg [ 0:14] pageTABLE2[0:255];
+   
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           ;
-        else if (pageWRITE)
+        else if (clken & vmaEN)
           begin
-             if (~pageVIRTADDR[18] | pageSWEEP)
-               pageTABLE1[pageVIRTADDR[19:26]] <= pageDATAIN;
-             if ( pageVIRTADDR[18] | pageSWEEP)
-               pageTABLE2[pageVIRTADDR[19:26]] <= pageDATAIN;
+             if (pageWRITE)
+               begin
+                  if (~dp[18] | pageSWEEP)
+                    pageTABLE1[dp[19:26]] <= {pageinFLAGS, pageinADDR};
+                  if ( dp[18] | pageSWEEP)
+                    pageTABLE2[dp[19:26]] <= {pageinFLAGS, pageinADDR};
+               end
           end
      end
 
@@ -201,14 +212,35 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    // Page Table Read
    //
 
-   wire [18:26] readADDR    = pageVIRTADDR;
-   wire [ 0:14] pageDATAOUT = (readADDR[18]) ? pageTABLE2[readADDR[19:26]] : pageTABLE1[readADDR[19:26]];
+   reg pageVALID;
+   reg pageWRITEABLE;
+   reg pageCACHEABLE;
+   reg pageUSER;
+   reg [16:26] pageADDR;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          begin
+             pageVALID     <= 0;
+             pageWRITEABLE <= 0;
+             pageCACHEABLE <= 0;
+             pageUSER      <= 0;
+             pageADDR      <= 0;
+          end
+        else if (clken & vmaEN)
+          begin
+             if(dp[18])
+               {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER, pageADDR} <= pageTABLE2[dp[19:26]];
+             else
+               {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER, pageADDR} <= pageTABLE1[dp[19:26]];
+          end
+     end
 
    //
-   // Fixup Page RAM data
+   // Page Flags
    //
 
-   assign pageFLAGS = pageDATAOUT[0: 3];
-   assign pageADDR  = pageDATAOUT[4:14];
-
+   assign pageFLAGS = {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER};
+   
 endmodule

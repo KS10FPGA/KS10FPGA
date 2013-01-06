@@ -79,7 +79,7 @@
    //  execution.
    //
 
-   reg [18:35] PC;
+   reg [0:35] PC;
    
    always @(posedge clk or posedge rst)
      begin

@@ -19,20 +19,18 @@
 //        0101: NXM (Non-existant Memory)
 //        0111: NXM and Bad Data (Not implemented)
 //        1000: Write Violation
+//        1001: Timer and Page Fail
 //        1010: Page not valid
 //        1011: Exec/User Mismatch
 //
 //   The the Page Fail dispatch is actually a combination of a
 //   Dispatch and a Skip operating simulataneously.
 //
-//
-// Note
-//
 // File
 //   pf_disp.v
 //
 // Author
-//      Rob Doyle - doyle (at) cox (dot) net
+//   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -61,13 +59,14 @@
 ////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+  
 `include "apr.vh"
 `include "vma.vh"
 `include "pager.vh"
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
+module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
                aprFLAGS, pageFLAGS, cpuINTR, nxmINTR, timerINTR,
                pageFAIL, dispPF);
 
@@ -79,15 +78,16 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    input                   clken;       // Clock Enable
    input  [ 0:cromWidth-1] crom;        // Control ROM Data
    input  [ 0:dromWidth-1] drom;        // Dispatch ROM Data
+   input  [ 0:35]          dp;          // Datapath
    input  [ 0:13]          vmaFLAGS;    // Virtual Memory Flags
    input  [14:35]          vmaADDR;     // Virtual Memory Address
    input  [22:35]          aprFLAGS;    // APR Flags
-   input  [ 0: 4]          pageFLAGS;   // Page Flags
+   input  [ 0: 3]          pageFLAGS;   // Page Flags
    input                   timerINTR;   // Timer Interrupt
    input                   cpuINTR;     // CPU Interrupt
    input                   nxmINTR;     // NXM Interrupt
-   output                  pageFAIL;	// Page Fail                  
-   output [ 0: 3]     	   dispPF;   	// Page Fail Dispatch
+   output                  pageFAIL;    // Page Fail                  
+   output [ 0: 3]          dispPF;      // Page Fail Dispatch
 
    //
    // Microcode decode
@@ -98,34 +98,36 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    // Trace
    //  DPMA/E2
    //  DPMA/E8
+   //  DPE5/E1
    //
 
    wire specMEMCLR     = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
    wire specMEMWAIT    = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMWAIT);
+   wire specSWEEP      = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE);
 
    //
    // aprFLAGS
    //
 
-   wire flagPAGEEN     = `flagPAGEEN(aprFLAGS);		// Paging is enabled
+   wire flagPAGEEN     = `flagPAGEEN(aprFLAGS);         // Paging is enabled
 
    //
    // vmaFLAGS
    //
 
-   wire vmaUSER        = `vmaUSER(vmaFLAGS);   		// VMA User
-   wire vmaREADCYCLE   = `vmaREADCYCLE(vmaFLAGS);   	// Read Cycle (IO or Memory)
-   wire vmaWRTESTCYCLE = `vmaWRTESTCYCLE(vmaFLAGS);   	// Write Test Cycle
-   wire vmaWRITECYCLE  = `vmaWRITECYCLE(vmaFLAGS);   	// Write Cycle (IO or Memory)
-   wire vmaPHYSICAL    = `vmaPHYSICAL(vmaFLAGS);   	// VMA Physical
+   wire vmaUSER        = `vmaUSER(vmaFLAGS);            // VMA User
+   wire vmaREADCYCLE   = `vmaREADCYCLE(vmaFLAGS);       // Read Cycle (IO or Memory)
+   wire vmaWRTESTCYCLE = `vmaWRTESTCYCLE(vmaFLAGS);     // Write Test Cycle
+   wire vmaWRITECYCLE  = `vmaWRITECYCLE(vmaFLAGS);      // Write Cycle (IO or Memory)
+   wire vmaPHYSICAL    = `vmaPHYSICAL(vmaFLAGS);        // VMA Physical
 
    //
    // Page Flags
    //
 
-   wire pageVALID      = `pageVALID(pageFLAGS);  	// Page is valid
-   wire pageWRITEABLE  = `pageWRITEABLE(pageFLAGS);  	// Page is writeable
-   wire pageUSER       = `pageUSER(pageFLAGS);  	// Page is user mode
+   wire pageVALID      = `pageVALID(pageFLAGS);         // Page is valid
+   wire pageWRITEABLE  = `pageWRITEABLE(pageFLAGS);     // Page is writeable
+   wire pageUSER       = `pageUSER(pageFLAGS);          // Page is user mode
 
    //
    // AC Reference
@@ -141,9 +143,88 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    //  DPM4/E191
    //
 
-   wire vmaACREF       = ~vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
+   wire vmaACREF = ~vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
+
+   //
+   // vmaEN
+   //
+   // Trace
+   //  DPE5/E53
+   //  DPE5/E76
+   //
    
-   wire memCYCLE       = 1;//vmaREADCYCLE | vmaWRTESTCYCLE;
+   wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) |
+                 (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA) |
+                 (specSWEEP));
+   
+   //
+   // vmaJUSTLOADED
+   //
+   // Details
+   //  This prevents an immediate PAGE FAIL after the VMA has been
+   //  updated.  This only is asserted for a single clock cycle.
+   //
+   // Trace
+   //  DPMC/E10
+   //
+
+`ifdef broken
+   
+   wire vmaJUSTLOADED = vmaEN;
+   
+
+   reg  vmaJUSTLOADED;
+   
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          vmaJUSTLOADED <= 0;
+        else if (clken)
+          vmaJUSTLOADED <= vmaEN;
+     end
+   
+`endif //  `ifdef broken
+   
+   wire vmaJUSTLOADED = 0;
+   
+   //
+   // Read/Write Enable
+   //
+   // Trace
+   //  DPM5/E48
+   //
+
+   reg readENABLE;
+   reg writeENABLE;
+   
+   always @(crom or drom or dp)
+     begin
+        if (`cromMEM_AREAD)
+          begin
+             readENABLE  <= `dromREADCYCLE;
+             writeENABLE <= `dromWRITECYCLE;
+          end
+        else
+          if (`cromMEM_DPFUNC)
+            begin
+               readENABLE  <= dp[3];
+               writeENABLE <= dp[5];
+            end
+          else
+            begin
+               readENABLE  <= `cromMEM_READCYCLE;
+               writeENABLE <= `cromMEM_WRITECYCLE;
+            end
+     end
+
+   //
+   // Interrupts
+   //
+   // Trace
+   //  DPM6/E9
+   //
+   
+   wire anyINTR = (cpuINTR | timerINTR | nxmINTR);
    
    //
    // pagingOK
@@ -159,8 +240,30 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    //  DPM6/E47
    //
 
-   wire pagingOK = flagPAGEEN & ~vmaACREF & ~vmaPHYSICAL;
+   wire pagingOK = flagPAGEEN & ~vmaACREF & ~vmaPHYSICAL & ~anyINTR;
 
+   //
+   // Memory Enable
+   //
+   // Trace
+   //  DPM5/E118
+   //
+   
+   wire memENABLE = ((`cromMEM_CYCLE  & `cromMEM_WAIT                   ) |
+                     (`cromMEM_CYCLE  & `cromMEM_BWRITE & `dromCOND_FUNC));
+  
+   //
+   // Memory Cycle
+   //
+   // Trace
+   //  DPM5/E17
+   //  DPM5/E5
+   //  DPM6/E16
+   //
+
+   wire memoryCYCLE = ((memENABLE & readENABLE ) |
+                       (memENABLE & writeENABLE));
+   
    //
    // Page Fail Dispatch
    //
@@ -188,16 +291,6 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    //  the KS10 CPU executes the Page Fill microcode and then
    //  re-executes the instruction that caused the Page Failure.
    //
-   // Note:
-   //  The two msbs of the priority encoder are inverted.
-   //  The lsb is not.  The output of the priority encoder is "111"
-   //  when not enabled.  This translates to "001" when the inverters
-   //  are added.
-   //
-   //  Notice also the interrupts generate a dispatch but disables the
-   //  priority encoder - so the two kinds of dispatches (interrupts
-   //  and paging errors) are independant.
-   //
    // Trace:
    //  DPM6/E41
    //  DPM6/E47
@@ -205,74 +298,67 @@ module PF_DISP(clk, rst, clken, crom, drom, vmaFLAGS, vmaADDR,
    //  DPM6/E124
    //
    
-   reg actPF;
-   reg [0:3] dispPF;
+   reg [0:3] pfDISP;
    
-   always @(memCYCLE or nxmINTR or cpuINTR or timerINTR or pagingOK or
-            pageVALID or pageUSER or vmaWRTESTCYCLE or vmaUSER or
-            pageWRITEABLE)
+   always @(pagingOK or pageVALID or pageUSER or vmaUSER or
+            vmaWRTESTCYCLE or pageWRITEABLE)
      begin
-        if (memCYCLE)
+        
+        if (pagingOK)
           begin
-             if (nxmINTR)
-               begin
-                  actPF  = 1;
-                  dispPF = 4'b0101;
-               end
-             else if (cpuINTR | timerINTR)
-               begin
-                  actPF  = 1;
-                  dispPF = 4'b0001;
-               end
-             else if (pagingOK)
-               begin
-                  if (~pageVALID)
-                    begin
-                       actPF  = 1;
-                       dispPF = 4'b1010;
-                    end
-                  else if (pageUSER != vmaUSER)
-                    begin
-                       actPF  = 1;
-                       dispPF = 4'b1011;
-                    end
-                  else if (vmaWRTESTCYCLE & ~pageWRITEABLE)
-                    begin
-                       actPF  = 1;
-                       dispPF = 4'b1000;
-                    end
-                  else
-                    begin
-                       actPF  = 0;
-                       dispPF = 4'b0001;
-                    end
-               end
+
+             //
+             // Page not valid/present
+             //
+                  
+             if (~pageVALID)
+               pfDISP = 4'b1010;
+             
+             //
+             // EXEC / USER Mismatch
+             //
+                  
+             else if (pageUSER != vmaUSER)
+               pfDISP = 4'b1011;
+             
+             //
+             // Write Violation
+             //
+                  
+             else if (vmaWRTESTCYCLE & ~pageWRITEABLE)
+               pfDISP = 4'b1000;
+             
+             //
+             // Everything else
+             //
+
              else
-               begin
-                  actPF  = 0;
-                  dispPF = 4'b0001;
-               end
+               pfDISP = 4'b0001;    
+             
           end
         else
-          begin
-             actPF  = 0;
-             dispPF = 4'b0001;
-          end
-     end
-        
-   //
-   // pageFAIL should only be asserted for a clock cycle.
-   //
-   
-   reg lastACT;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          lastACT <= 0;
-        else if (clken)
-          lastACT <= actPF;
+          pfDISP = 4'b0001; 
      end
 
-   assign pageFAIL = 0;//~lastACT & actPF;
+   //
+   // Interrupt Dispatch
+   //
+
+   wire [0:3] intrDISP = {anyINTR, nxmINTR, 2'b0};
+
+   //
+   // Mung Page Fail Dispatch and Interrupt Dispatch together.
+   //
+
+   assign dispPF = (pfDISP | intrDISP);
+
+   //
+   // Create pageFAIL signal.   This must only be asserted
+   // for a single clock cycle (to jam the page fail address
+   // into the microsequencer address).
+   //
+   
+   assign pageFAIL = ((memoryCYCLE & ~vmaJUSTLOADED & (pfDISP != 4'b0001)) | 
+                      (memoryCYCLE & ~vmaJUSTLOADED & anyINTR           ));
    
 endmodule

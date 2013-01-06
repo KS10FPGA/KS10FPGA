@@ -97,7 +97,7 @@ module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
 `else             
              for (i = 0; i < 1024; i = i + 1)
              begin
-                ram[i] = 0;
+                ram[i] <= 0;
              end
 `endif
           end

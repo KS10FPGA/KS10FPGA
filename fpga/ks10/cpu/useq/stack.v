@@ -175,14 +175,21 @@ module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
    //  CRA3/E160
    //
 
+`ifndef SYNTHESIS
    integer i;
+`endif
+
    reg [0:11] stack[0:15];
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
+`ifdef SYNTHESIS
+          ;
+`else			 
           for (i = 0; i < 16; i = i + 1)
-            stack[i] <= 12'b0;
+            stack[i] <= 0;
+`endif				
         else if (clken & call)
           stack[wp] <= currADDR;
      end

@@ -332,6 +332,11 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    //  The Clear operation has priority over the Set operation.
    //  The Set operation has priority over the Load operation.
    //
+   // Trace
+   //  DPE9/E17
+   //  DPE9/E32
+   //  DPE8/E54
+   //
 
    always @(posedge clk or posedge rst)
      begin
@@ -353,6 +358,10 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    //
    // USER Flag
    //
+   // Trace
+   //  DPE9/E32
+   //  DPE9/E33
+   //
 
    always @(posedge clk or posedge rst)
      begin
@@ -372,20 +381,32 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    //
    // USERIO Flag
    //
-
+   // Verification
+   //  This is tested by MAINDEC-10-DSKAH
+   // 
+   // Trace
+   //  DPE9/E53
+   //  DPE9/E54
+   //  DPE9/E60
+   //
+   
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           flagUSERIO <= 1'b0;
         else if (clken & selPCFLAGS)
-          flagUSERIO <= ((flagUSER   & dpUSERIO                 & `cromLDFLAGS ) |
-                         (flagUSERIO                            & `cromLDFLAGS ) |
-                         (flagUSER              & `cromSETPCU                  ) |
-                         (flagUSERIO & dpUSERIO & `cromHOLDUSER & `cromLDFLAGS ));
+          flagUSERIO <= ((~flagUSER  & dpUSERIO                 &  `cromLDFLAGS ) |
+                         (flagUSERIO                            & ~`cromLDFLAGS ) |
+                         (flagUSER              & `cromSETPCU                   ) |
+                         (flagUSERIO & dpUSERIO & `cromHOLDUSER &  `cromLDFLAGS ));
      end
 
    //
    // TRAP2 Flag
+   //
+   // Trace
+   //  DPE9/E60
+   //  DPE9/E68
    //
 
    always @(posedge clk or posedge rst)
@@ -409,6 +430,13 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    // Notes
    //  An arithmetic overflow occurs if CRY0 and CRY1 differ which
    //  also sets the TRAP1 flag.
+   //
+   // Trace
+   //  DPE9/E26
+   //  DPE9/E33
+   //  DPE9/E78
+   //  DPE9/E85
+   //  DPE9/E98
    //
 
    always @(posedge clk or posedge rst)
@@ -438,7 +466,11 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
    //
    // Floating-point Underflow Flag (FXU)
    //
-
+   // Trace
+   //  DPE9/E69
+   //  DPE9/E78
+   //  DPE9/E84
+   
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -459,6 +491,11 @@ module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
 
    //
    // NODIV Flag
+   //
+   // Trace
+   //  DPE9/E9
+   //  DPE9/E60
+   //  DPE9/E69
    //
 
    always @(posedge clk or posedge rst)

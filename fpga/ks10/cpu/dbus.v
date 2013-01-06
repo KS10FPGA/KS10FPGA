@@ -126,7 +126,7 @@ module DBUS(crom, cacheHIT, reqINTP, vmaADDR, vmaFLAGS, pcFLAGS, dp,
    //  DPE3/E100
    //
 
-   always @(`cromDBUS_SEL or pcFLAGS or dp or ramfile or dbm or forceRAMFILE)
+   always @(`cromDBUS_SEL or pcFLAGS or dp or ramfile or dbm or forceRAMFILE or reqINTP or vmaADDR)
      begin
         case (`cromDBUS_SEL)
           `cromDBUS_SEL_FLAGS:

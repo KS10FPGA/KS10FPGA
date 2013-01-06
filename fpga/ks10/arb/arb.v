@@ -42,14 +42,16 @@
 
 `include "../cpu/vma.vh"
 
-module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
+module ARB(clk,
+           cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
            cslREQI,  cslREQO,  cslACKI,  cslACKO,  cslADDRI, cslDATAI, cslDATAO,
            ubaREQO,  ubaDATAO,
            uba1REQI, uba1ACKI, uba1ACKO, uba1ADDRI, uba1DATAI,
            uba3REQI, uba3ACKI, uba3ACKO, uba3ADDRI, uba3DATAI,
            memREQO,  memACKI,  memDATAI, memDATAO,
            arbADDRO);
-
+   
+   input         clk;           // Clock
    input         cpuREQI;       // CPU Bus Request
    output        cpuACKO;       // CPU Bus Acknowledge
    input  [0:35] cpuADDRI;      // CPU Address
@@ -121,7 +123,8 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
             cslREQI  or cslACKI   or cslADDRI  or cslDATAI  or
             uba1REQI or uba1ACKI  or uba1ADDRI or uba1DATAI or
             uba3REQI or uba3ACKI  or uba3ADDRI or uba3DATAI or
-            memACKI  or memDATAI)
+            memACKI  or memDATAI  or 
+				vmaPHYSICAL or vmaIOCYCLE or vmaWRUCYCLE)
 
      begin
 
@@ -292,7 +295,7 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
                   cpuACKO  = 1'b1;
                   cpuDATAO = 36'b0;
                end
-
+             
 	     //
 	     // Everything else
 	     //
@@ -305,4 +308,22 @@ module ARB(cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
           end
      end
 
+
+   //
+   // Whine about unacked bus cycles
+   // 
+        
+`ifndef SYNTHESIS
+
+   always @(posedge clk)
+     begin
+        if (cpuREQI & ~cpuACKO)
+          begin
+             $display("");
+             $display("Unacknowledged bus cycle.  Addr Bus = %012o", cpuADDRI);
+             $display("");
+          end
+     end
+
+`endif   
 endmodule

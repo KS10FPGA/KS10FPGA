@@ -108,7 +108,6 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
 
    wire [ 9:12] regIR_AC  = `IR_AC(regIR);
    wire         regIR_I   = `IR_I(regIR);
-   wire [14:17] regIR_XR  = `IR_XR(regIR);
    wire         regACZERO = `acZERO(regIR);
    wire         regXRZERO = `xrZERO(regIR);
 

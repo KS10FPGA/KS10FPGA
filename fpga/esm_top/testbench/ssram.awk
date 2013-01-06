@@ -82,7 +82,7 @@ BEGIN {
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] [0-7][0-7] [0-7][0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
     data1 = lshift(strtonum("0" substr($3,  1, 3)), 27);
     data2 = lshift(strtonum("0" substr($3,  5, 2)), 21)
-    data3 = lshift(strtonum("0" substr($3,  8, 2)), 18);
+    data3 = lshift(strtonum("0" substr($3,  8, 2)), 20);
     data4 = lshift(strtonum("0" substr($3, 11, 2)), 18);
     data5 = lshift(strtonum("0" substr($3, 14, 6)),  0);
     data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5);

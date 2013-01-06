@@ -173,13 +173,20 @@ module KS10(clk, reset,
    wire [0:35] uba3ADDRO;
    wire [0:35] uba3DATAO;
    wire [1: 7] uba3INTR;
+
+   //
+   // RH11 Outputs
+   //
+
+   wire [0:35] rhDEBUG;
                
    //
    // Bus Arbiter
    //
 
    ARB uARB
-     (// CPU
+     (.clk              (clk),
+      // CPU
       .cpuREQI          (cpuREQ),
       .cpuACKO          (cpuACK),
       .cpuADDRI         (cpuADDRO),
@@ -262,8 +269,9 @@ module KS10(clk, reset,
       .busADDRO         (cslADDRO),
       .busDATAI         (cslDATAI),
       .busDATAO         (cslDATAO),
-      .cpuHALT          (cpuHALT),
       // Console Interfaces
+      .rhDEBUG		(rhDEBUG),
+      .cpuHALT          (cpuHALT),
       .cslSTEP          (cslSTEP),
       .cslRUN           (cslRUN),
       .cslEXEC          (cslEXEC),
@@ -388,7 +396,9 @@ module KS10(clk, reset,
       .devADDRO         (rh1ADDRO),
       // Data
       .devDATAI         (ctl1DATAO),
-      .devDATAO         (rh1DATAO)
+      .devDATAO         (rh1DATAO),
+      // Debug
+      .rhDEBUG		(rhDEBUG)
       );
 
    //

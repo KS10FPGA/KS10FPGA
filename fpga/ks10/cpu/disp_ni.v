@@ -91,7 +91,7 @@ module NI_DISP (clk, rst, clken, crom, aprFLAGS, pcFLAGS, cslTRAPEN,
    //
 
    reg [8:11] dispNI;
-   always @(cslTRAPEN or flagTRAP1 or flagTRAP2 or cpuRUN or memory_cycle)
+   always @(cslTRAPEN or flagTRAPEN or flagTRAP1 or flagTRAP2 or cpuRUN or memory_cycle)
      begin
         if (cslTRAPEN & flagTRAPEN)
           if (flagTRAP1 & flagTRAP2)

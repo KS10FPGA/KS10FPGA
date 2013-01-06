@@ -112,7 +112,7 @@ module MEM(clk, rst, clken,
    // Memory Status is Device 0
    //
 
-   wire [ 0: 3] ubaDEV   = 4'b0000;
+   wire [ 0: 3] memDEV   = 4'b0000;
  
    //
    // Memory flags
@@ -122,11 +122,12 @@ module MEM(clk, rst, clken,
    //  busADDRI[14:35] is address
    //
 
-   wire         busREAD  = busADDRI[ 3];
-   wire         busWRITE = busADDRI[ 5];
-   wire         busIO    = busADDRI[10];
-   wire [ 0: 3] busDEV   = busADDRI[14:17];
-   wire [16:35] busADDR  = busADDRI[16:35];
+   wire         busREAD   = busADDRI[ 3];
+   wire         busWRTEST = busADDRI[ 4];
+   wire         busWRITE  = busADDRI[ 5];
+   wire         busIO     = busADDRI[10];
+   wire [ 0: 3] busDEV    = busADDRI[14:17];
+   wire [16:35] busADDR   = busADDRI[16:35];
 
    //
    // Memory Status Register (IO Address 100000)
@@ -154,7 +155,7 @@ module MEM(clk, rst, clken,
           end
         else if (clken)
           begin
-             if (busIO & busWRITE  & (busDEV[0:3] == ubaDEV) & (busADDR == 18'o100000))
+             if (busIO & busWRITE  & (busDEV[0:3] == memDEV) & (busADDR == 18'o100000))
                begin
                   statPE <=  busDATAI[ 3];
                   statPF <=  busDATAI[12] & statPF;
@@ -179,7 +180,12 @@ module MEM(clk, rst, clken,
    reg [0:35] busDATAO;
    
    always @(busIO or busADDR or busREAD or busWRITE or ssramDATA or statREG)
-      begin
+     begin
+
+        //
+        // Memory Status Register
+        //
+        
         if (busIO & (busADDR == 18'o100000))
           begin
              busACKO  <= 1'b1;
@@ -191,11 +197,23 @@ module MEM(clk, rst, clken,
                $display("Memory Status Register Written.\n");
 `endif
           end
-        else if (~busIO & (busADDR < 32768))
+
+        //
+        // Memory
+        //
+        
+        else if ((~busIO & busREAD & (busADDR < 32768)) |
+                 (~busIO & busWRITE                   ) | 
+                 (~busIO & busWRTEST                  ))
           begin
              busACKO  <= 1'b1;
              busDATAO <= ssramDATA;
           end
+
+        //
+        // Everything else.
+        //
+        
         else
           begin
              busACKO  <= 1'b0;

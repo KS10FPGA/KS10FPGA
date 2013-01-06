@@ -192,12 +192,10 @@
 module CSL(clk, reset,
            cslALE, cslAD, cslRD_N, cslWR_N,
            busREQI,  busREQO,  busACKI,  busACKO,
-           busADDRI, busADDRO, busDATAI, busDATAO,
-           cpuHALT,
-           cslSTEP, cslRUN, cslEXEC, cslCONT, cslHALT,
+           busADDRI, busADDRO, busDATAI, busDATAO, rhDEBUG,
+           cpuHALT, cslSTEP, cslRUN, cslEXEC, cslCONT, cslHALT,
            cslTIMEREN, cslTRAPEN, cslCACHEEN,
-           ks10INTR, ks10RESET
-           );
+           ks10INTR, ks10RESET);
 
    input         clk;           // Clock
    input         reset;         // Reset
@@ -213,6 +211,7 @@ module CSL(clk, reset,
    output [0:35] busADDRO;      // Bus Address Out
    input  [0:35] busDATAI;      // Bus Data In
    output [0:35] busDATAO;      // Bus Data Out
+   input  [0:35] rhDEBUG;       // RH11 Debug Info
    input         cpuHALT;       // CPU Halt Status
    output        cslSTEP;       // Step Switch
    output        cslRUN;        // Run Switch
@@ -226,27 +225,16 @@ module CSL(clk, reset,
    output        ks10RESET;     // KS10 Reset
 
    //
-   // Console Instruction Register Address
-   //
-
-   parameter [18:36] addrCIR = 18'o200000;
-
-   //
-   // State Machine States
-   //
-
-   parameter stateIDLE      = 0;
-   parameter stateCHECK     = 1;
-   parameter stateREAD      = 2;
-   parameter stateWRITE     = 3;
-   parameter stateFAIL      = 4;
-   parameter stateDONE      = 5;
-
-   //
    // Console is Device 0
    //
 
-   wire [ 0: 3] ubaDEV      = 4'b0000;
+   parameter [0:3] cslDEV   = 4'b0000;
+
+   //
+   // Console Instruction Register Address
+   //
+
+   parameter [18:35] addrCIR = 18'o200000;
 
    //
    // Memory Address and Flags
@@ -258,6 +246,23 @@ module CSL(clk, reset,
    wire         busIO       = busADDRI[10];
    wire [14:17] busDEV      = busADDRI[14:17];
    wire [18:35] busADDR     = busADDRI[18:35];
+
+   //
+   // Console Instruction Register Read
+   //
+
+   wire cirREAD = busIO & busREAD & (busDEV == cslDEV) & (busADDR[18:35] == addrCIR);
+
+   //
+   // State Machine States
+   //
+
+   parameter [0:2] stateIDLE  = 0,
+                   stateCHECK = 1,
+                   stateREAD  = 2,
+                   stateWRITE = 3,
+                   stateFAIL  = 4,
+                   stateDONE  = 5;
 
    //
    // Synchronize Write signal to Console Processor
@@ -379,7 +384,7 @@ module CSL(clk, reset,
    reg [7:0] adOUT;
 
    always @(cslADDR or regADDR or regDATA or regSTAT or regIR)
-
+     begin
         case (cslADDR)
 
           //
@@ -423,24 +428,29 @@ module CSL(clk, reset,
           8'h37 : adOUT <= regIR[28:35];
 
           //
+          // RH11 Debug Register
+          //
+
+          8'hfb : adOUT <= {4'b0, rhDEBUG[0:3]};
+          8'hfc : adOUT <= rhDEBUG[ 4:11];
+          8'hfd : adOUT <= rhDEBUG[12:19];
+          8'hfe : adOUT <= rhDEBUG[20:27];
+          8'hff : adOUT <= rhDEBUG[28:35];
+          
+          //
           // Everything else
           //
 
           default : adOUT <= 8'b0;
 
         endcase
+     end
 
    //
-   // Handle bi-directional bus output
+   // Handle bi-directional bus output to console microcontroller
    //
 
    assign cslAD = (~cslRD_N) ? adOUT : 8'bz;
-
-   //
-   // Bus Address Out is always set by Address Register
-   //
-
-   assign busADDRO = regADDR;
 
    //
    // Read/Write State Machine
@@ -493,48 +503,19 @@ module CSL(clk, reset,
      end
 
    //
-   // Bus REQ
-   //
-
-   assign busREQO = ((state == stateCHECK) ||
-                     (state == stateREAD ) ||
-                     (state == stateWRITE));
-
-   //
-   // Bus ACK
-   //
-
-   assign busACKO = busIO & busREAD & (busDEV == ubaDEV) & (busADDR == addrCIR);
-
-   //
    // Bus MUX
    //
 
    reg [0:35] busDATAO;
-   always @(busACKO or state or regIR or regDATA)
+   always @(cirREAD or state or regIR or regDATA)
      begin
-        if (busACKO)
+        if (cirREAD)
           busDATAO = regIR;
         else if (state == stateWRITE)
           busDATAO = regDATA;
         else
           busDATAO = 36'bx;
      end
-
-   //
-   // Status Register
-   //
-
-   assign cslRUN     = regSTAT[15];
-   assign cslSTEP    = regSTAT[16];
-   assign cslEXEC    = regSTAT[17];
-   assign cslCONT    = regSTAT[18];
-   assign cslHALT    = regSTAT[19];
-   assign cslTIMEREN = regSTAT[25];
-   assign cslTRAPEN  = regSTAT[26];
-   assign cslCACHEEN = regSTAT[27];
-   assign ks10INTR   = regSTAT[34];
-   assign ks10RESET  = regSTAT[35];
 
    //
    // Print the Halt Status Block
@@ -587,4 +568,39 @@ module CSL(clk, reset,
 
 `endif
 
+   //
+   // Status Register
+   //
+
+   assign cslRUN     = regSTAT[15];
+   assign cslSTEP    = regSTAT[16];
+   assign cslEXEC    = regSTAT[17];
+   assign cslCONT    = regSTAT[18];
+   assign cslHALT    = regSTAT[19];
+   assign cslTIMEREN = regSTAT[25];
+   assign cslTRAPEN  = regSTAT[26];
+   assign cslCACHEEN = regSTAT[27];
+   assign ks10INTR   = regSTAT[34];
+   assign ks10RESET  = regSTAT[35];
+
+   //
+   // Bus REQ
+   //
+
+   assign busREQO = ((state == stateCHECK) ||
+                     (state == stateREAD ) ||
+                     (state == stateWRITE));
+
+   //
+   // Bus ACK
+   //
+
+   assign busACKO = cirREAD;
+
+   //
+   // Bus Address Out is always set by Address Register
+   //
+
+   assign busADDRO = regADDR;
+   
 endmodule

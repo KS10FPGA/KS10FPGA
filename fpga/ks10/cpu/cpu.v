@@ -94,7 +94,7 @@ module CPU(clk, rst,
    // Flags
    //
 
-   wire memory_cycle = 0;                    	// FIXME
+   wire memory_cycle = 0;                       // FIXME
    wire iolatch;                                // FIXME
    wire opJRST0;                                // JRST 0 Instruction
    wire skipJFCL;                               // JFCL Instruction
@@ -116,8 +116,6 @@ module CPU(clk, rst,
 
    wire         prevEN;                         // Conditionally use Previous Context
    wire [ 0: 5] acBLOCK;                        // AC Block
-   wire [ 0: 2] currBLOCK = acBLOCK[0:2];       //  Current AC Block
-   wire [ 0: 2] prevBLOCK = acBLOCK[3:5];       //  Previous AC Block
 
    //
    // ALU Flags
@@ -151,7 +149,7 @@ module CPU(clk, rst,
 
    wire         pageFAIL;                       // Page Fail
    wire [16:26] pageADDR;                       // Page Address
-   wire [ 0: 4] pageFLAGS;                      // Page Flags
+   wire [ 0: 3] pageFLAGS;                      // Page Flags
 
    //
    // Timer
@@ -187,7 +185,6 @@ module CPU(clk, rst,
    //
 
    wire [ 0: 9] scad;
-   wire         scadSIGN = scad[0];             // SCAD Sign
    wire         scSIGN;                         // Step Count Sign
    wire         feSIGN;                         // Floating-point exponent Sign
 
@@ -514,6 +511,7 @@ module CPU(clk, rst,
       .clken            (clkenDP),
       .crom             (crom),
       .drom             (drom),
+      .dp               (dp),
       .vmaFLAGS         (vmaFLAGS),
       .vmaADDR          (vmaADDR),
       .aprFLAGS         (aprFLAGS),

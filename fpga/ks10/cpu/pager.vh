@@ -51,6 +51,5 @@
 `define	pageWRITEABLE(reg)  (reg[1])	// Page is writeable
 `define	pageCACHEABLE(reg)  (reg[2])	// Page is cacheable
 `define	pageUSER(reg)       (reg[3])	// Page is user mode
-`define	pagePARITY(reg)     (reg[4])	// Not implemented
 
 `endif
