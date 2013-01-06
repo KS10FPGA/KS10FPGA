@@ -9,7 +9,7 @@ MEM  := $(RTL)/mem
 UBA  := $(RTL)/uba
 UC   := $(CPU)/useq
 LOAD := MAINDEC-10-DSKAM.txt
-#LOAD := MAINDEC-10-DSKAH.txt
+#LOAD := MAINDEC-10-DSKCG.txt
 #LOAD := MAINDEC-10-DSKEA.txt
 #LOAD := smmon.txt
 

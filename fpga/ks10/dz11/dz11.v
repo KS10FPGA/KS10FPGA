@@ -596,4 +596,7 @@ module DZ11(clk, rst, clken,
           end
      end
    
+	assign devADDRO = 0;
+	assign devREQO  = 0;
+	
 endmodule

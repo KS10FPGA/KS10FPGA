@@ -56,7 +56,8 @@ module RH11(clk, rst,
             devRESET, devINTR,  devINTA,
             devREQI,  devACKO,  devADDRI,
             devREQO,  devACKI,  devADDRO,
-            devDATAI, devDATAO);
+            devDATAI, devDATAO,
+            rhDEBUG);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
@@ -81,8 +82,10 @@ module RH11(clk, rst,
    input          devACKI;                      // Device Acknowledge In
    output [ 0:35] devADDRO;                     // Device Address Out
    // Data
-   input  [0:35] devDATAI;                     // Data In
-   output [0:35] devDATAO;                     // Data Out
+   input  [ 0:35] devDATAI;                     // Data In
+   output [ 0:35] devDATAO;                     // Data Out
+   // Debug
+   output [ 0:35] rhDEBUG;                     	// Debug Output
 
    //
    // RH Parameters
@@ -643,10 +646,20 @@ module RH11(clk, rst,
    SD uSD
      (.clk      (clk),
       .rst      (rst),
+      .sdMISO	(rh11MISO),
+      .sdMOSI	(rh11MOSI),
+      .sdSCLK	(rh11SCLK),
+      .sdCS	(rh11CS),
       .sdOP     (rpSDOP[sdUNITSEL]),
       .sdADDR   (rpSDADDR[sdUNITSEL]);
-
-      .sdINCWD  (sdINCWD)
+      .dmaREQ   (devREQO),
+      .dmaACK   (devACKI),
+      .dmaADDRO (devADDRO),
+      .dmaDATAI (devDATAI),
+      .dmaDATAO (devDATAO),
+      .sdSTAT   (sdSTAT),
+      .sdINCWD  (sdINCWD),
+      .sdDEBUG  (rhDEBUG)
       );
 `endif
 

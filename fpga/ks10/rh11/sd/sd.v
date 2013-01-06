@@ -3,15 +3,15 @@
 // KS10 Processor
 //
 // Brief
-//  RPXX Secure Digital Interface
+//   RPXX Secure Digital Interface
 //
 // Details
 //
 // File
-//  sd.vhd
+//   sd.vhd
 //
 // Author
-//  Rob Doyle - doyle (at) cox (dot) net
+//   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -42,33 +42,28 @@
 `include "sd.vh"
 `include "sdspi.vh"
 
-module sd(clk, rst,
+module SD(clk, rst,
           // SD Interface
           sdMISO, sdMOSI, sdSCLK, sdCS,
-          
-          sdOP, sdSECT,          sdINCWD,
+
+          sdOP, sdSECT, sdINCWD,
           // Debug
-          sdRDCNT, sdWRCNT, sdERR, sdVAL, sdSTATE
-          );
-   
-   input         clk;                	// Clock
+          sdDEBUG);
+
+   input         clk;                   // Clock
    input         rst;                   // Reset
-   input	 sdMISO;		// SD Data In
-   output	 sdMOSI;		// SD Data Out
-   output	 sdSCLK;		// SD Clock
-   output	 sdCS;			// SD Chip Select
-   input  [ 1:0] sdOP;			// SD Operation
-   input  [31:0] sdSECT;		// 
-   output        sdINCWD;		//
+   input         sdMISO;                // SD Data In
+   output        sdMOSI;                // SD Data Out
+   output        sdSCLK;                // SD Clock
+   output        sdCS;                  // SD Chip Select
+   input  [ 1:0] sdOP;                  // SD Operation
+   input  [31:0] sdSECT;                //
+   output        sdINCWD;               //
    // Diagnostics
-   output [ 7:0] sdRDCNT;		// Read Counter
-   output [ 7:0] sdWRCNT;              	// Write Counter
-   output [ 7:0] sdERR;                	// Error State
-   output [ 7:0] sdVAL;                	// Error Value
-   output [ 7:0] sdSTATE;		// State Value
-               
+   output [35:0] sdDEBUG;		// Debug Output
+
 `ifdef notyet
-          
+
     // PDP8 Interface
    dmaDIN     : in  data_t;                    // DMA Data Into Disk
    dmaDOUT    : out data_t;                    // DMA Data Out of Disk
@@ -77,37 +72,32 @@ module sd(clk, rst,
    dmaWR      : out std_logic;                 // DMA Write
    dmaREQ     : out std_logic;                 // DMA Request
    dmaGNT     : in  std_logic;                 // DMA Grant
-   // Interface to SD Hardware
-   sdMISO     : in  std_logic;                 // SD Data In
-   sdMOSI     : out std_logic;                 // SD Data Out
-   sdSCLK     : out std_logic;                 // SD Clock
-   sdCS       : out std_logic;                 // SD Chip Select
    // RK8E Interface
    sdOP       : in  sdOP_t;                    // SD OP
    sdMEMaddr  : in  addr_t;                    // Memory Address
    sdLEN      : in  sdLEN_t;                   // Sector Length
    sdSTAT     : out sdSTAT_t;                  // Status
-   
+
 `endif
-   
+
    //
    // Commands:
    // Sending leading 0xff just sends clocks with data parked.
    //
-   
-   parameter [7:0] sdCMD0  [0:5] = {8'h40, 8'h00, 8'h00, 8'h00, 8'h00, 8'h95}; 
+
+   parameter [7:0] sdCMD0  [0:5] = {8'h40, 8'h00, 8'h00, 8'h00, 8'h00, 8'h95};
    parameter [7:0] sdCMD8  [0:5] = {8'h48, 8'h00, 8'h00, 8'h01, 8'haa, 8'h87};
    parameter [7:0] sdCMD13 [0:5] = {8'h4d, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
    parameter [7:0] sdACMD41[0:5] = {8'h69, 8'h40, 8'h00, 8'h00, 8'h00, 8'hff};
    parameter [7:0] sdCMD55 [0:5] = {8'h77, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
    parameter [7:0] sdCMD58 [0:5] = {8'h7a, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
 
-   
-   parameter [15:0] nCR  =    8;            	// NCR from SD Spec
-   parameter [15:0] nAC  = 1023;         	// NAC from SD Spec
-   parameter [15:0] nWR  =   20;           	// NWR from SD Spec
-   
-   parameter [ 7:0] stateRESET   =  0,
+
+   parameter [15:0] nCR  =    8;                // NCR from SD Spec
+   parameter [15:0] nAC  = 1023;                // NAC from SD Spec
+   parameter [15:0] nWR  =   20;                // NWR from SD Spec
+
+   parameter [ 6:0] stateRESET   =  0,
                  // Init States
                  stateINIT00  =  1,
                  stateINIT01  =  2,
@@ -162,29 +152,29 @@ module sd(clk, rst,
                  stateDONE    = 48,
                  stateINFAIL  = 49,
                  stateRWFAIL  = 50;
-   
-   reg [ 7:0] state;                    // Current State
+
+   reg [ 6:0] state;                    // Current State
    reg [ 2:0] spiOP;                    // SPI Op
    reg [ 7:0] spiRXD;                   // SPI Received Data
    reg [ 7:0] spiTXD;                   // SPI Transmit Data
    reg        spiDONE;                  // Asserted when SPI is done
-   reg [15:0] bytecnt;		    	// Byte Counter
+   reg [15:0] bytecnt;                  // Byte Counter
    reg [ 7:0] sdCMD17[0:5];             // CMD17
    reg [ 7:0] sdCMD24[0:5];             // CMD24
    reg [15:0] memADDR;                  // Memory Address
    reg        memREQ;                   // DMA Request
    reg        abort;                    // Abort this command
-   reg [19:0] timeout;			// Timeout
-   reg [ 7:0] sdRDCNT;                	// Read Counter
-   reg [ 7:0] sdWRCNT;                	// Write Counter
-   reg [ 7:0] sdERR;                	// Error State
-   reg [ 7:0] sdVAL;                	// Error Value
-   
+   reg [19:0] timeout;                  // Timeout
+   reg [ 7:0] sdRDCNT;                  // Read Counter
+   reg [ 7:0] sdWRCNT;                  // Write Counter
+   reg [ 7:0] sdVAL;                    // Error Value
+   reg [ 4:0] sdERR;                    // Error State
+
    //
    // SD_STATE:
    // This process assumes a 50 MHz clock
    //
-   
+
    always @(posedge clk)
      begin
         if (rst)
@@ -202,8 +192,8 @@ module sd(clk, rst,
              memADDR <= 0;
              dmaDOUT <= 0;
              spiTXD  <= 0;
-             //sdCMD17 <= {8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00}; 
-             //sdCMD24 <= {8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00}; 
+             //sdCMD17 <= {8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00};
+             //sdCMD24 <= {8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00};
              abort   <= 0;
              bytecnt <= 0;
              dmaRD   <= 0;
@@ -215,34 +205,34 @@ module sd(clk, rst,
           end
         else
           begin
-             
+
              dmaRD   <= 0;
              dmaWR   <= 0;
              spiOP   <= `spiNOP;
-             
+
              //if ((sdOP == `sdopABORT) & (state != stateIDLE))
              //  begin
              //     abort <= 1;
              //  end
-             
+
              case (state)
-               
+
                //
                // stateRESET:
                //
-               
+
                stateRESET:
                  begin
                     timeout <= timeout - 1'b1;
                     bytecnt <= 0;
                     state   <= stateINIT00;
                  end
-               
+
                //
                // stateINIT00
                //  Send 8x8 clocks cycles
                //
-               
+
                stateINIT00:
                  begin
                     timeout <= timeout - 1'b1;
@@ -262,12 +252,12 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateINIT01:
                //  Send GO_IDLE_STATE command (CMD0)
                //
-               
+
                stateINIT01:
                  begin
                     timeout <= timeout - 1'b1;
@@ -286,13 +276,13 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateINIT02:
                //  Read R1 Response from CMD0
                //  Response should be 8'h01
                //
-               
+
                stateINIT02:
                  begin
                     timeout <= timeout - 1'b1;
@@ -333,12 +323,12 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateINIT03:
                //  Send 8 clock cycles
                //
-               
+
                stateINIT03:
                  begin
                     timeout <= timeout - 1'b1;
@@ -355,12 +345,12 @@ module sd(clk, rst,
                          state   <= stateINIT04;
                       end
                  end
-               
+
                //
                // stateINIT04:
                //   Send SEND_IF_COND (CMD8)
                //
-               
+
                stateINIT04:
                  begin
                     timeout <= timeout - 1'b1;
@@ -379,14 +369,14 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateINIT05
                //  Read first byte R1 of R7 Response
                //  Response should be 8'h01 for V2.00 initialization or
                //  8'h05 for V1.00 initialization.
                //
-               
+
                stateINIT05:
                  begin
                     timeout <= timeout - 1'b1;
@@ -438,7 +428,7 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateINIT06
                //  Read 32-bit Response to CMD8
@@ -446,7 +436,7 @@ module sd(clk, rst,
                //    8'h01 - Voltage
                //    8'h55 - Pattern
                //
-               
+
                stateINIT06:
                  begin
                     timeout <= timeout - 1'b1;
@@ -529,15 +519,15 @@ module sd(clk, rst,
                         begin
                            ;
                         end
-                      
+
                     endcase
                  end
-               
+
                //
                // stateINIT07:
                //  Send 8 clock cycles
                //
-               
+
                stateINIT07:
                  begin
                     timeout <= timeout - 1'b1;
@@ -554,12 +544,12 @@ module sd(clk, rst,
                          state   <= stateINIT08;
                       end
                  end
-               
+
                //
                // stateINIT08:
                //   Send APP_CMD (CMD55)
                //
-               
+
                stateINIT08:
                  begin
                     timeout <= timeout - 1'b1;
@@ -578,13 +568,13 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateINIT09:
                //  Read R1 response from CMD55.
                //  Response should be 8'h01
                //
-               
+
                stateINIT09:
                  begin
                     timeout <= timeout - 1'b1;
@@ -630,12 +620,12 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateINIT10:
                //  Send 8 clock cycles
                //
-               
+
                stateINIT10:
                  begin
                     timeout <= timeout - 1'b1;
@@ -652,12 +642,12 @@ module sd(clk, rst,
                          state   <= stateINIT11;
                       end
                  end
-               
+
                //
                // stateINIT11:
                //  Send SD_SEND_OP_COND (ACMD41)
                //
-               
+
                stateINIT11:
                  begin
                     timeout <= timeout - 1'b1;
@@ -676,13 +666,13 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateINIT12:
                //  Read R1 response from ACMD41.
                //  Response should be 8'h00
                //
-               
+
                stateINIT12:
                  begin
                     timeout <= timeout - 1'b1;
@@ -728,12 +718,12 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateINIT13
                //  Send 8 clock cycles
                //
-               
+
                stateINIT13:
                  begin
                     timeout <= timeout - 1'b1;
@@ -750,12 +740,12 @@ module sd(clk, rst,
                          state   <= stateINIT14;
                       end
                  end
-               
+
                //
                // stateINIT14:
                //  Send READ_OCR (CMD58)
                //
-               
+
                stateINIT14:
                  begin
                     timeout <= timeout - 1'b1;
@@ -774,13 +764,13 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateINIT15
                //  Read first byte of R3 response to CMD58
                //  Response should be 8'h00
                //
-               
+
                stateINIT15:
                  begin
                     timeout <= timeout - 1'b1;
@@ -823,13 +813,13 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateINIT16
                //  Response should be e0_ff_80_00
                //  Read 32-bit OCR response to CMD58
                //
-               
+
                stateINIT16:
                  begin
                     timeout <= timeout - 1'b1;
@@ -882,12 +872,12 @@ module sd(clk, rst,
                         end
                     endcase
                  end
-               
+
                //
                // stateINIT17:
                //  Send 8 clock cycles
                //
-               
+
                stateINIT17:
                  begin
                     timeout <= timeout - 1'b1;
@@ -900,20 +890,20 @@ module sd(clk, rst,
                     else if (spiDONE)
                       begin
                          bytecnt <= 0;
-`ifdef GOFAST                         
+`ifdef GOFAST
                          spiOP   <= spiFAST;
-`endif                         
+`endif
                          state   <= stateIDLE;
                       end
                  end
-               
+
                //
                // stateIDLE:
                //  Wait for a command to process.
                //  Once the SD card is initialized, it waits in this state
                //  for either a read (sdopRD) or a write (sdopWR) command.
                //
-               
+
                stateIDLE:
                  begin
                     abort   <= 0;
@@ -938,12 +928,12 @@ module sd(clk, rst,
                         end
                     endcase
                  end
-               
+
                //
                // stateREAD00:
                //  Setup Read Single Block (CMD17)
                //
-               
+
                stateREAD00:
                  begin
                     memADDR    <= sdMEMaddr;
@@ -957,12 +947,12 @@ module sd(clk, rst,
                     spiOP      <= `spiCSL;
                     state      <= stateREAD01;
                  end
-               
+
                //
                // stateREAD01:
                //  Send Read Single Block (CMD17)
                //
-               
+
                stateREAD01:
                  begin
                     if (spiDONE | (bytecnt == 0))
@@ -980,13 +970,13 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateREAD02:
                //  Read R1 response from CMD17
                //  Response should be 8'h00
                //
-               
+
                stateREAD02:
                  begin
                     if (bytecnt == 0)
@@ -1032,12 +1022,12 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateREAD03:
                //  Find 'Read Start token' which should be 8'hfe
                //
-               
+
                stateREAD03:
                  begin
                     if (bytecnt == 0)
@@ -1084,12 +1074,12 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateREAD04:
                //  Acquire DMA.  Setup for loop.
                //
-               
+
                stateREAD04:
                  begin
                     memREQ <= 1;
@@ -1101,13 +1091,13 @@ module sd(clk, rst,
                          state   <= stateREAD05;
                       end
                  end
-               
+
                //
                // stateREAD05:
                //  Read LSBYTE of data from disk (even addresses)
                //  Loop destination
                //
-               
+
                stateREAD05:
                  begin
                     if (spiDONE)
@@ -1119,14 +1109,14 @@ module sd(clk, rst,
                          state <= stateREAD06;
                       end
                  end
-               
+
                //
                // stateREAD06:
                //  Read MSBYTE of data from disk (odd addresses).
                //  Discard the top four bits forming a 12-bit word
                //  from the two bytes.
                //
-               
+
                stateREAD06:
                  begin
                     if (spiDONE)
@@ -1137,7 +1127,7 @@ module sd(clk, rst,
                          state <= stateREAD07;
                       end
                  end
-               
+
                //
                // stateREAD07:
                //  Write disk data to memory.
@@ -1145,7 +1135,7 @@ module sd(clk, rst,
                //  128 words of a 128 word read.  Notice no DMA occurs
                //  to memory and the bits are dropped.
                //
-               
+
                stateREAD07:
                  begin
                     if (memREQ)
@@ -1154,7 +1144,7 @@ module sd(clk, rst,
                       end
                     state <= stateREAD08;
                  end
-               
+
                //
                // stateREAD08:
                //  This state checks the loop conditions:
@@ -1165,7 +1155,7 @@ module sd(clk, rst,
                //      all 256 words (512 bytes).
                //  3.  At word 256 (byte 512), the loop terminates.
                //
-               
+
                stateREAD08:
                  begin
                     if (abort)
@@ -1195,12 +1185,12 @@ module sd(clk, rst,
                          state   <= stateREAD05;
                       end
                  end
-               
+
                //
                // stateREAD09:
                //  Read 2 bytes of CRC which is required for the SD Card.
                //
-               
+
                stateREAD09:
                  begin
                     if (bytecnt == 0)
@@ -1228,12 +1218,12 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateWRITE00:
                //  Setup Write Single Block (CMD24)
                //
-               
+
                stateWRITE00:
                  begin
                     memADDR    <= sdMEMaddr;
@@ -1247,12 +1237,12 @@ module sd(clk, rst,
                     spiOP      <= `spiCSL;
                     state      <= stateWRITE01;
                  end
-               
+
                //
                // stateWRITE01:
                //  Send Write Single Block (CMD24)
                //
-               
+
                stateWRITE01:
                  begin
                     if (spiDONE | (bytecnt == 0))
@@ -1270,13 +1260,13 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateWRITE02:
                //  Read R1 response from CMD24
                //  Response should be 8'h00
                //
-               
+
                stateWRITE02:
                  begin
                     if (bytecnt == 0)
@@ -1322,12 +1312,12 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateWRITE03:
                //  Send 8 clock cycles
                //
-               
+
                stateWRITE03:
                  begin
                     if (bytecnt == 0)
@@ -1342,12 +1332,12 @@ module sd(clk, rst,
                          state   <= stateWRITE04;
                       end
                  end
-               
+
                //
                // stateWRITE04:
                //  Send Write Start Token.  The write start token is 8'hfe
                //
-               
+
                stateWRITE04:
                  begin
                     if (bytecnt == 0)
@@ -1362,12 +1352,12 @@ module sd(clk, rst,
                          state   <= stateWRITE05;
                       end
                  end
-               
+
                //
                // stateWRITE05:
                //  Start a DMA Read Address Cycle
                //
-               
+
                stateWRITE05:
                  begin
                     memREQ <= 1;
@@ -1376,7 +1366,7 @@ module sd(clk, rst,
                          state <= stateWRITE06;
                       end
                  end
-               
+
                //
                // stateWRITE06:
                //  Loop destination
@@ -1384,7 +1374,7 @@ module sd(clk, rst,
                //  If memREQ is not asserted, we are writing the second
                //  128 words of a 128 word write.  Notice no DMA occurs.
                //
-               
+
                stateWRITE06:
                  begin
                     if (memREQ)
@@ -1393,7 +1383,7 @@ module sd(clk, rst,
                       end
                     state <= stateWRITE07;
                  end
-               
+
                //
                // stateWRITE07:
                //  Write LSBYTE of data to disk (even addresses)
@@ -1403,7 +1393,7 @@ module sd(clk, rst,
                //     words of a 128 word operation.  Therefore we
                //     write zeros.  See file header.
                //
-               
+
                stateWRITE07:
                  begin
                     spiOP  <= `spiTR;
@@ -1419,13 +1409,13 @@ module sd(clk, rst,
                       end
                     state <= stateWRITE08;
                  end
-               
+
                //
                // stateWRITE08:
                //  Write MSBYTE of data to disk (odd addresses)
                //  Note:  The top 4 bits of the MSBYTE are zero.
                //
-               
+
                stateWRITE08:
                  begin
                     if (spiDONE)
@@ -1436,12 +1426,12 @@ module sd(clk, rst,
                          state   <= stateWRITE09;
                       end
                  end
-               
+
                //
                // stateWRITE09:
                //  This is the addr phase of the read cycle.
                //
-               
+
                stateWRITE09:
                  begin
                     if (spiDONE)
@@ -1477,12 +1467,12 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateWRITE10:
                //  Write CRC bytes
                //
-               
+
                stateWRITE10:
                  begin
                     if (spiDONE)
@@ -1502,7 +1492,7 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateWRITE11:
                //  Read Data Response.  The response is is one byte long
@@ -1515,7 +1505,7 @@ module sd(clk, rst,
                //     101 is rejected due to CRC error and
                //     110 is rejected due to write error.
                //
-               
+
                stateWRITE11:
                  begin
                     if (spiDONE)
@@ -1537,13 +1527,13 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateWRITE12:
                //  Wait for busy token to clear.   The disk reports
                //  all zeros while the write is occurring.
                //
-               
+
                stateWRITE12:
                  begin
                     if (spiDONE)
@@ -1571,12 +1561,12 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateWRITE13:
                //  Send Send Status Command (CMD13)
                //
-               
+
                stateWRITE13:
                  begin
                     if (spiDONE | (bytecnt == 0))
@@ -1596,7 +1586,7 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateWRITE14:
                //  Check first byte of CMD13 response
@@ -1610,7 +1600,7 @@ module sd(clk, rst,
                //   Bit 6: Erase Reset
                //   Bit 7: Idle State
                //
-               
+
                stateWRITE14:
                  begin
                     if (spiDONE)
@@ -1650,7 +1640,7 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateWRITE15:
                //  Check second byte of CMD13 response
@@ -1664,7 +1654,7 @@ module sd(clk, rst,
                //   Bit 6: WP Erase Skip
                //   Bit 7: Card is locked
                //
-               
+
                stateWRITE15:
                  begin
                     if (spiDONE)
@@ -1686,12 +1676,12 @@ module sd(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateWRITE16:
                //  Send 8 clock cycles.   Pull CS High.
                //
-               
+
                stateWRITE16:
                  begin
                     if (spiDONE)
@@ -1701,12 +1691,12 @@ module sd(clk, rst,
                          state   <= stateFINI;
                       end
                  end
-               
+
                //
                // stateFINI:
                //  Send 8 clock cycles
                //
-               
+
                stateFINI:
                  begin
                     if (bytecnt == 0)
@@ -1721,63 +1711,67 @@ module sd(clk, rst,
                          state   <= stateDONE;
                       end
                  end
-               
+
                //
                // stateDONE:
                //
-               
+
                stateDONE:
                  begin
                     state   <= stateIDLE;
                  end
-               
+
                //
                // stateINFAIL:
                //  Initialization failed somehow.
                //
-               
+
                stateINFAIL:
                  begin
                     state   <= stateINFAIL;
                  end
-               
+
                //
                // stateRWFAIL:
                //  Read or Write failed somehow.
                //
-               
+
                stateRWFAIL:
                  begin
                     state   <= stateRWFAIL;
                  end
-               
+
              endcase;
-             
+
              if (timeout == 0)
                begin
                   state  <= stateINFAIL;
                end
-             
+
           end
      end
 
    //
    // SPI Interface
    //
-   
+
    SDSPI uSDSPI
-     (.clk	(clk),
-      .rst	(rst),
-      .spiOP	(spiOP),
-      .spiTXD	(spiTXD),
-      .spiRXD	(spiRXD),
-      .spiMISO	(sdMISO),
-      .spiMOSI	(sdMOSI),
-      .spiSCLK	(sdSCLK),
-      .spiCS	(sdCS),
+     (.clk      (clk),
+      .rst      (rst),
+      .spiOP    (spiOP),
+      .spiTXD   (spiTXD),
+      .spiRXD   (spiRXD),
+      .spiMISO  (sdMISO),
+      .spiMOSI  (sdMOSI),
+      .spiSCLK  (sdSCLK),
+      .spiCS    (sdCS),
       .spiDONE  (spiDONE)
-      );   
+      );
+
+   //
+   // Debug Output
+   //
    
-   assign sdSTATE = state;
+   assign sdDEBUG = {sdERR[4:0], sdSTATE[6:0], sdVAL[7:0], sdWRCNT[7:0], sdRDCNT[7:0]};
    
 endmodule
