@@ -149,6 +149,26 @@ BEGIN {
 }
 
 #
+# Bytes
+#" 2791	023352	0 117 124 0 123 120 	"
+#
+# See DSQDC
+#
+
+/^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7] [0-7][0-7][0-7] [0-7][0-7][0-7] [0-7] [0-7][0-7][0-7] [0-7][0-7][0-7].*/ {
+    data1 = lshift(strtonum("0" substr($3,  1, 1)), 34);
+    data2 = lshift(strtonum("0" substr($3,  3, 3)), 26);
+    data3 = lshift(strtonum("0" substr($3,  7, 3)), 18);
+    data4 = lshift(strtonum("0" substr($3, 11, 1)), 16);
+    data5 = lshift(strtonum("0" substr($3, 13, 3)),  8);
+    data6 = lshift(strtonum("0" substr($3, 17, 3)),  0);
+    data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5 + data6);
+    i = strtonum("0" $2)
+    map[i] = data
+
+}
+
+#
 # OPCODES
 #
 #  These looks like:
