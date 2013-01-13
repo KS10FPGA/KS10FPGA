@@ -107,10 +107,12 @@ module testbench;
    parameter [0:35] valREGCIR    = 36'o254000_020000;
 `else
 // parameter [0:35] valREGCIR    = 36'o254000_030601;	// DSKAA-DSKAH
-   parameter [0:35] valREGCIR    = 36'o254000_030010;	// DSKAI-DSKAM,DSKEA
+   parameter [0:35] valREGCIR    = 36'o254000_030010;	// DSKAI-DSKAM,DSKCF, DSKEA
 // parameter [0:35] valREGCIR    = 36'o254000_030660;
 // parameter [0:35] valREGCIR    = 36'o254000_030620;	// DSKCG
 // parameter [0:35] valREGCIR    = 36'o254000_030622;
+// parameter [0:35] valREGCIR    = 36'o254000_020000;	// DSQDC
+   
 `endif   
    
    //
