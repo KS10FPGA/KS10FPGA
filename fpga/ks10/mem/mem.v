@@ -179,7 +179,7 @@ module MEM(clk, rst, clken,
    reg busACKO;
    reg [0:35] busDATAO;
    
-   always @(busIO or busADDR or busREAD or busWRITE or ssramDATA or statREG)
+   always @(busIO or busADDR or busREAD or busWRITE or busWRTEST or ssramDATA or statREG)
      begin
 
         //

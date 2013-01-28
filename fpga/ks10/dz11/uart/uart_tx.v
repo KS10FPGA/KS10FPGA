@@ -107,7 +107,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
    reg [7:0] txREG;
    reg [3:0] brdiv;
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
 
         if (rst)

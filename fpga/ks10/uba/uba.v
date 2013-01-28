@@ -153,6 +153,7 @@ module UBA(clk, rst, clken, ctlNUM,
    wire statWRITE  = busIO  & busWRITE & (busCTL == ctlNUM) & (busADDR[18:35] == statADDR[18:35]);
    wire statREAD   = busIO  & busREAD  & (busCTL == ctlNUM) & (busADDR[18:35] == statADDR[18:35]);
    wire devREAD    = busIO  & busREAD  & (busCTL == ctlNUM) & (busADDR[18:20] == ctrlADDR[18:20]) & (busADDR[21:26] != ctrlADDR[21:26]);
+   wire devWRITE   = busIO  & busWRITE & (busCTL == ctlNUM) & (busADDR[18:20] == ctrlADDR[18:20]) & (busADDR[21:26] != ctrlADDR[21:26]);
    
    //
    // IO Bridge Interrupt Request
@@ -336,26 +337,38 @@ module UBA(clk, rst, clken, ctlNUM,
      begin
         if (rst)
           begin
-             statNM  <= 1'b0;
-             statND  <= 1'b0;
-             statDX  <= 1'b0;
-             statPIH <= 3'b0;
-             statPIL <= 3'b0;
+             statNM  <= 1'bx;
+             statND  <= 1'bx;
+             statDX  <= 1'bx;
+             statPIH <= 3'bx;
+             statPIL <= 3'bx;
           end
         else if (clken)
           begin
              if (statWRITE)
                begin
-                  statNM  <= statNM & ~busDATAI[18];
-                  statND  <= statND & ~busDATAI[21];
-                  statDX  <= busDATAI[28];
-                  statPIH <= busDATAI[30:32];
-                  statPIL <= busDATAI[33:35];
+                  if (busADDRI[29])
+                    begin
+                       statNM  <= 0;
+                       statND  <= 0;
+                       statDX  <= 0;
+                       statPIH <= 0;
+                       statPIL <= 0;
+                    end
+                  else
+                    begin
+                       statNM  <= statNM & ~busDATAI[18];
+                       statND  <= statND & ~busDATAI[21];
+                       statDX  <= busDATAI[28];
+                       statPIH <= busDATAI[30:32];
+                       statPIL <= busDATAI[33:35];
+                    end
                end
              else
                begin
-                  statNM <= statNM | setNXM;
-                  statND <= statNM | setNXD;
+                  // FIXME
+                  //statNM <= statNM | setNXM;
+                  //statND <= statNM | setNXD;
                end
           end
      end
@@ -532,7 +545,7 @@ module UBA(clk, rst, clken, ctlNUM,
             statREAD or regSTAT   or
             vectREAD or dev1VECT  or
             wruREAD  or wruNUM1   or wruNUM3  or ctlNUM    or statINTHI or statINTLO or busPI or statPIH or statPIL or
-            devREAD  or dev1ACKI  or dev2ACKI or dev1DATAI or dev2DATAI)
+            devREAD  or devWRITE  or dev1ACKI  or dev2ACKI or dev1DATAI or dev2DATAI)
      begin
         busACKO  = 1'b0;             
         busDATAO = 36'bx;
@@ -568,7 +581,7 @@ module UBA(clk, rst, clken, ctlNUM,
                  busDATAO = 36'b0;
              endcase
           end
-        if (devREAD)
+        if (devREAD | devWRITE)
           begin
              busACKO = dev1ACKI | dev2ACKI;
              if (dev1ACKI)
@@ -577,7 +590,12 @@ module UBA(clk, rst, clken, ctlNUM,
                busDATAO = dev2DATAI;
              else
               busDATAO = 36'b0;
-           end
+          end
+        if (statWRITE)
+          begin
+             busACKO = 1;
+             busDATAO = 36'b0;
+          end
      end
 
    //

@@ -383,7 +383,7 @@ module CSL(clk, reset,
 
    reg [7:0] adOUT;
 
-   always @(cslADDR or regADDR or regDATA or regSTAT or regIR)
+   always @(cslADDR or regADDR or regDATA or regSTAT or regIR or rhDEBUG)
      begin
         case (cslADDR)
 

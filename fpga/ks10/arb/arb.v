@@ -131,16 +131,15 @@ module ARB(clk,
         cpuACKO  = 1'b0;
         cslREQO  = 1'b0;
         cslACKO  = 1'b0;
-        ubaREQO = 1'b0;
+        ubaREQO  = 1'b0;
         uba1ACKO = 1'b0;
         uba3ACKO = 1'b0;
         memREQO  = 1'b0;
-        arbADDRO = 36'bx;
+        arbADDRO = 36'b0;
         cslDATAO = 36'bx;
         cpuDATAO = 36'bx;
         memDATAO = 36'bx;
         ubaDATAO = 36'bx;
-        arbADDRO = 36'bx;
 
         //
         // Bus Request from the Console

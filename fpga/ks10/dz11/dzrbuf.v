@@ -2,18 +2,16 @@
 //
 // KS-10 Processor
 //
-// brief
-//      DZ-11 SILO FIFO
+// Brief
+//   DZ-11 SILO FIFO
 //
-// details
+// Details
 //
-// todo
+// File
+//   fifo64x11.v
 //
-// file
-//      fifo64x11.v
-//
-// author
-//      Rob Doyle - doyle (at) cox (dot) net
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -62,7 +60,7 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
 
    reg [0:5] wr_curr;
    
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
    begin
      if (rst)
        wr_curr <= 0;
@@ -76,7 +74,7 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
 
    reg [0:5] rd_curr;
    
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
    begin
      if (rst)
        rd_curr <= 0;
@@ -90,7 +88,7 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
 
    reg [0:5] depth;
    
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
    begin
      if (rst)
        depth <= 0;
@@ -103,12 +101,27 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
    //
    // Dual Port RAM
    //
-
+   
+`ifndef SYNTHESIS
+   integer i;
+`endif
+ 
    reg [0:10] DPRAM[0:63];
    reg [0:10] dout;
    
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
+        if (rst)
+          begin
+`ifdef SYNTHESIS
+             ;
+`else             
+             for (i = 0; i < 63; i = i + 1)
+               begin
+                  DPRAM[i] <= 0;
+               end
+`endif
+          end
         if (clken)
           begin
              if (wr)

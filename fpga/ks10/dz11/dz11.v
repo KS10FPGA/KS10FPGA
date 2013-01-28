@@ -48,6 +48,7 @@
 
 `default_nettype none
 `include "dz11.vh"
+`include "../../ks10.vh"
 `include "uart/uart_brg.vh"
   
 module DZ11(clk, rst, clken,
@@ -144,6 +145,27 @@ module DZ11(clk, rst, clken,
    //
    
    wire [35:0] dzDATAI = devDATAI[0:35];
+
+   //
+   // CSR[CLR] 15us one-shot
+   //
+
+   reg [9:0] clrCOUNT;
+   always @(posedge clk or posedge rst or posedge devRESET)
+     begin
+        if (rst | devRESET)
+          clrCOUNT <= 2;
+        else if (clken)
+          begin
+             if (csrWRITEL & dzDATAI[4])
+               clrCOUNT <= `CLKFRQ / 1000000 * 15;
+             else if (csrCLR)
+               clrCOUNT <= clrCOUNT - 1'b1;
+          end
+     end
+   
+   wire csrCLR = (clrCOUNT != 0);
+   wire regRESET = csrCLR;
    
    //
    // CSR Register
@@ -159,20 +181,18 @@ module DZ11(clk, rst, clken,
    reg       csrMSE;
    reg [2:0] csrTLINE;
    reg       csrMAINT;
-   reg [9:0] clrCOUNT;
    
-   always @(posedge clk)
+   always @(posedge clk or posedge regRESET)
      begin
-        if (rst | devRESET | (csrWRITEL & dzDATAI[4]))
+        if (regRESET)
           begin
              csrTRDY  <= 0;
              csrTIE   <= 0;
-             csrSAE   <= 1;
+             csrSAE   <= 0;
              csrRIE   <= 0;
              csrMSE   <= 0;
              csrTLINE <= 0;
              csrMAINT <= 0;
-             clrCOUNT <= 1023;
           end
         else
           begin
@@ -199,19 +219,12 @@ module DZ11(clk, rst, clken,
                end
 
              //
-             // Decrement CLR one-shot time if not zero already
-             //
-             
-             if (csrCLR)
-               clrCOUNT <= clrCOUNT - 1'b1;
-
-             //
              // Transmitter Scan
              //
 
              if (csrTRDY & tdrWRITEL)
                csrTRDY <= 0;
-             else if (tcrLIN[scanMUX] & ~ttyTXEMPTY[scanMUX])
+             else if (tcrLIN[scan] & ttyTXEMPTY[scan])
                begin
                   csrTRDY  <= 1;
                   csrTLINE <= scan;
@@ -219,10 +232,9 @@ module DZ11(clk, rst, clken,
           end
      end              
    
-   wire        csrCLR   = (clrCOUNT != 0);
-   wire [15:0] regCSR   = {csrTRDY,  csrTIE, csrSA, csrSAE,  1'b0, csrTLINE, 
-                           csrRDONE, csrRIE, csrMSE, csrCLR, csrMAINT, 3'b0};
-   
+   wire [15:0] regCSR = {csrTRDY,  csrTIE, csrSA, csrSAE,  1'b0, csrTLINE, 
+                         csrRDONE, csrRIE, csrMSE, csrCLR, csrMAINT, 3'b0};
+
    //
    // RBUF Register
    //
@@ -240,35 +252,35 @@ module DZ11(clk, rst, clken,
    //
    
    reg lprRXON;
-   reg [3:0] lprBR[7:0];
+   //reg [3:0] lprBR[7:0];
    
-   always @(posedge clk)
+   always @(posedge clk or posedge regRESET)
      begin
-        if (rst | devRESET | csrCLR)
+        if (regRESET)
           begin
              lprRXON  <= 0;
-             lprBR[7] <= 0;
-             lprBR[6] <= 0;
-             lprBR[5] <= 0;
-             lprBR[4] <= 0;
-             lprBR[3] <= 0;
-             lprBR[2] <= 0;
-             lprBR[1] <= 0;
-             lprBR[0] <= 0;
+             //lprBR[7] <= 0;
+             //lprBR[6] <= 0;
+             //lprBR[5] <= 0;
+             //lprBR[4] <= 0;
+             //lprBR[3] <= 0;
+             //lprBR[2] <= 0;
+             //lprBR[1] <= 0;
+             //lprBR[0] <= 0;
           end
         else if (lprWRITE)
           begin
              lprRXON <= dzDATAI[12];
-             case (dzDATAI[2:0])
-               7: lprBR[7] <= dzDATAI[11:8];
-               6: lprBR[6] <= dzDATAI[11:8];
-               5: lprBR[5] <= dzDATAI[11:8];
-               4: lprBR[4] <= dzDATAI[11:8];
-               3: lprBR[3] <= dzDATAI[11:8];
-               2: lprBR[2] <= dzDATAI[11:8];
-               1: lprBR[1] <= dzDATAI[11:8];
-               0: lprBR[0] <= dzDATAI[11:8];
-             endcase
+             //case (dzDATAI[2:0])
+             //  7: lprBR[7] <= dzDATAI[11:8];
+             //  6: lprBR[6] <= dzDATAI[11:8];
+             //  5: lprBR[5] <= dzDATAI[11:8];
+             //  4: lprBR[4] <= dzDATAI[11:8];
+             //  3: lprBR[3] <= dzDATAI[11:8];
+             //  2: lprBR[2] <= dzDATAI[11:8];
+             //  1: lprBR[1] <= dzDATAI[11:8];
+             //  0: lprBR[0] <= dzDATAI[11:8];
+             //endcase
           end
      end
  
@@ -283,7 +295,7 @@ module DZ11(clk, rst, clken,
  
    reg [7:0] tcrDTR;
    reg [7:0] tcrLIN;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst or posedge devRESET)
      begin
         if (rst | devRESET)
           begin
@@ -326,13 +338,13 @@ module DZ11(clk, rst, clken,
    //
 
    wire [7:0] tdrDATA = dzDATAI[7:0];
-   wire [7:0] tdrLOAD = (tdrWRITEL) ? tlineMUX : 8'b0;
+   wire [7:0] tdrLOAD = (tdrWRITEL) ? (tlineMUX & tcrLIN) : 8'b0;
                  
    //
    // Maintenance Loopback
    //
    
-   wire [0:7] loopRXD = (csrMAINT) ? dz11TXD : dz11RXD;
+   wire [7:0] loopRXD = (csrMAINT) ? dz11TXD : dz11RXD;
 
    //
    // UART Baud Rate Generators
@@ -356,9 +368,9 @@ module DZ11(clk, rst, clken,
    //  The 'generate' loops below builds 8 UARTS.
    //
 
-   wire [0:7] ttyRXINTR;                // UART Receiver has data
-   wire [0:7] ttyRXDATA[0:7];           // UART RX received data
-   wire [0:7] ttyTXEMPTY;               // UART Transmitter buffer is empty
+   wire [7:0] ttyRXINTR;                // UART Receiver has data
+   wire [7:0] ttyRXDATA[0:7];           // UART RX received data
+   wire [7:0] ttyTXEMPTY;               // UART Transmitter buffer is empty
    genvar     i;
 
    generate
@@ -402,11 +414,11 @@ module DZ11(clk, rst, clken,
    // RBUF FIFO
    //
 
+   wire csrSA;
    wire fifoEMPTY;
    wire [10:0] rbufDATA;
-   wire csrSA;
-   reg  [2:0] scan;
-   reg  [7:0] scanMUX;
+   reg  [ 2:0] scan;
+   reg  [ 7:0] scanMUX;
    
    dzfifo rxfifo
      (.clk      (clk),
@@ -431,8 +443,7 @@ module DZ11(clk, rst, clken,
    //  This just increments the scan signal.
    //
 
-   //reg [2:0] scan;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst or posedge csrCLR)
      begin
         if (rst | csrCLR)
           scan <= 0;
@@ -444,7 +455,6 @@ module DZ11(clk, rst, clken,
    // Scan Decoder
    //
    
-   //reg [7:0] scanMUX;
    always @(scan)
      begin
         case (scan)
@@ -485,27 +495,29 @@ module DZ11(clk, rst, clken,
    reg devACKO;
    reg [0:35] devDATAO;
    
-   always @(csrREAD or regCSR or rbfREAD or regRBUF or
-            tcrREAD or regTCR or msrREAD or regMSR)
+   always @(csrREAD or csrWRITE or regCSR  or
+            rbfREAD or lprWRITE or regRBUF or
+            tcrREAD or tcrWRITE or regTCR  or
+            msrREAD or tdrWRITE or regMSR)
      begin
         devACKO  = 0;             
         devDATAO = 36'bx;
-        if (csrREAD)
+        if (csrREAD | csrWRITE)
           begin
              devACKO  = 1;             
              devDATAO = {20'b0, regCSR};
           end
-        if (rbfREAD)
+        if (rbfREAD | lprWRITE)
           begin
              devACKO  = 1;             
              devDATAO = {20'b0, regRBUF};
           end
-        if (tcrREAD)
+        if (tcrREAD | tcrWRITE)
           begin
              devACKO  = 1;             
              devDATAO = {20'b0, regTCR};
           end
-        if (msrREAD)
+        if (msrREAD | tdrWRITE)
           begin
              devACKO  = 1;             
              devDATAO = {20'b0, regMSR};
@@ -520,7 +532,7 @@ module DZ11(clk, rst, clken,
    reg intRDONE;
    reg dzRXINTR;
    
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst | csrCLR | devRESET)
           begin
@@ -556,7 +568,7 @@ module DZ11(clk, rst, clken,
    reg dzTXINTR;
    reg intTRDY;
    
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst | csrCLR | devRESET)
           begin
@@ -583,7 +595,7 @@ module DZ11(clk, rst, clken,
    //
 
    reg [7:4] devINTR;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst | csrCLR | devRESET)
           devINTR <= 0;
@@ -596,7 +608,7 @@ module DZ11(clk, rst, clken,
           end
      end
    
-	assign devADDRO = 0;
-	assign devREQO  = 0;
+   assign devADDRO = 0;
+   assign devREQO  = 0;
 	
 endmodule

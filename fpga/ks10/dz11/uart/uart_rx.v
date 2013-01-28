@@ -17,10 +17,10 @@
 //   then you will need to layer a set of buffers on top of this
 //   device.
 //
-// file
+// File
 //   uart_rx.v
 //
-// author
+// Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////
@@ -82,7 +82,7 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
    reg temp;
    reg rxdd;
    
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
@@ -128,7 +128,7 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
    reg [7:0] rxREG;
    reg [3:0] brdiv;
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
 
         if (rst)

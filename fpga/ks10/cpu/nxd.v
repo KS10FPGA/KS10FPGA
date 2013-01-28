@@ -1,20 +1,18 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      IO Latch
-//!
-//! \details
-//!
-//! \todo
-//!
-//! \file
-//!      iolatch.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   IO Latch
+//
+// Details
+//
+// File
+//   iolatch.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -46,8 +44,9 @@
 
 `default_nettype none
 `include "useq/crom.vh"
+`include "vma.vh"
 
-module IOLATCH(clk, rst, clken, crom, iolatch);
+module IOLATCH(clk, rst, clken, crom, vmaFLAGS, iolatch);
    
    parameter cromWidth = `CROM_WIDTH;
 
@@ -55,8 +54,21 @@ module IOLATCH(clk, rst, clken, crom, iolatch);
    input                  rst;      	// Reset
    input                  clken;    	// Clock Enable
    input  [0:cromWidth-1] crom;  	// Control ROM Data
+   input  [0:13]          vmaFLAGS;     // VMA Flags
    output                 iolatch;	// IO Latch
-
+   
+   //
+   // Microcode Decode
+   //
+   
+   wire selCLRIOLAT = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRIOLAT);
+   
+   //
+   // VMA Flags
+   //
+   
+   wire vmaIOCYCLE  = `vmaIOCYCLE(vmaFLAGS);
+   
    //
    // IO Latch
    //
@@ -66,14 +78,34 @@ module IOLATCH(clk, rst, clken, crom, iolatch);
    //
 
    reg iolatch;
-   wire latch = 1'b0;	// FIXME
+   reg lastVMAIO;
+   reg [0:1] count;
    
    always @(posedge clk or posedge rst)
     begin
         if (rst)
-          iolatch <= 1'b0;
+          begin
+             iolatch   <= 0;
+             lastVMAIO <= 0;
+             count     <= 3;
+          end
         else if (clken)
-          iolatch <= latch;
+          begin
+             if (vmaIOCYCLE & ~lastVMAIO)
+               begin
+                  iolatch <= 1;
+                  count   <= 3;
+               end
+             else if (count == 0)
+               begin
+                  iolatch <= 0;
+               end
+             else
+               begin
+                  count <= count - 1'b1;
+               end
+             lastVMAIO <= vmaIOCYCLE;
+          end
     end
 
  endmodule

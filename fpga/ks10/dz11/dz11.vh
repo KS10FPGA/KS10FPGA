@@ -49,46 +49,46 @@
 // DZ Device and Interrupt
 //
 
-`define dzDEV     4'd3           	// Device 3
-`define dzINTR    4'b0010        	// Interrupt 5
+`define dzDEV     4'd3                  // Device 3
+`define dzINTR    4'b0010               // Interrupt 5
 
 //
 // DZ Register Address offsets
 //
 
-`define csrOFFSET 3'd0			// CSR Offset
-`define rbfOFFSET 3'd2       		// RBUF Offset
-`define lprOFFSET 3'd4       		// LPR Offset
-`define tcrOFFSET 3'd4       		// TCR Offset
-`define msrOFFSET 3'd6       		// MSR Offset
-`define tdrOFFSET 3'd6       		// TDR Offset
+`define csrOFFSET 3'd0                  // CSR Offset  (RW)
+`define rbfOFFSET 3'd2                  // RBUF Offset (RO)
+`define lprOFFSET 3'd2                  // LPR Offset  (WO)
+`define tcrOFFSET 3'd4                  // TCR Offset  (RW)
+`define msrOFFSET 3'd6                  // MSR Offset  (RO)
+`define tdrOFFSET 3'd6                  // TDR Offset  (WO)
 
 //
 // DZ #1 parameters
 //
 
-`define dz1VECT   18'o000340     	// Interrupt Vector
-`define dz1ADDR   18'o760010     	// Base Address
+`define dz1VECT   18'o000340            // Interrupt Vector
+`define dz1ADDR   18'o760010            // Base Address
 
 //
 // DZ #2 parameters
 //
 
-`define dz2VECT   18'o000350     	// Interrupt Vector
-`define dz2ADDR   18'o760020     	// Base Address
+`define dz2VECT   18'o000350            // Interrupt Vector
+`define dz2ADDR   18'o760020            // Base Address
 
 //
 // DZ #3 parameters
 //
 
-`define dz3VECT   18'o000360     	// Interrupt Vector
-`define dz3ADDR   18'o760030     	// Base Address
+`define dz3VECT   18'o000360            // Interrupt Vector
+`define dz3ADDR   18'o760030            // Base Address
 
 //
 // DZ #4 parameters
 //
 
-`define dz4VECT   18'o000370     	// Interrupt Vector
-`define dz4ADDR   18'o760040     	// Base Address
+`define dz4VECT   18'o000370            // Interrupt Vector
+`define dz4ADDR   18'o760040            // Base Address
 
 `endif

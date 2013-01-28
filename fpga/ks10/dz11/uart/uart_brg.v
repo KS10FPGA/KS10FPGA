@@ -2,18 +2,16 @@
 //
 // KS-10 Processor
 //
-// brief
-//      DZ11 UART Baud Rate Generator
+// Brief
+//   DZ11 UART Baud Rate Generator
 //
-// details
+// Details
 //
-// todo
+// File
+//   uart_brg.v
 //
-// file
-//      uart_brg.v
-//
-// author
-//      Rob Doyle - doyle (at) cox (dot) net
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -66,7 +64,7 @@ module UART_BRG(clk, rst, brgSEL, brgCLKEN);
 
    reg brgCLKEN;
    reg [0:31] count;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
