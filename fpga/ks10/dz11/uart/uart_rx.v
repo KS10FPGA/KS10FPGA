@@ -51,29 +51,29 @@
 
 module UART_RX(clk, rst, clkBR, rxd, intr, data);
 
-   input        clk;            // Clock
-   input        rst;            // Reset
-   input        clkBR;          // Clock Enable from BRG
-   input        rxd;            // Receiver Serial Data
-   output       intr;           // Data ready
-   output [7:0] data;           // Received Data
+   input        clk;                    // Clock
+   input        rst;                    // Reset
+   input        clkBR;                  // Clock Enable from BRG
+   input        rxd;                    // Receiver Serial Data
+   output       intr;                   // Data ready
+   output [7:0] data;                   // Received Data
 
    //
    // State machine states
    //
 
-   parameter stateIDLE  =  0;   // Idle
-   parameter stateSTART =  1;   // Working on Start Bit
-   parameter stateBIT0  =  2;   // Working on Bit 7
-   parameter stateBIT1  =  3;   // Working on Bit 6
-   parameter stateBIT2  =  4;   // Working on Bit 5
-   parameter stateBIT3  =  5;   // Working on Bit 4
-   parameter stateBIT4  =  6;   // Working on Bit 3
-   parameter stateBIT5  =  7;   // Working on Bit 2
-   parameter stateBIT6  =  8;   // Working on Bit 1
-   parameter stateBIT7  =  9;   // Working on Bit 0
-   parameter stateSTOP  = 10;   // Working on Stop Bit
-   parameter stateDONE  = 11;   // Generate Interrupt
+   parameter [3:0] stateIDLE  =  0,     // Idle
+                   stateSTART =  1,     // Working on Start Bit
+                   stateBIT0  =  2,     // Working on Bit 7
+                   stateBIT1  =  3,     // Working on Bit 6
+                   stateBIT2  =  4,     // Working on Bit 5
+                   stateBIT3  =  5,     // Working on Bit 4
+                   stateBIT4  =  6,     // Working on Bit 3
+                   stateBIT5  =  7,     // Working on Bit 2
+                   stateBIT6  =  8,     // Working on Bit 1
+                   stateBIT7  =  9,     // Working on Bit 0
+                   stateSTOP  = 10,     // Working on Stop Bit
+                   stateDONE  = 11;     // Generate Interrupt
 
    //
    // Synchronize the Received Data to this clock domain.
@@ -106,22 +106,22 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
    //   looks for a start bit.  When it find the 'edge' of the start
    //   bit starts the state machine which does the following:
    //
-   //   -# Continuously sample the start bit for half a bit period.
+   //    - Continuously sample the start bit for half a bit period.
    //      If the start bit is narrower than half a bit then, go back
    //      to the idle state and look for a real start bit.   Othewise,
-   //   -# Delay one bit time from the middle of the Start bit and
+   //    - Delay one bit time from the middle of the Start bit and
    //      sample bit D7 (LSB), then
-   //   -# Delay one bit time from the middle of D7 and sample bit D6, then
-   //   -# Delay one bit time from the middle of D6 and sample bit D5, then
-   //   -# Delay one bit time from the middle of D5 and sample bit D4, then
-   //   -# Delay one bit time from the middle of D4 and sample bit D3, then
-   //   -# Delay one bit time from the middle of D3 and sample bit D2, then
-   //   -# Delay one bit time from the middle of D2 and sample bit D1, then
-   //   -# Delay one bit time from the middle of D1 and sample bit D0, then
-   //   -# Delay one bit time from the middle of D0 and sample Stop
-   //      Bit, then
-   //   -# Generate INTR pulse for one clock cycle, then
-   //   -# go back to idle state and wait for a start bit.
+   //    - Delay one bit time from the middle of D7 and sample bit D6, then
+   //    - Delay one bit time from the middle of D6 and sample bit D5, then
+   //    - Delay one bit time from the middle of D5 and sample bit D4, then
+   //    - Delay one bit time from the middle of D4 and sample bit D3, then
+   //    - Delay one bit time from the middle of D3 and sample bit D2, then
+   //    - Delay one bit time from the middle of D2 and sample bit D1, then
+   //    - Delay one bit time from the middle of D1 and sample bit D0, then
+   //    - Delay one bit time from the middle of D0 and sample Stop
+   //       Bit, then
+   //    - Generate INTR pulse for one clock cycle, then
+   //    - Go back to idle state and wait for a start bit.
    //
 
    reg [3:0] state;
@@ -148,174 +148,248 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
             //
 
             stateIDLE:
-              if (clkBR)
-                if (rxdd == 0)
-                  begin
-                     state <= stateSTART;
-                     brdiv <= 8;
-                  end
+              begin
+                 if (clkBR)
+                   begin
+                      if (~rxdd)
+                        begin
+                           state <= stateSTART;
+                           brdiv <= 8;
+                        end
+                   end
+              end
 
             //
             // Receive Start Bit
             //
 
             stateSTART:
-              if (clkBR)
-                if (rxdd == 0)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       state <= stateBIT0;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
-                else
-                  state <= stateIDLE;
-
+              begin
+                 if (clkBR)
+                   begin
+                      if (~rxdd)
+                        begin
+                           if (brdiv == 0)
+                             begin
+                                brdiv <= 15;
+                                state <= stateBIT0;
+                             end
+                           else
+                             begin
+                                brdiv <= brdiv - 1'b1;
+                             end
+                        end
+                      else
+                        begin
+                           state <= stateIDLE;
+                        end
+                   end
+              end
+            
             //
             // Receive Bit 0 (LSB)
             //
 
             stateBIT0:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     rxREG <= rxdd & rxREG[7:1];
-                     state <= stateBIT1;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
+              begin
+                 if (clkBR)
+                   begin
+                      if (brdiv == 0)
+                        begin
+                           brdiv <= 15;
+                           rxREG <= {rxdd, rxREG[7:1]};
+                           state <= stateBIT1;
+                        end
+                      else
+                        begin
+                           brdiv <= brdiv - 1'b1;
+                        end
+                   end
+              end
 
             //
             // Receive Bit 1
             //
 
             stateBIT1:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     rxREG <= rxdd & rxREG[7:1];
-                     state <= stateBIT2;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
+              begin
+                 if (clkBR)
+                   begin
+                      if (brdiv == 0)
+                        begin
+                           brdiv <= 15;
+                           rxREG <= {rxdd, rxREG[7:1]};
+                           state <= stateBIT2;
+                        end
+                      else
+                        begin
+                           brdiv <= brdiv - 1'b1;
+                        end
+                   end
+              end
 
             //
             // Receive Bit 2
             //
 
             stateBIT2:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     rxREG <= rxdd & rxREG[7:1];
-                     state <= stateBIT3;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
+              begin
+                 if (clkBR)
+                   begin
+                      if (brdiv == 0)
+                        begin
+                           brdiv <= 15;
+                           rxREG <= {rxdd, rxREG[7:1]};
+                           state <= stateBIT3;
+                        end
+                      else
+                        begin
+                           brdiv <= brdiv - 1'b1;
+                        end
+                   end
+              end
 
             //
             // Receive Bit 3
             //
 
             stateBIT3:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     rxREG <= rxdd & rxREG[7:1];
-                     state <= stateBIT4;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
-
+              begin
+                 if (clkBR)
+                   begin
+                      if (brdiv == 0)
+                        begin
+                           brdiv <= 15;
+                           rxREG <= {rxdd, rxREG[7:1]};
+                           state <= stateBIT4;
+                        end
+                      else
+                        begin
+                           brdiv <= brdiv - 1'b1;
+                        end
+                   end
+              end
+            
             //
             // Receive Bit 4
             //
 
             stateBIT4:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     rxREG <= rxdd & rxREG[7:1];
-                     state <= stateBIT5;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
-
+              begin
+                 if (clkBR)
+                   begin
+                      if (brdiv == 0)
+                        begin
+                           brdiv <= 15;
+                           rxREG <= {rxdd, rxREG[7:1]};
+                           state <= stateBIT5;
+                        end
+                      else
+                        begin
+                           brdiv <= brdiv - 1'b1;
+                        end
+                   end
+              end
+            
             //
             // Receive Bit 5
             //
 
             stateBIT5:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     rxREG <= rxdd & rxREG[7:1];
-                     state <= stateBIT6;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
-
+              begin
+                 if (clkBR)
+                   begin
+                      if (brdiv == 0)
+                        begin
+                           brdiv <= 15;
+                           rxREG <= {rxdd, rxREG[7:1]};
+                           state <= stateBIT6;
+                        end
+                      else
+                        begin
+                           brdiv <= brdiv - 1'b1;
+                        end
+                   end
+              end
+            
             //
             // Receive Bit 6
             //
 
             stateBIT6:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     rxREG <= rxdd & rxREG[7:1];
-                     state <= stateBIT7;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
-
+              begin
+                 if (clkBR)
+                   begin
+                      if (brdiv == 0)
+                        begin
+                           brdiv <= 15;
+                           rxREG <= {rxdd, rxREG[7:1]};
+                           state <= stateBIT7;
+                        end
+                      else
+                        begin
+                           brdiv <= brdiv - 1'b1;
+                        end
+                   end
+              end
+            
             //
             // Receive Bit 7 (MSB)
             //
 
             stateBIT7:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     rxREG <= rxdd & rxREG[7:1];
-                     state <= stateSTOP;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
+              begin
+                 if (clkBR)
+                   begin
+                      if (brdiv == 0)
+                        begin
+                           brdiv <= 15;
+                           rxREG <= {rxdd, rxREG[7:1]};
+                           state <= stateSTOP;
+                        end
+                      else
+                        begin
+                           brdiv <= brdiv - 1'b1;
+                        end
+                   end
+              end
 
             //
             // Receive Stop Bit
             //
 
             stateSTOP:
-              if (clkBR)
-                if (brdiv == 0)
-                  state <= stateDONE;
-                else
-                  brdiv <= brdiv - 1'b1;
+              begin
+                 if (clkBR)
+                   begin
+                      if (brdiv == 0)
+                        begin
+                           state <= stateDONE;
+                        end
+                      else
+                        begin
+                           brdiv <= brdiv - 1'b1;
+                        end
+                   end
+              end
 
             //
             // Generate Interrupt
             //
 
             stateDONE:
-              state <= stateIDLE;
+              begin
+                 state <= stateIDLE;
+              end
 
             //
             // Everything else
             //
 
             default:
-              state <= stateIDLE;
+              begin
+                 state <= stateIDLE;
+              end
 
           endcase
      end

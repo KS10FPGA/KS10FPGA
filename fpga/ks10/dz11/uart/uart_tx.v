@@ -2,7 +2,7 @@
 //
 // KS-10 Processor
 //
-// brief
+// Brief
 //  Generic UART Transmitter
 //
 // Details
@@ -22,11 +22,11 @@
 //   then you will need to layer a set of buffers on top of this
 //   device.
 //
-// file
-//      uart_tx.vhd
+// File
+//   uart_tx.vhd
 //
-// author
-//      Rob Doyle - doyle (at) cox (dot) net
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////
 //
@@ -56,30 +56,30 @@
 
 module UART_TX(clk, rst, clkBR, load, intr, data, txd);
 
-   input        clk;            // Clock
-   input        rst;            // Reset
-   input        clkBR;          // Clock Enable from BRG
-   input  [7:0] data;           // Transmitter Data
-   input        load;		// Load Transmitter
-   output       intr;           // Data ready
-   output       txd;            // Transmitter Serial Data
+   input        clk;                    // Clock
+   input        rst;                    // Reset
+   input        clkBR;                  // Clock Enable from BRG
+   input  [7:0] data;                   // Transmitter Data
+   input        load;                   // Load Transmitter
+   output       intr;                   // Data ready
+   output       txd;                    // Transmitter Serial Data
 
    //
    // State machine states
    //
 
-   parameter stateIDLE  =  0;   // Idle
-   parameter stateSTART =  1;   // Working on Start Bit
-   parameter stateBIT0  =  2;   // Working on Bit 7
-   parameter stateBIT1  =  3;   // Working on Bit 6
-   parameter stateBIT2  =  4;   // Working on Bit 5
-   parameter stateBIT3  =  5;   // Working on Bit 4
-   parameter stateBIT4  =  6;   // Working on Bit 3
-   parameter stateBIT5  =  7;   // Working on Bit 2
-   parameter stateBIT6  =  8;   // Working on Bit 1
-   parameter stateBIT7  =  9;   // Working on Bit 0
-   parameter stateSTOP  = 10;   // Working on Stop Bit
-   parameter stateDONE  = 11;   // Generate Interrupt
+   parameter [3:0] stateIDLE  =  0,     // Idle
+                   stateSTART =  1,     // Working on Start Bit
+                   stateBIT0  =  2,     // Working on Bit 7
+                   stateBIT1  =  3,     // Working on Bit 6
+                   stateBIT2  =  4,     // Working on Bit 5
+                   stateBIT3  =  5,     // Working on Bit 4
+                   stateBIT4  =  6,     // Working on Bit 3
+                   stateBIT5  =  7,     // Working on Bit 2
+                   stateBIT6  =  8,     // Working on Bit 1
+                   stateBIT7  =  9,     // Working on Bit 0
+                   stateSTOP  = 10,     // Working on Stop Bit
+                   stateDONE  = 11;     // Generate Interrupt
    
     //
     // UART Transmitter:
@@ -90,17 +90,18 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
     //  Transmit Register and the state machine is started.
     //
     //  Once the state machine is started, it proceeds as follows:
-    //   -# Send Start Bit, then
-    //   -# Send bit 7 (LSB)
-    //   -# Send bit 6
-    //   -# Send bit 5
-    //   -# Send bit 4
-    //   -# Send bit 3
-    //   -# Send bit 2
-    //   -# Send bit 1
-    //   -# Send bit 0 (MSB)
-    //   -# Send Stop Bit 1
-    //   -# Trigger Interrupt output
+    //
+    //    - Send Start Bit, then
+    //    - Send bit 7 (LSB)
+    //    - Send bit 6
+    //    - Send bit 5
+    //    - Send bit 4
+    //    - Send bit 3
+    //    - Send bit 2
+    //    - Send bit 1
+    //    - Send bit 0 (MSB)
+    //    - Send Stop Bit 1
+    //    - Trigger Interrupt output
     //
 
    reg [3:0] state;
@@ -314,7 +315,6 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
    //
    
    assign intr = (state == stateDONE);
-   
    assign txd  = txdata;
    
 endmodule
