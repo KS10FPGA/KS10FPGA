@@ -63,17 +63,18 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
    //
 
    parameter [3:0] stateIDLE  =  0,     // Idle
-                   stateSTART =  1,     // Working on Start Bit
-                   stateBIT0  =  2,     // Working on Bit 7
-                   stateBIT1  =  3,     // Working on Bit 6
-                   stateBIT2  =  4,     // Working on Bit 5
-                   stateBIT3  =  5,     // Working on Bit 4
-                   stateBIT4  =  6,     // Working on Bit 3
-                   stateBIT5  =  7,     // Working on Bit 2
-                   stateBIT6  =  8,     // Working on Bit 1
-                   stateBIT7  =  9,     // Working on Bit 0
-                   stateSTOP  = 10,     // Working on Stop Bit
-                   stateDONE  = 11;     // Generate Interrupt
+                   stateSYNC  =  1,     // Wait for Start Bit
+                   stateSTART =  2,     // Working on Start Bit
+                   stateBIT0  =  3,     // Working on Bit 7
+                   stateBIT1  =  4,     // Working on Bit 6
+                   stateBIT2  =  5,     // Working on Bit 5
+                   stateBIT3  =  6,     // Working on Bit 4
+                   stateBIT4  =  7,     // Working on Bit 3
+                   stateBIT5  =  8,     // Working on Bit 2
+                   stateBIT6  =  9,     // Working on Bit 1
+                   stateBIT7  = 10,     // Working on Bit 0
+                   stateSTOP  = 11,     // Working on Stop Bit
+                   stateDONE  = 12;     // Generate Interrupt
 
    //
    // Synchronize the Received Data to this clock domain.
@@ -81,13 +82,13 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
 
    reg temp;
    reg rxdd;
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             temp <= 0;
-             rxdd <= 0;
+             temp <= 1;
+             rxdd <= 1;
           end
         else
           begin
@@ -144,10 +145,22 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
           case (state)
 
             //
-            // Reciever is Idle
+            // Receiver is waiting for IDLE condition
             //
 
             stateIDLE:
+              begin
+                 if (rxdd)
+                   begin
+                      state <= stateSYNC;
+                   end
+              end
+
+            //
+            // Wait for edge of Start bit
+            //
+
+            stateSYNC:
               begin
                  if (clkBR)
                    begin
@@ -185,7 +198,7 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
                         end
                    end
               end
-            
+
             //
             // Receive Bit 0 (LSB)
             //
@@ -269,7 +282,7 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
                         end
                    end
               end
-            
+
             //
             // Receive Bit 4
             //
@@ -290,7 +303,7 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
                         end
                    end
               end
-            
+
             //
             // Receive Bit 5
             //
@@ -311,7 +324,7 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
                         end
                    end
               end
-            
+
             //
             // Receive Bit 6
             //
@@ -332,7 +345,7 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
                         end
                    end
               end
-            
+
             //
             // Receive Bit 7 (MSB)
             //
@@ -364,7 +377,10 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
                    begin
                       if (brdiv == 0)
                         begin
-                           state <= stateDONE;
+                           if (rxdd)
+                             state <= stateDONE;
+                           else
+                             state <= stateIDLE;
                         end
                       else
                         begin

@@ -15,7 +15,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+//  Copyright (C) 2012-2013 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -41,7 +41,7 @@
 
 `default_nettype none
 
-module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
+module dzfifo(clk, rst, clken, din, wr, dout, rd, alarm, empty);
 
    input         clk;           // Clock
    input         rst;           // Reset
@@ -50,7 +50,6 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
    input         wr;            // Push Data into FIFO
    output [0:10] dout;          // Data Output
    input         rd;            // Pop Data from FIFO
-   output        full;          // FIFO full
    output        alarm;         // FIFO full enough
    output        empty;         // FIFO empty
 
@@ -59,13 +58,27 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
    //
 
    reg [0:5] wr_curr;
-   
+
    always @(posedge clk or posedge rst)
    begin
      if (rst)
        wr_curr <= 0;
-     else if (clken & wr)
+     else if (clken & wr & (depth != 63))
        wr_curr <= wr_curr + 1'b1;
+   end
+
+   //
+   // Read edge trigger
+   //
+
+   reg last_rd;
+
+   always @(posedge clk or posedge rst)
+   begin
+      if (rst)
+        last_rd <= 0;
+      else
+        last_rd <= rd;
    end
 
    //
@@ -73,12 +86,12 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
    //
 
    reg [0:5] rd_curr;
-   
+
    always @(posedge clk or posedge rst)
    begin
      if (rst)
        rd_curr <= 0;
-     else if (clken & rd)
+     else if (clken & rd & ~last_rd & (depth !=  0))
        rd_curr <= rd_curr + 1'b1;
    end
 
@@ -87,7 +100,7 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
    //
 
    reg [0:5] depth;
-   
+
    always @(posedge clk or posedge rst)
    begin
      if (rst)
@@ -101,21 +114,21 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
    //
    // Dual Port RAM
    //
-   
+
 `ifndef SYNTHESIS
    integer i;
 `endif
- 
+
    reg [0:10] DPRAM[0:63];
    reg [0:10] dout;
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
 `ifdef SYNTHESIS
              ;
-`else             
+`else
              for (i = 0; i < 63; i = i + 1)
                begin
                   DPRAM[i] <= 0;
@@ -129,7 +142,7 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
              dout <= DPRAM[rd_curr];
           end
      end
-   
+
    //
    // FIFO Empty
    //
@@ -137,15 +150,9 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, full, alarm, empty);
    assign empty = (depth == 0);
 
    //
-   // FIFO Full
-   //
-
-   assign full = (depth == 63);
-
-   //
    // FIFO Alarm
    //
-   
+
    assign alarm = (depth > 16);
 
 endmodule
