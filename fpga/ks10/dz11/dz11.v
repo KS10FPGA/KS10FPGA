@@ -400,7 +400,7 @@ module DZ11(clk, rst, clken,
    // Clear receiver full flag
    //
    // Details:
-   //  If the receiver is full, empty it the receiver into the
+   //  If the receiver is full, empty the receiver into the
    //  RXFIFO and clear the full flag.
    //
    
@@ -417,7 +417,7 @@ module DZ11(clk, rst, clken,
    UART_BRG ttyBRG
      (.clk        (clk),
       .rst        (rst | devRESET),
-      .brgSEL     (`BR9600),
+      .brgSEL     (`BR115200),
       .brgCLKEN   (clkBR)
       );
 
@@ -436,7 +436,6 @@ module DZ11(clk, rst, clken,
    wire [7:0] ttyRXFULL;                // UART receiver has data
    wire [7:0] ttyRXDATA[0:7];           // UART received data
    wire [7:0] ttyTXEMPTY;               // UART transmitter buffer is empty
-
    
    generate
       
@@ -484,7 +483,7 @@ module DZ11(clk, rst, clken,
    wire fifoEMPTY;
    wire [10:0] rbufDATA;
 
-   dzfifo rxfifo
+   DZFIFO uDZFIFO
      (.clk      (clk),
       .rst      (rst | csrCLR | devRESET),
       .clken    (clken),

@@ -8,7 +8,7 @@
 // Details
 //
 // File
-//   fifo64x11.v
+//   dzfifo.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -41,7 +41,7 @@
 
 `default_nettype none
 
-module dzfifo(clk, rst, clken, din, wr, dout, rd, alarm, empty);
+module DZFIFO(clk, rst, clken, din, wr, dout, rd, alarm, empty);
 
    input         clk;           // Clock
    input         rst;           // Reset
@@ -52,6 +52,26 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, alarm, empty);
    input         rd;            // Pop Data from FIFO
    output        alarm;         // FIFO full enough
    output        empty;         // FIFO empty
+
+   //
+   // Read edge trigger
+   //
+   // Details:
+   //  The read pointer is incremented on the trailing edge
+   //  of the read pulse; i.e., after the read is done.
+   //
+
+   reg last_rd;
+
+   always @(posedge clk or posedge rst)
+   begin
+      if (rst)
+        last_rd <= 0;
+      else
+        last_rd <= rd;
+   end
+
+   wire edge_rd = ~rd & last_rd;
 
    //
    // Write Pointer
@@ -68,20 +88,6 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, alarm, empty);
    end
 
    //
-   // Read edge trigger
-   //
-
-   reg last_rd;
-
-   always @(posedge clk or posedge rst)
-   begin
-      if (rst)
-        last_rd <= 0;
-      else
-        last_rd <= rd;
-   end
-
-   //
    // Read Pointer
    //
 
@@ -91,7 +97,7 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, alarm, empty);
    begin
      if (rst)
        rd_curr <= 0;
-     else if (clken & rd & ~last_rd & (depth !=  0))
+     else if (clken & edge_rd & (depth !=  0))
        rd_curr <= rd_curr + 1'b1;
    end
 
@@ -105,9 +111,9 @@ module dzfifo(clk, rst, clken, din, wr, dout, rd, alarm, empty);
    begin
      if (rst)
        depth <= 0;
-     else if (clken & rd & ~wr & (depth !=  0))
+     else if (clken & edge_rd & ~wr & (depth !=  0))
        depth <= depth - 1'b1;
-     else if (clken & wr & ~rd & (depth != 63))
+     else if (clken & wr & ~edge_rd & (depth != 63))
        depth <= depth + 1'b1;
    end
 
