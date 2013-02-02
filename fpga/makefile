@@ -1,118 +1,136 @@
-RTL  := rtl
-ISE  := ISE
+PROJECT := ks10
 
-ARB  := $(RTL)/arb
-CSL  := $(RTL)/csl
-CPU  := $(RTL)/cpu
-ISE  := $(ISE)
-MEM  := $(RTL)/mem
-UBA  := $(RTL)/uba
-UC   := $(CPU)/useq
-LOAD := MAINDEC-10-DSKAM.txt
+RTL       := rtl
+ISE       := ise
+#XILINX   := /cygdrive/c/Xilinx/13.1
+XILDIR    := `cygpath -u '$(XILINX)'`
+FUSE      := $(XILDIR)/ISE_DS/ISE/bin/nt/fuse.exe
+WCFG      := ks10_useriot.wcfg
+
+PRJFILE   := $(PROJECT).prj
+TESTBENCH := $(PROJECT)_testbench
+WORK      := work.testbench
+
+#LOAD      := MAINDEC-10-DSDZA.SEQ
+LOAD      := fixed.SEQ
+
+#LOAD := MAINDEC-10-DSQDC.txt
+#LOAD := MAINDEC-10-DSKCG.fixed.txt
 #LOAD := MAINDEC-10-DSKCG.txt
 #LOAD := MAINDEC-10-DSKEA.txt
 #LOAD := smmon.txt
 
 SRC := \
-	$(UC)/crom.vh  \
-	$(UC)/crom.v   \
-	$(UC)/crom.dat \
-	$(UC)/drom.vh  \
-	$(UC)/drom.v   \
-	$(UC)/drom.dat \
-	$(UC)/skip.v   \
-	$(UC)/stack.v  \
-	$(UC)/dispatch.v   \
-	$(UC)/useq.v \
-	$(CPU)/alu.vh \
-	$(CPU)/alu.v \
-	$(CPU)/apr.vh \
-	$(CPU)/apr.v \
-	$(CPU)/bus.v \
-	$(CPU)/byte_disp.v \
-	$(CPU)/dbm.v \
-	$(CPU)/dbus.v \
-	$(CPU)/debug.v \
-	$(CPU)/intf.v \
-	$(CPU)/intr.v \
-	$(CPU)/iolatch.v \
-	$(CPU)/ni_disp.v \
-	$(CPU)/pager.vh \
-	$(CPU)/pager.v \
-	$(CPU)/pcflags.vh \
-	$(CPU)/pcflags.v \
-	$(CPU)/pf_disp.v \
-	$(CPU)/pxct.vh \
-	$(CPU)/pxct.v \
-	$(CPU)/ram1kx36.v \
-	$(CPU)/ramfile.v \
-	$(CPU)/regir.vh \
-	$(CPU)/regir.v \
-	$(CPU)/scad.v \
-	$(CPU)/timer.v \
-	$(CPU)/timing.v \
-	$(CPU)/vma.vh \
-	$(CPU)/vma.v \
-	$(CPU)/cpu.v \
-	$(CSL)/csl.v \
-	$(MEM)/mem.v \
-	$(ARB)/arb.v \
-	$(UBA)/dz11/uart/uart_brg.vh \
-	$(UBA)/dz11/uart/uart_brg.v \
-	$(UBA)/dz11/uart/uart_rx.v \
-	$(UBA)/dz11/uart/uart_tx.v \
-	$(UBA)/dz11/uart/uart_buftx.v \
-	$(UBA)/dz11/dzfifo.v \
-	$(UBA)/dz11/dz11.vh \
-	$(UBA)/dz11/dz11.v \
-	$(UBA)/rh11/sd/sdspi.vh \
-	$(UBA)/rh11/sd/sdspi.v \
-	$(UBA)/rh11/sd/sd.vh \
-	$(UBA)/rh11/sd/sd.v \
-	$(UBA)/rh11/rpxx.vh \
-	$(UBA)/rh11/rpxx.v \
-	$(UBA)/rh11/sdaddr.v \
-	$(UBA)/rh11/rh11.vh \
-	$(UBA)/rh11/rh11.v \
-	$(UBA)/uba.vh \
-	$(UBA)/uba.v \
-	$(RTL)/ks10.vh \
+	$(RTL)/cpu/useq/crom.v \
+	$(RTL)/cpu/useq/drom.v \
+	$(RTL)/cpu/useq/skip.v \
+	$(RTL)/cpu/useq/stack.v \
+	$(RTL)/cpu/useq/dispatch.v \
+	$(RTL)/cpu/useq/useq.v \
+	$(RTL)/cpu/alu.v \
+	$(RTL)/cpu/apr.v \
+	$(RTL)/cpu/bus.v \
+	$(RTL)/cpu/byte_disp.v \
+	$(RTL)/cpu/dbm.v \
+	$(RTL)/cpu/dbus.v \
+	$(RTL)/cpu/debug.v \
+	$(RTL)/cpu/intf.v \
+	$(RTL)/cpu/intr.v \
+	$(RTL)/cpu/iolatch.v \
+	$(RTL)/cpu/ni_disp.v \
+	$(RTL)/cpu/pager.v \
+	$(RTL)/cpu/pcflags.v \
+	$(RTL)/cpu/pf_disp.v \
+	$(RTL)/cpu/pxct.v \
+	$(RTL)/cpu/ram1kx36.v \
+	$(RTL)/cpu/ramfile.v \
+	$(RTL)/cpu/regir.v \
+	$(RTL)/cpu/scad.v \
+	$(RTL)/cpu/timer.v \
+	$(RTL)/cpu/timing.v \
+	$(RTL)/cpu/vma.v \
+	$(RTL)/cpu/cpu.v \
+	$(RTL)/csl/csl.v \
+	$(RTL)/mem/mem.v \
+	$(RTL)/arb/arb.v \
+	$(RTL)/uba/dz11/uart/uart_brg.v \
+	$(RTL)/uba/dz11/uart/uart_rx.v \
+	$(RTL)/uba/dz11/uart/uart_tx.v \
+	$(RTL)/uba/dz11/uart/uart_bufrx.v \
+	$(RTL)/uba/dz11/uart/uart_buftx.v \
+	$(RTL)/uba/dz11/dzfifo.v \
+	$(RTL)/uba/dz11/dz11.v \
+	$(RTL)/uba/rh11/sd/sdspi.v \
+	$(RTL)/uba/rh11/rpxx.v \
+	$(RTL)/uba/rh11/sdaddr.v \
+	$(RTL)/uba/rh11/rh11.v \
+	$(RTL)/uba/uba.v \
 	$(RTL)/ks10.v \
-	$(RTL)/ks10.ucf \
-	$(RTL)/status.txt \
-	$(RTL)/ssram.dat \
 	$(RTL)/testbench.v
+
+#	$(RTL)/uba/rh11/sd/sd.v \
+
+
+INC := \
+	$(RTL)/cpu/useq/crom.vh  \
+	$(RTL)/cpu/useq/drom.vh  \
+	$(RTL)/cpu/alu.vh \
+	$(RTL)/cpu/apr.vh \
+	$(RTL)/cpu/pager.vh \
+	$(RTL)/cpu/pcflags.vh \
+	$(RTL)/cpu/pxct.vh \
+	$(RTL)/cpu/regir.vh \
+	$(RTL)/cpu/vma.vh \
+	$(RTL)/uba/dz11/uart/uart_brg.vh \
+	$(RTL)/uba/dz11/dz11.vh \
+	$(RTL)/uba/rh11/sd/sdspi.vh \
+	$(RTL)/uba/rh11/sd/sd.vh \
+	$(RTL)/uba/rh11/rpxx.vh \
+	$(RTL)/uba/rh11/rh11.vh \
+	$(RTL)/uba/uba.vh \
+	$(RTL)/ks10.vh
+
+DAT := \
+	$(RTL)/cpu/useq/crom.dat \
+	$(RTL)/cpu/useq/drom.dat \
+	$(RTL)/ssram.dat
+
+DOC := \
+	$(RTL)/status.txt
+
+UCF := \
+	$(RTL)/$(PROJECT).ucf
 
 BLD := \
 	$(ISE)/ks10.xise \
 	$(ISE)/ks10.gise \
 	$(ISE)/ks10.wcfg
 
-asdf : $(SRC) $(BLD)
-	echo $(SRC) $(BLD)
+asdf :  $(INC) $(SRC) $(BLD) $(DAT) $(UCF) $(DOC)
+	echo $(INC) $(SRC) $(BLD) $(DAT) $(UCF) $(DOC)
 
-$(UC)/crom.dat  : $(UC)/ks10.mcr $(UC)/crom.awk makefile
-	awk -f $(UC)/crom.awk $(UC)/ks10.mcr > $(UC)/crom.dat
+$(RTL)/cpu/useq/crom.dat  : $(RTL)/cpu/useq/ks10.mcr $(RTL)/cpu/useq/crom.awk makefile
+	awk -f $(RTL)/cpu/useq/crom.awk $(RTL)/cpu/useq/ks10.mcr > $(RTL)/cpu/useq/crom.dat
 
-$(UC)/drom.dat  : $(UC)/ks10.mcr $(UC)/drom.awk makefile
-	awk -f $(UC)/drom.awk $(UC)/ks10.mcr > $(UC)/drom.dat
+$(RTL)/cpu/useq/drom.dat  : $(RTL)/cpu/useq/ks10.mcr $(RTL)/cpu/useq/drom.awk makefile
+	awk -f $(RTL)/cpu/useq/drom.awk $(RTL)/cpu/useq/ks10.mcr > $(RTL)/cpu/useq/drom.dat
 
 $(RTL)/ssram.dat : $(RTL)/$(LOAD) $(RTL)/ssram.awk makefile
 	awk -f $(RTL)/ssram.awk -vfilename=$(LOAD) $(RTL)/$(LOAD) > $(RTL)/ssram.dat
 
 clean: 
 	rcsclean $(RTL)/*
-	rcsclean $(ARB)/*
-	rcsclean $(CSL)/*
-	rcsclean $(CPU)/*
-	rcsclean $(MEM)/*
-	rcsclean $(UBA)/dz11/uart/*
-	rcsclean $(UBA)/dz11/*
-	rcsclean $(UBA)/rh11/sd/*
-	rcsclean $(UBA)/rh11/*
-	rcsclean $(UBA)/*
-	rcsclean $(UC)/*
-	rm -f    $(UC)/*.dat
+	rcsclean $(RTL)/arb/*
+	rcsclean $(RTL)/csl/*
+	rcsclean $(RTL)/cpu/*
+	rcsclean $(RTL)/mem/*
+	rcsclean $(RTL)/uba/dz11/uart/*
+	rcsclean $(RTL)/uba/dz11/*
+	rcsclean $(RTL)/uba/rh11/sd/*
+	rcsclean $(RTL)/uba/rh11/*
+	rcsclean $(RTL)/uba/*
+	rcsclean $(RTL)/cpu/useq/*
+	rm -f    $(RTL)/cpu/useq/*.dat
 	rm -f    $(RTL)/*.dat
 	find . -type f -name "*~" | xargs rm -fv
 
@@ -122,19 +140,36 @@ archive_src: $(SRC)
 archive_all:
 	tar -czvf ks10_all_`date '+%y%m%d'`.tgz *
 
-fuse := /cygdrive/c/Xilinx/13.3/ISE_DS/ISE/bin/nt64/fuse.exe
+$(ISE)/$(PRJFILE) : makefile
+	echo "Creating "$(ISE)/$(PRJFILE) > /dev/stderr
+	echo "" > $@;
+	for FILE in $(SRC); \
+	do \
+	    echo 'verilog work "../'$$FILE'"' >> $@; \
+	done
 
-testbench_isim_beh.exe fuse :
-	cd ise;$(fuse) \
+$(ISE)/$(TESTBENCH) : $(ISE)/$(PRJFILE) makefile
+	cd ise; \
+	$(FUSE) \
 	-intstyle ise \
 	-incremental \
-	-lib unisims_ver \
-	-lib unimacro_ver \
-	-lib xilinxcorelib_ver \
-	-lib secureip \
-	-o E:/PDPx/pdp10/KS10/fpga/ise/testbench_isim_beh.exe \
-	-prj E:/PDPx/pdp10/KS10/fpga/ise/testbench_beh.prj \
+	-prj $(PRJFILE) \
+	-o $(TESTBENCH) \
 	work.testbench
 
-testbench :
-	ise/testbench_isim_beh.exe -gui
+test : $(ISE)/$(TESTBENCH).exe
+	$(ISE)/$(TESTBENCH).exe \
+	-gui \
+	-intstyle ise \
+	-tclbatch $(TESTBENCH).cmd \
+	-wdb $(TESTBENCH).wdb
+
+
+#./t10backup.exe   -x smmon.sav -f ks_diag_gs.tap
+
+#	-prj testbench_beh.prj \
+#	-lib unisims_ver \
+#	-lib unimacro_ver \
+#	-lib xilinxcorelib_ver \
+#	-lib secureip \
+#	echo 'verilog work "C:/Xilinx/13.1/ISE_DS/ISE//verilog/src/glbl.v"' >> $@

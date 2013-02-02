@@ -61,9 +61,9 @@ module UBA(clk, rst, clken, ctlNUM,
            // Device Interface
            devREQO, devADDRO, devDATAO, devINTA, devRESET,
            // Device #1 Interface
-           dev1REQI, dev1ACKI, dev1ADDRI, dev1DATAI, dev1INTR, dev1VECT, dev1ACKO,
+           dev1REQI, dev1ACKI, dev1ADDRI, dev1DATAI, dev1INTR, dev1ACKO,
            // Device #2 Interface
-           dev2REQI, dev2ACKI, dev2ADDRI, dev2DATAI, dev2INTR, dev2VECT, dev2ACKO);
+           dev2REQI, dev2ACKI, dev2ADDRI, dev2DATAI, dev2INTR, dev2ACKO);
    
    input          clk;          		// Clock
    input          rst;          		// Reset
@@ -91,7 +91,6 @@ module UBA(clk, rst, clken, ctlNUM,
    input  [ 0:35] dev1ADDRI;     		// IO Device #1 Address In
    input  [ 0:35] dev1DATAI;     		// IO Device #1 Data In
    input  [ 7: 4] dev1INTR;     		// IO Device #1 Interrupt Request
-   input  [18:35] dev1VECT;     		// IO Device #1 Interrupt Vector
    output         dev1ACKO;      		// IO Device #1 Acknowledge Out
    // Device #2 Interface
    input          dev2REQI;      		// IO Device #2 Request In
@@ -99,7 +98,6 @@ module UBA(clk, rst, clken, ctlNUM,
    input  [ 0:35] dev2ADDRI;     		// IO Device #2 Address In
    input  [ 0:35] dev2DATAI;     		// IO Device #2 Data In
    input  [ 7: 4] dev2INTR;     		// IO Device #2 Interrupt Request
-   input  [18:35] dev2VECT;     		// IO Device #2 Interrupt Vector
    output         dev2ACKO;      		// IO Device #2 Acknowledge Out
 
    //
@@ -134,6 +132,7 @@ module UBA(clk, rst, clken, ctlNUM,
    
    wire         busREAD   = busADDRI[ 3];       // 1 = Read Cycle (IO or Memory)
    wire         busWRITE  = busADDRI[ 5];       // 1 = Write Cycle (IO or Memory)
+   wire         busPHYS   = busADDRI[ 8];       // 1 = Physical reference
    wire         busIO     = busADDRI[10];       // 1 = IO Cycle, 0 = Memory Cycle
    wire         busWRU    = busADDRI[11];       // 1 = Read interrupting controller number
    wire         busVECT   = busADDRI[12];       // 1 = Read interrupt vector
@@ -146,32 +145,22 @@ module UBA(clk, rst, clken, ctlNUM,
    // Address Decoding
    //
 
-   wire wruREAD    = busWRU & busREAD;
-   wire vectREAD   = busIO  & busREAD  & (busCTL == ctlNUM) & busVECT;
-   wire pageREAD   = busIO  & busREAD  & (busCTL == ctlNUM) & (busADDR[18:29] == pageADDR[18:29]);
-   wire pageWRITE  = busIO  & busWRITE & (busCTL == ctlNUM) & (busADDR[18:29] == pageADDR[18:29]);
-   wire statWRITE  = busIO  & busWRITE & (busCTL == ctlNUM) & (busADDR[18:35] == statADDR[18:35]);
-   wire statREAD   = busIO  & busREAD  & (busCTL == ctlNUM) & (busADDR[18:35] == statADDR[18:35]);
-   wire devREAD    = busIO  & busREAD  & (busCTL == ctlNUM) & (busADDR[18:20] == ctrlADDR[18:20]) & (busADDR[21:26] != ctrlADDR[21:26]);
-   wire devWRITE   = busIO  & busWRITE & (busCTL == ctlNUM) & (busADDR[18:20] == ctrlADDR[18:20]) & (busADDR[21:26] != ctrlADDR[21:26]);
+   wire wruREAD    = busIO & busWRU   &  busPHYS;
+   wire vectREAD   = busIO /*& busREAD*/  & (busCTL == ctlNUM) & busVECT;
+   wire pageREAD   = busIO & busREAD  & (busCTL == ctlNUM) & (busADDR[18:29] == pageADDR[18:29]);
+   wire pageWRITE  = busIO & busWRITE & (busCTL == ctlNUM) & (busADDR[18:29] == pageADDR[18:29]);
+   wire statWRITE  = busIO & busWRITE & (busCTL == ctlNUM) & (busADDR[18:35] == statADDR[18:35]);
+   wire statREAD   = busIO & busREAD  & (busCTL == ctlNUM) & (busADDR[18:35] == statADDR[18:35]);
+   wire devREAD    = busIO & busREAD  & (busCTL == ctlNUM) & (busADDR[18:20] == ctrlADDR[18:20]) & (busADDR[21:26] != ctrlADDR[21:26]);
+   wire devWRITE   = busIO & busWRITE & (busCTL == ctlNUM) & (busADDR[18:20] == ctrlADDR[18:20]) & (busADDR[21:26] != ctrlADDR[21:26]);
    
    //
    // IO Bridge Interrupt Request
    //
 
-   wire vectREQ = 1'b1;		// FIXME
-	
-   reg [7:4] intREQ;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          intREQ <= 4'b0;
-        else if (vectREQ)
-          intREQ <= dev1INTR | dev2INTR;
-     end
-
-   wire statINTHI = intREQ[7] | intREQ[6];
-   wire statINTLO = intREQ[5] | intREQ[4];
+   wire [7:4] intREQ    = dev1INTR  | dev2INTR;
+   wire       statINTHI = intREQ[7] | intREQ[6];
+   wire       statINTLO = intREQ[5] | intREQ[4];
    
    //
    // High Priority Interrupt
@@ -252,7 +241,7 @@ module UBA(clk, rst, clken, ctlNUM,
           devINTA = 4'b0;
         else
           begin
-             if (wruREAD & statINTHI & (busPI == statPIH))
+             if (wruREAD & (busPI == statPIH))
                begin
                   if (intREQ[7])
                     devINTA = 4'b1000;
@@ -261,7 +250,7 @@ module UBA(clk, rst, clken, ctlNUM,
                   else
                     devINTA = 4'b0000;
                end
-             else if (wruREAD & statINTLO & (busPI == statPIL))
+             else if (wruREAD & (busPI == statPIL))
                begin
                   if (intREQ[5])
                     devINTA = 4'b0010;
@@ -347,7 +336,7 @@ module UBA(clk, rst, clken, ctlNUM,
           begin
              if (statWRITE)
                begin
-                  if (busADDRI[29])
+                  if (busDATAI[29])
                     begin
                        statNM  <= 0;
                        statND  <= 0;
@@ -380,7 +369,7 @@ module UBA(clk, rst, clken, ctlNUM,
    // IO Bridge Reset Output
    //
    
-   assign devRESET = statWRITE & busADDRI[29];
+   assign devRESET = statWRITE & busDATAI[29];
 
    //
    // IO Bridge Maintenance Register (IO Address 763101)
@@ -543,9 +532,8 @@ module UBA(clk, rst, clken, ctlNUM,
    reg [0:35] busDATAO;
    always @(pageREAD or pageDATAO or
             statREAD or regSTAT   or
-            vectREAD or dev1VECT  or
             wruREAD  or wruNUM1   or wruNUM3  or ctlNUM    or statINTHI or statINTLO or busPI or statPIH or statPIL or
-            devREAD  or devWRITE  or dev1ACKI  or dev2ACKI or dev1DATAI or dev2DATAI)
+            devREAD  or devWRITE  or vectREAD or dev1ACKI  or dev2ACKI  or dev1DATAI or dev2DATAI)
      begin
         busACKO  = 1'b0;             
         busDATAO = 36'bx;
@@ -559,29 +547,24 @@ module UBA(clk, rst, clken, ctlNUM,
              busACKO  = 1'b1;             
              busDATAO = {18'b0, regSTAT};
           end
-        if (vectREAD)
-          begin
-             busACKO  = 1'b1;
-             busDATAO = {18'b0, dev1VECT};
-          end
-        if ((wruREAD & statINTHI & (busPI == statPIH)) |
-            (wruREAD & statINTLO & (busPI == statPIL)))
+        if ((wruREAD & (busPI == statPIH)) |
+            (wruREAD & (busPI == statPIL)))
           begin
              busACKO  = 1'b1;
              case (ctlNUM)
                ctlNUM0:
-                 busDATAO = {18'b0, wruNUM0};
+                 busDATAO = wruNUM0;	// Bit 18
                ctlNUM1:
-                 busDATAO = {18'b0, wruNUM1};
+                 busDATAO = wruNUM1;	// Bit 19
                ctlNUM2:
-                 busDATAO = {18'b0, wruNUM2};
+                 busDATAO = wruNUM2;	// Bit 20
                ctlNUM3:
-                 busDATAO = {18'b0, wruNUM3};
+                 busDATAO = wruNUM3;	// Bit 21
                default:
                  busDATAO = 36'b0;
              endcase
           end
-        if (devREAD | devWRITE)
+        if (devREAD | devWRITE | vectREAD)
           begin
              busACKO = dev1ACKI | dev2ACKI;
              if (dev1ACKI)
@@ -589,7 +572,7 @@ module UBA(clk, rst, clken, ctlNUM,
              else if (dev2ACKI)
                busDATAO = dev2DATAI;
              else
-              busDATAO = 36'b0;
+               busDATAO = 36'b0;
           end
         if (statWRITE)
           begin
