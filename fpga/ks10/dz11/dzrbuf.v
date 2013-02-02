@@ -3,7 +3,7 @@
 // KS-10 Processor
 //
 // Brief
-//   DZ-11 SILO FIFO
+//   DZ-11 SILO/FIFO
 //
 // Details
 //
@@ -41,11 +41,10 @@
 
 `default_nettype none
 
-module DZFIFO(clk, rst, clken, din, wr, dout, rd, alarm, empty);
+module DZFIFO(clk, rst, din, wr, dout, rd, alarm, empty);
 
    input         clk;           // Clock
    input         rst;           // Reset
-   input         clken;         // Clock enable
    input  [0:10] din;           // Data Input
    input         wr;            // Push Data into FIFO
    output [0:10] dout;          // Data Output
@@ -83,7 +82,7 @@ module DZFIFO(clk, rst, clken, din, wr, dout, rd, alarm, empty);
    begin
      if (rst)
        wr_curr <= 0;
-     else if (clken & wr & (depth != 63))
+     else if (wr & (depth != 63))
        wr_curr <= wr_curr + 1'b1;
    end
 
@@ -97,7 +96,7 @@ module DZFIFO(clk, rst, clken, din, wr, dout, rd, alarm, empty);
    begin
      if (rst)
        rd_curr <= 0;
-     else if (clken & edge_rd & (depth !=  0))
+     else if (edge_rd & (depth !=  0))
        rd_curr <= rd_curr + 1'b1;
    end
 
@@ -111,9 +110,9 @@ module DZFIFO(clk, rst, clken, din, wr, dout, rd, alarm, empty);
    begin
      if (rst)
        depth <= 0;
-     else if (clken & edge_rd & ~wr & (depth !=  0))
+     else if (edge_rd & ~wr & (depth !=  0))
        depth <= depth - 1'b1;
-     else if (clken & wr & ~edge_rd & (depth != 63))
+     else if (wr & ~edge_rd & (depth != 63))
        depth <= depth + 1'b1;
    end
 
@@ -141,7 +140,7 @@ module DZFIFO(clk, rst, clken, din, wr, dout, rd, alarm, empty);
                end
 `endif
           end
-        if (clken)
+        else
           begin
              if (wr)
                DPRAM[wr_curr] <= din;

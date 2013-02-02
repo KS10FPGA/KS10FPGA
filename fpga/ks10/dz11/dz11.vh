@@ -67,28 +67,28 @@
 // DZ #1 parameters
 //
 
-`define dz1VECT   18'o000340            // Interrupt Vector
+`define dz1VECT   36'o000000_000340     // Interrupt Vector
 `define dz1ADDR   18'o760010            // Base Address
 
 //
 // DZ #2 parameters
 //
 
-`define dz2VECT   18'o000350            // Interrupt Vector
+`define dz2VECT   36'o000000_000350     // Interrupt Vector
 `define dz2ADDR   18'o760020            // Base Address
 
 //
 // DZ #3 parameters
 //
 
-`define dz3VECT   18'o000360            // Interrupt Vector
+`define dz3VECT   36'o000000_000360     // Interrupt Vector
 `define dz3ADDR   18'o760030            // Base Address
 
 //
 // DZ #4 parameters
 //
 
-`define dz4VECT   18'o000370            // Interrupt Vector
+`define dz4VECT   36'o000000_000370     // Interrupt Vector
 `define dz4ADDR   18'o760040            // Base Address
 
 `endif
