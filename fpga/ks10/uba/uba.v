@@ -52,7 +52,7 @@
 `default_nettype none
 `include "uba.vh"
 `include "../ks10.vh"
-  
+
 module UBA(clk, rst, clken, ctlNUM,
            // KS10 Bus Interface
            busREQI,  busREQO,  busACKI,  busACKO,
@@ -64,63 +64,63 @@ module UBA(clk, rst, clken, ctlNUM,
            dev1REQI, dev1ACKI, dev1ADDRI, dev1DATAI, dev1INTR, dev1ACKO,
            // Device #2 Interface
            dev2REQI, dev2ACKI, dev2ADDRI, dev2DATAI, dev2INTR, dev2ACKO);
-   
-   input          clk;          		// Clock
-   input          rst;          		// Reset
-   input          clken;        		// Clock enable
-   input  [ 0: 3] ctlNUM;       		// Bridge Device Number
+
+   input          clk;                          // Clock
+   input          rst;                          // Reset
+   input          clken;                        // Clock enable
+   input  [ 0: 3] ctlNUM;                       // Bridge Device Number
    // KS10 Backplane Bus Interface
-   input          busREQI;      		// Backplane Bus Request In
-   output         busREQO;      		// Backplane Bus Request Out
-   input          busACKI;      		// Backplane Bus Acknowledge In
-   output         busACKO;      		// Backplane Bus Acknowledge Out
-   input  [ 0:35] busADDRI;     		// Backplane Bus Address In
-   output [ 0:35] busADDRO;     		// Backplane Bus Address Out
-   input  [ 0:35] busDATAI;     		// Backplane Bus Data In
-   output [ 0:35] busDATAO;     		// Backplane Bus Data Out
-   output [ 1: 7] busINTR;      		// Backplane Bus Interrupt Request
+   input          busREQI;                      // Backplane Bus Request In
+   output         busREQO;                      // Backplane Bus Request Out
+   input          busACKI;                      // Backplane Bus Acknowledge In
+   output         busACKO;                      // Backplane Bus Acknowledge Out
+   input  [ 0:35] busADDRI;                     // Backplane Bus Address In
+   output [ 0:35] busADDRO;                     // Backplane Bus Address Out
+   input  [ 0:35] busDATAI;                     // Backplane Bus Data In
+   output [ 0:35] busDATAO;                     // Backplane Bus Data Out
+   output [ 1: 7] busINTR;                      // Backplane Bus Interrupt Request
    // Device Interface
-   output         devREQO;      		// IO Device Request Out
-   output [ 0:35] devADDRO;     		// IO Device Address Out
-   output [ 0:35] devDATAO;     		// IO Device Data Out
-   output [ 7: 4] devINTA;      		// IO Device Interrupt Acknowledge
-   output         devRESET;     		// IO Device Reset
+   output         devREQO;                      // IO Device Request Out
+   output [ 0:35] devADDRO;                     // IO Device Address Out
+   output [ 0:35] devDATAO;                     // IO Device Data Out
+   output [ 7: 4] devINTA;                      // IO Device Interrupt Acknowledge
+   output         devRESET;                     // IO Device Reset
    // Device #1 Interface
-   input          dev1REQI;      		// IO Device #1 Request In
-   input          dev1ACKI;      		// IO Device #1 Acknowledge In
-   input  [ 0:35] dev1ADDRI;     		// IO Device #1 Address In
-   input  [ 0:35] dev1DATAI;     		// IO Device #1 Data In
-   input  [ 7: 4] dev1INTR;     		// IO Device #1 Interrupt Request
-   output         dev1ACKO;      		// IO Device #1 Acknowledge Out
+   input          dev1REQI;                     // IO Device #1 Request In
+   input          dev1ACKI;                     // IO Device #1 Acknowledge In
+   input  [ 0:35] dev1ADDRI;                    // IO Device #1 Address In
+   input  [ 0:35] dev1DATAI;                    // IO Device #1 Data In
+   input  [ 7: 4] dev1INTR;                     // IO Device #1 Interrupt Request
+   output         dev1ACKO;                     // IO Device #1 Acknowledge Out
    // Device #2 Interface
-   input          dev2REQI;      		// IO Device #2 Request In
-   input          dev2ACKI;      		// IO Device #2 Acknowledge In
-   input  [ 0:35] dev2ADDRI;     		// IO Device #2 Address In
-   input  [ 0:35] dev2DATAI;     		// IO Device #2 Data In
-   input  [ 7: 4] dev2INTR;     		// IO Device #2 Interrupt Request
-   output         dev2ACKO;      		// IO Device #2 Acknowledge Out
+   input          dev2REQI;                     // IO Device #2 Request In
+   input          dev2ACKI;                     // IO Device #2 Acknowledge In
+   input  [ 0:35] dev2ADDRI;                    // IO Device #2 Address In
+   input  [ 0:35] dev2DATAI;                    // IO Device #2 Data In
+   input  [ 7: 4] dev2INTR;                     // IO Device #2 Interrupt Request
+   output         dev2ACKO;                     // IO Device #2 Acknowledge Out
 
    //
    // IO Bridge Configuration
    //
-   
-   parameter [14:17] ctlNUM0 = `ctlNUM0;	// IO Bridge Device 0
-   parameter [14:17] ctlNUM1 = `ctlNUM1;	// IO Bridge Device 1
-   parameter [14:17] ctlNUM2 = `ctlNUM2;	// IO Bridge Device 2
-   parameter [14:17] ctlNUM3 = `ctlNUM3;	// IO Bridge Device 3
-   parameter [18:35] wruNUM0 = `wruNUM0;  	// IO Bridge Device 0 WRU Response (bit 18)
-   parameter [18:35] wruNUM1 = `wruNUM1;  	// IO Bridge Device 1 WRU Response (bit 19)
-   parameter [18:35] wruNUM2 = `wruNUM2;  	// IO Bridge Device 2 WRU Response (bit 20)
-   parameter [18:35] wruNUM3 = `wruNUM3;  	// IO Bridge Device 3 WRU Response (bit 21)
-   
+
+   parameter [14:17] ctlNUM0 = `ctlNUM0;        // IO Bridge Device 0
+   parameter [14:17] ctlNUM1 = `ctlNUM1;        // IO Bridge Device 1
+   parameter [14:17] ctlNUM2 = `ctlNUM2;        // IO Bridge Device 2
+   parameter [14:17] ctlNUM3 = `ctlNUM3;        // IO Bridge Device 3
+   parameter [18:35] wruNUM0 = `wruNUM0;        // IO Bridge Device 0 WRU Response (bit 18)
+   parameter [18:35] wruNUM1 = `wruNUM1;        // IO Bridge Device 1 WRU Response (bit 19)
+   parameter [18:35] wruNUM2 = `wruNUM2;        // IO Bridge Device 2 WRU Response (bit 20)
+   parameter [18:35] wruNUM3 = `wruNUM3;        // IO Bridge Device 3 WRU Response (bit 21)
+
    //
    // IO Addresses
    //
-   
+
    parameter [18:35] pageADDR  = 18'o763000;    // Paging RAM Address
    parameter [18:35] statADDR  = 18'o763100;    // Status Register Address
    parameter [18:35] maintADDR = 18'o763101;    // Maintenance Register Address
-   parameter [18:26] ctrlADDR  =  9'o763;	// Bridge Registers
+   parameter [18:26] ctrlADDR  =  9'o763;       // Bridge Registers
 
    //
    // Address Bus
@@ -129,7 +129,7 @@ module UBA(clk, rst, clken, ctlNUM,
    //  busADDRI[ 0:13] is flags
    //  busADDRI[14:35] is address
    //
-   
+
    wire         busREAD   = busADDRI[ 3];       // 1 = Read Cycle (IO or Memory)
    wire         busWRITE  = busADDRI[ 5];       // 1 = Write Cycle (IO or Memory)
    wire         busPHYS   = busADDRI[ 8];       // 1 = Physical reference
@@ -137,7 +137,7 @@ module UBA(clk, rst, clken, ctlNUM,
    wire         busWRU    = busADDRI[11];       // 1 = Read interrupting controller number
    wire         busVECT   = busADDRI[12];       // 1 = Read interrupt vector
    wire         busIOBYTE = busADDRI[13];       // 1 = IO Bridge Byte IO Operation
-   wire [15:17] busPI     = busADDRI[15:17];	// IO Bridge PI Request
+   wire [15:17] busPI     = busADDRI[15:17];    // IO Bridge PI Request
    wire [14:17] busCTL    = busADDRI[14:17];    // IO Bridge Device Number
    wire [18:35] busADDR   = busADDRI[18:35];    // IO Address
 
@@ -146,30 +146,31 @@ module UBA(clk, rst, clken, ctlNUM,
    //
 
    wire wruREAD    = busIO & busWRU   &  busPHYS;
-   wire vectREAD   = busIO /*& busREAD*/  & (busCTL == ctlNUM) & busVECT;
+   wire vectREAD   = busIO & busVECT  & (busCTL == ctlNUM);
    wire pageREAD   = busIO & busREAD  & (busCTL == ctlNUM) & (busADDR[18:29] == pageADDR[18:29]);
    wire pageWRITE  = busIO & busWRITE & (busCTL == ctlNUM) & (busADDR[18:29] == pageADDR[18:29]);
    wire statWRITE  = busIO & busWRITE & (busCTL == ctlNUM) & (busADDR[18:35] == statADDR[18:35]);
    wire statREAD   = busIO & busREAD  & (busCTL == ctlNUM) & (busADDR[18:35] == statADDR[18:35]);
    wire devREAD    = busIO & busREAD  & (busCTL == ctlNUM) & (busADDR[18:20] == ctrlADDR[18:20]) & (busADDR[21:26] != ctrlADDR[21:26]);
    wire devWRITE   = busIO & busWRITE & (busCTL == ctlNUM) & (busADDR[18:20] == ctrlADDR[18:20]) & (busADDR[21:26] != ctrlADDR[21:26]);
-   
+
    //
    // IO Bridge Interrupt Request
    //
 
-   wire [7:4] intREQ    = dev1INTR  | dev2INTR;
+   wire [7:4] intREQ = dev1INTR  | dev2INTR;
    wire       statINTHI = intREQ[7] | intREQ[6];
    wire       statINTLO = intREQ[5] | intREQ[4];
-   
+
    //
    // High Priority Interrupt
    //
    // Trace
    //  UBA3/E180
    //
-   
+
    reg [1:7] devINTRH;
+
    always @(statINTHI or statPIH)
      begin
         if (statINTHI)
@@ -193,8 +194,9 @@ module UBA(clk, rst, clken, ctlNUM,
    // Trace
    //  UBA3/E182
    //
-   
+
    reg [1:7] devINTRL;
+
    always @(statINTLO or statPIL)
      begin
         if (statINTLO)
@@ -219,7 +221,7 @@ module UBA(clk, rst, clken, ctlNUM,
    //  UBA3/E179
    //  UBA3/E181
    //
-   
+
    assign busINTR = devINTRL | devINTRH;
 
    //
@@ -263,7 +265,7 @@ module UBA(clk, rst, clken, ctlNUM,
                devINTA = 4'b0000;
           end
      end
-      
+
    //
    // NXM and NXD Decoding
    //
@@ -277,12 +279,12 @@ module UBA(clk, rst, clken, ctlNUM,
                    (devREQO & busWRITE &  busIO & ~devACKI));
    wire setNXM  = ((devREQO & busREAD  & ~busIO & ~devACKI) |
                    (devREQO & busWRITE & ~busIO & ~devACKI));
-   
+
    //
    // IO Bridge Status Register (IO Address 763100)
    //
    // Details:
-   //    
+   //
    //             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
    //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
    //     (LH)  |                                                     |
@@ -315,13 +317,13 @@ module UBA(clk, rst, clken, ctlNUM,
    //           PIH : Hi level PIA        - R/W
    //           PIL : Lo level PIA        - R/W
    //
-   
-   reg 	     statNM;
-   reg 	     statND;
-   reg 	     statDX;
+
+   reg       statNM;
+   reg       statND;
+   reg       statDX;
    reg [0:2] statPIH;
    reg [0:2] statPIL;
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -368,7 +370,7 @@ module UBA(clk, rst, clken, ctlNUM,
    //
    // IO Bridge Reset Output
    //
-   
+
    assign devRESET = statWRITE & busDATAI[29];
 
    //
@@ -433,7 +435,7 @@ module UBA(clk, rst, clken, ctlNUM,
    //          |  Physical Page Number  |        Word Number     |
    //          +------------------------+------------------------+
    //           16                    26 27                    35
-   //     
+   //
    //  Paging RAM Write
    //
    //           0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
@@ -460,7 +462,7 @@ module UBA(clk, rst, clken, ctlNUM,
    //
    //  Paging RAM Internal Format:
    //
-   //            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 
+   //            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14
    //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
    //          |FR|ES|FM|PV|            PPN                 |
    //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -478,7 +480,7 @@ module UBA(clk, rst, clken, ctlNUM,
    //                data is loaded.
    //          PPN : Physical Page Number.
    //
-   
+
    wire [0: 5] addr = busADDRI[30:35];
    reg  [0:14] pageRAM[0:63];
 
@@ -501,8 +503,8 @@ module UBA(clk, rst, clken, ctlNUM,
    wire [ 0:35] devADDRI  = ((dev1REQI) ? dev1ADDRI :
                              (dev2REQI) ? dev2ADDRI :
                              36'b0);
-   
-   wire [ 0: 5] virtPAGE  = devADDRI[19:24];      	// Virtual Page Number
+
+   wire [ 0: 5] virtPAGE  = devADDRI[19:24];            // Virtual Page Number
    wire         forceRPW  = pageRAM[virtPAGE][0];
    wire         enable16  = pageRAM[virtPAGE][1];
    wire         fastMode  = pageRAM[virtPAGE][2];
@@ -512,18 +514,18 @@ module UBA(clk, rst, clken, ctlNUM,
    //
    // Bus Initiator Paging
    //
-   
+
    assign busADDRO = {devADDRI[0:13], 2'b0, physPAGE[16:26], devADDRI[27:35]};
-   assign busREQO  = dev1REQI | dev2REQI;        
+   assign busREQO  = dev1REQI | dev2REQI;
 
    //
    // Bus Target Paging
    //
 
    assign devADDRO = busADDRI;
-   assign dev1ACKO = 0;		// FIXME
-   assign dev2ACKO = 0;		// FIXME
-   
+   assign dev1ACKO = 0;         // FIXME
+   assign dev2ACKO = 0;         // FIXME
+
    //
    // Bus Data Out
    //
@@ -535,16 +537,16 @@ module UBA(clk, rst, clken, ctlNUM,
             wruREAD  or wruNUM1   or wruNUM3  or ctlNUM    or statINTHI or statINTLO or busPI or statPIH or statPIL or
             devREAD  or devWRITE  or vectREAD or dev1ACKI  or dev2ACKI  or dev1DATAI or dev2DATAI)
      begin
-        busACKO  = 1'b0;             
+        busACKO  = 1'b0;
         busDATAO = 36'bx;
         if (pageREAD)
           begin
-             busACKO  = 1'b1;             
+             busACKO  = 1'b1;
              busDATAO = pageDATAO;
           end
         if (statREAD)
           begin
-             busACKO  = 1'b1;             
+             busACKO  = 1'b1;
              busDATAO = {18'b0, regSTAT};
           end
         if ((wruREAD & (busPI == statPIH)) |
@@ -553,13 +555,13 @@ module UBA(clk, rst, clken, ctlNUM,
              busACKO  = 1'b1;
              case (ctlNUM)
                ctlNUM0:
-                 busDATAO = wruNUM0;	// Bit 18
+                 busDATAO = wruNUM0;    // Bit 18
                ctlNUM1:
-                 busDATAO = wruNUM1;	// Bit 19
+                 busDATAO = wruNUM1;    // Bit 19
                ctlNUM2:
-                 busDATAO = wruNUM2;	// Bit 20
+                 busDATAO = wruNUM2;    // Bit 20
                ctlNUM3:
-                 busDATAO = wruNUM3;	// Bit 21
+                 busDATAO = wruNUM3;    // Bit 21
                default:
                  busDATAO = 36'b0;
              endcase
@@ -586,5 +588,6 @@ module UBA(clk, rst, clken, ctlNUM,
    //
 
    assign devDATAO = busDATAI;
-   
-endmodule 
+
+endmodule
+

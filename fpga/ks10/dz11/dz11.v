@@ -56,8 +56,8 @@
 `include "../../ks10.vh"
 `include "uart/uart_brg.vh"
 
-module DZ11(clk, rst, clken,
-            dz11TXD, dz11RXD, dz11CO, dz11RI, dz11DTR,
+module DZ11(clk,      rst,      ctlNUM,
+            dz11TXD,  dz11RXD,  dz11CO,   dz11RI,  dz11DTR,
             devRESET, devINTR,  devINTA,
             devREQI,  devACKO,  devADDRI,
             devREQO,  devACKI,  devADDRO,
@@ -65,7 +65,7 @@ module DZ11(clk, rst, clken,
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          clken;                        // Clock enable
+   input  [ 0: 3] ctlNUM;                       // Bridge Device Number
    // DZ11 External Interfaces
    output [ 7: 0] dz11TXD;                      // DZ11 Transmitter Serial Data
    input  [ 7: 0] dz11RXD;                      // DZ11 Receiver Serial Data
@@ -93,10 +93,11 @@ module DZ11(clk, rst, clken,
    // DZ Parameters
    //
 
-   parameter [ 7: 4] dzINTR  = `dzINTR;         // Interrupt 5
-   parameter [14:17] dzDEV   = `dzDEV;          // Device 3
-   parameter [18:35] dzADDR  = `dz1ADDR;        // DZ11 Base Address
-
+   parameter [14:17] dzDEV  = `dzDEV;           // Device 3
+   parameter [18:35] dzADDR = `dz1ADDR;         // DZ11 Base Address
+   parameter [18:35] dzVECT = `dz1VECT;         // DZ11 Interrupt Vector
+   parameter [ 7: 4] dzINTR = `dzINTR;		// DZ11 Interrupt
+                 
    //
    // DZ Register Addresses
    //
@@ -109,6 +110,13 @@ module DZ11(clk, rst, clken,
    parameter [18:35] tdrADDR = dzADDR + `tdrOFFSET;
 
    //
+   // DZ Interrupt Vectors
+   //
+
+   parameter [18:35] rxVECT = dzVECT;           // DZ11 Receiver Interrupt Vector
+   parameter [18:35] txVECT = dzVECT + 4;       // DZ11 Transmitter Interrupt Vector
+   
+   //
    // Memory Address and Flags
    //
    // Details:
@@ -119,6 +127,7 @@ module DZ11(clk, rst, clken,
    wire         devREAD   = devADDRI[ 3];       // 1 = Read Cycle (IO or Memory)
    wire         devWRITE  = devADDRI[ 5];       // 1 = Write Cycle (IO or Memory)
    wire         devIO     = devADDRI[10];       // 1 = IO Cycle, 0 = Memory Cycle
+   wire         devVECT   = devADDRI[12];       // 1 = Read interrupt vector
    wire         devIOBYTE = devADDRI[13];       // 1 = Byte IO Operation
    wire [14:17] devDEV    = devADDRI[14:17];    // Device Number
    wire [18:35] devADDR   = devADDRI[18:35];    // Device Address
@@ -146,6 +155,12 @@ module DZ11(clk, rst, clken,
    wire tdrWRITEL = ((tdrWRITE & devIOBYTE & devLOBYTE) | (tdrWRITE & ~devIOBYTE));
 
    //
+   // Interrupt Vector Read Operation
+   //
+   
+   wire vectREAD  = devIO & devVECT & (devDEV == ctlNUM);
+   
+   //
    // Big-endian to little-endian data bus fixup
    //
 
@@ -160,7 +175,7 @@ module DZ11(clk, rst, clken,
      begin
         if (rst | devRESET)
           clrCOUNT <= 2;
-        else if (clken)
+        else
           begin
              if (csrWRITEL & dzDATAI[4])
                clrCOUNT <= `CLKFRQ / 1000000 * 15;
@@ -486,7 +501,6 @@ module DZ11(clk, rst, clken,
    DZFIFO uDZFIFO
      (.clk      (clk),
       .rst      (rst | csrCLR | devRESET),
-      .clken    (clken),
       .din      ({scan, ttyRXDATA[scan]}),
       .wr       (ttyRXFULL[scan]),
       .dout     (rbufDATA),
@@ -499,6 +513,117 @@ module DZ11(clk, rst, clken,
    assign rbufVALID = ~fifoEMPTY;
 
    //
+   // Edge Trigger RX Interrupts
+   //
+   
+   wire intRX0 = ((~csrSAE & csrRDONE & csrRIE) |
+                  (csrSAE  & csrSA    & csrRIE));
+
+   reg  intRX1;
+
+   always @(posedge clk or posedge regRESET)
+     begin
+        if (regRESET)
+          intRX1 <= 0;
+        else
+          intRX1 <= intRX0;
+     end
+   
+   wire intRX = intRX0 & ~intRX1;
+
+   //
+   // Edge Trigger TX Interrupts
+   //
+
+   wire intTX0 = csrTIE & csrTRDY;
+   reg  intTX1;
+   
+   always @(posedge clk or posedge regRESET)
+     begin
+        if (regRESET)
+          intTX1 <= 0;
+        else
+          intTX1 <= intTX0;
+     end
+
+   wire intTX = intTX0 & ~intTX1;
+   
+   //
+   // Receiver Interrupts
+   //
+   // Details:
+   //  This process generates the receiver interrupt from the silo
+   //  alarm and from the receiver done register bits.
+   //
+   //  The interrupt is edge-trigger by the conditions that are
+   //  described above.
+   //
+   // Notes:
+   //  The receiver interrupt is cleared when:
+   //  1.  Reset
+   //  2.  IO Bus Reset
+   //  3.  CSR[CLR]
+   //  4.  Receiver interrupts are disabled
+   //  5.  The interrupt is acknowledged
+   //
+
+   reg dzRXINTR;
+
+   always @(posedge clk or posedge regRESET)
+     begin
+        if (regRESET)
+          dzRXINTR <= 0;
+        else if (devINTA & dzINTR)
+          dzRXINTR <= 0;
+        else if (intRX)
+          dzRXINTR <= 1;
+     end
+     
+   //
+   // Transmiter Interrupts
+   //
+   // Details:
+   //   This process generates the transmitter interrupt from the
+   //   transmitter ready register bit.
+   //
+   // Notes:
+   //   The transmitter interrupt is cleared when:
+   //   1.  Reset
+   //   2.  IO Bus Reset
+   //   3.  CSR[CLR]
+   //   4.  Transmitter interrupts are disabled
+   //   5.  The interrupt is acknowledged
+   //
+   
+   reg dzTXINTR;
+
+   always @(posedge clk or posedge regRESET)
+     begin
+        if (regRESET)
+          dzTXINTR <= 0;
+        else if (devINTA & dzINTR)
+          dzTXINTR <= 0;
+        else if (intTX)
+          dzTXINTR <= 1;
+     end
+
+   //
+   // Vector Type
+   //
+   
+   reg dzRXVECT;
+   
+   always @(posedge clk or posedge regRESET)
+     begin
+        if (regRESET)
+          dzRXVECT <= 0;
+        else if (intRX)
+          dzRXVECT <= 1;
+        else if (intTX)
+          dzRXVECT <= 0;
+     end
+   
+   //
    // Bus Mux and little-endian to big-endian bus swap.
    //
 
@@ -508,7 +633,8 @@ module DZ11(clk, rst, clken,
    always @(csrREAD  or csrWRITE or regCSR  or
             rbufREAD or lprWRITE or regRBUF or
             tcrREAD  or tcrWRITE or regTCR  or
-            msrREAD  or tdrWRITE or regMSR)
+            msrREAD  or tdrWRITE or regMSR  or
+            vectREAD or dzRXINTR or rxVECT  or txVECT)
      begin
         devACKO  = 0;
         devDATAO = 36'bx;
@@ -532,102 +658,26 @@ module DZ11(clk, rst, clken,
              devACKO  = 1;
              devDATAO = {20'b0, regMSR};
           end
-     end
-
-   //
-   // Receiver Interrupts
-   //
-   // Details:
-   //  This process generates the receiver interrupt from the silo
-   //  alarm and from the receiver done register bits.
-   //
-   //  The interrupt is edge-trigger by the conditions that are
-   //  described above.
-   //
-   // Notes:
-   //  The receiver interrupt is cleared when:
-   //  1.  Reset
-   //  2.  IO Bus Reset
-   //  3.  CSR[CLR]
-   //  4.  Receiver interrupts are disabled
-   //  5.  The interrupt is acknowledged
-   //
-
-   reg intSA;                   // Last silo alarm interrupt for edge trigger
-   reg intRDONE;                // Last receiver done interrupt for edge trigger
-   reg dzRXINTR;                // Receiver Interrupt
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst | csrCLR | devRESET)
+        if (vectREAD)
           begin
-             intSA    <= 0;
-             intRDONE <= 0;
-             dzRXINTR <= 0;
-          end
-        else if (clken)
-          begin
-             if (~csrRIE | devINTA)
-               dzRXINTR <= 0;
-             else if (csrSAE)
+             if (dzRXVECT)
                begin
-                  if (~intSA & csrSA)
-                    dzRXINTR <= 1;
-                  else if (~intRDONE & csrRDONE)
-                    dzRXINTR <= 1;
+                  devACKO  = 1;
+                  devDATAO = rxVECT;
                end
-             intSA    <= csrSA;
-             intRDONE <= csrRDONE;
-          end
-     end
-
-   //
-   // Transmiter Interrupts
-   //
-   // Details:
-   //  This process generates the transmitter interrupt from the
-   //  transmitter ready register bit.
-   //
-   //  The interrupt is edge-trigger by the conditions that are
-   //  described above.
-   //
-   // Notes:
-   //  The transmitter interrupt is cleared when:
-   //  1.  Reset
-   //  2.  IO Bus Reset
-   //  3.  CSR[CLR]
-   //  4.  Transmitter interrupts are disabled
-   //  5.  The interrupt is acknowledged
-   //
-
-   reg intTRDY;                 // Last transmitter ready for edge trigger
-   reg dzTXINTR;                // Transmitter Interrupt
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst | csrCLR | devRESET)
-          begin
-             dzTXINTR <= 0;
-             intTRDY  <= 0;
-          end
-        else if (clken)
-          begin
-             if (~csrTIE | devINTA)
-               dzTXINTR <= 0;
              else
                begin
-                  if (~intTRDY & csrTRDY)
-                    dzTXINTR <= 1;
+                  devACKO  = 1;
+                  devDATAO = txVECT;
                end
-             intTRDY <= csrTRDY;
           end
      end
-
+   
    //
    // DZ11 Device Interface
    //
 
-   assign devINTR  = dzRXINTR | dzTXINTR;
+   assign devINTR  = (dzRXINTR | dzTXINTR) ? dzINTR : 4'b0;
    assign devADDRO = 0;
    assign devREQO  = 0;
 
