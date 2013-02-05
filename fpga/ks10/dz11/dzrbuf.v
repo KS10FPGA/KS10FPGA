@@ -41,81 +41,44 @@
 
 `default_nettype none
 
-module DZFIFO(clk, rst, din, wr, dout, rd, alarm, empty);
+module DZFIFO(clk, rst, din, wr, dout, rd, depth);
 
    input         clk;           // Clock
    input         rst;           // Reset
-   input  [0:10] din;           // Data Input
-   input         wr;            // Push Data into FIFO
-   output [0:10] dout;          // Data Output
-   input         rd;            // Pop Data from FIFO
-   output        alarm;         // FIFO full enough
-   output        empty;         // FIFO empty
+   input  [0:10] din;           // Data input
+   input         wr;            // Push data into FIFO
+   output [0:10] dout;          // Data output
+   input         rd;            // Pop data from FIFO
+   output [0: 5] depth;		// FIFO depth
 
    //
-   // Read edge trigger
-   //
-   // Details:
-   //  The read pointer is incremented on the trailing edge
-   //  of the read pulse; i.e., after the read is done.
-   //
-
-   reg last_rd;
-
-   always @(posedge clk or posedge rst)
-   begin
-      if (rst)
-        last_rd <= 0;
-      else
-        last_rd <= rd;
-   end
-
-   wire edge_rd = ~rd & last_rd;
-
-   //
-   // Write Pointer
-   //
-
-   reg [0:5] wr_curr;
-
-   always @(posedge clk or posedge rst)
-   begin
-     if (rst)
-       wr_curr <= 0;
-     else if (wr & (depth != 63))
-       wr_curr <= wr_curr + 1'b1;
-   end
-
-   //
-   // Read Pointer
-   //
-
-   reg [0:5] rd_curr;
-
-   always @(posedge clk or posedge rst)
-   begin
-     if (rst)
-       rd_curr <= 0;
-     else if (edge_rd & (depth !=  0))
-       rd_curr <= rd_curr + 1'b1;
-   end
-
-   //
-   // FIFO Depth
+   // FIFO Pointers
    //
 
    reg [0:5] depth;
+   reg [0:5] rd_ptr;
+   reg [0:5] wr_ptr;
 
    always @(posedge clk or posedge rst)
    begin
      if (rst)
-       depth <= 0;
-     else if (edge_rd & ~wr & (depth !=  0))
-       depth <= depth - 1'b1;
-     else if (wr & ~edge_rd & (depth != 63))
-       depth <= depth + 1'b1;
+       begin
+          rd_ptr <= 0;
+          wr_ptr <= 0;
+          depth  <= 0;
+       end
+     else if (rd & ~wr & (depth !=  0))
+       begin
+          rd_ptr <= rd_ptr + 1'b1;
+          depth  <= depth  - 1'b1;
+       end
+     else if (wr & ~rd)
+       begin
+          wr_ptr <= wr_ptr + 1'b1;
+          depth  <= depth  + 1'b1;
+       end
    end
-
+   
    //
    // Dual Port RAM
    //
@@ -130,34 +93,18 @@ module DZFIFO(clk, rst, din, wr, dout, rd, alarm, empty);
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          begin
 `ifdef SYNTHESIS
-             ;
+          ;
 `else
-             for (i = 0; i < 63; i = i + 1)
-               begin
-                  DPRAM[i] <= 0;
-               end
+          for (i = 0; i < 64; i = i + 1)
+            DPRAM[i] <= 0;
 `endif
-          end
         else
           begin
              if (wr)
-               DPRAM[wr_curr] <= din;
-             dout <= DPRAM[rd_curr];
+               DPRAM[wr_ptr] <= din;
+             dout <= DPRAM[rd_ptr];
           end
      end
-
-   //
-   // FIFO Empty
-   //
-
-   assign empty = (depth == 0);
-
-   //
-   // FIFO Alarm
-   //
-
-   assign alarm = (depth > 16);
 
 endmodule

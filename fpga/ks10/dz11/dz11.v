@@ -252,8 +252,6 @@ module DZ11(clk,      rst,      ctlNUM,
           end
      end
 
-   wire csrSA;
-   wire csrRDONE;
    wire [15:0] regCSR = {csrTRDY,  csrTIE, csrSA, csrSAE,  1'b0, csrTLINE,
                          csrRDONE, csrRIE, csrMSE, csrCLR, csrMAINT, 3'b0};
 
@@ -283,7 +281,6 @@ module DZ11(clk,      rst,      ctlNUM,
    //  RBUF is read only and can only be read as words
    //
    
-   wire rbufVALID;
    wire [15:0] regRBUF  = {rbufVALID, 4'b0, rbufDATA};
 
    //
@@ -492,11 +489,31 @@ module DZ11(clk,      rst,      ctlNUM,
    endgenerate
 
    //
+   // Read edge trigger
+   //
+   // Details:
+   //  The FIFO is updated on the trailing edge of the read pulse;
+   //  i.e., after the read is done.
+   //
+
+   reg last_rd;
+
+   always @(posedge clk or posedge rst)
+   begin
+      if (rst)
+        last_rd <= 0;
+      else
+        last_rd <= rbufREAD;
+   end
+
+   wire fifoREAD = ~rbufREAD & last_rd;
+
+   //
    // RBUF FIFO
    //
 
-   wire fifoEMPTY;
    wire [10:0] rbufDATA;
+   wire [0: 5] fifoDEPTH;
 
    DZFIFO uDZFIFO
      (.clk      (clk),
@@ -504,13 +521,31 @@ module DZ11(clk,      rst,      ctlNUM,
       .din      ({scan, ttyRXDATA[scan]}),
       .wr       (ttyRXFULL[scan]),
       .dout     (rbufDATA),
-      .rd       (rbufREAD),
-      .alarm    (csrSA),
-      .empty    (fifoEMPTY)
+      .rd       (fifoREAD),
+      .depth    (fifoDEPTH)
       );
 
-   assign csrRDONE  = ~fifoEMPTY;
-   assign rbufVALID = ~fifoEMPTY;
+   wire csrRDONE  = fifoDEPTH != 0;
+   wire rbufVALID = fifoDEPTH != 0;
+
+   //
+   // SILO Alarm
+   //
+
+   reg csrSA;
+   
+   always @(posedge clk or posedge regRESET)
+     begin
+        if (regRESET)
+          csrSA <= 0;
+        else
+          begin
+             if (fifoREAD)
+               csrSA <= 0;
+             else if (fifoDEPTH == 16)
+               csrSA <= 1;
+          end
+     end                       
 
    //
    // Edge Trigger RX Interrupts
