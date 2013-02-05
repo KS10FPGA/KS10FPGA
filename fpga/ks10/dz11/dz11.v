@@ -669,7 +669,7 @@ module DZ11(clk,      rst,      ctlNUM,
             rbufREAD or lprWRITE or regRBUF or
             tcrREAD  or tcrWRITE or regTCR  or
             msrREAD  or tdrWRITE or regMSR  or
-            vectREAD or dzRXINTR or rxVECT  or txVECT)
+            vectREAD or dzRXVECT or rxVECT  or txVECT)
      begin
         devACKO  = 0;
         devDATAO = 36'bx;

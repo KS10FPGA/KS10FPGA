@@ -535,7 +535,7 @@ module UBA(clk, rst, clken, ctlNUM,
    always @(pageREAD or pageDATAO or
             statREAD or regSTAT   or
             wruREAD  or wruNUM1   or wruNUM3  or ctlNUM    or statINTHI or statINTLO or busPI or statPIH or statPIL or
-            devREAD  or devWRITE  or vectREAD or dev1ACKI  or dev2ACKI  or dev1DATAI or dev2DATAI)
+            devREAD  or devWRITE  or vectREAD or dev1ACKI  or dev2ACKI  or dev1DATAI or dev2DATAI or statWRITE)
      begin
         busACKO  = 1'b0;
         busDATAO = 36'bx;
