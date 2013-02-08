@@ -19,6 +19,10 @@
 //   notation.   Sorry about the mixed endian-ism.  I didn't
 //   create this stuff - I've just matched the exising notation.
 //
+//   Whereas the 'Unibus' is 18-bit data and 16-bit address, I've
+//   implemented the IO bus as 18-bit address and 36-bit data just
+//   to keep things simple.
+//
 // File
 //   dz11.v
 //
@@ -96,8 +100,8 @@ module DZ11(clk,      rst,      ctlNUM,
    parameter [14:17] dzDEV  = `dzDEV;           // Device 3
    parameter [18:35] dzADDR = `dz1ADDR;         // DZ11 Base Address
    parameter [18:35] dzVECT = `dz1VECT;         // DZ11 Interrupt Vector
-   parameter [ 7: 4] dzINTR = `dzINTR;		// DZ11 Interrupt
-                 
+   parameter [ 7: 4] dzINTR = `dzINTR;          // DZ11 Interrupt
+
    //
    // DZ Register Addresses
    //
@@ -115,7 +119,7 @@ module DZ11(clk,      rst,      ctlNUM,
 
    parameter [18:35] rxVECT = dzVECT;           // DZ11 Receiver Interrupt Vector
    parameter [18:35] txVECT = dzVECT + 4;       // DZ11 Transmitter Interrupt Vector
-   
+
    //
    // Memory Address and Flags
    //
@@ -157,9 +161,9 @@ module DZ11(clk,      rst,      ctlNUM,
    //
    // Interrupt Vector Read Operation
    //
-   
+
    wire vectREAD  = devIO & devVECT & (devDEV == ctlNUM);
-   
+
    //
    // Big-endian to little-endian data bus fixup
    //
@@ -273,15 +277,15 @@ module DZ11(clk,      rst,      ctlNUM,
           7: tlineMUX <= 8'b1000_0000;
         endcase
      end
-   
+
    //
    // RBUF Register
    //
    // Details
    //  RBUF is read only and can only be read as words
    //
-   
-   wire [15:0] regRBUF  = {rbufVALID, 4'b0, rbufDATA};
+
+   wire [15:0] regRBUF  = rbufDATA;
 
    //
    // LPR Register
@@ -346,7 +350,7 @@ module DZ11(clk,      rst,      ctlNUM,
    //
 
    wire [15:0] regMSR = {dz11CO, dz11RI};
-   
+
    //
    // TDR Register
    //
@@ -366,7 +370,7 @@ module DZ11(clk,      rst,      ctlNUM,
    // Details
    //  This just increments the scan signal.
    //
-   
+
    reg [2:0] scan;
    always @(posedge clk or posedge rst or posedge csrCLR)
      begin
@@ -375,7 +379,7 @@ module DZ11(clk,      rst,      ctlNUM,
         else if (csrMSE)
           scan <= scan + 1'b1;
      end
-   
+
    //
    // Scan Decoder
    //
@@ -415,9 +419,9 @@ module DZ11(clk,      rst,      ctlNUM,
    //  If the receiver is full, empty the receiver into the
    //  RXFIFO and clear the full flag.
    //
-   
+
    wire [7:0] ttyRXCLR = scanMUX & ttyRXFULL;
-   
+
    //
    // UART Baud Rate Generators
    //
@@ -448,9 +452,9 @@ module DZ11(clk,      rst,      ctlNUM,
    wire [7:0] ttyRXFULL;                // UART receiver has data
    wire [7:0] ttyRXDATA[0:7];           // UART received data
    wire [7:0] ttyTXEMPTY;               // UART transmitter buffer is empty
-   
+
    generate
-      
+
       genvar  i;
 
       for (i = 0; i < 8; i = i + 1)
@@ -470,11 +474,11 @@ module DZ11(clk,      rst,      ctlNUM,
               .empty    (ttyTXEMPTY[i]),
               .txd      (dz11TXD[i])
               );
-           
+
            //
            // UART Receivers
            //
-           
+
            UART_BUFRX ttyRX
              (.clk      (clk),
               .rst      (rst | devRESET),
@@ -489,109 +493,89 @@ module DZ11(clk,      rst,      ctlNUM,
    endgenerate
 
    //
-   // Read edge trigger
+   // Read FIFO edge trigger
    //
    // Details:
-   //  The FIFO is updated on the trailing edge of the read pulse;
-   //  i.e., after the read is done.
+   //  The FIFO state is updated on the trailing edge of the read
+   //  pulse; i.e., after the read is completed.
    //
 
-   reg last_rd;
-
-   always @(posedge clk or posedge rst)
-   begin
-      if (rst)
-        last_rd <= 0;
-      else
-        last_rd <= rbufREAD;
-   end
-
-   wire fifoREAD = ~rbufREAD & last_rd;
+   wire fifoREAD;
+   EDGETRIG uFIFOREAD(clk, rst, 1'b1, 1'b0, rbufREAD, fifoREAD);
 
    //
    // RBUF FIFO
    //
 
-   wire [10:0] rbufDATA;
-   wire [0: 5] fifoDEPTH;
+   wire [15:0] rbufDATA;
+   wire        fifoEMPTY;
+   wire        fifoWRITE = ttyRXFULL[scan];
 
    DZFIFO uDZFIFO
      (.clk      (clk),
       .rst      (rst | csrCLR | devRESET),
       .din      ({scan, ttyRXDATA[scan]}),
-      .wr       (ttyRXFULL[scan]),
+      .wr       (fifoWRITE),
       .dout     (rbufDATA),
       .rd       (fifoREAD),
-      .depth    (fifoDEPTH)
+      .empty    (fifoEMPTY)
       );
 
-   wire csrRDONE  = fifoDEPTH != 0;
-   wire rbufVALID = fifoDEPTH != 0;
+   wire csrRDONE  = ~fifoEMPTY;
+
+   //
+   // SILO Alarm Counter
+   //
+
+   reg [0:4] depth;
+   always @(posedge clk or posedge regRESET)
+     begin
+        if (regRESET)
+          depth <= 0;
+        else if (fifoREAD)
+          depth <= 0;
+        else if (fifoWRITE)
+          depth <= depth + 1'b1;
+     end
 
    //
    // SILO Alarm
    //
 
    reg csrSA;
-   
    always @(posedge clk or posedge regRESET)
      begin
         if (regRESET)
           csrSA <= 0;
-        else
-          begin
-             if (fifoREAD)
-               csrSA <= 0;
-             else if (fifoDEPTH == 16)
-               csrSA <= 1;
-          end
-     end                       
+        else if (fifoREAD)
+          csrSA <= 0;
+        else if (depth == 16)
+          csrSA <= 1;
+     end
 
    //
-   // Edge Trigger RX Interrupts
+   // TX Interrupts
    //
-   
+
+   wire intTX;
+   wire intTX0 = csrTRDY & csrTIE;
+   EDGETRIG uINTTX(clk, rst, 1'b1, 1'b0, intTX0, intTX);
+
+   //
+   // RX Interrupts
+   //
+
+   wire intRX;
    wire intRX0 = ((~csrSAE & csrRDONE & csrRIE) |
                   (csrSAE  & csrSA    & csrRIE));
+   EDGETRIG uINTRX(clk, rst, 1'b1, 1'b0, intRX0, intRX);
 
-   reg  intRX1;
-
-   always @(posedge clk or posedge regRESET)
-     begin
-        if (regRESET)
-          intRX1 <= 0;
-        else
-          intRX1 <= intRX0;
-     end
-   
-   wire intRX = intRX0 & ~intRX1;
-
-   //
-   // Edge Trigger TX Interrupts
-   //
-
-   wire intTX0 = csrTIE & csrTRDY;
-   reg  intTX1;
-   
-   always @(posedge clk or posedge regRESET)
-     begin
-        if (regRESET)
-          intTX1 <= 0;
-        else
-          intTX1 <= intTX0;
-     end
-
-   wire intTX = intTX0 & ~intTX1;
-   
    //
    // Receiver Interrupts
    //
    // Details:
    //  This process generates the receiver interrupt from the silo
    //  alarm and from the receiver done register bits.
-   //
-   //  The interrupt is edge-trigger by the conditions that are
-   //  described above.
    //
    // Notes:
    //  The receiver interrupt is cleared when:
@@ -613,7 +597,7 @@ module DZ11(clk,      rst,      ctlNUM,
         else if (intRX)
           dzRXINTR <= 1;
      end
-     
+
    //
    // Transmiter Interrupts
    //
@@ -629,7 +613,7 @@ module DZ11(clk,      rst,      ctlNUM,
    //   4.  Transmitter interrupts are disabled
    //   5.  The interrupt is acknowledged
    //
-   
+
    reg dzTXINTR;
 
    always @(posedge clk or posedge regRESET)
@@ -645,9 +629,9 @@ module DZ11(clk,      rst,      ctlNUM,
    //
    // Vector Type
    //
-   
+
    reg dzRXVECT;
-   
+
    always @(posedge clk or posedge regRESET)
      begin
         if (regRESET)
@@ -657,7 +641,7 @@ module DZ11(clk,      rst,      ctlNUM,
         else if (intTX)
           dzRXVECT <= 0;
      end
-   
+
    //
    // Bus Mux and little-endian to big-endian bus swap.
    //
@@ -707,7 +691,7 @@ module DZ11(clk,      rst,      ctlNUM,
                end
           end
      end
-   
+
    //
    // DZ11 Device Interface
    //

@@ -328,11 +328,11 @@ module UBA(clk, rst, clken, ctlNUM,
      begin
         if (rst)
           begin
-             statNM  <= 1'bx;
-             statND  <= 1'bx;
-             statDX  <= 1'bx;
-             statPIH <= 3'bx;
-             statPIL <= 3'bx;
+             statNM  <= 0;
+             statND  <= 0;
+             statDX  <= 0;
+             statPIH <= 0;
+             statPIL <= 0;
           end
         else if (clken)
           begin
