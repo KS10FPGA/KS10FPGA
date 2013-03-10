@@ -150,7 +150,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
      (.crom(crom),
       .skip40({aluCRY0,   aluLZERO, aluRZERO, ~flagUSER,  flagFPD,  regACZERO, cpuINTR   }),
       .skip20({aluCRY2,   aluLSIGN, aluRSIGN, flagUSERIO, skipJFCL, aluCRY1,   txxx      }),
-      .skip10({trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    iolatch,  ~cpuCONT,  ~timerINTR}),
+      .skip10({trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    ~iolatch, ~cpuCONT,  ~timerINTR}),
       .skipADDR(skipADDR)
       );
 

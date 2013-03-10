@@ -1,22 +1,22 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor Testbench
-//!
-//! \brief
-//!
-//! \details
-//!
-//! \todo
-//!
-//! \file
-//!      testbench.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor Testbench
+//
+// Brief
+//
+// Details
+//
+// Todo
+//
+// File
+//   testbench.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2013 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -39,9 +39,6 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `undef SIMCTY
 `undef SIMSSMON
@@ -52,9 +49,9 @@ module testbench;
    //
    // Clock and things
    //
-   
-   reg clk;                     // Clock
-   reg reset;                   // Reset
+
+   reg  clk;                    // Clock
+   reg  reset;                  // Reset
    wire runLED;                 // Run LED
 
    //
@@ -74,19 +71,21 @@ module testbench;
    // DZ11 Serial Interface
    //
 
-   wire [0:7] dz11RXD;          // DZ11 Received RS-232 Data
-   wire [0:7] dz11TXD;        	// DZ11 Transmitted RS-232 Data
+   wire [2:1] TXD = 2'b11; 	// DZ11 RS-232 Received Data
+   wire [2:1] RXD;          	// DZ11 RS-232 Transmitted Data
+   wire [2:1] RTS = 2'b11;	// DZ11 RS-232 Request to Send
+   wire [2:1] CTS;		// DZ11 RS-232 Clear to Send
 
    //
    // RH11 Secure Digital Interface
    //
    
-   wire        rh11CD;        	// RH11 Card Detect
-   wire        rh11WP;        	// RH11 Write Protect
-   wire        rh11MISO;      	// RH11 Data In
-   wire        rh11MOSI;      	// RH11 Data Out
-   wire        rh11SCLK;      	// RH11 Clock
-   wire        rh11CS;        	// SD11 Chip Select
+   wire        rh11CD;          // RH11 Card Detect
+   wire        rh11WP;          // RH11 Write Protect
+   wire        rh11MISO;        // RH11 Data In
+   wire        rh11MOSI;        // RH11 Data Out
+   wire        rh11SCLK;        // RH11 Clock
+   wire        rh11CS;          // SD11 Chip Select
    
    //
    // SSRAM
@@ -96,7 +95,14 @@ module testbench;
    wire [0:22] ssramADDR;       // SSRAM Address Bus
    wire [0:35] ssramDATA;       // SSRAM Data Bus
    wire        ssramADV;        // SSRAM Advance
-   wire        ssramWR;         // SSRAM Write
+   wire        ssramWE_N;       // SSRAM Write
+   wire        ssramOE_N;       // SSRAM OE#
+   wire        ssramCE;         // SSRAM CE
+   wire        ssramCLKEN;      // SSRAM Clken
+   wire        ssramBWA_N;      // SSRAM BWA#
+   wire        ssramBWB_N;      // SSRAM BWB#
+   wire        ssramBWC_N;      // SSRAM BWC#
+   wire        ssramBWD_N;      // SSRAM BWD#
 
    //
    // Data to KS10
@@ -106,12 +112,12 @@ module testbench;
 `ifdef SIMSSMON
    parameter [0:35] valREGCIR    = 36'o254000_020000;
 `else
-// parameter [0:35] valREGCIR    = 36'o254000_030601;	// DSKAA-DSKAH
-   parameter [0:35] valREGCIR    = 36'o254000_030010;	// DSKAI-DSKAM,DSKCF, DSKEA
+// parameter [0:35] valREGCIR    = 36'o254000_030601;   // DSKAA-DSKAH
+   parameter [0:35] valREGCIR    = 36'o254000_030010;   // DSKAI-DSKAM,DSKCF, DSKEA
 // parameter [0:35] valREGCIR    = 36'o254000_030660;
-// parameter [0:35] valREGCIR    = 36'o254000_030620;	// DSKCG
+// parameter [0:35] valREGCIR    = 36'o254000_030620;   // DSKCG
 // parameter [0:35] valREGCIR    = 36'o254000_030622;
-// parameter [0:35] valREGCIR    = 36'o254000_020000;	// DSQDC
+// parameter [0:35] valREGCIR    = 36'o254000_020000;   // DSQDC
    
 `endif   
    
@@ -137,7 +143,7 @@ module testbench;
       begin
          cslWRITE (addrREGADDR, {18'o010000, address});
          cslWRITE (addrREGDATA, data);
-         cslWRITEb(addrREGSTATUS+4, 8'h01);
+         cslWRITEb(addrREGSTATUS+3, 8'h01);
       end
    endtask
    
@@ -150,7 +156,7 @@ module testbench;
       output [ 0:35] data;
       begin
          cslWRITE (addrREGADDR, {18'o040000, address});
-         cslWRITEb(addrREGSTATUS+4, 8'h01);
+         cslWRITEb(addrREGSTATUS+3, 8'h01);
          #40;
          cslREAD  (addrREGDATA, data);
       end
@@ -307,10 +313,12 @@ module testbench;
    //
 
    KS10 uKS10
-     (.clk              (clk),
-      .reset            (reset),
-      .dz11RXD          (dz11RXD),
-      .dz11TXD          (dz11TXD),
+     (.CLK50MHZ         (clk),
+      .RESET_N          (~reset),
+      .TXD          	(TXD),
+      .RXD          	(RXD),
+      .RTS              (RTS),
+      .CTS              (CTS),
       .rh11CD           (rh11CD),
       .rh11WP           (rh11WP),
       .rh11MISO         (rh11MISO),
@@ -323,10 +331,17 @@ module testbench;
       .cslWR_N          (cslWR_N),
       .cslINTR_N        (cslINTR_N),
       .ssramCLK         (ssramCLK),
+      .ssramCLKEN       (ssramCLKEN),
+      .ssramADV         (ssramADV),
+      .ssramBWA_N       (ssramBWA_N),
+      .ssramBWB_N       (ssramBWB_N),
+      .ssramBWC_N       (ssramBWC_N),
+      .ssramBWD_N       (ssramBWD_N),
+      .ssramOE_N        (ssramOE_N),
+      .ssramWE_N        (ssramWE_N),
+      .ssramCE          (ssramCE),
       .ssramADDR        (ssramADDR),
       .ssramDATA        (ssramDATA),
-      .ssramWR          (ssramWR),
-      .ssramADV         (ssramADV),
       .runLED           (runLED)
       );
    
@@ -399,12 +414,12 @@ module testbench;
      begin
         if (reset)
           ;
-        else if (ssramWR)
+        else if (~ssramWE_N)
           SSRAM[wr_addr] <= ssramDATA;
         rd_addr <= wr_addr;
      end
 
-   assign ssramDATA = (ssramWR) ? 36'bz : SSRAM[rd_addr];
+   assign ssramDATA = (ssramWE_N) ? SSRAM[rd_addr] : 36'bz;
 
 `ifdef SIMCTY
    
@@ -470,5 +485,6 @@ module testbench;
      end
 
 `endif
+
    
 endmodule

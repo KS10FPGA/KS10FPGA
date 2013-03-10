@@ -146,7 +146,7 @@ module SKIP(crom, skip40, skip20, skip10, skipADDR);
      end
 
    //
-   // SKIP 40
+   // SKIP 10
    //
    // Details
    //  When this mux is selected, the mux can generate

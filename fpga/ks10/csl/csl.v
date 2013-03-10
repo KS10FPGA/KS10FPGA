@@ -41,7 +41,7 @@
 //
 //             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
 //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//     (LH)  |                             |NX|GO|        |SR|SS|SE|
+//     (LH)  |        |GO|                    |NX|        |SR|SS|SE|
 //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
 //            18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
@@ -49,8 +49,8 @@
 //     (RH)  |SC|SH|              |TE|RE|CE|                 |KI|KR|
 //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
-//           NX : Non-existant memory timeout (Read Only)
 //           GO : Start Read or Write Transaction
+//           NX : Non-existant memory timeout (Read Only)
 //           SR : Run Switch
 //           SS : Single Step Switch
 //           SE : Execute Switch
@@ -323,58 +323,63 @@ module CSL(clk, reset,
         else
           begin
              if (cslWR)
-               case (cslADDR)
+	       begin
+		  case (cslADDR)
+		    
+                    //
+                    // Address Register
+                    //
+		    
+                    8'h03 : regADDR[ 0: 3] <= cslAD[3:0];
+                    8'h04 : regADDR[ 4:11] <= cslAD[7:0];
+                    8'h05 : regADDR[12:19] <= cslAD[7:0];
+                    8'h06 : regADDR[20:27] <= cslAD[7:0];
+                    8'h07 : regADDR[28:35] <= cslAD[7:0];
+		    
+                    //
+                    // Data Register
+                    //
+		    
+                    8'h13 : regDATA[ 0: 3] <= cslAD[3:0];
+                    8'h14 : regDATA[ 4:11] <= cslAD[7:0];
+                    8'h15 : regDATA[12:19] <= cslAD[7:0];
+                    8'h16 : regDATA[20:27] <= cslAD[7:0];
+                    8'h17 : regDATA[28:35] <= cslAD[7:0];
+		    
+                    //
+                    // Control/Status Register
+                    //
 
-                 //
-                 // Address Register
-                 //
+                    8'h23 : regSTAT[ 0: 3] <= cslAD[3:0];
+                    8'h24 : regSTAT[ 4:11] <= cslAD[7:0];
+                    8'h25 : regSTAT[12:19] <= cslAD[7:0];
+                    8'h26 : regSTAT[20:27] <= cslAD[7:0];
+                    8'h27 : regSTAT[28:35] <= cslAD[7:0];
 
-                 8'h03 : regADDR[ 0: 3] <= cslAD[3:0];
-                 8'h04 : regADDR[ 4:11] <= cslAD[7:0];
-                 8'h05 : regADDR[12:19] <= cslAD[7:0];
-                 8'h06 : regADDR[20:27] <= cslAD[7:0];
-                 8'h07 : regADDR[28:35] <= cslAD[7:0];
-
-                 //
-                 // Data Register
-                 //
-
-                 8'h13 : regDATA[ 0: 3] <= cslAD[3:0];
-                 8'h14 : regDATA[ 4:11] <= cslAD[7:0];
-                 8'h15 : regDATA[12:19] <= cslAD[7:0];
-                 8'h16 : regDATA[20:27] <= cslAD[7:0];
-                 8'h17 : regDATA[28:35] <= cslAD[7:0];
-
-                 //
-                 // Control/Status Register
-                 //
-
-                 8'h23 : regSTAT[ 0: 3] <= cslAD[3:0];
-                 8'h24 : regSTAT[ 4:11] <= cslAD[7:0];
-                 8'h25 : regSTAT[12:19] <= cslAD[7:0];
-                 8'h26 : regSTAT[20:27] <= cslAD[7:0];
-                 8'h27 : regSTAT[28:35] <= cslAD[7:0];
-
-                 //
-                 // Console Instruction Register
-                 //
-
-                 8'h33 : regIR[ 0: 3] <= cslAD[3:0];
-                 8'h34 : regIR[ 4:11] <= cslAD[7:0];
-                 8'h35 : regIR[12:19] <= cslAD[7:0];
-                 8'h36 : regIR[20:27] <= cslAD[7:0];
-                 8'h37 : regIR[28:35] <= cslAD[7:0];
-
-               endcase
-             case(state)
-               stateREAD:
-                 regDATA <= busDATAI;
-               stateDONE:
-                 regSTAT[11] <= 0;              // Clear GO when done
-               stateFAIL:
-                 regSTAT[10] <= 1;              // Non-existant Memory
-             endcase
-          end
+                    //
+                    // Console Instruction Register
+                    //
+		    
+                    8'h33 : regIR[ 0: 3] <= cslAD[3:0];
+                    8'h34 : regIR[ 4:11] <= cslAD[7:0];
+                    8'h35 : regIR[12:19] <= cslAD[7:0];
+                    8'h36 : regIR[20:27] <= cslAD[7:0];
+                    8'h37 : regIR[28:35] <= cslAD[7:0];
+		    
+		  endcase
+	       end
+	     else  // ~cslWR
+	       begin
+		  case(state)
+		    stateREAD:
+                      regDATA <= busDATAI;
+		    stateDONE:
+                      regSTAT[3]  <= 0;         // Clear GO when done
+		    stateFAIL:
+                      regSTAT[11] <= 1;        	// Non-existant Memory
+		  endcase
+               end
+	  end
      end
 
    //
@@ -411,11 +416,11 @@ module CSL(clk, reset,
           // Control/Status Register
           //
 
-          8'h23 : adOUT <= {4'b0, regSTAT[0:3]};
-          8'h24 : adOUT <= regSTAT[ 4:11];
-          8'h25 : adOUT <= regSTAT[12:19];
-          8'h26 : adOUT <= regSTAT[20:27];
-          8'h27 : adOUT <= regSTAT[28:35];
+          8'h23 : adOUT <= {7'b0, regSTAT[3]};
+          8'h24 : adOUT <= {7'b0, regSTAT[11]};
+          8'h25 : adOUT <= {3'b0, ~cpuHALT, 1'b0, regSTAT[17], 1'b0, cpuHALT};
+          8'h26 : adOUT <= {5'b0, regSTAT[25:27]};
+          8'h27 : adOUT <= {6'b0, regSTAT[34:35]};
 
           //
           // Console Instruction Register
@@ -478,8 +483,8 @@ module CSL(clk, reset,
             stateIDLE :
               begin
                  timeout <= 0;
-                 if ((regSTAT[11] & regADDR[3]) |
-                     (regSTAT[11] & regADDR[5]))
+                 if ((regSTAT[3] & regADDR[3]) |
+                     (regSTAT[3] & regADDR[5]))
                    state <= stateCHECK;
               end
             stateCHECK :

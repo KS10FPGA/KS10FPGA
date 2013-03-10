@@ -226,7 +226,7 @@ module CPU(clk, rst,
       .clkenCR          (clkenCR),
       .memWAIT          (memWAIT)
       );
-
+   
    //
    // Arithmetic Logic Unit
    //
@@ -399,6 +399,7 @@ module CPU(clk, rst,
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
+      .vmaFLAGS         (vmaFLAGS),
       .iolatch          (iolatch)
       );
 

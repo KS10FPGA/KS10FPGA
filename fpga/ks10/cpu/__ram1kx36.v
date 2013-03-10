@@ -1,22 +1,22 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      RAM 1Kx36
-//!
-//! \details
-//!
-//! \note
-//!
-//! \todo
-//!
-//! \file
-//!      ram1kx36.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   RAM 1Kx36
+//
+// Details
+//
+// Note
+//
+// Todo
+//
+// File
+//   ram1kx36.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -42,9 +42,6 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
 
@@ -88,7 +85,7 @@ module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
    reg [0:35] ram [0:1023];
    reg [0: 9] rd_addr;
 
-   always @(negedge clk)
+   always @(negedge clk or posedge rst)
      begin
         if (rst)
           begin
@@ -99,6 +96,8 @@ module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
              begin
                 ram[i] <= 0;
              end
+             // Initialize Stack Pointer
+             ram[15] <= 36'o777577_030303;
 `endif
           end
         else if (clken)

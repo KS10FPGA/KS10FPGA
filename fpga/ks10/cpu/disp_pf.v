@@ -357,8 +357,18 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
    // for a single clock cycle (to jam the page fail address
    // into the microsequencer address).
    //
+
+`define PAGEFAIL
+   
+`ifdef PAGEFAIL
    
    assign pageFAIL = ((memoryCYCLE & ~vmaJUSTLOADED & (pfDISP != 4'b0001)) | 
                       (memoryCYCLE & ~vmaJUSTLOADED & anyINTR           ));
+
+`else
+   
+   assign pageFAIL = 0;
+
+`endif
    
 endmodule

@@ -1,22 +1,18 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Read/Write Timing
-//!
-//! \details
-//!
-//! \note
-//!
-//! \todo
-//!
-//! \file
-//!      timing.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   Read/Write Timing
+//
+// Details
+//
+// File
+//   timing.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -42,9 +38,6 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
 
 `default_nettype none
 `include "useq/crom.vh"

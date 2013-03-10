@@ -141,25 +141,8 @@ module BUS(clk, rst, clken, crom, dp,
    //
    // Data Output
    //
-   // Details
-   //  The current interrupt priority is asserted onto bus[15:17] during a
-   //  WRU cycle.
-   //
-   // FIXME:
-   //  Is the pageWRITE mux necessary?  It just zeros out dp[19:20] and dp[23:24].
-   //  if (pageWRITE)
-   //     busDATAO[0:35] <= {dp[0:18], 2'b0, dp[21:22], 2'b0, dp[25:35]};
-   //
 
-   reg [0:35] busDATAO;
-
-   always @(dp or vmaWRUCYCLE or curINTP)
-     begin
-        if (vmaWRUCYCLE)
-          busDATAO[0:35] <= {15'b0, curINTP, 18'b0};
-        else
-          busDATAO[0:35] <= dp[0:35];
-     end
+   assign busDATAO[0:35] = dp[0:35];
 
    //
    // Address Output
@@ -167,16 +150,21 @@ module BUS(clk, rst, clken, crom, dp,
 
    reg [0:35] busADDRO;
 
-   always @(pagedREF or vmaEXTENDED or vmaFLAGS or vmaADDR or pageADDR)
+   always @(pagedREF or vmaEXTENDED or vmaFLAGS or vmaADDR or pageADDR or vmaWRUCYCLE or curINTP)
      begin
         if (pagedREF)
           busADDRO <= {vmaFLAGS, vmaADDR[14:15], pageADDR[16:26], vmaADDR[27:35]};
         else
           begin
-             if (vmaEXTENDED)
-               busADDRO <= {vmaFLAGS, vmaADDR};
+             if (vmaWRUCYCLE)
+               busADDRO[0:35] <= {vmaFLAGS, 1'b0, curINTP, vmaADDR[18:35]};
              else
-               busADDRO <= {vmaFLAGS, vmaADDR} & 36'o777760_777777;
+               begin
+                  if (vmaEXTENDED)
+                    busADDRO <= {vmaFLAGS, vmaADDR};
+                  else
+                    busADDRO <= {vmaFLAGS, 4'b0000, vmaADDR[18:35]};
+               end
           end
      end
 
@@ -200,7 +188,7 @@ module BUS(clk, rst, clken, crom, dp,
    //
 
    reg [0:3] timeout;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           timeout <= 0;

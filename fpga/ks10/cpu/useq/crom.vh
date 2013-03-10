@@ -162,27 +162,28 @@
 `define cromSPEC_EN_20          crom[52]        //  SPEC Select 20
 `define cromSPEC_EN_10          crom[53]        //  SPEC Select 10
 `define cromSPEC_SEL            crom[54:56]     //  SPEC Select
+
 `define cromSPEC_SEL_CONS       3'b000          //   10: Console
 `define cromSPEC_SEL_PREVIOUS   3'b000          //   20: Force Previous Context
 `define cromSPEC_SEL_CRY18INH   3'b000          //   40: Inhibit Carry into Left Half
-`define cromSPEC_SEL_LOADIR     3'b001          //   10: Load IR
+`define cromSPEC_SEL_CLR1MSEC   3'b001          //   10: CLR Interval Timer
 `define cromSPEC_SEL_LOADXR     3'b001          //   20: Load XR
-`define cromSPEC_SEL_CLR1MSEC   3'b001          //   40: CLR Interval Timer
-`define cromSPEC_SEL_SPARE10_2  3'b010          //   10: Spare
+`define cromSPEC_SEL_LOADIR     3'b001          //   40: Load IR
+`define cromSPEC_SEL_CLRIOLAT   3'b010          //   10: Clear IO Latch
 `define cromSPEC_SEL_SPARE20_2  3'b010          //   20: Spare
-`define cromSPEC_SEL_CLRIOLAT   3'b010          //   40: Clear IO Latch
-`define cromSPEC_SEL_LOADPI     3'b011          //   10: Load PI
+`define cromSPEC_SEL_SPARE10_2  3'b010          //   40: Spare
+`define cromSPEC_SEL_CLRIOBUSY  3'b011          //   10: Clear IO Busy
 `define cromSPEC_SEL_APRFLAGS   3'b011          //   20: Load APR Flags
-`define cromSPEC_SEL_CLRIOBUSY  3'b011          //   40: Clear IO Busy
-`define cromSPEC_SEL_ASHTEST    3'b100          //   10: ASH Test
+`define cromSPEC_SEL_LOADPI     3'b011          //   40: Load PI
+`define cromSPEC_SEL_PAGEWRITE  3'b100          //   10: PAGE WRITE
 `define cromSPEC_SEL_CLRCACHE   3'b100          //   20: Clear/Sweep cache
-`define cromSPEC_SEL_PAGEWRITE  3'b100          //   40: PAGE WRITE
-`define cromSPEC_SEL_EXPTEST    3'b101          //   10: EXP Test
+`define cromSPEC_SEL_ASHTEST    3'b100          //   40: ASH Test
+`define cromSPEC_SEL_LOADNICOND 3'b101          //   10: Load NICOND
 `define cromSPEC_SEL_LOADAPR    3'b101          //   20: Load APR
-`define cromSPEC_SEL_LOADNICOND 3'b101          //   40: Load NICOND
-`define cromSPEC_SEL_PCFLAGS    3'b110          //   10: Load PC FLAGS
+`define cromSPEC_SEL_EXPTEST    3'b101          //   40: EXP Test
+`define cromSPEC_SEL_PXCTEN     3'b110          //   10: Enable PXCT
 `define cromSPEC_SEL_PXCTOFF    3'b110          //   20: Turn off PXCT
-`define cromSPEC_SEL_PXCTEN     3'b110          //   40: Enable PXCT
+`define cromSPEC_SEL_PCFLAGS    3'b110          //   40: Load PC FLAGS
 `define cromSPEC_SEL_MEMWAIT    3'b111          //   10: Mem Wait
 `define cromSPEC_SEL_MEMCLR     3'b111          //   20: Mem Clear
 `define cromSPEC_SEL_LOADACBLK  3'b111          //   40: Load AC Block
