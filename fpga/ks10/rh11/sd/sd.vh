@@ -54,4 +54,10 @@
 `define sdopWR    2'd2
 `define sdopWRCHK 2'd3
 
+//
+// SD Status
+//
+
+
+
 `endif

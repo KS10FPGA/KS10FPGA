@@ -2,7 +2,6 @@ PROJECT := ks10
 
 RTL       := rtl
 ISE       := ise
-#XILINX   := /cygdrive/c/Xilinx/13.1
 XILDIR    := `cygpath -u '$(XILINX)'`
 FUSE      := $(XILDIR)/ISE_DS/ISE/bin/nt/fuse.exe
 WCFG      := ks10_useriot.wcfg
@@ -11,14 +10,32 @@ PRJFILE   := $(PROJECT).prj
 TESTBENCH := $(PROJECT)_testbench
 WORK      := work.testbench
 
-#LOAD      := MAINDEC-10-DSDZA.SEQ
-LOAD      := fixed.SEQ
+#LOAD      := MAINDEC-10-DSKAA.SEQ
+#LOAD      := MAINDEC-10-DSKAB.SEQ
+#LOAD      := MAINDEC-10-DSKAC.SEQ
+#LOAD      := MAINDEC-10-DSKAD.SEQ
+#LOAD      := MAINDEC-10-DSKAE.SEQ
+#LOAD      := MAINDEC-10-DSKAF.SEQ
+#LOAD      := MAINDEC-10-DSKAG.SEQ
+#LOAD      := MAINDEC-10-DSKAH.SEQ		# runs 3.4 ms
+#LOAD      := MAINDEC-10-DSKAI.SEQ
+#LOAD      := MAINDEC-10-DSKAJ.SEQ
+#LOAD      := MAINDEC-10-DSKAK.SEQ
+#LOAD      := MAINDEC-10-DSKAL.SEQ
+#LOAD      := MAINDEC-10-DSKAM.SEQ
+#LOAD      := MAINDEC-10-DSKBA.SEQ		# FAIL
+#LOAD      := MAINDEC-10-DSKCA.SEQ
+#LOAD      := MAINDEC-10-DSKCB.SEQ
+#LOAD      := MAINDEC-10-DSKCC.SEQ
+#LOAD      := MAINDEC-10-DSKCD.SEQ
+LOAD      := MAINDEC-10-DSKCE.SEQ
 
-#LOAD := MAINDEC-10-DSQDC.txt
-#LOAD := MAINDEC-10-DSKCG.fixed.txt
-#LOAD := MAINDEC-10-DSKCG.txt
-#LOAD := MAINDEC-10-DSKEA.txt
-#LOAD := smmon.txt
+#LOAD     := MAINDEC-10-DSDZA.SEQ
+#LOAD     := fixed.SEQ
+#LOAD     := MAINDEC-10-DSKCG.fixed.txt
+#LOAD     := MAINDEC-10-DSKCG.txt
+#LOAD     := MAINDEC-10-DSKEA.txt
+#LOAD     := smmon.txt
 
 SRC := \
 	$(RTL)/cpu/useq/crom.v \

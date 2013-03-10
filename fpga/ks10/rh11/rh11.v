@@ -51,8 +51,8 @@
 `include "rh11.vh"
 `include "sd/sd.vh"
   
-module RH11(clk, rst,
-            rh11CD, rh11WP, rh11MISO, rh11MOSI, rh11SCLK, rh11CS,  
+module RH11(clk,      rst,      ctlNUM,
+            rh11CD,   rh11WP,   rh11MISO, rh11MOSI, rh11SCLK, rh11CS,  
             devRESET, devINTR,  devINTA,
             devREQI,  devACKO,  devADDRI,
             devREQO,  devACKI,  devADDRO,
@@ -61,6 +61,7 @@ module RH11(clk, rst,
 
    input          clk;                          // Clock
    input          rst;                          // Reset
+   input  [ 0: 3] ctlNUM;                       // Bridge Device Number
    // RH11 Interfaces
    input          rh11CD;                       // RH11 Card Detect
    input          rh11WP;                       // RH11 Write Protect
@@ -584,8 +585,9 @@ module RH11(clk, rst,
    wire [ 7: 0] rpSDREQ;                // RP is ready for SD
    wire [ 7: 0] rpSDACK;                // SD is done with RP
                
-   wire         simTIME = 0;
+   wire         simTIME = 0;		// 
    wire         sdINCWD = 0;            // SD has transferred a word
+   wire         sdINCSECT;		// 
    
    assign rpSN[0] = `rpSN0;
    assign rpSN[1] = `rpSN1;
@@ -613,6 +615,7 @@ module RH11(clk, rst,
               .lastSURF (`rp06LASTSURF),
               .lastCYL  (`rp06LASTCYL),
               .unitSEL  (rhUNITSEL[i]),
+              .incSECTOR(sdINCSECT),
               .rhCLR    (rhCLR),
               .ataCLR   (ataCLR[i]),
               .devRESET (devRESET),
@@ -641,28 +644,33 @@ module RH11(clk, rst,
    //
    // SD Controller
    //
-   
-`ifdef notyet
+`ifdef notyet 
+   wire	sdSTAT;
    SD uSD
-     (.clk      (clk),
-      .rst      (rst),
-      .sdMISO	(rh11MISO),
-      .sdMOSI	(rh11MOSI),
-      .sdSCLK	(rh11SCLK),
-      .sdCS	(rh11CS),
-      .sdOP     (rpSDOP[sdUNITSEL]),
-      .sdADDR   (rpSDADDR[sdUNITSEL]);
-      .dmaREQ   (devREQO),
-      .dmaACK   (devACKI),
-      .dmaADDRO (devADDRO),
-      .dmaDATAI (devDATAI),
-      .dmaDATAO (devDATAO),
-      .sdSTAT   (sdSTAT),
-      .sdINCWD  (sdINCWD),
-      .sdDEBUG  (rhDEBUG)
+     (.clk       (clk),
+      .rst       (rst),
+      .sdMISO	 (rh11MISO),
+      .sdMOSI	 (rh11MOSI),
+      .sdSCLK	 (rh11SCLK),
+      .sdCS	 (rh11CS),
+      .sdREQ     (rpSDREQ[sdUNITSEL]),
+      .sdOP      (rpSDOP[sdUNITSEL]),
+      .sdSECTADDR(rpSDADDR[sdUNITSEL]),
+      .sdWDCNT   (rhWC),
+      //here
+      //.sdBUSADDR (sdBUSADDR),
+      .dmaDATAI  (devDATAI),
+      .dmaDATAO  (devDATAO),
+      .dmaADDR   (devADDR),
+      .dmaREQ    (devREQO),
+      .dmaACK    (devACKI),
+      .sdINCWD   (sdINCWD),
+      .sdINCSECT (sdINCSECT),
+      
+      .sdSTAT    (sdSTAT),
+      .sdDEBUG   (rhDEBUG)
       );
 `endif
-
    //
    // Demux Disk Array Registers
    //

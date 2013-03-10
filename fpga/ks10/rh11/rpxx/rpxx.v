@@ -49,7 +49,7 @@
 `include "sd/sd.vh"
   
 module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
-            unitSEL, rhCLR, ataCLR,
+            unitSEL, incSECTOR, rhCLR, ataCLR,
             devRESET, devADDRI, rhDATAI, rpCD, rpWP,
             rpDA, rpDS, rpER1, rpLA, rpMR, rpOF, rpDC, rpCC,
             rpFUN, rpGO, rpSDOP, rpSDREQ, rpSDACK, rpSDADDR);
@@ -61,6 +61,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    input  [ 4: 0] lastSURF;                     // Last Surfaces
    input  [ 9: 0] lastCYL;                      // Last Cylinder
    input          unitSEL;                      // Unit Select
+   input          incSECTOR;			// Increment Sector
    input          rhCLR;                        // Clear
    input          ataCLR;                       // Clear RPDS[ATA]
    input          devRESET;                     // Device Reset
@@ -242,7 +243,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
              rpGO     <= 0;
              rpFUN    <= 0;
           end
-        else if (rpcsWRITE)
+        else if (rpcsWRITE & unitSEL)
           begin
              if (devLOBYTE & rpDRY)
                begin
@@ -279,7 +280,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
              rpSAS <= 0;
              rpSA  <= 0;
           end
-        else if (rpdaWRITE)
+        else if (rpdaWRITE & unitSEL)
           begin
              if (devHIBYTE & rpDRY)
                begin
@@ -292,7 +293,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                   rpSA  <= rhDATAI[4:0];
                end
           end
-        else if (incSECTOR)
+        else if (incSECTOR & unitSEL)
           begin
              if (rpSA == lastSECT)
                begin
@@ -340,11 +341,11 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
         else
           begin
 
-             if (incSECTOR & (rpSA == lastSECT))
+             if (incSECTOR & (rpSA == lastSECT) & unitSEL)
                begin
                   rpLST <= 1;
                end
-             else if (rpdaWRITE)
+             else if (rpdaWRITE & unitSEL)
                begin
                   rpLST <= 0;
                end
@@ -431,7 +432,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
              rpILR  <= 0;
              rpILF  <= 0;
           end
-        else if (rperWRITE)
+        else if (rperWRITE & unitSEL)
           begin
              if (rpDRY)
                begin
@@ -460,12 +461,12 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
         else
           begin
         
-             if (incSECTOR & (rpDC == lastCYL) & (rpTA == lastSURF) & (rpSA == lastSECT))
+             if (incSECTOR & (rpDC == lastCYL) & (rpTA == lastSURF) & (rpSA == lastSECT) & unitSEL)
                begin
                   rpAOE <= 1;
                end
         
-             if (~rpDRY)
+             if (~rpDRY & unitSEL)
                begin
                   if (rpcsWRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)
                     begin
@@ -473,7 +474,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                     end
                end
 
-             if (devWRITE & devIO & (devDEV == rhDEV) & (devADDR >= undADDR[18:34]))
+             if (devWRITE & devIO & (devDEV == rhDEV) & (devADDR >= undADDR[18:34]) & unitSEL)
                begin
                   rpILR <= 1;
                end
@@ -536,7 +537,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
              rpHCI    <= 0;
              rpOFD    <= 0;
           end
-        else if (rpofWRITE)
+        else if (rpofWRITE & unitSEL)
           begin
              if (devHIBYTE & rpDRY)
                begin
@@ -573,7 +574,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
           begin
              rpDCA <= 0;
           end
-        else if (rpdcWRITE)
+        else if (rpdcWRITE & unitSEL)
           begin
              if (devHIBYTE & rpDRY)
                begin
@@ -584,7 +585,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                   rpDCA[7:0] <= rhDATAI[7:0];
                end
           end
-        else if (incSECTOR)
+        else if (incSECTOR & unitSEL)
           begin
              if ((rpTA == lastSURF) & (rpSA == lastSECT))
                begin

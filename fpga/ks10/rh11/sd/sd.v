@@ -43,172 +43,208 @@
 `include "sdspi.vh"
 
 module SD(clk, rst,
-          // SD Interface
+          // SPI Interface
           sdMISO, sdMOSI, sdSCLK, sdCS,
-
-          sdOP, sdSECT, sdINCWD,
+          // Control
+          sdOP, sdSECTADDR, sdWDCNT, sdBUSADDR,
+          // DMA Interface
+          dmaDATAI, dmaDATAO, dmaADDR, dmaREQ, dmaACK,
+          //
+          sdINCWD, sdINCSECT, sdSTAT,
           // Debug
           sdDEBUG);
 
    input         clk;                   // Clock
    input         rst;                   // Reset
+   // SPI Interface
    input         sdMISO;                // SD Data In
    output        sdMOSI;                // SD Data Out
    output        sdSCLK;                // SD Clock
    output        sdCS;                  // SD Chip Select
+   // Control
    input  [ 1:0] sdOP;                  // SD Operation
-   input  [31:0] sdSECT;                //
-   output        sdINCWD;               //
+   input  [31:0] sdSECTADDR;            // SD Sector Number
+   input  [15:0] sdWDCNT;               // SD Word Count
+   input  [15:0] sdBUSADDR;             // SD Bus Address
+   
+   // DMA Interface
+   input  [0:35] dmaDATAI;              // DMA Data Input
+   output [0:35] dmaDATAO;              // DMA Data Output
+   output [0:35] dmaADDR;               // DMA Address
+   output        dmaREQ;                // DMA Request
+   input         dmaACK;                // DMA Acknowledge
+   
+   // Outputs
+   output        sdINCWD;               // Increment Word Count
+   output        sdINCSECT;             // Increment Sector
+   output        sdSTAT;		// Status
    // Diagnostics
-   output [35:0] sdDEBUG;		// Debug Output
-
-`ifdef notyet
-
-    // PDP8 Interface
-   dmaDIN     : in  data_t;                    // DMA Data Into Disk
-   dmaDOUT    : out data_t;                    // DMA Data Out of Disk
-   dmaADDR    : out addr_t;                    // DMA Address
-   dmaRD      : out std_logic;                 // DMA Read
-   dmaWR      : out std_logic;                 // DMA Write
-   dmaREQ     : out std_logic;                 // DMA Request
-   dmaGNT     : in  std_logic;                 // DMA Grant
-   // RK8E Interface
-   sdOP       : in  sdOP_t;                    // SD OP
-   sdMEMaddr  : in  addr_t;                    // Memory Address
-   sdLEN      : in  sdLEN_t;                   // Sector Length
-   sdSTAT     : out sdSTAT_t;                  // Status
-
-`endif
+   output [35:0] sdDEBUG;               // Debug Output
 
    //
-   // Commands:
+   // SD Commands:
    // Sending leading 0xff just sends clocks with data parked.
    //
 
-   parameter [7:0] sdCMD0  [0:5] = {8'h40, 8'h00, 8'h00, 8'h00, 8'h00, 8'h95};
-   parameter [7:0] sdCMD8  [0:5] = {8'h48, 8'h00, 8'h00, 8'h01, 8'haa, 8'h87};
-   parameter [7:0] sdCMD13 [0:5] = {8'h4d, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
-   parameter [7:0] sdACMD41[0:5] = {8'h69, 8'h40, 8'h00, 8'h00, 8'h00, 8'hff};
-   parameter [7:0] sdCMD55 [0:5] = {8'h77, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
-   parameter [7:0] sdCMD58 [0:5] = {8'h7a, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
+   parameter [7:0] sdCMD0   [0:5] = {8'h40, 8'h00, 8'h00, 8'h00, 8'h00, 8'h95};
+   parameter [7:0] sdCMD8   [0:5] = {8'h48, 8'h00, 8'h00, 8'h01, 8'haa, 8'h87};
+   parameter [7:0] sdCMD13  [0:5] = {8'h4d, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
+   parameter [7:0] sdACMD41 [0:5] = {8'h69, 8'h40, 8'h00, 8'h00, 8'h00, 8'hff};
+   parameter [7:0] sdCMD55  [0:5] = {8'h77, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
+   parameter [7:0] sdCMD58  [0:5] = {8'h7a, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
 
+   //
+   // Timing parameters
+   //
+   
+   parameter [15:0] nCR  =    8;        // NCR from SD Spec
+   parameter [15:0] nAC  = 1023;        // NAC from SD Spec
+   parameter [15:0] nWR  =   20;        // NWR from SD Spec
 
-   parameter [15:0] nCR  =    8;                // NCR from SD Spec
-   parameter [15:0] nAC  = 1023;                // NAC from SD Spec
-   parameter [15:0] nWR  =   20;                // NWR from SD Spec
-
+   //
+   // States
+   //
+   
    parameter [ 6:0] stateRESET   =  0,
-                 // Init States
-                 stateINIT00  =  1,
-                 stateINIT01  =  2,
-                 stateINIT02  =  3,
-                 stateINIT03  =  4,
-                 stateINIT04  =  5,
-                 stateINIT05  =  6,
-                 stateINIT06  =  7,
-                 stateINIT07  =  8,
-                 stateINIT08  =  9,
-                 stateINIT09  = 10,
-                 stateINIT10  = 11,
-                 stateINIT11  = 12,
-                 stateINIT12  = 13,
-                 stateINIT13  = 14,
-                 stateINIT14  = 15,
-                 stateINIT15  = 16,
-                 stateINIT16  = 17,
-                 stateINIT17  = 18,
-                 // Read States
-                 stateREAD00  = 19,
-                 stateREAD01  = 20,
-                 stateREAD02  = 21,
-                 stateREAD03  = 22,
-                 stateREAD04  = 23,
-                 stateREAD05  = 24,
-                 stateREAD06  = 25,
-                 stateREAD07  = 26,
-                 stateREAD08  = 27,
-                 stateREAD09  = 28,
-                 // Write States
-                 stateWRITE00 = 29,
-                 stateWRITE01 = 30,
-                 stateWRITE02 = 31,
-                 stateWRITE03 = 32,
-                 stateWRITE04 = 33,
-                 stateWRITE05 = 34,
-                 stateWRITE06 = 35,
-                 stateWRITE07 = 36,
-                 stateWRITE08 = 37,
-                 stateWRITE09 = 38,
-                 stateWRITE10 = 39,
-                 stateWRITE11 = 40,
-                 stateWRITE12 = 41,
-                 stateWRITE13 = 42,
-                 stateWRITE14 = 43,
-                 stateWRITE15 = 44,
-                 stateWRITE16 = 45,
-                 // Other States
-                 stateFINI    = 46,
-                 stateIDLE    = 47,
-                 stateDONE    = 48,
-                 stateINFAIL  = 49,
-                 stateRWFAIL  = 50;
+                    // Init States
+                    stateINIT00  =  1,
+                    stateINIT01  =  2,
+                    stateINIT02  =  3,
+                    stateINIT03  =  4,
+                    stateINIT04  =  5,
+                    stateINIT05  =  6,
+                    stateINIT06  =  7,
+                    stateINIT07  =  8,
+                    stateINIT08  =  9,
+                    stateINIT09  = 10,
+                    stateINIT10  = 11,
+                    stateINIT11  = 12,
+                    stateINIT12  = 13,
+                    stateINIT13  = 14,
+                    stateINIT14  = 15,
+                    stateINIT15  = 16,
+                    stateINIT16  = 17,
+                    stateINIT17  = 18,
+                    // Read States
+                    stateREAD00  = 19,
+                    stateREAD01  = 20,
+                    stateREAD02  = 21,
+                    stateREAD03  = 22,
+                    stateREAD04  = 23,
+                    stateREAD05  = 24,
+                    stateREAD06  = 25,
+                    stateREAD07  = 26,
+                    stateREAD08  = 27,
+                    stateREAD09  = 28,
+                    stateREAD10  = 29,
+                    stateREAD11  = 30,
+                    stateREAD12  = 31,
+                    stateREAD13  = 32,
+                    stateREAD14  = 33,
+                    // Write States
+                    stateWRITE00 = 34,
+                    stateWRITE01 = 35,
+                    stateWRITE02 = 36,
+                    stateWRITE03 = 37,
+                    stateWRITE04 = 38,
+                    stateWRITE05 = 39,
+                    stateWRITE06 = 40,
+                    stateWRITE07 = 41,
+                    stateWRITE08 = 42,
+                    stateWRITE09 = 43,
+                    stateWRITE10 = 44,
+                    stateWRITE11 = 45,
+                    stateWRITE12 = 46,
+                    stateWRITE13 = 47,
+                    stateWRITE14 = 48,
+                    stateWRITE15 = 49,
+                    stateWRITE16 = 50,
+                 
+                    // Write Check States
+                    stateWRCHK00 = 51,
+                 
+                    
+                    // Other States
+                    stateFINI    = 52,
+                    stateIDLE    = 53,
+                    stateDONE    = 54,
+                    stateINFAIL  = 55,
+                    stateRWFAIL  = 56;
 
-   reg [ 6:0] state;                    // Current State
    reg [ 2:0] spiOP;                    // SPI Op
    reg [ 7:0] spiRXD;                   // SPI Received Data
    reg [ 7:0] spiTXD;                   // SPI Transmit Data
-   reg        spiDONE;                  // Asserted when SPI is done
-   reg [15:0] bytecnt;                  // Byte Counter
+   reg [15:0] loopCNT;                  // Byte Counter
    reg [ 7:0] sdCMD17[0:5];             // CMD17
    reg [ 7:0] sdCMD24[0:5];             // CMD24
-   reg [15:0] memADDR;                  // Memory Address
-   reg        memREQ;                   // DMA Request
+
+   reg [20:0] busFLAGS;                 // Bus Flags
+
    reg        abort;                    // Abort this command
    reg [19:0] timeout;                  // Timeout
    reg [ 7:0] sdRDCNT;                  // Read Counter
    reg [ 7:0] sdWRCNT;                  // Write Counter
    reg [ 7:0] sdVAL;                    // Error Value
    reg [ 4:0] sdERR;                    // Error State
+   reg        sdINCSECT;                // Increment Sector
+   reg        sdINCWD;                  // Increment Word
+   
+   reg        rwDONE;                   // Read/Write Completed
+   reg        readOP;                   // Read/Write Operation
+   reg        dmaREQ;			// DMA Request
+   reg [0:35] dmaDATAO;   		// DMA Data Out
+   
+   reg [ 6:0] state;                    // Current State
+   wire       spiDONE;                  // Asserted by SPI when done
 
    //
    // SD_STATE:
    // This process assumes a 50 MHz clock
    //
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             sdERR   <= 0;
-             sdVAL   <= 0;
-             sdRDCNT <= 0;
-             sdWRCNT <= 0;
-             spiOP   <= `spiNOP;
-             bytecnt <= 0;
-             dmaRD   <= 0;
-             dmaWR   <= 0;
-             memREQ  <= 0;
-             memBUF  <= 0;
-             memADDR <= 0;
-             dmaDOUT <= 0;
-             spiTXD  <= 0;
-             //sdCMD17 <= {8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00};
-             //sdCMD24 <= {8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00};
-             abort   <= 0;
-             bytecnt <= 0;
-             dmaRD   <= 0;
-             dmaWR   <= 0;
-             memREQ  <= 0;
-             spiOP   <= `spiNOP;
-             timeout <= 499999;
-             state   <= stateRESET;
+             sdERR      <= 0;
+             sdVAL      <= 0;
+             sdRDCNT    <= 0;
+             sdWRCNT    <= 0;
+             sdINCSECT  <= 0;
+             sdINCWD    <= 0;
+             loopCNT    <= 0;
+             
+             dmaDATAO   <= 0;
+             
+             
+             readOP     <= 0;
+             
+             spiTXD     <= 0;
+             abort      <= 0;
+             rwDONE     <= 0;
+             
+             sdCMD17[0] <= 0;
+             sdCMD17[1] <= 0;
+             sdCMD17[2] <= 0;
+             sdCMD17[3] <= 0;
+             sdCMD17[4] <= 0;
+             sdCMD17[5] <= 0;
+             sdCMD24[0] <= 0;
+             sdCMD24[1] <= 0;
+             sdCMD24[2] <= 0;
+             sdCMD24[3] <= 0;
+             sdCMD24[4] <= 0;
+             sdCMD24[5] <= 0;
+             spiOP      <= `spiNOP;
+             timeout    <= 499999;
+             state      <= stateRESET;
           end
         else
           begin
 
-             dmaRD   <= 0;
-             dmaWR   <= 0;
-             spiOP   <= `spiNOP;
+             dmaREQ    <= 0;
+             sdINCSECT <= 0;
+             spiOP     <= `spiNOP;
 
              //if ((sdOP == `sdopABORT) & (state != stateIDLE))
              //  begin
@@ -224,7 +260,7 @@ module SD(clk, rst,
                stateRESET:
                  begin
                     timeout <= timeout - 1'b1;
-                    bytecnt <= 0;
+                    loopCNT <= 0;
                     state   <= stateINIT00;
                  end
 
@@ -236,11 +272,11 @@ module SD(clk, rst,
                stateINIT00:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (spiDONE | (bytecnt == 0))
+                    if (spiDONE | (loopCNT == 0))
                       begin
-                         if (bytecnt == nCR)
+                         if (loopCNT == nCR)
                            begin
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               spiOP   <= `spiCSL;
                               state   <= stateINIT01;
                            end
@@ -248,7 +284,7 @@ module SD(clk, rst,
                            begin
                               spiOP   <= `spiTR;
                               spiTXD  <= 8'hff;
-                              bytecnt <= bytecnt + 1'b1;
+                              loopCNT <= loopCNT + 1'b1;
                            end
                       end
                  end
@@ -261,18 +297,18 @@ module SD(clk, rst,
                stateINIT01:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (spiDONE | (bytecnt == 0))
+                    if (spiDONE | (loopCNT == 0))
                       begin
-                         if (bytecnt == 6)
+                         if (loopCNT == 6)
                            begin
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateINIT02;
                            end
                          else
                            begin
                               spiOP   <= `spiTR;
-                              spiTXD  <= sdCMD0[bytecnt];
-                              bytecnt <= bytecnt + 1'b1;
+                              spiTXD  <= sdCMD0[loopCNT];
+                              loopCNT <= loopCNT + 1'b1;
                            end
                       end
                  end
@@ -286,11 +322,11 @@ module SD(clk, rst,
                stateINIT02:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else
                       begin
@@ -298,23 +334,23 @@ module SD(clk, rst,
                            begin
                               if (spiRXD == 8'hff)
                                 begin
-                                   if (bytecnt == nCR)
+                                   if (loopCNT == nCR)
                                      begin
                                         spiOP   <= `spiCSH;
-                                        bytecnt <= 0;
+                                        loopCNT <= 0;
                                         state   <= stateRESET;
                                      end
                                    else
                                      begin
                                         spiOP   <= `spiTR;
                                         spiTXD  <= 8'hff;
-                                        bytecnt <= bytecnt + 1'b1;
+                                        loopCNT <= loopCNT + 1'b1;
                                      end
                                 end
                               else
                                 begin
                                    spiOP   <= `spiCSH;
-                                   bytecnt <= 0;
+                                   loopCNT <= 0;
                                    if (spiRXD == 8'h01)
                                      state <= stateINIT03;
                                    else
@@ -332,16 +368,16 @@ module SD(clk, rst,
                stateINIT03:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else if (spiDONE)
                       begin
                          spiOP   <= `spiCSL;
-                         bytecnt <= 0;
+                         loopCNT <= 0;
                          state   <= stateINIT04;
                       end
                  end
@@ -354,18 +390,18 @@ module SD(clk, rst,
                stateINIT04:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (spiDONE | (bytecnt == 0))
+                    if (spiDONE | (loopCNT == 0))
                       begin
-                         if (bytecnt == 6)
+                         if (loopCNT == 6)
                            begin
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateINIT05;
                            end
                          else
                            begin
                               spiOP   <= `spiTR;
-                              spiTXD  <= sdCMD8[bytecnt];
-                              bytecnt <= bytecnt + 1'b1;
+                              spiTXD  <= sdCMD8[loopCNT];
+                              loopCNT <= loopCNT + 1'b1;
                            end
                       end
                  end
@@ -380,11 +416,11 @@ module SD(clk, rst,
                stateINIT05:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else
                       begin
@@ -392,10 +428,10 @@ module SD(clk, rst,
                            begin
                               if (spiRXD == 8'hff)
                                 begin
-                                   if (bytecnt == nCR)
+                                   if (loopCNT == nCR)
                                      begin
                                         spiOP   <= `spiCSH;
-                                        bytecnt <= 0;
+                                        loopCNT <= 0;
                                         sdERR   <= 1;
                                         state   <= stateINFAIL;
                                      end
@@ -403,18 +439,19 @@ module SD(clk, rst,
                                      begin
                                         spiOP   <= `spiTR;
                                         spiTXD  <= 8'hff;
-                                        bytecnt <= bytecnt + 1'b1;
+                                        loopCNT <= loopCNT + 1'b1;
                                      end
                                 end
                               else
                                 begin
-                                   bytecnt   <= 0;
+                                   loopCNT   <= 0;
                                    if (spiRXD == 8'h01)
                                      begin
                                         state <= stateINIT06;
                                      end
-                                   else if (spiRXD <= 8'h05)
+                                   else if (spiRXD == 8'h05)
                                      begin
+                                        spiOP <= `spiCSH;
                                         sdERR <= 2;
                                         state <= stateINFAIL;
                                      end
@@ -440,12 +477,12 @@ module SD(clk, rst,
                stateINIT06:
                  begin
                     timeout <= timeout - 1'b1;
-                    case (bytecnt)
+                    case (loopCNT)
                       0:
                         begin
                            spiOP   <= `spiTR;
                            spiTXD  <= 8'hff;
-                           bytecnt <= 1;
+                           loopCNT <= 1;
                         end
                       1:
                         begin
@@ -455,7 +492,7 @@ module SD(clk, rst,
                                   begin
                                      spiOP   <= `spiTR;
                                      spiTXD  <= 8'hff;
-                                     bytecnt <= 2;
+                                     loopCNT <= 2;
                                   end
                                 else
                                   begin
@@ -472,7 +509,7 @@ module SD(clk, rst,
                                   begin
                                      spiOP   <= `spiTR;
                                      spiTXD  <= 8'hff;
-                                     bytecnt <= 3;
+                                     loopCNT <= 3;
                                   end
                                 else
                                   begin
@@ -489,7 +526,7 @@ module SD(clk, rst,
                                   begin
                                      spiOP   <= `spiTR;
                                      spiTXD  <= 8'hff;
-                                     bytecnt <= 4;
+                                     loopCNT <= 4;
                                   end
                                 else
                                   begin
@@ -505,7 +542,7 @@ module SD(clk, rst,
                                 if (spiRXD == 8'haa)
                                   begin
                                      spiOP   <= `spiCSH;
-                                     bytecnt <= 0;
+                                     loopCNT <= 0;
                                      state   <= stateINIT07;
                                   end
                                 else
@@ -531,16 +568,16 @@ module SD(clk, rst,
                stateINIT07:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else if (spiDONE)
                       begin
                          spiOP   <= `spiCSL;
-                         bytecnt <= 0;
+                         loopCNT <= 0;
                          state   <= stateINIT08;
                       end
                  end
@@ -553,18 +590,18 @@ module SD(clk, rst,
                stateINIT08:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (spiDONE | (bytecnt == 0))
+                    if (spiDONE | (loopCNT == 0))
                       begin
-                         if (bytecnt == 6)
+                         if (loopCNT == 6)
                            begin
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateINIT09;
                            end
                          else
                            begin
                               spiOP   <= `spiTR;
-                              spiTXD  <= sdCMD55[bytecnt];
-                              bytecnt <= bytecnt + 1'b1;
+                              spiTXD  <= sdCMD55[loopCNT];
+                              loopCNT <= loopCNT + 1'b1;
                            end
                       end
                  end
@@ -578,11 +615,11 @@ module SD(clk, rst,
                stateINIT09:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else
                       begin
@@ -590,10 +627,10 @@ module SD(clk, rst,
                            begin
                               if (spiRXD == 8'hff)
                                 begin
-                                   if (bytecnt == nCR)
+                                   if (loopCNT == nCR)
                                      begin
                                         spiOP   <= `spiCSH;
-                                        bytecnt <= 0;
+                                        loopCNT <= 0;
                                         sdERR   <= 8;
                                         state   <= stateINFAIL;
                                      end
@@ -601,13 +638,13 @@ module SD(clk, rst,
                                      begin
                                         spiOP   <= `spiTR;
                                         spiTXD  <= 8'hff;
-                                        bytecnt <= bytecnt + 1'b1;
+                                        loopCNT <= loopCNT + 1'b1;
                                      end
                                 end
                               else
                                 begin
                                    spiOP   <= `spiCSH;
-                                   bytecnt <= 0;
+                                   loopCNT <= 0;
                                    if (spiRXD == 8'h01)
                                      begin
                                         state <= stateINIT10;
@@ -629,16 +666,16 @@ module SD(clk, rst,
                stateINIT10:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else if (spiDONE)
                       begin
                          spiOP   <= `spiCSL;
-                         bytecnt <= 0;
+                         loopCNT <= 0;
                          state   <= stateINIT11;
                       end
                  end
@@ -651,18 +688,18 @@ module SD(clk, rst,
                stateINIT11:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (spiDONE | (bytecnt == 0) )
+                    if (spiDONE | (loopCNT == 0) )
                       begin
-                         if (bytecnt == 6)
+                         if (loopCNT == 6)
                            begin
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateINIT12;
                            end
                          else
                            begin
                               spiOP   <= `spiTR;
-                              spiTXD  <= sdACMD41[bytecnt];
-                              bytecnt <= bytecnt + 1'b1;
+                              spiTXD  <= sdACMD41[loopCNT];
+                              loopCNT <= loopCNT + 1'b1;
                            end
                       end
                  end
@@ -676,11 +713,11 @@ module SD(clk, rst,
                stateINIT12:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else
                       begin
@@ -688,10 +725,10 @@ module SD(clk, rst,
                            begin
                               if (spiRXD == 8'hff)
                                 begin
-                                   if (bytecnt == nCR)
+                                   if (loopCNT == nCR)
                                      begin
                                         spiOP   <= `spiCSH;
-                                        bytecnt <= 0;
+                                        loopCNT <= 0;
                                         sdERR   <= 9;
                                         state   <= stateINFAIL;
                                      end
@@ -699,13 +736,13 @@ module SD(clk, rst,
                                      begin
                                         spiOP   <= `spiTR;
                                         spiTXD  <= 8'hff;
-                                        bytecnt <= bytecnt + 1'b1;
+                                        loopCNT <= loopCNT + 1'b1;
                                      end
                                 end
                               else
                                 begin
                                    spiOP   <= `spiCSH;
-                                   bytecnt <= 0;
+                                   loopCNT <= 0;
                                    if (spiRXD == 8'h00)
                                      begin
                                         state <= stateINIT13;
@@ -727,16 +764,16 @@ module SD(clk, rst,
                stateINIT13:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else if (spiDONE)
                       begin
                          spiOP   <= `spiCSL;
-                         bytecnt <= 0;
+                         loopCNT <= 0;
                          state   <= stateINIT14;
                       end
                  end
@@ -749,18 +786,18 @@ module SD(clk, rst,
                stateINIT14:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (spiDONE | (bytecnt == 0))
+                    if (spiDONE | (loopCNT == 0))
                       begin
-                         if (bytecnt == 6)
+                         if (loopCNT == 6)
                            begin
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateINIT15;
                            end
                          else
                            begin
                               spiOP   <= `spiTR;
-                              spiTXD  <= sdCMD58[bytecnt];
-                              bytecnt <= bytecnt + 1'b1;
+                              spiTXD  <= sdCMD58[loopCNT];
+                              loopCNT <= loopCNT + 1'b1;
                            end
                       end
                  end
@@ -774,11 +811,11 @@ module SD(clk, rst,
                stateINIT15:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else
                       begin
@@ -786,10 +823,10 @@ module SD(clk, rst,
                            begin
                               if (spiRXD == 8'hff)
                                 begin
-                                   if (bytecnt == nCR)
+                                   if (loopCNT == nCR)
                                      begin
                                         spiOP   <= `spiCSH;
-                                        bytecnt <= 0;
+                                        loopCNT <= 0;
                                         sdERR   <= 10;
                                         state   <= stateINFAIL;
                                      end
@@ -797,12 +834,12 @@ module SD(clk, rst,
                                      begin
                                         spiOP   <= `spiTR;
                                         spiTXD  <= 8'hff;
-                                        bytecnt <= bytecnt + 1'b1;
+                                        loopCNT <= loopCNT + 1'b1;
                                      end
                                 end
                               else
                                 begin
-                                   bytecnt    <= 0;
+                                   loopCNT    <= 0;
                                    if (spiRXD == 8'h00)
                                      state <= stateINIT16;
                                    else
@@ -823,12 +860,12 @@ module SD(clk, rst,
                stateINIT16:
                  begin
                     timeout <= timeout - 1'b1;
-                    case (bytecnt)
+                    case (loopCNT)
                       0:
                         begin
                            spiOP   <= `spiTR;
                            spiTXD  <= 8'hff;
-                           bytecnt <= 1;
+                           loopCNT <= 1;
                         end
                       1:
                         begin
@@ -836,7 +873,7 @@ module SD(clk, rst,
                              begin
                                 spiOP      <= `spiTR;
                                 spiTXD     <= 8'hff;
-                                bytecnt    <= 2;
+                                loopCNT    <= 2;
                              end
                         end
                       2:
@@ -845,7 +882,7 @@ module SD(clk, rst,
                              begin
                                 spiOP      <= `spiTR;
                                 spiTXD     <= 8'hff;
-                                bytecnt    <= 3;
+                                loopCNT    <= 3;
                              end
                         end
                       3:
@@ -854,7 +891,7 @@ module SD(clk, rst,
                              begin
                                 spiOP      <= `spiTR;
                                 spiTXD     <= 8'hff;
-                                bytecnt    <= 4;
+                                loopCNT    <= 4;
                              end
                         end
                       4:
@@ -862,7 +899,7 @@ module SD(clk, rst,
                            if (spiDONE)
                              begin
                                 spiOP      <= `spiCSH;
-                                bytecnt    <= 0;
+                                loopCNT    <= 0;
                                 state      <= stateINIT17;
                              end
                         end
@@ -881,15 +918,15 @@ module SD(clk, rst,
                stateINIT17:
                  begin
                     timeout <= timeout - 1'b1;
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else if (spiDONE)
                       begin
-                         bytecnt <= 0;
+                         loopCNT <= 0;
 `ifdef GOFAST
                          spiOP   <= spiFAST;
 `endif
@@ -915,12 +952,20 @@ module SD(clk, rst,
                       `sdopRD:
                         begin
                            sdRDCNT <= sdRDCNT + 1'b1;
-                           state <= stateREAD00;
+                           readOP  <= 1;
+                           state   <= stateREAD00;
                         end
                       `sdopWR:
                         begin
                            sdWRCNT <= sdWRCNT + 1'b1;
-                           state <= stateWRITE00;
+                           readOP  <= 0;
+                           state   <= stateWRITE00;
+                        end
+                      `sdopWRCHK:
+                        begin
+                           sdRDCNT <= sdRDCNT + 1'b1;
+                           readOP  <= 1;
+                           state    <= stateWRCHK00;
                         end
                       default:
                         begin
@@ -932,18 +977,18 @@ module SD(clk, rst,
                //
                // stateREAD00:
                //  Setup Read Single Block (CMD17)
+               //  This is a loop destination
                //
 
                stateREAD00:
                  begin
-                    memADDR    <= sdMEMaddr;
                     sdCMD17[0] <= 8'h51;
-                    sdCMD17[1] <= sdSECT[31 :24];
-                    sdCMD17[2] <= sdSECT[23 :16];
-                    sdCMD17[3] <= sdSECT[15 : 8];
-                    sdCMD17[4] <= sdSECT[ 7 : 0];
+                    sdCMD17[1] <= sdSECTADDR[31:24];
+                    sdCMD17[2] <= sdSECTADDR[23:16];
+                    sdCMD17[3] <= sdSECTADDR[15: 8];
+                    sdCMD17[4] <= sdSECTADDR[ 7: 0];
                     sdCMD17[5] <= 8'hff;
-                    bytecnt    <= 0;
+                    loopCNT    <= 0;
                     spiOP      <= `spiCSL;
                     state      <= stateREAD01;
                  end
@@ -955,18 +1000,18 @@ module SD(clk, rst,
 
                stateREAD01:
                  begin
-                    if (spiDONE | (bytecnt == 0))
+                    if (spiDONE | (loopCNT == 0))
                       begin
-                         if (bytecnt == 6)
+                         if (loopCNT == 6)
                            begin
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateREAD02;
                            end
                          else
                            begin
                               spiOP   <= `spiTR;
-                              spiTXD  <= sdCMD17[bytecnt];
-                              bytecnt <= bytecnt + 1'b1;
+                              spiTXD  <= sdCMD17[loopCNT];
+                              loopCNT <= loopCNT + 1'b1;
                            end
                       end
                  end
@@ -979,11 +1024,11 @@ module SD(clk, rst,
 
                stateREAD02:
                  begin
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else
                       begin
@@ -991,10 +1036,10 @@ module SD(clk, rst,
                            begin
                               if (spiRXD == 8'hff)
                                 begin
-                                   if (bytecnt == nCR)
+                                   if (loopCNT == nCR)
                                      begin
                                         spiOP   <= `spiCSH;
-                                        bytecnt <= 0;
+                                        loopCNT <= 0;
                                         sdERR   <= 12;
                                         state   <= stateRWFAIL;
                                      end
@@ -1002,12 +1047,12 @@ module SD(clk, rst,
                                      begin
                                         spiOP   <= `spiTR;
                                         spiTXD  <= 8'hff;
-                                        bytecnt <= bytecnt + 1'b1;
+                                        loopCNT <= loopCNT + 1'b1;
                                      end
                                 end
                               else
                                 begin
-                                   bytecnt <= 0;
+                                   loopCNT <= 0;
                                    if (spiRXD == 8'h00)
                                      begin
                                         state <= stateREAD03;
@@ -1030,11 +1075,11 @@ module SD(clk, rst,
 
                stateREAD03:
                  begin
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else
                       begin
@@ -1042,10 +1087,10 @@ module SD(clk, rst,
                            begin
                               if (spiRXD == 8'hff)
                                 begin
-                                   if (bytecnt == nAC)
+                                   if (loopCNT == nAC)
                                      begin
                                         spiOP   <= `spiCSH;
-                                        bytecnt <= 0;
+                                        loopCNT <= 0;
                                         sdERR   <= 14;
                                         state   <= stateRWFAIL;
                                      end
@@ -1053,15 +1098,19 @@ module SD(clk, rst,
                                      begin
                                         spiOP   <= `spiTR;
                                         spiTXD  <= 8'hff;
-                                        bytecnt <= bytecnt + 1'b1;
+                                        loopCNT <= loopCNT + 1'b1;
                                      end
                                 end
                               else
                                 begin
-                                   bytecnt <= 0;
+                                   loopCNT <= 0;
                                    if (spiRXD == 8'hfe)
                                      begin
-                                        state <= stateREAD04;
+                                        rwDONE  <= 0;
+                                        spiOP   <= `spiTR;
+                                        spiTXD  <= 8'hff;
+                                        loopCNT <= 0;
+                                        state   <= stateREAD04;
                                      end
                                    else
                                      begin
@@ -1077,142 +1126,226 @@ module SD(clk, rst,
 
                //
                // stateREAD04:
-               //  Acquire DMA.  Setup for loop.
+               //  Read byte[0] of data from disk. (LS Byte)
+               //  This is a loop destination
                //
 
                stateREAD04:
                  begin
-                    memREQ <= 1;
-                    if (dmaGNT)
+                    if (spiDONE)
                       begin
-                         spiOP   <= `spiTR;
-                         spiTXD  <= 8'hff;
-                         bytecnt <= 0;
-                         state   <= stateREAD05;
+                         spiOP           <= `spiTR;
+                         spiTXD          <= 8'hff;
+                         loopCNT         <= loopCNT + 1'b1;
+                         dmaDATAO[28:35] <= spiRXD;
+                         state           <= stateREAD05;
                       end
                  end
 
                //
                // stateREAD05:
-               //  Read LSBYTE of data from disk (even addresses)
-               //  Loop destination
+               //  Read byte[1] of data from disk.
                //
 
                stateREAD05:
                  begin
                     if (spiDONE)
                       begin
-                         spiOP   <= `spiTR;
-                         spiTXD  <= 8'hff;
-                         bytecnt <= bytecnt + 1'b1;
-                         dmaDOUT[4 : 11] <= spiRXD[0 : 7];
-                         state <= stateREAD06;
+                         spiOP           <= `spiTR;
+                         spiTXD          <= 8'hff;
+                         dmaDATAO[20:27] <= spiRXD;
+                         state           <= stateREAD06;
                       end
                  end
 
                //
                // stateREAD06:
-               //  Read MSBYTE of data from disk (odd addresses).
-               //  Discard the top four bits forming a 12-bit word
-               //  from the two bytes.
+               //  Read byte[2] of data from disk.
                //
 
                stateREAD06:
                  begin
                     if (spiDONE)
                       begin
-                         spiOP   <= `spiTR;
-                         spiTXD  <= 8'hff;
-                         dmaDOUT[0 : 3] <= spiRXD[4 : 7];
-                         state <= stateREAD07;
+                         spiOP           <= `spiTR;
+                         spiTXD          <= 8'hff;
+                         dmaDATAO[12:19] <= spiRXD;
+                         state           <= stateREAD07;
                       end
                  end
 
                //
                // stateREAD07:
-               //  Write disk data to memory.
-               //  if memREQ is not asserted, we are reading the second
-               //  128 words of a 128 word read.  Notice no DMA occurs
-               //  to memory and the bits are dropped.
+               //  Read byte[3] of data from disk.
                //
 
                stateREAD07:
                  begin
-                    if (memREQ)
+                    if (spiDONE)
                       begin
-                         dmaWR <= 1;
+                         spiOP           <= `spiTR;
+                         spiTXD          <= 8'hff;
+                         dmaDATAO[ 4:11] <= spiRXD;
+                         state           <= stateREAD08;
                       end
-                    state <= stateREAD08;
                  end
 
                //
                // stateREAD08:
-               //  This state checks the loop conditions:
-               //  1.  An abort command causes the loop to terminate immediately.
-               //  2.  if sdLEN is asserted (128 word read) at byte 255,)
-               //      the memory write DMA request is dropped.  The DMA address
-               //      stops incrementing.  The state machine continues to read
-               //      all 256 words (512 bytes).
-               //  3.  At word 256 (byte 512), the loop terminates.
+               //  Read byte[4] of data from disk.  (MS Nibble)
                //
 
                stateREAD08:
                  begin
-                    if (abort)
+                    if (spiDONE)
                       begin
-                         memREQ  <= 0;
-                         spiOP   <= `spiCSH;
-                         bytecnt <= 0;
-                         state   <= stateFINI;
-                      end
-                    else if (bytecnt == 511)
-                      begin
-                         memREQ  <= 0;
-                         memADDR <= memADDR + 1'b1;
-                         bytecnt <= 0;
-                         state   <= stateREAD09;
-                      end
-                    else if (bytecnt >= 255 & sdLEN)
-                      begin
-                         memREQ  <= 0;
-                         bytecnt <= bytecnt + 1'b1;
-                         state   <= stateREAD05;
-                      end
-                    else
-                      begin
-                         memADDR <= memADDR + 1'b1;
-                         bytecnt <= bytecnt + 1'b1;
-                         state   <= stateREAD05;
+                         spiOP         <= `spiTR;
+                         spiTXD        <= 8'hff;
+                         dmaDATAO[0:3] <= spiRXD[4:7];
+                         state         <= stateREAD09;
                       end
                  end
 
                //
                // stateREAD09:
-               //  Read 2 bytes of CRC which is required for the SD Card.
+               //  Read byte[5] of data from disk.
+               //  This byte is ignored by the disk controller
                //
 
                stateREAD09:
                  begin
-                    if (bytecnt == 0)
+                    if (spiDONE)
+                      begin
+                         spiOP  <= `spiTR;
+                         spiTXD <= 8'hff;
+                         state  <= stateREAD10;
+                      end
+                 end
+
+               //
+               // stateREAD10:
+               //  Read byte[6] of data from disk.
+               //  This byte is ignored by the disk controller
+               //
+
+               stateREAD10:
+                 begin
+                    if (spiDONE)
+                      begin
+                         spiOP  <= `spiTR;
+                         spiTXD <= 8'hff;
+                         state  <= stateREAD11;
+                      end
+                 end
+    
+               //
+               // stateREAD11:
+               //  Read byte[7] of data from disk.
+               //  This byte is ignored by the disk controller
+               //
+
+               stateREAD11:
+                 begin
+                    if (spiDONE)
+                      begin
+                         if (rwDONE)
+                           begin
+                              state <= stateREAD13;
+                           end
+                         else
+                           begin
+                              spiOP  <= `spiTR;
+                              spiTXD <= 8'hff;
+                              dmaREQ <= 1;
+                              state  <= stateREAD12;
+                           end
+                      end
+                 end
+               
+               //
+               // stateREAD12:
+               //  Write disk data to memory.
+               //
+
+               stateREAD12:
+                 begin
+                    if (dmaACK)
+                      begin
+                         state <= stateREAD13;
+                      end
+                 end
+
+////////////////////////////////////////////////////////////////////
+               //
+               // stateREAD13:
+               //  The SIMH uses 1024 byte sectors.   This is
+               //  because a PDP10 sector is 128 words and SIMH uses
+               //  8 bytes (64-bits) per word.  Therefore each PDP10
+               //  sector corresponds to two SD sectors.
+               //
+               //  This state checks the various loop conditions:
+               //
+               //  - When Word Count increments to zero, we are done
+               //    storing data in memory but we continue reading
+               //    until the end-of-sector.  In this case we set
+               //    'rwDONE'
+               //
+               //
+
+               stateREAD13:
+                 begin
+                    if (abort)
+                      begin
+                         spiOP   <= `spiCSH;
+                         loopCNT <= 0;
+                         state   <= stateFINI;
+                      end
+                    else
+                      begin
+                         if (sdWDCNT == 0)
+                           begin
+                              rwDONE <= 0;
+                           end
+                         if (loopCNT == 63)
+                           begin
+                              sdINCSECT <= 1;
+                              state     <= stateREAD00;
+                           end
+                         else if (loopCNT == 127)
+                           begin
+                              sdINCSECT <= 1;
+                              state     <= stateREAD00;
+                           end
+                      end
+                 end
+
+               //
+               // stateREAD14:
+               //  Read 2 bytes of CRC which is required for the SD Card.
+               //
+
+               stateREAD14:
+                 begin
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else
                       begin
                          if (spiDONE)
                            begin
-                              if (bytecnt)
+                              if (loopCNT)
                                 begin
                                    spiOP   <= `spiTR;
                                    spiTXD  <= 8'hff;
-                                   bytecnt <= 2;
+                                   loopCNT <= 2;
                                 end
-                              else if (bytecnt == 2)
+                              else if (loopCNT == 2)
                                 begin
                                    spiOP   <= `spiCSH;
-                                   bytecnt <= 0;
+                                   loopCNT <= 0;
                                    state   <= stateFINI;
                                 end
                            end
@@ -1226,14 +1359,13 @@ module SD(clk, rst,
 
                stateWRITE00:
                  begin
-                    memADDR    <= sdMEMaddr;
                     sdCMD24[0] <= 8'h58;
-                    sdCMD24[1] <= sdSECT[31 : 24];
-                    sdCMD24[2] <= sdSECT[23 : 16];
-                    sdCMD24[3] <= sdSECT[15 :  8];
-                    sdCMD24[4] <= sdSECT[ 7 :  0];
+                    sdCMD24[1] <= sdSECTADDR[31: 24];
+                    sdCMD24[2] <= sdSECTADDR[23: 16];
+                    sdCMD24[3] <= sdSECTADDR[15:  8];
+                    sdCMD24[4] <= sdSECTADDR[ 7:  0];
                     sdCMD24[5] <= 8'hff;
-                    bytecnt    <= 0;
+                    loopCNT    <= 0;
                     spiOP      <= `spiCSL;
                     state      <= stateWRITE01;
                  end
@@ -1245,18 +1377,18 @@ module SD(clk, rst,
 
                stateWRITE01:
                  begin
-                    if (spiDONE | (bytecnt == 0))
+                    if (spiDONE | (loopCNT == 0))
                       begin
-                         if (bytecnt == 6)
+                         if (loopCNT == 6)
                            begin
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateWRITE02;
                            end
                          else
                            begin
                               spiOP   <= `spiTR;
-                              spiTXD  <= sdCMD24[bytecnt];
-                              bytecnt <= bytecnt + 1'b1;
+                              spiTXD  <= sdCMD24[loopCNT];
+                              loopCNT <= loopCNT + 1'b1;
                            end
                       end
                  end
@@ -1269,11 +1401,11 @@ module SD(clk, rst,
 
                stateWRITE02:
                  begin
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else
                       begin
@@ -1281,10 +1413,10 @@ module SD(clk, rst,
                            begin
                               if (spiRXD == 8'hff)
                                 begin
-                                   if (bytecnt == nCR)
+                                   if (loopCNT == nCR)
                                      begin
                                         spiOP   <= `spiCSH;
-                                        bytecnt <= 0;
+                                        loopCNT <= 0;
                                         sdERR   <= 16;
                                         state   <= stateRWFAIL;
                                      end
@@ -1292,12 +1424,12 @@ module SD(clk, rst,
                                      begin
                                         spiOP   <= `spiTR;
                                         spiTXD  <= 8'hff;
-                                        bytecnt <= bytecnt + 1'b1;
+                                        loopCNT <= loopCNT + 1'b1;
                                      end
                                 end
                               else
                                 begin
-                                   bytecnt <= 0;
+                                   loopCNT <= 0;
                                    if (spiRXD == 8'h00)
                                      begin
                                         state <= stateWRITE03;
@@ -1320,15 +1452,15 @@ module SD(clk, rst,
 
                stateWRITE03:
                  begin
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else if (spiDONE)
                       begin
-                         bytecnt <= 0;
+                         loopCNT <= 0;
                          state   <= stateWRITE04;
                       end
                  end
@@ -1340,15 +1472,15 @@ module SD(clk, rst,
 
                stateWRITE04:
                  begin
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hfe;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else if (spiDONE)
                       begin
-                         bytecnt <= 0;
+                         loopCNT <= 0;
                          state   <= stateWRITE05;
                       end
                  end
@@ -1360,8 +1492,8 @@ module SD(clk, rst,
 
                stateWRITE05:
                  begin
-                    memREQ <= 1;
-                    if (dmaGNT)
+                    dmaREQ <= 1;
+                    if (dmaACK)
                       begin
                          state <= stateWRITE06;
                       end
@@ -1369,17 +1501,14 @@ module SD(clk, rst,
 
                //
                // stateWRITE06:
-               //  Loop destination
-               //  This is the data phase of the read cycle.
-               //  If memREQ is not asserted, we are writing the second
-               //  128 words of a 128 word write.  Notice no DMA occurs.
+               //  This is a loop destination
                //
 
                stateWRITE06:
                  begin
-                    if (memREQ)
+                    if (dmaREQ)
                       begin
-                         dmaRD <= 1;
+                         //dmaRD <= 1;
                       end
                     state <= stateWRITE07;
                  end
@@ -1388,8 +1517,8 @@ module SD(clk, rst,
                // stateWRITE07:
                //  Write LSBYTE of data to disk (even addresses)
                //   This state has two modes:
-               //    If memREQ is asserted we are operating normally.
-               //    If memREQ is negated we are writing the last 128
+               //    If dmaREQ is asserted we are operating normally.
+               //    If dmaREQ is negated we are writing the last 128
                //     words of a 128 word operation.  Therefore we
                //     write zeros.  See file header.
                //
@@ -1397,15 +1526,13 @@ module SD(clk, rst,
                stateWRITE07:
                  begin
                     spiOP  <= `spiTR;
-                    if (memREQ)
+                    if (dmaREQ)
                       begin
-                         memBUF <= dmaDIN[0 : 3];
-                         spiTXD <= dmaDIN[4 :11];
+                         spiTXD <= dmaDATAI[4:11];
                       end
                     else
                       begin
-                         memBUF <= b0000;
-                         spiTXD <= b0000_0000;
+                         spiTXD <= 8'b0;
                       end
                     state <= stateWRITE08;
                  end
@@ -1421,8 +1548,7 @@ module SD(clk, rst,
                     if (spiDONE)
                       begin
                          spiOP   <= `spiTR;
-                         spiTXD  <= b0000 & memBUF;
-                         bytecnt <= bytecnt + 1'b1;
+                         loopCNT <= loopCNT + 1'b1;
                          state   <= stateWRITE09;
                       end
                  end
@@ -1438,31 +1564,24 @@ module SD(clk, rst,
                       begin
                          if (abort)
                            begin
-                              memREQ  <= 0;
+                              dmaREQ  <= 0;
                               spiOP   <= `spiCSH;
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateFINI;
                            end
-                         else if (bytecnt == 511)
+                         else if (loopCNT == 511)
                            begin
-                              memREQ  <= 0;
+                              dmaREQ  <= 0;
                               spiOP   <= `spiTR;
                               spiTXD  <= 8'hff;
-                              bytecnt <= 0;
-                              memADDR <= memADDR + 1'b1;
+                              loopCNT <= 0;
+                              //memADDR <= memADDR + 1'b1;
                               state   <= stateWRITE10;
-                           end
-                         else if ((bytecnt == 255) & sdLEN)
-                           begin
-                              memREQ  <= 0;
-                              spiOP   <= `spiCSH;
-                              bytecnt <= bytecnt + 1'b1;
-                              state   <= stateWRITE06;
                            end
                          else
                            begin
-                              bytecnt <= bytecnt + 1'b1;
-                              memADDR <= memADDR + 1'b1;
+                              loopCNT <= loopCNT + 1'b1;
+                              //memADDR <= memADDR + 1'b1;
                               state   <= stateWRITE06;
                            end
                       end
@@ -1477,17 +1596,17 @@ module SD(clk, rst,
                  begin
                     if (spiDONE)
                       begin
-                         if (bytecnt == 0)
+                         if (loopCNT == 0)
                            begin
                               spiOP   <= `spiTR;
                               spiTXD  <= 8'hff;
-                              bytecnt <= 1;
+                              loopCNT <= 1;
                            end
                          else
                            begin
                               spiOP   <= `spiTR;
                               spiTXD  <= 8'hff;
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateWRITE11;
                            end
                       end
@@ -1510,11 +1629,11 @@ module SD(clk, rst,
                  begin
                     if (spiDONE)
                       begin
-                         if (spiRXD[3 : 7] == 5'b0_010_1)
+                         if (spiRXD[3:7] == 5'b0_010_1)
                            begin
                               spiOP   <= `spiTR;
                               spiTXD  <= 8'hff;
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateWRITE12;
                            end
                          else
@@ -1522,7 +1641,7 @@ module SD(clk, rst,
                               spiOP   <= `spiCSH;
                               sdVAL   <= spiRXD;
                               sdERR   <= 18;
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateRWFAIL;
                            end
                       end
@@ -1540,10 +1659,10 @@ module SD(clk, rst,
                       begin
                          if (spiRXD == 0)
                            begin
-                              if (bytecnt == 65535)
+                              if (loopCNT == 65535)
                                 begin
                                    spiOP   <= `spiCSH;
-                                   bytecnt <= 0;
+                                   loopCNT <= 0;
                                    sdERR   <= 19;
                                    state   <= stateRWFAIL;
                                 end
@@ -1551,12 +1670,12 @@ module SD(clk, rst,
                                 begin
                                    spiOP   <= `spiTR;
                                    spiTXD  <= 8'hff;
-                                   bytecnt <= bytecnt + 1'b1;
+                                   loopCNT <= loopCNT + 1'b1;
                                 end
                            end
                          else
                            begin
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateWRITE13;
                            end
                       end
@@ -1569,20 +1688,20 @@ module SD(clk, rst,
 
                stateWRITE13:
                  begin
-                    if (spiDONE | (bytecnt == 0))
+                    if (spiDONE | (loopCNT == 0))
                       begin
-                         if (bytecnt == 6)
+                         if (loopCNT == 6)
                            begin
                               spiOP   <= `spiTR;
                               spiTXD  <= 8'hff;
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               state   <= stateWRITE14;
                            end
                          else
                            begin
                               spiOP   <= `spiTR;
-                              spiTXD  <= sdCMD13(bytecnt);
-                              bytecnt <= bytecnt + 1'b1;
+                              spiTXD  <= sdCMD13[loopCNT];
+                              loopCNT <= loopCNT + 1'b1;
                            end
                       end
                  end
@@ -1607,10 +1726,10 @@ module SD(clk, rst,
                       begin
                          if (spiRXD == 8'hff)
                            begin
-                              if (bytecnt == nCR)
+                              if (loopCNT == nCR)
                                 begin
                                    spiOP   <= `spiCSH;
-                                   bytecnt <= 0;
+                                   loopCNT <= 0;
                                    sdERR   <= 20;
                                    state   <= stateRWFAIL;
                                 end
@@ -1618,7 +1737,7 @@ module SD(clk, rst,
                                 begin
                                    spiOP   <= `spiTR;
                                    spiTXD  <= 8'hff;
-                                   bytecnt <= bytecnt + 1'b1;
+                                   loopCNT <= loopCNT + 1'b1;
                                 end
                            end
                          else
@@ -1627,13 +1746,13 @@ module SD(clk, rst,
                                 begin
                                    spiOP   <= `spiTR;
                                    spiTXD  <= 8'hff;
-                                   bytecnt <= 0;
+                                   loopCNT <= 0;
                                    state   <= stateWRITE15;
                                 end
                               else
                                 begin
                                    spiOP   <= `spiCSH;
-                                   bytecnt <= 0;
+                                   loopCNT <= 0;
                                    sdVAL   <= spiRXD;
                                    sdERR   <= 21;
                                 end
@@ -1663,13 +1782,13 @@ module SD(clk, rst,
                            begin
                               spiOP   <= `spiTR;
                               spiTXD  <= 8'hff;
-                              bytecnt <= 1;
+                              loopCNT <= 1;
                               state   <= stateWRITE16;
                            end
                          else
                            begin
                               spiOP   <= `spiCSH;
-                              bytecnt <= 0;
+                              loopCNT <= 0;
                               sdVAL   <= spiRXD;
                               sdERR   <= 22;
                               state   <= stateRWFAIL;
@@ -1687,11 +1806,31 @@ module SD(clk, rst,
                     if (spiDONE)
                       begin
                          spiOP   <= `spiCSH;
-                         bytecnt <= 0;
+                         loopCNT <= 0;
                          state   <= stateFINI;
                       end
                  end
 
+               //
+               // stateWRCHK00:
+               //  Setup Read Single Block (CMD17) - (same as stateRD00)
+               //
+               
+               stateWRCHK00:
+                 begin
+                    sdCMD17[0] <= 8'h51;
+                    sdCMD17[1] <= sdSECTADDR[31:24];
+                    sdCMD17[2] <= sdSECTADDR[23:16];
+                    sdCMD17[3] <= sdSECTADDR[15: 8];
+                    sdCMD17[4] <= sdSECTADDR[ 7: 0];
+                    sdCMD17[5] <= 8'hff;
+                    loopCNT    <= 0;
+                    spiOP      <= `spiCSL;
+                    state      <= stateWRCHK00;
+                 end
+
+
+               
                //
                // stateFINI:
                //  Send 8 clock cycles
@@ -1699,15 +1838,15 @@ module SD(clk, rst,
 
                stateFINI:
                  begin
-                    if (bytecnt == 0)
+                    if (loopCNT == 0)
                       begin
                          spiOP   <= `spiTR;
                          spiTXD  <= 8'hff;
-                         bytecnt <= 1;
+                         loopCNT <= 1;
                       end
                     else if (spiDONE)
                       begin
-                         bytecnt <= 0;
+                         loopCNT <= 0;
                          state   <= stateDONE;
                       end
                  end
@@ -1772,6 +1911,15 @@ module SD(clk, rst,
    // Debug Output
    //
    
-   assign sdDEBUG = {sdERR[4:0], sdSTATE[6:0], sdVAL[7:0], sdWRCNT[7:0], sdRDCNT[7:0]};
+   assign sdDEBUG = {sdERR[4:0], state[6:0], sdVAL[7:0], sdWRCNT[7:0], sdRDCNT[7:0]};
+
+   //
+   // Create address
+   //
+   
+   parameter [0:19] rdFLAGS = 20'b0001_0000_0000_0000_0000;
+   parameter [0:19] wrFLAGS = 20'b0000_0100_0000_0000_0000;
+
+   assign dmaADDR = (readOP) ? {rdFLAGS, sdBUSADDR} :  {wrFLAGS, sdBUSADDR};
    
 endmodule

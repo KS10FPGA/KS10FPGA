@@ -1,75 +1,73 @@
-////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      KS-10 Memory Interface
-//!
-//! \details
-//!      This module is simply a wrapper for the external memory.
-//!
-//!      Memory Status Register Write (IO addresses o100000)
-//!
-//!              0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!       (LH)  |EH|UE|RE|PE|                       |PF|              |
-//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!   
-//!             18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!       (RH)  |                             |       FCB          |ED|
-//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!   
-//!      Memory Status Register Read (IO addresses o100000)
-//!   
-//!              0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!       (LH)  |EH|UE|RE|PE|EE|         ECP        |PF| 0|   ERA     |
-//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!   
-//!              18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!       (RH)  |                     ERA                             |
-//!             +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//!
-//!   
-//!             EH  : Error Hold          - Always read as 0.  Writes
-//!                                         ignored.
-//!             UE  : Uncorrectable Error - Always read as 0.  Writes
-//!                                         ignored.
-//!             RE  : Refresh Error       - Always read as 0.  Writes
-//!                                         ignored.
-//!             PE  : Parity Error        - Read/Writes PE bit.
-//!             EE  : ECC Enable          - Reads back inverse value set
-//!                                         by write to bit ED bit.
-//!                                         Writes ignored. See ED bit
-//!                                         below.
-//!             PF  : Power Failure       - Initialized to 1 at power-up,
-//!                                         Writing zero clears PF.
-//!             ED  : ECC Disable         - Always read as 0.
-//!                                         Writing zero sets EE bit,
-//!                                         Writing one clears EE bit.
-//!             FCB : Force Check Bits    - Always read as 0.  Writes
-//!                                         ignored.
-//!             ERA : Error Read Address  - Always read as 0.  Writes
-//!                                         ignored.
-//! \todo
-//!
-//! \file
-//!      mem.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////   
+//   
+// KS-10 Processor
+//   
+// Brief
+//   KS-10 Memory Interface
+//   
+// Details
+//   This module is simply a wrapper for the external memory.
+//   
+//   Memory Status Register Write (IO addresses o100000)
+//   
+//           0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//    (LH)  |EH|UE|RE|PE|                       |PF|              |
+//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
-//  Copyright (C) 2012 Rob Doyle
+//          18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//    (RH)  |                             |       FCB          |ED|
+//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
+//   Memory Status Register Read (IO addresses o100000)
+//
+//           0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//    (LH)  |EH|UE|RE|PE|EE|         ECP        |PF| 0|   ERA     |
+//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//           18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//    (RH)  |                     ERA                             |
+//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//
+//          EH  : Error Hold          - Always read as 0.  Writes
+//                                      ignored.
+//          UE  : Uncorrectable Error - Always read as 0.  Writes
+//                                      ignored.
+//          RE  : Refresh Error       - Always read as 0.  Writes
+//                                      ignored.
+//          PE  : Parity Error        - Read/Writes PE bit.
+//          EE  : ECC Enable          - Reads back inverse value set
+//                                      by write to bit ED bit.
+//                                      Writes ignored. See ED bit
+//                                      below.
+//          PF  : Power Failure       - Initialized to 1 at power-up,
+//                                      Writing zero clears PF.
+//          ED  : ECC Disable         - Always read as 0.
+//                                      Writing zero sets EE bit,
+//                                      Writing one clears EE bit.
+//          FCB : Force Check Bits    - Always read as 0.  Writes
+//                                      ignored.
+//          ERA : Error Read Address  - Always read as 0.  Writes
+//                                      ignored.
+// File
+//   mem.v
+//   
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//   
+////////////////////////////////////////////////////////////////////   
+//   
+// Copyright (C) 2012-2013 Rob Doyle
+//   
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
 // removed from the file and that any derivative work contains
 // the original copyright notice and the associated disclaimer.
-//
+//   
 // This source file is free software; you can redistribute it
 // and/or modify it under the terms of the GNU Lesser General
 // Public License as published by the Free Software Foundation;
@@ -92,7 +90,8 @@
 
 module MEM(clk, rst, clken,
            busREQI, busACKO, busADDRI, busDATAI, busDATAO,
-           ssramCLK, ssramADDR, ssramDATA, ssramADV, ssramWR);
+           ssramCLK, ssramCLKEN, ssramADV, ssramBWA_N, ssramBWB_N, ssramBWC_N, ssramBWD_N,
+           ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA);
 
    input         clk;           // Clock
    input         rst;           // Reset
@@ -103,10 +102,17 @@ module MEM(clk, rst, clken,
    input  [0:35] busDATAI;      // Data in
    output [0:35] busDATAO;      // Data out
    output        ssramCLK;      // SSRAM Clock
+   output        ssramCLKEN;    // SSRAM Clken
+   output        ssramADV;      // SSRAM Advance (burst)
+   output        ssramBWA_N;    // SSRAM BWA#
+   output        ssramBWB_N;    // SSRAM BWB#
+   output        ssramBWC_N;    // SSRAM BWC#
+   output        ssramBWD_N;    // SSRAM BWD#
+   output        ssramOE_N;     // SSRAM OE#
+   output        ssramWE_N;     // SSRAM WE#
+   output        ssramCE;       // SSRAM CE
    output [0:22] ssramADDR;     // SSRAM Address Bus
    inout  [0:35] ssramDATA;     // SSRAM Data Bus
-   output        ssramADV;      // SSRAM Advance (burst)
-   output        ssramWR;       // SSRAM Write
    
    //
    // Memory Status is Device 0
@@ -224,14 +230,18 @@ module MEM(clk, rst, clken,
    //
    // SSRAM Interface
    //
-   // FIXME:
-   //  This is not setup for SSRAM.
-   //
 
-   assign ssramCLK  = clk;
-   assign ssramADV  = 1'b0;
-   assign ssramWR   = busWRITE & ~busIO;
-   assign ssramADDR = {3'b0, busADDR[16:35]};
-   assign ssramDATA = (ssramWR) ? busDATAI : 36'bz;
-
+   assign ssramCLK   = clk;
+   assign ssramCLKEN = 1;
+   assign ssramADV   = 0;
+   assign ssramBWA_N = 0;
+   assign ssramBWB_N = 0;
+   assign ssramBWC_N = 0;
+   assign ssramBWD_N = 0;
+   assign ssramOE_N  = 0;
+   assign ssramWE_N  = ~(busWRITE & ~busIO);
+   assign ssramCE    = 1;
+   assign ssramADDR  = {3'b0, busADDR[16:35]};
+   assign ssramDATA  = (~ssramWE_N) ? busDATAI : 36'bz;
+   
 endmodule

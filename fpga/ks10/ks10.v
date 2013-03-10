@@ -8,8 +8,6 @@
 //
 // Details
 //
-// Todo
-//
 // File
 //   ks10.v
 //
@@ -18,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+//  Copyright (C) 2012-2013 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -47,25 +45,28 @@
 `include "uba/dz11/dz11.vh"
 `include "uba/rh11/rh11.vh"
 
-module KS10(clk, reset,
+module KS10(CLK50MHZ, RESET_N,
             // DZ11 Interfaces
-            dz11TXD, dz11RXD,
+            TXD, RXD, RTS, CTS,
             // RH11 Interfaces
             rh11CD, rh11WP, rh11MISO, rh11MOSI, rh11SCLK, rh11CS,
             // Console Interfaces
             cslALE, cslAD, cslRD_N, cslWR_N, cslINTR_N,
             // SSRAM Interfaces
-            ssramCLK, ssramADDR, ssramDATA, ssramWR, ssramADV,
+            ssramCLK, ssramCLKEN, ssramADV, ssramBWA_N, ssramBWB_N, ssramBWC_N, ssramBWD_N,
+            ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA,
             runLED);
 
    parameter [14:17] ctlNUM1 = `ctlNUM1;
    parameter [14:17] ctlNUM3 = `ctlNUM3;
 
-   input         clk;           // Clock
-   input         reset;         // Reset
+   input         CLK50MHZ;      // Clock
+   input         RESET_N;       // Reset
    // DZ11 Interfaces
-   output [7: 0] dz11TXD;       // DZ11 Transmitted RS-232 Data
-   input  [7: 0] dz11RXD;       // DZ11 Received RS-232 Data
+   input  [2: 1] TXD;           // DZ11 RS-232 Transmitted Data
+   output [2: 1] RXD;           // DZ11 RS-232 Received Data
+   input  [2: 1] RTS;           // DZ11 RS-232 Request to Send
+   output [2: 1] CTS;           // DZ11 RS-232 Clear to Send
    // RH11 Interfaces
    input         rh11CD;        // RH11 Card Detect
    input         rh11WP;        // RH11 Write Protect
@@ -81,11 +82,30 @@ module KS10(clk, reset,
    output        cslINTR_N;     // Console Interrupt
    // SSRAM Interfaces
    output        ssramCLK;      // SSRAM Clock
+   output        ssramCLKEN;    // SSRAM Clken
+   output        ssramADV;      // SSRAM Advance
+   output        ssramBWA_N;    // SSRAM BWA#
+   output        ssramBWB_N;    // SSRAM BWB#
+   output        ssramBWC_N;    // SSRAM BWC#
+   output        ssramBWD_N;    // SSRAM BWD#
+   output        ssramOE_N;     // SSRAM OE#
+   output        ssramWE_N;     // SSRAM WE#
+   output        ssramCE;       // SSRAM CE
    output [0:22] ssramADDR;     // SSRAM Address Bus
    inout  [0:35] ssramDATA;     // SSRAM Data Bus
-   output        ssramWR;       // SSRAM Write
-   output        ssramADV;      // SSRAM Advance
+
+   //
+   // Status LED
+   //
+
    output        runLED;        // RUN LED
+
+   //
+   //
+   //
+
+   wire reset = ~RESET_N;
+   wire clk     = CLK50MHZ;;
 
    //
    // DZ-11 Interface Stubs
@@ -94,6 +114,8 @@ module KS10(clk, reset,
    wire [7: 0] dz11CO  = 8'hff; // DZ11 Carrier Input
    wire [7: 0] dz11RI  = 8'h00; // DZ11 Ring Input
    wire [7: 0] dz11DTR;         // DZ11 DTR Output
+   wire [7: 0] dz11TXD;		// DZ11 TXD
+   wire [7: 0] dz11RXD;		// DZ11 RXD
 
    //
    // Bus Arbiter Outputs
@@ -179,7 +201,7 @@ module KS10(clk, reset,
    //
 
    wire [0:35] rhDEBUG;
-               
+
    //
    // Bus Arbiter
    //
@@ -270,7 +292,7 @@ module KS10(clk, reset,
       .busDATAI         (cslDATAI),
       .busDATAO         (cslDATAO),
       // Console Interfaces
-      .rhDEBUG		(rhDEBUG),
+      .rhDEBUG          (rhDEBUG),
       .cpuHALT          (cpuHALT),
       .cslSTEP          (cslSTEP),
       .cslRUN           (cslRUN),
@@ -298,16 +320,23 @@ module KS10(clk, reset,
       .busDATAI         (memDATAI),
       .busDATAO         (memDATAO),
       .ssramCLK         (ssramCLK),
-      .ssramADDR        (ssramADDR),
-      .ssramDATA        (ssramDATA),
+      .ssramCLKEN       (ssramCLKEN),
       .ssramADV         (ssramADV),
-      .ssramWR          (ssramWR)
+      .ssramBWA_N       (ssramBWA_N),
+      .ssramBWB_N       (ssramBWB_N),
+      .ssramBWC_N       (ssramBWC_N),
+      .ssramBWD_N       (ssramBWD_N),
+      .ssramOE_N        (ssramOE_N),
+      .ssramWE_N        (ssramWE_N),
+      .ssramCE          (ssramCE),
+      .ssramADDR        (ssramADDR),
+      .ssramDATA        (ssramDATA)
       );
 
    //
    // IO Bridge #1
    //
-   
+
    wire         ctl1REQO;
    wire [ 0:35] ctl1ADDRO;
    wire [ 0:35] ctl1DATAO;
@@ -329,9 +358,8 @@ module KS10(clk, reset,
    wire [ 0:35] ctl1dev2ADDRI   = 36'b0;
    wire [ 0:35] ctl1dev2DATAI   = 36'b0;
    wire [ 7: 4] ctl1dev2INTR    =  4'b0;
-   wire [18:35] ctl1dev2VECT    = 18'b0;
    wire         ctl1dev2ACKO;
-   
+
    UBA UBA1
      (.clk              (clk),
       .rst              (reset),
@@ -356,14 +384,12 @@ module KS10(clk, reset,
       .dev1ADDRI        (rh1ADDRO),
       .dev1DATAI        (rh1DATAO),
       .dev1INTR         (rh1INTR),
-      .dev1VECT         (`rh1VECT),
       .dev1ACKO         (ctl1rh1ACKO),
       .dev2REQI         (ctl1dev2REQI),
       .dev2ACKI         (ctl1dev2ACKI),
       .dev2ADDRI        (ctl1dev2ADDRI),
       .dev2DATAI        (ctl1dev2DATAI),
       .dev2INTR         (ctl1dev2INTR),
-      .dev2VECT         (ctl1dev2VECT),
       .dev2ACKO         (ctl1dev2ACKO)
       );
 
@@ -374,6 +400,7 @@ module KS10(clk, reset,
    RH11 uRH11
      (.clk              (clk),
       .rst              (reset),
+      .ctlNUM           (ctlNUM1),
       // RH11 IO
       .rh11CD           (rh11CD),
       .rh11WP           (rh11WP),
@@ -398,13 +425,13 @@ module KS10(clk, reset,
       .devDATAI         (ctl1DATAO),
       .devDATAO         (rh1DATAO),
       // Debug
-      .rhDEBUG		(rhDEBUG)
+      .rhDEBUG          (rhDEBUG)
       );
 
    //
    // IO Bridge #3
    //
-	
+
 
    wire         ctl3REQO;
    wire [ 0:35] ctl3ADDRO;
@@ -427,9 +454,8 @@ module KS10(clk, reset,
    wire [ 0:35] ctl3dev2ADDRI   = 36'b0;
    wire [ 0:35] ctl3dev2DATAI   = 36'b0;
    wire [ 7: 4] ctl3dev2INTR    =  4'b0;
-   wire [18:35] ctl3dev2VECT    = 18'b0;
    wire         ctl3dev2ACKO;
-   
+
    UBA UBA3
      (.clk              (clk),
       .rst              (reset),
@@ -454,14 +480,12 @@ module KS10(clk, reset,
       .dev1ADDRI        (dz1ADDRO),
       .dev1DATAI        (dz1DATAO),
       .dev1INTR         (dz1INTR),
-      .dev1VECT         (`dz1VECT),
       .dev1ACKO         (ctl3dz1ACKO),
       .dev2REQI         (ctl3dev2REQI),
       .dev2ACKI         (ctl3dev2ACKI),
       .dev2ADDRI        (ctl3dev2ADDRI),
       .dev2DATAI        (ctl3dev2DATAI),
       .dev2INTR         (ctl3dev2INTR),
-      .dev2VECT         (ctl3dev2VECT),
       .dev2ACKO         (ctl3dev2ACKO)
       );
 
@@ -472,7 +496,7 @@ module KS10(clk, reset,
    DZ11 uDZ11
      (.clk              (clk),
       .rst              (reset),
-      .clken            (1'b1),
+      .ctlNUM           (ctlNUM3),
       // DZ11 IO
       .dz11TXD          (dz11TXD),
       .dz11RXD          (dz11RXD),
@@ -507,8 +531,18 @@ module KS10(clk, reset,
    //
    // Interrupts
    //
-   
+
    assign busINTR = uba1INTR | uba3INTR;
-   
+
+   //
+   // DZ11 Fixup
+   //  TXD is an output of the FT4232.  RXD is an input to the
+   //  FT4232.  Therefore must twist TXD and RXD here.
+   //
+
+   assign dz11RXD[1:0] = TXD[2:1];
+   assign RXD[2:1]     = dz11TXD[1:0];
+   assign dz11RXD[7:2] = dz11TXD[7:2];
+   assign CTS[2:1]     = RTS[2:1];
    
 endmodule
