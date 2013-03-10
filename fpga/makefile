@@ -38,6 +38,7 @@ LOAD      := MAINDEC-10-DSKCE.SEQ
 #LOAD     := smmon.txt
 
 SRC := \
+    $(RTL)/utils/utils.v \
 	$(RTL)/cpu/useq/crom.v \
 	$(RTL)/cpu/useq/drom.v \
 	$(RTL)/cpu/useq/skip.v \
@@ -77,6 +78,7 @@ SRC := \
 	$(RTL)/uba/dz11/uart/uart_buftx.v \
 	$(RTL)/uba/dz11/dzfifo.v \
 	$(RTL)/uba/dz11/dz11.v \
+	$(RTL)/uba/rh11/sd/sd.v \
 	$(RTL)/uba/rh11/sd/sdspi.v \
 	$(RTL)/uba/rh11/rpxx.v \
 	$(RTL)/uba/rh11/sdaddr.v \
