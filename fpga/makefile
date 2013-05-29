@@ -28,97 +28,101 @@ WORK      := work.testbench
 #LOAD      := MAINDEC-10-DSKCB.SEQ
 #LOAD      := MAINDEC-10-DSKCC.SEQ
 #LOAD      := MAINDEC-10-DSKCD.SEQ
-LOAD      := MAINDEC-10-DSKCE.SEQ
+#LOAD      := MAINDEC-10-DSKCE-RD00.SEQ
+LOAD      := MAINDEC-10-DSKCF-RD00.SEQ	
+#LOAD      := MAINDEC-10-DSKEA-RD00.SEQ
 
 #LOAD     := MAINDEC-10-DSDZA.SEQ
 #LOAD     := fixed.SEQ
 #LOAD     := MAINDEC-10-DSKCG.fixed.txt
 #LOAD     := MAINDEC-10-DSKCG.txt
-#LOAD     := MAINDEC-10-DSKEA.txt
+
 #LOAD     := smmon.txt
 
 SRC := \
-    $(RTL)/utils/utils.v \
-	$(RTL)/cpu/useq/crom.v \
-	$(RTL)/cpu/useq/drom.v \
-	$(RTL)/cpu/useq/skip.v \
-	$(RTL)/cpu/useq/stack.v \
-	$(RTL)/cpu/useq/dispatch.v \
-	$(RTL)/cpu/useq/useq.v \
-	$(RTL)/cpu/alu.v \
-	$(RTL)/cpu/apr.v \
-	$(RTL)/cpu/bus.v \
-	$(RTL)/cpu/byte_disp.v \
-	$(RTL)/cpu/dbm.v \
-	$(RTL)/cpu/dbus.v \
-	$(RTL)/cpu/debug.v \
-	$(RTL)/cpu/intf.v \
-	$(RTL)/cpu/intr.v \
-	$(RTL)/cpu/iolatch.v \
-	$(RTL)/cpu/ni_disp.v \
-	$(RTL)/cpu/pager.v \
-	$(RTL)/cpu/pcflags.v \
-	$(RTL)/cpu/pf_disp.v \
-	$(RTL)/cpu/pxct.v \
-	$(RTL)/cpu/ram1kx36.v \
-	$(RTL)/cpu/ramfile.v \
-	$(RTL)/cpu/regir.v \
-	$(RTL)/cpu/scad.v \
-	$(RTL)/cpu/timer.v \
-	$(RTL)/cpu/timing.v \
-	$(RTL)/cpu/vma.v \
-	$(RTL)/cpu/cpu.v \
-	$(RTL)/csl/csl.v \
-	$(RTL)/mem/mem.v \
-	$(RTL)/arb/arb.v \
-	$(RTL)/uba/dz11/uart/uart_brg.v \
-	$(RTL)/uba/dz11/uart/uart_rx.v \
-	$(RTL)/uba/dz11/uart/uart_tx.v \
-	$(RTL)/uba/dz11/uart/uart_bufrx.v \
-	$(RTL)/uba/dz11/uart/uart_buftx.v \
-	$(RTL)/uba/dz11/dzfifo.v \
-	$(RTL)/uba/dz11/dz11.v \
-	$(RTL)/uba/rh11/sd/sd.v \
-	$(RTL)/uba/rh11/sd/sdspi.v \
-	$(RTL)/uba/rh11/rpxx.v \
-	$(RTL)/uba/rh11/sdaddr.v \
-	$(RTL)/uba/rh11/rh11.v \
-	$(RTL)/uba/uba.v \
-	$(RTL)/ks10.v \
-	$(RTL)/testbench.v
+    	$(RTL)/ks10/utils/utils.v \
+	$(RTL)/ks10/cpu/useq/crom.v \
+	$(RTL)/ks10/cpu/useq/drom.v \
+	$(RTL)/ks10/cpu/useq/skip.v \
+	$(RTL)/ks10/cpu/useq/stack.v \
+	$(RTL)/ks10/cpu/useq/dispatch.v \
+	$(RTL)/ks10/cpu/useq/useq.v \
+	$(RTL)/ks10/cpu/alu.v \
+	$(RTL)/ks10/cpu/apr.v \
+	$(RTL)/ks10/cpu/bus.v \
+	$(RTL)/ks10/cpu/byte_disp.v \
+	$(RTL)/ks10/cpu/dbm.v \
+	$(RTL)/ks10/cpu/dbus.v \
+	$(RTL)/ks10/cpu/debug.v \
+	$(RTL)/ks10/cpu/intf.v \
+	$(RTL)/ks10/cpu/intr.v \
+	$(RTL)/ks10/cpu/iolatch.v \
+	$(RTL)/ks10/cpu/ni_disp.v \
+	$(RTL)/ks10/cpu/pager.v \
+	$(RTL)/ks10/cpu/pcflags.v \
+	$(RTL)/ks10/cpu/pf_disp.v \
+	$(RTL)/ks10/cpu/pxct.v \
+	$(RTL)/ks10/cpu/ram1kx36.v \
+	$(RTL)/ks10/cpu/ramfile.v \
+	$(RTL)/ks10/cpu/regir.v \
+	$(RTL)/ks10/cpu/scad.v \
+	$(RTL)/ks10/cpu/timer.v \
+	$(RTL)/ks10/cpu/timing.v \
+	$(RTL)/ks10/cpu/vma.v \
+	$(RTL)/ks10/cpu/cpu.v \
+	$(RTL)/ks10/csl/csl.v \
+	$(RTL)/ks10/mem/mem.v \
+	$(RTL)/ks10/arb/arb.v \
+	$(RTL)/ks10/uba/dz11/uart/uart_brg.v \
+	$(RTL)/ks10/uba/dz11/uart/uart_rx.v \
+	$(RTL)/ks10/uba/dz11/uart/uart_tx.v \
+	$(RTL)/ks10/uba/dz11/uart/uart_bufrx.v \
+	$(RTL)/ks10/uba/dz11/uart/uart_buftx.v \
+	$(RTL)/ks10/uba/dz11/dzfifo.v \
+	$(RTL)/ks10/uba/dz11/dz11.v \
+	$(RTL)/ks10/uba/rh11/sd/sd.v \
+	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
+	$(RTL)/ks10/uba/rh11/rpxx.v \
+	$(RTL)/ks10/uba/rh11/sdaddr.v \
+	$(RTL)/ks10/uba/rh11/rh11.v \
+	$(RTL)/ks10/uba/uba.v \
+	$(RTL)/ks10/ks10.v \
+	$(RTL)/esm/esm_csl.v \
+	$(RTL)/esm/esm_ks10.v \
+	$(RTL)/esm/esm_testbench.v
 
 #	$(RTL)/uba/rh11/sd/sd.v \
 
 
 INC := \
-	$(RTL)/cpu/useq/crom.vh  \
-	$(RTL)/cpu/useq/drom.vh  \
-	$(RTL)/cpu/alu.vh \
-	$(RTL)/cpu/apr.vh \
-	$(RTL)/cpu/pager.vh \
-	$(RTL)/cpu/pcflags.vh \
-	$(RTL)/cpu/pxct.vh \
-	$(RTL)/cpu/regir.vh \
-	$(RTL)/cpu/vma.vh \
-	$(RTL)/uba/dz11/uart/uart_brg.vh \
-	$(RTL)/uba/dz11/dz11.vh \
-	$(RTL)/uba/rh11/sd/sdspi.vh \
-	$(RTL)/uba/rh11/sd/sd.vh \
-	$(RTL)/uba/rh11/rpxx.vh \
-	$(RTL)/uba/rh11/rh11.vh \
-	$(RTL)/uba/uba.vh \
-	$(RTL)/ks10.vh
+	$(RTL)/ks10/cpu/useq/crom.vh  \
+	$(RTL)/ks10/cpu/useq/drom.vh  \
+	$(RTL)/ks10/cpu/alu.vh \
+	$(RTL)/ks10/cpu/apr.vh \
+	$(RTL)/ks10/cpu/pager.vh \
+	$(RTL)/ks10/cpu/pcflags.vh \
+	$(RTL)/ks10/cpu/pxct.vh \
+	$(RTL)/ks10/cpu/regir.vh \
+	$(RTL)/ks10/cpu/vma.vh \
+	$(RTL)/ks10/uba/dz11/uart/uart_brg.vh \
+	$(RTL)/ks10/uba/dz11/dz11.vh \
+	$(RTL)/ks10/uba/rh11/sd/sdspi.vh \
+	$(RTL)/ks10/uba/rh11/sd/sd.vh \
+	$(RTL)/ks10/uba/rh11/rpxx.vh \
+	$(RTL)/ks10/uba/rh11/rh11.vh \
+	$(RTL)/ks10/uba/uba.vh \
+	$(RTL)/ks10/ks10.vh
 
 DAT := \
-	$(RTL)/cpu/useq/crom.dat \
-	$(RTL)/cpu/useq/drom.dat \
-	$(RTL)/ssram.dat
+	$(RTL)/ks10/cpu/useq/crom.dat \
+	$(RTL)/ks10/cpu/useq/drom.dat \
+	$(RTL)/testbench/ssram.dat
 
 DOC := \
 	$(RTL)/status.txt
 
 UCF := \
-	$(RTL)/$(PROJECT).ucf
+	$(RTL)/esm/esm_ks10.ucf
 
 BLD := \
 	$(ISE)/ks10.xise \
@@ -128,29 +132,33 @@ BLD := \
 asdf :  $(INC) $(SRC) $(BLD) $(DAT) $(UCF) $(DOC)
 	echo $(INC) $(SRC) $(BLD) $(DAT) $(UCF) $(DOC)
 
-$(RTL)/cpu/useq/crom.dat  : $(RTL)/cpu/useq/ks10.mcr $(RTL)/cpu/useq/crom.awk makefile
-	awk -f $(RTL)/cpu/useq/crom.awk $(RTL)/cpu/useq/ks10.mcr > $(RTL)/cpu/useq/crom.dat
+$(RTL)/ks10/cpu/useq/crom.dat  : $(RTL)/ks10/cpu/useq/ks10.mcr $(RTL)/ks10/cpu/useq/crom.awk makefile
+	awk -f $(RTL)/ks10/cpu/useq/crom.awk $(RTL)/ks10/cpu/useq/ks10.mcr > $(RTL)/ks10/cpu/useq/crom.dat
 
-$(RTL)/cpu/useq/drom.dat  : $(RTL)/cpu/useq/ks10.mcr $(RTL)/cpu/useq/drom.awk makefile
-	awk -f $(RTL)/cpu/useq/drom.awk $(RTL)/cpu/useq/ks10.mcr > $(RTL)/cpu/useq/drom.dat
+$(RTL)/ks10/cpu/useq/drom.dat  : $(RTL)/ks10/cpu/useq/ks10.mcr $(RTL)/ks10/cpu/useq/drom.awk makefile
+	awk -f $(RTL)/ks10/cpu/useq/drom.awk $(RTL)/ks10/cpu/useq/ks10.mcr > $(RTL)/ks10/cpu/useq/drom.dat
 
-$(RTL)/ssram.dat : $(RTL)/$(LOAD) $(RTL)/ssram.awk makefile
-	awk -f $(RTL)/ssram.awk -vfilename=$(LOAD) $(RTL)/$(LOAD) > $(RTL)/ssram.dat
+$(RTL)/testbench/ssram.dat : $(RTL)/testbench/$(LOAD) $(RTL)/testbench/ssram.awk makefile
+	awk -f $(RTL)/testbench/ssram.awk -vfilename=$(LOAD) $(RTL)/testbench/$(LOAD) > $(RTL)/testbench/ssram.dat
 
 clean: 
 	rcsclean $(RTL)/*
-	rcsclean $(RTL)/arb/*
-	rcsclean $(RTL)/csl/*
-	rcsclean $(RTL)/cpu/*
-	rcsclean $(RTL)/mem/*
-	rcsclean $(RTL)/uba/dz11/uart/*
-	rcsclean $(RTL)/uba/dz11/*
-	rcsclean $(RTL)/uba/rh11/sd/*
-	rcsclean $(RTL)/uba/rh11/*
-	rcsclean $(RTL)/uba/*
-	rcsclean $(RTL)/cpu/useq/*
-	rm -f    $(RTL)/cpu/useq/*.dat
-	rm -f    $(RTL)/*.dat
+	rcsclean $(RTL)/testbench/*
+	rcsclean $(RTL)/esm/*
+	rcsclean $(RTL)/ks10/*
+	rcsclean $(RTL)/ks10/arb/*
+	rcsclean $(RTL)/ks10/csl/*
+	rcsclean $(RTL)/ks10/cpu/*
+	rcsclean $(RTL)/ks10/mem/*
+	rcsclean $(RTL)/ks10/utils/*
+	rcsclean $(RTL)/ks10/uba/dz11/uart/*
+	rcsclean $(RTL)/ks10/uba/dz11/*
+	rcsclean $(RTL)/ks10/uba/rh11/sd/*
+	rcsclean $(RTL)/ks10/uba/rh11/*
+	rcsclean $(RTL)/ks10/uba/*
+	rcsclean $(RTL)/ks10/cpu/useq/*
+	rm -f    $(RTL)/ks10/cpu/useq/*.dat
+	rm -f    $(RTL)/testbench/*.dat
 	find . -type f -name "*~" | xargs rm -fv
 
 archive_src: $(SRC)
