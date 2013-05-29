@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2013 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -43,14 +43,13 @@
 `include "../cpu/vma.vh"
 
 module ARB(clk,
-           cpuREQI,  cpuACKO,  cpuADDRI, cpuDATAI, cpuDATAO,
-           cslREQI,  cslREQO,  cslACKI,  cslACKO,  cslADDRI, cslDATAI, cslDATAO,
-           ubaREQO,  ubaDATAO,
-           uba1REQI, uba1ACKI, uba1ACKO, uba1ADDRI, uba1DATAI,
-           uba3REQI, uba3ACKI, uba3ACKO, uba3ADDRI, uba3DATAI,
-           memREQO,  memACKI,  memDATAI, memDATAO,
-           arbADDRO);
-   
+           cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
+           cslREQI, cslREQO, cslACKI, cslACKO, cslADDRI, cslDATAI, cslDATAO,
+           ubaREQI, ubaREQO, ubaACKI, ubaACKO,
+           uba0ADDRI, uba1ADDRI, uba2ADDRI, uba3ADDRI,
+           uba0DATAI, uba1DATAI, uba2DATAI, uba3DATAI, ubaDATAO,
+           memREQO, memACKI, memDATAI, memDATAO, arbADDRO);
+
    input         clk;           // Clock
    input         cpuREQI;       // CPU Bus Request
    output        cpuACKO;       // CPU Bus Acknowledge
@@ -66,20 +65,19 @@ module ARB(clk,
    input  [0:35] cslDATAI;      // CSL Data In
    output [0:35] cslDATAO;      // CSL Data Out
 
+   input  [0: 3] ubaREQI;       // UBA Bus RequestIn
    output        ubaREQO;       // UBA Bus Request Out
+   input  [0: 3] ubaACKI;       // UBA Bus Acknowledge In
+   output [0: 3] ubaACKO;       // UBA Bus Acknowledge Out
+   input  [0:35] uba0ADDRI;     // UBA 0 Address In
+   input  [0:35] uba1ADDRI;     // UBA 1 Address In
+   input  [0:35] uba2ADDRI;     // UBA 2 Address In
+   input  [0:35] uba3ADDRI;     // UBA 3 Address In
+   input  [0:35] uba0DATAI;     // UBA 0 Data In
+   input  [0:35] uba1DATAI;     // UBA 1 Data In
+   input  [0:35] uba2DATAI;     // UBA 2 Data In
+   input  [0:35] uba3DATAI;     // UBA 3 Data In
    output [0:35] ubaDATAO;      // UBA Data Out
-
-   input         uba1REQI;      // UBA1 Bus RequestIn
-   input         uba1ACKI;      // UBA1 Bus Acknowledge In
-   input  [0:35] uba1ADDRI;     // UBA1 Address In
-   input  [0:35] uba1DATAI;     // UBA1 Data In
-   output        uba1ACKO;      // UBA1 Bus Acknowledge Out
-
-   input         uba3REQI;      // UBA3 Bus RequestIn
-   input         uba3ACKI;      // UBA3 Bus Acknowledge In
-   input  [0:35] uba3ADDRI;     // UBA3 Address In
-   input  [0:35] uba3DATAI;     // UBA3 Data In
-   output        uba3ACKO;      // UBA3 Bus Acknowledge Out
 
    output        memREQO;       // MEM Bus Request Out
    input         memACKI;       // MEM Bus Acknowledge In
@@ -96,7 +94,14 @@ module ARB(clk,
    wire vmaIOCYCLE     = `vmaIOCYCLE(cpuADDRI);
    wire vmaVECTORCYCLE = `vmaVECTORCYCLE(cpuADDRI);
    wire vmaWRUCYCLE    = `vmaWRUCYCLE(cpuADDRI);
-   
+
+   //
+   // Build Vector
+   //
+
+   wire [0:35] ubaADDR[0:3] = {uba0ADDRI, uba1ADDRI, uba2ADDRI, uba3ADDRI};
+   wire [0:35] ubaDATA[0:3] = {uba0DATAI, uba1DATAI, uba2DATAI, uba3DATAI};
+
    //
    // Bus Request Arbitration
    //
@@ -111,30 +116,29 @@ module ARB(clk,
    reg cslREQO;
    reg memREQO;
    reg ubaREQO;
-   reg uba1ACKO;
-   reg uba3ACKO;
+   reg [0: 3] ubaACKO;
    reg [0:35] cslDATAO;
    reg [0:35] cpuDATAO;
    reg [0:35] memDATAO;
    reg [0:35] ubaDATAO;
    reg [0:35] arbADDRO;
 
-   always @(cpuREQI  or cpuADDRI  or cpuDATAI  or cpuDATAO  or
-            cslREQI  or cslACKI   or cslADDRI  or cslDATAI  or
-            uba1REQI or uba1ACKI  or uba1ADDRI or uba1DATAI or
-            uba3REQI or uba3ACKI  or uba3ADDRI or uba3DATAI or
-            memACKI  or memDATAI  or 
-				vmaPHYSICAL or vmaIOCYCLE or vmaWRUCYCLE)
+   always @(cpuREQI or cpuADDRI or cpuDATAI or cpuDATAO or
+            cslREQI or cslACKI  or cslADDRI or cslDATAI or
+            ubaREQI or ubaACKI  or
+            ubaADDR[0] or ubaADDR[1] or ubaADDR[2] or ubaADDR[3] or
+            ubaDATA[0] or ubaDATA[1] or ubaDATA[2] or ubaDATA[3] or
+            memACKI or memDATAI or
+            vmaPHYSICAL or vmaIOCYCLE or vmaWRUCYCLE)
 
      begin
 
-        cpuACKO  = 1'b0;
-        cslREQO  = 1'b0;
-        cslACKO  = 1'b0;
-        ubaREQO  = 1'b0;
-        uba1ACKO = 1'b0;
-        uba3ACKO = 1'b0;
-        memREQO  = 1'b0;
+        cpuACKO  = 0;
+        cslREQO  = 0;
+        cslACKO  = 0;
+        ubaREQO  = 0;
+        ubaACKO  = 0;
+        memREQO  = 0;
         arbADDRO = 36'b0;
         cslDATAO = 36'bx;
         cpuDATAO = 36'bx;
@@ -150,35 +154,57 @@ module ARB(clk,
 
         if (cslREQI)
           begin
-             cpuACKO  = 1'b0;
-             cslREQO  = 1'b0;
-             ubaREQO  = 1'b1;
-             uba1ACKO = 1'b0;
-             uba3ACKO = 1'b0;
-             memREQO  = 1'b1;
+             ubaREQO  = 1;
+             memREQO  = 1;
              arbADDRO = cslADDRI;
              cpuDATAO = cslDATAI;
              memDATAO = cslDATAI;
              ubaDATAO = cslDATAI;
              if (memACKI)
                begin
-                  cslACKO  = 1'b1;
+                  cslACKO  = 1;
                   cslDATAO = memDATAI;
                end
-             else if (uba1ACKI)
+             else if (ubaACKI[0])
                begin
-                  cslACKO  = 1'b1;
-                  cslDATAO = uba1DATAI;
+                  cslACKO  = 1;
+                  cslDATAO = ubaDATA[0];
                end
-             else if (uba3ACKI)
+             else if (ubaACKI[1])
                begin
-                  cslACKO  = 1'b1;
-                  cslDATAO = uba3DATAI;
+                  cslACKO  = 1;
+                  cslDATAO = ubaDATA[1];
                end
-             else
+             else if (ubaACKI[2])
                begin
-                  cslACKO  = 1'b0;
-                  cslDATAO = 36'bx;
+                  cslACKO  = 1;
+                  cslDATAO = ubaDATA[2];
+               end
+             else if (ubaACKI[3])
+               begin
+                  cslACKO  = 1;
+                  cslDATAO = ubaDATA[3];
+               end
+          end
+
+        //
+        // Bus Request from the Unibus #0
+        //
+        // Details
+        //  The unibus can access the memory
+        //
+
+        else if (ubaREQI[0])
+          begin
+             memREQO  = 1;
+             arbADDRO = ubaADDR[0];
+             cslDATAO = ubaDATA[0];
+             cpuDATAO = ubaDATA[0];
+             memDATAO = ubaDATA[0];
+             if (memACKI)
+               begin
+                  ubaACKO[0] = 1;
+                  ubaDATAO   = memDATAI;
                end
           end
 
@@ -189,26 +215,38 @@ module ARB(clk,
         //  The unibus can access the memory
         //
 
-        else if (uba1REQI)
+        else if (ubaREQI[1])
           begin
-             cpuACKO  = 1'b0;
-             cslREQO  = 1'b0;
-             cslACKO  = 1'b0;
-             ubaREQO  = 1'b0;
-             memREQO  = 1'b1;
-             arbADDRO = uba1ADDRI;
-             cslDATAO = uba1DATAI;
-             cpuDATAO = uba1DATAI;
-             memDATAO = uba1DATAI;
+             memREQO  = 1;
+             arbADDRO = ubaADDR[1];
+             cslDATAO = ubaDATA[1];
+             cpuDATAO = ubaDATA[1];
+             memDATAO = ubaDATA[1];
              if (memACKI)
                begin
-                  uba1ACKO = 1'b1;
-                  ubaDATAO = memDATAI;
+                  ubaACKO[1] = 1;
+                  ubaDATAO   = memDATAI;
                end
-             else
+          end
+
+        //
+        // Bus Request from the Unibus #2
+        //
+        // Details
+        //  The unibus can access the memory
+        //
+
+        else if (ubaREQI[2])
+          begin
+             memREQO  = 1;
+             arbADDRO = ubaADDR[2];
+             cslDATAO = ubaDATA[2];
+             cpuDATAO = ubaDATA[2];
+             memDATAO = ubaDATA[2];
+             if (memACKI)
                begin
-                  uba1ACKO  = 1'b0;
-                  ubaDATAO = 36'bx;
+                  ubaACKO[2] = 1;
+                  ubaDATAO   = memDATAI;
                end
           end
 
@@ -219,26 +257,17 @@ module ARB(clk,
         //  The unibus can access the memory
         //
 
-        else if (uba3REQI)
+        else if (ubaREQI[3])
           begin
-             cpuACKO  = 1'b0;
-             cslREQO  = 1'b0;
-             cslACKO  = 1'b0;
-             ubaREQO  = 1'b0;
-             memREQO  = 1'b1;
-             arbADDRO = uba3ADDRI;
-             cslDATAO = uba3DATAI;
-             cpuDATAO = uba3DATAI;
-             memDATAO = uba3DATAI;
+             memREQO  = 1;
+             arbADDRO = ubaADDR[3];
+             cslDATAO = ubaDATA[3];
+             cpuDATAO = ubaDATA[3];
+             memDATAO = ubaDATA[3];
              if (memACKI)
                begin
-                  uba3ACKO = 1'b1;
-                  ubaDATAO = memDATAI;
-               end
-             else
-               begin
-                  uba3ACKO  = 1'b0;
-                  ubaDATAO = 36'bx;
+                  ubaACKO[3] = 1;
+                  ubaDATAO   = memDATAI;
                end
           end
 
@@ -252,12 +281,9 @@ module ARB(clk,
 
         else if (cpuREQI)
           begin
-             cslREQO  = 1'b1;
-             cslACKO  = 1'b0;
-             ubaREQO  = 1'b1;
-             uba1ACKO = 1'b0;
-             uba3ACKO = 1'b0;
-             memREQO  = 1'b1;
+             cslREQO  = 1;
+             ubaREQO  = 1;
+             memREQO  = 1;
              arbADDRO = cpuADDRI;
              cslDATAO = cpuDATAI;
              memDATAO = cpuDATAI;
@@ -265,44 +291,44 @@ module ARB(clk,
 
              if (memACKI)
                begin
-                  cpuACKO  = 1'b1;
+                  cpuACKO  = 1;
                   cpuDATAO = memDATAI;
                end
-             else if (uba1ACKI)
+             else if (ubaACKI[0])
                begin
-                  cpuACKO  = 1'b1;
-                  cpuDATAO = uba1DATAI;
+                  cpuACKO  = 1;
+                  cpuDATAO = ubaDATA[0];
                end
-             else if (uba3ACKI)
+             else if (ubaACKI[1])
                begin
-                  cpuACKO  = 1'b1;
-                  cpuDATAO = uba3DATAI;
+                  cpuACKO  = 1;
+                  cpuDATAO = ubaDATA[1];
+               end
+             else if (ubaACKI[2])
+               begin
+                  cpuACKO  = 1;
+                  cpuDATAO = ubaDATA[2];
+               end
+             else if (ubaACKI[3])
+               begin
+                  cpuACKO  = 1;
+                  cpuDATAO = ubaDATA[3];
                end
              else if (cslACKI)
                begin
-                  cpuACKO  = 1'b1;
+                  cpuACKO  = 1;
                   cpuDATAO = cslDATAI;
                end
-             
+
              //
              // Ack an otherwise un-acked WRU cycle
              // WRU Cycles really aren't arbitrated.
              //
-             
+
              else if (vmaPHYSICAL & vmaIOCYCLE & vmaWRUCYCLE)
                begin
-                  cpuACKO  = 1'b1;
+                  cpuACKO  = 1;
                   cpuDATAO = 36'b0;
-               end
-             
-	     //
-	     // Everything else
-	     //
-	     
-             else
-               begin
-                  cpuACKO  = 1'b0;
-                  cpuDATAO = 36'bx;
                end
           end
      end
@@ -310,8 +336,8 @@ module ARB(clk,
 
    //
    // Whine about unacked bus cycles
-   // 
-        
+   //
+
 `ifndef SYNTHESIS
 
    always @(posedge clk)
@@ -324,5 +350,6 @@ module ARB(clk,
           end
      end
 
-`endif   
+`endif
+
 endmodule

@@ -70,7 +70,7 @@ module DZ11(clk,      rst,      ctlNUM,
    input          clk;                          // Clock
    input          rst;                          // Reset
    input  [ 0: 3] ctlNUM;                       // Bridge Device Number
-   // DZ11 External Interfaces
+   // DZ11 Interfaces
    output [ 7: 0] dz11TXD;                      // DZ11 Transmitter Serial Data
    input  [ 7: 0] dz11RXD;                      // DZ11 Receiver Serial Data
    input  [ 7: 0] dz11CO;                       // DZ11 Carrier Detect Input

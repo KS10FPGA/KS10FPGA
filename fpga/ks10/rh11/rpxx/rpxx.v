@@ -47,7 +47,7 @@
 `include "rh11.vh"
 `include "rpxx.vh"
 `include "sd/sd.vh"
-  
+
 module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
             unitSEL, incSECTOR, rhCLR, ataCLR,
             devRESET, devADDRI, rhDATAI, rpCD, rpWP,
@@ -61,12 +61,12 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    input  [ 4: 0] lastSURF;                     // Last Surfaces
    input  [ 9: 0] lastCYL;                      // Last Cylinder
    input          unitSEL;                      // Unit Select
-   input          incSECTOR;			// Increment Sector
+   input          incSECTOR;                    // Increment Sector
    input          rhCLR;                        // Clear
    input          ataCLR;                       // Clear RPDS[ATA]
    input          devRESET;                     // Device Reset
    input  [ 0:35] devADDRI;                     // Device Address In
-   input  [35: 0] rhDATAI;	                // Data In
+   input  [35: 0] rhDATAI;                      // Data In
    input          rpCD;                         // Card Detect from SD Card
    input          rpWP;                         // Write Protect from SD Card
    output [15: 0] rpDA;                         // DA  Register
@@ -83,7 +83,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    output         rpSDREQ;                      // SD Request
    input          rpSDACK;                      // SD Complete Acknowledge
    output [31: 0] rpSDADDR;                     // SD Sector Address
-   
+
    //
    // RH Parameters
    //
@@ -94,91 +94,91 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    //
    // RH Register Addresses
    //
-   
+
    parameter [18:35] cs1ADDR = rhADDR + `cs1OFFSET;
    parameter [18:35] wcADDR  = rhADDR + `wcOFFSET;
    parameter [18:35] baADDR  = rhADDR + `baOFFSET;
    parameter [18:35] daADDR  = rhADDR + `daOFFSET;
-   
+
    parameter [18:35] cs2ADDR = rhADDR + `cs2OFFSET;
    parameter [18:35] dsADDR  = rhADDR + `dsOFFSET;
    parameter [18:35] er1ADDR = rhADDR + `er1OFFSET;
    parameter [18:35] asADDR  = rhADDR + `asOFFSET;
-   
+
    parameter [18:35] laADDR  = rhADDR + `laOFFSET;
    parameter [18:35] dbADDR  = rhADDR + `dbOFFSET;
    parameter [18:35] mrADDR  = rhADDR + `mrOFFSET;
    parameter [18:35] dtADDR  = rhADDR + `dtOFFSET;
-   
+
    parameter [18:35] snADDR  = rhADDR + `snOFFSET;
    parameter [18:35] ofADDR  = rhADDR + `ofOFFSET;
    parameter [18:35] dcADDR  = rhADDR + `dcOFFSET;
    parameter [18:35] ccADDR  = rhADDR + `ccOFFSET;
-   
+
    parameter [18:35] er2ADDR = rhADDR + `er2OFFSET;
    parameter [18:35] er3ADDR = rhADDR + `er3OFFSET;
    parameter [18:35] ec1ADDR = rhADDR + `ec1OFFSET;
    parameter [18:35] ec2ADDR = rhADDR + `ec2OFFSET;
-   
+
    parameter [18:35] undADDR = rhADDR + `undOFFSET;
 
    //
    // Timing Parameters
-   
+
    parameter [24:0] fiveMS = 100000;           // 5 milliseconds
    parameter [24:0] oneUS  = 50;               // 1 microsecond
 
    //
    // Register Decode
    //
-   
+
    wire rpcsWRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
    wire rpdaWRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]);
    wire rperWRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
    wire rpofWRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]);
    wire rpdcWRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]);
-   
+
    //
    // Function to calculate disk seek delay
    // The RP06 has 815 cyclinders
    //
-   
+
    function [24:0] seekDELAY;
       input [9:0] newCYL;               // New Cylinder
       input [9:0] oldCYL;               // Old Cylinder
       reg   [9:0] diffCYL;              // Distance between Cylinders
 
       begin
-         
+
          diffCYL = (newCYL > oldCYL) ? newCYL - oldCYL : oldCYL - newCYL;
-         
-         if (diffCYL < 1)               
+
+         if (diffCYL < 1)
            seekDELAY = 0;               //  0 ms, Same cylinder
          else if (diffCYL < 1)
            seekDELAY = fiveMS * 1;      //  5 ms
-         else if (diffCYL < 2) 
+         else if (diffCYL < 2)
            seekDELAY = fiveMS * 2;      // 10 ms
-         else if (diffCYL < 3) 
+         else if (diffCYL < 3)
            seekDELAY = fiveMS * 3;      // 15 ms
-         else if (diffCYL < 7) 
+         else if (diffCYL < 7)
            seekDELAY = fiveMS * 4;      // 20 ms
-         else if (diffCYL < 13) 
+         else if (diffCYL < 13)
            seekDELAY = fiveMS * 5;      // 25 ms
-         else if (diffCYL < 25) 
+         else if (diffCYL < 25)
            seekDELAY = fiveMS * 6;      // 30 ms
-         else if (diffCYL < 50) 
+         else if (diffCYL < 50)
            seekDELAY = fiveMS * 7;      // 35 ms
-         else if (diffCYL < 100) 
+         else if (diffCYL < 100)
            seekDELAY = fiveMS * 8;      // 40 ms
-         else if (diffCYL < 200) 
+         else if (diffCYL < 200)
            seekDELAY = fiveMS * 9;      // 45 ms
-         else if (diffCYL < 400) 
+         else if (diffCYL < 400)
            seekDELAY = fiveMS * 10;     // 50 ms
          else
            seekDELAY = fiveMS * 11;     // 55 ms
       end
    endfunction
-   
+
    //
    // Memory Address and Flags
    //
@@ -186,7 +186,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    //  devADDRI[ 0:13] is flags
    //  devADDRI[14:35] is address
    //
-   
+
    wire         devREAD   = devADDRI[ 3];       // 1 = Read Cycle (IO or Memory)
    wire         devWRITE  = devADDRI[ 5];       // 1 = Write Cycle (IO or Memory)
    wire         devIO     = devADDRI[10];       // 1 = IO Cycle, 0 = Memory Cycle
@@ -198,7 +198,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    //
    // Byte Selects
    //
-   
+
    wire devHIBYTE = (devIOBYTE &  devBYTE) | ~devIOBYTE;
    wire devLOBYTE = (devIOBYTE & ~devBYTE) | ~devIOBYTE;
 
@@ -207,11 +207,11 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    //
 
    wire cmdGO = devLOBYTE & devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & rhDATAI[0];
-      
+
    //
    // State Definition
    //
-   
+
    parameter [4:0] stateIDLE    =  0,
                    stateSEEK    =  1,
                    stateSEEKDLY =  2,
@@ -228,7 +228,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                    stateATA     = 13,
                    stateDONE    = 31;
    reg [ 4: 0] state;                   // RPxx State
-   
+
    //
    // RPxx Control/Status (RPCS1) Register
    //
@@ -270,7 +270,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    reg  [2:0] rpSAS;
    reg  [4:0] rpSA;
    wire       incSECTOR = 0;
-   
+
    always @(posedge clk)
      begin
         if (rst | rhCLR | devRESET | (state == statePRESET))
@@ -313,7 +313,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                end
           end
      end
-   
+
    assign rpDA  = {rpTAS, rpTA, rpSAS, rpSA};
 
    //
@@ -324,7 +324,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    reg rpLST;
    reg rpVV;
    reg rpOM;
-   
+
    always @(posedge clk)
      begin
         if (rst | rhCLR | devRESET)
@@ -349,8 +349,12 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                begin
                   rpLST <= 0;
                end
-             
+
              case (state)
+               stateIDLE:
+                 begin
+                    rpVV <= rpVV & rpCD;
+                 end
                stateATA:
                  begin
                     rpATA <= 1;
@@ -361,8 +365,8 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                  end
                statePRESET:
                  begin
-                    rpVV <= 1;
-                 end  
+                    rpVV <= rpCD;
+                 end
                stateOFFSET:
                  begin
                     rpOM <= 1;
@@ -373,7 +377,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                  end
                statePAKACK:
                  begin
-                    rpVV <= 1;
+                    rpVV <= rpCD;
                  end
              endcase
           end
@@ -381,14 +385,14 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
 
    wire rpERR  = (rpER1 != 0);
    wire rpPIP  = (state == stateSEEKDLY);
-   wire rpMOL  = 1;
+   wire rpMOL  = rpCD;
    wire rpWRL  = rpWP;
-   wire rpPGM  = 0; 
+   wire rpPGM  = 0;
    wire rpDPR  = 1;
    wire rpDRY  = (state != stateIDLE);
    assign rpDS = {rpATA, rpERR, rpPIP, rpMOL, rpWRL, rpLST,
                   rpPGM, rpDPR, rpDRY, rpVV,  5'b0,  rpOM};
-   
+
    //
    // RPxx Error #1 (RPER1) Register
    //  This register is not byte addressable.
@@ -460,12 +464,12 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
           end
         else
           begin
-        
+
              if (incSECTOR & (rpDC == lastCYL) & (rpTA == lastSURF) & (rpSA == lastSECT) & unitSEL)
                begin
                   rpAOE <= 1;
                end
-        
+
              if (~rpDRY & unitSEL)
                begin
                   if (rpcsWRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)
@@ -493,10 +497,10 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                     rpILF <= 1;
                  end
              endcase
-             
+
           end
      end
-   
+
    assign rpER1 = {rpDCK, rpUNS, rpOPI, rpDTE, rpWLE, rpIAE, rpAOE, rpHCRC,
                    rpHCE, rpECH, rpWCF, rpFER, rpPAR, rpRMR, rpILR, rpILF};
 
@@ -511,11 +515,11 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    //
 
    assign rpMR = 16'b0;
-   
+
    //
-   // RPxx Offset (RPOF) Register 
+   // RPxx Offset (RPOF) Register
    //
-   
+
    reg rpF16;
    reg rpECI;
    reg rpHCI;
@@ -527,7 +531,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    reg rpOF100;
    reg rpOF050;
    reg rpOF025;
-   
+
    always @(posedge clk)
      begin
         if (rst | rhCLR | devRESET | (state == statePRESET))
@@ -558,16 +562,16 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                end
           end
      end
-    
+
    assign rpOF = {3'b0, rpF16, rpECI, rpHCI, 2'b0,
                   rpOFD, rpNU, rpOF800, rpOF400, rpOF200, rpOF100, rpOF050, rpOF025};
 
    //
    // RPxx Desired Cylinder (RPDC) Register
    //
-   
+
    reg [9:0] rpDCA;
-   
+
    always @(posedge clk)
      begin
         if (rst | rhCLR | devRESET | (state == statePRESET))
@@ -595,7 +599,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
      end
 
    assign rpDC = {6'b0, rpDCA};
-   
+
    //
    // SD Sector Address Calculation
    //
@@ -612,16 +616,16 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
       .rpSA     (rpSA),
       .sdADDR   (rpSDADDR)
       );
-   
+
    //
    // Disk Motion Simlation State Machine
    //
-   
+
    reg [ 1: 0] rpSDOP;                  // SD Operation
    reg [24: 0] delay;                   // RPxx Delay Simulation
    reg [ 9: 0] rpCCA;                   // Current Cylinder Address
    reg [ 9: 0] tempCYL;                 // Temporary Cylinder
-   
+
 
    always @(posedge clk)
      begin
@@ -640,7 +644,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                // stateIDLE
                //  Look for a function (command) to go process
                //
-               
+
                stateIDLE:
                  begin
                   if (cmdGO)
@@ -648,14 +652,14 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                     //
                     // Decode Command (Function)
                     //
-                                                              
+
                     case (rhDATAI[6:0])
-                      
+
                       //
                       // NOP Command
                       //  Does nothing
                       //
-                      
+
                       `funNOP:
                         begin
                            if (rpERR)
@@ -669,8 +673,8 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                       //  On an RPxx disk, the seek command would
                       //  cause the heads to retract. This command
                       //  simulates head motion to cylinder 0.
-                      // 
-                      
+                      //
+
                       `funUNLOAD:
                         begin
                            if (rpERR)
@@ -693,7 +697,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                       //  to the new cylinder specified by the RPDC
                       //  register
                       //
-                      
+
                       `funSEEK:
                         begin
                            if (rpERR)
@@ -713,7 +717,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                       //  The seek command causes the heads to move
                       //  to cylinder 0.
                       //
-                      
+
                       `funRECAL:
                         begin
                            if (rpERR)
@@ -729,7 +733,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                       //
                       // Device Clear Command
                       //
-                      
+
                       `funCLEAR:
                         begin
                            state <= stateCLEAR;
@@ -739,7 +743,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                       // Port Release Command
                       //  This command does nothing
                       //
-                      
+
                       `funRELEASE:
                         begin
                            if (rpERR)
@@ -747,7 +751,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                            else
                              state <= stateDONE;
                         end
-                      
+
                       //
                       // Offset Comand
                       //  On an RPxx disk, the offset command moves
@@ -757,12 +761,12 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                       //
                       //  This command does nothing.
                       //
-                      
+
                       `funOFFSET:
                         begin
                            state <= stateATA;
                         end
-                      
+
                       //
                       // Return to Centerline Command.
                       //
@@ -779,11 +783,11 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                            else
                              state <= stateATA;
                         end
-                        
+
                       //
                       // Read-in Preset Command
                       //
-                      
+
                       `funPRESET:
                         begin
                            if (rpERR)
@@ -795,7 +799,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                       //
                       // Pack Acknowldege Command
                       //
-                      
+
                       `funPAKACK:
                         begin
                            if (rpERR)
@@ -815,7 +819,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                       //  This command behaves exactly the same as
                       //  a seek command.
                       //
-                      
+
                       `funSEARCH:
                         begin
                            if (rpERR)
@@ -831,11 +835,11 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                         end
 
 ////////////////////////////////////////////////////////////////////
-                      
+
                       //
                       // Write Commands
                       //
-                      
+
                       `funWRCHK,
                       `funWRCHKH:
                         begin
@@ -855,7 +859,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                                 state  <= stateROTDLY;
                              end
                         end
-                        
+
                       `funWRITE,
                       `funWRITEH:
                         begin
@@ -881,7 +885,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                       //
                       // Read Commands
                       //
-                      
+
                       `funREAD,
                       `funREADH:
                         begin
@@ -902,11 +906,11 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                              end
                         end
 
-                      
+
                       //
                       // Functions that don't exist
                       //
-                      
+
                       default:
                         begin
                            state <= stateILLFUN;
@@ -918,18 +922,18 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                // stateSEEK
                //  This state starts the SD Address Calculation
                //
-               
+
                stateSEEK:
                  begin
                     state <= stateSEEKDLY;
                  end
-               
+
                //
                // stateSEEKDLY
                //  Simulate Seek Timing on Seek Commands.
                //  Update Current Cylinder Address after delay.
                //
-               
+
                stateSEEKDLY:
                  begin
                     if (delay == 0)
@@ -953,13 +957,13 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                     else
                       delay <= delay - 1'b1;
                  end
-                        
+
                //
                // stateWAITSD:
                //
                //  Wait for SD to handle Read/Write operaton
                //
-               
+
                stateWAITSD:
                  begin
                     if (rpSDACK)
@@ -985,7 +989,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
 
                statePRESET:
                  state <= stateDONE;
-               
+
                //
                // stateOFFSET
                // This state modifies the bits that occur
@@ -994,7 +998,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
 
                stateOFFSET:
                  state <= stateDONE;
-               
+
                //
                // stateRETURN
                // This state modifies the bits that occur
@@ -1003,7 +1007,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
 
                stateRETURN:
                  state <= stateDONE;
-               
+
                //
                // statePAKACK
                // This state modifies the bits that occur
@@ -1028,7 +1032,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                // This state modifies the bits that occur
                // when an invalid seek error is provided.
                //
-               
+
                stateINVADDR:
                  state <= stateDONE;
 
@@ -1045,33 +1049,33 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                // stateATA
                // This state sets the RPDS[ATA] bit.
                //
-               
+
                stateATA:
                  state <= stateDONE;
-               
+
                //
                // stateDONE:
                //  Update the disk state
                //
-               
+
                stateDONE:
                  begin
                     rpSDOP <= `sdopNOP;
                     state  <= stateIDLE;
                  end
-                 
+
                //
                // Everything else
                //
-                 
+
                default:
                  state <= stateIDLE;
-               
+
              endcase
           end
      end
 
    assign rpCC    = {6'b0, rpCCA};
    assign rpSDREQ = (state == stateWAITSD);
-   
+
 endmodule

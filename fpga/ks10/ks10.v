@@ -3,8 +3,8 @@
 // KS-10 Processor
 //
 // Brief
-//   KS10 System.   The system consists of a CPU, a Bus Aribter,
-//   Memory, and a Unibus Interface.
+//   KS10 System.   The system consists of a CPU, a Bus Aribter, a
+//   Memory Controller, and two Unibus Interfaces.
 //
 // Details
 //
@@ -44,42 +44,66 @@
 `include "uba/uba.vh"
 `include "uba/dz11/dz11.vh"
 `include "uba/rh11/rh11.vh"
+`default_nettype none
 
-module KS10(CLK50MHZ, RESET_N,
+ module KS10(clk, rst,
             // DZ11 Interfaces
-            TXD, RXD, RTS, CTS,
+            dz11TXD, dz11RXD, dz11DTR, dz11CO, dz11RI,
             // RH11 Interfaces
-            rh11CD, rh11WP, rh11MISO, rh11MOSI, rh11SCLK, rh11CS,
+            rh11CD, rh11WP, rh11MISO, rh11MOSI, rh11SCLK, rh11CS, rh11DEBUG,
             // Console Interfaces
-            cslALE, cslAD, cslRD_N, cslWR_N, cslINTR_N,
+            cslREGADDR, cslREGDATI, cslREGDATO, cslREGIR, cslBUSY, cslNXM,
+            cslGO,  cslRESET, cslSTEP, cslRUN, cslEXEC, cslCONT, cslHALT, cslTIMEREN,
+            cslTRAPEN, cslCACHEEN, cslINTRI, cslINTRO,
+            // CPU Interfaces
+            cpuHALT, cpuRUN, cpuEXEC, cpuCONT,
             // SSRAM Interfaces
             ssramCLK, ssramCLKEN, ssramADV, ssramBWA_N, ssramBWB_N, ssramBWC_N, ssramBWD_N,
-            ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA,
-            runLED);
+            ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA);
 
    parameter [14:17] ctlNUM1 = `ctlNUM1;
    parameter [14:17] ctlNUM3 = `ctlNUM3;
 
-   input         CLK50MHZ;      // Clock
-   input         RESET_N;       // Reset
+   input         clk;           // Clock
+   input         rst;           // Reset
    // DZ11 Interfaces
-   input  [2: 1] TXD;           // DZ11 RS-232 Transmitted Data
-   output [2: 1] RXD;           // DZ11 RS-232 Received Data
-   input  [2: 1] RTS;           // DZ11 RS-232 Request to Send
-   output [2: 1] CTS;           // DZ11 RS-232 Clear to Send
+   output [7: 0] dz11TXD;       // DZ11 Transmitter Serial Data
+   input  [7: 0] dz11RXD;       // DZ11 Receiver Serial Data
+   input  [7: 0] dz11CO;        // DZ11 Carrier Detect Input
+   input  [7: 0] dz11RI;        // DZ11 Ring Indicator Input
+   output [7: 0] dz11DTR;       // DZ11 Data Terminal Ready Output
    // RH11 Interfaces
    input         rh11CD;        // RH11 Card Detect
    input         rh11WP;        // RH11 Write Protect
    input         rh11MISO;      // RH11 Data In
    output        rh11MOSI;      // RH11 Data Out
    output        rh11SCLK;      // RH11 Clock
-   output        rh11CS;        // SD11 Chip Select
+   output        rh11CS;        // RH11 Chip Select
+   output [0:35] rh11DEBUG;     // RH11 Debug
    // Console Interfaces
-   input         cslALE;        // Address Latch Enable
-   inout  [7: 0] cslAD;         // Multiplexed Address/Data Bus
-   input         cslRD_N;       // Read Strobe
-   input         cslWR_N;       // Write Strobe
-   output        cslINTR_N;     // Console Interrupt
+   input  [0:35] cslREGADDR;    // Console Address Register
+   input  [0:35] cslREGDATI;    // Console Data Register In
+   output [0:35] cslREGDATO;    // Console Data Register Out
+   input  [0:35] cslREGIR;      // Console Instruction Register
+   output        cslBUSY;       // Console Busy
+   output        cslNXM;        // Console NXM/NXD
+   input         cslGO;         // Console Go
+   input         cslRESET;      // Console Reset
+   input         cslSTEP;       // Console Step
+   input         cslRUN;        // Console Run
+   input         cslEXEC;       // Console Exec
+   input         cslCONT;       // Console Cont
+   input         cslHALT;       // Console Halt
+   input         cslTIMEREN;    // Console Timer Enable
+   input         cslTRAPEN;     // Console Trap Enable
+   input         cslCACHEEN;    // Console Cache Enable
+   input         cslINTRI;      // Console Interrupt In
+   output        cslINTRO;      // Console Interrupt Out
+   // CPU Interfaces
+   output        cpuHALT;       // CPU Halt
+   output        cpuRUN;        // CPU Run
+   output        cpuEXEC;       // CPU Exec
+   output        cpuCONT;       // CPU Cont
    // SSRAM Interfaces
    output        ssramCLK;      // SSRAM Clock
    output        ssramCLKEN;    // SSRAM Clken
@@ -95,29 +119,6 @@ module KS10(CLK50MHZ, RESET_N,
    inout  [0:35] ssramDATA;     // SSRAM Data Bus
 
    //
-   // Status LED
-   //
-
-   output        runLED;        // RUN LED
-
-   //
-   //
-   //
-
-   wire reset = ~RESET_N;
-   wire clk     = CLK50MHZ;;
-
-   //
-   // DZ-11 Interface Stubs
-   //
-
-   wire [7: 0] dz11CO  = 8'hff; // DZ11 Carrier Input
-   wire [7: 0] dz11RI  = 8'h00; // DZ11 Ring Input
-   wire [7: 0] dz11DTR;         // DZ11 DTR Output
-   wire [7: 0] dz11TXD;		// DZ11 TXD
-   wire [7: 0] dz11RXD;		// DZ11 RXD
-
-   //
    // Bus Arbiter Outputs
    //
 
@@ -126,7 +127,6 @@ module KS10(CLK50MHZ, RESET_N,
    //
    // Console Interfaces
    //
-
 
    wire        cslREQI;         // Console Bus Request In
    wire        cslREQO;         // Console Bus Request Out
@@ -144,23 +144,23 @@ module KS10(CLK50MHZ, RESET_N,
    wire        cslTRAPEN;       // Console Trap Enable
    wire        cslTIMEREN;      // Console Timer Enable
    wire        cslCACHEEN;      // Console Cache Enable
-   wire        cslINTR;         // KS10 Interrupt to Console
-   wire        ks10INTR;        // KS10 Interrupt
-   wire        ks10RESET;       // KS10 Reset
 
    //
-   // CPU Outputs
+   // CPU Interfaces
    //
 
-   wire        cpuHALT;         // CPU Halt Status
-   wire        cpuREQ;          // CPU Bus Request
-   wire        cpuACK;          // CPU Bus Acknowledge
+   wire        cpuREQO;         // CPU Bus Request
+   wire        cpuACKI;         // CPU Bus Acknowledge
    wire [0:35] cpuADDRO;        // CPU Address Out
    wire [0:35] cpuDATAI;        // CPU Data In
    wire [0:35] cpuDATAO;        // CPU Data Out
+   wire        cpuHALT;         // CPU Halt Status
+   wire        cpuRUN;          // CPU Run Status
+   wire        cpuEXEC;         // CPU Exec Status
+   wire        cpuCONT;         // CPU Cont Status
 
    //
-   // Memory Outputs
+   // Memory Interfaces
    //
 
    wire [0:35] memDATAI;        // Memory Data In
@@ -169,38 +169,18 @@ module KS10(CLK50MHZ, RESET_N,
    wire        memACK;          // Memory ACK
 
    //
-   // Unibus Interface
+   // Unibus Interfaces (x4)
    //
 
-   wire [1: 7] busINTR;         // Unibus Interrupt Request
+   wire [1: 7] ubaINTR;         // Unibus Interrupt Request
    wire        ubaREQI;         // Unibus Bus Request In
-   wire        ubaREQO;         // Unibus Bus Request Out
-   wire        ubaACKI;         // Unibus Bus Acknowledge In
-   wire        ubaACKO;         // Unibus Bus Acknowledge Out
-   wire [0:35] ubaADDRI;        // Unibus Address In
-   wire [0:35] ubaADDRO;        // Unibus Address Out
+   wire [0: 3] ubaREQO;         // Unibus Bus Request Out
+   wire [0: 3] ubaACKI;         // Unibus Bus Acknowledge In
+   wire [0: 3] ubaACKO;         // Unibus Bus Acknowledge Out
+   wire [0:35] ubaADDRO[0:3];   // Unibus Address Out
    wire [0:35] ubaDATAI;        // Unibus Data In
-   wire [0:35] ubaDATAO;        // Unibus Data Out
-
-   wire        uba1REQO;
-   wire        uba1ACKO;
-   wire [0:35] uba1ADDRO;
-   wire [0:35] uba1DATAO;
-   wire        uba1ACKI;
-   wire [1: 7] uba1INTR;
-
-   wire        uba3REQO;
-   wire        uba3ACKI;
-   wire        uba3ACKO;
-   wire [0:35] uba3ADDRO;
-   wire [0:35] uba3DATAO;
-   wire [1: 7] uba3INTR;
-
-   //
-   // RH11 Outputs
-   //
-
-   wire [0:35] rhDEBUG;
+   wire [0:35] ubaDATAO[0:3];   // Unibus Data Out
+   wire [1: 7] ubaINTRO[0:3];   // Unibus Interrupt
 
    //
    // Bus Arbiter
@@ -209,8 +189,8 @@ module KS10(CLK50MHZ, RESET_N,
    ARB uARB
      (.clk              (clk),
       // CPU
-      .cpuREQI          (cpuREQ),
-      .cpuACKO          (cpuACK),
+      .cpuREQI          (cpuREQO),
+      .cpuACKO          (cpuACKI),
       .cpuADDRI         (cpuADDRO),
       .cpuDATAI         (cpuDATAO),
       .cpuDATAO         (cpuDATAI),
@@ -223,20 +203,19 @@ module KS10(CLK50MHZ, RESET_N,
       .cslDATAI         (cslDATAO),
       .cslDATAO         (cslDATAI),
       // Unibus
+      .ubaREQI          (ubaREQO),
       .ubaREQO          (ubaREQI),
+      .ubaACKI          (ubaACKO),
+      .ubaACKO          (ubaACKI),
+      .uba0ADDRI        (ubaADDRO[0]),
+      .uba1ADDRI        (ubaADDRO[1]),
+      .uba2ADDRI        (ubaADDRO[2]),
+      .uba3ADDRI        (ubaADDRO[3]),
+      .uba0DATAI        (ubaDATAO[0]),
+      .uba1DATAI        (ubaDATAO[1]),
+      .uba2DATAI        (ubaDATAO[2]),
+      .uba3DATAI        (ubaDATAO[3]),
       .ubaDATAO         (ubaDATAI),
-      // Unibus #1
-      .uba1REQI         (uba1REQO),
-      .uba1ACKI         (uba1ACKO),
-      .uba1ADDRI        (uba1ADDRO),
-      .uba1DATAI        (uba1DATAO),
-      .uba1ACKO         (uba1ACKI),
-      // Unibus #3
-      .uba3REQI         (uba3REQO),
-      .uba3ACKI         (uba3ACKO),
-      .uba3ADDRI        (uba3ADDRO),
-      .uba3DATAI        (uba3DATAO),
-      .uba3ACKO         (uba3ACKI),
       // Memory
       .memREQO          (memREQ),
       .memACKI          (memACK),
@@ -252,7 +231,9 @@ module KS10(CLK50MHZ, RESET_N,
 
    CPU uCPU
      (.clk              (clk),
-      .rst              (ks10RESET),
+      .rst              (rst),
+      // Console
+      .cslRESET         (cslRESET),
       .cslSTEP          (cslSTEP),
       .cslRUN           (cslRUN),
       .cslEXEC          (cslEXEC),
@@ -261,15 +242,20 @@ module KS10(CLK50MHZ, RESET_N,
       .cslTIMEREN       (cslTIMEREN),
       .cslTRAPEN        (cslTRAPEN),
       .cslCACHEEN       (cslCACHEEN),
-      .ks10INTR         (ks10INTR),
-      .cslINTR          (cslINTR),
-      .busINTR          (busINTR),
-      .busREQ           (cpuREQ),
-      .busACK           (cpuACK),
-      .busADDRO         (cpuADDRO),
-      .busDATAI         (cpuDATAI),
-      .busDATAO         (cpuDATAO),
-      .cpuHALT          (cpuHALT)
+      .cslINTRI         (cslINTRI),
+      .cslINTRO         (cslINTRO),
+      // UBA
+      .ubaINTR          (ubaINTR),
+      // CPU
+      .cpuREQO          (cpuREQO),
+      .cpuACKI          (cpuACKI),
+      .cpuADDRO         (cpuADDRO),
+      .cpuDATAI         (cpuDATAI),
+      .cpuDATAO         (cpuDATAO),
+      .cpuHALT          (cpuHALT),
+      .cpuRUN           (cpuRUN),
+      .cpuEXEC          (cpuEXEC),
+      .cpuCONT          (cpuCONT)
       );
 
    //
@@ -278,11 +264,16 @@ module KS10(CLK50MHZ, RESET_N,
 
    CSL uCSL
      (.clk              (clk),
-      .reset            (reset),
-      .cslALE           (cslALE),
-      .cslAD            (cslAD),
-      .cslRD_N          (cslRD_N),
-      .cslWR_N          (cslWR_N),
+      .rst              (rst),
+      // Console Wrapper Interfaces
+      .cslREGADDR       (cslREGADDR),
+      .cslREGDATI       (cslREGDATI),
+      .cslREGDATO       (cslREGDATO),
+      .cslREGIR         (cslREGIR),
+      .cslBUSY          (cslBUSY),
+      .cslNXM           (cslNXM),
+      .cslGO            (cslGO),
+      // KS10 Interfaces
       .busREQI          (cslREQI),
       .busREQO          (cslREQO),
       .busACKI          (cslACKI),
@@ -290,20 +281,7 @@ module KS10(CLK50MHZ, RESET_N,
       .busADDRI         (arbADDRO),
       .busADDRO         (cslADDRO),
       .busDATAI         (cslDATAI),
-      .busDATAO         (cslDATAO),
-      // Console Interfaces
-      .rhDEBUG          (rhDEBUG),
-      .cpuHALT          (cpuHALT),
-      .cslSTEP          (cslSTEP),
-      .cslRUN           (cslRUN),
-      .cslEXEC          (cslEXEC),
-      .cslCONT          (cslCONT),
-      .cslHALT          (cslHALT),
-      .cslTIMEREN       (cslTIMEREN),
-      .cslTRAPEN        (cslTRAPEN),
-      .cslCACHEEN       (cslCACHEEN),
-      .ks10INTR         (ks10INTR),
-      .ks10RESET        (ks10RESET)
+      .busDATAO         (cslDATAO)
       );
 
    //
@@ -312,7 +290,7 @@ module KS10(CLK50MHZ, RESET_N,
 
    MEM uMEM
      (.clk              (clk),
-      .rst              (reset),
+      .rst              (rst),
       .clken            (1'b1),
       .busREQI          (memREQ),
       .busACKO          (memACK),
@@ -353,27 +331,27 @@ module KS10(CLK50MHZ, RESET_N,
    // Stub Connected to IO Bridge 1 Device 2
    //
 
-   wire         ctl1dev2REQI    = 0;
-   wire         ctl1dev2ACKI    = 0;
-   wire [ 0:35] ctl1dev2ADDRI   = 36'b0;
-   wire [ 0:35] ctl1dev2DATAI   = 36'b0;
-   wire [ 7: 4] ctl1dev2INTR    =  4'b0;
+   wire         ctl1dev2REQI  = 0;
+   wire         ctl1dev2ACKI  = 0;
+   wire [ 0:35] ctl1dev2ADDRI = 36'b0;
+   wire [ 0:35] ctl1dev2DATAI = 36'b0;
+   wire [ 7: 4] ctl1dev2INTR  =  4'b0;
    wire         ctl1dev2ACKO;
 
    UBA UBA1
      (.clk              (clk),
-      .rst              (reset),
+      .rst              (rst),
       .clken            (1'b1),
       .ctlNUM           (ctlNUM1),
       .busREQI          (ubaREQI),
-      .busREQO          (uba1REQO),
-      .busACKI          (uba1ACKI),
-      .busACKO          (uba1ACKO),
+      .busREQO          (ubaREQO[1]),
+      .busACKI          (ubaACKI[1]),
+      .busACKO          (ubaACKO[1]),
       .busADDRI         (arbADDRO),
-      .busADDRO         (uba1ADDRO),
+      .busADDRO         (ubaADDRO[1]),
       .busDATAI         (ubaDATAI),
-      .busDATAO         (uba1DATAO),
-      .busINTR          (uba1INTR),
+      .busDATAO         (ubaDATAO[1]),
+      .busINTR          (ubaINTRO[1]),
       .devREQO          (ctl1REQO),
       .devADDRO         (ctl1ADDRO),
       .devDATAO         (ctl1DATAO),
@@ -399,7 +377,7 @@ module KS10(CLK50MHZ, RESET_N,
 
    RH11 uRH11
      (.clk              (clk),
-      .rst              (reset),
+      .rst              (rst),
       .ctlNUM           (ctlNUM1),
       // RH11 IO
       .rh11CD           (rh11CD),
@@ -408,6 +386,7 @@ module KS10(CLK50MHZ, RESET_N,
       .rh11MOSI         (rh11MOSI),
       .rh11SCLK         (rh11SCLK),
       .rh11CS           (rh11CS),
+      .rh11DEBUG        (rh11DEBUG),
       // Reset
       .devRESET         (ctl1RESET),
       // Interrupt
@@ -423,15 +402,12 @@ module KS10(CLK50MHZ, RESET_N,
       .devADDRO         (rh1ADDRO),
       // Data
       .devDATAI         (ctl1DATAO),
-      .devDATAO         (rh1DATAO),
-      // Debug
-      .rhDEBUG          (rhDEBUG)
+      .devDATAO         (rh1DATAO)
       );
 
    //
    // IO Bridge #3
    //
-
 
    wire         ctl3REQO;
    wire [ 0:35] ctl3ADDRO;
@@ -458,18 +434,18 @@ module KS10(CLK50MHZ, RESET_N,
 
    UBA UBA3
      (.clk              (clk),
-      .rst              (reset),
+      .rst              (rst),
       .clken            (1'b1),
       .ctlNUM           (ctlNUM3),
       .busREQI          (ubaREQI),
-      .busREQO          (uba3REQO),
-      .busACKI          (uba3ACKI),
-      .busACKO          (uba3ACKO),
+      .busREQO          (ubaREQO[3]),
+      .busACKI          (ubaACKI[3]),
+      .busACKO          (ubaACKO[3]),
       .busADDRI         (arbADDRO),
-      .busADDRO         (uba3ADDRO),
+      .busADDRO         (ubaADDRO[3]),
       .busDATAI         (ubaDATAI),
-      .busDATAO         (uba3DATAO),
-      .busINTR          (uba3INTR),
+      .busDATAO         (ubaDATAO[3]),
+      .busINTR          (ubaINTRO[3]),
       .devREQO          (ctl3REQO),
       .devADDRO         (ctl3ADDRO),
       .devDATAO         (ctl3DATAO),
@@ -495,7 +471,7 @@ module KS10(CLK50MHZ, RESET_N,
 
    DZ11 uDZ11
      (.clk              (clk),
-      .rst              (reset),
+      .rst              (rst),
       .ctlNUM           (ctlNUM3),
       // DZ11 IO
       .dz11TXD          (dz11TXD),
@@ -522,27 +498,24 @@ module KS10(CLK50MHZ, RESET_N,
       );
 
    //
-   // Console Interrupt fixup
-   //
-
-   assign cslINTR_N = ~cslINTR;
-   assign runLED    = ~cpuHALT;
-
-   //
    // Interrupts
    //
 
-   assign busINTR = uba1INTR | uba3INTR;
+   assign ubaINTR = ubaINTRO[0] | ubaINTRO[1] |  ubaINTRO[2] | ubaINTRO[3];
 
    //
-   // DZ11 Fixup
-   //  TXD is an output of the FT4232.  RXD is an input to the
-   //  FT4232.  Therefore must twist TXD and RXD here.
+   // Unused Unibus Devices
    //
 
-   assign dz11RXD[1:0] = TXD[2:1];
-   assign RXD[2:1]     = dz11TXD[1:0];
-   assign dz11RXD[7:2] = dz11TXD[7:2];
-   assign CTS[2:1]     = RTS[2:1];
-   
+   assign ubaREQO[0]  = 0;
+   assign ubaREQO[2]  = 0;
+   assign ubaACKO[0]  = 0;
+   assign ubaACKO[2]  = 0;
+   assign ubaADDRO[0] = 0;
+   assign ubaADDRO[2] = 0;
+   assign ubaDATAO[0] = 0;
+   assign ubaDATAO[2] = 0;
+   assign ubaINTRO[0] = 0;
+   assign ubaINTRO[2] = 0;
+
 endmodule
