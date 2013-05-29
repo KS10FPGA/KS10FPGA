@@ -7,8 +7,6 @@
 //
 // Details
 //
-// Todo
-//
 // File
 //   cpu.v
 //
@@ -17,7 +15,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+//  Copyright (C) 2012-2013 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -45,18 +43,20 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 `include "apr.vh"
-  
-module CPU(clk, rst,
+
+module CPU(clk, rst, cslRESET,
            cslSTEP, cslRUN, cslEXEC, cslCONT, cslHALT, cslTIMEREN,
-           cslTRAPEN, cslCACHEEN, ks10INTR, cslINTR, busINTR,
-           busREQ, busACK, busDATAI, busDATAO, busADDRO,
-           cpuHALT);
+           cslTRAPEN, cslCACHEEN, cslINTRI, cslINTRO, ubaINTR,
+           cpuREQO, cpuACKI, cpuADDRO, cpuDATAI, cpuDATAO,
+           cpuHALT, cpuRUN, cpuEXEC, cpuCONT);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
 
    input          clk;          // Clock
    input          rst;          // Reset
+   // Console
+   input          cslRESET;     // CPU Reset
    input          cslSTEP;      // Single Step
    input          cslRUN;       // Run
    input          cslEXEC;      // Execute
@@ -65,153 +65,150 @@ module CPU(clk, rst,
    input          cslTIMEREN;   // Timer Enable
    input          cslTRAPEN;    // Enable Traps
    input          cslCACHEEN;   // Enable Cache
-   input          ks10INTR;     // Console Interrupt to KS10
-   output         cslINTR;      // KS10 Interrupt to Console
-   input  [ 1: 7] busINTR;      // Unibus Interrupt Request
-   output         busREQ;       // Bus Request
-   input          busACK;       // Bus Acknowledge
-   input  [ 0:35] busDATAI;     // Bus Data Input
-   output [ 0:35] busDATAO;     // Bus Data Output
-   output [ 0:35] busADDRO;     // Bus Addr and Flags
-   output         cpuHALT;      // Run/Halt Status
+   input          cslINTRI;     // Console Interrupt to CPU
+   output         cslINTRO;     // CPU Interrupt to Console
+   // UBA
+   input  [ 1: 7] ubaINTR;      // Unibus Interrupt Request
+   // CPU
+   output         cpuREQO;      // CPU Bus Request
+   input          cpuACKI;     // Bus Acknowledge
+   output [ 0:35] cpuADDRO;     // CPU Addr and Flags
+   input  [ 0:35] cpuDATAI;    // Bus Data Input
+   output [ 0:35] cpuDATAO;     // CPU Data Output
+   output         cpuHALT;      // CPU Halt Status
+   output         cpuRUN;       // CPU Run Status
+   output         cpuEXEC;      // CPU Exec Status
+   output         cpuCONT;      // CPU Cont Status
 
    //
    // ROMS
    //
 
-   wire [0:cromWidth-1] crom;                   // Control ROM
-   wire [0:dromWidth-1] drom;                   // Dispatch ROM
-
-   //
-   // Processor State
-   //
-
-   wire cpuRUN;                                 // Run Switch Active
-   wire cpuCONT;                                // Continue Switch Active
-   wire cpuEXEC;                                // Execute Switch Active
+   wire [0:cromWidth-1] crom;   // Control ROM
+   wire [0:dromWidth-1] drom;   // Dispatch ROM
 
    //
    // Flags
    //
 
-   wire memory_cycle = 0;                       // FIXME
-   wire iolatch;                                // FIXME
-   wire opJRST0;                                // JRST 0 Instruction
-   wire skipJFCL;                               // JFCL Instruction
-   wire trapCYCLE;                              // Trap Cycle
+   wire memory_cycle = 0;       // FIXME
+   wire iolatch;                // FIXME
+   wire opJRST0;                // JRST 0 Instruction
+   wire skipJFCL;               // JFCL Instruction
+   wire trapCYCLE;              // Trap Cycle
 
    //
    // Interrupts
    //
 
-   wire cpuINTR;                                // Extenal Interrupt
-   wire nxmINTR;                                // Non-existent memory interrupt
-   wire [ 0: 2] reqINTP;                        // Requested Interrupt Priority
-   wire [ 0: 2] curINTP;                        // Current Interrupt Priority
-   wire [ 1: 7] aprINTR;                        // APR Interrupt Request
+   wire cpuINTR;                // Extenal Interrupt
+   wire nxmINTR;                // Non-existent memory interrupt
+   wire [ 0: 2] reqINTP;        // Requested Interrupt Priority
+   wire [ 0: 2] curINTP;        // Current Interrupt Priority
+   wire [ 1: 7] aprINTR;        // APR Interrupt Request
 
    //
    // PXCT
    //
 
-   wire         prevEN;                         // Conditionally use Previous Context
-   wire [ 0: 5] acBLOCK;                        // AC Block
+   wire         prevEN;         // Conditionally use Previous Context
+   wire [ 0: 5] acBLOCK;        // AC Block
 
    //
    // ALU Flags
    //
 
-   wire [ 0: 8] aluFLAGS;                       // ALU Flags
+   wire [ 0: 8] aluFLAGS;       // ALU Flags
 
    //
    // PC Flags
    //
 
-   wire [ 0:17] pcFLAGS;                        // PC Flags
+   wire [ 0:17] pcFLAGS;        // PC Flags
 
    //
    // APR Flags
    //
 
-   wire [22:35] aprFLAGS;                       // Arithmetic Processor Flags
+   wire [22:35] aprFLAGS;       // Arithmetic Processor Flags
 
    //
    // VMA Registers
    //
 
-   wire [14:35] vmaADDR;                        // VMA Address
-   wire [ 0:13] vmaFLAGS;                       // VMA Flags
-   wire         vmaEXTENDED;                    //  Extended VMA
+   wire [14:35] vmaADDR;        // VMA Address
+   wire [ 0:13] vmaFLAGS;       // VMA Flags
+   wire         vmaEXTENDED;    //  Extended VMA
 
    //
    // Paging
    //
 
-   wire         pageFAIL;                       // Page Fail
-   wire [16:26] pageADDR;                       // Page Address
-   wire [ 0: 3] pageFLAGS;                      // Page Flags
+   wire         pageFAIL;       // Page Fail
+   wire [16:26] pageADDR;       // Page Address
+   wire [ 0: 3] pageFLAGS;      // Page Flags
 
    //
    // Timer
    //
 
-   wire         timerINTR;                      // Timer Interrupt
-   wire [18:35] timerCOUNT;                     // Millisecond timer
+   wire         timerINTR;      // Timer Interrupt
+   wire [18:35] timerCOUNT;     // Millisecond timer
 
    //
    // Instruction Register IR
    //
 
-   wire [ 0:17] regIR;                          // Instruction Register (IR)
-   wire         xrPREV;                         // XR is previous
+   wire [ 0:17] regIR;          // Instruction Register (IR)
+   wire         xrPREV;         // XR is previous
 
    //
    // Cache
    //
 
-   wire         cacheHIT = 1'b0;                // FIXME: Cache not implemented.
+   wire         cacheHIT = 0;   // FIXME: Cache not implemented.
 
    //
    // Busses
    //
 
-   wire [ 0:35] dp;                             // ALU output bus
-   wire [ 0:35] dbus;                           // DBUS Mux output
-   wire [ 0:35] dbm;                            // DBM Mux output
-   wire [ 0:35] ramfile;                        // RAMFILE output
+   wire [ 0:35] dp;             // ALU output bus
+   wire [ 0:35] dbus;           // DBUS Mux output
+   wire [ 0:35] dbm;            // DBM Mux output
+   wire [ 0:35] ramfile;        // RAMFILE output
 
    //
    // SCAD, SC, and FE
    //
 
    wire [ 0: 9] scad;
-   wire         scSIGN;                         // Step Count Sign
-   wire         feSIGN;                         // Floating-point exponent Sign
+   wire         scSIGN;         // Step Count Sign
+   wire         feSIGN;         // Floating-point exponent Sign
 
    //
    // Dispatches
    //
 
-   wire [ 8:11] dispNI;                         // Next Instruction Dispatch
-   wire [ 8:11] dispPF;                         // Page Fail Dispatch
-   wire [ 8:11] dispBYTE;                       // Byte Dispatch
-   wire [ 8:11] dispSCAD;                       // SCAD Dispatch
-   wire [ 0:11] dispDIAG = 12'b0;               // Diagnostic Dispatch
+   wire [ 8:11] dispNI;         // Next Instruction Dispatch
+   wire [ 8:11] dispPF;         // Page Fail Dispatch
+   wire [ 8:11] dispBYTE;       // Byte Dispatch
+   wire [ 8:11] dispSCAD;       // SCAD Dispatch
+   wire [ 0:11] dispDIAG = 0;   // Diagnostic Dispatch
 
    //
    // DEBUG
    //
 
-   wire [0: 3]  debugADDR;                      // DEBUG Address
-   wire [0:35]  debugDATA;                      // DEBUG Data
+   wire [0: 3]  debugADDR;      // DEBUG Address
+   wire [0:35]  debugDATA;      // DEBUG Data
 
    //
    // Timing
    //
 
-   wire clkenDP;                                // Clock Enable for Datapaths
-   wire clkenCR;                                // Clock Enable for Control ROM
-   wire memWAIT;                                // Wait for memory
+   wire clkenDP;                // Clock Enable for Datapaths
+   wire clkenCR;                // Clock Enable for Control ROM
+   wire memWAIT;                // Wait for memory
 
    //
    // Timing and Wait States
@@ -226,7 +223,7 @@ module CPU(clk, rst,
       .clkenCR          (clkenCR),
       .memWAIT          (memWAIT)
       );
-   
+
    //
    // Arithmetic Logic Unit
    //
@@ -254,7 +251,7 @@ module CPU(clk, rst,
       .crom             (crom),
       .dp               (dp),
       .nxmINTR          (nxmINTR),
-      .ks10INTR         (ks10INTR),
+      .cslINTR          (cslINTRI),
       .aprFLAGS         (aprFLAGS),
       .aprINTR          (aprINTR)
       );
@@ -283,10 +280,10 @@ module CPU(clk, rst,
       .vmaADDR          (vmaADDR),
       .pageADDR         (pageADDR),
       .aprFLAGS         (aprFLAGS),
-      .busDATAO         (busDATAO),
-      .busADDRO         (busADDRO),
-      .busREQ           (busREQ),
-      .busACK           (busACK),
+      .cpuDATAO         (cpuDATAO),
+      .cpuADDRO         (cpuADDRO),
+      .cpuREQO          (cpuREQO),
+      .cpuACKI          (cpuACKI),
       .curINTP          (curINTP),
       .memWAIT          (memWAIT),
       .nxmINTR          (nxmINTR)
@@ -305,7 +302,7 @@ module CPU(clk, rst,
       .timerCOUNT       (timerCOUNT),
       .vmaFLAGS         (vmaFLAGS),
       .vmaADDR          (vmaADDR),
-      .busDATAI         (busDATAI),
+      .cpuDATAI         (cpuDATAI),
       .dbm              (dbm)
       );
 
@@ -364,7 +361,7 @@ module CPU(clk, rst,
       .dp               (dp),
       .flagINTREQ       (`flagINTREQ(aprFLAGS)),
       .aprINTR          (aprINTR),
-      .busINTR          (busINTR),
+      .ubaINTR          (ubaINTR),
       .reqINTP          (reqINTP),
       .curINTP          (curINTP),
       .cpuINTR          (cpuINTR)
@@ -425,7 +422,7 @@ module CPU(clk, rst,
 
    USEQ uUSEQ
      (.clk              (clk),
-      .rst              (rst),
+      .rst              (cslRESET),
       .clken            (clkenCR),
       .dp               (dp),
       .pageFAIL         (pageFAIL),
@@ -513,8 +510,8 @@ module CPU(clk, rst,
       .crom             (crom),
       .drom             (drom),
       .dp               (dp),
-      .vmaFLAGS         (vmaFLAGS),
-      .vmaADDR          (vmaADDR),
+      .vmaFLAGSx         (vmaFLAGS),
+      .vmaADDRx          (vmaADDR),
       .aprFLAGS         (aprFLAGS),
       .pageFLAGS        (pageFLAGS),
       .cpuINTR          (cpuINTR),
@@ -606,6 +603,10 @@ module CPU(clk, rst,
       .vmaADDR          (vmaADDR)
       );
 
-   assign cslINTR = `flagCSL(aprFLAGS);         //  KS10 Interrupt to Console
-   
+   //
+   //  KS10 Interrupt to Console
+   //
+
+   assign cslINTRO = `flagCSL(aprFLAGS);
+
 endmodule

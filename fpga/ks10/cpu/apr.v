@@ -42,7 +42,7 @@
 `default_nettype none
 `include "useq/crom.vh"
 
-module APR(clk, rst, clken, crom, dp, nxmINTR, ks10INTR, aprFLAGS, aprINTR);
+module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -52,7 +52,7 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, ks10INTR, aprFLAGS, aprINTR);
    input  [ 0:cromWidth-1] crom;        // Control ROM Data
    input  [ 0:35]          dp;          // Data path
    input                   nxmINTR;     // Non existant memory interrupt
-   input                   ks10INTR;     // Console In Interrupt
+   input                   cslINTR;     // Interrupt from Console
    output [22:35]          aprFLAGS;    // APR Flags
    output [ 1: 7]          aprINTR;     // APR Interrupt Request
 
@@ -220,7 +220,7 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, ks10INTR, aprFLAGS, aprINTR);
      begin
         if (rst)
           flag31 <= 1'b0;
-        else if (ks10INTR)
+        else if (cslINTR)
           flag31 <= 1'b1;
         else if (clken & specAPRFLAGS)
           flag31 <= dp[31];

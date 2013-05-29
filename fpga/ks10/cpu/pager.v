@@ -150,6 +150,12 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
       end
 
    //
+   // Table Address
+   //
+
+   wire [0:7] tableAddr = dp[19:26];
+   
+   //
    // Page Table Write
    //
 
@@ -201,9 +207,9 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
              if (pageWRITE)
                begin
                   if (~dp[18] | pageSWEEP)
-                    pageTABLE1[dp[19:26]] <= {pageinFLAGS, pageinADDR};
+                    pageTABLE1[tableAddr] <= {pageinFLAGS, pageinADDR};
                   if ( dp[18] | pageSWEEP)
-                    pageTABLE2[dp[19:26]] <= {pageinFLAGS, pageinADDR};
+                    pageTABLE2[tableAddr] <= {pageinFLAGS, pageinADDR};
                end
           end
      end
@@ -231,9 +237,9 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR,
         else if (clken & vmaEN)
           begin
              if(dp[18])
-               {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER, pageADDR} <= pageTABLE2[dp[19:26]];
+               {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER, pageADDR} <= pageTABLE2[tableAddr];
              else
-               {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER, pageADDR} <= pageTABLE1[dp[19:26]];
+               {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER, pageADDR} <= pageTABLE1[tableAddr];
           end
      end
 

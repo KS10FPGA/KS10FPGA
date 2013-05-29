@@ -1,25 +1,21 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Console Interface
-//!
-//! \details
-//!
-//! \note
-//!
-//! \todo
-//!
-//! \file
-//!      intf.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//    Console Interface
+//
+// Details
+//
+// File
+//   intf.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+//  Copyright (C) 2012-2013 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -87,13 +83,13 @@ module INTF(clk, rst, clken, crom,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          cpuHALT <= 1'b0;
+          cpuHALT <= 0;
         else if (clken)
           begin
              if (specCONS & `cromCONS_SET_HALT)
-               cpuHALT <= 1'b1;
+               cpuHALT <= 1;
              else if (specCONS & `cromCONS_CLR_HALT)
-               cpuHALT <= 1'b0;
+               cpuHALT <= 0;
           end
      end
 
@@ -108,13 +104,13 @@ module INTF(clk, rst, clken, crom,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          cpuRUN <= 1'b0;
+          cpuRUN <= 0;
         else if (clken)
           begin
              if (cslRUN)
-               cpuRUN <= 1'b1;
+               cpuRUN <= 1;
              else if (specCONS & `cromCONS_CLR_RUN)
-               cpuRUN <= 1'b0;
+               cpuRUN <= 0;
           end
      end
 
@@ -129,13 +125,13 @@ module INTF(clk, rst, clken, crom,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          cpuEXEC <= 1'b0;
+          cpuEXEC <= 0;
         else if (clken)
           begin
              if (cslEXEC)
-               cpuEXEC <= 1'b1;
+               cpuEXEC <= 1;
              else if (specCONS & `cromCONS_CLR_EXEC)
-               cpuEXEC <= 1'b0;
+               cpuEXEC <= 0;
           end
      end
 
@@ -150,13 +146,13 @@ module INTF(clk, rst, clken, crom,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          cpuCONT <= 1'b0;
+          cpuCONT <= 0;
         else if (clken)
           begin
              if (cslCONT)
-               cpuCONT <= 1'b1;
+               cpuCONT <= 1;
              else if (specCONS & `cromCONS_CLR_CONT)
-               cpuCONT <= 1'b0;
+               cpuCONT <= 0;
           end
      end
 
