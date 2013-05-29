@@ -91,14 +91,14 @@
 //
 
 `define cromDST                 crom[21:23]     // ALU Destinations
-`define cromDST_QREG            3'b000          // RAM <- RAM, Q <- F
-`define cromDST_NOP             3'b001          // RAM <- RAM, Q <- Q
-`define cromDST_RAMA            3'b010          // RAM <- A, Q <- Q
-`define cromDST_RAMF            3'b011          // RAM <- F, Q <- Q
-`define cromDST_RAMQD           3'b100          // RAM <- F shifted right, Q <- Q shifted right
-`define cromDST_RAMD            3'b101          // RAM <- F shifted right, Q <- Q
-`define cromDST_RAMQU           3'b110          // RAM <- F shifted left,  Q <- Q shifted left
-`define cromDST_RAMU            3'b111          // RAM <- F shifted left,  Q <- Q
+`define cromDST_QREG            3'b000          //  RAM <- RAM, Q <- F
+`define cromDST_NOP             3'b001          //  RAM <- RAM, Q <- Q
+`define cromDST_RAMA            3'b010          //  RAM <- A, Q <- Q
+`define cromDST_RAMF            3'b011          //  RAM <- F, Q <- Q
+`define cromDST_RAMQD           3'b100          //  RAM <- F shifted right, Q <- Q shifted right
+`define cromDST_RAMD            3'b101          //  RAM <- F shifted right, Q <- Q
+`define cromDST_RAMQU           3'b110          //  RAM <- F shifted left,  Q <- Q shifted left
+`define cromDST_RAMU            3'b111          //  RAM <- F shifted left,  Q <- Q
 
 //
 // ALU Register Selection
@@ -259,10 +259,11 @@
 `define cromDIVIDE              crom[77]        // Microinstruction is doing a divide
 `define cromMULTIPREC           crom[78]        // Multiprecision step (Divide, DFAD, DFSB)
 `define cromMULTISHIFT          crom[79]        // Fast Shift (repeat until FE overflows)
-`define cromCALL                crom[80]        // Save current location on stack
+`define cromCALL                crom[80]        // Save current micro sequencer address on stack
 
 //
 // SCAD
+//  Note: Only the ALU OPs that are actually used are implemented.
 //
 
 `define cromSCAD_FUN            crom[90:92]     // SCAD ALU OP
@@ -297,14 +298,14 @@
 // Number Field
 //
 
-`define cromNUM                 crom[90:107]    //
+`define cromNUM                 crom[90:107]    // Immediate Data
 
 //
 // State Field
 //  Overloaded with Number Field
 //
 
-`define cromSTATE               crom[90:107]    //
+`define cromSTATE               crom[90:107]    // State Definition
 
 //
 // Memory Cycle Control

@@ -1,25 +1,21 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      DBM Multiplexor
-//!
-//! \details
-//!
-//! \todo
-//!
-//! \notes
-//!
-//! \file
-//!      dbm.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   DBM Multiplexer
+//
+// Details
+//
+// File
+//   dbm.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+//  Copyright (C) 2012-2013 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -50,7 +46,7 @@
 `include "useq/crom.vh"
 
 module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaFLAGS,
-           vmaADDR, busDATAI, dbm);
+           vmaADDR, cpuDATAI, dbm);
 
    parameter  cromWidth = `CROM_WIDTH;
 
@@ -62,7 +58,7 @@ module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaFLAGS,
    input  [18:35]          timerCOUNT;  // Timer Count
    input  [ 0:13]          vmaFLAGS;    // VMA Flags
    input  [14:35]          vmaADDR;     // VMA Address
-   input  [ 0:35]          busDATAI;    // Memory Bus Data
+   input  [ 0:35]          cpuDATAI;    // Memory Bus Data
    output [ 0:35]          dbm;         // DBM output
 
    //
@@ -122,7 +118,7 @@ module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaFLAGS,
 
    reg [0:35] dbm;
 
-   always @(crom or scad or dispPF or aprFLAGS or dp or timerCOUNT or vmaFLAGS or vmaADDR or busDATAI)
+   always @(crom or scad or dispPF or aprFLAGS or dp or timerCOUNT or vmaFLAGS or vmaADDR or cpuDATAI)
      begin
         case (`cromDBM_SEL)
           `cromDBM_SEL_SCADPFAPR:
@@ -152,7 +148,7 @@ module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaFLAGS,
           `cromDBM_SEL_VMA :
             dbm = {vmaFLAGS[0:13], vmaADDR[14:35]};
           `cromDBM_SEL_MEM :
-            dbm = busDATAI[0:35];
+            dbm = cpuDATAI[0:35];
           `cromDBM_SEL_NUM :
             dbm = {`cromNUM, `cromNUM};
         endcase

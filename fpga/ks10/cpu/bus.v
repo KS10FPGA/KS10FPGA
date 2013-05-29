@@ -93,7 +93,7 @@
 
 module BUS(clk, rst, clken, crom, dp,
            vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR, aprFLAGS,
-           busDATAO, busADDRO, busREQ, busACK, curINTP, memWAIT, nxmINTR);
+           cpuDATAO, cpuADDRO, cpuREQO, cpuACKI, curINTP, memWAIT, nxmINTR);
 
    parameter  cromWidth = `CROM_WIDTH;
 
@@ -107,10 +107,10 @@ module BUS(clk, rst, clken, crom, dp,
    input  [14:35]          vmaADDR;     // Virtual Memory Address
    input  [16:26]          pageADDR;    // Page Address
    input  [22:35]          aprFLAGS;    // APR Flags
-   output [ 0:35]          busDATAO;    // Bus Out
-   output [ 0:35]          busADDRO;    // Bus Address
-   output                  busREQ;      // Bus Request
-   input                   busACK;      // Bus Acknowledge
+   output [ 0:35]          cpuDATAO;    // CPU Data Out
+   output [ 0:35]          cpuADDRO;    // CPU Address Out
+   output                  cpuREQO;     // CPU Request
+   input                   cpuACKI;     // CPU Bus Acknowledge
    input  [ 0: 2]          curINTP;     // Current Interrupt Priority
    output                  memWAIT;     // Wait for Memory
    output                  nxmINTR;     // Non-existant Memory Interrupt
@@ -142,28 +142,28 @@ module BUS(clk, rst, clken, crom, dp,
    // Data Output
    //
 
-   assign busDATAO[0:35] = dp[0:35];
+   assign cpuDATAO[0:35] = dp[0:35];
 
    //
    // Address Output
    //
 
-   reg [0:35] busADDRO;
+   reg [0:35] cpuADDRO;
 
    always @(pagedREF or vmaEXTENDED or vmaFLAGS or vmaADDR or pageADDR or vmaWRUCYCLE or curINTP)
      begin
         if (pagedREF)
-          busADDRO <= {vmaFLAGS, vmaADDR[14:15], pageADDR[16:26], vmaADDR[27:35]};
+          cpuADDRO <= {vmaFLAGS, vmaADDR[14:15], pageADDR[16:26], vmaADDR[27:35]};
         else
           begin
              if (vmaWRUCYCLE)
-               busADDRO[0:35] <= {vmaFLAGS, 1'b0, curINTP, vmaADDR[18:35]};
+               cpuADDRO[0:35] <= {vmaFLAGS, 1'b0, curINTP, vmaADDR[18:35]};
              else
                begin
                   if (vmaEXTENDED)
-                    busADDRO <= {vmaFLAGS, vmaADDR};
+                    cpuADDRO <= {vmaFLAGS, vmaADDR};
                   else
-                    busADDRO <= {vmaFLAGS, 4'b0000, vmaADDR[18:35]};
+                    cpuADDRO <= {vmaFLAGS, 4'b0000, vmaADDR[18:35]};
                end
           end
      end
@@ -172,38 +172,48 @@ module BUS(clk, rst, clken, crom, dp,
    // Bus Request on the various cycles
    //
 
-   assign busREQ = vmaREADCYCLE | vmaWRITECYCLE | vmaWRTESTCYCLE | vmaWRUCYCLE | vmaVECTORCYCLE;
-
-   //
-   // Wait for memory (REQ with no ACK)
-   //
-
-   assign memWAIT = busREQ & ~busACK;
+   assign cpuREQO = vmaREADCYCLE | vmaWRITECYCLE | vmaWRTESTCYCLE | vmaWRUCYCLE | vmaVECTORCYCLE;
 
    //
    // Bus Monitor
    //
    // Details
-   //  Generate a NXM Interrupt on a bus timeout
+   //  Wait for Bus ACK on bus accesses.  Generate a NXM Interrupt
+   //  on a bus timeout.
    //
 
-   reg [0:3] timeout;
+   localparam [0:3] tNXM  = 14;
+   localparam [0:3] tDONE = 15;
+   reg        [0:3] timeout;
+   
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           timeout <= 0;
         else
           begin
-             if (memWAIT)
+             if (cpuREQO & ~cpuACKI)
                begin
-                  if (timeout != 15)
+                  if (timeout != tDONE)
                     timeout <= timeout + 1'b1;
                end
              else
                timeout <= 0;
           end
      end
+   
+   //
+   // Wait for memory (REQ with no ACK) unless the bus has
+   //  timed out.
+   //
 
-   assign nxmINTR = (timeout == 14);
+   assign memWAIT = ((cpuREQO & ~cpuACKI & (timeout != tNXM)) &
+                     (cpuREQO & ~cpuACKI & (timeout != tDONE)));
+
+   //
+   // Generate an NXM trap
+   //
+   
+   assign nxmINTR = (timeout == tNXM);
 
 endmodule
