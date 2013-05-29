@@ -43,9 +43,10 @@
 `undef SIMCTY
 `undef SIMSSMON
 `define EOF 32'hFFFF_FFFF
+`default_nettype none
 
 module testbench;
-   
+
    //
    // Clock and things
    //
@@ -58,6 +59,7 @@ module testbench;
    // Console Interfaces
    //
 
+   wire       cslCLK = clk;     // Console Clock
    wire [7:0] cslAD;            // Multiplexed Address/Data Bus
    reg  [7:0] cslADOUT;         // Address/Data Bus Out
    wire [7:0] cslADIN;          // Data Bus In
@@ -66,27 +68,32 @@ module testbench;
    reg        cslWR_N;          // Write Strobe
    wire       cslINTR_N;        // Console Interrupt
    wire       cslINTR = ~cslINTR_N;
-   
+
+
    //
    // DZ11 Serial Interface
    //
 
-   wire [2:1] TXD = 2'b11; 	// DZ11 RS-232 Received Data
-   wire [2:1] RXD;          	// DZ11 RS-232 Transmitted Data
-   wire [2:1] RTS = 2'b11;	// DZ11 RS-232 Request to Send
-   wire [2:1] CTS;		// DZ11 RS-232 Clear to Send
+   wire       TXD1 = 1;         // DZ11 RS-232 Received Data #1
+   wire       TXD2 = 1;         // DZ11 RS-232 Received Data #2
+   wire       RXD1;             // DZ11 RS-232 Transmitted Data #1
+   wire       RXD2;             // DZ11 RS-232 Transmitted Data #2
+   wire       RTS1 = 1;         // DZ11 RS-232 Request to Send #1
+   wire       RTS2 = 1;         // DZ11 RS-232 Request to Send #2
+   wire       CTS1;             // DZ11 RS-232 Clear to Send #1
+   wire       CTS2;             // DZ11 RS-232 Clear to Send #2
 
    //
    // RH11 Secure Digital Interface
    //
-   
+
    wire        rh11CD;          // RH11 Card Detect
    wire        rh11WP;          // RH11 Write Protect
    wire        rh11MISO;        // RH11 Data In
    wire        rh11MOSI;        // RH11 Data Out
    wire        rh11SCLK;        // RH11 Clock
    wire        rh11CS;          // SD11 Chip Select
-   
+
    //
    // SSRAM
    //
@@ -118,13 +125,13 @@ module testbench;
 // parameter [0:35] valREGCIR    = 36'o254000_030620;   // DSKCG
 // parameter [0:35] valREGCIR    = 36'o254000_030622;
 // parameter [0:35] valREGCIR    = 36'o254000_020000;   // DSQDC
-   
-`endif   
-   
+
+`endif
+
    //
    // Register Addresses
    //
-   
+
    parameter [7:0] addrREGADDR   = 8'h00;
    parameter [7:0] addrREGDATA   = 8'h10;
    parameter [7:0] addrREGSTATUS = 8'h20;
@@ -136,7 +143,7 @@ module testbench;
    // Details
    //  Write address.  Write data.
    //
-   
+
    task cslWRKS10MEM;
       input [18:35] address;
       input [ 0:35] data;
@@ -146,11 +153,11 @@ module testbench;
          cslWRITEb(addrREGSTATUS+3, 8'h01);
       end
    endtask
-   
+
    //
    // Task to read from KS10 memory
    //
-   
+
    task cslRDKS10MEM;
       input  [18:35] address;
       output [ 0:35] data;
@@ -161,7 +168,7 @@ module testbench;
          cslREAD  (addrREGDATA, data);
       end
    endtask
-   
+
    //
    // Task to write a word to console register
    //
@@ -181,14 +188,14 @@ module testbench;
          #100;
       end
    endtask
-   
+
    //
    // Task to read word from console register
    //
    // Note:
    //  A 36-bit read requires 5 byte operations.
    //
-   
+
    task cslREAD;
       input [7:0] addr;
       output reg [0:35] data;
@@ -201,11 +208,11 @@ module testbench;
          #100;
       end
    endtask
-    
+
    //
    // Task to write byte to console register
    //
-   
+
    task cslWRITEb;
       input [7:0] addr;
       input [7:0] data;
@@ -222,7 +229,7 @@ module testbench;
    //
    // Task to read byte from console register
    //
-   
+
    task cslREADb;
       input [7:0] addr;
       output reg [7:0] data;
@@ -239,9 +246,9 @@ module testbench;
    //
    // Initialization
    //
-        
+
    reg [0:35] temp;
-   
+
    initial
      begin
         $display("KS10 Simulation Starting");
@@ -249,7 +256,7 @@ module testbench;
         //
         // Initial state
         //
-        
+
         clk     = 0;
         reset   = 1;
         cslALE  = 0;
@@ -259,13 +266,13 @@ module testbench;
         //
         // Release reset at 95 nS
         //
-        
+
         #95 reset = 1'b0;
 
         //
         //  Write to Console Instruction Register
         //
-       
+
         cslWRITE(addrREGCIR, valREGCIR);
 
         //
@@ -291,7 +298,7 @@ module testbench;
         cslWRKS10MEM(18'o026040, 36'b0);
         cslWRKS10MEM(18'o030024, 36'b0);
         cslWRKS10MEM(18'o030037, 36'b0);
-        
+
      end
 
    //
@@ -312,24 +319,33 @@ module testbench;
    // KS10
    //
 
-   KS10 uKS10
+   ESM_KS10 uKS10
      (.CLK50MHZ         (clk),
       .RESET_N          (~reset),
-      .TXD          	(TXD),
-      .RXD          	(RXD),
-      .RTS              (RTS),
-      .CTS              (CTS),
+      // DZ11 Interfaces
+      .TXD1             (TXD1),
+      .TXD2             (TXD2),
+      .RXD1             (RXD1),
+      .RXD2             (RXD2),
+      .RTS1             (RTS1),
+      .RTS2             (RTS2),
+      .CTS1             (CTS1),
+      .CTS2             (CTS2),
+      // RH11 Interfaces
       .rh11CD           (rh11CD),
       .rh11WP           (rh11WP),
       .rh11MISO         (rh11MISO),
       .rh11MOSI         (rh11MOSI),
       .rh11SCLK         (rh11SCLK),
       .rh11CS           (rh11CS),
+      // Console Interfaces
+      .cslCLK               (cslCLK),
       .cslALE           (cslALE),
       .cslAD            (cslAD),
       .cslRD_N          (cslRD_N),
       .cslWR_N          (cslWR_N),
       .cslINTR_N        (cslINTR_N),
+      // SSRAM Interfaces
       .ssramCLK         (ssramCLK),
       .ssramCLKEN       (ssramCLKEN),
       .ssramADV         (ssramADV),
@@ -344,17 +360,17 @@ module testbench;
       .ssramDATA        (ssramDATA),
       .runLED           (runLED)
       );
-   
+
    //
    // Display run/halt status
    //
 
    always @(negedge runLED)
      $display("KS10 CPU Halted at t = %f us.", $time / 1.0e3);
-   
+
    always @(posedge runLED)
      $display("KS10 CPU Unhalted at t = %f us", $time / 1.0e3);
-   
+
    //
    // Handle Startup.
    //
@@ -364,7 +380,7 @@ module testbench;
    //  continue button to continue execution.  Otherwise let the
    //  KS10 halt.
    //
-   
+
    always @(negedge runLED)
      begin
         if ($time > 13000 && $time < 15000)
@@ -373,7 +389,7 @@ module testbench;
              cslWRITEb(8'h25, 8'h14);
           end
      end
- 
+
    //
    // PDP10 Memory Initialization
    //
@@ -389,7 +405,7 @@ module testbench;
    reg [0:35] SSRAM [0:32767];
    initial
      begin
-       `include "ssram.dat"
+       `include "../testbench/ssram.dat"
      end
 
    //
@@ -422,14 +438,14 @@ module testbench;
    assign ssramDATA = (ssramWE_N) ? SSRAM[rd_addr] : 36'bz;
 
 `ifdef SIMCTY
-   
+
    //
    // File IO
    //
-   
+
    integer cty_ofile;
    integer cty_ifile;
-   
+
    initial
      begin
         cty_ofile = $fopen("cty_out.txt", "w");
@@ -439,7 +455,7 @@ module testbench;
         $fclose(cty_ifile);
         $finish;
      end
-   
+
    //
    //  CTY Output Processing
    //
@@ -448,30 +464,30 @@ module testbench;
    //   character is available to print or that a character can be
    //   accepted by the KS10, or both, or neither.
    //
-   
+
    reg [0:35] dataCOUT;
    parameter [18:35] addrCOUT = 18'o000033;
-   
+
    always @(posedge clk or posedge reset)
      begin
         if (reset)
           dataCOUT <= 36'b0;
         else if (cslINTR)
           begin
-             
+
              //$display("KS10 CPU has interrupted the console at t = %f us", $time / 1.0e3);
-             
+
              //
              // Read CTYOUT Memory Location
              //
-             
+
              cslRDKS10MEM(addrCOUT, dataCOUT);
 
              //
              // Print character if character is available.
              // Zero the flag when done printing.
              //
-             
+
              if (dataCOUT[27])
                begin
                   if ((dataCOUT[28:35] >= 8'h20) && (dataCOUT[28:35] < 8'h7f))
@@ -486,5 +502,4 @@ module testbench;
 
 `endif
 
-   
 endmodule
