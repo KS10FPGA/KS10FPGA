@@ -70,7 +70,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    input                  clken;                // Clock enable
    input  [0:cromWidth-1] crom;                 // Control ROM Data
    input  [0:35]          aluIN;                // Bus input
-   output [0: 8]          aluFLAGS;		// ALU Flags
+   output [0: 8]          aluFLAGS;             // ALU Flags
    output [0:35]          aluOUT;               // ALU Output
    input  [0: 3]          debugADDR;            // DEBUG Address
    output [0:35]          debugDATA;            // DEBUG Data
@@ -184,7 +184,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    //  shifter modes.
    //
    // Note
-   //  All of the F shifer logic is external to the am2901s.
+   //  All of the F shifter logic is external to the am2901s.
    //
    //  Shift Left Operations
    //
@@ -755,7 +755,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    //
 
    reg flagQR37;
-   
+
    //
    // ALU Flag State Register
    //
@@ -785,14 +785,14 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
           end
         else
           begin
-             flagFL02     <= bdi[4];
+             flagFL02     <= bdi[3];
              flagQR37     <= q[39];
              flagCARRY02  <= aluCRY2;
              flagFUNCT02  <= funct_02;
              flagCARRYOUT <= aluCRY0;
          end
      end
- 
+
    //
    // Shifter Configuration
    //
@@ -810,44 +810,44 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    //  DPE5/E62
    //  DPE5/E70
    //
-  
+
    reg multi_shift;
    reg divide_shift;
    reg carry_in;
    reg funct_02;
- 
+
    always @(crom or flagFL02 or flagCARRY02 or flagFUNCT02 or flagCARRYOUT or fun[2])
    begin
- 
+
      //
      // Multiprecision operations
-     // 
- 
+     //
+
      if (`cromMULTIPREC)
        begin
          multi_shift  <= flagFL02;
          divide_shift <= 1'b0;
-         carry_in     <= flagCARRY02;
-         funct_02     <= flagFUNCT02;
+         carry_in     <= flagCARRY02 | `cromCRY38;
+         funct_02     <= flagFUNCT02 | fun[2];
        end
- 
+
      //
      // Divide operations
      //
- 
+
      else if (`cromDIVIDE)
        begin
          multi_shift  <= 1'b0;
          divide_shift <= flagCARRYOUT;
-         carry_in     <= flagCARRYOUT; 
-         funct_02     <= flagCARRYOUT;
+         carry_in     <= flagCARRYOUT | `cromCRY38;
+         funct_02     <= flagCARRYOUT | fun[2];
        end
- 
+
      //
      // Nothing special.  Carry in is controlled by microcode.
      // Everything else special is disabled.
      //
- 
+
      else
        begin
          multi_shift  <= 1'b0;
@@ -856,7 +856,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
          funct_02     <= fun[2];
        end
    end
-   
+
    //
    // ALU Destination Selector
    //
@@ -876,7 +876,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    //
    // ALU Flags
    //
-   
+
    assign aluFLAGS[0] = flagQR37;
    assign aluFLAGS[1] = aluLZERO;
    assign aluFLAGS[2] = aluRZERO;
@@ -886,5 +886,5 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    assign aluFLAGS[6] = aluCRY0;
    assign aluFLAGS[7] = aluCRY1;
    assign aluFLAGS[8] = aluCRY2;
-   
+
 endmodule
