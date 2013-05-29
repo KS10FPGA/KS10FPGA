@@ -1,71 +1,71 @@
 ////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Ramfile
-//!
-//! \details
-//!
-//! \note
-//!
-//!     +------+----------------+
-//!     | 1777 |                |
-//!     |      |     Cache      |
-//!     | 1000 |                |
-//!     +------+----------------+
-//!     | 0777 |                |
-//!     |      |   Workspace    |
-//!     | 0200 |                |
-//!     +------+----------------+
-//!     | 0177 |                |
-//!     |      |   AC Block 7   |
-//!     | 0160 |                |
-//!     +------+----------------+
-//!     | 0067 |                |
-//!     |      |   AC Block 6   |
-//!     | 0140 |                |
-//!     +------+----------------+
-//!     | 0037 |                |
-//!     |      |   AC Block 5   |
-//!     | 0120 |                |
-//!     +------+----------------+
-//!     | 0117 |                |
-//!     |      |   AC Block 4   |
-//!     | 0100 |                |
-//!     +------+----------------+
-//!     | 0077 |                |
-//!     |      |   AC Block 3   |
-//!     | 0060 |                |
-//!     +------+----------------+
-//!     | 0057 |                |
-//!     |      |   AC Block 2   |
-//!     | 0040 |                |
-//!     +------+----------------+
-//!     | 0037 |                |
-//!     |      |   AC Block 1   |
-//!     | 0020 |                |
-//!     +------+----------------+
-//!     | 0017 |                |
-//!     |      |   AC Block 0   |
-//!     | 0000 |                |
-//!     +------+----------------+
-//!
-//! \note
-//!       In the original circuitry the Control ROM (microcode)
-//!       was supplied to this module via the dbm input.  This
-//!       has been replaced by a direct connection to the Control
-//!       ROM. Presumably this was done because of circuit board
-//!       interconnection limitations.
-//!
-//! \todo
-//!
-//! \file
-//!      ramfile.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
+//
+// KS-10 Processor
+//
+// Brief
+//   Ramfile
+//
+// Details
+//
+// Note
+//
+//     +------+----------------+
+//     | 1777 |                |
+//     |      |     Cache      |
+//     | 1000 |                |
+//     +------+----------------+
+//     | 0777 |                |
+//     |      |   Workspace    |
+//     | 0200 |                |
+//     +------+----------------+
+//     | 0177 |                |
+//     |      |   AC Block 7   |
+//     | 0160 |                |
+//     +------+----------------+
+//     | 0067 |                |
+//     |      |   AC Block 6   |
+//     | 0140 |                |
+//     +------+----------------+
+//     | 0037 |                |
+//     |      |   AC Block 5   |
+//     | 0120 |                |
+//     +------+----------------+
+//     | 0117 |                |
+//     |      |   AC Block 4   |
+//     | 0100 |                |
+//     +------+----------------+
+//     | 0077 |                |
+//     |      |   AC Block 3   |
+//     | 0060 |                |
+//     +------+----------------+
+//     | 0057 |                |
+//     |      |   AC Block 2   |
+//     | 0040 |                |
+//     +------+----------------+
+//     | 0037 |                |
+//     |      |   AC Block 1   |
+//     | 0020 |                |
+//     +------+----------------+
+//     | 0017 |                |
+//     |      |   AC Block 0   |
+//     | 0000 |                |
+//     +------+----------------+
+//
+// Note
+//    In the original circuitry the Control ROM (microcode)
+//    was supplied to this module via the dbm input.  This
+//    has been replaced by a direct connection to the Control
+//    ROM. Presumably this was done because of circuit board
+//    interconnection limitations.
+//
+// Todo
+//
+// File
+//   ramfile.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
 ////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
@@ -91,9 +91,7 @@
 // from http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
+
 
 `default_nettype none
 `include "vma.vh"
@@ -101,7 +99,6 @@
 `include "regir.vh"
 `include "useq/crom.vh"
 `include "useq/drom.vh"
-
 
 
 module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
