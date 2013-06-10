@@ -64,7 +64,7 @@ extern unsigned long _stackend;		//!< End of .stack
 //!
 
 vector_t vectList[] __attribute__ ((section(".vectors"))) = {
-    (vector_t)(&_stackend),		//  0 : Top of stack
+    (vector_t)&_stackend,		//  0 : Top of stack
     vectReset, 				//  1 : Reset vector
     vectNMI, 				//  2 : NMI vector
     vectHard, 				//  3 : Hard fault vector
@@ -185,9 +185,12 @@ extern "C" void vectReset(void) {
 
     //
     // Call main()
+    //  Main should never return, but be smart if it does.
     //
 
-    main();
+    for (;;) {
+        __asm("b.w		main");
+    }
 }
 
 //!
