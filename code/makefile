@@ -38,6 +38,7 @@ DRIVERS := \
 	drivers/sysctl.hpp \
 	drivers/uart.hpp \
 	drivers/memmap.hpp \
+	commands.hpp \
 	printf.h
 
 
@@ -50,8 +51,8 @@ LIBS := \
 $(TARGET).bin : $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
 
-$(TARGET).elf :$(TARGET).ld console.o startup.o bootcode.o printf.o
-	$(LD) $(LDFLAGS) console.o startup.o bootcode.o printf.o $(LIBS) -o $(TARGET).elf
+$(TARGET).elf :$(TARGET).ld console.o commands.o startup.o bootcode.o printf.o
+	$(LD) $(LDFLAGS) console.o commands.o startup.o bootcode.o printf.o $(LIBS) -o $(TARGET).elf
 
 $(TARGET).o : $(TARGET).cpp $(DRIVERS)
 	$(GCC) $(CFLAGS) -c $< -o $@
@@ -80,6 +81,9 @@ bootcode.cpp : $(BOOTFILE) makefile
 	@echo ""   >> bootcode.cpp
 	@echo "static_assert((sizeof(bootcode) % 5) == 0, \"Boot image is malformed.\");" >> bootcode.cpp
 	@echo ""   >> bootcode.cpp
+
+load :  $(TARGET).bin
+	openocd -f ek-lm3s9b9x.cfg
 
 clean:
 	rcsclean *
