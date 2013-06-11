@@ -7,8 +7,7 @@ OBJCOPY := arm-none-eabi-objcopy
 TARGET  := console
 
 BOOTFILE := diagnostics..dskda.sav
-
-#	-MD \
+OPENOCD_CFG := ek-lm3s9b9x.cfg
 
 CFLAGS := \
 	-W -Wall \
@@ -31,16 +30,16 @@ LDFLAGS := \
         --gc-sections \
 	-Map $(TARGET).map
 
-DRIVERS := \
+HEADERS := \
+	printf.h \
+	commands.hpp \
+	bootcode.hpp \
 	drivers/epi.hpp \
 	drivers/gpio.hpp \
 	drivers/ks10.hpp \
 	drivers/sysctl.hpp \
 	drivers/uart.hpp \
-	drivers/memmap.hpp \
-	commands.hpp \
-	printf.h
-
+	drivers/memmap.hpp 
 
 LIBS := \
 	/usr/local/lib/gcc/arm-none-eabi/4.7.2/thumb/libgcc.a \
@@ -54,7 +53,7 @@ $(TARGET).bin : $(TARGET).elf
 $(TARGET).elf :$(TARGET).ld console.o commands.o startup.o bootcode.o printf.o
 	$(LD) $(LDFLAGS) console.o commands.o startup.o bootcode.o printf.o $(LIBS) -o $(TARGET).elf
 
-$(TARGET).o : $(TARGET).cpp $(DRIVERS)
+$(TARGET).o : $(TARGET).cpp $(HEADERS)
 	$(GCC) $(CFLAGS) -c $< -o $@
 
 .cpp.o : 
@@ -82,8 +81,8 @@ bootcode.cpp : $(BOOTFILE) makefile
 	@echo "static_assert((sizeof(bootcode) % 5) == 0, \"Boot image is malformed.\");" >> bootcode.cpp
 	@echo ""   >> bootcode.cpp
 
-load :  $(TARGET).bin
-	openocd -f ek-lm3s9b9x.cfg
+load :  $(TARGET).bin $(OPENOCD_CFG)
+	openocd -f $(OPENOCD_CFG)
 
 clean:
 	rcsclean *
