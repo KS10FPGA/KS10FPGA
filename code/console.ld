@@ -47,28 +47,42 @@ SECTIONS
         KEEP(*(.vectors))
         *(.text*)
         *(.rodata*)
+        KEEP (*(.init))
+        KEEP (*(.fini))
+        . = ALIGN(4);
         _etext = .;
     } > FLASH
 
-    .ARM.extab :
+    .preinit_array :    
     {
-      *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } >FLASH
-
-    .ARM.exidx :
-    {
-        __exidx_start = .;
-        *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-        __exidx_end = .;
+         PROVIDE_HIDDEN (__preinit_array_start = .);
+         KEEP (*(.preinit_array*))
+         PROVIDE_HIDDEN (__preinit_array_end = .);
     } > FLASH
 
-    .data : AT(ADDR(.text) + SIZEOF(.text) + SIZEOF(.ARM.extab) + SIZEOF(.ARM.exidx))
+    .init_array :
+    {
+         PROVIDE_HIDDEN (__init_array_start = .);
+         KEEP (*(SORT(.init_array.*)))
+         KEEP (*(.init_array*))
+         PROVIDE_HIDDEN (__init_array_end = .);
+    } > FLASH
+
+    .fini_array :
+    {
+         PROVIDE_HIDDEN (__fini_array_start = .);
+         KEEP (*(.fini_array*))
+         KEEP (*(SORT(.fini_array.*)))
+         PROVIDE_HIDDEN (__fini_array_end = .);
+    } > FLASH
+
+    .data : 
     {
         _data = .;
         *(vtable)
         *(.data*)
         _edata = .;
-    } > SRAM
+    } > SRAM AT > FLASH
 
     .bss :
     {
