@@ -3,6 +3,7 @@
 #include "sd.h"
 #include "stdio.h"
 #include "driverlib/inc/hw_types.h"
+#include "driverlib/rom.h"
 #include "driverlib/ssi.h"
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
@@ -29,24 +30,7 @@ enum cmd_t {
     CMD58  = 58,	// READ_OCR
 };
 
-void initializeSD(void) __attribute__((constructor(301)));
-
-void initializeSD(void) {
-
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
-     
-    GPIOPinTypeGPIOOutput(GPIO_PORTCS_BASE, GPIO_PIN_CS);
-    GPIOPinTypeGPIOOutput(GPIO_PORTCD_BASE, GPIO_PIN_CD);
-
-    GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5);
-
-    SSIConfigSetExpClk(SSI_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0, SSI_MODE_MASTER, bitRate, 8);
-    SSIEnable(SSI_BASE);
-
-    puts("1, ");
-}
+void SDInitialize(void) __attribute__((constructor(301)));
 
 //!
 //! \brief
@@ -141,6 +125,7 @@ static uint8_t sendCommand(uint8_t cmd, uint32_t data, uint8_t crc) {
             break;
         }
     }
+
     return response;
 }
 
@@ -165,11 +150,10 @@ static uint8_t getR2Response(void) {
 //!
 
 static uint32_t getR3Response(void) {
-    uint32_t ret = ((transactData(0xff) << 24) |
-                    (transactData(0xff) << 16) |
-                    (transactData(0xff) <<  8) |
-                    (transactData(0xff) <<  0));
-    return ret;
+    return ((transactData(0xff) << 24) |
+            (transactData(0xff) << 16) |
+            (transactData(0xff) <<  8) |
+            (transactData(0xff) <<  0));
 }
 
 //!
@@ -181,11 +165,10 @@ static uint32_t getR3Response(void) {
 //!
 
 static uint32_t getR7Response(void) {
-    uint32_t ret = ((transactData(0xff) << 24) |
-                    (transactData(0xff) << 16) |
-                    (transactData(0xff) <<  8) |
-                    (transactData(0xff) <<  0));
-    return ret;
+    return ((transactData(0xff) << 24) |
+            (transactData(0xff) << 16) |
+            (transactData(0xff) <<  8) |
+            (transactData(0xff) <<  0));
 }
 
 //!
@@ -230,21 +213,17 @@ void sendWriteStartToken(void) {
 //!     otherwise.
 //
 
-bool sdInitializeCard(void) {
+bool SDInitializeCard(void) {
     
     printf("Initializing SD Card.\n");
 
-    uint8_t R1Response;
     initialized = false;
     
-    transactData(0xff);
-    transactData(0xff);
-
     chipEnable(false);
     for (int i = 0; i < 10; i++) {
         transactData(0xff);
     }
-    
+
     //
     // Send GO_IDLE_STATE Command
     // Check R1 Response
@@ -253,11 +232,15 @@ bool sdInitializeCard(void) {
     // during the reception of the reset command (CMD0).
     //
 
+ cmd0:
     printf("Sending CMD0.\n");
     chipEnable(true);
     uint8_t rsp0 = sendCommand(CMD0, 0x00000000, 0x95);
+    chipEnable(false);
+    transactData(0xff);
     if (rsp0 != 0x01) {
         printf("CMD0: Response was 0x%02x.\n", rsp0);
+        goto cmd0;
         return false;
     }
             
@@ -265,8 +248,9 @@ bool sdInitializeCard(void) {
     // Send SEND_IF_COND Command
     // Check R1 Response
     // 
-    
+
     printf("Sending CMD8.\n");
+    chipEnable(true);
     uint8_t rsp8 = sendCommand(CMD8, 0x000001aa, 0x87);
 
     switch (rsp8) {
@@ -284,6 +268,8 @@ bool sdInitializeCard(void) {
                 //
 
                 uint32_t R7Response = getR7Response();
+                chipEnable(false);
+                transactData(0xff);
                 if ((R7Response & 0x0000ffff) != 0x000001aa) {
                     printf("CMD8: R7 Response was 0x%08lx.\n", R7Response);
                     return false;
@@ -299,7 +285,10 @@ bool sdInitializeCard(void) {
 		do {
 
 		    printf("Sending CMD55.\n");
+                    chipEnable(true);
 		    uint8_t rsp55 = sendCommand(CMD55, 0x00000000, 0xff);
+                    chipEnable(false);
+                    transactData(0xff);
 		    if (rsp55 != 0x01) {
                         printf("CMD55: R1 Response was 0x%02x.\n", rsp55);
 			return false;
@@ -312,9 +301,13 @@ bool sdInitializeCard(void) {
 		    //
 
 		    printf("Sending ACMD41.\n");
+                    chipEnable(true);
 		    rsp41 = sendCommand(ACMD41, 0x40000000, 0xff);
+                    chipEnable(false);
+                    transactData(0xff);
 		    printf("ACMD41: R1 Response was 0x%02x.\n", rsp41);
 		    if (--loop == 0) {
+                        chipEnable(false);
 		        return false;
 		    }
 		} while (rsp41 != 0x00);
@@ -325,9 +318,11 @@ bool sdInitializeCard(void) {
                 //
                 
                 printf("Sending CMD58.\n");
+                chipEnable(true);
                 uint8_t rsp58 = sendCommand(CMD58, 0x00000000, 0xff);
                 if (rsp58 != 0x00) {
                     printf("CMD58: R1 Response was 0x%02x.\n", rsp58);
+                    chipEnable(false);
                     return false;
                 }
  
@@ -336,6 +331,8 @@ bool sdInitializeCard(void) {
                 //
                 
                 uint32_t R3Response = getR3Response();
+                chipEnable(false);
+                transactData(0xff);
                 if (R3Response != 0xc0ff8000) {
                     printf("CMD58: R3 Response was 0x%08lx.\n", R3Response);
                     return false;
@@ -368,9 +365,11 @@ bool sdInitializeCard(void) {
                 //
 
                 printf("Sending CMD58.\n");
-                R1Response = sendCommand(CMD58, 0x00000000, 0xff);
-                if (R1Response != 0x00) {
-                    printf("CMD58: R1 Response was 0x%02x.\n", R1Response);
+                chipEnable(true);
+                uint8_t rsp58 = sendCommand(CMD58, 0x00000000, 0xff);
+                if (rsp58 != 0x00) {
+                    chipEnable(false);
+                    printf("CMD58: R1 Response was 0x%02x.\n", rsp58);
                     return false;
                 }
 
@@ -379,6 +378,8 @@ bool sdInitializeCard(void) {
                 //
                 
                 uint32_t R3Response = getR3Response();
+                chipEnable(false);
+                transactData(0xff);
                 if (R3Response != 0xe0ff8000) {
                     printf("CMD8: R3 Response was 0x%08lx.\n", R3Response);
                     return false;
@@ -392,8 +393,11 @@ bool sdInitializeCard(void) {
                 for (int i = 0; i < 10; i++) {
                     
                     printf("Sending ACMD41.\n");
-                    R1Response = sendCommand(ACMD41, 0x40000000, 0xff);
-                    if (R1Response == 0x00) {
+                    chipEnable(true);
+                    uint8_t rsp41 = sendCommand(ACMD41, 0x40000000, 0xff);
+                    chipEnable(false);
+                    transactData(0xff);
+                    if (rsp41 == 0x00) {
                         printf("CMD8: Successful V1.00 Initialization.\n");
                         initialized = true;
                         return true;
@@ -444,9 +448,12 @@ bool sdInitializeCard(void) {
 //!     True if the read was successful, false otherwise.
 //!
 
-bool sdReadSector(uint8_t *buf, uint32_t sector) {
+bool SDReadSector(uint8_t *buf, uint32_t sector) {
 
-    uint8_t R1Response;
+    if (!initialized) {
+        printf("CMD17: Card is not initialized.\n");
+        return false;
+    }
 
     //
     // Send READ_SINGLE Command
@@ -455,9 +462,9 @@ bool sdReadSector(uint8_t *buf, uint32_t sector) {
 
     printf("Sending CMD17.\n");
     chipEnable(true);
-    R1Response = sendCommand(CMD17, sector, 0xff);
-    if (R1Response != 0x00) {
-        printf("CMD17: R1 Response was 0x%02x.\n", R1Response);
+    uint8_t rsp17 = sendCommand(CMD17, sector, 0xff);
+    if (rsp17 != 0x00) {
+        printf("CMD17: R1 Response was 0x%02x.\n", rsp17);
 	chipEnable(false);
         return false;
     }
@@ -477,7 +484,7 @@ bool sdReadSector(uint8_t *buf, uint32_t sector) {
     // Start Reading Data
     //
 
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < 512; i++) {
         *buf++ = transactData(0xff);
     }
     
@@ -528,7 +535,7 @@ bool sdReadSector(uint8_t *buf, uint32_t sector) {
 //!     True if the write was successful, false otherwise.
 //!
 
-bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
+bool SDWriteSector(const uint8_t *buf, uint32_t sector) {
 
     uint8_t R1Response;
 
@@ -635,7 +642,7 @@ bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
 //!     True if the SD Card has been initialized successfully, false otherwise.
 //!
 
-bool sdStatus(void) {
+bool SDStatus(void) {
     return initialized;
 }
 
@@ -648,15 +655,30 @@ bool sdStatus(void) {
 //!     looks for card insertions and card removals.
 //!
 
-void sdTimerInterrupt(void) {
+void SDTimerInterrupt(void) {
     static uint32_t lastCardDetect = 0;
     uint32_t cardDetect = GPIOPinRead(GPIO_PORTCD_BASE, GPIO_PIN_CD);
     if (cardDetect && !lastCardDetect) {
         printf("KS10> SD Card Inserted.\n");
-        sdInitializeCard();
+        SDInitializeCard();
     } else if (!cardDetect && lastCardDetect) {
         printf("KS10> SD Card Ejected.\n");
         initialized = false;
     }
     lastCardDetect = cardDetect;
+}
+
+
+void SDInitialize(void) {
+
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTCS_BASE, GPIO_PIN_CS);
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTCD_BASE, GPIO_PIN_CD);
+    ROM_GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5);
+    ROM_SSIConfigSetExpClk(SSI_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0, SSI_MODE_MASTER, bitRate, 8);
+    ROM_SSIEnable(SSI_BASE);
+    chipEnable(false);
+    puts("1, ");
 }
