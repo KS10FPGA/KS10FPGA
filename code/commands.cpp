@@ -39,9 +39,10 @@
 #include <ctype.h>
 #include <stdint.h>
 
-#include "printf.h"
+#include "sd.h"
+#include "stdio.h"
+#include "ks10.hpp"
 #include "bootcode.hpp"
-#include "drivers/ks10.hpp"
 
 static ks10_t::addr_t address;
 
@@ -49,6 +50,23 @@ static enum access_t {
     accessMEM = 0,
     accessIO,
 } access;
+
+//!
+//! Convert a string to upper case.
+//!
+//! \param [in] buf
+//!     Pointer to line buffer.
+//!
+//! \returns
+//!     Pointer to line buffer.
+//! 
+
+static char *strupper(char *buf) {
+    for (int i = 0; buf[i] != 0; i++) {
+        buf[i] -= (buf[i] >= 'a' && buf[i] <= 'z') ? 0x20 : 0x00;
+    }
+    return buf;
+}
 
 //!
 //! \brief
@@ -145,8 +163,6 @@ static void parseSavFile(const uint8_t *data) {
 #ifdef CONFIG_KS10                
             ks10_t::writeMem(addr, data36);
 #else
-            //            printf("%06o: %06lo,,%06lo\n", addr,
-            //                   ks10_t::lh(data36), ks10_t::rh(data36));
             printf("%06o: %012llo\n", addr, data36);
 #endif
             addr  = (addr  + 1) & 0777777;
@@ -199,7 +215,7 @@ static void loadCode(void) {
 //!    console code.
 //!
 
-static void cmdBT(const char *, const char *buf) {
+static void cmdBT(const char *buf) {
     char state = *buf++;
     if (state == '1') {
         loadCode();
@@ -221,7 +237,7 @@ static void cmdBT(const char *, const char *buf) {
 //!    Nothing
 //!
 
-static void cmdCE(const char *, const char * buf) {
+static void cmdCE(const char * buf) {
     char state = *buf++;
     if (state == '0') {
         ks10_t::cacheEnable(false);
@@ -244,7 +260,7 @@ static void cmdCE(const char *, const char * buf) {
 //!    Nothing
 //!
 
-static void cmdCO(const char *, const char *) {
+static void cmdCO(const char *) {
     ks10_t::cont();
 }
 
@@ -266,7 +282,7 @@ static void cmdCO(const char *, const char *) {
 //!    Nothing
 //!
 
-static void cmdDI(const char *, const char *buf) {
+static void cmdDI(const char *buf) {
     access = accessIO;
     ks10_t::data_t data = parseOctal(buf);
     if (address <= ks10_t::maxIOAddr) {
@@ -295,7 +311,7 @@ static void cmdDI(const char *, const char *buf) {
 //!    Nothing
 //!
 
-static void cmdDM(const char *, const char *buf) {
+static void cmdDM(const char *buf) {
     access = accessMEM;
     ks10_t::data_t data = parseOctal(buf);
     if (address <= ks10_t::maxMemAddr) {
@@ -321,7 +337,7 @@ static void cmdDM(const char *, const char *buf) {
 //!    Nothing
 //!
 
-static void cmdDN(const char *, const char *buf) {
+static void cmdDN(const char *buf) {
     address += 1;
     ks10_t::data_t data = parseOctal(buf);
     if (access == accessMEM) {
@@ -343,7 +359,7 @@ static void cmdDN(const char *, const char *buf) {
 //!    Nothing
 //!
 
-static void cmdDS(const char *, const char *) {
+static void cmdDS(const char *) {
     printf("DS Command is not implemented, yet.\n");
 }
 
@@ -359,7 +375,7 @@ static void cmdDS(const char *, const char *) {
 //!    Nothing
 //!
 
-static void cmdEI(const char *, const char *) {
+static void cmdEI(const char *) {
     access = accessIO; 
     printf("%012llo\n", ks10_t::readIO(address));
 }
@@ -376,7 +392,7 @@ static void cmdEI(const char *, const char *) {
 //!    Nothing
 //!
 
-static void cmdEM(const char *, const char *) {
+static void cmdEM(const char *) {
     access = accessMEM;
     printf("%012llo\n", ks10_t::readMem(address));
 }
@@ -393,7 +409,7 @@ static void cmdEM(const char *, const char *) {
 //!    Nothing
 //!
 
-static void cmdEN(const char *, const char *) {
+static void cmdEN(const char *) {
     if (access == accessMEM) {
         printf("%012llo\n", ks10_t::readMem(address));
     } else {
@@ -412,7 +428,7 @@ static void cmdEN(const char *, const char *) {
 //!    Nothing
 //!
 
-static void cmdHA(const char *, const char *) {
+static void cmdHA(const char *) {
     ks10_t::halt(true);
 
     //
@@ -438,7 +454,7 @@ static void cmdHA(const char *, const char *) {
 //!    Nothing
 //!
 
-static void cmdLA(const char *, const char *buf) {
+static void cmdLA(const char *buf) {
     access = accessMEM;
     ks10_t::addr_t addr = parseOctal(buf);
     if (addr <= ks10_t::maxMemAddr) {
@@ -463,7 +479,7 @@ static void cmdLA(const char *, const char *buf) {
 //!    Nothing
 //!
 
-static void cmdLB(const char *, const char *) {
+static void cmdLB(const char *) {
     printf("LB Command is not implemented, yet.\n");
 }
 
@@ -479,7 +495,7 @@ static void cmdLB(const char *, const char *) {
 //!    Nothing
 //!
 
-static void cmdLI(const char *, const char *buf) {
+static void cmdLI(const char *buf) {
     access = accessIO;
     ks10_t::addr_t addr = parseOctal(buf);
     if (addr <= ks10_t::maxIOAddr) {
@@ -503,7 +519,7 @@ static void cmdLI(const char *, const char *buf) {
 //!    Nothing
 //!
  
-static void cmdMR(const char *, const char *) {
+static void cmdMR(const char *) {
 
     //
     // Reset the CPU
@@ -540,7 +556,28 @@ static void cmdMR(const char *, const char *) {
     while (!ks10_t::halt()) {
         ;
     }
+}
 
+static void cmdSD(const char *buf) {
+    printf("here... cmdSD\n");
+    if (buf[0] == 'D' && buf[1] == 'I' && buf[2] == 'R') {
+        //directory(".");
+    } else if (buf[0] == 'M' && buf[1] == 'O' && buf[2] == 'U') {
+        sdInitializeCard();
+    } else if (buf[0] == 'R' && buf[1] == 'D') {
+        unsigned char buffer[256];
+        bool success = sdReadSector(buffer, 0);
+        if (!success) {
+            printf("SD Card Read Failure...\n");
+            return;
+        }
+        for (int i = 0; i < 256; i++) {
+            printf("%02x ", buffer[i]);
+            if ((i%16) == 15) {
+                printf("\n");
+            }
+        }
+    }
 }
 
 //!
@@ -554,7 +591,7 @@ static void cmdMR(const char *, const char *) {
 //!    Nothing
 //!
 
-static void cmdSI(const char *, const char *) {
+static void cmdSI(const char *) {
     ks10_t::step();
 }
 
@@ -570,7 +607,7 @@ static void cmdSI(const char *, const char *) {
 //!    Nothing
 //!
 
-static void cmdSH(const char *, const char *) {
+static void cmdSH(const char *) {
     ks10_t::writeMem(030, 1);
 }
 
@@ -590,7 +627,7 @@ static void cmdSH(const char *, const char *) {
 //!    Nothing
 //!
 
-static void cmdST(const char *, const char *buf) {
+static void cmdST(const char *buf) {
     ks10_t::addr_t addr = parseOctal(buf);
     if (addr <= ks10_t::maxVirtAddr) {
         ks10_t::writeCIR((ks10_t::opJRST << 18) | (addr & 0777777));
@@ -614,7 +651,7 @@ static void cmdST(const char *, const char *buf) {
 //!    Nothing
 //!
 
-void cmdTE(const char *, const char *buf) {
+void cmdTE(const char *buf) {
     char state = *buf++;
     if (state == '0') {
         ks10_t::timerEnable(false);
@@ -638,7 +675,7 @@ void cmdTE(const char *, const char *buf) {
 //!
 //!
 
-static void cmdTP(const char *, const char * buf) {
+static void cmdTP(const char * buf) {
     char state = *buf++;
     if (state == '0') {
         ks10_t::trapEnable(false);
@@ -661,11 +698,11 @@ static void cmdTP(const char *, const char * buf) {
 //!    Nothing
 //!
 
-static void cmdXX(const char *cmd, const char *) {
-    printf("Command \"%c%c\" is not implemented.\n", cmd[0], cmd[1]);
+static void cmdXX(const char *) {
+    printf("Command is not implemented.\n");
 }
 
-static void cmdZZ(const char *, const char *) {
+static void cmdZZ(const char *) {
     printf("Test is %012llo\n", 0765432123456);
 }
 
@@ -677,7 +714,7 @@ void parseCMD(char * buf) {
 
     struct cmdList_t {
         const char * name;
-        void (*function)(const char *, const char *);
+        void (*function)(const char *);
     };
 
     static const cmdList_t cmdList[] = {
@@ -702,6 +739,7 @@ void parseCMD(char * buf) {
         {"EK", cmdXX},		// Not implemented.
         {"EI", cmdEI},
         {"EJ", cmdXX},		// Not implemented.
+        {"EK", cmdXX},		// Not implemented.
         {"EM", cmdEM},
         {"EN", cmdEN},
         {"ER", cmdXX},		// Not implemented.
@@ -729,6 +767,7 @@ void parseCMD(char * buf) {
         {"RC", cmdXX},		// Not implemented.
         {"RP", cmdXX},		// Not implemented.
         {"SC", cmdXX},		// Not implemented.
+        {"SD", cmdSD},		
         {"SH", cmdSH},
         {"SI", cmdSI},
         {"ST", cmdST},
@@ -744,9 +783,7 @@ void parseCMD(char * buf) {
 
     const int numCMD = sizeof(cmdList)/sizeof(cmdList_t);
 
-    for (int i = 0; buf[i] != 0; i++) {
-        buf[i] = toupper(buf[i]);
-    }
+    strupper(buf);
 
     for (int i = 0; i < numCMD; i++) {
         if ((cmdList[i].name[0] == buf[0]) &&
@@ -754,11 +791,12 @@ void parseCMD(char * buf) {
 
             for (int j = 2; buf[j] != 0; j++) {
                 if (buf[j] != ' ') {
-                    (*cmdList[i].function)(&buf[0], &buf[j]);
+                    (*cmdList[i].function)(&buf[j]);
                     return;
                 }
             }
-            (*cmdList[i].function)(&buf[0], &buf[2]);
+            (*cmdList[i].function)(&buf[2]);
+            return;
         }
     }
     if (buf[0] != 0) {
