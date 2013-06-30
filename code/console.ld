@@ -50,31 +50,32 @@ SECTIONS
         KEEP (*(.init))
         KEEP (*(.fini))
         . = ALIGN(4);
-        _etext = .;
     } > FLASH
 
     .preinit_array :    
     {
-         PROVIDE_HIDDEN (__preinit_array_start = .);
-         KEEP (*(.preinit_array*))
-         PROVIDE_HIDDEN (__preinit_array_end = .);
+        PROVIDE_HIDDEN (__preinit_array_start = .);
+        KEEP (*(.preinit_array*))
+        PROVIDE_HIDDEN (__preinit_array_end = .);
     } > FLASH
 
     .init_array :
     {
-         PROVIDE_HIDDEN (__init_array_start = .);
-         KEEP (*(SORT(.init_array.*)))
-         KEEP (*(.init_array*))
-         PROVIDE_HIDDEN (__init_array_end = .);
+        PROVIDE_HIDDEN (__init_array_start = .);
+        KEEP (*(SORT(.init_array.*)))
+        KEEP (*(.init_array*))
+        PROVIDE_HIDDEN (__init_array_end = .);
     } > FLASH
 
     .fini_array :
     {
-         PROVIDE_HIDDEN (__fini_array_start = .);
-         KEEP (*(.fini_array*))
-         KEEP (*(SORT(.fini_array.*)))
-         PROVIDE_HIDDEN (__fini_array_end = .);
+        PROVIDE_HIDDEN (__fini_array_start = .);
+        KEEP (*(.fini_array*))
+        KEEP (*(SORT(.fini_array.*)))
+        PROVIDE_HIDDEN (__fini_array_end = .);
     } > FLASH
+
+    _etext = .;
 
     .data : 
     {
@@ -94,9 +95,10 @@ SECTIONS
 
     PROVIDE (end = .);
 
-   .stack (NOLOAD) : {
-       _stackstart = .;
-       . = . + 0x3000;
-       _stackend = .;
-   } > SRAM
+    .stack (NOLOAD) :
+    {
+        _stackstart = .;
+        . = . + 0x3000;
+        _stackend = .;
+    } > SRAM
 }
