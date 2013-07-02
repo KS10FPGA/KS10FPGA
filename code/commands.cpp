@@ -42,7 +42,8 @@
 #include "sd.h"
 #include "stdio.h"
 #include "ks10.hpp"
-#include "bootcode.hpp"
+#include "fatfs/dir.h"
+#include "fatfs/ff.h"
 
 static ks10_t::addr_t address;
 
@@ -100,36 +101,83 @@ static ks10_t::data_t parseOctal(const char *buf) {
 }
 
 //!
+//! Buffer the PDP10 .SAV file
+//!
+//! This function reads buffers from the FAT filesytems and supplies the data
+//! 5 bytes at a time to the .SAV file parser.
+//!
+//! \param [in] fp
+//!     file pointer
+//!
+//! \pre
+//!     The filesystem must be mounted and the file must be opened.
+//!
+//! \note
+//!     Buffer size should be a multiple of 5 bytes.  Each PDP10 word occupies
+//!     5 bytes in the .SAV file.
+//! 
+//! \returns
+//!     a 36-bit PDP10 word
+//!
+
+ks10_t::data_t getdata(FIL *fp) {
+
+    static uint8_t buffer[255];		
+    static unsigned int index = sizeof(buffer);
+
+    static_assert((sizeof(buffer) % 5) == 0, "Buffer size must be a multiple"
+		  " of five bytes.");
+
+    if (index == sizeof(buffer)) {
+        unsigned int numbytes;
+        FRESULT status = f_read(fp, &buffer, sizeof(buffer), &numbytes);
+	if (status == FR_OK) {
+	    index = 0;
+	}
+    }
+    ks10_t::data_t data = ks10_t::rdword(&buffer[index]);
+    index += 5;
+
+    return data;
+}
+
+//!
 //! \brief
-//!     Parse the PDP10 .SAV file
+//!     Load code into the KS10
 //!
 //! \details
-//!     This function reads the .SAV file and writes the contents to
-//!     to the KS10.
+//!     This function reads the .SAV file and writes the contents to to the
+//!     KS10.
 //!
 //! \param [in] data
 //!     is the starting address of the .SAV file
 //!
 //! \notes
-//!     This function sets the starting address in the Console
-//!     Instruction Register with the starting address contained
-//!     in the .SAV file.
+//!     This function sets the starting address in the Console Instruction
+//!     Register with the starting address contained in the .SAV file.
 //!
 //! \returns
 //!     Nothing
 //! 
 
-static void parseSavFile(const uint8_t *data) {
+static bool loadCode(const char * filename) {
+
+    FIL fp;
+    FRESULT status = f_open(&fp, filename, FA_READ);
+    if (status != FR_OK) {
+        printf("f_open() returned %d\n", status);
+        return false;
+    }
+ 
     for (;;) {
 
         //
         // The data36 format is:  -n,,a-1
         //
 
-        ks10_t::data_t data36 = rdword(data);
+        ks10_t::data_t data36 = getdata(&fp);
         unsigned int words    = ks10_t::lh(data36);
         unsigned int addr     = ks10_t::rh(data36);
-        data += 5;
 
         //
         // Check for end
@@ -148,9 +196,12 @@ static void parseSavFile(const uint8_t *data) {
                 printf("Starting Address: %06lo,,%06lo\n",
                        ks10_t::lh(data36), ks10_t::rh(data36));
 #endif
-                return;
-            } 
-            return;
+            }
+	    FRESULT status = f_close(&fp);
+	    if (status != FR_OK) {
+	        printf("f_close() returned %d\n", status);
+	    }
+	    return true;
         }
 
         //
@@ -158,12 +209,12 @@ static void parseSavFile(const uint8_t *data) {
         //
 
         while ((words & 0400000) != 0) {
-            ks10_t::data_t data36 = rdword(data);
-            data += 5;
+            ks10_t::data_t data36 = getdata(&fp);
 #ifdef CONFIG_KS10                
             ks10_t::writeMem(addr, data36);
 #else
-            printf("%06o: %012llo\n", addr, data36);
+            printf("%06o: %06lo%06lo\n", addr, ks10_t::lh(data36),
+		   ks10_t::rh(data36));
 #endif
             addr  = (addr  + 1) & 0777777;
             words = (words + 1) & 0777777;
@@ -171,58 +222,22 @@ static void parseSavFile(const uint8_t *data) {
     }
 }
 
-
-//
-// \brief
-//    Load Code
-//
-// \details
-//    The 
-//
-// \returns
-//    Nothing
-//
-// \note
-//    This is a kludge.  Eventually the code should be loaded from a USB or
-//    Secure Digital Card.  For now, the code needs to be compiled into the
-//    console code.
-//
-
-static void loadCode(void) {
-    parseSavFile(bootcode);
-}
-
 //!
-//! \brief
-//!    Boot System
+//! Boot System
 //!
-//! \details
-//!    The Boot (\bBT) command loads code into KS10 memory and starts
-//!    execution.
+//! The Boot (\bBT) command loads code into KS10 memory and starts execution.
 //!
-//!    - If there is no argument, the monitor is loaded into KS10 memory
-//!      and execution begins at address 01000.
-//!
-//!    - if there is an argument, SMMON is loaded into KS10 memory and
-//!      execution begins at address 020000.
+//! \param [in] buf
+//!    Pathname of the file to load.
 //!
 //! \returns
 //!    Nothing
 //!
-//! \note
-//!    This is a kludge.  Eventually the code should be loaded from a USB or
-//!    Secure Digital Card.  For now, the code needs to be compiled into the
-//!    console code.
-//!
 
 static void cmdBT(const char *buf) {
-    char state = *buf++;
-    if (state == '1') {
-        loadCode();
-    } else {
-        loadCode();
+    if (!loadCode(buf)) {
+        printf("Unable to open file \"%s\".\n", buf);
     }
-    loadCode();
 //  ks10_t::run(true);
 }
 
@@ -269,14 +284,13 @@ static void cmdCO(const char *) {
 //!    Deposit IO
 //!
 //! \details
-//!    The Deposit IO (\bDM) deposits data into the IO
-//!    address previously loaded by the Load Address (\bLA)
-//!    command.
+//!    The Deposit IO (\bDM) deposits data into the IO address previously
+//!    loaded by the Load Address (\bLA) command.
 //!
 //! \note
-//!    If the data is less that 0377 and the address points
-//!    to a Unibus Address, this function assumes that a
-//!    byte operation is desired.  The KS10 does not do this.
+//!    If the data is less that 0377 and the address points to a Unibus
+//!    Address, this function assumes that a byte operation is desired.  The
+//!    KS10 does not do this.
 //!
 //! \returns
 //!    Nothing
@@ -303,9 +317,8 @@ static void cmdDI(const char *buf) {
 //!    Deposit Memory
 //!
 //! \details
-//!    The Deposit Memory (\bDM) deposits data into the memory
-//!    address previously loaded by the Load Address (\bLA)
-//!    command.
+//!    The Deposit Memory (\bDM) deposits data into the memory address
+//!    previously loaded by the Load Address (\bLA) command.
 //!
 //! \returns
 //!    Nothing
@@ -329,9 +342,8 @@ static void cmdDM(const char *buf) {
 //!    Deposit Next
 //!
 //! \details
-//!    The Deposit Next(\bDM) command deposits data into the next 
-//!    memory or IO address depending on the last DM or DI
-//!    command.
+//!    The Deposit Next(\bDM) command deposits data into the next memory or IO
+//!    address depending on the last DM or DI command.
 //!
 //! \returns
 //!    Nothing
@@ -352,8 +364,8 @@ static void cmdDN(const char *buf) {
 //!    Disk Select
 //!
 //! \details
-//!    The Disk Select (\bDS) select the Unit, Unibus Adapter
-//!    to load when booting.
+//!    The Disk Select (\bDS) select the Unit, Unibus Adapter to load when
+//!    booting.
 //!
 //! \returns
 //!    Nothing
@@ -368,8 +380,7 @@ static void cmdDS(const char *) {
 //!    Examine IO
 //!
 //! \details
-//!    The Examine IO (\bEI) reads from the last IO
-//!    address specified.
+//!    The Examine IO (\bEI) reads from the last IO address specified.
 //!
 //! \returns
 //!    Nothing
@@ -385,8 +396,7 @@ static void cmdEI(const char *) {
 //!    Examine Memory
 //!
 //! \details
-//!    The Examine Memory (\bEM) reads from the last memory
-//!    address specified.
+//!    The Examine Memory (\bEM) reads from the last memory address specified.
 //!
 //! \returns
 //!    Nothing
@@ -402,8 +412,7 @@ static void cmdEM(const char *) {
 //!    Examine Next
 //!
 //! \details
-//!    The Examine Next (\bEM) reads from next IO or
-//!    memory address.
+//!    The Examine Next (\bEM) reads from next IO or memory address.
 //!
 //! \returns
 //!    Nothing
@@ -447,8 +456,8 @@ static void cmdHA(const char *) {
 //!    Load Memory Address
 //!
 //! \details
-//!    The Load Memory Address (\bLA) command sets the memory
-//!    address for the next commands.
+//!    The Load Memory Address (\bLA) command sets the memory address for the
+//!    next commands.
 //!
 //! \returns
 //!    Nothing
@@ -472,8 +481,7 @@ static void cmdLA(const char *buf) {
 //!    Load Diagnostic Monitor SMMON
 //!
 //! \details
-//!    The Load Diagnostic (\bLB) command loads the diagnostic
-//!    Monitor.
+//!    The Load Diagnostic (\bLB) command loads the diagnostic Monitor.
 //!
 //! \returns
 //!    Nothing
@@ -488,8 +496,8 @@ static void cmdLB(const char *) {
 //!    Load IO Address
 //!
 //! \details
-//!    The Load IO Address (\bLI) command sets the IO address
-//!    for the next commands.
+//!    The Load IO Address (\bLI) command sets the IO address for the next
+//!    commands.
 //!
 //! \returns
 //!    Nothing
@@ -548,9 +556,9 @@ static void cmdMR(const char *) {
     ks10_t::cpuReset(false);
 
     //
-    // Wait for the KS10 to peform a selftest and initialize the ALU.  When
-    // the microcode initialization is completed, the KS10 will enter a HALT
-    // state.  Wait for that to occur.
+    // Wait for the KS10 to peform a selftest and initialize the ALU.  When the
+    // microcode initialization is completed, the KS10 will enter a HALT state.
+    // Wait for that to occur.
     //
 
     while (!ks10_t::halt()) {
@@ -559,19 +567,42 @@ static void cmdMR(const char *) {
 }
 
 static void cmdSD(const char *buf) {
-    printf("here... cmdSD\n");
-    if (buf[0] == 'D' && buf[1] == 'I' && buf[2] == 'R') {
-        //directory(".");
-    } else if (buf[0] == 'M' && buf[1] == 'O' && buf[2] == 'U') {
-        sdInitializeCard();
+    static FATFS fatFS;
+
+    if (buf[0] == 'D' && buf[1] == 'I') {
+        FRESULT status = directory(".");
+        if (status != FR_OK) {
+            printf("directory status was %d\n", status);
+        }
+    } else if (buf[0] == 'M' && buf[1] == 'O') {
+        FRESULT status = f_mount(0, &fatFS);
+        printf("open status was %d\n", status);
+    } else if (buf[0] == 'I' && buf[1] == 'N') {
+        SDInitializeCard();
+    } else if (buf[0] == 'O' && buf[1] == 'P') {
+        FIL fp;
+        uint8_t buffer[256];
+        unsigned int numbytes;
+        FRESULT status = f_open(&fp, "asdf.txt", FA_READ);
+        printf("open status was %d\n", status);
+        status = f_read(&fp, &buffer, sizeof(buffer), &numbytes);
+        for (unsigned int i = 0; i < numbytes; i++) {
+            printf("%02x ", buffer[i]);
+            if ((i % 16) == 15) {
+                printf("\n");
+            }
+        }
+        printf("\n");
+        buffer[numbytes] = 0;
+        printf("###%s###\n", buffer);
     } else if (buf[0] == 'R' && buf[1] == 'D') {
-        unsigned char buffer[256];
-        bool success = sdReadSector(buffer, 0);
+        unsigned char buffer[512];
+        bool success = SDReadSector(buffer, 0);
         if (!success) {
             printf("SD Card Read Failure...\n");
             return;
         }
-        for (int i = 0; i < 256; i++) {
+        for (int i = 0; i < 512; i++) {
             printf("%02x ", buffer[i]);
             if ((i%16) == 15) {
                 printf("\n");
@@ -703,8 +734,23 @@ static void cmdXX(const char *) {
 }
 
 static void cmdZZ(const char *) {
-    printf("Test is %012llo\n", 0765432123456);
+
+    printf("This is a test (int decimal) %d\n", 23456);
+    printf("This is a test (int hex    ) %x\n", 0x123456);
+    printf("This is a test (int octal  ) %o\n", 01234567);
+
+    printf("This is a test (long decimal) %ld\n", 345699234);
+    printf("This is a test (long hex    ) %lx\n", 0x1234567a);
+    printf("This is a test (long octal  ) %lo\n", 012345676543);
+
+    printf("This is a test (long long decimal) %lld\n", 345699234ull);
+    printf("This is a test (long long hex    ) %llx \n", 0x95232633ull);
+    printf("This is a test (long long octal  ) %012llo\n", 0123456ull);
+    printf("This is a test (long long hex    ) 0x%llx\n", 0x0123456789abcdefULL);
+    printf("This is a test (long long hex    ) 0x%llx\n", 0x95232633579bfe34ull);
+
 }
+
 
 void parseCMD(char * buf) {
 
