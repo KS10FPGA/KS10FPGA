@@ -47,11 +47,11 @@ extern "C"
 {
 #endif
 
-    void initializeSD(void);
-    bool sdStatus(void);
-    bool sdInitializeCard(void);
-    bool sdReadSector(uint8_t *buf, uint32_t sector);
-    bool sdWriteSector(const uint8_t *buf, uint32_t sector);
+    void SDInitialize(void);
+    bool SDStatus(void);
+    bool SDInitializeCard(void);
+    bool SDReadSector(uint8_t *buf, uint32_t sector);
+    bool SDWriteSector(const uint8_t *buf, uint32_t sector);
 
 #ifdef __cplusplus
 }

@@ -47,6 +47,7 @@
 extern "C" int main(void);
 extern "C" void vectReset(void);
 extern "C" void vectDefault(void);
+extern "C" void vectTICK(void);
 
 //
 // Addresses from linker
@@ -76,7 +77,11 @@ void vectUSAGE(void)  __attribute__ ((weak, alias("vectDefault")));
 void vectSVCALL(void) __attribute__ ((weak, alias("vectDefault")));
 void vectDEBUG(void)  __attribute__ ((weak, alias("vectDefault")));
 void vectPEND(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectTICK(void)   __attribute__ ((weak, alias("vectDefault")));
+void vectTICK0(void)  __attribute__ ((weak, alias("vectDefault")));
+void vectTICK1(void)  __attribute__ ((weak, alias("vectDefault")));
+void vectTICK2(void)  __attribute__ ((weak, alias("vectDefault")));
+void vectTICK3(void)  __attribute__ ((weak, alias("vectDefault")));
+void vectTICK4(void)  __attribute__ ((weak, alias("vectDefault")));
 void vectGPIOA(void)  __attribute__ ((weak, alias("vectDefault")));
 void vectGPIOB(void)  __attribute__ ((weak, alias("vectDefault")));
 void vectGPIOC(void)  __attribute__ ((weak, alias("vectDefault")));
@@ -258,4 +263,13 @@ extern "C" void vectReset(void) {
 
 extern "C" void vectDefault(void) {
     ;
+}
+
+
+extern "C" void vectTICK(void) {
+    vectTICK0();
+    vectTICK1();
+    vectTICK2();
+    vectTICK3();
+    vectTICK4();
 }

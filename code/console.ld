@@ -75,6 +75,7 @@ SECTIONS
         PROVIDE_HIDDEN (__fini_array_end = .);
     } > FLASH
 
+    . = ALIGN(8);
     _etext = .;
 
     .data : 
@@ -95,8 +96,14 @@ SECTIONS
 
     PROVIDE (end = .);
 
+    /*
+     * Really weird things happen when the stack is not aligned to a
+     * double-word.
+     */
+
     .stack (NOLOAD) :
     {
+        . = ALIGN(8);
         _stackstart = .;
         . = . + 0x3000;
         _stackend = .;

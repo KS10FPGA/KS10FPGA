@@ -8,13 +8,19 @@
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/inc/hw_memmap.h"
+#include "fatfs/ff.h"
 
 #undef  SSI_BASE
 #define SSI_BASE          SSI0_BASE		//!< SSI Port Base Address
 #define GPIO_PORTCS_BASE  GPIO_PORTA_BASE	//!< Chip Select Base Address
-#define GPIO_PORTCD_BASE  GPIO_PORTB_BASE	//!< Card Detect Base Address
 #define GPIO_PIN_CS       GPIO_PIN_3		//!< Chip Select Pin 
-#define GPIO_PIN_CD       GPIO_PIN_3		//!< Card Detect Pin
+#ifdef CONFIG_KS10
+#define GPIO_PORTCD_BASE  GPIO_PORTB_BASE	//!< Card Detect Base Address
+#define GPIO_PIN_CD       GPIO_PIN_6		//!< Card Detect Pin
+#else
+#define GPIO_PORTCD_BASE  GPIO_PORTA_BASE	//!< Card Detect Base Address
+#define GPIO_PIN_CD       GPIO_PIN_6		//!< Card Detect Pin
+#endif
 
 static const uint32_t bitRate = 250000;
 static bool initialized = false;
@@ -50,7 +56,7 @@ void SDInitialize(void) __attribute__((constructor(301)));
 //!
 
 static void chipEnable(bool enable) {
-    GPIOPinWrite(GPIO_PORTCS_BASE, GPIO_PIN_CS, enable ? 0 : GPIO_PIN_CS);
+    ROM_GPIOPinWrite(GPIO_PORTCS_BASE, GPIO_PIN_CS, enable ? 0 : GPIO_PIN_CS);
 }
 
 //!
@@ -72,8 +78,8 @@ static void chipEnable(bool enable) {
 
 static uint8_t transactData(uint8_t byte) {
     uint32_t ret;
-    SSIDataPut(SSI_BASE, byte);
-    SSIDataGet(SSI_BASE, &ret);
+    ROM_SSIDataPut(SSI_BASE, byte);
+    ROM_SSIDataGet(SSI_BASE, &ret);
     return ret & 0xff;
 }
 
@@ -655,12 +661,23 @@ bool SDStatus(void) {
 //!     looks for card insertions and card removals.
 //!
 
-void SDTimerInterrupt(void) {
+void vectTICK0(void) {
     static uint32_t lastCardDetect = 0;
-    uint32_t cardDetect = GPIOPinRead(GPIO_PORTCD_BASE, GPIO_PIN_CD);
+    static FATFS fatFS;
+    uint32_t cardDetect = !ROM_GPIOPinRead(GPIO_PORTCD_BASE, GPIO_PIN_CD);
     if (cardDetect && !lastCardDetect) {
         printf("KS10> SD Card Inserted.\n");
-        SDInitializeCard();
+        if (SDInitializeCard()) {
+	    printf("KS10> SD Card initialized successfully.\n");
+	    FRESULT status = f_mount(0, &fatFS);
+  	    if (status == FR_OK) {
+	        printf("KS10> FAT filesystem mounted on SD Card.\n");
+	    } else {
+	        printf("KS10> Failed to mount FAT filesystem on SD Card.  Status was %d.\n", status);
+	    }
+	} else {
+	    printf("KS10> Failed to initialize SD Card.\n");
+	}
     } else if (!cardDetect && lastCardDetect) {
         printf("KS10> SD Card Ejected.\n");
         initialized = false;
@@ -675,10 +692,15 @@ void SDInitialize(void) {
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTCS_BASE, GPIO_PIN_CS);
-    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTCD_BASE, GPIO_PIN_CD);
+    ROM_GPIOPinTypeGPIOInput(GPIO_PORTCD_BASE, GPIO_PIN_CD);
     ROM_GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5);
-    ROM_SSIConfigSetExpClk(SSI_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0, SSI_MODE_MASTER, bitRate, 8);
+    ROM_SSIConfigSetExpClk(SSI_BASE, ROM_SysCtlClockGet(), SSI_FRF_MOTO_MODE_0, SSI_MODE_MASTER, bitRate, 8);
     ROM_SSIEnable(SSI_BASE);
     chipEnable(false);
+
+    ROM_SysTickPeriodSet(80000000);
+    ROM_SysTickIntEnable();
+    ROM_SysTickEnable();
+
     puts("1, ");
 }

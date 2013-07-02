@@ -48,6 +48,7 @@
 
 #include "fpga.h"
 #include "stdio.h"
+#include "driverlib/rom.h"
 #include "driverlib/inc/hw_types.h"
 #include "driverlib/inc/hw_memmap.h"
 #include "driverlib/gpio.h"
@@ -73,26 +74,26 @@
 
 void programFPGA(void) {
 
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-    GPIOPinTypeGPIOOutput(GPIO_PORT_BASE, GPIO_PIN_PROG);
-    GPIOPinTypeGPIOInput(GPIO_PORT_BASE, GPIO_PIN_INIT);
-    GPIOPinTypeGPIOInput(GPIO_PORT_BASE, GPIO_PIN_DONE);
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORT_BASE, GPIO_PIN_PROG);
+    ROM_GPIOPinTypeGPIOInput(GPIO_PORT_BASE, GPIO_PIN_INIT);
+    ROM_GPIOPinTypeGPIOInput(GPIO_PORT_BASE, GPIO_PIN_DONE);
 
     //
     // Assert PROG# momentarily
     //
 
     printf("KS10> Programming FPGA with firmware\n");
-    GPIOPinWrite(GPIO_PORT_BASE, GPIO_PIN_PROG, 0);
+    ROM_GPIOPinWrite(GPIO_PORT_BASE, GPIO_PIN_PROG, 0);
     SysCtlDelay(10);
-    GPIOPinWrite(GPIO_PORT_BASE, GPIO_PIN_PROG, GPIO_PIN_PROG);
+    ROM_GPIOPinWrite(GPIO_PORT_BASE, GPIO_PIN_PROG, GPIO_PIN_PROG);
     SysCtlDelay(10);
     
     //
     // Verify DONE is negated.
     //
     
-    if (GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_DONE) != 0) {
+    if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_DONE) != 0) {
         printf("KS10> FPGA Programming Error.  FPGA Done should be negated.\n");
         return;
     }
@@ -103,7 +104,7 @@ void programFPGA(void) {
     
     unsigned int delay = 0;
     do {
-        if (GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_INIT) == 0) {
+        if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_INIT) == 0) {
             printf("KS10> FPGA Programming Error.  CRC Failure.\n");
             return;
         }
@@ -112,7 +113,7 @@ void programFPGA(void) {
             return;
         }
         SysCtlDelay(10);
-    } while (GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_DONE) == 0);
+    } while (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_DONE) == 0);
 
     //
     // FPGA was successfully programmed.
