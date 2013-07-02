@@ -75,7 +75,6 @@ SECTIONS
         PROVIDE_HIDDEN (__fini_array_end = .);
     } > FLASH
 
-    . = ALIGN(8);
     _etext = .;
 
     .data : 
