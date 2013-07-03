@@ -1,46 +1,54 @@
-/*!
-********************************************************************************
-**
-** KS10 Console Microcontroller
-**
-** \brief
-**      Startup Code
-**
-** \details
-**      This module initializes the CPU.
-**
-** \file
-**      startup.cpp
-**
-** \note
-**      In C++, the preinit operations are not supported because shared
-**      libraries are not supported and therefore static constructors from
-**      shared libraries are not supported.   Also static destructors are not
-**      supported because main() should never exit.
-**
-** \author
-**      Rob Doyle - doyle (at) cox (dot) net
-**
-********************************************************************************
-**
-** Copyright (C) 2013 Rob Doyle
-**
-** This program is free software; you can redistribute it and/or modify
-** it under the terms of the GNU General Public License as published by
-** the Free Software Foundation; either version 2 of the License, or
-** (at your option) any later version.
-**
-** This program is distributed in the hope that it will be useful,
-** but WITHOUT ANY WARRANTY; without even the implied warranty of
-** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-** GNU General Public License for more details.
-**
-** You should have received a copy of the GNU General Public License
-** along with this program; if not, write to the Free Software
-** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-**
-********************************************************************************
-*/
+//******************************************************************************
+//
+//  KS10 Console Microcontroller
+//
+//! Startup Code
+//!
+//! This module initializes the C/C++ Run Time environment.
+//!
+//! This code does the following:
+//! -# Creates the interrupt vector table.
+//! -# Clears .bss
+//! -# Initializes the 'initialized data' from flash
+//! -# Runs C++ static constructors.
+//! -# Calls main()
+//!
+//! All interrupt vectors are weakly bound to a interrupt handler that does
+//! nothing.  The use an interrupt vector, just create a function with
+//! the proper name and it will override the weak binding.
+//!
+//! In C++, the preinit operations are not supported because shared
+//! libraries are not supported and therefore static constructors from
+//! shared libraries are not supported.
+//!
+//! C++ static destructors are also not implemented because main() should
+//! never exit.
+//!
+//! \file
+//!    startup.cpp
+//!
+//! \author
+//!    Rob Doyle - doyle (at) cox (dot) net
+//
+//******************************************************************************
+//
+// Copyright (C) 2013 Rob Doyle
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+//
+//******************************************************************************
 
 #include <stdint.h>
 
@@ -53,67 +61,67 @@ extern "C" void vectTICK(void);
 // Addresses from linker
 //
 
-extern unsigned long _etext;                                            //!< Start of .data in ROM
-extern unsigned long _data;                                             //!< Start of .data
-extern unsigned long _edata;                                            //!< End of .data
-extern unsigned long _bss;                                              //!< Start of .bss
-extern unsigned long _ebss;                                             //!< End of .bss
-extern unsigned long _stackend;                                         //!< End of .stack
-extern void (*__preinit_array_start[])(void) __attribute__((weak));     //!< start of preinit array
-extern void (*__preinit_array_end[])(void)   __attribute__((weak));     //!< start of preinit array
-extern void (*__init_array_start[])(void)    __attribute__((weak));     //!< start of init array
-extern void (*__init_array_end[])(void)      __attribute__((weak));     //!< start of init array
+extern unsigned long _etext;                                            //!< Address of start of .data in ROM
+extern unsigned long _data;                                             //!< Address of start of .data
+extern unsigned long _edata;                                            //!< Address of end of .data
+extern unsigned long _bss;                                              //!< Address of start of .bss
+extern unsigned long _ebss;                                             //!< Address if end of .bss
+extern unsigned long _stackend;                                         //!< Address of end of stack
+extern void (*__preinit_array_start[])(void) __attribute__((weak));     //!< Address of start of preinit array
+extern void (*__preinit_array_end[])(void)   __attribute__((weak));     //!< Address of end of preinit array
+extern void (*__init_array_start[])(void)    __attribute__((weak));     //!< Address of start of init array
+extern void (*__init_array_end[])(void)      __attribute__((weak));     //!< Address of end of init array
 
 //
-//! Weak aliases for the vectors.  If you define 'real' functions
-//! they will override these default handlers.
+// Weak aliases for the vectors.  If you define 'real' functions
+// they will override these default handlers.
 //
 
-void vectNMI(void)    __attribute__ ((weak, alias("vectDefault")));
-void vectHard(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectMPU(void)    __attribute__ ((weak, alias("vectDefault")));
-void vectBUS(void)    __attribute__ ((weak, alias("vectDefault")));
-void vectUSAGE(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectSVCALL(void) __attribute__ ((weak, alias("vectDefault")));
-void vectDEBUG(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectPEND(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectTICK0(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectTICK1(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectTICK2(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectTICK3(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectTICK4(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectGPIOA(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectGPIOB(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectGPIOC(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectGPIOD(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectGPIOE(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectUART0(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectUART1(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectSSI0(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectI2C0(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectPWM(void)    __attribute__ ((weak, alias("vectDefault")));
-void vectPWM0(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectPWM1(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectPWM2(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectQEC0(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectADC0(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectGPIOF(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectGPIOG(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectGPIOH(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectUART2(void)  __attribute__ ((weak, alias("vectDefault")));
-void vectSSI1(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectCAN0(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectCAN1(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectENET(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectUSB(void)    __attribute__ ((weak, alias("vectDefault")));
-void vectPWM3(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectI2S0(void)   __attribute__ ((weak, alias("vectDefault")));
-void vectEPI(void)    __attribute__ ((weak, alias("vectDefault")));
-void vectGPIOJ(void)  __attribute__ ((weak, alias("vectDefault")));
+void vectNMI(void)    __attribute__ ((weak, alias("vectDefault")));     //!< NMI vector
+void vectHard(void)   __attribute__ ((weak, alias("vectDefault")));     //!< Hard fault vector
+void vectMPU(void)    __attribute__ ((weak, alias("vectDefault")));     //!< MPU fault vector
+void vectBUS(void)    __attribute__ ((weak, alias("vectDefault")));     //!< Bus Fault vector
+void vectUSAGE(void)  __attribute__ ((weak, alias("vectDefault")));     //!< Usage Fault vector
+void vectSVCALL(void) __attribute__ ((weak, alias("vectDefault")));     //!< SVCall vector
+void vectDEBUG(void)  __attribute__ ((weak, alias("vectDefault")));     //!< Debug monitor vector
+void vectPEND(void)   __attribute__ ((weak, alias("vectDefault")));     //!< PendSV vector
+void vectTICK0(void)  __attribute__ ((weak, alias("vectDefault")));     //!< SysTick vector
+void vectTICK1(void)  __attribute__ ((weak, alias("vectDefault")));     //!< SysTick vector
+void vectTICK2(void)  __attribute__ ((weak, alias("vectDefault")));     //!< SysTick vector
+void vectTICK3(void)  __attribute__ ((weak, alias("vectDefault")));     //!< SysTick vector
+void vectTICK4(void)  __attribute__ ((weak, alias("vectDefault")));     //!< SysTick vector
+void vectGPIOA(void)  __attribute__ ((weak, alias("vectDefault")));     //!< GPIO Port A interrupt vector
+void vectGPIOB(void)  __attribute__ ((weak, alias("vectDefault")));     //!< GPIO Port B interrupt vector
+void vectGPIOC(void)  __attribute__ ((weak, alias("vectDefault")));     //!< GPIO Port C interrupt vector
+void vectGPIOD(void)  __attribute__ ((weak, alias("vectDefault")));     //!< GPIO Port D interrupt vector
+void vectGPIOE(void)  __attribute__ ((weak, alias("vectDefault")));     //!< GPIO Port E interrupt vector
+void vectUART0(void)  __attribute__ ((weak, alias("vectDefault")));     //!< UART0 interrupt vector
+void vectUART1(void)  __attribute__ ((weak, alias("vectDefault")));     //!< UART1 interrupt vector
+void vectSSI0(void)   __attribute__ ((weak, alias("vectDefault")));     //!< SSI0 interrupt vector
+void vectI2C0(void)   __attribute__ ((weak, alias("vectDefault")));     //!< I2C0 interrupt vector
+void vectPWM(void)    __attribute__ ((weak, alias("vectDefault")));     //!< PWM interrupt vector
+void vectPWM0(void)   __attribute__ ((weak, alias("vectDefault")));     //!< PWM0 interrupt vector
+void vectPWM1(void)   __attribute__ ((weak, alias("vectDefault")));     //!< PWM1 interrupt vector
+void vectPWM2(void)   __attribute__ ((weak, alias("vectDefault")));     //!< PWM2 interrupt vector
+void vectQEC0(void)   __attribute__ ((weak, alias("vectDefault")));     //!< Quadrature Encoder 0 interrupt vector
+void vectADC0(void)   __attribute__ ((weak, alias("vectDefault")));     //!< ADC0 Sequence 0 interrupt vector
+void vectGPIOF(void)  __attribute__ ((weak, alias("vectDefault")));     //!< GPIO Port F interrupt vector
+void vectGPIOG(void)  __attribute__ ((weak, alias("vectDefault")));     //!< GPIO Port G interrupt vector
+void vectGPIOH(void)  __attribute__ ((weak, alias("vectDefault")));     //!< GPIO Port H interrupt vector
+void vectUART2(void)  __attribute__ ((weak, alias("vectDefault")));     //!< UART2 interrupt vector
+void vectSSI1(void)   __attribute__ ((weak, alias("vectDefault")));     //!< SSI1 interrupt vector
+void vectCAN0(void)   __attribute__ ((weak, alias("vectDefault")));     //!< CAN0 interrupt vector
+void vectCAN1(void)   __attribute__ ((weak, alias("vectDefault")));     //!< CAN1 interrupt vector
+void vectENET(void)   __attribute__ ((weak, alias("vectDefault")));     //!< Ethernet interrupt vector
+void vectUSB(void)    __attribute__ ((weak, alias("vectDefault")));     //!< USB interrupt vector
+void vectPWM3(void)   __attribute__ ((weak, alias("vectDefault")));     //!< PWM3 interrupt vector
+void vectI2S0(void)   __attribute__ ((weak, alias("vectDefault")));     //!< I2S0 interrupt vector
+void vectEPI(void)    __attribute__ ((weak, alias("vectDefault")));     //!< EPI interrupt vector
+void vectGPIOJ(void)  __attribute__ ((weak, alias("vectDefault")));     //!< GPIO Port J interrupt vector
 
-//!
+//
 //! Vectors and Stack
-//!
+//
 
 struct vectStruct_t {
     uint32_t *stackEnd;         // Top of stack
@@ -123,9 +131,9 @@ struct vectStruct_t {
         vectReset,              //  1 : Reset vector
         vectNMI,                //  2 : NMI vector
         vectHard,               //  3 : Hard fault vector
-        vectMPU,                //  4 : The MPU fault vector
-        vectBUS,                //  5 : The bus fault vector
-        vectUSAGE,              //  6 : The usage fault vector
+        vectMPU,                //  4 : MPU fault vector
+        vectBUS,                //  5 : Bus Fault vector
+        vectUSAGE,              //  6 : Usage Fault vector
         vectDefault,            //  7 : Reserved
         vectDefault,            //  8 : Reserved
         vectDefault,            //  9 : Reserved
@@ -133,8 +141,8 @@ struct vectStruct_t {
         vectSVCALL,             // 11 : SVCall vector
         vectDEBUG,              // 12 : Debug monitor vector
         vectDefault,            // 13 : Reserved
-        vectPEND,               // 14 : The PendSV vector
-        vectTICK,               // 15 : The SysTick vector
+        vectPEND,               // 14 : PendSV vector
+        vectTICK,               // 15 : SysTick vector
         vectGPIOA,              // 16 : GPIO Port A interrupt vector
         vectGPIOB,              // 17 : GPIO Port B interrupt vector
         vectGPIOC,              // 18 : GPIO Port C interrupt vector
@@ -179,7 +187,7 @@ struct vectStruct_t {
         vectDefault,            // 57 : Reserved
         vectENET,               // 58 : Ethernet interrupt vector
         vectDefault,            // 59 : Reserved
-        vectUSB,                // 60 : USB
+        vectUSB,                // 60 : USB interrupt vector
         vectPWM3,               // 61 : PWM3 interrupt vector
         vectDefault,            // 62 : uDMA Software
         vectDefault,            // 63 : uDMA Error
@@ -194,19 +202,15 @@ struct vectStruct_t {
 };
 
 //!
-//! \brief
-//!     Reset Vector
+//! Reset Vector
 //!
-//! \details
-//!     This code is placed at the reset vector.  It initialized the C/C++
-//!     run-time environment.  It does the following:
+//! This code is placed at the reset vector.  It initializes the C/C++
+//! run-time environment.  It does the following:
 //!
-//!     - Initializes the "initialized data"
-//!     - Clears bss
-//!     - Executes the static constructors.
-//!
-//! \returns
-//!     Nothing.
+//! -# Initializes the "initialized data"
+//! -# Clears bss
+//! -# Executes the static constructors.
+//! -# Calls main()
 //!
 
 extern "C" void vectReset(void) {
@@ -241,7 +245,7 @@ extern "C" void vectReset(void) {
 
     //
     // Call main()
-    //  Main should never return, but be smart if it does.
+    // Main should never return, but be smart if it does.
     //
 
     for (;;) {
@@ -249,22 +253,25 @@ extern "C" void vectReset(void) {
     }
 }
 
+//
+//! Default Vector
 //!
-//! \brief
-//!     Default Vector
+//! This code is the default operation for all of the unused interrupt vectors.
+//! It does asolutely noting.
 //!
-//! \details
-//!     This code is the default operation for all of the unused interrupt
-//!     vectors.  It does asolutely noting.
-//!
-//! \returns
-//!     Nothing.
-//!
+//
 
 extern "C" void vectDefault(void) {
     ;
 }
 
+//
+//! System Tick Timer Vector
+//!
+//! This code is the default operation for all of the System Tick Interrupt.
+//! It allows several objects to get access to the System Tick Interrupt.
+//!
+//
 
 extern "C" void vectTICK(void) {
     vectTICK0();

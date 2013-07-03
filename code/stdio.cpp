@@ -1,3 +1,36 @@
+//******************************************************************************
+//
+//  KS10 Console Microcontroller
+//
+//! Embedded Stdio-like functions.
+//!
+//! This object provides some of the functionality of stdio.
+//!
+//! \file
+//!    stdio.cpp
+//!
+//! \author
+//!    Rob Doyle - doyle (at) cox (dot) net
+//
+//******************************************************************************
+//
+// Copyright (C) 2013 Rob Doyle
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+//
+//******************************************************************************
 
 #include <stdarg.h>
 #include <stdint.h>
@@ -6,12 +39,14 @@
 #include "stdio.h"
 #include "uart.h"
 
+//! Upper case digits for printing radix greater than 10
 static const char *upper_digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+//! Lower case digits for printing radix greater than 10
 static const char *lower_digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-//!
-//! \brief
-//!     This function gets a character from the UART receiver.
+//
+//! This function gets a character from the UART receiver.
 //!
 //! \returns
 //!     Character read from UART receiver.
@@ -21,19 +56,15 @@ char getchar(void) {
     return getUART();
 }
 
+//
+//! This function outputs a character to the UART transmitter.
 //!
-//! \brief
-//!     This function outputs a character to the UART transmitter.
+//! This function expands newlines to CR, LF sequences.
 //!
 //! \param ch
 //!     Character to output to UART transmitter.
 //!
-//! \details
-//!     This function expands newlines to CR, LF sequences.
-//!
-//! \returns
-//!     None.
-//!
+//
 
 void putchar(char ch) {
     if (ch == '\n') {
@@ -42,20 +73,15 @@ void putchar(char ch) {
     putUART(ch);
 }
 
+//
+//! Outputs a string to the UART transmitter.
 //!
-//! \brief
-//!    Outputs a string to the UART transmitter.
+//! This function outputs a string to the UART transmitter and expands newlines
+//! to CR, LF sequences.
 //!
 //! \param s
 //!     null terminated string to print.
-//!
-//! \details
-//!     This function outputs a string to the UART transmitter
-//!     and expands newlines to CR, LF sequences.
-//!
-//! \returns
-//!     None.
-//!
+//
 
 void puts(const char *s) {
     while (*s) {
@@ -63,9 +89,10 @@ void puts(const char *s) {
     }
 }
 
+//
+//! This function gets a string from the UART receiver.
 //!
-//! \brief
-//!     This function gets a string from the UART receiver.
+//! This function buffers a line of characters.  The Backspace is handled.
 //!
 //! \param [in] buf
 //!     buffer to place input characters
@@ -73,15 +100,9 @@ void puts(const char *s) {
 //! \param [in] len
 //!     buffer length
 //!
-//! \details
-//!     This function buffers a line of characters.
-//!
-//! \notes
-//!     Backspace is handled.
-//!
 //! \returns
-//!     None.
-//!
+//!     pointer to buffer.
+//
 
 char *fgets(char *buf, unsigned int len) {
     unsigned int i;
@@ -109,10 +130,34 @@ char *fgets(char *buf, unsigned int len) {
 }
 
 //
-// Unsigned to ascii
+//! Unsigned to ASCII
+//!
+//! This function converts an unsigned integer value to a null-terminated
+//! string using the radix that was specified.  The result is stored in the
+//! array given by buffer parameter.
+//! 
+//! \param [in] value
+//!    Value to be printed
+//!
+//! \param [in, out] buffer
+//!    Buffer space for input and output string operations
+//!
+//! \param [in] radix
+//!    Radix of the print operation.  Radix must be between 2 and 36.
+//! 
+//! \param [in] digits
+//!    Pointer to string of either uppercase or lowercase digits
+//!
+//! \note
+//!    This function uses recursion to parse the number.  Beware of stack
+//!    space issues.
+//!
+//! \returns
+//!    Pointer to buffer
 //
 
-static char *__utoa(unsigned int value, char * buffer, unsigned int radix, const char * digits)  {
+static char *__utoa(unsigned int value, char * buffer, unsigned int radix,
+                    const char * digits)  {
     if (value / radix) {
         buffer = __utoa(value / radix, buffer, radix, digits);
     }
@@ -122,10 +167,34 @@ static char *__utoa(unsigned int value, char * buffer, unsigned int radix, const
 }
 
 //
-// Unsigned long to ascii
+//! Unsigned Long to ASCII
+//!
+//! This function converts an unsigned long integer value to a null-terminated
+//! string using the radix that was specified.  The result is stored in the
+//! array given by buffer parameter.
+//! 
+//! \param [in] value
+//!    Value to be printed
+//!
+//! \param [in, out] buffer
+//!    Buffer space for input and output string operations
+//!
+//! \param [in] radix
+//!    Radix of the print operation.  Radix must be between 2 and 36.
+//! 
+//! \param [in] digits
+//!    Pointer to string of either uppercase or lowercase digits
+//!
+//! \note
+//!    This function uses recursion to parse the number.  Beware of stack
+//!    space issues.
+//!
+//! \returns
+//!    Pointer to buffer
 //
 
-static char *__ultoa(unsigned long value, char * buffer, unsigned int radix, const char * digits) {
+static char *__ultoa(unsigned long value, char * buffer, unsigned int radix,
+                     const char * digits) {
     if (value / radix) {
         buffer = __ultoa(value / radix, buffer, radix, digits);
     }
@@ -135,16 +204,41 @@ static char *__ultoa(unsigned long value, char * buffer, unsigned int radix, con
 }
 
 //
-// Unsigned long long to ascii
-//
-// This is especially hacked to work on octal and hex numbers.  These don't
-// require long long division - just shifts.  long long division requires a
-// a lot of support from the run time library.   Adding decimal number requires
-// lots more code and it won't be used.
+//! Unsigned long long to ASCII
+//!
+//! This function converts an unsigned long long integer value to a null-
+//! terminated string using the radix that was specified.  The result is
+//! stored in the array given by buffer parameter.
+//! 
+//! This function is specially hacked to work on only octal and hex numbers.
+//! These don't require long long division - just shifts.  The long long
+//! division by arbitrary radix requires a lot of support from the run time
+//! library and it isn't worth the extra code space since it will not be used.
+//!
+//! The only support for unsigned long long is octal or hex printing.
+//!
+//! \param [in] value
+//!    Value to be printed
+//!
+//! \param [in, out] buffer
+//!    Buffer space for input and output string operations
+//!
+//! \param [in] radix
+//!    Radix of the print operation.  Radix must be between 2 and 36.
+//! 
+//! \param [in] digits
+//!    Pointer to string of either uppercase or lowercase digits
+//!
+//! \note
+//!    This function uses recursion to parse the number.  Beware of stack
+//!    space issues.
+//!
+//! \returns
+//!    Pointer to buffer
 //
 
-char *__ulltoa(unsigned long long value, char * buffer, unsigned int radix, const char * digits) {
-#if 1
+char *__ulltoa(unsigned long long value, char * buffer, unsigned int radix,
+               const char * digits) {
     unsigned int shift;
     unsigned long long mask;
     if (radix == 16) {
@@ -163,41 +257,32 @@ char *__ulltoa(unsigned long long value, char * buffer, unsigned int radix, cons
     *buffer++ = digits[value & mask];
     *buffer   = 0;
     return buffer;
-#else
-    unsigned int shift;
-    unsigned long long mask;
-    if (radix == 16) {
-        shift = 4;
-        mask  = 15;
-    } else if (radix == 8) {
-        shift = 3;
-        mask = 7;
-    } else {
-        buffer = (char*)"Not implemented\n";
-        return buffer;
-    }
-
-    int i;
-    for (i = 0; (i < 63) && (mask < value); i += shift, mask <<= shift) {
-        ;
-    }
-
-    if (((value & mask) >> i) == 0) {
-        i -= shift;
-        mask >>= shift;
-    }
-
-    for (int j = i; j > -1; j -= shift, mask >>= shift) {
-        char dgt = (value & mask) >> j;
-        *buffer++ = dgt + (dgt < 10 ? '0' : (1 ? 'A' : 'a') - 10);
-    }
-    *buffer = 0;
-    return buffer;
-#endif
 }
 
 //
-// Integer to ascii
+//! Signed Integer to ASCII
+//!
+//! This function converts an signed integer value to a null-terminated
+//! string using the radix that was specified.  The result is stored in the
+//! array given by buffer parameter.
+//!
+//! Negative numbers are printed properly.
+//! 
+//! \param [in] value
+//!    Value to be printed
+//!
+//! \param [in, out] buffer
+//!    Buffer space for input and output string operations
+//!
+//! \param [in] radix
+//!    Radix of the print operation.  Radix must be between 2 and 36.
+//! 
+//! \note
+//!    This function uses recursion to parse the number.  Beware of stack
+//!    space issues.
+//!
+//! \returns
+//!    Pointer to buffer
 //
 
 char *itoa(int value, char * buffer, int radix) {
@@ -218,7 +303,29 @@ char *itoa(int value, char * buffer, int radix) {
 }
 
 //
-// Long integer to ascii
+//! Signed Long Integer to ASCII
+//!
+//! This function converts an signed long integer value to a null-terminated
+//! string using the radix that was specified.  The result is stored in the
+//! array given by buffer parameter.
+//!
+//! Negative numbers are printed properly.
+//! 
+//! \param [in] value
+//!    Value to be printed
+//!
+//! \param [in, out] buffer
+//!    Buffer space for input and output string operations
+//!
+//! \param [in] radix
+//!    Radix of the print operation.  Radix must be between 2 and 36.
+//! 
+//! \note
+//!    This function uses recursion to parse the number.  Beware of stack
+//!    space issues.
+//!
+//! \returns
+//!    Pointer to buffer
 //
 
 char *ltoa(long value, char * buffer, int radix) {
@@ -239,7 +346,34 @@ char *ltoa(long value, char * buffer, int radix) {
 }
 
 //
-// Long long integer to ascii
+//! Signed Long Long Integer to ASCII
+//!
+//! This function converts an signed long long integer value to a null-
+//! terminated string using the radix that was specified.  The result is
+//! stored in the array given by buffer parameter.
+//!
+//! This function is specially hacked to work on only octal and hex numbers.
+//! These don't require long long division - just shifts.  The long long
+//! division by arbitrary radix requires a lot of support from the run time
+//! library and it isn't worth the extra code space since it will not be used.
+//!
+//! The only support for signed long long is octal or hex printing.
+//! 
+//! \param [in] value
+//!    Value to be printed
+//!
+//! \param [in, out] buffer
+//!    Buffer space for input and output string operations
+//!
+//! \param [in] radix
+//!    Radix of the print operation.  Radix must be between 2 and 36.
+//! 
+//! \note
+//!    This function uses recursion to parse the number.  Beware of stack
+//!    space issues.
+//!
+//! \returns
+//!    Pointer to buffer
 //
 
 char *lltoa(long long value, char * buffer, int radix) {
@@ -262,6 +396,21 @@ char *lltoa(long long value, char * buffer, int radix) {
 //
 //! Function to pad field sizes to specific widths
 //!
+//! \param [in] width
+//!    Minimum field width.
+//!
+//! \param [in] prec
+//!    Precision.  Not implemented.
+//! 
+//! \param [in] padchar
+//!    Either a zero or a space
+//!
+//! \param [in] leftFlag
+//!    Left justify flag.  Not implemented.
+//! 
+//! \param [in, out] buffer
+//!    Workspace.
+//
 
 static void padout(int width, int prec, char padchar, bool leftFlag, char* buffer) {
     (void)prec;
@@ -279,7 +428,61 @@ static void padout(int width, int prec, char padchar, bool leftFlag, char* buffe
 }
 
 //
-//
+//!
+//! Print formatted data to stdout
+//!
+//! The print format string has the following form:
+//!   
+//!  % [flags] [width] [.precision] [modifier] type
+//!   
+//!  <ul>
+//!  <li>flags:</li>
+//!   - - Left justifies the result by padding with blanks on the right.
+//!       If not supplied, the results are right justified by padding
+//!       with blanks on the left.
+//!   
+//!  <li>width:  n < 132</li>
+//!    <ul>
+//!      <li>
+//!         <b>n</b>
+//!            - At least n characters are printed.  If the output value has
+//!            less than n characters, the output is padded with blanks.
+//!      </li>
+//!      <li>
+//!         <b>0n</b>
+//!            - At least n characters are printed.  If the output value has
+//!            less than n characters, the output is padded with zeros.
+//!      </li>
+//!    </ul>
+//!   
+//!  <li>precision:</li>
+//!     <ul>
+//!      <li>not implemented (floating point is not implemented)</li>
+//!     </ul>
+//!   
+//!  <li>modifier:</li>
+//!     <ul>
+//!      <li>l - arg is interpreted as a long</li>
+//!      <li>ll - arg is interpreted as a long long/li>
+//!     </ul>
+//!
+//!  <li>type:</li>
+//!     <ul>
+//!       <li> % - litteral percent</li>
+//!       <li> c - character</li>
+//!       <li> d - signed decimal int</li>
+//!       <li> o - unsigned octal int</li>
+//!       <li> p - pointer</li>
+//!       <li> s - string</li>
+//!       <li> u - unsigned decimal int</li>
+//!       <li> x - unsigned hexadecimal int in lower case</li>
+//!       <li> X - unsigned hexadecimal int in upper case</li>
+//!     </ul>
+//!
+//! </ul>
+//! \param [in] fmt
+//!    format statement.  See above.
+//!
 //
 
 void printf(const char *fmt, ...)  {
