@@ -1,14 +1,48 @@
+//******************************************************************************
+//
+//  KS10 Console Microcontroller
+//
+//! Secure Digial Card Interface.
+//!
+//! This object provides the interfaces that are required to interact with
+//! an SD Card.
+//!
+//! \file
+//!    sd.cpp
+//!
+//! \author
+//!    Rob Doyle - doyle (at) cox (dot) net
+//
+//******************************************************************************
+//
+// Copyright (C) 2013 Rob Doyle
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+//
+//******************************************************************************
 
 #include <stdint.h>
 #include "sd.h"
 #include "stdio.h"
+#include "fatfs/ff.h"
 #include "driverlib/inc/hw_types.h"
 #include "driverlib/rom.h"
 #include "driverlib/ssi.h"
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/inc/hw_memmap.h"
-#include "fatfs/ff.h"
 
 #undef  SSI_BASE
 #define SSI_BASE          SSI0_BASE		//!< SSI Port Base Address
@@ -26,55 +60,53 @@ static const uint32_t bitRate = 250000;
 static bool initialized = false;
 
 enum cmd_t {
-    CMD0   =  0,	// GO_IDLE_STATE
-    CMD8   =  8,	// SEND_IF_COND
-    CMD13  = 13,	// SEND_STATUS
-    CMD17  = 17,	// READ_SINGLE
-    CMD24  = 24,	// WRITE_SINGLE
-    ACMD41 = 41,	// APP_SEND_OP_COND
-    CMD55  = 55,	// APP_CMD
-    CMD58  = 58,	// READ_OCR
+    CMD0   =  0,	//!< GO_IDLE_STATE Command
+    CMD8   =  8,	//!< SEND_IF_COND Command
+    CMD13  = 13,	//!< SEND_STATUS Command
+    CMD17  = 17,	//!< READ_SINGLE Command
+    CMD24  = 24,	//!< WRITE_SINGLE Command
+    ACMD41 = 41,	//!< APP_SEND_OP_COND Command
+    CMD55  = 55,	//!< APP_CMD Command
+    CMD58  = 58,	//!< READ_OCR Command
 };
 
 void SDInitialize(void) __attribute__((constructor(301)));
 
+//
+//! Controls the chip enable of the SD Card.
 //!
-//! \brief
-//!     Controls the chip enable of the SD Card.
+//! The SD specification allows the clock and data pins to be shared among
+//! multiple SD Cards.   The chip enable operation is an integral part of the
+//! SD protocol.
 //!
-//! \param enable
-//!     Sets the state of the Chip Enable (CE) pin.   When the argument is
-//!     true, the Chip Enable signal is asserted low.
+//! The Chip Enable is active low.
 //!
-//! \details
-//!     The SD specification allows the clock and data pins to be shared among
-//!      multiple SD Cards.   The chip enable operation is an integral part of
-//!      the SD protocol.
+//! <p><dfn> chipEnable(true) </dfn> asserts the Chip Enable signal (low).</p>
+//! <p><dfn> chipEnable(false) </dfn> negates the Chip Enable signal (high).</p>
 //!
-//! \note
-//!     The Chip Enable is active low.
+//! \param enable 
+//!     sets the state of the Chip Enable (CE) pin.
 //!
+//
 
 static void chipEnable(bool enable) {
     ROM_GPIOPinWrite(GPIO_PORTCS_BASE, GPIO_PIN_CS, enable ? 0 : GPIO_PIN_CS);
 }
 
+//
+//! Sends/Receives a byte of data to/from the SD Card.
 //!
-//! \brief
-//!     Sends/Receives a byte of data to/from the SD Card.
+//! Transactions to the SD Card are always bi-directional.  Sometimes the data
+//! to be transmitted doesn't matter but the received data is relevant;
+//! sometimes that data to be transmitted does matter and the received is
+//! ignored.
 //!
-//! \param byte
+//! \param byte 
 //!     data to be sent to the SD Card.
-//!
-//! \details
-//!     Transactions to the SD Card are always bi-directional.  Sometimes the
-//!     data to be transmitted doesn't matter but the received data is
-//!     relevant; sometimes that data to be transmitted does matter and the
-//!     received data is not relevant.
 //!
 //! \returns
 //!     data read from the SD Card.
-//!
+//
 
 static uint8_t transactData(uint8_t byte) {
     uint32_t ret;
@@ -83,30 +115,31 @@ static uint8_t transactData(uint8_t byte) {
     return ret & 0xff;
 }
 
+//
+//! Sends a command to the SD Card.
 //!
-//! \brief
-//!     Sends a command to the SD Card.
+//! This function sends a properly formed command to the SD card.  In some
+//! cases the CRC must be correct and in other cases the CRC is ignored and
+//! can be anything.  Once the command is sent, this function waits for an
+//! R1 Response (not all ones) from the SD Card.
 //!
-//! \param cmd
+//! The first bit of the command must be a zero (start bit).  The second
+//! bit of a command must be a one.  The last bit of the CRC must be a one
+//! (stop bit).  Technically the CRC is only 7 bits and the stop bit is the
+//! last bit sent - but that makes things confusing.
+//!
+//! \param cmd 
 //!     command byte
 //!
-//! \param data
+//! \param data 
 //!     32-bit command payload
 //!
-//! \param crc
+//! \param crc 
 //!     crc7 (and stop bit)
 //!
-//! \details
-//!     This function sends a properly formed command to the SD card.  In some
-//!     cases the CRC must be correct and in other cases the CRC is ignored and
-//!     can be anything.  Once the command is sent, this function waits for an
-//!     R1 Response (not all ones) from the SD Card.
-//!
-//!     The first bit of the command must be a zero (start bit).  The second
-//!     bit of a command must be a one.  The last bit of the CRC must be a one
-//!     (stop bit).  Technically the CRC is only 7 bits and the stop bit is the
-//!     last bit sent - but that makes things confusing.
-//!
+//! \returns
+//!     R1 status from command.
+//
 
 static uint8_t sendCommand(uint8_t cmd, uint32_t data, uint8_t crc) {
 
@@ -135,25 +168,23 @@ static uint8_t sendCommand(uint8_t cmd, uint32_t data, uint8_t crc) {
     return response;
 }
 
-//!
-//! \brief
-//!     Waits for an R2 Response from the SD Card.
+//
+//! Wait for an R2 Response from the SD Card.
 //!
 //! \returns
 //!     R2 Response from SD Card.
-//!
+//
 
 static uint8_t getR2Response(void) {
     return transactData(0xff);
 }
 
-//!
-//! \brief
-//!     Waits for an R3 Response from the SD Card.
+//
+//! Wait for an R3 Response from the SD Card.
 //!
 //! \returns
 //!     R3 Response from SD Card.
-//!
+//
 
 static uint32_t getR3Response(void) {
     return ((transactData(0xff) << 24) |
@@ -162,13 +193,12 @@ static uint32_t getR3Response(void) {
             (transactData(0xff) <<  0));
 }
 
-//!
-//! \brief
-//!     Waits for an R7 Response from the SD Card.
+//
+//! Wait for an R7 Response from the SD Card.
 //!
 //! \returns
 //!     R7 Response from SD Card.
-//!
+//
 
 static uint32_t getR7Response(void) {
     return ((transactData(0xff) << 24) |
@@ -177,13 +207,12 @@ static uint32_t getR7Response(void) {
             (transactData(0xff) <<  0));
 }
 
-//!
-//! \brief
-//!     Waits for an Read Start Token Response from the SD Card.
+//
+//! Waits for a <em>Read Start Token</em> response from the SD Card.
 //!
 //! \returns
 //!     Read Start Token Response from SD Card.
-//!
+//
 
 static uint8_t findReadStartToken(void) {
     static const int nAC = 1023;
@@ -197,26 +226,20 @@ static uint8_t findReadStartToken(void) {
     return response;
 }
 
-//!
-//! \brief
-//!     Sends a Write Start Token Response to the SD Card.
-//!
-//! \returns
-//!     Nothing
-//!
+//
+//! Send a <em>Write Start Token</em> command to the SD Card.
+//
 
 void sendWriteStartToken(void) {
     transactData(0xff);
     transactData(0xfe);
 }
 
-//!
-//! \brief
-//!     Initializes the SD Card
+//
+//! Initializes the SD Card
 //!
 //! \returns
-//!     True if the SD Card is initialized properly, false
-//!     otherwise.
+//!     True if the SD Card is initialized properly, false otherwise.
 //
 
 bool SDInitializeCard(void) {
@@ -433,19 +456,18 @@ bool SDInitializeCard(void) {
     return initialized;
 }
 
+//
+//! Reads a 512-byte sector from the SD Card
 //!
-//! \brief
-//!     Reads a 512-byte sector from the SD Card
-//!
-//! \param [in out] buf
-//!     Pointer to data buffer.  The buffer space must be at least 512 bytes.
+//! \param [in, out] buf 
+//!     pointer to data buffer.  The buffer space must be at least 512 bytes.
 //!     The buf pointer is modified by this function.
 //!
-//! \param [in] sector
+//! \param [in] sector 
 //!     Linear sector address of SD Card
 //!
 //! \pre
-//!     The SD Card must be initialized for reads to succeed.
+//!     The SD Card must be initialized and mounted for reads to succeed.
 //!
 //! \note
 //!     Sectors are always 512 bytes long
@@ -520,19 +542,19 @@ bool SDReadSector(uint8_t *buf, uint32_t sector) {
     return true;
 }
 
+//
+//! Writes a 512-byte sector to the SD Card
 //!
-//! \brief
-//!     Writes a 512-byte sector to the SD Card
-//!
-//! \param [in out] buf
-//!     Pointer to data buffer.  The buffer space must be at least 512 bytes.
+//! \param [in,out] buf 
+//!     pointer to data buffer.  The buffer space must be at least 512 bytes.
 //!     The buf pointer is modified by this function.
 //!
-//! \param [in] sector
+//! \param [in] sector 
 //!     Linear sector address of SD Card
 //!
 //! \pre
-//!     The SD Card must be initialized for writes to succeed.
+//!     The SD Card must be initialized, mounted, and not read-only for writes
+//!     to succeed.
 //!
 //! \note
 //!     Sectors are always 512 bytes long
@@ -640,26 +662,23 @@ bool SDWriteSector(const uint8_t *buf, uint32_t sector) {
 
 }
 
-//!
-//! \brief
-//!     Check SD Card Status
+//
+//! Check SD Card Status
 //!
 //! \returns
 //!     True if the SD Card has been initialized successfully, false otherwise.
-//!
+//
 
 bool SDStatus(void) {
     return initialized;
 }
 
+//
+//! Timer Interrupt
 //!
-//! \brief
-//!     Timer Interrupt
-//!
-//! \details
-//!     The Timer Interrupt polls the SD Card Detect input and periodically
-//!     looks for card insertions and card removals.
-//!
+//! The Timer Interrupt periodically polls the SD Card Detect input to check
+//! for SD Card insertions and SD Card removals.
+//
 
 void vectTICK0(void) {
     static uint32_t lastCardDetect = 0;
@@ -673,7 +692,8 @@ void vectTICK0(void) {
   	    if (status == FR_OK) {
 	        printf("KS10> FAT filesystem mounted on SD Card.\n");
 	    } else {
-	        printf("KS10> Failed to mount FAT filesystem on SD Card.  Status was %d.\n", status);
+	        printf("KS10> Failed to mount FAT filesystem on SD Card."
+                       "  Status was %d.\n", status);
 	    }
 	} else {
 	    printf("KS10> Failed to initialize SD Card.\n");
@@ -685,6 +705,9 @@ void vectTICK0(void) {
     lastCardDetect = cardDetect;
 }
 
+//
+//! Initialize the SD Card Interface
+//
 
 void SDInitialize(void) {
 
@@ -694,7 +717,8 @@ void SDInitialize(void) {
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTCS_BASE, GPIO_PIN_CS);
     ROM_GPIOPinTypeGPIOInput(GPIO_PORTCD_BASE, GPIO_PIN_CD);
     ROM_GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5);
-    ROM_SSIConfigSetExpClk(SSI_BASE, ROM_SysCtlClockGet(), SSI_FRF_MOTO_MODE_0, SSI_MODE_MASTER, bitRate, 8);
+    ROM_SSIConfigSetExpClk(SSI_BASE, ROM_SysCtlClockGet(), SSI_FRF_MOTO_MODE_0,
+                           SSI_MODE_MASTER, bitRate, 8);
     ROM_SSIEnable(SSI_BASE);
     chipEnable(false);
 

@@ -1,22 +1,20 @@
-/*!
-********************************************************************************
-**
-** KS10 Console Microcontroller
-**
-** \brief
-**      Commands
-**
-** \details
-**      All the console commands are implemented in the file.
-**
-** \file
-**      commands.cpp
-**
-** \author
-**      Rob Doyle - doyle (at) cox (dot) net
-**
-********************************************************************************
-*/
+//
+//******************************************************************************
+//
+//  KS10 Console Microcontroller
+//
+//! Console commands
+//!
+//! All the console commands are implemented in the file.
+//!
+//! \file
+//!     commands.cpp
+//!
+//! \author
+//!     Rob Doyle - doyle (at) cox (dot) net
+//
+//********************************************************************************
+
 /* Copyright (C) 2013 Rob Doyle
 **
 ** This program is free software; you can redistribute it and/or modify
@@ -48,11 +46,11 @@
 static ks10_t::addr_t address;
 
 static enum access_t {
-    accessMEM = 0,
-    accessIO,
+    accessMEM = 0,		//!< KS10 Memory Access
+    accessIO,			//!< KS10 IO Access
 } access;
 
-//!
+//
 //! Convert a string to upper case.
 //!
 //! \param [in] buf
@@ -60,7 +58,7 @@ static enum access_t {
 //!
 //! \returns
 //!     Pointer to line buffer.
-//! 
+// 
 
 static char *strupper(char *buf) {
     for (int i = 0; buf[i] != 0; i++) {
@@ -69,16 +67,15 @@ static char *strupper(char *buf) {
     return buf;
 }
 
-//!
-//! \brief
-//!     Parses an octal number from the command line
+//
+//! Parses an octal number from the command line
 //!
 //! \param [in] buf
 //!     Pointer to line buffer.
 //!
 //! \returns
-//!     Octal Number
-//! 
+//!     Number
+// 
 
 static ks10_t::data_t parseOctal(const char *buf) {
     
@@ -100,7 +97,7 @@ static ks10_t::data_t parseOctal(const char *buf) {
     return num;
 }
 
-//!
+//
 //! Buffer the PDP10 .SAV file
 //!
 //! This function reads buffers from the FAT filesytems and supplies the data
@@ -113,12 +110,12 @@ static ks10_t::data_t parseOctal(const char *buf) {
 //!     The filesystem must be mounted and the file must be opened.
 //!
 //! \note
-//!     Buffer size should be a multiple of 5 bytes.  Each PDP10 word occupies
-//!     5 bytes in the .SAV file.
+//!     Buffer size should be a multiple of 5 bytes.  Each PDP-10 word requires
+//!     5 bytes in of storage the .SAV file.
 //! 
 //! \returns
 //!     a 36-bit PDP10 word
-//!
+//
 
 ks10_t::data_t getdata(FIL *fp) {
 
@@ -141,24 +138,21 @@ ks10_t::data_t getdata(FIL *fp) {
     return data;
 }
 
+//
+//! Load code into the KS10
 //!
-//! \brief
-//!     Load code into the KS10
+//! This function reads the .SAV file and writes the contents to to the KS10.
 //!
-//! \details
-//!     This function reads the .SAV file and writes the contents to to the
-//!     KS10.
+//! \param [in] filename
+//!     filename of the .SAV file
 //!
-//! \param [in] data
-//!     is the starting address of the .SAV file
-//!
-//! \notes
+//! \note
 //!     This function sets the starting address in the Console Instruction
 //!     Register with the starting address contained in the .SAV file.
 //!
 //! \returns
 //!     Nothing
-//! 
+//
 
 static bool loadCode(const char * filename) {
 
@@ -222,31 +216,36 @@ static bool loadCode(const char * filename) {
     }
 }
 
-//!
+//
 //! Boot System
 //!
-//! The Boot (\bBT) command loads code into KS10 memory and starts execution.
+//! The <b>BT</b> (Boot) command loads code into KS10 memory and starts execution.
 //!
-//! \param [in] buf
-//!    Pathname of the file to load.
+//! If a filename is supplied as an argument, the <b>BT</b> command will attempt to load that filename
+//! from the root directory of the SD Card.
+//!
+//! \param [in] filename
+//!    Filename of the file to load.
 //!
 //! \returns
 //!    Nothing
 //!
 
-static void cmdBT(const char *buf) {
-    if (!loadCode(buf)) {
-        printf("Unable to open file \"%s\".\n", buf);
+static void cmdBT(const char *filename) {
+    if (!loadCode(filename)) {
+        printf("Unable to open file \"%s\".\n", filename);
     }
 //  ks10_t::run(true);
 }
 
+//
+//! Cache Enable
 //!
-//! \brief
-//!    Cache Enable
+//! The <b>CE</b> (Cache Enable) command controls the operation the KS10's
+//! cache.
 //!
-//! \details
-//!    The Cache Enable (\bCE) command enables or disable the KS10's cache.
+//! - The <b>CE 0</b> command will disable the KS10's cache.
+//! - The <b>CE 1</b> command will enable the KS10's cache.
 //!
 //! \returns
 //!    Nothing
@@ -264,12 +263,12 @@ static void cmdCE(const char * buf) {
     }
 }
 
+//
+//! Continue
 //!
-//! \brief
-//!    Continue
+//! The <b>CO</b> (Continue) command causes the KS10 to exit the HALT state.
 //!
-//! \details
-//!    The Continue (\bCO) command causes the KS10 to exit the HALT state.
+//! \sa cmdHA, cmdSI
 //!
 //! \returns
 //!    Nothing
@@ -279,18 +278,11 @@ static void cmdCO(const char *) {
     ks10_t::cont();
 }
 
+//
+//! Deposit IO
 //!
-//! \brief
-//!    Deposit IO
-//!
-//! \details
-//!    The Deposit IO (\bDM) deposits data into the IO address previously
-//!    loaded by the Load Address (\bLA) command.
-//!
-//! \note
-//!    If the data is less that 0377 and the address points to a Unibus
-//!    Address, this function assumes that a byte operation is desired.  The
-//!    KS10 does not do this.
+//! The <b>DI</b> (Deposit IO) deposits data into the IO address previously
+//! loaded by the <b>LA</b> (Load Address) command.
 //!
 //! \returns
 //!    Nothing
@@ -300,25 +292,18 @@ static void cmdDI(const char *buf) {
     access = accessIO;
     ks10_t::data_t data = parseOctal(buf);
     if (address <= ks10_t::maxIOAddr) {
-        if ((ks10_t::deviceAddr(address) > 0) && (data < 0377)) {
-            ks10_t::writeIObyte(address, data);
-        } else {
-            ks10_t::writeIO(address, data);
-        }
+        ks10_t::writeIO(address, data);
     } else {
         printf("Invalid IO address.\n"
-               "Valid addresses are %08o-%08llo\n",
-               0, ks10_t::maxIOAddr);
+               "Valid addresses are %08o-%08llo\n", 0, ks10_t::maxIOAddr);
     }
 }
 
+//
+//! Deposit Memory
 //!
-//! \brief
-//!    Deposit Memory
-//!
-//! \details
-//!    The Deposit Memory (\bDM) deposits data into the memory address
-//!    previously loaded by the Load Address (\bLA) command.
+//! The <b>DM</b> (Deposit Memory) deposits data into the memory address
+//! previously loaded by the <b>LA</b> (Load Address) command.
 //!
 //! \returns
 //!    Nothing
@@ -342,8 +327,8 @@ static void cmdDM(const char *buf) {
 //!    Deposit Next
 //!
 //! \details
-//!    The Deposit Next(\bDM) command deposits data into the next memory or IO
-//!    address depending on the last DM or DI command.
+//!    The <b>DN</b> (Deposit Next) command deposits data into the next memory or IO
+//!    address depending on the last <b>DM</b> or <b>DI</b> command.
 //!
 //! \returns
 //!    Nothing
@@ -364,7 +349,7 @@ static void cmdDN(const char *buf) {
 //!    Disk Select
 //!
 //! \details
-//!    The Disk Select (\bDS) select the Unit, Unibus Adapter to load when
+//!    The <b>DS</b> (Disk Select) select the Unit, Unibus Adapter to load when
 //!    booting.
 //!
 //! \returns
@@ -375,48 +360,47 @@ static void cmdDS(const char *) {
     printf("DS Command is not implemented, yet.\n");
 }
 
-//!
-//! \brief
-//!    Examine IO
+//
+//! Examine IO
 //!
 //! \details
-//!    The Examine IO (\bEI) reads from the last IO address specified.
+//!    The <b>EI</b> (Examine IO) command reads from the last IO address specified.
 //!
 //! \returns
 //!    Nothing
-//!
+//
 
 static void cmdEI(const char *) {
     access = accessIO; 
     printf("%012llo\n", ks10_t::readIO(address));
 }
 
+//
+//  Examine Memory
 //!
-//! \brief
-//!    Examine Memory
+//! The <b>EM</b> (Examine Memory) command reads from the last memory address specified.
 //!
-//! \details
-//!    The Examine Memory (\bEM) reads from the last memory address specified.
+//! \sa cmdLA, cmdEI, cmdEN
 //!
 //! \returns
 //!    Nothing
-//!
+//
 
 static void cmdEM(const char *) {
     access = accessMEM;
     printf("%012llo\n", ks10_t::readMem(address));
 }
 
+//
+//! Examine Next
 //!
-//! \brief
-//!    Examine Next
+//! The <b>EN</b> (Examine Next) command reads from next IO or memory address.
 //!
-//! \details
-//!    The Examine Next (\bEM) reads from next IO or memory address.
+//! \sa cmdLA, cmdEI, cmdEM, cmdEN
 //!
 //! \returns
 //!    Nothing
-//!
+//
 
 static void cmdEN(const char *) {
     if (access == accessMEM) {
@@ -426,16 +410,16 @@ static void cmdEN(const char *) {
     }
 }
 
+//
+//! Halt the KS10
 //!
-//! \brief
-//!    Halt
+//! The <b>HA</b> (Halt) command halts the KS10 CPU.
 //!
-//! \details
-//!    The Halt Command (\bHA) halts the KS10 CPU.
+//! \sa cmdCO, cmdSI
 //!
 //! \returns
 //!    Nothing
-//!
+//
 
 static void cmdHA(const char *) {
     ks10_t::halt(true);
@@ -451,17 +435,17 @@ static void cmdHA(const char *) {
     printf("KS10> Halted\n");
 }
 
+//
+//! Load Memory Address
 //!
-//! \brief
-//!    Load Memory Address
+//! The <b>LA</b> (Load Memory Address) command sets the memory address for the
+//! next commands.
 //!
-//! \details
-//!    The Load Memory Address (\bLA) command sets the memory address for the
-//!    next commands.
+//! \sa cmdLI
 //!
 //! \returns
 //!    Nothing
-//!
+//
 
 static void cmdLA(const char *buf) {
     access = accessMEM;
@@ -476,12 +460,10 @@ static void cmdLA(const char *buf) {
     }
 }
 
+//
+//! Load Diagnostic Monitor SMMON
 //!
-//! \brief
-//!    Load Diagnostic Monitor SMMON
-//!
-//! \details
-//!    The Load Diagnostic (\bLB) command loads the diagnostic Monitor.
+//! The <b>LB</b> (Load Diagnostic_) command loads the diagnostic Monitor.
 //!
 //! \returns
 //!    Nothing
@@ -491,17 +473,17 @@ static void cmdLB(const char *) {
     printf("LB Command is not implemented, yet.\n");
 }
 
+//
+//! Load IO Address
 //!
-//! \brief
-//!    Load IO Address
+//! The <b>LI</b> (Load IO Address) command sets the IO address for the next
+//! commands.
 //!
-//! \details
-//!    The Load IO Address (\bLI) command sets the IO address for the next
-//!    commands.
+//! \sa cmdLI
 //!
 //! \returns
 //!    Nothing
-//!
+//
 
 static void cmdLI(const char *buf) {
     access = accessIO;
@@ -516,16 +498,14 @@ static void cmdLI(const char *buf) {
     }
 }
 
+//
+//! Master Reset
 //!
-//! \brief
-//!    Master Reset
-//!
-//! \details
-//!    The Master Reset (\bMR) command hard resets the KS10 CPU.
+//! The <b>MR</b> (Master Reset) command hard resets the KS10 CPU.
 //!
 //! \returns
 //!    Nothing
-//!
+//
  
 static void cmdMR(const char *) {
 
@@ -611,52 +591,48 @@ static void cmdSD(const char *buf) {
     }
 }
 
+//
+//! Single Step
 //!
-//! \brief
-//!    Single Step
+//! The <b>SI</b> (Step Instruction) single steps the KS10 CPU.
 //!
-//! \details
-//!    The Step Instruction (\bSI) single steps the KS10 CPU.
+//! \sa cmdHA, cmdCO
+//!
 //!
 //! \returns
 //!    Nothing
-//!
+//
 
 static void cmdSI(const char *) {
     ks10_t::step();
 }
 
-//! 
-//! \brief
-//!    Shutdown Command
+//
+//! Shutdown Command
 //!
-//! \details
-//!    The Shutdown (\bSH) command deposits non-zero data in memory location 30.
-//!    This causes TOPS20 to shut down without issuing a warning.
+//! The <b>SH</b> (Shutdown) command deposits non-zero data in KS10 memory location 30.
+//! This causes TOPS20 to shut down without issuing a warning.
 //!
 //! \returns
 //!    Nothing
-//!
+//
 
 static void cmdSH(const char *) {
     ks10_t::writeMem(030, 1);
 }
 
+//
+//! Start Command
 //!
-//! \brief
-//!    Start Command
-//!
-//! \details
-//!    The Start (\bST) command stuffs a JRST instruction into the Console
+//! The <b>ST</b> (Start) command stuffs a JRST instruction into the Console
 //!    Instruction Register and TBD.
 //!
-//! \note
-//!    The address must be a virtual address and is therefore limited to
-//!    0777777.
+//! The address must be a virtual address and is therefore limited to
+//! 0777777.
 //!
 //! \returns
 //!    Nothing
-//!
+//
 
 static void cmdST(const char *buf) {
     ks10_t::addr_t addr = parseOctal(buf);
@@ -670,17 +646,18 @@ static void cmdST(const char *buf) {
     }
 }
 
+//
+//! Timer Enable
 //!
-//! \brief
-//!    Enable Timer
+//! The <b>TE</b> (Timer Enable) command controls the operation the KS10's
+//! one millisecond system timer.
 //!
-//! \details
-//!    The Timer Enable (\bTE) command enables or disable the KS10's
-//!    1 millisecond system timer.
+//! - The <b>TE 0</b> command will disable the KS10's system timer.
+//! - The <b>TE 1</b> command will enable the KS10's system timer
 //!
 //! \returns
 //!    Nothing
-//!
+//
 
 void cmdTE(const char *buf) {
     char state = *buf++;
@@ -694,17 +671,18 @@ void cmdTE(const char *buf) {
     }
 }
 
+//
+//! Traps Enable
 //!
-//! \brief
-//!    Enable Traps
+//! The <b>TP</b> (Trap Enable) command controls the operation the KS10's
+//! trap system.
 //!
-//! \details
-//!    The Trap Enable (\bTP) command enables or disables KS10's traps.
+//! - The <b>TP 0</b> command will disable the KS10's traps.
+//! - The <b>TP 1</b> command will enable the KS10's traps.
 //!
 //! \returns
 //!    Nothing
-//!
-//!
+//
 
 static void cmdTP(const char * buf) {
     char state = *buf++;
@@ -718,16 +696,14 @@ static void cmdTP(const char * buf) {
     }
 }
 
+//
+//! Not implemented
 //!
-//! \brief
-//!    Not implemented
-//!
-//! \details
-//!    This function handles commands that are not implemented.
+//! This function handles commands that are not implemented.
 //!
 //! \returns
 //!    Nothing
-//!
+//
 
 static void cmdXX(const char *) {
     printf("Command is not implemented.\n");
@@ -750,6 +726,16 @@ static void cmdZZ(const char *) {
     printf("This is a test (long long hex    ) 0x%llx\n", 0x95232633579bfe34ull);
 
 }
+
+//
+//! Parse Commands
+//!
+//! This function parses the commands and dispatches to the various handler
+//! functions.
+//!
+//! \returns
+//!    Nothing
+//
 
 
 void parseCMD(char * buf) {

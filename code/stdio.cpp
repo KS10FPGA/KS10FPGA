@@ -435,51 +435,51 @@ static void padout(int width, int prec, char padchar, bool leftFlag, char* buffe
 //!   
 //!  % [flags] [width] [.precision] [modifier] type
 //!   
-//!  <ul>
-//!  <li>flags:</li>
-//!   - - Left justifies the result by padding with blanks on the right.
-//!       If not supplied, the results are right justified by padding
-//!       with blanks on the left.
-//!   
-//!  <li>width:  n < 132</li>
-//!    <ul>
-//!      <li>
-//!         <b>n</b>
-//!            - At least n characters are printed.  If the output value has
-//!            less than n characters, the output is padded with blanks.
-//!      </li>
-//!      <li>
-//!         <b>0n</b>
-//!            - At least n characters are printed.  If the output value has
-//!            less than n characters, the output is padded with zeros.
-//!      </li>
-//!    </ul>
-//!   
-//!  <li>precision:</li>
-//!     <ul>
-//!      <li>not implemented (floating point is not implemented)</li>
-//!     </ul>
-//!   
-//!  <li>modifier:</li>
-//!     <ul>
-//!      <li>l - arg is interpreted as a long</li>
-//!      <li>ll - arg is interpreted as a long long/li>
-//!     </ul>
+//!  <dl>
+//!      <dt>flags:</dt>
+//!          <dd><b>'-'</b> - Left justifies the result by padding with blanks
+//!                          on the right. If not supplied, the results are
+//!                          right justified by padding with blanks on the
+//!                          left.</dd>
 //!
-//!  <li>type:</li>
-//!     <ul>
-//!       <li> % - litteral percent</li>
-//!       <li> c - character</li>
-//!       <li> d - signed decimal int</li>
-//!       <li> o - unsigned octal int</li>
-//!       <li> p - pointer</li>
-//!       <li> s - string</li>
-//!       <li> u - unsigned decimal int</li>
-//!       <li> x - unsigned hexadecimal int in lower case</li>
-//!       <li> X - unsigned hexadecimal int in upper case</li>
-//!     </ul>
+//!      <dt>width: (n < 132)</dt>
+//!          <dd><b>n</b> -  At least <b>n</b> characters are printed.  If the
+//!                          output value has less than <b>n</b> characters,
+//!                          the output is padded with blanks.</dd>
+//!      <dt></dt>
+//!          <dd><b>0n</b> - At least <b>n</b> characters are printed.  If the
+//!                          output value has less than <b>n</b> characters,
+//!                          the output is padded with zeros.</dd>
+//!          
+//!      <dt>precision:</dt>
+//!          <dd><b>l</b> - arg is interpreted as a long</dd>
+//!      <dt></dt>
+//!          <dd><b>ll</b> - arg is interpreted as a long long</dd>
 //!
-//! </ul>
+//!      <dt>modifier:</dt>
+//!          <dd>not implemented (floating point is not implemented)</dd>
+//!
+//!      <dt>type:</dt>
+//!          <dd> <b>%</b> - literal percent</dd>
+//!      <dt></dt>
+//!          <dd> <b>c</b> - character</dd>
+//!      <dt></dt>
+//!          <dd> <b>d</b> - signed decimal int</dd>
+//!      <dt></dt>
+//!          <dd> <b>o</b> - unsigned octal int</dd>
+//!      <dt></dt>
+//!          <dd> <b>p</b> - pointer</dd>
+//!      <dt></dt>
+//!          <dd> <b>s</b> - string</dd>
+//!      <dt></dt>
+//!          <dd> <b>u</b> - unsigned decimal int</dd>
+//!      <dt></dt>
+//!          <dd> <b>x</b> - unsigned hexadecimal int in lower case</dd>
+//!      <dt></dt>
+//!          <dd> <b>X</b> - unsigned hexadecimal int in upper case</dd>
+//!
+//! </dl>
+//!
 //! \param [in] fmt
 //!    format statement.  See above.
 //!
