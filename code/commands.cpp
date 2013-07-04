@@ -41,6 +41,7 @@
 #include "ks10.hpp"
 #include "fatfs/dir.h"
 #include "fatfs/ff.h"
+#include "driverlib/sysctl.h"
 
 static ks10_t::addr_t address;
 
@@ -97,6 +98,24 @@ static ks10_t::data_t parseOctal(const char *buf) {
 }
 
 //
+//! This function builds a 36-bit data word from the contents of the .SAV file.
+//!
+//! \param
+//!     b is a pointer to the input data
+//!
+//! \returns
+//!     36-bit data word
+//! 
+
+ks10_t::data_t rdword(const uint8_t *b) {
+    return (((uint64_t)b[0] << 28) |
+            ((uint64_t)b[1] << 20) |
+            ((uint64_t)b[2] << 12) |
+            ((uint64_t)b[3] <<  4) |
+            ((uint64_t)b[4] <<  0));
+}
+
+//
 //! Buffer the PDP10 .SAV file
 //!
 //! This function reads buffers from the FAT filesytems and supplies the data
@@ -131,7 +150,7 @@ ks10_t::data_t getdata(FIL *fp) {
 	    index = 0;
 	}
     }
-    ks10_t::data_t data = ks10_t::rdword(&buffer[index]);
+    ks10_t::data_t data = rdword(&buffer[index]);
     index += 5;
 
     return data;
@@ -523,10 +542,10 @@ static void cmdMR(const char *) {
     ks10_t::cacheEnable(true);
     
     //
-    // Delay a little longer
+    // Delay a little
     //
 
-    ks10_t::delay();
+    SysCtlDelay(10);
 
     //
     // Unreset the CPU
