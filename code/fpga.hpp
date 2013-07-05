@@ -48,7 +48,7 @@ extern "C"
 {
 #endif
 
-void programFPGA(void);
+bool programFPGA(void);
 
 #ifdef __cplusplus
 }
