@@ -56,6 +56,18 @@
 #define GPIO_PIN_CD       GPIO_PIN_6		//!< Card Detect Pin
 #endif
 
+//
+// Debug macros
+//
+
+//#define VERBOSE_SD
+
+#ifdef VERBOSE_SD
+#define debug(fmt...) printf(fmt)
+#else
+#define debug(fmt...)
+#endif
+
 static const uint32_t bitRate = 250000;
 static bool initialized = false;
 
@@ -244,7 +256,7 @@ void sendWriteStartToken(void) {
 
 bool SDInitializeCard(void) {
     
-    printf("Initializing SD Card.\n");
+    debug("Initializing SD Card.\n");
 
     initialized = false;
     
@@ -262,13 +274,13 @@ bool SDInitializeCard(void) {
     //
 
  cmd0:
-    printf("Sending CMD0.\n");
+    debug("Sending CMD0.\n");
     chipEnable(true);
     uint8_t rsp0 = sendCommand(CMD0, 0x00000000, 0x95);
     chipEnable(false);
     transactData(0xff);
     if (rsp0 != 0x01) {
-        printf("CMD0: Response was 0x%02x.\n", rsp0);
+        debug("CMD0: Response was 0x%02x.\n", rsp0);
         goto cmd0;
         return false;
     }
@@ -278,7 +290,7 @@ bool SDInitializeCard(void) {
     // Check R1 Response
     // 
 
-    printf("Sending CMD8.\n");
+    debug("Sending CMD8.\n");
     chipEnable(true);
     uint8_t rsp8 = sendCommand(CMD8, 0x000001aa, 0x87);
 
@@ -290,7 +302,7 @@ bool SDInitializeCard(void) {
 
         case 0x01:
             {
-                printf("CMD8: Attempting V2.00 Initialization.\n");
+                debug("CMD8: Attempting V2.00 Initialization.\n");
 
                 //
                 // Check R7 Response
@@ -300,7 +312,7 @@ bool SDInitializeCard(void) {
                 chipEnable(false);
                 transactData(0xff);
                 if ((R7Response & 0x0000ffff) != 0x000001aa) {
-                    printf("CMD8: R7 Response was 0x%08lx.\n", R7Response);
+                    debug("CMD8: R7 Response was 0x%08lx.\n", R7Response);
                     return false;
                 }
 
@@ -313,28 +325,28 @@ bool SDInitializeCard(void) {
 		uint8_t rsp41;
 		do {
 
-		    printf("Sending CMD55.\n");
+		    debug("Sending CMD55.\n");
                     chipEnable(true);
 		    uint8_t rsp55 = sendCommand(CMD55, 0x00000000, 0xff);
                     chipEnable(false);
                     transactData(0xff);
 		    if (rsp55 != 0x01) {
-                        printf("CMD55: R1 Response was 0x%02x.\n", rsp55);
+                        debug("CMD55: R1 Response was 0x%02x.\n", rsp55);
 			return false;
 		    }
-		    printf("CMD55: R1 Response was 0x%02x.\n", rsp55);
+		    debug("CMD55: R1 Response was 0x%02x.\n", rsp55);
 
 		    //
 		    // Send APP_SEND_OP_COND Command
 		    // Check R1 Response
 		    //
 
-		    printf("Sending ACMD41.\n");
+		    debug("Sending ACMD41.\n");
                     chipEnable(true);
 		    rsp41 = sendCommand(ACMD41, 0x40000000, 0xff);
                     chipEnable(false);
                     transactData(0xff);
-		    printf("ACMD41: R1 Response was 0x%02x.\n", rsp41);
+		    debug("ACMD41: R1 Response was 0x%02x.\n", rsp41);
 		    if (--loop == 0) {
                         chipEnable(false);
 		        return false;
@@ -346,11 +358,11 @@ bool SDInitializeCard(void) {
                 // Check R1 Response
                 //
                 
-                printf("Sending CMD58.\n");
+                debug("Sending CMD58.\n");
                 chipEnable(true);
                 uint8_t rsp58 = sendCommand(CMD58, 0x00000000, 0xff);
                 if (rsp58 != 0x00) {
-                    printf("CMD58: R1 Response was 0x%02x.\n", rsp58);
+                    debug("CMD58: R1 Response was 0x%02x.\n", rsp58);
                     chipEnable(false);
                     return false;
                 }
@@ -363,11 +375,11 @@ bool SDInitializeCard(void) {
                 chipEnable(false);
                 transactData(0xff);
                 if (R3Response != 0xc0ff8000) {
-                    printf("CMD58: R3 Response was 0x%08lx.\n", R3Response);
+                    debug("CMD58: R3 Response was 0x%08lx.\n", R3Response);
                     return false;
                 }
 
-                printf("CMD8: Successful V2.00 Initialization.\n");
+                debug("CMD8: Successful V2.00 Initialization.\n");
                 
             }
             
@@ -385,7 +397,7 @@ bool SDInitializeCard(void) {
 
         case 0x05:
             {
-                printf("CMD8: Attempting V1.00 Initialization.\n");
+                debug("CMD8: Attempting V1.00 Initialization.\n");
                 chipEnable(false);
             
                 //
@@ -393,12 +405,12 @@ bool SDInitializeCard(void) {
                 // Check R1 Response
                 //
 
-                printf("Sending CMD58.\n");
+                debug("Sending CMD58.\n");
                 chipEnable(true);
                 uint8_t rsp58 = sendCommand(CMD58, 0x00000000, 0xff);
                 if (rsp58 != 0x00) {
                     chipEnable(false);
-                    printf("CMD58: R1 Response was 0x%02x.\n", rsp58);
+                    debug("CMD58: R1 Response was 0x%02x.\n", rsp58);
                     return false;
                 }
 
@@ -410,7 +422,7 @@ bool SDInitializeCard(void) {
                 chipEnable(false);
                 transactData(0xff);
                 if (R3Response != 0xe0ff8000) {
-                    printf("CMD8: R3 Response was 0x%08lx.\n", R3Response);
+                    debug("CMD8: R3 Response was 0x%08lx.\n", R3Response);
                     return false;
                 }
 
@@ -421,20 +433,20 @@ bool SDInitializeCard(void) {
                 
                 for (int i = 0; i < 10; i++) {
                     
-                    printf("Sending ACMD41.\n");
+                    debug("Sending ACMD41.\n");
                     chipEnable(true);
                     uint8_t rsp41 = sendCommand(ACMD41, 0x40000000, 0xff);
                     chipEnable(false);
                     transactData(0xff);
                     if (rsp41 == 0x00) {
-                        printf("CMD8: Successful V1.00 Initialization.\n");
+                        debug("CMD8: Successful V1.00 Initialization.\n");
                         initialized = true;
                         return true;
                     }
                     
                 }
 
-                printf("CMD8: V1.00 Initialization Failure.\n");
+                debug("CMD8: V1.00 Initialization Failure.\n");
                 
             }
             
@@ -449,7 +461,7 @@ bool SDInitializeCard(void) {
         //
 
         default:
-            printf("CMD8: R1 Response was 0x%02x.\n", rsp8);
+            debug("CMD8: R1 Response was 0x%02x.\n", rsp8);
             return false;
 
     }
@@ -479,7 +491,7 @@ bool SDInitializeCard(void) {
 bool SDReadSector(uint8_t *buf, uint32_t sector) {
 
     if (!initialized) {
-        printf("CMD17: Card is not initialized.\n");
+        debug("CMD17: Card is not initialized.\n");
         return false;
     }
 
@@ -488,11 +500,11 @@ bool SDReadSector(uint8_t *buf, uint32_t sector) {
     // Check R1 Response
     //
 
-    printf("Sending CMD17.\n");
+    debug("Sending CMD17.\n");
     chipEnable(true);
     uint8_t rsp17 = sendCommand(CMD17, sector, 0xff);
     if (rsp17 != 0x00) {
-        printf("CMD17: R1 Response was 0x%02x.\n", rsp17);
+        debug("CMD17: R1 Response was 0x%02x.\n", rsp17);
 	chipEnable(false);
         return false;
     }
@@ -503,7 +515,7 @@ bool SDReadSector(uint8_t *buf, uint32_t sector) {
 
     uint8_t readToken = findReadStartToken();
     if (readToken != 0xfe) {
-        printf("CMD17: Read Token was 0x%02x.\n", readToken);
+        debug("CMD17: Read Token was 0x%02x.\n", readToken);
 	chipEnable(false);
         return false;
     }
@@ -572,11 +584,11 @@ bool SDWriteSector(const uint8_t *buf, uint32_t sector) {
     // Check R1 Response
     //
 
-    printf("Sending CMD24.\n");
+    debug("Sending CMD24.\n");
     chipEnable(true);
     R1Response = sendCommand(CMD24, sector, 0xff);
     if (R1Response != 0x00) {
-        printf("CMD24: R1 Response was 0x%02x.\n", R1Response);
+        debug("CMD24: R1 Response was 0x%02x.\n", R1Response);
         return false;
     }
 
@@ -607,7 +619,7 @@ bool SDWriteSector(const uint8_t *buf, uint32_t sector) {
 
     uint8_t dataResponse = transactData(0xff);
     if ((dataResponse & 0x1f) != 0x05) {
-        printf("CMD24: Data Response was 0x%02x.\n", dataResponse);
+        debug("CMD24: Data Response was 0x%02x.\n", dataResponse);
         return false;
     }
 
@@ -620,7 +632,7 @@ bool SDWriteSector(const uint8_t *buf, uint32_t sector) {
     do {
         token = transactData(0xff);
         if (i == 65536) {
-            printf("CMD24: No read token.\n");
+            debug("CMD24: No read token.\n");
             return false;
         }
         i = i + 1;
@@ -630,15 +642,15 @@ bool SDWriteSector(const uint8_t *buf, uint32_t sector) {
     // Send SEND_STATUS Command
     //
 
-    printf("Sending CMD13.\n");
+    debug("Sending CMD13.\n");
     R1Response = sendCommand(CMD13, 0x00000000, 0xff);
     if (R1Response != 0x00) {
-        printf("CMD13: R1 Response was 0x%02x.\n", R1Response);
+        debug("CMD13: R1 Response was 0x%02x.\n", R1Response);
         return false;
     }
     uint8_t R2Response = getR2Response();
     if (R2Response != 0x00) {
-        printf("CMD13: R2 Response was 0x%02x.\n", R2Response);
+        debug("CMD13: R2 Response was 0x%02x.\n", R2Response);
         return false;
     }
 
@@ -674,6 +686,47 @@ bool SDStatus(void) {
 }
 
 //
+//! Detect changes in SD Card state
+//! 
+//! Detect SD Card insertions and removals.  When an insertion is detected,
+//! initialize the SD Card and mount the FAT32 Filesystem.
+//!
+
+void SDCardDetect(bool init) {
+    static uint32_t lastCardDetect = 0;
+    static FATFS fatFS;
+    uint32_t cardDetect = !ROM_GPIOPinRead(GPIO_PORTCD_BASE, GPIO_PIN_CD);
+    if (cardDetect && !lastCardDetect) {
+        if (!init) {
+            putchar('\n');
+        }
+        printf("KS10> SD Card inserted.\n");
+        if (SDInitializeCard()) {
+	    printf("KS10> SD Card initialized successfully.\n");
+	    FRESULT status = f_mount(0, &fatFS);
+  	    if (status == FR_OK) {
+	        printf("KS10> FAT filesystem successfully mounted on SD media.\n");
+	    } else {
+	        printf("KS10> Failed to mount FAT filesystem on SD media."
+                       "  Status was %d.\n", status);
+	    }
+	} else {
+	    printf("KS10> Failed to initialize SD Card.\n");
+	}
+        if (!init) {
+            printf("KS10> ");
+        }
+    } else if (!cardDetect && lastCardDetect) {
+        printf("SD Card ejected.\n");
+        if (!init) {
+            printf("KS10> ");
+        }
+        initialized = false;
+    }
+    lastCardDetect = cardDetect;
+}
+
+//
 //! Timer Interrupt
 //!
 //! The Timer Interrupt periodically polls the SD Card Detect input to check
@@ -681,28 +734,7 @@ bool SDStatus(void) {
 //
 
 void vectTICK0(void) {
-    static uint32_t lastCardDetect = 0;
-    static FATFS fatFS;
-    uint32_t cardDetect = !ROM_GPIOPinRead(GPIO_PORTCD_BASE, GPIO_PIN_CD);
-    if (cardDetect && !lastCardDetect) {
-        printf("KS10> SD Card Inserted.\n");
-        if (SDInitializeCard()) {
-	    printf("KS10> SD Card initialized successfully.\n");
-	    FRESULT status = f_mount(0, &fatFS);
-  	    if (status == FR_OK) {
-	        printf("KS10> FAT filesystem mounted on SD Card.\n");
-	    } else {
-	        printf("KS10> Failed to mount FAT filesystem on SD Card."
-                       "  Status was %d.\n", status);
-	    }
-	} else {
-	    printf("KS10> Failed to initialize SD Card.\n");
-	}
-    } else if (!cardDetect && lastCardDetect) {
-        printf("KS10> SD Card Ejected.\n");
-        initialized = false;
-    }
-    lastCardDetect = cardDetect;
+    SDCardDetect(false);
 }
 
 //

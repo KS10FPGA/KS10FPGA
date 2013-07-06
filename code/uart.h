@@ -42,6 +42,7 @@ bool rxEmpty(void);
 bool txFull(void);
 void putUART(char ch);
 char getUART(void);
+bool getLine(char **buf);
 
 #ifdef __cplusplus
 }
