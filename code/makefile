@@ -51,9 +51,11 @@ HEADERS := \
 	commands.hpp \
 	fpga.h \
 	ks10.hpp\
+	sd.h \
 	stdio.h \
 	uart.h \
 	fatfs/dir.h \
+	fatfs/diskio.h \
 	fatfs/ff.h \
 	fatfs/ffconf.h \
 	fatfs/integer.h \

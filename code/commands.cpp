@@ -43,6 +43,8 @@
 #include "fatfs/ff.h"
 #include "driverlib/sysctl.h"
 
+//#define CONFIG_KS10
+
 static ks10_t::addr_t address;
 
 static enum access_t {
@@ -167,9 +169,6 @@ ks10_t::data_t getdata(FIL *fp) {
 //! \note
 //!     This function sets the starting address in the Console Instruction
 //!     Register with the starting address contained in the .SAV file.
-//!
-//! \returns
-//!     Nothing
 //
 
 static bool loadCode(const char * filename) {
@@ -177,7 +176,9 @@ static bool loadCode(const char * filename) {
     FIL fp;
     FRESULT status = f_open(&fp, filename, FA_READ);
     if (status != FR_OK) {
+#if 0
         printf("f_open() returned %d\n", status);
+#endif
         return false;
     }
  
@@ -237,23 +238,36 @@ static bool loadCode(const char * filename) {
 //
 //! Boot System
 //!
-//! The <b>BT</b> (Boot) command loads code into KS10 memory and starts execution.
+//! The <b>BT</b> (Boot) command loads code into KS10 memory and starts
+//! execution.
 //!
-//! If a filename is supplied as an argument, the <b>BT</b> command will attempt to load that filename
-//! from the root directory of the SD Card.
+//! If a filename is supplied as an argument, the <b>BT</b> command will
+//! attempt to load a file from the SD Card of that filename.
 //!
-//! \param [in] filename
-//!    Filename of the file to load.
+//! \param [in] argc
+//!    Number of arguments.
 //!
-//! \returns
-//!    Nothing
-//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//
 
-static void cmdBT(const char *filename) {
-    if (!loadCode(filename)) {
-        printf("Unable to open file \"%s\".\n", filename);
+static void cmdBT(int argc, char *argv[]) {
+    const char *usage = 
+        "Usage: BT [filename]\n"
+        "Load boot software into the KS10 processor.\n";
+
+    if (argc == 1) {
+        printf("Not implemented.\n");
+    } else if (argc == 2) {
+        if (!loadCode(argv[1])) {
+            printf("Unable to open file \"%s\".\n", argv[1]);
+        }
+#ifdef BOOT_RUN
+        ks10_t::run(true);
+#endif
+    } else {
+        printf(usage);
     }
-//  ks10_t::run(true);
 }
 
 //
@@ -265,19 +279,42 @@ static void cmdBT(const char *filename) {
 //! - The <b>CE 0</b> command will disable the KS10's cache.
 //! - The <b>CE 1</b> command will enable the KS10's cache.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
 //!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//
 
-static void cmdCE(const char * buf) {
-    char state = *buf++;
-    if (state == '0') {
-        ks10_t::cacheEnable(false);
-    } else if (state == '1') {
-        ks10_t::cacheEnable(true);
+static void cmdCE(int argc, char *argv[]) {
+    const char *usage = 
+        "Usage: CE {0 | 1}\n"
+        "Control the operation of the KS10 cache.\n"
+        "\n"
+        "CE 0 : disable cache\n"
+        "CE 1 : enable cache\n";
+    
+    if (argc == 1) {
+#ifdef CONFIG_KS10    
+        printf("The cache is currently %s.\n",
+               ks10_t::cacheEnable() ? "enabled", "disabled");
+#endif
+    } else if (argc == 2) {
+        if (*argv[1] == '0') {
+            printf("The cache is disabled.\n");
+#ifdef CONFIG_KS10    
+            ks10_t::cacheEnable(false);
+#endif
+        } else if (*argv[1] == '1') {
+            printf("The cache is enabled.\n");
+#ifdef CONFIG_KS10    
+            ks10_t::cacheEnable(true);
+#endif
+        } else {
+            printf(usage);
+        }
     } else {
-        printf("Command Error.\n"
-               "Usage: CE {0 | 1}\n");
+        printf(usage);
     }
 }
 
@@ -288,12 +325,22 @@ static void cmdCE(const char * buf) {
 //!
 //! \sa cmdHA, cmdSI
 //!
-//! \returns
-//!    Nothing
-//!
+//! \param [in] argc
+//!    Number of arguments.
+//
 
-static void cmdCO(const char *) {
-    ks10_t::cont();
+static void cmdCO(int argc, char *[]) {
+    const char *usage = 
+        "Usage: CO\n"
+        "Continue the KS10 from the HALT state.\n";
+
+    if (argc == 1) {
+#ifdef  CONFIG_KS10    
+        ks10_t::cont();
+#endif
+    } else {
+        printf(usage);
+    }
 }
 
 //
@@ -302,18 +349,30 @@ static void cmdCO(const char *) {
 //! The <b>DI</b> (Deposit IO) deposits data into the IO address previously
 //! loaded by the <b>LA</b> (Load Address) command.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
 //!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//
 
-static void cmdDI(const char *buf) {
+static void cmdDI(int argc, char *argv[]) {
     access = accessIO;
-    ks10_t::data_t data = parseOctal(buf);
-    if (address <= ks10_t::maxIOAddr) {
+    const char *usage = 
+        "Usage: DI data.\n"
+        "Deposit the data argument at the IO address previously supplied by\n"
+        "the Load IO Address (LI) command\n";
+    
+    if (argc == 2) {
+        ks10_t::data_t data = parseOctal(argv[1]);
+#ifdef CONFIG_KS10
         ks10_t::writeIO(address, data);
+        if (ks10_t::nxmnxd()) {
+            printf("Write failed. (NXD)\n");
+        }
+#endif
     } else {
-        printf("Invalid IO address.\n"
-               "Valid addresses are %08o-%08llo\n", 0, ks10_t::maxIOAddr);
+        printf(usage);
     }
 }
 
@@ -323,90 +382,144 @@ static void cmdDI(const char *buf) {
 //! The <b>DM</b> (Deposit Memory) deposits data into the memory address
 //! previously loaded by the <b>LA</b> (Load Address) command.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
 //!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//
 
-static void cmdDM(const char *buf) {
+static void cmdDM(int argc, char *argv[]) {
     access = accessMEM;
-    ks10_t::data_t data = parseOctal(buf);
-    if (address <= ks10_t::maxMemAddr) {
+    const char *usage = 
+        "Usage: DM data.\n"
+        "Deposit the data argument at the memory address previously supplied\n"
+        "by the Load Address (LA) command\n";
+
+    if (argc == 2) {
+        ks10_t::data_t data = parseOctal(argv[1]);
+#ifdef CONFIG_KS10
         ks10_t::writeMem(address, data);
+        if (ks10_t::nxmnxd()) {
+            printf("Write failed. (NXM)\n");
+        }
+#endif
     } else {
-        printf("Invalid memory address.\n"
-               "Valid addresses are %08o-%08llo\n",
-               0, ks10_t::maxMemAddr);
-        
+        printf(usage);
     }
 }
 
 //!
-//! \brief
-//!    Deposit Next
+//! Deposit Next
 //!
-//! \details
-//!    The <b>DN</b> (Deposit Next) command deposits data into the next memory or IO
-//!    address depending on the last <b>DM</b> or <b>DI</b> command.
+//! The <b>DN</b> (Deposit Next) command deposits data into the next memory
+//! or IO address depending on the last <b>DM</b> or <b>DI</b> command.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
 //!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//
 
-static void cmdDN(const char *buf) {
+static void cmdDN(int argc, char *argv[]) {
     address += 1;
-    ks10_t::data_t data = parseOctal(buf);
-    if (access == accessMEM) {
-        ks10_t::writeMem(address, data);
+    const char *usage = 
+        "Usage: DN data.\n"
+        "Deposit the data argument at the next memory address or IO address.\n";
+
+    if (argc == 2) {
+        ks10_t::data_t data = parseOctal(argv[1]);
+#ifdef CONFIG_KS10
+        if (access == accessMEM) {
+            ks10_t::writeMem(address, data);
+            if (ks10_t::nxmnxd()) {
+                printf("Write failed. (NXM)\n");
+            }
+        } else {
+            ks10_t::writeIO(address, data);
+            if (ks10_t::nxmnxd()) {
+                printf("Write failed. (NXD)\n");
+            }
+        }
+#endif
     } else {
-        ks10_t::writeIO(address, data);
+        printf(usage);
     }
 }
 
 //!
-//! \brief
-//!    Disk Select
+//! Disk Select
 //!
-//! \details
-//!    The <b>DS</b> (Disk Select) select the Unit, Unibus Adapter to load when
-//!    booting.
-//!
-//! \returns
-//!    Nothing
-//!
+//! The <b>DS</b> (Disk Select) select the Unit, Unibus Adapter to load when
+//!  booting.
+//
 
-static void cmdDS(const char *) {
+static void cmdDS(int, char *[]) {
     printf("DS Command is not implemented, yet.\n");
 }
 
 //
 //! Examine IO
 //!
-//! \details
-//!    The <b>EI</b> (Examine IO) command reads from the last IO address specified.
+//! The <b>EI</b> (Examine IO) command reads from the last IO address
+//! specified.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
 //
 
-static void cmdEI(const char *) {
-    access = accessIO; 
-    printf("%012llo\n", ks10_t::readIO(address));
+static void cmdEI(int argc, char *[]) {
+    access = accessIO;
+    const char *usage = 
+        "Usage: EI\n"
+        "Examine data from the last IO address.";
+
+    if (argc == 1) {
+#ifdef CONFIG_KS10
+        if (ks10_t::nxmnxd()) {
+            printf("IO read failed. (NXD)\n");
+        } else {
+            printf("%012llo\n", ks10_t::readIO(address));
+        }
+#endif
+    } else {
+        printf(usage);
+    }
 }
 
 //
-//  Examine Memory
+//! Examine Memory
 //!
-//! The <b>EM</b> (Examine Memory) command reads from the last memory address specified.
+//! The <b>EM</b> (Examine Memory) command reads from the last memory address
+//! specified.
 //!
 //! \sa cmdLA, cmdEI, cmdEN
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
 
-static void cmdEM(const char *) {
+static void cmdEM(int argc, char *[]) {
     access = accessMEM;
-    printf("%012llo\n", ks10_t::readMem(address));
+    const char *usage = 
+        "Usage: EM\n"
+        "Examine data from the last memory address.";
+
+    if (argc == 1) {
+#ifdef CONFIG_KS10
+        if (ks10_t::nxmnxd()) {
+            printf("Memory read failed. (NXM)\n");
+        } else {
+            printf("%012llo\n", ks10_t::readMem(address));
+        }
+#endif
+    } else {
+        printf(usage);
+    }
 }
 
 //
@@ -416,15 +529,62 @@ static void cmdEM(const char *) {
 //!
 //! \sa cmdLA, cmdEI, cmdEM, cmdEN
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
 
-static void cmdEN(const char *) {
-    if (access == accessMEM) {
-        printf("%012llo\n", ks10_t::readMem(address));
+static void cmdEN(int argc, char *[]) {
+    const char *usage = 
+        "Usage: EN\n"
+        "Examine data from the next memory or IO address.";
+
+    if (argc == 1) {
+#ifdef CONFIG_KS10
+        if (access == accessMEM) {
+            if (ks10_t::nxmnxd()) {
+                printf("Memory read failed. (NXM)\n");
+            } else {
+                printf("%012llo\n", ks10_t::readMem(address));
+            }
+        } else {
+            if (ks10_t::nxmnxd()) {
+                printf("IO read failed. (NXD)\n");
+            } else {
+                printf("%012llo\n", ks10_t::readIO(address));
+            }
+        }
+#endif
     } else {
-        printf("%012llo\n", ks10_t::readIO(address));
+        printf(usage);
+    }
+}
+
+//
+//! Execute the next instruction
+//!
+//! The <b>EX/b> (Execute) command causes the KS10 to execute the next
+//! instruction, then return to the halt state.
+//!
+//! \sa cmdCO, cmdSI, cmdHA
+//!
+//! \param [in] argc
+//!    Number of arguments.
+///
+
+static void cmdEX(int argc, char *[]) {
+    const char *usage = 
+        "Usage: EX\n"
+        "Execute the next instruction and then halt.\n";
+
+    if (argc == 1) {
+#ifdef CONFIG_KS10        
+        ks10_t::exec();
+#endif
+    } else {
+        printf(usage);
     }
 }
 
@@ -435,22 +595,30 @@ static void cmdEN(const char *) {
 //!
 //! \sa cmdCO, cmdSI
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
 
-static void cmdHA(const char *) {
-    ks10_t::halt(true);
 
-    //
-    // Wait for the KS10 to halt
-    //
+static void cmdHA(int argc, char *[]) {
+    const char *usage = 
+        "Usage: HA\n"
+        "HALT the KS10\n";
     
-    while (!ks10_t::halt()) {
-        ;
+    if (argc == 1) {
+#ifdef CONFIG_KS10        
+        ks10_t::halt(true);
+        while (!ks10_t::halt()) {
+            ;
+        }
+#endif
+        printf("KS10> Halted\n");
+    } else {
+        printf(usage);
     }
-
-    printf("KS10> Halted\n");
 }
 
 //
@@ -461,20 +629,31 @@ static void cmdHA(const char *) {
 //!
 //! \sa cmdLI
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
 
-static void cmdLA(const char *buf) {
+static void cmdLA(int argc, char *argv[]) {
     access = accessMEM;
-    ks10_t::addr_t addr = parseOctal(buf);
-    if (addr <= ks10_t::maxMemAddr) {
-        address = addr;
-        printf("Memory address set to %06llo\n", address);
+    const char *usage = 
+        "Usage: LA address\n"
+        "Set the memory address for the next commands.\n"
+        "Valid addresses are %08llo-%08llo\n";
+    
+    if (argc == 2) {
+        ks10_t::addr_t addr = parseOctal(argv[1]);
+        if (addr <= ks10_t::maxMemAddr) {
+            address = addr;
+            printf("Memory address set to %08llo\n", address);
+        } else {
+            printf("Invalid memory address.\n");
+            printf(usage, 0, ks10_t::maxMemAddr);
+        }
     } else {
-        printf("Invalid address.\n"
-               "Valid addresses are %08o-%08llo\n",
-               0, ks10_t::maxMemAddr);
+        printf(usage, 0, ks10_t::maxMemAddr);
     }
 }
 
@@ -483,11 +662,14 @@ static void cmdLA(const char *buf) {
 //!
 //! The <b>LB</b> (Load Diagnostic_) command loads the diagnostic Monitor.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
 //!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//
 
-static void cmdLB(const char *) {
+static void cmdLB(int, char *[]) {
     printf("LB Command is not implemented, yet.\n");
 }
 
@@ -499,20 +681,31 @@ static void cmdLB(const char *) {
 //!
 //! \sa cmdLI
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
 
-static void cmdLI(const char *buf) {
+static void cmdLI(int argc, char *argv[]) {
     access = accessIO;
-    ks10_t::addr_t addr = parseOctal(buf);
-    if (addr <= ks10_t::maxIOAddr) {
-        address = addr;
-        printf("IO address set to %06llo\n", address);
+    const char *usage = 
+        "Usage: LI address\n"
+        "Set the IO address for the next commands.\n"
+        "Valid addresses are %08llo-%08llo\n";
+
+    if (argc == 2) {
+        ks10_t::addr_t addr = parseOctal(argv[1]);
+        if (addr <= ks10_t::maxIOAddr) {
+            address = addr;
+            printf("IO address set to %08llo\n", address);
+        } else {
+            printf("Invalid IO address.\n");
+            printf(usage, 0, ks10_t::maxIOAddr);
+        }
     } else {
-        printf("Invalid address.\n"
-               "Valid addresses are %08o-%08llo\n",
-               0, ks10_t::maxIOAddr);
+        printf(usage, 0, ks10_t::maxIOAddr);
     }
 }
 
@@ -520,52 +713,57 @@ static void cmdLI(const char *buf) {
 //! Master Reset
 //!
 //! The <b>MR</b> (Master Reset) command hard resets the KS10 CPU.
+//! 
+//! When the KS10 is started from <b>RESET</b>, the KS10 will peform a
+//! selftest and initialize the ALU.  When the microcode initialization is
+//! completed, the KS10 will enter the <b>HALT</b> state.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
  
-static void cmdMR(const char *) {
-
-    //
-    // Reset the CPU
-    //
-
-    ks10_t::cpuReset(true);
-
-    //
-    // Initialize traps, timer, and cache.
-    //
+static void cmdMR(int argc, char *[]) {
+    const char *usage = 
+        "Usage: MR\n"
+        "RESET the KS10.\n";
     
-    ks10_t::trapEnable(true);
-    ks10_t::timerEnable(true);
-    ks10_t::cacheEnable(true);
-    
-    //
-    // Delay a little
-    //
-
-    SysCtlDelay(10);
-
-    //
-    // Unreset the CPU
-    //
-
-    ks10_t::cpuReset(false);
-
-    //
-    // Wait for the KS10 to peform a selftest and initialize the ALU.  When the
-    // microcode initialization is completed, the KS10 will enter a HALT state.
-    // Wait for that to occur.
-    //
-
-    while (!ks10_t::halt()) {
-        ;
+    if (argc == 1) {
+#ifdef CONFIG_KS10
+        ks10_t::cpuReset(true);
+        ks10_t::trapEnable(true);
+        ks10_t::timerEnable(true);
+        ks10_t::cacheEnable(true);
+        SysCtlDelay(10);
+        ks10_t::cpuReset(false);
+        while (!ks10_t::halt()) {
+            ;
+        }
+#endif
+    } else {
+        printf(usage);
     }
 }
 
-static void cmdSD(const char *buf) {
+//
+//! SD Card
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//
+
+static void cmdSD(int argc, char *argv[]) {
     static FATFS fatFS;
+
+    if (argc != 2) {
+        return;
+    }
+    char *buf = argv[1];
 
     if (buf[0] == 'D' && buf[1] == 'I' && buf[2] == 'R') {
         FRESULT status = directory("");
@@ -617,50 +815,89 @@ static void cmdSD(const char *buf) {
 //! \sa cmdHA, cmdCO
 //!
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
 
-static void cmdSI(const char *) {
-    ks10_t::step();
+static void cmdSI(int argc, char *[]) {
+    const char *usage = 
+        "Usage: SI\n"
+        "Step Instruction: Single step the KS10.\n";
+
+    if (argc == 1) {
+#ifdef CONFIG_KS10
+        ks10_t::step();
+#endif
+    } else {
+        printf(usage);
+    }
 }
 
 //
 //! Shutdown Command
 //!
-//! The <b>SH</b> (Shutdown) command deposits non-zero data in KS10 memory location 30.
-//! This causes TOPS20 to shut down without issuing a warning.
+//! The <b>SH</b> (Shutdown) command deposits non-zero data in KS10 memory
+//! location 30.  This causes TOPS20 to shut down without issuing a warning.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
 
-static void cmdSH(const char *) {
-    ks10_t::writeMem(030, 1);
+static void cmdSH(int argc, char *[]) {
+    const char *usage = 
+        "Usage: SH\n"
+        "Shutdown.  Shutdown TOPS20.\n";
+    
+    if (argc == 1) {
+#ifdef CONFIG_KS10
+        ks10_t::writeMem(030, 1);
+#endif
+    } else {
+        printf(usage);
+    }
 }
 
 //
 //! Start Command
 //!
-//! The <b>ST</b> (Start) command stuffs a JRST instruction into the Console
-//!    Instruction Register and TBD.
+//! The <b>ST</b> (Start) command stuffs a JRST instruction into the
+//! <b>Console Instruction Register</b>.
 //!
 //! The address must be a virtual address and is therefore limited to
 //! 0777777.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
 
-static void cmdST(const char *buf) {
-    ks10_t::addr_t addr = parseOctal(buf);
-    if (addr <= ks10_t::maxVirtAddr) {
-        ks10_t::writeCIR((ks10_t::opJRST << 18) | (addr & 0777777));
-        ks10_t::run(true);
+static void cmdST(int argc, char *argv[]) {
+    const char *usage = 
+        "Usage: ST address\n"
+        "Start the KS10 at supplied address.\n";
+
+    if (argc == 1) {
+        ks10_t::addr_t addr = parseOctal(argv[1]);
+        if (addr <= ks10_t::maxVirtAddr) {
+#ifdef CONFIG_KS10
+            ks10_t::writeCIR((ks10_t::opJRST << 18) | (addr & 0777777));
+            ks10_t::run(true);
+#endif
+        } else {
+            printf("Invalid Address\n"
+                   "Valid addresses are %08o-%08llo\n",
+                   0, ks10_t::maxVirtAddr);
+        }
     } else {
-        printf("Invalid Address\n"
-               "Valid addresses are %08o-%08llo\n",
-               0, ks10_t::maxVirtAddr);
+        printf(usage);
     }
 }
 
@@ -673,19 +910,42 @@ static void cmdST(const char *buf) {
 //! - The <b>TE 0</b> command will disable the KS10's system timer.
 //! - The <b>TE 1</b> command will enable the KS10's system timer
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
 
-void cmdTE(const char *buf) {
-    char state = *buf++;
-    if (state == '0') {
-        ks10_t::timerEnable(false);
-    } else if (state == '1') {
-        ks10_t::timerEnable(true);
+void cmdTE(int argc, char *argv[]) {
+    const char *usage = 
+        "Usage: TE {0 | 1}\n"
+        "Control the operation of the KS10 system timer.\n"
+        "\n"
+        "TE 0 : disable timer\n"
+        "TE 1 : enable timer\n";
+     
+    if (argc == 1) {
+#ifdef CONFIG_KS10    
+        printf("The timer is currently %s.\n",
+               ks10_t::timerEnable() ? "enabled", "disabled");
+#endif
+    } else if (argc == 2) {
+        if (*argv[1] == '0') {
+            printf("The timer is disabled.\n");
+#ifdef CONFIG_KS10    
+            ks10_t::timerEnable(false);
+#endif
+        } else if (*argv[1] == '1') {
+            printf("The timer is enabled.\n");
+#ifdef CONFIG_KS10    
+            ks10_t::timerEnable(true);
+#endif
+        } else {
+            printf(usage);
+        }
     } else {
-        printf("Command Error.\n"
-               "Usage: TE {0 | 1}\n");
+        printf(usage);
     }
 }
 
@@ -698,19 +958,43 @@ void cmdTE(const char *buf) {
 //! - The <b>TP 0</b> command will disable the KS10's traps.
 //! - The <b>TP 1</b> command will enable the KS10's traps.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
 
-static void cmdTP(const char * buf) {
-    char state = *buf++;
-    if (state == '0') {
-        ks10_t::trapEnable(false);
-    } else if (state == '1') {
-        ks10_t::trapEnable(true);
+static void cmdTP(int argc, char *argv[]) {
+    const char *usage = 
+        "Usage: TP {0 | 1}\n"
+        "Control the operation of the KS10 trap system.\n"
+        "\n"
+        "TP 0 : disable traps\n"
+        "TP 1 : enable traps\n";
+    
+
+    if (argc == 1) {
+#ifdef CONFIG_KS10    
+        printf("The traps are currently %s.\n",
+               ks10_t::trapEnable() ? "enabled", "disabled");
+#endif
+    } else if (argc == 2) {
+        if (*argv[1] == '0') {
+            printf("The traps are disabled.\n");
+#ifdef CONFIG_KS10    
+            ks10_t::trapEnable(false);
+#endif
+        } else if (*argv[1] == '1') {
+            printf("The traps are enabled.\n");
+#ifdef CONFIG_KS10    
+            ks10_t::trapEnable(true);
+#endif
+        } else {
+            printf(usage);
+        }
     } else {
-        printf("Command Error.\n"
-               "Usage: TP {0 | 1}\n");
+        printf(usage);
     }
 }
 
@@ -719,23 +1003,38 @@ static void cmdTP(const char * buf) {
 //!
 //! This function handles commands that are not implemented.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //
 
-static void cmdXX(const char *) {
-    printf("Command is not implemented.\n");
+static void cmdXX(int, char *argv[]) {
+    printf("Command \"%s\" is not implemented.\n", argv[0]);
 }
 
-static void cmdZZ(const char *) {
+//
+//! Test function
+//!
+//! This function tests the printf() function.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//
+
+static void cmdZZ(int, char *[]) {
 
     printf("This is a test (int decimal) %d\n", 23456);
     printf("This is a test (int hex    ) %x\n", 0x123456);
     printf("This is a test (int octal  ) %o\n", 01234567);
 
-    printf("This is a test (long decimal) %ld\n", 345699234);
-    printf("This is a test (long hex    ) %lx\n", 0x1234567a);
-    printf("This is a test (long octal  ) %lo\n", 012345676543);
+    printf("This is a test (long decimal) %ld\n", 345699234ul);
+    printf("This is a test (long hex    ) %lx\n", 0x1234567aul);
+    printf("This is a test (long octal  ) %lo\n", 012345676543ul);
 
     printf("This is a test (long long decimal) %lld\n", 345699234ull);
     printf("This is a test (long long hex    ) %llx \n", 0x95232633ull);
@@ -751,10 +1050,9 @@ static void cmdZZ(const char *) {
 //! This function parses the commands and dispatches to the various handler
 //! functions.
 //!
-//! \returns
-//!    Nothing
+//! \param [in] buf
+//!    command line
 //
-
 
 void parseCMD(char * buf) {
 
@@ -763,13 +1061,12 @@ void parseCMD(char * buf) {
     //
 
     struct cmdList_t {
-        const char * name;
-        void (*function)(const char *);
+            const char * name;
+            void (*function)(int argc, char *argv[]);
     };
 
     static const cmdList_t cmdList[] = {
         {"BT", cmdBT},
-        {"B2", cmdXX},		// Not implemented.
         {"CE", cmdCE},
         {"CH", cmdXX},		// Not implemented.
         {"CO", cmdCO},
@@ -793,7 +1090,7 @@ void parseCMD(char * buf) {
         {"EM", cmdEM},
         {"EN", cmdEN},
         {"ER", cmdXX},		// Not implemented.
-        {"EX", cmdXX},		// Not implemented.
+        {"EX", cmdEX},
         {"FI", cmdXX},		// Not implemented.
         {"HA", cmdHA},
         {"KL", cmdXX},		// Not implemented.
@@ -835,21 +1132,49 @@ void parseCMD(char * buf) {
 
     strupper(buf);
 
-    for (int i = 0; i < numCMD; i++) {
-        if ((cmdList[i].name[0] == buf[0]) &&
-            (cmdList[i].name[1] == buf[1])) {
+    int argc = 0;
+    char *p = buf;
+    static const int maxarg = 5;
+    static char *argv[maxarg];
 
-            for (int j = 2; buf[j] != 0; j++) {
-                if (buf[j] != ' ') {
-                    (*cmdList[i].function)(&buf[j]);
-                    return;
-                }
-            }
-            (*cmdList[i].function)(&buf[2]);
-            return;
+    //
+    // Form argc and argv
+    //
+
+    bool process = true;
+    while (*p) {
+        if (*p == ' ') {
+            *p = 0;
+            process = true;
+        } else if (process && (argc < maxarg)) {
+            argv[argc++] = p;
+            process = false;
         }
+        p++;
     }
-    if (buf[0] != 0) {
-        printf("Command not found\n");
+
+#if 0
+    printf(":: argc = %d\n", argc);
+    for (int i = 0; i < argc; i++) {
+        printf("::   argv[%d] = #%s#\n", i, argv[i]);
+    }
+#endif
+
+    //
+    // Execute commands
+    //   argc = 0 when no command <cr> is entered
+    //   argv[0] is the command
+    //   argv[1] is the first argument
+    //
+
+    if (argc != 0) {
+        for (int i = 0; i < numCMD; i++) {
+            if ((cmdList[i].name[0] == argv[0][0]) &&
+                (cmdList[i].name[1] == argv[0][1])) {
+                (*cmdList[i].function)(argc, argv);
+                return;
+            }
+        }
+        printf("Command not found.\n");
     }
 }
