@@ -76,7 +76,7 @@ FRESULT directory(const char* arg) {
             if (res != FR_OK || filinfo.fname[0] == 0) {
                 break;
             }
-            printf("%02d/%02d/%4d  %02d:%02d %cM   %s %8d %s%s%s\n",
+            printf("%02d/%02d/%4d  %02d:%02d %cM   %s %8ld %s%s%s\n",
                    ((filinfo.fdate >>  5) & 0x0f),                      // Month
                    ((filinfo.fdate >>  0) & 0x1f),                      // Day
                    ((filinfo.fdate >>  9) & 0x7f) + 1980,               // Year

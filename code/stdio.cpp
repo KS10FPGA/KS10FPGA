@@ -77,8 +77,9 @@ int putchar(int ch) {
 //
 //! Outputs a string to the UART transmitter.
 //!
-//! This function outputs a string to the UART transmitter and expands newlines
-//! to CR, LF sequences.
+//! This function outputs a string to the UART transmitter.
+//!
+//! A newline is added which expands newlines to CR, LF sequences.
 //!
 //! \param s
 //!     null terminated string to print.
@@ -91,6 +92,7 @@ int puts(const char *s) {
     while (*s) {
         putchar(*s++);
     }
+    putchar('\n');
     return 1;
 }
 

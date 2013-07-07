@@ -1,37 +1,8 @@
-G++     := arm-none-eabi-g++.exe
-GCC     := arm-none-eabi-g++.exe
 LD      := arm-none-eabi-ld.exe
-XXD     := xxd
 OBJCOPY := arm-none-eabi-objcopy
-PART    := LM3S9B92
-
 TARGET  := console
 
-BOOTFILE := diagnostics..dskda.sav
 OPENOCD_CFG := ek-lm3s9b9x.cfg
-
-
-CFLAGS := \
-	-DPART_${PART} \
-	-W -Wall \
-	-mcpu=cortex-m3 \
-	-mthumb \
-	-Os \
-	-g \
-	-MD \
-	-std=gnu++11 \
-	-fno-rtti \
-	-fcheck-new \
-	-ffunction-sections \
-	-fdata-sections \
-	-fno-exceptions \
-        -Wno-ctor-dtor-privacy \
-	-Wno-non-virtual-dtor \
-	-DTARGET_IS_TEMPEST_RB1 \
-	-I..
-
-#        -pedantic \
-
 
 LDFLAGS := \
 	--script=$(TARGET).ld \
@@ -72,6 +43,10 @@ LIBS := \
 	/usr/local/lib/gcc/arm-none-eabi/4.6.2/thumb/libgcc.a \
 	/usr/local/arm-none-eabi/lib/thumb/libc.a \
 
+
+include makedefs
+
+
 $(TARGET).bin : $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
 
@@ -81,16 +56,6 @@ $(TARGET).elf :$(TARGET).ld $(FILES) $(DRIVERLIB) $(LIBFATFS)
 	$(LD) $(LDFLAGS) $(FILES) $(DRIVERLIB) $(LIBFATFS) $(LIBS) -o $(TARGET).elf
 
 $(TARGET).o : $(TARGET).cpp $(HEADERS)
-	$(G++) $(CFLAGS) -c $< -o $@
-
-.cpp.o : 
-	$(G++) $(CFLAGS) -c $< -o $@
-
-.c.o : 
-	$(GCC) $(CFLAGS) -std=c99 -c $< -o $@
-
-
-
 
 $(DRIVERLIB) : 
 	make -C driverlib
