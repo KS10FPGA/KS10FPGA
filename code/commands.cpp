@@ -473,7 +473,7 @@ static void cmdEI(int argc, char *[]) {
     access = accessIO;
     const char *usage = 
         "Usage: EI\n"
-        "Examine data from the last IO address.";
+        "Examine data from the last IO address.\n";
 
     if (argc == 1) {
 #ifdef CONFIG_KS10
@@ -507,7 +507,7 @@ static void cmdEM(int argc, char *[]) {
     access = accessMEM;
     const char *usage = 
         "Usage: EM\n"
-        "Examine data from the last memory address.";
+        "Examine data from the last memory address.\n";
 
     if (argc == 1) {
 #ifdef CONFIG_KS10
@@ -539,7 +539,7 @@ static void cmdEM(int argc, char *[]) {
 static void cmdEN(int argc, char *[]) {
     const char *usage = 
         "Usage: EN\n"
-        "Examine data from the next memory or IO address.";
+        "Examine data from the next memory or IO address.\n";
 
     if (argc == 1) {
 #ifdef CONFIG_KS10
