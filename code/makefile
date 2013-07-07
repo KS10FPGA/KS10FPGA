@@ -22,7 +22,6 @@ CFLAGS := \
 	-std=gnu++11 \
 	-fno-rtti \
 	-fcheck-new \
-        -pedantic \
 	-ffunction-sections \
 	-fdata-sections \
 	-fno-exceptions \
@@ -30,6 +29,9 @@ CFLAGS := \
 	-Wno-non-virtual-dtor \
 	-DTARGET_IS_TEMPEST_RB1 \
 	-I..
+
+#        -pedantic \
+
 
 LDFLAGS := \
 	--script=$(TARGET).ld \
@@ -79,10 +81,10 @@ $(TARGET).elf :$(TARGET).ld $(FILES) $(DRIVERLIB) $(LIBFATFS)
 	$(LD) $(LDFLAGS) $(FILES) $(DRIVERLIB) $(LIBFATFS) $(LIBS) -o $(TARGET).elf
 
 $(TARGET).o : $(TARGET).cpp $(HEADERS)
-	$(GCC) $(CFLAGS) -c $< -o $@
+	$(G++) $(CFLAGS) -c $< -o $@
 
 .cpp.o : 
-	$(GCC) $(CFLAGS) -c $< -o $@
+	$(G++) $(CFLAGS) -c $< -o $@
 
 .c.o : 
 	$(GCC) $(CFLAGS) -std=c99 -c $< -o $@
