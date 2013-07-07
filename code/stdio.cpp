@@ -66,11 +66,12 @@ char getchar(void) {
 //!
 //
 
-void putchar(char ch) {
+int putchar(int ch) {
     if (ch == '\n') {
         putUART('\r');
     }
-    putUART(ch);
+    putUART(ch & 0xff);
+    return ch;
 }
 
 //
@@ -81,12 +82,16 @@ void putchar(char ch) {
 //!
 //! \param s
 //!     null terminated string to print.
+//!
+//! \returns
+//!     1 always indicating success
 //
 
-void puts(const char *s) {
+int puts(const char *s) {
     while (*s) {
         putchar(*s++);
     }
+    return 1;
 }
 
 //
@@ -485,7 +490,7 @@ static void padout(int width, int prec, char padchar, bool leftFlag, char* buffe
 //!
 //
 
-void printf(const char *fmt, ...)  {
+int printf(const char *fmt, ...)  {
     char buffer[128];
     char *buf = buffer;
 
@@ -559,7 +564,7 @@ void printf(const char *fmt, ...)  {
             switch (ch) {
                 case 0: 
                     va_end(va);
-                    return;
+                    return 0;
                 case 'u' :
                     switch(size) {
                         case 0:
@@ -644,4 +649,5 @@ void printf(const char *fmt, ...)  {
         }
     }
     va_end(va);
+    return 0;
 }

@@ -1,5 +1,5 @@
 G++     := arm-none-eabi-g++.exe
-GCC     := arm-none-eabi-gcc.exe
+GCC     := arm-none-eabi-g++.exe
 LD      := arm-none-eabi-ld.exe
 XXD     := xxd
 OBJCOPY := arm-none-eabi-objcopy
@@ -10,6 +10,7 @@ TARGET  := console
 BOOTFILE := diagnostics..dskda.sav
 OPENOCD_CFG := ek-lm3s9b9x.cfg
 
+
 CFLAGS := \
 	-DPART_${PART} \
 	-W -Wall \
@@ -17,6 +18,7 @@ CFLAGS := \
 	-mthumb \
 	-Os \
 	-g \
+	-MD \
 	-std=gnu++11 \
 	-fno-rtti \
 	-fcheck-new \
@@ -45,6 +47,17 @@ FILES := \
 	stdio.o \
 	uart.o \
 
+HEADERS := \
+	commands.hpp \
+	fpga.h \
+	ks10.hpp\
+	stdio.h \
+	uart.h \
+	fatfs/dir.h \
+	fatfs/ff.h \
+	fatfs/ffconf.h \
+	fatfs/integer.h \
+
 DRIVERLIB := \
 	driverlib/driverlib.a
 
@@ -72,6 +85,9 @@ $(TARGET).o : $(TARGET).cpp $(HEADERS)
 .c.o : 
 	$(GCC) $(CFLAGS) -std=c99 -c $< -o $@
 
+
+
+
 $(DRIVERLIB) : 
 	make -C driverlib
 
@@ -90,9 +106,14 @@ clean:
 	rm -f *.map
 	rm -f *.bin
 	rm -f *.o
+	rm -f *.d
 	rm -rf ../doc/Doxygen/*
 	make -C driverlib clean
 	make -C fatfs clean
 
 archive_all:
 	tar -czvf ks10_code_all_`date '+%y%m%d'`.tgz *
+
+ifneq (${MAKECMDGOALS}, clean)
+-include ${wildcard *.d} __dummy__
+endif

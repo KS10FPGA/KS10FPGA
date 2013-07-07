@@ -71,7 +71,7 @@
 
 bool programFPGA(void) {
 
-    printf("KS10> Programming FPGA with firmware.\n");
+    puts("KS10> Programming FPGA with firmware.\n");
 
 #ifdef CONFIG_KS10    
    
@@ -94,7 +94,7 @@ bool programFPGA(void) {
     //
     
     if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_DONE) != 0) {
-        printf("KS10> FPGA Programming Error.  FPGA Done should be negated.\n");
+        puts("KS10> FPGA Programming Error.  FPGA Done should be negated.\n");
         return false;
     }
         
@@ -105,11 +105,12 @@ bool programFPGA(void) {
     unsigned int delay = 0;
     do {
         if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_INIT) == 0) {
-            printf("KS10> FPGA Programming Error.  CRC Failure.\n");
+            puts("KS10> FPGA Programming Error.  CRC Failure.\n");
             return false;
         }
         if (++delay == 1000000) {
-            printf("KS10> FPGA Programming Error.  Timed Out waiting for DONE.\n");
+            puts("KS10> FPGA Programming Error.  "
+                 "Timed Out waiting for DONE.\n");
             return false;
         }
         SysCtlDelay(10);
@@ -121,6 +122,6 @@ bool programFPGA(void) {
 
 #endif
     
-    printf("KS10> FPGA programmed successfully.\n");
+    puts("KS10> FPGA programmed successfully.\n");
     return true;
 }

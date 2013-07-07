@@ -1,50 +1,75 @@
-/*!
-********************************************************************************
-**
-** KS10 Console Microcontroller
-**
-** \brief
-**     KS10 Interface Object
-**
-** \details
-**     This object provides the interfaces that are required to interact with
-**     the KS10 FPGA.
-**
-** \file
-**     ks10.cpp
-**
-** \author
-**     Rob Doyle - doyle (at) cox (dot) net
-**
-********************************************************************************
-*/
-/* Copyright (C) 2013 Rob Doyle
-**
-** This program is free software; you can redistribute it and/or modify
-** it under the terms of the GNU General Public License as published by
-** the Free Software Foundation; either version 2 of the License, or
-** (at your option) any later version.
-**
-** This program is distributed in the hope that it will be useful,
-** but WITHOUT ANY WARRANTY; without even the implied warranty of
-** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-** GNU General Public License for more details.
-**
-** You should have received a copy of the GNU General Public License
-** along with this program; if not, write to the Free Software
-** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-**
-********************************************************************************
-*/
+//******************************************************************************
+//
+//  KS10 Console Microcontroller
+//
+//! KS10 Interface Object
+//!
+//! This object provides the interfaces that are required to interact with the
+//! KS10 FPGA.
+//!
+//! \file
+//!    ks10.cpp
+//!
+//! \author
+//!    Rob Doyle - doyle (at) cox (dot) net
+//
+//******************************************************************************
+//
+// Copyright (C) 2013 Rob Doyle
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+//
+//******************************************************************************
 
 #include "ks10.hpp"
+#include "driverlib/sysctl.h"
 
+//
+//! Constructor
 //!
-//! \brief
+//! The constructor initializes this object.
+//
 
-//!
-//! \brief
-//!     This function to reads a 36-bit word from KS10 memory.
+ks10_t::ks10_t(void) {
+    ;
+}
+
+//
+//! This function reads from <b>Console Status Register</b>
+//! 
+//! \returns
+//!     Contents of the <b>Console Status Register</b>.
+//
+
+ks10_t::data_t ks10_t::readStatus(void) {
+    return readReg(regStat);
+}
+
+//
+//! This function reads the <b>Console Instruction Register</b>
+//! 
+//! \returns
+//!     Contents of the <b>Console Instruction Register</b>
+//
+
+ks10_t::data_t ks10_t::readCIR(void) {
+    return readReg(regCIR);
+}
+
+//
+//! This function to reads a 36-bit word from KS10 memory.
 //!
 //! \param
 //!     addr is the address in the KS10 memory space which is to be read.
@@ -54,7 +79,7 @@
 //!
 //! \returns
 //!     Contents of the KS10 memory that was read.
-//!
+//
 
 ks10_t::data_t ks10_t::readMem(addr_t addr) {
     writeReg(regAddr, (addr & addrMask) | read);
@@ -62,9 +87,8 @@ ks10_t::data_t ks10_t::readMem(addr_t addr) {
     return readReg(regData);
 }
 
-//!
-//! \brief
-//!     This function reads a 36-bit word from KS10 IO.
+//
+//! This function reads a 36-bit word from KS10 IO.
 //!
 //! \param
 //!     addr is the address in the KS10 IO space which is to be read.
@@ -74,7 +98,7 @@ ks10_t::data_t ks10_t::readMem(addr_t addr) {
 //!
 //! \returns
 //!     Contents of the KS10 IO that was read.
-//!
+//
 
 ks10_t::data_t ks10_t::readIO(addr_t addr) {
     writeReg(regAddr, (addr & addrMask) | read | io);
@@ -82,9 +106,8 @@ ks10_t::data_t ks10_t::readIO(addr_t addr) {
     return readByte(regData);
 }
 
-//!
-//! \brief
-//!     This function reads an 8-bit (or 16-bit) byte from KS10 UNIBUS IO.
+//
+//! This function reads an 8-bit (or 16-bit) byte from KS10 UNIBUS IO.
 //!
 //! \param
 //!     addr is the address in the Unibus IO space which is to be read.
@@ -95,7 +118,7 @@ ks10_t::data_t ks10_t::readIO(addr_t addr) {
 //!
 //! \returns
 //!     Contents of the KS10 Unibus IO that was read.
-//!
+//
 
 uint8_t ks10_t::readIObyte(addr_t addr) {
     writeReg(regAddr, (addr & addrMask) | read | io | byte);
@@ -103,9 +126,31 @@ uint8_t ks10_t::readIObyte(addr_t addr) {
     return readReg(regData);
 }
 
+//
+//! This function writes to <b>Console Status Register</b>
 //!
-//! \brief
-//!     This function writes a 36-bit word to KS10 memory.
+//! \param data
+//!     data to be written to the <b>Console Status Register</b>.
+//
+
+void ks10_t::writeStatus(data_t data) {
+    writeReg(regStat, data); 
+}
+
+//
+//! Function to write to the <b>Console Instruction Register</b>
+//!
+//! \param
+//!     data is the data to be written to the <b>Console Instruction
+//!     Register.</b>
+//
+
+void ks10_t::writeCIR(data_t data) {
+    writeReg(regCIR, data); 
+}
+
+//
+//! This function writes a 36-bit word to KS10 memory.
 //!
 //! \param
 //!     addr is the address in the KS10 memory space which is to be written.
@@ -115,10 +160,7 @@ uint8_t ks10_t::readIObyte(addr_t addr) {
 //!
 //! \see
 //!     writeIO() for 36-bit IO writes, and writeIObyte() for UNIBUS writes.
-//!
-//! \returns
-//!     Nothing.
-//!
+//
 
 void ks10_t::writeMem(addr_t addr, data_t data) {
     writeReg(regAddr, (addr & addrMask) | write);
@@ -126,9 +168,11 @@ void ks10_t::writeMem(addr_t addr, data_t data) {
     writeReg(regData, data);
 }
 
+//
+//! This function writes a 36-bit word to the KS10 IO.
 //!
-//! \brief
-//!     This function writes a 36-bit word to the KS10 IO.
+//! This function is used to write to 36-bit KS10 IO and is not to be
+//! used to write to UNIBUS style IO.  
 //!
 //! \param
 //!     addr is the address in the KS10 IO space which is to be written.
@@ -136,16 +180,9 @@ void ks10_t::writeMem(addr_t addr, data_t data) {
 //! \param
 //!     data is the data to be written to the KS10 IO.
 //!
-//! \details
-//!     This function is used to write to 36-bit KS10 IO and is not to be
-//!     used to write to UNIBUS style IO.  
-//!
 //! \see
 //!     writeMem() for memory writes, and writeIObyte() for UNIBUS writes.
-//!
-//! \returns
-//!     Nothing.
-//!
+//
 
 void ks10_t::writeIO(addr_t addr, data_t data) {
     writeReg(regAddr, (addr & addrMask) | write | io);
@@ -153,20 +190,15 @@ void ks10_t::writeIO(addr_t addr, data_t data) {
     writeReg(regData, data);
 }
 
-//!
-//! \brief
-//!     This function writes 8-bit (or 16-bit) byte to KS10 Unibus IO.
+//
+//! This function writes 8-bit (or 16-bit) byte to KS10 Unibus IO.
 //!
 //! \param
 //!     addr is the address in the KS10 Unibus IO space which is to be written.
 //!
 //! \param
-//!     data is the data to be written to the KS10 
-//!     Unibus IO.
-//!
-//! \returns
-//!     Nothing.
-//!
+//!     data is the data to be written to the KS10 Unibus IO.
+//
 
 void ks10_t::writeIObyte(addr_t addr, uint8_t data) {
     writeReg(regAddr, (addr & addrMask) | write | io | byte);
@@ -174,32 +206,257 @@ void ks10_t::writeIObyte(addr_t addr, uint8_t data) {
     writeByte(regData, data);
 }
 
+//
+//! This function puts the KS10 in <b>RUN</b> mode.
 //!
-//! \brief
-//!     This function builds a 36-bit data word from the
-//!     contents of the .SAV file.
+//! This function momentarily pulses the <b>RUN</b> bit of the <b>Console
+//! Control/Status Register</b>.
 //!
-//! \param
-//!     b is a pointer to the input data
+//! The <b>RUN</b> bit only need to be asserted for a single FPGA clock cycle
+//! in order to transition the KS10 to <b>RUN</b> mode..
+//!
+//! \param enable -
+//!     Must be true to alter the operation of the KS10.
+//
+
+void ks10_t::run(bool enable) {
+    if (enable) {
+        uint8_t status = readByte(regStat + 5);
+        writeByte(regStat + 5, status | statRUN);
+	SysCtlDelay(10);
+        writeByte(regStat + 5, status);
+    }
+}
+
+//
+//! This function checks the KS10 in <b>RUN</b> status.
+//!
+//! This function examines the <b>RUN</b> bit in the <b>Console Control/Status
+//! Register</b>. 
 //!
 //! \returns
-//!     36-bit data word
-//! 
+//!     This function returns true if the KS10 is running, false
+//!     otherwise.
+//
 
-ks10_t::data_t ks10_t::rdword(const uint8_t *b) {
-    return (((uint64_t)b[0] << 28) |
-            ((uint64_t)b[1] << 20) |
-            ((uint64_t)b[2] << 12) |
-            ((uint64_t)b[3] <<  4) |
-            ((uint64_t)b[4] <<  0));
+bool ks10_t::run(void) {
+    return readByte(regStat + 5) & statRUN;
+}
+
+//
+//! This function puts the KS10 in <b>HALT</b> mode.
+//!
+//! This function momentarily pulses the <b>HALT</b> bit of the <b>Console
+//! Control/Status Register.</b>
+//!
+//! The <b>HALT</b> bit only need to be asserted for a single FPGA clock
+//! cycle in order to enter <b>HALT</b> mode.
+//!
+//! \param enable -
+//!     Must be true to alter the operation of the KS10.
+//
+
+void ks10_t::halt(bool enable) {
+    if (enable) {
+        uint8_t status = readByte(regStat + 5);
+        writeByte(regStat + 5, status | statHALT);
+	SysCtlDelay(10);
+        writeByte(regStat + 5, status);
+    }
+}
+
+//
+//! This checks the KS10 in <b>HALT</b> status.
+//!
+//! This function examines the <b>HALT</b> bit in the <b>Console Control/Status
+//! Register</b> 
+//!
+//! \returns
+//!     This function returns true if the KS10 is halted, false otherwise.
+//
+
+bool ks10_t::halt(void) {
+    return readByte(regStat + 5) & statHALT;
+}
+
+//
+//! This function <b>STEPs</b> the KS10.
+//!
+//! This function momentarily pulses the <b>STEP</b> bit of the <b>Console
+//! Control/Status Register</b>.
+//!
+//! The <b>STEP</b> bit only need to be asserted for a single FPGA clock cycle
+//! in order to single-step the KS10.
+//
+
+void ks10_t::step(void) {
+    uint8_t status = readByte(regStat + 5);
+    writeByte(regStat + 5, status | statSTEP);
+    SysCtlDelay(10);
+    writeByte(regStat + 5, status);
+}
+
+//
+//! This function momentarily pulses the <b>EXEC</b> bit of the <b>Console
+//! Control/Status Register</b>.
+//!
+//! The <b>EXEC</b> bit only need to be asserted for a single FPGA clock cycle
+//! in order to execute the next KS10 instruction.
+//
+
+void ks10_t::exec(void) {
+    uint8_t status = readByte(regStat + 5);
+    writeByte(regStat + 5, status | statEXEC);
+    SysCtlDelay(10);
+    writeByte(regStat + 5, status);
+}
+
+//
+//! This function <b>CONTINUEs</b> the KS10.
+//!
+//! This function momentarily pulses the <b>CONT</b> bit of the <b>Console
+//! Control/Status Register</b>.
+//!
+//! The <b>CONT</b> bit only need to be asserted for a single FPGA clock
+//! cycle in order to resume operation.
+//
+
+void ks10_t::cont(void) {
+    uint8_t status = readByte(regStat + 5);
+    writeByte(regStat + 5, status | statCONT);
+    SysCtlDelay(10);
+    writeByte(regStat + 5, status);
+}
+
+//
+//! This function returns the status of the KS10 interval timer.
+//!
+//! \returns
+//!     True if the KS10 interval timer is enabled.
+//
+
+bool ks10_t::timerEnable(void) {
+    return readByte(regStat + 6) & statTIMEREN;
+}
+
+//
+//! This function enables the KS10 interval timer.
+//!
+//! \param
+//!     enable - when true, enables the interval timer.
+//
+
+void ks10_t::timerEnable(bool enable) {
+    uint8_t status = readByte(regStat + 6);
+    if (enable) {
+        writeByte(regStat + 6, status | statTIMEREN);
+    } else {
+        writeByte(regStat + 6, status & ~statTIMEREN);
+    }
+}
+
+//
+//! This function returns the status of the KS10 traps.
+//!
+//! \returns
+//!     True if the KS10 traps enabled.
+//
+
+bool ks10_t::trapEnable(void) {
+    return readByte(regStat + 6) & statTRAPEN;
+}
+
+//
+//!  This function enables the KS10 traps.
+//!
+//! \param
+//!     enable - when true, enables the KS10 traps.
+//
+
+void ks10_t::trapEnable(bool enable) {
+    uint8_t status = readByte(regStat + 6);
+    if (enable) {
+        writeByte(regStat + 6, status | statTRAPEN);
+    } else {
+        writeByte(regStat + 6, status & ~statTRAPEN);
+    }
+}
+
+//
+//! This function returns the status of the KS10 cache.
+//!
+//! \returns
+//!     True if the KS10 cache enabled.
+//
+
+bool ks10_t::cacheEnable(void) {
+    return readByte(regStat + 6) & statCACHEEN;
+}
+
+//
+//! This function enables the KS10 cache.
+//!
+//! \param
+//!     enable - when true, enables the KS10 cache.
+//
+
+void ks10_t::cacheEnable(bool enable) {
+    uint8_t status = readByte(regStat + 6);
+    if (enable) {
+        writeByte(regStat + 6, status | statCACHEEN);
+    } else {
+        writeByte(regStat + 6, status & ~statCACHEEN);
+    }
+}
+
+//
+//! This function returns the status of the KS10 reset.
+//!
+//! \returns
+//!     True if the KS10 is held in reset.
+//
+
+bool ks10_t::cpuReset(void) {
+    return readByte(regStat + 7) & statRESET;
+}
+
+//
+//! This function controls the KS10 reset.
+//!
+//! \param
+//!     enable - when true, holds the KS10 in reset.
+//
+
+void ks10_t::cpuReset(bool enable) {
+    uint8_t status = readByte(regStat + 7);
+    if (enable) {
+        writeByte(regStat + 7, status | statRESET);
+    } else {
+        writeByte(regStat + 7, status & ~statRESET);
+    }
+}
+
+//
+//! This function creates a KS10 interrupt.
+//!
+//! This function momentarily pulses the <b>KS10INTR</b> bit of the <b>Console
+//! Control/Status Register</b>.
+//!
+//! The <b>KS10INTR</b> bit only need to be asserted for a single FPGA clock
+//! cycle in order to create an interrupt.
+//
+
+void ks10_t::cpuIntr(void) {
+    uint8_t status = readByte(regStat + 6);
+    writeByte(regStat + 7, status | statINTR);
+    SysCtlDelay(10);
+    writeByte(regStat + 7, status);
 }
 
 //!
-//! \brief
-//!     Get Halt Status Word
+//! Get Halt Status Word
 //!
-//! \details
-//!     This function return the contents of the Halt Status Word.
+//! This function return the contents of the Halt Status Word.
 //!
 //! \returns
 //!     Contents of the Halt Status Word
@@ -214,11 +471,9 @@ ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
 }
 
 //!
-//! \brief
-//!     Get Halt Status Word.
+//! Get Halt Status Word.
 //!
-//! \details
-//!     This function return the contents of the Halt Status Block.
+//! This function return the contents of the Halt Status Block.
 //!
 //! \returns
 //!     Contents of the Halt Status Block.

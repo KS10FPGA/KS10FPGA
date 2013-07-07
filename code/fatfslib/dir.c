@@ -50,6 +50,18 @@
 // 07/01/2013  05:34 PM    <DIR>          ffffffff
 // 05/17/2013  08:37 AM    <DIR>          ffffffff
 //
+//
+//! Perform a directory of SD Card
+//!
+//! This function prints a directory of the SD Card.
+//!
+//! \param arg
+//!     Pathname argument
+//!
+//! \returns
+//!     <b>FRESULT</b> of last file of directory operation.  If everything
+//!     went correctly <b>FRESULT</b> is <b>FR_OK</b>.
+//
 
 FRESULT directory(const char* arg) {
     char path[128];

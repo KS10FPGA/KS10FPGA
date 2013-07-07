@@ -45,7 +45,7 @@ extern "C"
 
     void SDInitialize(void);
     bool SDStatus(void);
-    void SDCardDetect(bool init = false);
+    void SDCardDetect(bool init);
     bool SDInitializeCard(void);
     bool SDReadSector(uint8_t *buf, uint32_t sector);
     bool SDWriteSector(const uint8_t *buf, uint32_t sector);

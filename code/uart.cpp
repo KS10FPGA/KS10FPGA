@@ -89,7 +89,11 @@ void initializeUART(void) {
     ROM_IntEnable(INT_UART);
     ROM_UARTIntEnable(UART_BASE, UART_INT_RX | UART_INT_RT);
     ROM_UARTEnable(UART_BASE);
-    puts("\n0, ");
+    putUART('\r');
+    putUART('\n');
+    putUART('0');
+    putUART(',');
+    putUART(' ');
 }
 
 //
@@ -182,42 +186,47 @@ void UARTinterrupt(void) {
 
     switch(ch) {
         case cntl_c:
-            puts("^C");
+            putUART('^');
+            putUART('C');
             break;
         case cntl_q:
-            puts("^Q");
+            putUART('^');
+            putUART('Q');
             break;
         case cntl_s:
-            puts("^S");
+            putUART('^');
+            putUART('S');
             break;
         case cntl_u:
-            for (int i = 0; i < index; i++) {
-                putchar(0x7f);
+            for (unsigned  int i = 0; i < index; i++) {
+                putUART(0x7f);
             }
             index = 0;
             break;
         case cntl_fs:
-            puts("^\\");
+            putUART('^');
+            putUART('\\');
             break;
         case backspace:
             if (index > 0) {
                 index -= 1;
-                putchar(ch);
+                putUART(ch);
             }
             break;
         case '\r':
             rxbuf[index] = '\n';
-            putchar('\n');
+            putUART('\r');
+            putUART('\n');
             break;
         case '\n':
             break;
         default:
             if (index < sizeof(rxbuf)-1) {
                 rxbuf[index++] = ch;
-                putchar(ch);
+                putUART(ch);
             } else {
                 rxbuf[index] = '\n';
-                putchar('\n');
+                putUART('\n');
             }
             break;
     }

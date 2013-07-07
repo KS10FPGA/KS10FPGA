@@ -30,10 +30,10 @@ HEADERS := \
 	ffconf.h \
 	integer.h
 
-$(TARGET).a : $(FILES)
+$(TARGET).a : $(FILES) 
 	$(AR) -cr $(TARGET).a $(FILES) 
 
-.c.o :
+.c.o : 
 	$(GCC) $(CFLAGS) -c $< -o $@
 
 .cpp.o : 
