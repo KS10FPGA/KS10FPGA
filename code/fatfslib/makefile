@@ -1,22 +1,6 @@
-GCC     := arm-none-eabi-gcc.exe
-AR      := arm-none-eabi-ar.exe
-PART    := LM3S9B92
+include ../makedefs
 
 TARGET  := libfatfs
-
-CFLAGS := \
-	-DPART_${PART} \
-	-W -Wall \
-	-mcpu=cortex-m3 \
-	-mthumb \
-	-Os \
-	-g \
-	-std=c99 \
-        -pedantic \
-	-ffunction-sections \
-	-fdata-sections \
-	-DTARGET_IS_TEMPEST_RB1 \
-	-I ..
 
 FILES := \
 	dir.o \
@@ -30,16 +14,14 @@ HEADERS := \
 	ffconf.h \
 	integer.h
 
-$(TARGET).a : $(FILES) 
-	$(AR) -cr $(TARGET).a $(FILES) 
-
-.c.o : 
-	$(GCC) $(CFLAGS) -c $< -o $@
-
-.cpp.o : 
-	$(GCC) $(CFLAGS) -c $< -o $@
+$(TARGET).a : $(FILES) $(HEADERS)
 
 clean:
 	rcsclean *
 	rm -f *.o
 	rm -f *.a
+	rm -f *.d
+
+ifneq (${MAKECMDGOALS}, clean)
+-include ${wildcard *.d} __dummy__
+endif

@@ -4,11 +4,13 @@
 //
 //! UART Object
 //!
+//! This object provide a UART abstraction.
+//!
 //! \file
-//!      uart.cpp
+//!    uart.cpp
 //!
 //! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
+//!    Rob Doyle - doyle (at) cox (dot) net
 //
 //******************************************************************************
 //

@@ -3,14 +3,13 @@
 **
 ** KS10 Console Microcontroller
 **
-** \brief
-**      Linker Script
+** Linker Script
 **
 ** \file
-**      console.ld
+**    console.ld
 **
 ** \author
-**      Rob Doyle - doyle (at) cox (dot) net
+**    Rob Doyle - doyle (at) cox (dot) net
 **
 ********************************************************************************
 */

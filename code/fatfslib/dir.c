@@ -1,4 +1,3 @@
-//
 //******************************************************************************
 //
 //  KS10 Console Microcontroller
@@ -8,10 +7,10 @@
 //! This function generates a directory listing.
 //!
 //! \file
-//!     dir.c
+//!    dir.c
 //!
 //! \author
-//!     Rob Doyle - doyle (at) cox (dot) net
+//!    Rob Doyle - doyle (at) cox (dot) net
 //
 //******************************************************************************
 //

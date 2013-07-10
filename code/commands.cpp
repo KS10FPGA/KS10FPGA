@@ -1,17 +1,16 @@
-//
 //******************************************************************************
 //
 //  KS10 Console Microcontroller
 //
 //! Console commands
 //!
-//! All the console commands are implemented in the file.
+//! All of the console commands are implemented in this file.
 //!
 //! \file
-//!     commands.cpp
+//!    commands.cpp
 //!
 //! \author
-//!     Rob Doyle - doyle (at) cox (dot) net
+//!    Rob Doyle - doyle (at) cox (dot) net
 //
 //******************************************************************************
 //
@@ -48,8 +47,8 @@
 static ks10_t::addr_t address;
 
 static enum access_t {
-    accessMEM = 0,		//!< KS10 Memory Access
-    accessIO,			//!< KS10 IO Access
+    accessMEM = 0,              //!< KS10 Memory Access
+    accessIO,                   //!< KS10 IO Access
 } access;
 
 //
@@ -60,7 +59,7 @@ static enum access_t {
 //!
 //! \returns
 //!     Pointer to line buffer.
-// 
+//
 
 static char *strupper(char *buf) {
     for (int i = 0; buf[i] != 0; i++) {
@@ -77,12 +76,12 @@ static char *strupper(char *buf) {
 //!
 //! \returns
 //!     Number
-// 
+//
 
 static ks10_t::data_t parseOctal(const char *buf) {
-    
+
     ks10_t::data_t num = 0;
-    
+
     for (int i = 0; i < 64; i += 3) {
         if (*buf >= '0' && *buf <= '7') {
             num += *buf++ - '0';
@@ -95,7 +94,7 @@ static ks10_t::data_t parseOctal(const char *buf) {
         }
     }
     num >>= 3;
-   
+
     return num;
 }
 
@@ -107,7 +106,7 @@ static ks10_t::data_t parseOctal(const char *buf) {
 //!
 //! \returns
 //!     36-bit data word
-//! 
+//!
 
 ks10_t::data_t rdword(const uint8_t *b) {
     return (((uint64_t)b[0] << 28) |
@@ -132,25 +131,25 @@ ks10_t::data_t rdword(const uint8_t *b) {
 //! \note
 //!     Buffer size should be a multiple of 5 bytes.  Each PDP-10 word requires
 //!     5 bytes in of storage the .SAV file.
-//! 
+//!
 //! \returns
 //!     a 36-bit PDP10 word
 //
 
 ks10_t::data_t getdata(FIL *fp) {
 
-    static uint8_t buffer[255];		
+    static uint8_t buffer[255];
     static unsigned int index = sizeof(buffer);
 
     static_assert((sizeof(buffer) % 5) == 0, "Buffer size must be a multiple"
-		  " of five bytes.");
+                  " of five bytes.");
 
     if (index == sizeof(buffer)) {
         unsigned int numbytes;
         FRESULT status = f_read(fp, &buffer, sizeof(buffer), &numbytes);
-	if (status == FR_OK) {
-	    index = 0;
-	}
+        if (status == FR_OK) {
+            index = 0;
+        }
     }
     ks10_t::data_t data = rdword(&buffer[index]);
     index += 5;
@@ -181,7 +180,7 @@ static bool loadCode(const char * filename) {
 #endif
         return false;
     }
- 
+
     for (;;) {
 
         //
@@ -198,23 +197,23 @@ static bool loadCode(const char * filename) {
 
         if ((words & 0400000) == 0) {
             if (words == ks10_t::opJRST) {
-                
+
                 //
                 // Create JRST to starting address.
                 //
 
-#ifdef CONFIG_KS10                
+#ifdef CONFIG_KS10
                 ks10_t::writeCIR(data36);
 #else
                 printf("Starting Address: %06lo,,%06lo\n",
                        ks10_t::lh(data36), ks10_t::rh(data36));
 #endif
             }
-	    FRESULT status = f_close(&fp);
-	    if (status != FR_OK) {
-	        printf("f_close() returned %d\n", status);
-	    }
-	    return true;
+            FRESULT status = f_close(&fp);
+            if (status != FR_OK) {
+                printf("f_close() returned %d\n", status);
+            }
+            return true;
         }
 
         //
@@ -223,15 +222,15 @@ static bool loadCode(const char * filename) {
 
         while ((words & 0400000) != 0) {
             ks10_t::data_t data36 = getdata(&fp);
-#ifdef CONFIG_KS10                
+#ifdef CONFIG_KS10
             ks10_t::writeMem(addr, data36);
 #else
             printf("%06o: %06lo%06lo\n", addr, ks10_t::lh(data36),
-		   ks10_t::rh(data36));
+                   ks10_t::rh(data36));
 #endif
             addr  = (addr  + 1) & 0777777;
             words = (words + 1) & 0777777;
-	}
+        }
     }
 }
 
@@ -252,7 +251,7 @@ static bool loadCode(const char * filename) {
 //
 
 static void cmdBT(int argc, char *argv[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: BT [filename]\n"
         "Load boot software into the KS10 processor.\n";
 
@@ -287,27 +286,27 @@ static void cmdBT(int argc, char *argv[]) {
 //
 
 static void cmdCE(int argc, char *argv[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: CE {0 | 1}\n"
         "Control the operation of the KS10 cache.\n"
         "\n"
         "CE 0 : disable cache\n"
         "CE 1 : enable cache\n";
-    
+
     if (argc == 1) {
-#ifdef CONFIG_KS10    
+#ifdef CONFIG_KS10
         printf("The cache is currently %s.\n",
                ks10_t::cacheEnable() ? "enabled", "disabled");
 #endif
     } else if (argc == 2) {
         if (*argv[1] == '0') {
             printf("The cache is disabled.\n");
-#ifdef CONFIG_KS10    
+#ifdef CONFIG_KS10
             ks10_t::cacheEnable(false);
 #endif
         } else if (*argv[1] == '1') {
             printf("The cache is enabled.\n");
-#ifdef CONFIG_KS10    
+#ifdef CONFIG_KS10
             ks10_t::cacheEnable(true);
 #endif
         } else {
@@ -321,7 +320,8 @@ static void cmdCE(int argc, char *argv[]) {
 //
 //! Continue
 //!
-//! The <b>CO</b> (Continue) command causes the KS10 to exit the HALT state.
+//! The <b>CO</b> (Continue) command causes the KS10 to exit the <b>HALT</b> 
+//! state and continue operation.
 //!
 //! \sa cmdHA, cmdSI
 //!
@@ -330,12 +330,12 @@ static void cmdCE(int argc, char *argv[]) {
 //
 
 static void cmdCO(int argc, char *[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: CO\n"
         "Continue the KS10 from the HALT state.\n";
 
     if (argc == 1) {
-#ifdef  CONFIG_KS10    
+#ifdef  CONFIG_KS10
         ks10_t::cont();
 #endif
     } else {
@@ -358,11 +358,11 @@ static void cmdCO(int argc, char *[]) {
 
 static void cmdDI(int argc, char *argv[]) {
     access = accessIO;
-    const char *usage = 
+    const char *usage =
         "Usage: DI data.\n"
         "Deposit the data argument at the IO address previously supplied by\n"
         "the Load IO Address (LI) command\n";
-    
+
     if (argc == 2) {
         ks10_t::data_t data = parseOctal(argv[1]);
 #ifdef CONFIG_KS10
@@ -391,7 +391,7 @@ static void cmdDI(int argc, char *argv[]) {
 
 static void cmdDM(int argc, char *argv[]) {
     access = accessMEM;
-    const char *usage = 
+    const char *usage =
         "Usage: DM data.\n"
         "Deposit the data argument at the memory address previously supplied\n"
         "by the Load Address (LA) command\n";
@@ -424,7 +424,7 @@ static void cmdDM(int argc, char *argv[]) {
 
 static void cmdDN(int argc, char *argv[]) {
     address += 1;
-    const char *usage = 
+    const char *usage =
         "Usage: DN data.\n"
         "Deposit the data argument at the next memory address or IO address.\n";
 
@@ -471,7 +471,7 @@ static void cmdDS(int, char *[]) {
 
 static void cmdEI(int argc, char *[]) {
     access = accessIO;
-    const char *usage = 
+    const char *usage =
         "Usage: EI\n"
         "Examine data from the last IO address.\n";
 
@@ -505,7 +505,7 @@ static void cmdEI(int argc, char *[]) {
 
 static void cmdEM(int argc, char *[]) {
     access = accessMEM;
-    const char *usage = 
+    const char *usage =
         "Usage: EM\n"
         "Examine data from the last memory address.\n";
 
@@ -537,7 +537,7 @@ static void cmdEM(int argc, char *[]) {
 //
 
 static void cmdEN(int argc, char *[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: EN\n"
         "Examine data from the next memory or IO address.\n";
 
@@ -575,12 +575,12 @@ static void cmdEN(int argc, char *[]) {
 ///
 
 static void cmdEX(int argc, char *[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: EX\n"
         "Execute the next instruction and then halt.\n";
 
     if (argc == 1) {
-#ifdef CONFIG_KS10        
+#ifdef CONFIG_KS10
         ks10_t::exec();
 #endif
     } else {
@@ -591,7 +591,9 @@ static void cmdEX(int argc, char *[]) {
 //
 //! Halt the KS10
 //!
-//! The <b>HA</b> (Halt) command halts the KS10 CPU.
+//! The <b>HA</b> (Halt) command halts the KS10 CPU at the end of the current
+//! instruction.  The KS10 will remain in the <b>HALT</b> state until it is
+//! single-stepped or it is commanded to continue.
 //!
 //! \sa cmdCO, cmdSI
 //!
@@ -602,14 +604,13 @@ static void cmdEX(int argc, char *[]) {
 //!    Array of pointers to the arguments.
 //
 
-
 static void cmdHA(int argc, char *[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: HA\n"
         "HALT the KS10\n";
-    
+
     if (argc == 1) {
-#ifdef CONFIG_KS10        
+#ifdef CONFIG_KS10
         ks10_t::halt(true);
         while (!ks10_t::halt()) {
             ;
@@ -638,11 +639,11 @@ static void cmdHA(int argc, char *[]) {
 
 static void cmdLA(int argc, char *argv[]) {
     access = accessMEM;
-    const char *usage = 
+    const char *usage =
         "Usage: LA address\n"
         "Set the memory address for the next commands.\n"
         "Valid addresses are %08llo-%08llo\n";
-    
+
     if (argc == 2) {
         ks10_t::addr_t addr = parseOctal(argv[1]);
         if (addr <= ks10_t::maxMemAddr) {
@@ -690,7 +691,7 @@ static void cmdLB(int, char *[]) {
 
 static void cmdLI(int argc, char *argv[]) {
     access = accessIO;
-    const char *usage = 
+    const char *usage =
         "Usage: LI address\n"
         "Set the IO address for the next commands.\n"
         "Valid addresses are %08llo-%08llo\n";
@@ -713,7 +714,7 @@ static void cmdLI(int argc, char *argv[]) {
 //! Master Reset
 //!
 //! The <b>MR</b> (Master Reset) command hard resets the KS10 CPU.
-//! 
+//!
 //! When the KS10 is started from <b>RESET</b>, the KS10 will peform a
 //! selftest and initialize the ALU.  When the microcode initialization is
 //! completed, the KS10 will enter the <b>HALT</b> state.
@@ -724,12 +725,12 @@ static void cmdLI(int argc, char *argv[]) {
 //! \param [in] argv
 //!    Array of pointers to the arguments.
 //
- 
+
 static void cmdMR(int argc, char *[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: MR\n"
         "RESET the KS10.\n";
-    
+
     if (argc == 1) {
 #ifdef CONFIG_KS10
         ks10_t::cpuReset(true);
@@ -823,7 +824,7 @@ static void cmdSD(int argc, char *argv[]) {
 //
 
 static void cmdSI(int argc, char *[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: SI\n"
         "Step Instruction: Single step the KS10.\n";
 
@@ -850,10 +851,10 @@ static void cmdSI(int argc, char *[]) {
 //
 
 static void cmdSH(int argc, char *[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: SH\n"
         "Shutdown.  Shutdown TOPS20.\n";
-    
+
     if (argc == 1) {
 #ifdef CONFIG_KS10
         ks10_t::writeMem(030, 1);
@@ -880,7 +881,7 @@ static void cmdSH(int argc, char *[]) {
 //
 
 static void cmdST(int argc, char *argv[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: ST address\n"
         "Start the KS10 at supplied address.\n";
 
@@ -918,27 +919,27 @@ static void cmdST(int argc, char *argv[]) {
 //
 
 void cmdTE(int argc, char *argv[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: TE {0 | 1}\n"
         "Control the operation of the KS10 system timer.\n"
         "\n"
         "TE 0 : disable timer\n"
         "TE 1 : enable timer\n";
-     
+
     if (argc == 1) {
-#ifdef CONFIG_KS10    
+#ifdef CONFIG_KS10
         printf("The timer is currently %s.\n",
                ks10_t::timerEnable() ? "enabled", "disabled");
 #endif
     } else if (argc == 2) {
         if (*argv[1] == '0') {
             printf("The timer is disabled.\n");
-#ifdef CONFIG_KS10    
+#ifdef CONFIG_KS10
             ks10_t::timerEnable(false);
 #endif
         } else if (*argv[1] == '1') {
             printf("The timer is enabled.\n");
-#ifdef CONFIG_KS10    
+#ifdef CONFIG_KS10
             ks10_t::timerEnable(true);
 #endif
         } else {
@@ -966,28 +967,28 @@ void cmdTE(int argc, char *argv[]) {
 //
 
 static void cmdTP(int argc, char *argv[]) {
-    const char *usage = 
+    const char *usage =
         "Usage: TP {0 | 1}\n"
         "Control the operation of the KS10 trap system.\n"
         "\n"
         "TP 0 : disable traps\n"
         "TP 1 : enable traps\n";
-    
+
 
     if (argc == 1) {
-#ifdef CONFIG_KS10    
+#ifdef CONFIG_KS10
         printf("The traps are currently %s.\n",
                ks10_t::trapEnable() ? "enabled", "disabled");
 #endif
     } else if (argc == 2) {
         if (*argv[1] == '0') {
             printf("The traps are disabled.\n");
-#ifdef CONFIG_KS10    
+#ifdef CONFIG_KS10
             ks10_t::trapEnable(false);
 #endif
         } else if (*argv[1] == '1') {
             printf("The traps are enabled.\n");
-#ifdef CONFIG_KS10    
+#ifdef CONFIG_KS10
             ks10_t::trapEnable(true);
 #endif
         } else {
@@ -1068,64 +1069,64 @@ void parseCMD(char * buf) {
     static const cmdList_t cmdList[] = {
         {"BT", cmdBT},
         {"CE", cmdCE},
-        {"CH", cmdXX},		// Not implemented.
+        {"CH", cmdXX},          // Not implemented.
         {"CO", cmdCO},
-        {"CP", cmdXX},		// Not implemented.
-        {"CS", cmdXX},		// Not implemented.
-        {"DB", cmdXX},		// Not implemented.
-        {"DC", cmdXX},		// Not implemented.
-        {"DF", cmdXX},		// Not implemented.
-        {"DK", cmdXX},		// Not implemented.
+        {"CP", cmdXX},          // Not implemented.
+        {"CS", cmdXX},          // Not implemented.
+        {"DB", cmdXX},          // Not implemented.
+        {"DC", cmdXX},          // Not implemented.
+        {"DF", cmdXX},          // Not implemented.
+        {"DK", cmdXX},          // Not implemented.
         {"DI", cmdDI},
         {"DM", cmdDM},
         {"DN", cmdDN},
-        {"DR", cmdXX},		// Not implemented.
+        {"DR", cmdXX},          // Not implemented.
         {"DS", cmdDS},
-        {"EB", cmdXX},		// Not implemented.
-        {"EC", cmdXX},		// Not implemented.
-        {"EK", cmdXX},		// Not implemented.
+        {"EB", cmdXX},          // Not implemented.
+        {"EC", cmdXX},          // Not implemented.
+        {"EK", cmdXX},          // Not implemented.
         {"EI", cmdEI},
-        {"EJ", cmdXX},		// Not implemented.
-        {"EK", cmdXX},		// Not implemented.
+        {"EJ", cmdXX},          // Not implemented.
+        {"EK", cmdXX},          // Not implemented.
         {"EM", cmdEM},
         {"EN", cmdEN},
-        {"ER", cmdXX},		// Not implemented.
+        {"ER", cmdXX},          // Not implemented.
         {"EX", cmdEX},
-        {"FI", cmdXX},		// Not implemented.
+        {"FI", cmdXX},          // Not implemented.
         {"HA", cmdHA},
-        {"KL", cmdXX},		// Not implemented.
+        {"KL", cmdXX},          // Not implemented.
         {"LA", cmdLA},
         {"LB", cmdLB},
-        {"LC", cmdXX},		// Not implemented.
-        {"LF", cmdXX},		// Not implemented.
+        {"LC", cmdXX},          // Not implemented.
+        {"LF", cmdXX},          // Not implemented.
         {"LI", cmdLI},
-        {"LK", cmdXX},		// Not implemented.
-        {"LR", cmdXX},		// Not implemented.
-        {"LT", cmdXX},		// Not implemented.
-        {"MB", cmdXX},		// Not implemented.
-        {"MK", cmdXX},		// Not implemented.
-        {"MM", cmdXX},		// Not implemented.
+        {"LK", cmdXX},          // Not implemented.
+        {"LR", cmdXX},          // Not implemented.
+        {"LT", cmdXX},          // Not implemented.
+        {"MB", cmdXX},          // Not implemented.
+        {"MK", cmdXX},          // Not implemented.
+        {"MM", cmdXX},          // Not implemented.
         {"MR", cmdMR},
-        {"MS", cmdXX},		// Not implemented.
-        {"MT", cmdXX},		// Not implemented.
-        {"PE", cmdXX},		// Not implemented.
-        {"PM", cmdXX},		// Not implemented.
-        {"PW", cmdXX},		// Not implemented.
-        {"RC", cmdXX},		// Not implemented.
-        {"RP", cmdXX},		// Not implemented.
-        {"SC", cmdXX},		// Not implemented.
-        {"SD", cmdSD},		
+        {"MS", cmdXX},          // Not implemented.
+        {"MT", cmdXX},          // Not implemented.
+        {"PE", cmdXX},          // Not implemented.
+        {"PM", cmdXX},          // Not implemented.
+        {"PW", cmdXX},          // Not implemented.
+        {"RC", cmdXX},          // Not implemented.
+        {"RP", cmdXX},          // Not implemented.
+        {"SC", cmdXX},          // Not implemented.
+        {"SD", cmdSD},
         {"SH", cmdSH},
         {"SI", cmdSI},
         {"ST", cmdST},
         {"TE", cmdTE},
         {"TP", cmdTP},
-        {"TT", cmdXX},		// Not implemented.
-        {"UM", cmdXX},		// Not implemented.
-        {"VD", cmdXX},		// Not implemented.
-        {"VT", cmdXX},		// Not implemented.
-        {"VM", cmdXX},		// Not implemented.
-        {"ZZ", cmdZZ},		// Testing
+        {"TT", cmdXX},          // Not implemented.
+        {"UM", cmdXX},          // Not implemented.
+        {"VD", cmdXX},          // Not implemented.
+        {"VT", cmdXX},          // Not implemented.
+        {"VM", cmdXX},          // Not implemented.
+        {"ZZ", cmdZZ},          // Testing
     };
 
     const int numCMD = sizeof(cmdList)/sizeof(cmdList_t);

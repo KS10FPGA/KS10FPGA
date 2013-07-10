@@ -67,10 +67,8 @@ extern unsigned long _edata;                                            //!< Add
 extern unsigned long _bss;                                              //!< Address of start of .bss
 extern unsigned long _ebss;                                             //!< Address if end of .bss
 extern unsigned long _stackend;                                         //!< Address of end of stack
-extern void (*__preinit_array_start[])(void) __attribute__((weak));     //!< Address of start of preinit array
-extern void (*__preinit_array_end[])(void)   __attribute__((weak));     //!< Address of end of preinit array
-extern void (*__init_array_start[])(void)    __attribute__((weak));     //!< Address of start of init array
-extern void (*__init_array_end[])(void)      __attribute__((weak));     //!< Address of end of init array
+extern void (*__init_array_start[])(void) __attribute__((weak));        //!< Address of start of init function array
+extern void (*__init_array_end[])(void)   __attribute__((weak));        //!< Address of end of init function array
 
 //
 // Weak aliases for the vectors.  If you define 'real' functions
@@ -246,6 +244,9 @@ extern "C" void vectReset(void) {
     //
     // Call main()
     // Main should never return, but be smart if it does.
+    //
+    // The #()*#$ compiler warns about calling main().  Hide the call in
+    // asm just to shut up the warning.
     //
 
     for (;;) {

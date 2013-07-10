@@ -32,6 +32,10 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 //
 //******************************************************************************
+//
+//! \addtogroup ks10_api
+//! @{
+//
 
 #include "ks10.hpp"
 #include "driverlib/sysctl.h"
@@ -329,10 +333,11 @@ void ks10_t::cont(void) {
 }
 
 //
-//! This function returns the status of the KS10 interval timer.
+//! Report the state of the KS10's interval timer.
 //!
 //! \returns
-//!     True if the KS10 interval timer is enabled.
+//!     Returns <b>true</b> if the KS10 interval timer enabled and <b>false</b>
+//!     otherwise.
 //
 
 bool ks10_t::timerEnable(void) {
@@ -340,10 +345,11 @@ bool ks10_t::timerEnable(void) {
 }
 
 //
-//! This function enables the KS10 interval timer.
+//! Control the KS10 interval timer operation
 //!
 //! \param
-//!     enable - when true, enables the interval timer.
+//!     enable is <b>true</b> to enable the KS10 intervale timer or
+//!     <b>false</b> to disable the KS10 timer.
 //
 
 void ks10_t::timerEnable(bool enable) {
@@ -356,10 +362,11 @@ void ks10_t::timerEnable(bool enable) {
 }
 
 //
-//! This function returns the status of the KS10 traps.
+//! Report the state of the KS10's traps.
 //!
 //! \returns
-//!     True if the KS10 traps enabled.
+//!     Returns <b>true</b> if the KS10 traps enabled and <b>false</b>
+//!     otherwise.
 //
 
 bool ks10_t::trapEnable(void) {
@@ -367,10 +374,13 @@ bool ks10_t::trapEnable(void) {
 }
 
 //
-//!  This function enables the KS10 traps.
+//! Control the KS10 traps operation
+//!
+//! This function controls whether the KS10's trap are enabled.
 //!
 //! \param
-//!     enable - when true, enables the KS10 traps.
+//!     enable is <b>true</b> to enable the KS10 traps or <b>false</b> to
+//!     disable the KS10 traps.
 //
 
 void ks10_t::trapEnable(bool enable) {
@@ -383,10 +393,11 @@ void ks10_t::trapEnable(bool enable) {
 }
 
 //
-//! This function returns the status of the KS10 cache.
+//! Report the state of the KS10's cache memory.
 //!
 //! \returns
-//!     True if the KS10 cache enabled.
+//!     Returns <b>true</b> if the KS10 cache enabled and <b>false</b>
+//!     otherwise.
 //
 
 bool ks10_t::cacheEnable(void) {
@@ -394,10 +405,13 @@ bool ks10_t::cacheEnable(void) {
 }
 
 //
-//! This function enables the KS10 cache.
+//! Control the KS10 cache memory operation
+//!
+//! This function controls whether the KS10's cache is enabled.
 //!
 //! \param
-//!     enable - when true, enables the KS10 cache.
+//!     enable is <b>true</b> to enable the KS10 cache or <b>false</b> to
+//!     disable the KS10 cache.
 //
 
 void ks10_t::cacheEnable(bool enable) {
@@ -410,10 +424,11 @@ void ks10_t::cacheEnable(bool enable) {
 }
 
 //
-//! This function returns the status of the KS10 reset.
+//! Report the state of the KS10's reset signal.
 //!
 //! \returns
-//!     True if the KS10 is held in reset.
+//!     Returns <b>true</b> if the KS10 is <b>reset</b> and <b>false</b>
+//!     otherwise.
 //
 
 bool ks10_t::cpuReset(void) {
@@ -421,10 +436,15 @@ bool ks10_t::cpuReset(void) {
 }
 
 //
-//! This function controls the KS10 reset.
+//! Reset the KS10
+//!
+//! This function controls whether the KS10's is reset.  When reset, the KS10 will
+//! reset on next clock cycle without completing the current operatoin.
 //!
 //! \param
-//!     enable - when true, holds the KS10 in reset.
+//!     enable is <b>true</b> to assert <b>reset</b> to the KS10 or <b>false</b> to
+//!     negate <b>reset</b> to the KS10.
+//!
 //
 
 void ks10_t::cpuReset(bool enable) {
@@ -502,3 +522,7 @@ ks10_t::haltStatusBlock_t &ks10_t::getHaltStatusBlock(addr_t addr) {
 
     return haltStatusBlock;
 }
+
+//
+//! @}
+//
