@@ -42,6 +42,8 @@
 #include "driverlib/inc/hw_memmap.h"
 #include "driverlib/inc/hw_ints.h"
 
+#define CONFIG_KS10
+
 #ifdef CONFIG_KS10
 #define SYSCTL_XTAL        SYSCTL_XTAL_8MHZ
 #define GPIO_PORT_BASE     GPIO_PORTD_BASE
@@ -80,9 +82,15 @@ void initializeUART(void) {
 
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOJ);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART);
 
     ROM_GPIOPinTypeUART(GPIO_PORT_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+
+#ifdef CONFIG_KS10
+    GPIOPinConfigure(GPIO_PD0_U1RX);
+    GPIOPinConfigure(GPIO_PD1_U1TX);
+#endif
 
     ROM_UARTConfigSetExpClk(UART_BASE, ROM_SysCtlClockGet(), 9600,
                             UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE |
