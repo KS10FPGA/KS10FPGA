@@ -2,7 +2,8 @@ LD      := arm-none-eabi-ld.exe
 OBJCOPY := arm-none-eabi-objcopy
 TARGET  := console
 
-OPENOCD_CFG := ek-lm3s9b9x.cfg
+#OPENOCD_CFG := ek-lm3s9b9x.cfg
+OPENOCD_CFG := ks10.cfg
 
 LDFLAGS := \
 	--script=$(TARGET).ld \
@@ -63,10 +64,18 @@ $(DRIVERLIB) :
 $(LIBFATFS) :
 	make -C fatfs
 
+#
+# Program the flash in the target
+#
+
 load :  $(TARGET).bin $(OPENOCD_CFG)
 	-openocd -f $(OPENOCD_CFG) -c "program_device ()"
 
-reset : 
+#
+# Reset the target from the JTAG port
+#
+
+reset : $(OPENOCD_CFG)
 	-openocd -f $(OPENOCD_CFG) -c "reset" -c "shutdown"
 
 clean:
