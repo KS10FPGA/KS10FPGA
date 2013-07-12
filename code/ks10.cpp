@@ -473,6 +473,24 @@ void ks10_t::cpuIntr(void) {
     writeByte(regStat + 7, status);
 }
 
+//
+//! Get the firmware revision of the KS10 FPGA firmware
+//!
+//! \returns
+//!     character string with firmware information
+//
+
+const char *ks10_t::getFirmwareRev(void) {
+    union fwReg_t {
+        uint64_t ull;
+        char buffer[8];
+    };
+    static fwReg_t fwReg;
+
+    fwReg.ull = readReg(regFirmwareVersion);
+    return fwReg.buffer;
+}
+
 //!
 //! Get Halt Status Word
 //!

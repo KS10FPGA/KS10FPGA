@@ -49,16 +49,16 @@ class ks10_t {
         // KS10 Address and Data Type
         //
 
-        typedef uint64_t addr_t;              		//!< KS10 Address Typedef
-        typedef uint64_t data_t;                	//!< KS10 Data Typedef
+        typedef uint64_t addr_t;                        //!< KS10 Address Typedef
+        typedef uint64_t data_t;                        //!< KS10 Data Typedef
 
-        // 
+        //
         //! Halt Status Word Type
         //
 
         struct haltStatusWord_t {
-            data_t status;				//!< Halt Status
-            data_t pc;					//!< Halt Program Counter
+            data_t status;                              //!< Halt Status
+            data_t pc;                                  //!< Halt Program Counter
         };
 
         //
@@ -66,45 +66,45 @@ class ks10_t {
         //
 
         struct haltStatusBlock_t {
-            data_t mag;					// x +  0
-            data_t pc;					// x +  1
-            data_t hr;					// x +  2
-            data_t ar;					// x +  3
-            data_t arx;					// x +  4
-            data_t br;					// x +  5
-            data_t brx;					// x +  6
-            data_t one;					// x +  7
-            data_t ebr;					// x + 10
-            data_t ubr;					// x + 11
-            data_t mask;				// x + 12
-            data_t flg;					// x + 13
-            data_t pi;					// x + 14
-            data_t x1;					// x + 15
-            data_t t0;					// x + 16
-            data_t t1;					// x + 17
-            data_t vma;					// x + 20
-            data_t fe;					// x + 21
+            data_t mag;                                 //!< Magnitude Mask
+            data_t pc;                                  //!< Program Counter
+            data_t hr;                                  //!< Instruction Register
+            data_t ar;                                  //!< AR Register
+            data_t arx;                                 //!< ARX Register
+            data_t br;                                  //!< BR Register
+            data_t brx;                                 //!< BRX Register
+            data_t one;                                 //!< ONE Register
+            data_t ebr;                                 //!< EBR Register
+            data_t ubr;                                 //!< UBR Register
+            data_t mask;                                //!< Mask Register
+            data_t flg;                                 //!< Flag Register
+            data_t pi;                                  //!< PI Register
+            data_t x1;                                  //!< X1 Register
+            data_t t0;                                  //!< T0 Register
+            data_t t1;                                  //!< T1 Register
+            data_t vma;                                 //!< VMA Register
+            data_t fe;                                  //!< FE Register
         };
 
         //
         // Opcodes
         //
 
-        static const uint32_t opJRST = 0254000;     	//!< JRST Instruction
+        static const uint32_t opJRST = 0254000;         //!< JRST Instruction
 
         //
         // KS10 addresses
         //
 
-        static const addr_t invalidAddr = (addr_t) -1;	//!< Guaranteed invalid address
-        static const addr_t maxVirtAddr = 000777777; 	//!< Last virtual address (18-bit)
-        static const addr_t maxMemAddr  = 003777777; 	//!< Last memory address (20-bit)
-        static const addr_t maxIOAddr   = 017777777;	//!< Last IO address (22-bit)
+        static const addr_t invalidAddr = (addr_t) -1;  //!< Guaranteed invalid address
+        static const addr_t maxVirtAddr = 000777777;    //!< Last virtual address (18-bit)
+        static const addr_t maxMemAddr  = 003777777;    //!< Last memory address (20-bit)
+        static const addr_t maxIOAddr   = 017777777;    //!< Last IO address (22-bit)
 
         //
         // Functions
         //
- 
+
         ks10_t(void);
         static uint32_t lh(data_t data);
         static uint32_t rh(data_t data);
@@ -114,7 +114,7 @@ class ks10_t {
         static data_t   readIO(addr_t addr);
         static uint8_t  readIObyte(addr_t addr);
         static void     writeStatus(data_t data);
-        static void     writeCIR(data_t data); 
+        static void     writeCIR(data_t data);
         static void     writeMem(addr_t addr, data_t data);
         static void     writeIO(addr_t addr, data_t data);
         static void     writeIObyte(addr_t addr, uint8_t data);
@@ -137,6 +137,7 @@ class ks10_t {
         static bool     nxmnxd(void);
         static haltStatusWord_t  &getHaltStatusWord(void);
         static haltStatusBlock_t &getHaltStatusBlock(addr_t addr);
+        static const char *getFirmwareRev(void);
 
     private:
 
@@ -144,7 +145,7 @@ class ks10_t {
         // Misc constants
         //
 
-        static const uint32_t epiOffset = 0x60000000;	//!< EPI Address Offset
+        static const uint32_t epiOffset = 0x60000000;   //!< EPI Address Offset
         static const addr_t   addrMask  = 0x0fffffULL;  //!< KS10 20-bit Address Mask
 
         //
@@ -160,16 +161,18 @@ class ks10_t {
         // KS10 FPGA Register Addresses
         //
 
-        static constexpr uint8_t * const regAddr      = 
-	    reinterpret_cast<uint8_t * const>(epiOffset + 0x00); //!< KS10 Address Register
+        static constexpr uint8_t * const regAddr      =
+            reinterpret_cast<uint8_t * const>(epiOffset + 0x00); //!< KS10 Address Register
         static constexpr uint8_t * const regData      =
-	    reinterpret_cast<uint8_t * const>(epiOffset + 0x10); //!< KS10 Data Register
+            reinterpret_cast<uint8_t * const>(epiOffset + 0x10); //!< KS10 Data Register
         static constexpr uint8_t * const regStat      =
-	    reinterpret_cast<uint8_t * const>(epiOffset + 0x20); //!< KS10 Status Regsiter
+            reinterpret_cast<uint8_t * const>(epiOffset + 0x20); //!< KS10 Status Regsiter
         static constexpr uint8_t * const regCIR       =
-	    reinterpret_cast<uint8_t * const>(epiOffset + 0x30); //!< KS10 Console Instruction Register
+            reinterpret_cast<uint8_t * const>(epiOffset + 0x30); //!< KS10 Console Instruction Register
         static constexpr uint8_t * const regRH11debug =
-	    reinterpret_cast<uint8_t * const>(epiOffset + 0xf0); //!< RH11 Debug Register
+            reinterpret_cast<uint8_t * const>(epiOffset + 0xe8); //!< RH11 Debug Register
+        static constexpr uint8_t * const regFirmwareVersion =
+            reinterpret_cast<uint8_t * const>(epiOffset + 0xf8); //!< Firmware Version Register
 
         //
         // Low level interface functions
@@ -229,7 +232,7 @@ inline uint32_t ks10_t::rh(data_t data) {
 
 //
 //! This function reads a byte from the FPGA
-//! 
+//!
 //! The address is the register address mapped through the EPI.
 //!
 //! \param reg -
@@ -295,7 +298,7 @@ inline void ks10_t::writeReg(uint8_t * reg, data_t data) {
 //!  This function starts and completes a KS10 bus transaction
 //!
 //!  A KS10 FPGA bus cycle begins when the <b>GO</b> bit is asserted.  The
-//!  <b>GO</b> bit will remain asserted while the bus cycle is still active. 
+//!  <b>GO</b> bit will remain asserted while the bus cycle is still active.
 //!  The <b>Console Data Register</b> should not be accessed when the <b>GO</b>
 //!  bit is asserted.
 //
