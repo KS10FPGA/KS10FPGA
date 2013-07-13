@@ -112,9 +112,8 @@ void initializeUART(void) {
 //!     Returns true if the UART transmitter is full.  False otherwise.
 //
 
-#warning FIXME: This should be rom-able
 bool txFull(void) {
-    return UARTBusy(UART_BASE);
+    return ROM_UARTBusy(UART_BASE);
 }
 
 //

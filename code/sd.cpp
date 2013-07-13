@@ -63,9 +63,9 @@
 //
 
 #ifdef VERBOSE_SD
-#define debug(fmt...) printf(fmt)
+#define debug(...) printf(__VA_ARGS__)
 #else
-#define debug(fmt...)
+#define debug(...)
 #endif
 
 static const uint32_t bitRate = 250000;
