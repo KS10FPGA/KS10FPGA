@@ -4,8 +4,8 @@
 //
 //! External Peripheral Interface (EPI) Object
 //!
-//! This object abstracts the EPI interface. The console interfaces to the
-//! KS10 FPGA over the EPI interface.
+//! This object abstracts the EPI interface. The console microcontroller
+//! interfaces to the KS10 FPGA over the EPI interface.
 //!
 //! \file
 //!    epi.h
@@ -41,11 +41,8 @@ extern "C"
 {
 #endif
 
-inline unsigned long EPIAddressMapGet(void) {
-    return 0x60000000;
-}
-
 void EPIInitialize(void);
+unsigned long EPIAddressMapGet(void);
 
 #ifdef __cplusplus
 }

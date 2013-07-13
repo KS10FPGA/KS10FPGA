@@ -44,6 +44,7 @@
 
 #include "fpga.h"
 #include "stdio.h"
+#include "timer.hpp"
 #include "driverlib/rom.h"
 #include "driverlib/inc/hw_types.h"
 #include "driverlib/inc/hw_memmap.h"
@@ -73,8 +74,6 @@ bool programFPGA(void) {
 
     printf("KS10> Programming FPGA with firmware.\n");
 
-#ifdef CONFIG_KS10    
-   
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORT_BASE, GPIO_PIN_PROG);
     ROM_GPIOPinTypeGPIOInput(GPIO_PORT_BASE, GPIO_PIN_INIT);
@@ -101,27 +100,31 @@ bool programFPGA(void) {
     //
     // Wait for DONE to be asserted.
     //
-    
-    unsigned int delay = 0;
+
+#ifdef CONFIG_KS10    
+
+    timer_t timeout(5 * timer_t::HZ);
     do {
+
         if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_INIT) == 0) {
             printf("KS10> FPGA Programming Error.  CRC Failure.\n");
             return false;
         }
-        if (++delay == 1000000) {
+    
+        if (timeout) {
             printf("KS10> FPGA Programming Error.  "
-                 "Timed Out waiting for DONE.\n");
+                   "Timed Out waiting for DONE.\n");
             return false;
         }
-        SysCtlDelay(10);
+
     } while (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_DONE) == 0);
+
+#endif
 
     //
     // FPGA was successfully programmed.
     //
 
-#endif
-    
     printf("KS10> FPGA programmed successfully.\n");
     return true;
 }

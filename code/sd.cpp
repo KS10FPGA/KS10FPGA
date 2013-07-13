@@ -41,14 +41,16 @@
 #include "driverlib/rom.h"
 #include "driverlib/ssi.h"
 #include "driverlib/gpio.h"
+#include "driverlib/timer.h"
 #include "driverlib/sysctl.h"
+#include "driverlib/inc/hw_ints.h"
 #include "driverlib/inc/hw_memmap.h"
 
 #undef  SSI_BASE
 #define SSI_BASE          SSI0_BASE		//!< SSI Port Base Address
 #define GPIO_PORTCS_BASE  GPIO_PORTA_BASE	//!< Chip Select Base Address
 #define GPIO_PIN_CS       GPIO_PIN_3		//!< Chip Select Pin 
-#ifdef CONFIG_KS10
+#ifdef CONFIG_ESM
 #define GPIO_PORTCD_BASE  GPIO_PORTB_BASE	//!< Card Detect Base Address
 #define GPIO_PIN_CD       GPIO_PIN_6		//!< Card Detect Pin
 #else
@@ -59,8 +61,6 @@
 //
 // Debug macros
 //
-
-//#define VERBOSE_SD
 
 #ifdef VERBOSE_SD
 #define debug(fmt...) printf(fmt)
@@ -273,7 +273,6 @@ bool SDInitializeCard(void) {
     // during the reception of the reset command (CMD0).
     //
 
- cmd0:
     debug("Sending CMD0.\n");
     chipEnable(true);
     uint8_t rsp0 = sendCommand(CMD0, 0x00000000, 0x95);
@@ -281,7 +280,6 @@ bool SDInitializeCard(void) {
     transactData(0xff);
     if (rsp0 != 0x01) {
         debug("CMD0: Response was 0x%02x.\n", rsp0);
-        goto cmd0;
         return false;
     }
             
@@ -727,14 +725,15 @@ void SDCardDetect(bool init) {
 }
 
 //
-//! Timer Interrupt
+//! Timer 1 Interrupt Handler
 //!
 //! The Timer Interrupt periodically polls the SD Card Detect input to check
 //! for SD Card insertions and SD Card removals.
 //
 
-void vectTICK0(void) {
+void timer1IntHandler(void) {
     SDCardDetect(false);
+    ROM_TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
 }
 
 //
@@ -746,6 +745,7 @@ void SDInitialize(void) {
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTCS_BASE, GPIO_PIN_CS);
     ROM_GPIOPinTypeGPIOInput(GPIO_PORTCD_BASE, GPIO_PIN_CD);
     ROM_GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5);
@@ -754,9 +754,12 @@ void SDInitialize(void) {
     ROM_SSIEnable(SSI_BASE);
     chipEnable(false);
 
-    ROM_SysTickPeriodSet(80000000);
-    ROM_SysTickIntEnable();
-    ROM_SysTickEnable();
-
-    puts("1, ");
+    ROM_TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER);
+    ROM_TimerLoadSet(TIMER1_BASE, TIMER_A, SysCtlClockGet());
+    ROM_TimerEnable(TIMER1_BASE, TIMER_A);
+    ROM_TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+    ROM_IntEnable(INT_TIMER1A);
+    putchar('1');
+    putchar(',');
+    putchar(' ');
 }

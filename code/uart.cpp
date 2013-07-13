@@ -42,21 +42,19 @@
 #include "driverlib/inc/hw_memmap.h"
 #include "driverlib/inc/hw_ints.h"
 
-#define CONFIG_KS10
-
-#ifdef CONFIG_KS10
+#ifdef CONFIG_ESM
 #define SYSCTL_XTAL        SYSCTL_XTAL_8MHZ
 #define GPIO_PORT_BASE     GPIO_PORTD_BASE
 #define SYSCTL_PERIPH_UART SYSCTL_PERIPH_UART1
 #define UART_BASE          UART1_BASE
-#define UARTinterrupt      vectUART1
+#define uartIntHandler     uart1IntHandler
 #define INT_UART           INT_UART1
 #else
 #define SYSCTL_XTAL        SYSCTL_XTAL_16MHZ
 #define GPIO_PORT_BASE     GPIO_PORTA_BASE
 #define SYSCTL_PERIPH_UART SYSCTL_PERIPH_UART0
 #define UART_BASE          UART0_BASE
-#define UARTinterrupt      vectUART0
+#define uartIntHandler     uart0IntHandler
 #define INT_UART           INT_UART0
 #endif
 
@@ -80,6 +78,7 @@ void initializeUART(void) {
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
                        SYSCTL_XTAL);
 
+
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOJ);
@@ -87,7 +86,7 @@ void initializeUART(void) {
 
     ROM_GPIOPinTypeUART(GPIO_PORT_BASE, GPIO_PIN_0 | GPIO_PIN_1);
 
-#ifdef CONFIG_KS10
+#ifdef CONFIG_ESM
     GPIOPinConfigure(GPIO_PD0_U1RX);
     GPIOPinConfigure(GPIO_PD1_U1TX);
 #endif
@@ -182,7 +181,7 @@ bool getLine(char **buf) {
 //! have been received by the UART
 //
 
-void UARTinterrupt(void) {
+void uartIntHandler(void) {
 
     static const char cntl_c  = 0x03;
     static const char cntl_q  = 0x11;

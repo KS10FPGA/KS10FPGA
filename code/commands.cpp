@@ -296,7 +296,7 @@ static void cmdCE(int argc, char *argv[]) {
     if (argc == 1) {
 #ifdef CONFIG_KS10
         printf("The cache is currently %s.\n",
-               ks10_t::cacheEnable() ? "enabled", "disabled");
+               ks10_t::cacheEnable() ? "enabled" : "disabled");
 #endif
     } else if (argc == 2) {
         if (*argv[1] == '0') {
@@ -929,7 +929,7 @@ void cmdTE(int argc, char *argv[]) {
     if (argc == 1) {
 #ifdef CONFIG_KS10
         printf("The timer is currently %s.\n",
-               ks10_t::timerEnable() ? "enabled", "disabled");
+               ks10_t::timerEnable() ? "enabled" : "disabled");
 #endif
     } else if (argc == 2) {
         if (*argv[1] == '0') {
@@ -978,7 +978,7 @@ static void cmdTP(int argc, char *argv[]) {
     if (argc == 1) {
 #ifdef CONFIG_KS10
         printf("The traps are currently %s.\n",
-               ks10_t::trapEnable() ? "enabled", "disabled");
+               ks10_t::trapEnable() ? "enabled" : "disabled");
 #endif
     } else if (argc == 2) {
         if (*argv[1] == '0') {
