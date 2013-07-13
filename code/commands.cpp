@@ -40,9 +40,8 @@
 #include "ks10.hpp"
 #include "fatfs/dir.h"
 #include "fatfs/ff.h"
+#include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
-
-//#define CONFIG_KS10
 
 static ks10_t::addr_t address;
 
@@ -294,21 +293,15 @@ static void cmdCE(int argc, char *argv[]) {
         "CE 1 : enable cache\n";
 
     if (argc == 1) {
-#ifdef CONFIG_KS10
         printf("The cache is currently %s.\n",
                ks10_t::cacheEnable() ? "enabled" : "disabled");
-#endif
     } else if (argc == 2) {
         if (*argv[1] == '0') {
             printf("The cache is disabled.\n");
-#ifdef CONFIG_KS10
             ks10_t::cacheEnable(false);
-#endif
         } else if (*argv[1] == '1') {
             printf("The cache is enabled.\n");
-#ifdef CONFIG_KS10
             ks10_t::cacheEnable(true);
-#endif
         } else {
             printf(usage);
         }
@@ -335,9 +328,7 @@ static void cmdCO(int argc, char *[]) {
         "Continue the KS10 from the HALT state.\n";
 
     if (argc == 1) {
-#ifdef  CONFIG_KS10
         ks10_t::cont();
-#endif
     } else {
         printf(usage);
     }
@@ -365,12 +356,12 @@ static void cmdDI(int argc, char *argv[]) {
 
     if (argc == 2) {
         ks10_t::data_t data = parseOctal(argv[1]);
-#ifdef CONFIG_KS10
+        printf("started writeIO(%012llo, %012llo)\n", address, data);
         ks10_t::writeIO(address, data);
         if (ks10_t::nxmnxd()) {
             printf("Write failed. (NXD)\n");
         }
-#endif
+        printf("done writeIO()\n");
     } else {
         printf(usage);
     }
@@ -398,12 +389,10 @@ static void cmdDM(int argc, char *argv[]) {
 
     if (argc == 2) {
         ks10_t::data_t data = parseOctal(argv[1]);
-#ifdef CONFIG_KS10
         ks10_t::writeMem(address, data);
         if (ks10_t::nxmnxd()) {
             printf("Write failed. (NXM)\n");
         }
-#endif
     } else {
         printf(usage);
     }
@@ -430,7 +419,6 @@ static void cmdDN(int argc, char *argv[]) {
 
     if (argc == 2) {
         ks10_t::data_t data = parseOctal(argv[1]);
-#ifdef CONFIG_KS10
         if (access == accessMEM) {
             ks10_t::writeMem(address, data);
             if (ks10_t::nxmnxd()) {
@@ -442,7 +430,6 @@ static void cmdDN(int argc, char *argv[]) {
                 printf("Write failed. (NXD)\n");
             }
         }
-#endif
     } else {
         printf(usage);
     }
@@ -476,13 +463,11 @@ static void cmdEI(int argc, char *[]) {
         "Examine data from the last IO address.\n";
 
     if (argc == 1) {
-#ifdef CONFIG_KS10
         if (ks10_t::nxmnxd()) {
             printf("IO read failed. (NXD)\n");
         } else {
             printf("%012llo\n", ks10_t::readIO(address));
         }
-#endif
     } else {
         printf(usage);
     }
@@ -510,13 +495,11 @@ static void cmdEM(int argc, char *[]) {
         "Examine data from the last memory address.\n";
 
     if (argc == 1) {
-#ifdef CONFIG_KS10
         if (ks10_t::nxmnxd()) {
             printf("Memory read failed. (NXM)\n");
         } else {
             printf("%012llo\n", ks10_t::readMem(address));
         }
-#endif
     } else {
         printf(usage);
     }
@@ -542,7 +525,6 @@ static void cmdEN(int argc, char *[]) {
         "Examine data from the next memory or IO address.\n";
 
     if (argc == 1) {
-#ifdef CONFIG_KS10
         if (access == accessMEM) {
             if (ks10_t::nxmnxd()) {
                 printf("Memory read failed. (NXM)\n");
@@ -556,7 +538,6 @@ static void cmdEN(int argc, char *[]) {
                 printf("%012llo\n", ks10_t::readIO(address));
             }
         }
-#endif
     } else {
         printf(usage);
     }
@@ -580,9 +561,7 @@ static void cmdEX(int argc, char *[]) {
         "Execute the next instruction and then halt.\n";
 
     if (argc == 1) {
-#ifdef CONFIG_KS10
         ks10_t::exec();
-#endif
     } else {
         printf(usage);
     }
@@ -610,12 +589,10 @@ static void cmdHA(int argc, char *[]) {
         "HALT the KS10\n";
 
     if (argc == 1) {
-#ifdef CONFIG_KS10
         ks10_t::halt(true);
         while (!ks10_t::halt()) {
             ;
         }
-#endif
         printf("KS10> Halted\n");
     } else {
         printf(usage);
@@ -732,17 +709,15 @@ static void cmdMR(int argc, char *[]) {
         "RESET the KS10.\n";
 
     if (argc == 1) {
-#ifdef CONFIG_KS10
         ks10_t::cpuReset(true);
         ks10_t::trapEnable(true);
         ks10_t::timerEnable(true);
         ks10_t::cacheEnable(true);
-        SysCtlDelay(10);
+        ROM_SysCtlDelay(10);
         ks10_t::cpuReset(false);
         while (!ks10_t::halt()) {
             ;
         }
-#endif
     } else {
         printf(usage);
     }
@@ -829,9 +804,7 @@ static void cmdSI(int argc, char *[]) {
         "Step Instruction: Single step the KS10.\n";
 
     if (argc == 1) {
-#ifdef CONFIG_KS10
         ks10_t::step();
-#endif
     } else {
         printf(usage);
     }
@@ -856,9 +829,7 @@ static void cmdSH(int argc, char *[]) {
         "Shutdown.  Shutdown TOPS20.\n";
 
     if (argc == 1) {
-#ifdef CONFIG_KS10
         ks10_t::writeMem(030, 1);
-#endif
     } else {
         printf(usage);
     }
@@ -888,10 +859,8 @@ static void cmdST(int argc, char *argv[]) {
     if (argc == 1) {
         ks10_t::addr_t addr = parseOctal(argv[1]);
         if (addr <= ks10_t::maxVirtAddr) {
-#ifdef CONFIG_KS10
             ks10_t::writeCIR((ks10_t::opJRST << 18) | (addr & 0777777));
             ks10_t::run(true);
-#endif
         } else {
             printf("Invalid Address\n"
                    "Valid addresses are %08o-%08llo\n",
@@ -927,21 +896,15 @@ void cmdTE(int argc, char *argv[]) {
         "TE 1 : enable timer\n";
 
     if (argc == 1) {
-#ifdef CONFIG_KS10
         printf("The timer is currently %s.\n",
                ks10_t::timerEnable() ? "enabled" : "disabled");
-#endif
     } else if (argc == 2) {
         if (*argv[1] == '0') {
             printf("The timer is disabled.\n");
-#ifdef CONFIG_KS10
             ks10_t::timerEnable(false);
-#endif
         } else if (*argv[1] == '1') {
             printf("The timer is enabled.\n");
-#ifdef CONFIG_KS10
             ks10_t::timerEnable(true);
-#endif
         } else {
             printf(usage);
         }
@@ -976,21 +939,15 @@ static void cmdTP(int argc, char *argv[]) {
 
 
     if (argc == 1) {
-#ifdef CONFIG_KS10
         printf("The traps are currently %s.\n",
                ks10_t::trapEnable() ? "enabled" : "disabled");
-#endif
     } else if (argc == 2) {
         if (*argv[1] == '0') {
             printf("The traps are disabled.\n");
-#ifdef CONFIG_KS10
             ks10_t::trapEnable(false);
-#endif
         } else if (*argv[1] == '1') {
             printf("The traps are enabled.\n");
-#ifdef CONFIG_KS10
             ks10_t::trapEnable(true);
-#endif
         } else {
             printf(usage);
         }
