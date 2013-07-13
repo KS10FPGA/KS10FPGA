@@ -4,8 +4,8 @@
 //
 //! External Peripheral Interface (EPI) Object
 //!
-//! This object abstracts the EPI interface. The console interfaces to the
-//! KS10 FPGA over the EPI interface.
+//! This object abstracts the EPI interface. The console microcontroller
+//! interfaces to the KS10 FPGA over the EPI interface.
 //!
 //! \file
 //!    epi.cpp
@@ -41,24 +41,15 @@
 #include "driverlib/epi.h"
 
 //!
-//! \brief
-//!     Constructor
+//! Constructor
 //!
-//! \details
-//!     The constructor initializes this object.
+//! The constructor initializes this object.
 //!
 //! \returns
 //!     Nothing.
 //!
 
-static void initialize(void) __attribute__((constructor(200)));
-
-
 static void EPIInitialize(void) {
-
-#ifndef CONFIG_KS10
-#warning FIXME: Stubbed out code
-#else
 
     //
     // Enable EPI0
@@ -162,19 +153,24 @@ static void EPIInitialize(void) {
     ROM_EPIModeSet(EPI0_BASE, EPI_MODE_HB8);
     ROM_EPIDividerSet(EPI0_BASE, 0);
     ROM_EPIConfigHB8Set(EPI0_BASE, (EPI_HB8_MODE_ADMUX  |
-                                EPI_HB8_WRWAIT_3    |
-                                EPI_HB8_RDWAIT_3    |
-                                EPI_HB8_WORD_ACCESS |
-                                EPI_HB8_CSCFG_ALE_DUAL_CS), 0);
+                                    EPI_HB8_WRWAIT_3    |
+                                    EPI_HB8_RDWAIT_3    |
+                                    EPI_HB8_WORD_ACCESS |
+                                    EPI_HB8_CSCFG_ALE_DUAL_CS), 0);
 
     //
     // Set EPI address map
     //
     
-    ROM_EPIAddressMapSet(EPI0_BASE, (EPI_ADDR_RAM_SIZE_256B | EPI_ADDR_RAM_BASE_6));
+    ROM_EPIAddressMapSet(EPI0_BASE, (EPI_ADDR_RAM_SIZE_256B |
+                                     EPI_ADDR_RAM_BASE_6));
 #endif
    
 }
+
+//
+//! Return EPI Address
+//
 
 unsigned long EPIAddressMapGet(void) {
     return 0x60000000;
