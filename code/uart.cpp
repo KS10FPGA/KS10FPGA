@@ -87,8 +87,8 @@ void initializeUART(void) {
     ROM_GPIOPinTypeUART(GPIO_PORT_BASE, GPIO_PIN_0 | GPIO_PIN_1);
 
 #ifdef CONFIG_ESM
-    GPIOPinConfigure(GPIO_PD0_U1RX);
-    GPIOPinConfigure(GPIO_PD1_U1TX);
+    ROM_GPIOPinConfigure(GPIO_PD0_U1RX);
+    ROM_GPIOPinConfigure(GPIO_PD1_U1TX);
 #endif
 
     ROM_UARTConfigSetExpClk(UART_BASE, ROM_SysCtlClockGet(), 9600,

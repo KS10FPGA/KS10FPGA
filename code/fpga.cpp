@@ -84,9 +84,9 @@ bool programFPGA(void) {
     //
 
     ROM_GPIOPinWrite(GPIO_PORT_BASE, GPIO_PIN_PROG, 0);
-    SysCtlDelay(10);
+    ROM_SysCtlDelay(10);
     ROM_GPIOPinWrite(GPIO_PORT_BASE, GPIO_PIN_PROG, GPIO_PIN_PROG);
-    SysCtlDelay(10);
+    ROM_SysCtlDelay(10);
     
     //
     // Verify DONE is negated.

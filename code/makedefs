@@ -5,20 +5,21 @@ PART    := LM3S9B92
 CFLAGS := \
 	-Dgcc \
 	-DPART_${PART} \
+	-DTARGET_IS_TEMPEST_RC3 \
+	-DCONFIG_ESM \
 	-W -Wall \
 	-mcpu=cortex-m3 \
 	-mthumb \
 	-Os \
 	-g \
-        -MD \
-        -std=gnu++11 \
+	-MD \
+	-std=gnu++11 \
         -pedantic \
 	-ffunction-sections \
 	-fdata-sections \
 	-fno-exceptions \
         -Wno-ctor-dtor-privacy \
 	-Wno-non-virtual-dtor \
-	-DTARGET_IS_TEMPEST_RB1 \
 	-I ..
 
 %.o: %.c

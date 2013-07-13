@@ -37,17 +37,20 @@
 //! @{
 //
 
+#include "epi.h"
 #include "ks10.hpp"
+#include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 
 //
 //! Constructor
 //!
-//! The constructor initializes this object.
+//! The constructor initializes this object.  For the most part, it
+//! just initializes the EPI object.
 //
 
 ks10_t::ks10_t(void) {
-    ;
+    EPIInitialize();
 }
 
 //
@@ -227,7 +230,7 @@ void ks10_t::run(bool enable) {
     if (enable) {
         uint8_t status = readByte(regStat + 5);
         writeByte(regStat + 5, status | statRUN);
-	SysCtlDelay(10);
+	ROM_SysCtlDelay(10);
         writeByte(regStat + 5, status);
     }
 }
@@ -264,7 +267,7 @@ void ks10_t::halt(bool enable) {
     if (enable) {
         uint8_t status = readByte(regStat + 5);
         writeByte(regStat + 5, status | statHALT);
-	SysCtlDelay(10);
+	ROM_SysCtlDelay(10);
         writeByte(regStat + 5, status);
     }
 }
@@ -296,7 +299,7 @@ bool ks10_t::halt(void) {
 void ks10_t::step(void) {
     uint8_t status = readByte(regStat + 5);
     writeByte(regStat + 5, status | statSTEP);
-    SysCtlDelay(10);
+    ROM_SysCtlDelay(10);
     writeByte(regStat + 5, status);
 }
 
@@ -311,7 +314,7 @@ void ks10_t::step(void) {
 void ks10_t::exec(void) {
     uint8_t status = readByte(regStat + 5);
     writeByte(regStat + 5, status | statEXEC);
-    SysCtlDelay(10);
+    ROM_SysCtlDelay(10);
     writeByte(regStat + 5, status);
 }
 
@@ -328,7 +331,7 @@ void ks10_t::exec(void) {
 void ks10_t::cont(void) {
     uint8_t status = readByte(regStat + 5);
     writeByte(regStat + 5, status | statCONT);
-    SysCtlDelay(10);
+    ROM_SysCtlDelay(10);
     writeByte(regStat + 5, status);
 }
 
@@ -469,7 +472,7 @@ void ks10_t::cpuReset(bool enable) {
 void ks10_t::cpuIntr(void) {
     uint8_t status = readByte(regStat + 6);
     writeByte(regStat + 7, status | statINTR);
-    SysCtlDelay(10);
+    ROM_SysCtlDelay(10);
     writeByte(regStat + 7, status);
 }
 

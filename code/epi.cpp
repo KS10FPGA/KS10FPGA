@@ -33,12 +33,13 @@
 //
 //******************************************************************************
 
-#include <stdint.h>
 
 #include "epi.h"
-#include "driverlib/sysctl.h"
-#include "driverlib/gpio.h"
+#include "driverlib/rom.h"
 #include "driverlib/epi.h"
+#include "driverlib/gpio.h"
+#include "driverlib/sysctl.h"
+#include "driverlib/inc/hw_memmap.h"
 
 //!
 //! Constructor
@@ -49,7 +50,7 @@
 //!     Nothing.
 //!
 
-static void EPIInitialize(void) {
+void EPIInitialize(void) {
 
     //
     // Enable EPI0
@@ -164,8 +165,6 @@ static void EPIInitialize(void) {
     
     ROM_EPIAddressMapSet(EPI0_BASE, (EPI_ADDR_RAM_SIZE_256B |
                                      EPI_ADDR_RAM_BASE_6));
-#endif
-   
 }
 
 //
@@ -175,5 +174,3 @@ static void EPIInitialize(void) {
 unsigned long EPIAddressMapGet(void) {
     return 0x60000000;
 }
-
-#endif
