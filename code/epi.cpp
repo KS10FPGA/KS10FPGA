@@ -73,43 +73,6 @@ void EPIInitialize(void) {
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOJ);
 
     //
-    // Configure EPI Pins
-    //
-
-    ROM_GPIOPinConfigure(GPIO_PH3_EPI0S0);
-    ROM_GPIOPinConfigure(GPIO_PH2_EPI0S1);
-    ROM_GPIOPinConfigure(GPIO_PC4_EPI0S2);
-    ROM_GPIOPinConfigure(GPIO_PC5_EPI0S3);
-    ROM_GPIOPinConfigure(GPIO_PC6_EPI0S4);
-    ROM_GPIOPinConfigure(GPIO_PC7_EPI0S5);
-    ROM_GPIOPinConfigure(GPIO_PH0_EPI0S6);
-    ROM_GPIOPinConfigure(GPIO_PH1_EPI0S7);
-    ROM_GPIOPinConfigure(GPIO_PE0_EPI0S8);
-    ROM_GPIOPinConfigure(GPIO_PE1_EPI0S9);
-    ROM_GPIOPinConfigure(GPIO_PH4_EPI0S10);
-    ROM_GPIOPinConfigure(GPIO_PH5_EPI0S11);
-    ROM_GPIOPinConfigure(GPIO_PF4_EPI0S12);
-    ROM_GPIOPinConfigure(GPIO_PG0_EPI0S13);
-    ROM_GPIOPinConfigure(GPIO_PG1_EPI0S14);
-    ROM_GPIOPinConfigure(GPIO_PF5_EPI0S15);
-    ROM_GPIOPinConfigure(GPIO_PJ0_EPI0S16);
-    ROM_GPIOPinConfigure(GPIO_PJ1_EPI0S17);
-    ROM_GPIOPinConfigure(GPIO_PJ2_EPI0S18);
-    ROM_GPIOPinConfigure(GPIO_PD4_EPI0S19);
-    ROM_GPIOPinConfigure(GPIO_PD2_EPI0S20);
-    ROM_GPIOPinConfigure(GPIO_PD3_EPI0S21);
-    ROM_GPIOPinConfigure(GPIO_PB5_EPI0S22);
-    ROM_GPIOPinConfigure(GPIO_PB4_EPI0S23);
-    ROM_GPIOPinConfigure(GPIO_PE2_EPI0S24);
-    ROM_GPIOPinConfigure(GPIO_PE3_EPI0S25);
-    ROM_GPIOPinConfigure(GPIO_PH6_EPI0S26);
-    ROM_GPIOPinConfigure(GPIO_PH7_EPI0S27);
-    ROM_GPIOPinConfigure(GPIO_PJ4_EPI0S28);
-    ROM_GPIOPinConfigure(GPIO_PJ5_EPI0S29);
-    ROM_GPIOPinConfigure(GPIO_PD7_EPI0S30);
-    ROM_GPIOPinConfigure(GPIO_PG7_EPI0S31);
-
-    //
     // Configure the GPIO pins for EPI mode
     //
     
@@ -147,6 +110,44 @@ void EPIInitialize(void) {
                                          GPIO_PIN_2 |
                                          GPIO_PIN_1 |
                                          GPIO_PIN_0));
+
+    //
+    // Configure EPI Pins
+    //
+
+    ROM_GPIOPinConfigure(GPIO_PH3_EPI0S0);
+    ROM_GPIOPinConfigure(GPIO_PH2_EPI0S1);
+    ROM_GPIOPinConfigure(GPIO_PC4_EPI0S2);
+    ROM_GPIOPinConfigure(GPIO_PC5_EPI0S3);
+    ROM_GPIOPinConfigure(GPIO_PC6_EPI0S4);
+    ROM_GPIOPinConfigure(GPIO_PC7_EPI0S5);
+    ROM_GPIOPinConfigure(GPIO_PH0_EPI0S6);
+    ROM_GPIOPinConfigure(GPIO_PH1_EPI0S7);
+    ROM_GPIOPinConfigure(GPIO_PE0_EPI0S8);
+    ROM_GPIOPinConfigure(GPIO_PE1_EPI0S9);
+    ROM_GPIOPinConfigure(GPIO_PH4_EPI0S10);
+    ROM_GPIOPinConfigure(GPIO_PH5_EPI0S11);
+    ROM_GPIOPinConfigure(GPIO_PF4_EPI0S12);
+    ROM_GPIOPinConfigure(GPIO_PG0_EPI0S13);
+    ROM_GPIOPinConfigure(GPIO_PG1_EPI0S14);
+    ROM_GPIOPinConfigure(GPIO_PF5_EPI0S15);
+    ROM_GPIOPinConfigure(GPIO_PJ0_EPI0S16);
+    ROM_GPIOPinConfigure(GPIO_PJ1_EPI0S17);
+    ROM_GPIOPinConfigure(GPIO_PJ2_EPI0S18);
+    ROM_GPIOPinConfigure(GPIO_PD4_EPI0S19);
+    ROM_GPIOPinConfigure(GPIO_PD2_EPI0S20);
+    ROM_GPIOPinConfigure(GPIO_PD3_EPI0S21);
+    ROM_GPIOPinConfigure(GPIO_PB5_EPI0S22);
+    ROM_GPIOPinConfigure(GPIO_PB4_EPI0S23);
+    ROM_GPIOPinConfigure(GPIO_PE2_EPI0S24);
+    ROM_GPIOPinConfigure(GPIO_PE3_EPI0S25);
+    ROM_GPIOPinConfigure(GPIO_PH6_EPI0S26);
+    ROM_GPIOPinConfigure(GPIO_PH7_EPI0S27);
+    ROM_GPIOPinConfigure(GPIO_PJ4_EPI0S28);
+    ROM_GPIOPinConfigure(GPIO_PJ5_EPI0S29);
+    ROM_GPIOPinConfigure(GPIO_PD7_EPI0S30);
+    ROM_GPIOPinConfigure(GPIO_PG7_EPI0S31);
+
     //
     // Configure EPI
     //
