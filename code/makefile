@@ -7,26 +7,31 @@ OPENOCD_CFG := ks10.cfg
 
 LDFLAGS := \
 	--script=$(TARGET).ld \
-	--entry vectReset \
+	--entry reset \
         --gc-sections \
 	-Map $(TARGET).map
 
 FILES := \
 	console.o\
 	commands.o \
+	epi.o \
 	fpga.o \
 	ks10.o \
 	sd.o \
 	startup.o \
 	stdio.o \
+	sysclk.o \
 	uart.o \
 
 HEADERS := \
 	commands.hpp \
+	epi.h \
 	fpga.h \
 	ks10.hpp\
 	sd.h \
 	stdio.h \
+	sysclk.hpp \
+	timer.hpp \
 	uart.h \
 	fatfs/dir.h \
 	fatfs/diskio.h \

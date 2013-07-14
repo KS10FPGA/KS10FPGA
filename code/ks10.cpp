@@ -40,22 +40,93 @@
 #include "epi.h"
 #include "ks10.hpp"
 #include "driverlib/rom.h"
+#include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
+#include "driverlib/inc/hw_gpio.h"
+#include "driverlib/inc/hw_ints.h"
+#include "driverlib/inc/hw_types.h"
+#include "driverlib/inc/hw_memmap.h"
+
+#include "stdio.h"
+
+void (*ks10_t::consIntrHandler)(void);
 
 //
 //! Constructor
 //!
-//! The constructor initializes this object.  For the most part, it
-//! just initializes the EPI object.
+//! The constructor initializes this object.
+//!
+//! For the most part, this function initializes the EPI object and configures
+//! the GPIO for the console interrupt.
+//!
+//! We use PB7 for the interrupt from the KS10.  Normally PB7 is the NMI but
+//! we don't want NMI semantics.  Therefore this code configures PB7 to
+//! be a normal active low GPIO-based interrupt.
+///
+
+ks10_t::ks10_t(void (*consIntrHandler)(void)) {
+    ks10_t::consIntrHandler = consIntrHandler;
+
+    EPIInitialize();
+
+    // Unlock and change PB7 behavior - default is NMI
+    HWREG(GPIO_PORTB_BASE + GPIO_O_LOCK) = GPIO_LOCK_KEY;
+
+    // Change commit register
+    HWREG(GPIO_PORTB_BASE + GPIO_O_CR) = 0x000000ff;
+
+    // Configure PD7 as an input
+    ROM_GPIODirModeSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_DIR_MODE_IN);
+
+    // Set max current 2mA and connect weak pull-up resistor
+    ROM_GPIOPadConfigSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_STRENGTH_2MA,
+                         GPIO_PIN_TYPE_STD_WPU);
+
+    // Set the interrupt type for each pin
+    ROM_GPIOIntTypeSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_FALLING_EDGE);
+    // (GPIO_FALLING_EDGE | GPIO_DISCRETE_INT)
+
+    // Enable interrupt
+    ROM_GPIOPinIntEnable(GPIO_PORTB_BASE, GPIO_PIN_7);
+
+    // Enable interrupts on Port B
+    ROM_IntEnable(INT_GPIOB);
+}
+
+//
+//! Console Interrupt Wrapper
 //
 
-ks10_t::ks10_t(void) {
-    EPIInitialize();
+extern "C" void gpiobIntHandler(void) {
+    (*ks10_t::consIntrHandler)();
+    ROM_GPIOPinIntClear(GPIO_PORTB_BASE, GPIO_PIN_7);
+}
+
+//
+//!  This function starts and completes a KS10 bus transaction
+//!
+//!  A KS10 FPGA bus cycle begins when the <b>GO</b> bit is asserted.  The
+//!  <b>GO</b> bit will remain asserted while the bus cycle is still active.
+//!  The <b>Console Data Register</b> should not be accessed when the <b>GO</b>
+//!  bit is asserted.
+//
+
+
+void ks10_t::go(void) {
+    writeByte(regStat + 3, statGO);
+    ROM_SysCtlDelay(1);
+    for (int i = 0; i < 1000; i++) {
+        if (!(readByte(regStat + 3) & statGO)) {
+            return;
+        }
+        ROM_SysCtlDelay(1);
+    }
+    //printf("Bus Timeout.\n");
 }
 
 //
 //! This function reads from <b>Console Status Register</b>
-//! 
+//!
 //! \returns
 //!     Contents of the <b>Console Status Register</b>.
 //
@@ -65,8 +136,19 @@ ks10_t::data_t ks10_t::readStatus(void) {
 }
 
 //
+//! This function writes to <b>Console Status Register</b>
+//!
+//! \param data
+//!     data to be written to the <b>Console Status Register</b>.
+//
+
+void ks10_t::writeStatus(data_t data) {
+    writeReg(regStat, data);
+}
+
+//
 //! This function reads the <b>Console Instruction Register</b>
-//! 
+//!
 //! \returns
 //!     Contents of the <b>Console Instruction Register</b>
 //
@@ -76,9 +158,21 @@ ks10_t::data_t ks10_t::readCIR(void) {
 }
 
 //
-//! This function to reads a 36-bit word from KS10 memory.
+//! Function to write to the <b>Console Instruction Register</b>
 //!
 //! \param
+//!     data is the data to be written to the <b>Console Instruction
+//!     Register.</b>
+//
+
+void ks10_t::writeCIR(data_t data) {
+    writeReg(regCIR, data);
+}
+
+//
+//! This function to reads a 36-bit word from KS10 memory.
+//!
+//! \param [in]
 //!     addr is the address in the KS10 memory space which is to be read.
 //!
 //! \see
@@ -91,13 +185,32 @@ ks10_t::data_t ks10_t::readCIR(void) {
 ks10_t::data_t ks10_t::readMem(addr_t addr) {
     writeReg(regAddr, (addr & addrMask) | read);
     go();
-    return readReg(regData);
+    return dataMask & readReg(regData);
+}
+
+//
+//! This function writes a 36-bit word to KS10 memory.
+//!
+//! \param [in]
+//!     addr is the address in the KS10 memory space which is to be written.
+//!
+//! \param [in]
+//!     data is the data to be written to the KS10 memory.
+//!
+//! \see
+//!     writeIO() for 36-bit IO writes, and writeIObyte() for UNIBUS writes.
+//
+
+void ks10_t::writeMem(addr_t addr, data_t data) {
+    writeReg(regAddr, (addr & addrMask) | write);
+    writeReg(regData, data);
+    go();
 }
 
 //
 //! This function reads a 36-bit word from KS10 IO.
 //!
-//! \param
+//! \param [in]
 //!     addr is the address in the KS10 IO space which is to be read.
 //!
 //! \see
@@ -110,13 +223,35 @@ ks10_t::data_t ks10_t::readMem(addr_t addr) {
 ks10_t::data_t ks10_t::readIO(addr_t addr) {
     writeReg(regAddr, (addr & addrMask) | read | io);
     go();
-    return readByte(regData);
+    return dataMask & readReg(regData);
+}
+
+//
+//! This function writes a 36-bit word to the KS10 IO.
+//!
+//! This function is used to write to 36-bit KS10 IO and is not to be
+//! used to write to UNIBUS style IO.
+//!
+//! \param [in]
+//!     addr is the address in the KS10 IO space which is to be written.
+//!
+//! \param [in]
+//!     data is the data to be written to the KS10 IO.
+//!
+//! \see
+//!     writeMem() for memory writes, and writeIObyte() for UNIBUS writes.
+//
+
+void ks10_t::writeIO(addr_t addr, data_t data) {
+    writeReg(regAddr, (addr & addrMask) | write | io);
+    writeReg(regData, data);
+    go();
 }
 
 //
 //! This function reads an 8-bit (or 16-bit) byte from KS10 UNIBUS IO.
 //!
-//! \param
+//! \param [in]
 //!     addr is the address in the Unibus IO space which is to be read.
 //!
 //! \see
@@ -127,74 +262,10 @@ ks10_t::data_t ks10_t::readIO(addr_t addr) {
 //!     Contents of the KS10 Unibus IO that was read.
 //
 
-uint8_t ks10_t::readIObyte(addr_t addr) {
+uint16_t ks10_t::readIObyte(addr_t addr) {
     writeReg(regAddr, (addr & addrMask) | read | io | byte);
     go();
-    return readReg(regData);
-}
-
-//
-//! This function writes to <b>Console Status Register</b>
-//!
-//! \param data
-//!     data to be written to the <b>Console Status Register</b>.
-//
-
-void ks10_t::writeStatus(data_t data) {
-    writeReg(regStat, data); 
-}
-
-//
-//! Function to write to the <b>Console Instruction Register</b>
-//!
-//! \param
-//!     data is the data to be written to the <b>Console Instruction
-//!     Register.</b>
-//
-
-void ks10_t::writeCIR(data_t data) {
-    writeReg(regCIR, data); 
-}
-
-//
-//! This function writes a 36-bit word to KS10 memory.
-//!
-//! \param
-//!     addr is the address in the KS10 memory space which is to be written.
-//!
-//! \param
-//!     data is the data to be written to the KS10 memory.
-//!
-//! \see
-//!     writeIO() for 36-bit IO writes, and writeIObyte() for UNIBUS writes.
-//
-
-void ks10_t::writeMem(addr_t addr, data_t data) {
-    writeReg(regAddr, (addr & addrMask) | write);
-    go();
-    writeReg(regData, data);
-}
-
-//
-//! This function writes a 36-bit word to the KS10 IO.
-//!
-//! This function is used to write to 36-bit KS10 IO and is not to be
-//! used to write to UNIBUS style IO.  
-//!
-//! \param
-//!     addr is the address in the KS10 IO space which is to be written.
-//!
-//! \param
-//!     data is the data to be written to the KS10 IO.
-//!
-//! \see
-//!     writeMem() for memory writes, and writeIObyte() for UNIBUS writes.
-//
-
-void ks10_t::writeIO(addr_t addr, data_t data) {
-    writeReg(regAddr, (addr & addrMask) | write | io);
-    go();
-    writeReg(regData, data);
+    return 0xffff & readReg(regData);
 }
 
 //
@@ -207,10 +278,10 @@ void ks10_t::writeIO(addr_t addr, data_t data) {
 //!     data is the data to be written to the KS10 Unibus IO.
 //
 
-void ks10_t::writeIObyte(addr_t addr, uint8_t data) {
+void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
     writeReg(regAddr, (addr & addrMask) | write | io | byte);
-    go();
     writeByte(regData, data);
+    go();
 }
 
 //
@@ -230,7 +301,7 @@ void ks10_t::run(bool enable) {
     if (enable) {
         uint8_t status = readByte(regStat + 5);
         writeByte(regStat + 5, status | statRUN);
-	ROM_SysCtlDelay(10);
+        ROM_SysCtlDelay(10);
         writeByte(regStat + 5, status);
     }
 }
@@ -239,7 +310,7 @@ void ks10_t::run(bool enable) {
 //! This function checks the KS10 in <b>RUN</b> status.
 //!
 //! This function examines the <b>RUN</b> bit in the <b>Console Control/Status
-//! Register</b>. 
+//! Register</b>.
 //!
 //! \returns
 //!     This function returns true if the KS10 is running, false
@@ -267,7 +338,7 @@ void ks10_t::halt(bool enable) {
     if (enable) {
         uint8_t status = readByte(regStat + 5);
         writeByte(regStat + 5, status | statHALT);
-	ROM_SysCtlDelay(10);
+        ROM_SysCtlDelay(10);
         writeByte(regStat + 5, status);
     }
 }
@@ -276,7 +347,7 @@ void ks10_t::halt(bool enable) {
 //! This checks the KS10 in <b>HALT</b> status.
 //!
 //! This function examines the <b>HALT</b> bit in the <b>Console Control/Status
-//! Register</b> 
+//! Register</b>
 //!
 //! \returns
 //!     This function returns true if the KS10 is halted, false otherwise.
@@ -501,10 +572,11 @@ const char *ks10_t::getFirmwareRev(void) {
 //!
 //! \returns
 //!     Contents of the Halt Status Word
-//! 
+//!
 
 ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
     static haltStatusWord_t haltStatusWord;
+
     haltStatusWord.status = readMem(0);
     haltStatusWord.pc     = readMem(1);
 
@@ -518,10 +590,11 @@ ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
 //!
 //! \returns
 //!     Contents of the Halt Status Block.
-//! 
+//!
 
 ks10_t::haltStatusBlock_t &ks10_t::getHaltStatusBlock(addr_t addr) {
     static haltStatusBlock_t haltStatusBlock;
+
     haltStatusBlock.mag  = readMem(addr +  0);
     haltStatusBlock.pc   = readMem(addr +  1);
     haltStatusBlock.hr   = readMem(addr +  2);

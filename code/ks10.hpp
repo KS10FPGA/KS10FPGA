@@ -100,24 +100,25 @@ class ks10_t {
         static const addr_t maxVirtAddr = 000777777;    //!< Last virtual address (18-bit)
         static const addr_t maxMemAddr  = 003777777;    //!< Last memory address (20-bit)
         static const addr_t maxIOAddr   = 017777777;    //!< Last IO address (22-bit)
+        static const data_t dataMask    = 0777777777777;
 
         //
         // Functions
         //
 
-        ks10_t(void);
+        ks10_t(void (*)(void));
         static uint32_t lh(data_t data);
         static uint32_t rh(data_t data);
         static data_t   readStatus(void);
-        static data_t   readCIR(void);
-        static data_t   readMem(addr_t addr);
-        static data_t   readIO(addr_t addr);
-        static uint8_t  readIObyte(addr_t addr);
         static void     writeStatus(data_t data);
+        static data_t   readCIR(void);
         static void     writeCIR(data_t data);
+        static data_t   readMem(addr_t addr);
         static void     writeMem(addr_t addr, data_t data);
+        static data_t   readIO(addr_t addr);
         static void     writeIO(addr_t addr, data_t data);
-        static void     writeIObyte(addr_t addr, uint8_t data);
+        static uint16_t readIObyte(addr_t addr);
+        static void     writeIObyte(addr_t addr, uint16_t data);
         static void     run(bool enable);
         static bool     run(void);
         static void     halt(bool enable);
@@ -138,6 +139,7 @@ class ks10_t {
         static haltStatusWord_t  &getHaltStatusWord(void);
         static haltStatusBlock_t &getHaltStatusBlock(addr_t addr);
         static const char *getFirmwareRev(void);
+        static void     (*consIntrHandler)(void);
 
     private:
 
@@ -292,23 +294,6 @@ inline ks10_t::data_t ks10_t::readReg(const uint8_t * reg) {
 
 inline void ks10_t::writeReg(uint8_t * reg, data_t data) {
     *reinterpret_cast<data_t *>(reg) = data;
-}
-
-//
-//!  This function starts and completes a KS10 bus transaction
-//!
-//!  A KS10 FPGA bus cycle begins when the <b>GO</b> bit is asserted.  The
-//!  <b>GO</b> bit will remain asserted while the bus cycle is still active.
-//!  The <b>Console Data Register</b> should not be accessed when the <b>GO</b>
-//!  bit is asserted.
-//
-
-
-inline void ks10_t::go(void) {
-    writeByte(regStat + 3, statGO);
-    while (readByte(regStat + 3) & statGO) {
-        ;
-    }
 }
 
 //

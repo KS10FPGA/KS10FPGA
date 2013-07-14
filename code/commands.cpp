@@ -356,12 +356,10 @@ static void cmdDI(int argc, char *argv[]) {
 
     if (argc == 2) {
         ks10_t::data_t data = parseOctal(argv[1]);
-        printf("started writeIO(%012llo, %012llo)\n", address, data);
         ks10_t::writeIO(address, data);
         if (ks10_t::nxmnxd()) {
             printf("Write failed. (NXD)\n");
         }
-        printf("done writeIO()\n");
     } else {
         printf(usage);
     }
