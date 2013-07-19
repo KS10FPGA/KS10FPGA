@@ -152,13 +152,14 @@ void EPIInitialize(void) {
     // Configure EPI
     //
     
-    ROM_EPIModeSet(EPI0_BASE, EPI_MODE_HB8);
+    ROM_EPIModeSet(EPI0_BASE, EPI_MODE_HB16);
     ROM_EPIDividerSet(EPI0_BASE, 0);
-    ROM_EPIConfigHB8Set(EPI0_BASE, (EPI_HB8_MODE_ADMUX  |
-                                    EPI_HB8_WRWAIT_3    |
-                                    EPI_HB8_RDWAIT_3    |
-                                    EPI_HB8_WORD_ACCESS |
-                                    EPI_HB8_CSCFG_ALE_DUAL_CS), 0);
+    ROM_EPIConfigHB16Set(EPI0_BASE, (EPI_HB16_MODE_ADDEMUX  |
+				     EPI_HB16_WRWAIT_3      |
+				     EPI_HB16_RDWAIT_3      |
+				     EPI_HB16_BSEL          |
+				     EPI_HB16_WORD_ACCESS   |
+				     EPI_HB16_CSCFG_CS), 0);
 
     //
     // Set EPI address map

@@ -544,8 +544,9 @@ static void cmdEN(int argc, char *[]) {
 //
 //! Execute the next instruction
 //!
-//! The <b>EX/b> (Execute) command causes the KS10 to execute the next
-//! instruction, then return to the halt state.
+//! The <b>EX/b> (Execute) command causes the KS10 to execute the 
+//! instruction in the Console Instruction Register, then return to
+//! the halt state.
 //!
 //! \sa cmdCO, cmdSI, cmdHA
 //!
@@ -559,7 +560,9 @@ static void cmdEX(int argc, char *[]) {
         "Execute the next instruction and then halt.\n";
 
     if (argc == 1) {
-        ks10_t::exec();
+        ks10_t::run(false);
+        ks10_t::exec(true);
+        ks10_t::cont(true);
     } else {
         printf(usage);
     }
@@ -571,6 +574,9 @@ static void cmdEX(int argc, char *[]) {
 //! The <b>HA</b> (Halt) command halts the KS10 CPU at the end of the current
 //! instruction.  The KS10 will remain in the <b>HALT</b> state until it is
 //! single-stepped or it is commanded to continue.
+//!
+//! This command negates the <b>RUN</b> bit in the Console Control Register and
+//! waits for the KS10 to halt.
 //!
 //! \sa cmdCO, cmdSI
 //!
@@ -587,7 +593,7 @@ static void cmdHA(int argc, char *[]) {
         "HALT the KS10\n";
 
     if (argc == 1) {
-        ks10_t::halt(true);
+        ks10_t::run(false);
         while (!ks10_t::halt()) {
             ;
         }
@@ -788,7 +794,6 @@ static void cmdSD(int argc, char *argv[]) {
 //!
 //! \sa cmdHA, cmdCO
 //!
-//!
 //! \param [in] argc
 //!    Number of arguments.
 //!
@@ -802,7 +807,8 @@ static void cmdSI(int argc, char *[]) {
         "Step Instruction: Single step the KS10.\n";
 
     if (argc == 1) {
-        ks10_t::step();
+        ks10_t::run(false);
+        ks10_t::cont(true);
     } else {
         printf(usage);
     }
@@ -837,7 +843,8 @@ static void cmdSH(int argc, char *[]) {
 //! Start Command
 //!
 //! The <b>ST</b> (Start) command stuffs a JRST instruction into the
-//! <b>Console Instruction Register</b>.
+//! <b>Console Instruction Register</b> and begins execution starting
+//! with that instruction.
 //!
 //! The address must be a virtual address and is therefore limited to
 //! 0777777.
@@ -858,7 +865,9 @@ static void cmdST(int argc, char *argv[]) {
         ks10_t::addr_t addr = parseOctal(argv[1]);
         if (addr <= ks10_t::maxVirtAddr) {
             ks10_t::writeCIR((ks10_t::opJRST << 18) | (addr & 0777777));
+            ks10_t::exec(true);
             ks10_t::run(true);
+            ks10_t::cont(true);
         } else {
             printf("Invalid Address\n"
                    "Valid addresses are %08o-%08llo\n",

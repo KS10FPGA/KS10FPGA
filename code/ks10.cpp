@@ -111,17 +111,13 @@ extern "C" void gpiobIntHandler(void) {
 //!  bit is asserted.
 //
 
-
 void ks10_t::go(void) {
-    writeByte(regStat + 3, statGO);
+    writeWord(regStat + 4, statGO);
     ROM_SysCtlDelay(1);
-    for (int i = 0; i < 1000; i++) {
-        if (!(readByte(regStat + 3) & statGO)) {
-            return;
-        }
-        ROM_SysCtlDelay(1);
+    // Wait for GO to negate
+    while (readWord(regStat + 4) & statGO) {
+        ;
     }
-    //printf("Bus Timeout.\n");
 }
 
 //
@@ -280,67 +276,102 @@ uint16_t ks10_t::readIObyte(addr_t addr) {
 
 void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
     writeReg(regAddr, (addr & addrMask) | write | io | byte);
-    writeByte(regData, data);
+    writeWord(regData, data);
     go();
 }
 
 //
-//! This function puts the KS10 in <b>RUN</b> mode.
-//!
-//! This function momentarily pulses the <b>RUN</b> bit of the <b>Console
-//! Control/Status Register</b>.
-//!
-//! The <b>RUN</b> bit only need to be asserted for a single FPGA clock cycle
-//! in order to transition the KS10 to <b>RUN</b> mode..
+//! This function controls the <b>RUN</b> mode of the KS10.
 //!
 //! \param enable -
-//!     Must be true to alter the operation of the KS10.
+//!     <b>True</b> puts the KS10 in <b>RUN</b> mode.
+//!     <b>False</b> puts the KS10 in <b>HALT</b> mode.
 //
 
 void ks10_t::run(bool enable) {
+    uint8_t status = readWord(regStat + 6);
     if (enable) {
-        uint8_t status = readByte(regStat + 5);
-        writeByte(regStat + 5, status | statRUN);
-        ROM_SysCtlDelay(10);
-        writeByte(regStat + 5, status);
+        writeWord(regStat + 6, status | statRUN);
+    } else {
+        writeWord(regStat + 6, status & ~statRUN);
     }
 }
 
 //
-//! This function checks the KS10 in <b>RUN</b> status.
+//! This function checks the KS10 <b>RUN</b> status.
 //!
 //! This function examines the <b>RUN</b> bit in the <b>Console Control/Status
 //! Register</b>.
 //!
 //! \returns
-//!     This function returns true if the KS10 is running, false
-//!     otherwise.
+//!     <b>true</b> if the KS10 is in <b>RUN<\b> mode, <b>false</b> if the KS10
+//!     is in <b>HALT</b> mode..
 //
 
 bool ks10_t::run(void) {
-    return readByte(regStat + 5) & statRUN;
+    return readWord(regStat + 6) & statRUN;
 }
 
 //
-//! This function puts the KS10 in <b>HALT</b> mode.
-//!
-//! This function momentarily pulses the <b>HALT</b> bit of the <b>Console
-//! Control/Status Register.</b>
-//!
-//! The <b>HALT</b> bit only need to be asserted for a single FPGA clock
-//! cycle in order to enter <b>HALT</b> mode.
+//! This function controls the <b>CONT</b> mode of the KS10.
 //!
 //! \param enable -
-//!     Must be true to alter the operation of the KS10.
+//!     <b>True</b> puts the KS10 in <b>CONT</b> mode.
+//!     <b>False</b> takes the KS10 out of <b>CONT</b> mode.
 //
 
-void ks10_t::halt(bool enable) {
+void ks10_t::cont(bool enable) {
+    uint8_t status = readWord(regStat + 6);
     if (enable) {
-        uint8_t status = readByte(regStat + 5);
-        writeByte(regStat + 5, status | statHALT);
-        ROM_SysCtlDelay(10);
-        writeByte(regStat + 5, status);
+        writeWord(regStat + 6, status | statCONT);
+    } else {
+        writeWord(regStat + 6, status & ~statCONT);
     }
+}
+
+//
+//! This function checks the KS10 <b>CONT</b> status.
+//!
+//! This function examines the <b>CONT</b> bit in the <b>Console Control/Status
+//! Register</b>.
+//!
+//! \returns
+//!     <b>true</b> if the KS10 is in <b>CONT<\b> mode, false otherwise.
+//
+
+bool ks10_t::cont(void) {
+    return readWord(regStat + 6) & statCONT;
+}
+
+//
+//! This function controls the <b>EXEC</b> mode of the KS10.
+//!
+//! \param enable -
+//!     <b>True</b> puts the KS10 in <b>EXEC</b> mode.
+//!     <b>False</b> takes the KS10 out of <b>EXEC</b> mode.
+//
+
+void ks10_t::exec(bool enable) {
+    uint8_t status = readWord(regStat + 6);
+    if (enable) {
+        writeWord(regStat + 6, status | statEXEC);
+    } else {
+        writeWord(regStat + 6, status & ~statEXEC);
+    }
+}
+
+//
+//! This function checks the KS10 <b>EXEC</b> status.
+//!
+//! This function examines the <b>EXEC</b> bit in the <b>Console Control/Status
+//! Register</b>.
+//!
+//! \returns
+//!     <b>true</b> if the KS10 is in <b>EXEC<\b> mode, false otherwise.
+//
+
+bool ks10_t::exec(void) {
+    return readWord(regStat + 6) & statEXEC;
 }
 
 //
@@ -354,56 +385,7 @@ void ks10_t::halt(bool enable) {
 //
 
 bool ks10_t::halt(void) {
-    return readByte(regStat + 5) & statHALT;
-}
-
-//
-//! This function <b>STEPs</b> the KS10.
-//!
-//! This function momentarily pulses the <b>STEP</b> bit of the <b>Console
-//! Control/Status Register</b>.
-//!
-//! The <b>STEP</b> bit only need to be asserted for a single FPGA clock cycle
-//! in order to single-step the KS10.
-//
-
-void ks10_t::step(void) {
-    uint8_t status = readByte(regStat + 5);
-    writeByte(regStat + 5, status | statSTEP);
-    ROM_SysCtlDelay(10);
-    writeByte(regStat + 5, status);
-}
-
-//
-//! This function momentarily pulses the <b>EXEC</b> bit of the <b>Console
-//! Control/Status Register</b>.
-//!
-//! The <b>EXEC</b> bit only need to be asserted for a single FPGA clock cycle
-//! in order to execute the next KS10 instruction.
-//
-
-void ks10_t::exec(void) {
-    uint8_t status = readByte(regStat + 5);
-    writeByte(regStat + 5, status | statEXEC);
-    ROM_SysCtlDelay(10);
-    writeByte(regStat + 5, status);
-}
-
-//
-//! This function <b>CONTINUEs</b> the KS10.
-//!
-//! This function momentarily pulses the <b>CONT</b> bit of the <b>Console
-//! Control/Status Register</b>.
-//!
-//! The <b>CONT</b> bit only need to be asserted for a single FPGA clock
-//! cycle in order to resume operation.
-//
-
-void ks10_t::cont(void) {
-    uint8_t status = readByte(regStat + 5);
-    writeByte(regStat + 5, status | statCONT);
-    ROM_SysCtlDelay(10);
-    writeByte(regStat + 5, status);
+    return readWord(regStat + 6) & statHALT;
 }
 
 //
@@ -415,7 +397,7 @@ void ks10_t::cont(void) {
 //
 
 bool ks10_t::timerEnable(void) {
-    return readByte(regStat + 6) & statTIMEREN;
+    return readWord(regStat + 6) & statTIMEREN;
 }
 
 //
@@ -427,11 +409,11 @@ bool ks10_t::timerEnable(void) {
 //
 
 void ks10_t::timerEnable(bool enable) {
-    uint8_t status = readByte(regStat + 6);
+    uint8_t status = readWord(regStat + 6);
     if (enable) {
-        writeByte(regStat + 6, status | statTIMEREN);
+        writeWord(regStat + 6, status | statTIMEREN);
     } else {
-        writeByte(regStat + 6, status & ~statTIMEREN);
+        writeWord(regStat + 6, status & ~statTIMEREN);
     }
 }
 
@@ -444,7 +426,7 @@ void ks10_t::timerEnable(bool enable) {
 //
 
 bool ks10_t::trapEnable(void) {
-    return readByte(regStat + 6) & statTRAPEN;
+    return readWord(regStat + 6) & statTRAPEN;
 }
 
 //
@@ -458,11 +440,11 @@ bool ks10_t::trapEnable(void) {
 //
 
 void ks10_t::trapEnable(bool enable) {
-    uint8_t status = readByte(regStat + 6);
+    uint8_t status = readWord(regStat + 6);
     if (enable) {
-        writeByte(regStat + 6, status | statTRAPEN);
+        writeWord(regStat + 6, status | statTRAPEN);
     } else {
-        writeByte(regStat + 6, status & ~statTRAPEN);
+        writeWord(regStat + 6, status & ~statTRAPEN);
     }
 }
 
@@ -475,7 +457,7 @@ void ks10_t::trapEnable(bool enable) {
 //
 
 bool ks10_t::cacheEnable(void) {
-    return readByte(regStat + 6) & statCACHEEN;
+    return readWord(regStat + 6) & statCACHEEN;
 }
 
 //
@@ -489,11 +471,11 @@ bool ks10_t::cacheEnable(void) {
 //
 
 void ks10_t::cacheEnable(bool enable) {
-    uint8_t status = readByte(regStat + 6);
+    uint8_t status = readWord(regStat + 6);
     if (enable) {
-        writeByte(regStat + 6, status | statCACHEEN);
+        writeWord(regStat + 6, status | statCACHEEN);
     } else {
-        writeByte(regStat + 6, status & ~statCACHEEN);
+        writeWord(regStat + 6, status & ~statCACHEEN);
     }
 }
 
@@ -506,7 +488,7 @@ void ks10_t::cacheEnable(bool enable) {
 //
 
 bool ks10_t::cpuReset(void) {
-    return readByte(regStat + 7) & statRESET;
+    return readWord(regStat + 6) & statRESET;
 }
 
 //
@@ -522,11 +504,11 @@ bool ks10_t::cpuReset(void) {
 //
 
 void ks10_t::cpuReset(bool enable) {
-    uint8_t status = readByte(regStat + 7);
+    uint8_t status = readWord(regStat + 6);
     if (enable) {
-        writeByte(regStat + 7, status | statRESET);
+        writeWord(regStat + 6, status | statRESET);
     } else {
-        writeByte(regStat + 7, status & ~statRESET);
+        writeWord(regStat + 6, status & ~statRESET);
     }
 }
 
@@ -541,10 +523,24 @@ void ks10_t::cpuReset(bool enable) {
 //
 
 void ks10_t::cpuIntr(void) {
-    uint8_t status = readByte(regStat + 6);
-    writeByte(regStat + 7, status | statINTR);
+    uint8_t status = readWord(regStat + 6);
+    writeWord(regStat + 6, status | statINTR);
     ROM_SysCtlDelay(10);
-    writeByte(regStat + 7, status);
+    writeWord(regStat + 6, status);
+}
+
+//
+//!  This function returns the state of the <b>NXM/NXD</b> bit of the
+//!  <b>Console Control/Status Register</b>.
+//!
+//!  This function will reset the state of the <b>NXM/NXD</b> bit once it is
+//!  read.
+//
+
+bool ks10_t::nxmnxd(void) {
+    uint16_t reg = readWord(regStat + 6);
+    writeWord(regStat + 6, reg & ~statNXMNXD);
+    return reg & statNXMNXD;
 }
 
 //
