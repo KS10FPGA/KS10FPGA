@@ -343,17 +343,17 @@ XST_CMDS := \
 	'-slice_utilization_ratio_maxmargin 5'
 
 $(ISE)/$(PROJECT).xst : makefile
-	echo "Creating "$(ISE)/$(PROJECT).xst > /dev/stderr
-	echo "" > $@
-	for CMD in $(XST_CMDS); \
+	@echo "Creating "$(ISE)/$(PROJECT).xst > /dev/stderr
+	@echo "" > $@
+	@for CMD in $(XST_CMDS); \
 	do \
 	    echo $$CMD >> $@; \
 	done
 
 $(ISE)/$(PROJECT).prj : makefile
-	echo "Creating "$(ISE)/$(PROJECT).prj > /dev/stderr
-	echo "" > $@
-	for FILE in $(SRC); \
+	@echo "Creating "$(ISE)/$(PROJECT).prj > /dev/stderr
+	@echo "" > $@
+	@for FILE in $(SRC); \
 	do \
 	    echo 'verilog work "../'$$FILE'"' >> $@; \
 	done
@@ -393,6 +393,10 @@ $(ISE)/$(PROJECT).ngd : $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(FILTER
 	$(NGD) $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd
 
 #
+# MAP
+#
+# map [options] infile[.ngd] [pcf_file.pcf]
+#
 # Map Options:
 #
 #   -filter               : Filter File
@@ -402,6 +406,7 @@ $(ISE)/$(PROJECT).ngd : $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(FILTER
 #   -lc                   : LUT Combining {off|auto|area}
 #   -logic_opt            : Logic Optimization {on|off}
 #   -mt                   : Multi-threading {off|2}
+#   -o                    : Output File Name
 #   -ol                   : Overall Effort Level {std|high}
 #   -p                    : Part number
 #   -power                : Power Optimization
@@ -435,7 +440,7 @@ MAP_OPTS := \
 
 #map -filter "J:/PDPx/pdp10/KS10/fpga/ise/iseconfig/filter.filter" -intstyle ise -p xc6slx45-fgg676-2 -w -logic_opt off -ol high -xe n -t 1 -xt 0 -register_duplication off -r 4 -global_opt off -mt 2 -ir off -pr off -lc off -power off -o ESM_KS10_map.ncd ESM_KS10.ngd ESM_KS10.pcf
 
-$(ISE)/$(PROJECT)_map.ngd $(ISE)/$(PROJECT).pcf : $(ISE)/$(PROJECT).ngd $(FILTER_FILE) makefile
+$(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf : $(ISE)/$(PROJECT).ngd $(FILTER_FILE) makefile
 	$(MAP) $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf
 
 #
@@ -454,7 +459,7 @@ $(ISE)/$(PROJECT)_map.ngd $(ISE)/$(PROJECT).pcf : $(ISE)/$(PROJECT).ngd $(FILTER
 #
 
 PAR_OPTS := \
-	-filter $(FILTER) \
+	-filter $(FILTER_FILE) \
 	-intstyle ise \
 	-mt 4 \
 	-ol high \
@@ -524,23 +529,28 @@ $(ISE)/$(PROJECT).mcs : $(ISE)/$(PROJECT).bit makefile
 	$(PROMGEN) $(PROMGEN_OPTS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs
 
 #
-# Generate Impact command (batch) file.
+# Run impact to program the ks10 flash
+#
 # Gosh the documentation for impact is really poor.
 #
 
-$(ISE)/impact.cmd : makefile
-	echo "setmode -bscan" > $@
-	echo "setcable -p auto" >> $@
-	echo "identify -inferir" >> $@
-	echo "identifyMPM " >> $@
-	echo "attachflash -position 1 -spi S25FL032P" >> $@
-	echo "assignfiletoattachedflash -position 1 -file $(ISE)/$(PROJECT).mcs" >> $@
-	echo "program -p 1 -dataWidth 1 -spionly -e -v -loadfpga " >> $@
-	echo "quit" >> $@
+IMPACT_CMDS := \
+	'setmode -bscan' \
+	'setcable -p auto' \
+	'identify -inferir' \
+	'identifyMPM' \
+	'attachflash -position 1 -spi S25FL032P' \
+	'assignfiletoattachedflash -position 1 -file $(ISE)/$(PROJECT).mcs' \
+	'program -p 1 -dataWidth 1 -spionly -e -v -loadfpga' \
+	'quit'
 
-#
-# Run Xilinx Impact to program the KS10 S25FL032P SPI Flash
-#
+$(ISE)/impact.cmd : makefile
+	@echo "Creating "$(ISE)/impact.cmd > /dev/stderr
+	@echo "" > $@
+	@for CMD in $(IMPACT_CMDS); \
+	do \
+	    echo $$CMD >> $@; \
+	done
 
 load : $(ISE)/$(PROJECT).mcs $(ISE)/impact.cmd
 	$(IMPACT) -batch $(ISE)/impact.cmd
