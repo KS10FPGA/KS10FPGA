@@ -472,6 +472,9 @@ $(ISE)/$(PROJECT).ncd : $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(FILTER
 
 #par -filter "J:/PDPx/pdp10/KS10/fpga/ise/iseconfig/filter.filter" -w -intstyle ise -ol high -xe n -mt 4 ESM_KS10_map.ncd ESM_KS10.ncd ESM_KS10.pcf
 
+#
+#trce -filter J:/PDPx/pdp10/KS10/fpga/ise/iseconfig/filter.filter -intstyle ise -v 3 -s 2 -n 3 -fastpaths -xml ESM_KS10.twx ESM_KS10.ncd -o ESM_KS10.twr ESM_KS10.pcf
+
 
 #
 # Generate Bit file from NCD file.
@@ -529,13 +532,13 @@ $(ISE)/$(PROJECT).mcs : $(ISE)/$(PROJECT).bit makefile
 	$(PROMGEN) $(PROMGEN_OPTS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs
 
 #
-# Run impact to program the ks10 flash
+# Run impact to program the KS10 flash
 #
 # Gosh the documentation for impact is really poor.
 #
 
 IMPACT_CMDS := \
-	'setmode -bscan' \
+  	'setmode -bscan' \
 	'setcable -p auto' \
 	'identify -inferir' \
 	'identifyMPM' \
