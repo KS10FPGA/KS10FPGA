@@ -10,6 +10,9 @@ TOPMOD    := $(shell echo $(PROJECT) | tr a-z A-Z)
 
 BITGEN    := $(XILEXE)/bitgen.exe
 FUSE      := $(XILEXE)/fuse.exe
+MAP       := $(XILEXE)/map.exe
+NGD       := $(XILEXE)/ngdbuild.exe
+PAR       := $(XILEXE)/par.exe
 PROMGEN   := $(XILEXE)/promgen.exe
 IMPACT    := $(XILEXE)/impact.exe
 XST       := $(XILEXE)/xst.exe
@@ -194,14 +197,14 @@ clean_ise:
                  $(ISE)/$(PROJECT).pad \
                  $(ISE)/$(PROJECT).par \
                  $(ISE)/$(PROJECT).pcf\
+                 $(ISE)/$(PROJECT).prj\
                  $(ISE)/$(PROJECT).ptwx \
                  $(ISE)/$(PROJECT).stx \
-                 $(ISE)/$(PROJECT).syr \
                  $(ISE)/$(PROJECT).twr \
                  $(ISE)/$(PROJECT).twx \
                  $(ISE)/$(PROJECT).unroutes \
-                 $(ISE)/$(PROJECT).ut \
                  $(ISE)/$(PROJECT).xpi \
+                 $(ISE)/$(PROJECT).xst \
                  $(ISE)/$(PROJECT)_bitgen.xwbt \
                  $(ISE)/$(PROJECT)_envsettings.html \
                  $(ISE)/$(PROJECT)_guide.ncd \
@@ -217,6 +220,7 @@ clean_ise:
                  $(ISE)/$(PROJECT)_summary.html \
                  $(ISE)/$(PROJECT)_summary.xml \
                  $(ISE)/$(PROJECT)_usage.xml \
+                 $(ISE)/$(PROJECT)_xst.log \
                  $(ISE)/$(PROJECT)_xst.xrpt \
                  $(ISE)/par_usage_statistics.html \
                  $(ISE)/usage_statistics_webtalk.html \
@@ -250,13 +254,41 @@ test : $(ISE)/$(TESTBENCH).exe
 	-wdb $(TESTBENCH).wdb
 
 #
-# XST
+# Filter file
 #
+#	'    <filter task="xst" file="Xst" num="647" type="warning"></filter>'  \
+#	'    <filter task="xst" file="Xst" num="2677" type="warning"></filter>' \
+
+FILTER_FILE    := $(ISE)/$(PROJECT).filter
+
+FILTER_ARGS    := \
+	'<filters xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="filter.xsd">' \
+	'</filters>'
+
+$(FILTER_FILE) : makefile
+	@echo "Creating "$(FILTER_FILE) > /dev/stderr
+	@echo "" > $@
+	@for FIL in $(FILTER_ARGS); \
+	do \
+	    echo $$FIL >> $@; \
+	done
+
+#
+# xst
+#
+# xst options:
+#
+#   -filter               : Filter File
+#   -intstyle             : Integration Style
+
 #	'set -tmpdir "/tmp"' \
 
-
 XST_OPTS := \
-	'set -xsthdpdir "xst"' \
+	-filter $(FILTER_FILE) \
+	-intstyle ise 
+
+XST_CMDS := \
+	'set -xsthdpdir "$(ISE)/xst"' \
 	'run' \
 	'-ifn $(ISE)/$(PROJECT).prj' \
 	'-ofn $(ISE)/$(PROJECT)' \
@@ -310,15 +342,12 @@ XST_OPTS := \
 	'-equivalent_register_removal YES' \
 	'-slice_utilization_ratio_maxmargin 5'
 
-XST_ARGS := \
-	-intstyle ise
-
 $(ISE)/$(PROJECT).xst : makefile
 	echo "Creating "$(ISE)/$(PROJECT).xst > /dev/stderr
 	echo "" > $@
-	for OPT in $(XST_OPTS); \
+	for CMD in $(XST_CMDS); \
 	do \
-	    echo $$OPT >> $@; \
+	    echo $$CMD >> $@; \
 	done
 
 $(ISE)/$(PROJECT).prj : makefile
@@ -329,14 +358,121 @@ $(ISE)/$(PROJECT).prj : makefile
 	    echo 'verilog work "../'$$FILE'"' >> $@; \
 	done
 
-$(ISE)/$(PROJECT).syr : $(ISE)/$(PROJECT).xst makefile
-	$(XST) $(XST_ARGS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT).syr
+$(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr : $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(FILTER_FILE) makefile
+	$(XST) $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log
+	mv $(PROJECT).lso $(ISE)/$(PROJECT).lso
+
+#
+# ngdbuild
+#
+# "NGDBuild reads in a netlist file in EDIF or NGC format and creates a Xilinx® Native
+# Generic Database (NGD) file that contains a logical description of the design in terms of
+# logic elements, such as AND gates, OR gates, LUTs, flip-flops, and RAMs"
+#
+# ngdbuild [options] design_name [ngd_file[.ngd]]
+#
+# Ngdbuild options:
+#
+#   -dd                   : Destination Directory
+#   -filter               : Filter File
+#   -intstyle             : Integration Style {ise|xflow|silent}
+#   -nt                   : Netlist Translation Type {timestamp|on|off}
+#   -p                    : Part number
+#   -uc                   : User Constraints File
+#
+
+NGD_OPTS := \
+	-dd _ngo \
+	-filter $(FILTER_FILE) \
+	-intstyle ise \
+	-nt timestamp \
+	-p $(PART) \
+	-uc $(RTL)/esm/$(PROJECT).ucf 
+
+$(ISE)/$(PROJECT).ngd : $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(FILTER_FILE) makefile
+	$(NGD) $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd
+
+#
+# Map Options:
+#
+#   -filter               : Filter File
+#   -global_opt           : Global optimizations {off|speed|area|power}
+#   -intstyle             : Integration Style
+#   -ir                   : Do Not Use RLOCs to Generate RPMs {all|off|place}
+#   -lc                   : LUT Combining {off|auto|area}
+#   -logic_opt            : Logic Optimization {on|off}
+#   -mt                   : Multi-threading {off|2}
+#   -ol                   : Overall Effort Level {std|high}
+#   -p                    : Part number
+#   -power                : Power Optimization
+#   -pr                   : Pack Registers in I/O
+#   -r                    : Register Ordering
+#   -register_duplication : Duplicate Registers
+#   -t                    : Placer Cost Table
+#   -w                    : Overwrite files
+#   -xe                   : Extra Effort Level
+#   -xt                   : Extra Placer Cost Table
+
+MAP_OPTS := \
+	-filter $(FILTER_FILE) \
+	-global_opt off \
+	-intstyle ise \
+	-ir off \
+	-lc off \
+	-logic_opt off \
+	-mt 2 \
+	-ol high \
+	-p $(PART) \
+	-power off \
+	-pr off \
+	-r 4 \
+	-register_duplication off \
+	-t 1 \
+	-w \
+	-xe n \
+	-xt 0
+
+
+#map -filter "J:/PDPx/pdp10/KS10/fpga/ise/iseconfig/filter.filter" -intstyle ise -p xc6slx45-fgg676-2 -w -logic_opt off -ol high -xe n -t 1 -xt 0 -register_duplication off -r 4 -global_opt off -mt 2 -ir off -pr off -lc off -power off -o ESM_KS10_map.ncd ESM_KS10.ngd ESM_KS10.pcf
+
+$(ISE)/$(PROJECT)_map.ngd $(ISE)/$(PROJECT).pcf : $(ISE)/$(PROJECT).ngd $(FILTER_FILE) makefile
+	$(MAP) $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf
+
+#
+# Place and Route
+#
+# par [options] infile[.ncd] outfile [pcf_file[.pcf]]
+#
+# par options:
+#
+#   -filter               : Filter File
+#   -intstyle             : Integration Style
+#   -mt                   : Multi-threading {off|2|3|4}
+#   -ol                   : Overall Effort Level {std|high}
+#   -w                    : Overwrite files
+#   -xe                   : Extra Effort Level {n|c}
+#
+
+PAR_OPTS := \
+	-filter $(FILTER) \
+	-intstyle ise \
+	-mt 4 \
+	-ol high \
+	-w \
+	-xe n
+
+$(ISE)/$(PROJECT).ncd : $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(FILTER) makefile
+	$(PAR) $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf
+
+
+#par -filter "J:/PDPx/pdp10/KS10/fpga/ise/iseconfig/filter.filter" -w -intstyle ise -ol high -xe n -mt 4 ESM_KS10_map.ncd ESM_KS10.ncd ESM_KS10.pcf
+
 
 #
 # Generate Bit file from NCD file.
 #
 
-BITGEN_ARGS := \
+BITGEN_OPTS := \
 	-w \
 	-intstyle ise \
 	-g DebugBitstream:No \
@@ -370,13 +506,13 @@ BITGEN_ARGS := \
 	-g sw_gts_cycle:4
 
 $(ISE)/$(PROJECT).bit : $(ISE)/$(PROJECT).ncd
-	$(BITGEN) $(BITGEN_ARGS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit
+	$(BITGEN) $(BITGEN_OPTS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit
 
 #
 # Create the Intel Hex file for loading into the serial flash.
 #
 
-PROMGEN_ARGS := \
+PROMGEN_OPTS := \
 	-w \
 	-spi \
 	-p mcs \
@@ -385,7 +521,7 @@ PROMGEN_ARGS := \
 	-u 0000 
 
 $(ISE)/$(PROJECT).mcs : $(ISE)/$(PROJECT).bit makefile
-	$(PROMGEN) $(PROMGEN_ARGS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs
+	$(PROMGEN) $(PROMGEN_OPTS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs
 
 #
 # Generate Impact command (batch) file.
