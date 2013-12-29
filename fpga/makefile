@@ -1,16 +1,26 @@
-PROJECT := ks10
+PROJECT   := esm_ks10
+PART      := xc6slx45-2-fgg676
 
 RTL       := rtl
 ISE       := ise
+#ISETEMP   := $(ISE)/temp
 XILDIR    := `cygpath -u '$(XILINX)'`
-FUSE      := $(XILDIR)/ISE_DS/ISE/bin/nt/fuse.exe
+XILEXE    := $(XILDIR)/ISE_DS/ISE/bin/nt64/
+TOPMOD    := $(shell echo $(PROJECT) | tr a-z A-Z)
+
+BITGEN    := $(XILEXE)/bitgen.exe
+FUSE      := $(XILEXE)/fuse.exe
+PROMGEN   := $(XILEXE)/promgen.exe
+IMPACT    := $(XILEXE)/impact.exe
+XST       := $(XILEXE)/xst.exe
+
 WCFG      := ks10_useriot.wcfg
 
 PRJFILE   := $(PROJECT).prj
 TESTBENCH := $(PROJECT)_testbench
 WORK      := work.testbench
 
-#LOAD      := MAINDEC-10-DSKAA.SEQ
+LOAD      := MAINDEC-10-DSKAA.SEQ
 #LOAD      := MAINDEC-10-DSKAB.SEQ
 #LOAD      := MAINDEC-10-DSKAC.SEQ
 #LOAD      := MAINDEC-10-DSKAD.SEQ
@@ -23,14 +33,14 @@ WORK      := work.testbench
 #LOAD      := MAINDEC-10-DSKAK.SEQ
 #LOAD      := MAINDEC-10-DSKAL.SEQ
 #LOAD      := MAINDEC-10-DSKAM.SEQ
-#LOAD      := MAINDEC-10-DSKBA.SEQ		# FAIL
+#LOAD      := MAINDEC-10-DSKBA.SEQ
 #LOAD      := MAINDEC-10-DSKCA.SEQ
 #LOAD      := MAINDEC-10-DSKCB.SEQ
 #LOAD      := MAINDEC-10-DSKCC.SEQ
 #LOAD      := MAINDEC-10-DSKCD.SEQ
 #LOAD      := MAINDEC-10-DSKCE-RD00.SEQ
-LOAD      := MAINDEC-10-DSKCF-RD00.SEQ	
-#LOAD      := MAINDEC-10-DSKEA-RD00.SEQ
+#LOAD      := MAINDEC-10-DSKCF-RD00.SEQ	
+#LOAD      := MAINDEC-10-DSKEA-RD00.SEQ		# fails early
 
 #LOAD     := MAINDEC-10-DSDZA.SEQ
 #LOAD     := fixed.SEQ
@@ -40,7 +50,8 @@ LOAD      := MAINDEC-10-DSKCF-RD00.SEQ
 #LOAD     := smmon.txt
 
 SRC := \
-    	$(RTL)/ks10/utils/utils.v \
+	$(RTL)/ks10/utils/edgetrig.v \
+	$(RTL)/ks10/utils/sync.v \
 	$(RTL)/ks10/cpu/useq/crom.v \
 	$(RTL)/ks10/cpu/useq/drom.v \
 	$(RTL)/ks10/cpu/useq/skip.v \
@@ -80,18 +91,17 @@ SRC := \
 	$(RTL)/ks10/uba/dz11/uart/uart_buftx.v \
 	$(RTL)/ks10/uba/dz11/dzfifo.v \
 	$(RTL)/ks10/uba/dz11/dz11.v \
-	$(RTL)/ks10/uba/rh11/sd/sd.v \
-	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
 	$(RTL)/ks10/uba/rh11/rpxx.v \
 	$(RTL)/ks10/uba/rh11/sdaddr.v \
 	$(RTL)/ks10/uba/rh11/rh11.v \
 	$(RTL)/ks10/uba/uba.v \
 	$(RTL)/ks10/ks10.v \
-	$(RTL)/esm/esm_csl.v \
-	$(RTL)/esm/esm_ks10.v \
-	$(RTL)/esm/esm_testbench.v
+	$(RTL)/esm/esm_clk.v \
+	$(RTL)/esm/esm_rst.v \
+	$(RTL)/esm/esm_ks10.v
 
-#	$(RTL)/uba/rh11/sd/sd.v \
+#	$(RTL)/ks10/uba/rh11/sd/sd.v \
+#	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
 
 
 INC := \
@@ -110,7 +120,6 @@ INC := \
 	$(RTL)/ks10/uba/rh11/sd/sd.vh \
 	$(RTL)/ks10/uba/rh11/rpxx.vh \
 	$(RTL)/ks10/uba/rh11/rh11.vh \
-	$(RTL)/ks10/uba/uba.vh \
 	$(RTL)/ks10/ks10.vh
 
 DAT := \
@@ -129,6 +138,10 @@ BLD := \
 	$(ISE)/ks10.gise \
 	$(ISE)/ks10.wcfg
 
+TESTBENCH := \
+	$(RTL)/esm/esm_testbench.v
+
+
 asdf :  $(INC) $(SRC) $(BLD) $(DAT) $(UCF) $(DOC)
 	echo $(INC) $(SRC) $(BLD) $(DAT) $(UCF) $(DOC)
 
@@ -141,7 +154,7 @@ $(RTL)/ks10/cpu/useq/drom.dat  : $(RTL)/ks10/cpu/useq/ks10.mcr $(RTL)/ks10/cpu/u
 $(RTL)/testbench/ssram.dat : $(RTL)/testbench/$(LOAD) $(RTL)/testbench/ssram.awk makefile
 	awk -f $(RTL)/testbench/ssram.awk -vfilename=$(LOAD) $(RTL)/testbench/$(LOAD) > $(RTL)/testbench/ssram.dat
 
-clean: 
+clean_rtl: 
 	rcsclean $(RTL)/*
 	rcsclean $(RTL)/testbench/*
 	rcsclean $(RTL)/esm/*
@@ -161,19 +174,64 @@ clean:
 	rm -f    $(RTL)/testbench/*.dat
 	find . -type f -name "*~" | xargs rm -fv
 
+clean_ise:
+	rcsclean $(ISE)/*
+	rm -rf   $(ISE)/xst \
+	         $(ISE)/_ngo \
+	         $(ISE)/_xmsgs \
+                 $(ISE)/iseconfig \
+                 $(ISE)/xlnx_auto_0_xdb      
+	rm -f    $(ISE)/$(PROJECT).bgn \
+	         $(ISE)/$(PROJECT).bit \
+	         $(ISE)/$(PROJECT).bld \
+                 $(ISE)/$(PROJECT).cmd_log \
+                 $(ISE)/$(PROJECT).drc \
+                 $(ISE)/$(PROJECT).lso \
+                 $(ISE)/$(PROJECT).ncd \
+                 $(ISE)/$(PROJECT).ngc \
+                 $(ISE)/$(PROJECT).ngd \
+                 $(ISE)/$(PROJECT).ngr \
+                 $(ISE)/$(PROJECT).pad \
+                 $(ISE)/$(PROJECT).par \
+                 $(ISE)/$(PROJECT).pcf\
+                 $(ISE)/$(PROJECT).ptwx \
+                 $(ISE)/$(PROJECT).stx \
+                 $(ISE)/$(PROJECT).syr \
+                 $(ISE)/$(PROJECT).twr \
+                 $(ISE)/$(PROJECT).twx \
+                 $(ISE)/$(PROJECT).unroutes \
+                 $(ISE)/$(PROJECT).ut \
+                 $(ISE)/$(PROJECT).xpi \
+                 $(ISE)/$(PROJECT)_bitgen.xwbt \
+                 $(ISE)/$(PROJECT)_envsettings.html \
+                 $(ISE)/$(PROJECT)_guide.ncd \
+                 $(ISE)/$(PROJECT)_map.map \
+                 $(ISE)/$(PROJECT)_map.mrp \
+                 $(ISE)/$(PROJECT)_map.ncd \
+                 $(ISE)/$(PROJECT)_map.ngm \
+                 $(ISE)/$(PROJECT)_map.xrpt \
+                 $(ISE)/$(PROJECT)_ngdbuild.xrpt \
+                 $(ISE)/$(PROJECT)_pad.csv \
+                 $(ISE)/$(PROJECT)_pad.txt \
+                 $(ISE)/$(PROJECT)_par.xrpt \
+                 $(ISE)/$(PROJECT)_summary.html \
+                 $(ISE)/$(PROJECT)_summary.xml \
+                 $(ISE)/$(PROJECT)_usage.xml \
+                 $(ISE)/$(PROJECT)_xst.xrpt \
+                 $(ISE)/par_usage_statistics.html \
+                 $(ISE)/usage_statistics_webtalk.html \
+                 $(ISE)/webtalk.log \
+                 $(ISE)/webtalk_pn.xml
+
+
+
+
+
 archive_src: $(SRC)
-	tar -czvf ks10_src_`date '+%y%m%d'`.tgz $(SRC)
+	tar -czvf ks10_fpga_src_`date '+%y%m%d'`.tgz $(SRC)
 
 archive_all:
-	tar -czvf ks10_all_`date '+%y%m%d'`.tgz *
-
-$(ISE)/$(PRJFILE) : makefile
-	echo "Creating "$(ISE)/$(PRJFILE) > /dev/stderr
-	echo "" > $@;
-	for FILE in $(SRC); \
-	do \
-	    echo 'verilog work "../'$$FILE'"' >> $@; \
-	done
+	tar -czvf ks10_fpga_all_`date '+%y%m%d'`.tgz *
 
 $(ISE)/$(TESTBENCH) : $(ISE)/$(PRJFILE) makefile
 	cd ise; \
@@ -190,6 +248,166 @@ test : $(ISE)/$(TESTBENCH).exe
 	-intstyle ise \
 	-tclbatch $(TESTBENCH).cmd \
 	-wdb $(TESTBENCH).wdb
+
+#
+# XST
+#
+#	'set -tmpdir "/tmp"' \
+
+
+XST_OPTS := \
+	'set -xsthdpdir "xst"' \
+	'run' \
+	'-ifn $(ISE)/$(PROJECT).prj' \
+	'-ofn $(ISE)/$(PROJECT)' \
+	'-ofmt ngc' \
+	'-p $(PART)' \
+	'-top $(TOPMOD)' \
+	'-opt_mode Speed' \
+	'-opt_level 2' \
+	'-power NO' \
+	'-iuc NO' \
+	'-keep_hierarchy No' \
+	'-netlist_hierarchy As_Optimized' \
+	'-rtlview Yes' \
+	'-glob_opt AllClockNets' \
+	'-read_cores YES' \
+	'-write_timing_constraints NO' \
+	'-cross_clock_analysis NO' \
+	'-hierarchy_separator /' \
+	'-bus_delimiter <>' \
+	'-case Maintain' \
+	'-slice_utilization_ratio 100' \
+	'-bram_utilization_ratio 100' \
+	'-dsp_utilization_ratio 100' \
+	'-lc Auto' \
+	'-reduce_control_sets Auto' \
+	'-fsm_extract YES -fsm_encoding Auto' \
+	'-safe_implementation No' \
+	'-fsm_style LUT' \
+	'-ram_extract Yes' \
+	'-ram_style Auto' \
+	'-rom_extract Yes' \
+	'-shreg_extract YES' \
+	'-rom_style Auto' \
+	'-auto_bram_packing NO' \
+	'-resource_sharing NO' \
+	'-async_to_sync YES' \
+	'-shreg_min_size 2' \
+	'-use_dsp48 Auto' \
+	'-iobuf YES' \
+	'-max_fanout 100000' \
+	'-bufg 16' \
+	'-register_duplication YES' \
+	'-register_balancing Forward' \
+	'-move_first_stage YES' \
+	'-move_last_stage YES' \
+	'-optimize_primitives NO' \
+	'-use_clock_enable Auto' \
+	'-use_sync_set Auto' \
+	'-use_sync_reset Auto' \
+	'-iob Auto' \
+	'-equivalent_register_removal YES' \
+	'-slice_utilization_ratio_maxmargin 5'
+
+XST_ARGS := \
+	-intstyle ise
+
+$(ISE)/$(PROJECT).xst : makefile
+	echo "Creating "$(ISE)/$(PROJECT).xst > /dev/stderr
+	echo "" > $@
+	for OPT in $(XST_OPTS); \
+	do \
+	    echo $$OPT >> $@; \
+	done
+
+$(ISE)/$(PROJECT).prj : makefile
+	echo "Creating "$(ISE)/$(PROJECT).prj > /dev/stderr
+	echo "" > $@
+	for FILE in $(SRC); \
+	do \
+	    echo 'verilog work "../'$$FILE'"' >> $@; \
+	done
+
+$(ISE)/$(PROJECT).syr : $(ISE)/$(PROJECT).xst makefile
+	$(XST) $(XST_ARGS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT).syr
+
+#
+# Generate Bit file from NCD file.
+#
+
+BITGEN_ARGS := \
+	-w \
+	-intstyle ise \
+	-g DebugBitstream:No \
+	-g Binary:no \
+	-g CRC:Enable \
+	-g Reset_on_err:No \
+	-g ConfigRate:2 \
+	-g ProgPin:PullUp \
+	-g TckPin:PullUp \
+	-g TdiPin:PullUp \
+	-g TdoPin:PullUp \
+	-g TmsPin:PullUp \
+	-g UnusedPin:PullDown \
+	-g UserID:0xFFFFFFFF \
+	-g ExtMasterCclk_en:No \
+	-g SPI_buswidth:1 \
+	-g TIMER_CFG:0xFFFF \
+	-g multipin_wakeup:No \
+	-g StartUpClk:Cclk \
+	-g DONE_cycle:4 \
+	-g GTS_cycle:5 \
+	-g GWE_cycle:6 \
+	-g LCK_cycle:NoWait \
+	-g Security:None \
+	-g DonePipe:No \
+	-g DriveDone:No \
+	-g en_sw_gsr:No \
+	-g drive_awake:No \
+	-g sw_clk:Startupclk \
+	-g sw_gwe_cycle:5 \
+	-g sw_gts_cycle:4
+
+$(ISE)/$(PROJECT).bit : $(ISE)/$(PROJECT).ncd
+	$(BITGEN) $(BITGEN_ARGS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit
+
+#
+# Create the Intel Hex file for loading into the serial flash.
+#
+
+PROMGEN_ARGS := \
+	-w \
+	-spi \
+	-p mcs \
+	-c ff \
+	-s 4096 \
+	-u 0000 
+
+$(ISE)/$(PROJECT).mcs : $(ISE)/$(PROJECT).bit makefile
+	$(PROMGEN) $(PROMGEN_ARGS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs
+
+#
+# Generate Impact command (batch) file.
+# Gosh the documentation for impact is really poor.
+#
+
+$(ISE)/impact.cmd : makefile
+	echo "setmode -bscan" > $@
+	echo "setcable -p auto" >> $@
+	echo "identify -inferir" >> $@
+	echo "identifyMPM " >> $@
+	echo "attachflash -position 1 -spi S25FL032P" >> $@
+	echo "assignfiletoattachedflash -position 1 -file $(ISE)/$(PROJECT).mcs" >> $@
+	echo "program -p 1 -dataWidth 1 -spionly -e -v -loadfpga " >> $@
+	echo "quit" >> $@
+
+#
+# Run Xilinx Impact to program the KS10 S25FL032P SPI Flash
+#
+
+load : $(ISE)/$(PROJECT).mcs $(ISE)/impact.cmd
+	$(IMPACT) -batch $(ISE)/impact.cmd
 
 
 #./t10backup.exe   -x smmon.sav -f ks_diag_gs.tap
