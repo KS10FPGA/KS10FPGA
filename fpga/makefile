@@ -41,6 +41,9 @@ PRJFILE      := $(PROJECT).prj
 TESTBENCH    := $(PROJECT)_testbench
 WORK         := work.testbench
 
+BEG          := \e[0;32m
+END          := \e[1;37m
+
 #
 # Initialized Memory Contents (Simulation only)
 #
@@ -321,7 +324,7 @@ $(ISE)/$(PROJECT).prj : makefile
 	done
 
 $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr : $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(XST_FILTER) makefile
-	@echo "xst $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log" > /dev/stderr
+	@echo -e "$(BEG)xst $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log $(END)" > /dev/stderr
 	@$(XST) $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log
 	@mv  -f ./$(PROJECT).lso $(ISE)/$(PROJECT).lso
 	@cp -af ./_xmsgs $(ISE)
@@ -356,7 +359,7 @@ NGD_OPTS := \
 	-uc $(RTL)/esm/$(PROJECT).ucf 
 
 $(ISE)/$(PROJECT).ngd : $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(XST_FILTER) makefile
-	@echo "ngd $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd" > /dev/stderr
+	@echo -e "$(BEG)ngd $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd $(END)" > /dev/stderr
 	@$(NGD) $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd
 	@cp -af ./xlnx_auto_0_xdb $(ISE)
 	@rm -rf ./xlnx_auto_0_xdb
@@ -417,7 +420,7 @@ MAP_OPTS := \
 	-xt 0
 
 $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf : $(ISE)/$(PROJECT).ngd $(XST_FILTER) makefile
-	@echo "map $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf" > /dev/stderr
+	@echo -e "$(BEG)map $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf $(END)" > /dev/stderr
 	@$(MAP) $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf
 	@mv -f  ./xilinx_device_details.xml $(ISE)
 	@mv -f  ./$(PROJECT)_map.xrpt $(ISE)
@@ -452,7 +455,7 @@ PAR_OPTS := \
 	-xe n
 
 $(ISE)/$(PROJECT).ncd : $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(FILTER) makefile
-	@echo "par $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf" > /dev/stderr
+	@echo -e "$(BEG)par $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf $(END)" > /dev/stderr
 	@$(PAR) $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf
 	@mv -f par_usage_statistics.html $(ISE)
 	@mv -f $(PROJECT)_par.xrpt $(ISE)
@@ -508,7 +511,7 @@ BITGEN_OPTS := \
 	-g sw_gts_cycle:4
 
 $(ISE)/$(PROJECT).bit : $(ISE)/$(PROJECT).ncd
-	@echo "bitgen $(BITGEN_OPTS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit" > /dev/stderr
+	@echo -e "$(BEG)bitgen $(BITGEN_OPTS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit $(END)" > /dev/stderr
 	@$(BITGEN) $(BITGEN_OPTS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit
 	@mv xilinx_device_details.xml $(ISE)
 	@cp -af ./_xmsgs $(ISE)
@@ -543,7 +546,7 @@ PROMGEN_OPTS := \
 	-w
 
 $(ISE)/$(PROJECT).mcs : $(ISE)/$(PROJECT).bit makefile
-	@echo "promgen $(PROMGEN_OPTS)" > /dev/stderr
+	@echo -e "$(BEG)promgen $(PROMGEN_OPTS) $(END)" > /dev/stderr
 	@$(PROMGEN) $(PROMGEN_OPTS) 
 
 #
@@ -574,7 +577,7 @@ $(ISE)/impact.cmd : makefile
 	done
 
 load : $(ISE)/$(PROJECT).mcs $(ISE)/impact.cmd
-	@echo "impact -batch $(ISE)/impact.cmd" > /dev/stderr
+	@echo -e "$(BEG)impact -batch $(ISE)/impact.cmd $(END)" > /dev/stderr
 	@$(IMPACT) -batch $(ISE)/impact.cmd
 
 #
