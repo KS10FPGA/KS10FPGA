@@ -180,16 +180,19 @@ clean_rtl:
 clean_ise:
 	rcsclean $(ISE)/*
 	rm -rf   $(ISE)/xst \
-	         $(ISE)/_ngo \
-	         $(ISE)/_xmsgs \
+                 $(ISE)/_ngo \
+                 $(ISE)/_xmsgs \
                  $(ISE)/iseconfig \
                  $(ISE)/xlnx_auto_0_xdb      
 	rm -f    $(ISE)/$(PROJECT).bgn \
 	         $(ISE)/$(PROJECT).bit \
 	         $(ISE)/$(PROJECT).bld \
+	         $(ISE)/$(PROJECT).cfi \
                  $(ISE)/$(PROJECT).cmd_log \
                  $(ISE)/$(PROJECT).drc \
+                 $(ISE)/$(PROJECT).filter \
                  $(ISE)/$(PROJECT).lso \
+                 $(ISE)/$(PROJECT).mcs \
                  $(ISE)/$(PROJECT).ncd \
                  $(ISE)/$(PROJECT).ngc \
                  $(ISE)/$(PROJECT).ngd \
@@ -198,6 +201,7 @@ clean_ise:
                  $(ISE)/$(PROJECT).par \
                  $(ISE)/$(PROJECT).pcf\
                  $(ISE)/$(PROJECT).prj\
+                 $(ISE)/$(PROJECT).prm\
                  $(ISE)/$(PROJECT).ptwx \
                  $(ISE)/$(PROJECT).stx \
                  $(ISE)/$(PROJECT).twr \
@@ -222,6 +226,7 @@ clean_ise:
                  $(ISE)/$(PROJECT)_usage.xml \
                  $(ISE)/$(PROJECT)_xst.log \
                  $(ISE)/$(PROJECT)_xst.xrpt \
+                 $(ISE)/impact.cmd \
                  $(ISE)/par_usage_statistics.html \
                  $(ISE)/usage_statistics_webtalk.html \
                  $(ISE)/webtalk.log \
@@ -359,8 +364,9 @@ $(ISE)/$(PROJECT).prj : makefile
 	done
 
 $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr : $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(FILTER_FILE) makefile
-	$(XST) $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log
-	mv $(PROJECT).lso $(ISE)/$(PROJECT).lso
+	@echo "$(XST) $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log" > /dev/stderr
+	@$(XST) $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log
+	@mv $(PROJECT).lso $(ISE)/$(PROJECT).lso
 
 #
 # ngdbuild
@@ -369,7 +375,8 @@ $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr : $(ISE)/$(PROJECT).xst $(ISE)/$(PRO
 # Generic Database (NGD) file that contains a logical description of the design in terms of
 # logic elements, such as AND gates, OR gates, LUTs, flip-flops, and RAMs"
 #
-# ngdbuild [options] design_name [ngd_file[.ngd]]
+# usage:
+#   ngdbuild [options] design_name [ngd_file[.ngd]]
 #
 # Ngdbuild options:
 #
@@ -390,12 +397,18 @@ NGD_OPTS := \
 	-uc $(RTL)/esm/$(PROJECT).ucf 
 
 $(ISE)/$(PROJECT).ngd : $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(FILTER_FILE) makefile
-	$(NGD) $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd
+	@echo "$(NGD) $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd" > /dev/stderr
+	@$(NGD) $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd
 
 #
 # MAP
 #
-# map [options] infile[.ngd] [pcf_file.pcf]
+# The MAP program maps a logical design to a Xilinx® FPGA. The
+# input to MAP is an NGD file, which is generated using the
+# NGDBuild program.
+#
+# usage:
+#    map [options] infile[.ngd] [pcf_file.pcf]
 #
 # Map Options:
 #
@@ -417,6 +430,7 @@ $(ISE)/$(PROJECT).ngd : $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(FILTER
 #   -w                    : Overwrite files
 #   -xe                   : Extra Effort Level
 #   -xt                   : Extra Placer Cost Table
+#
 
 MAP_OPTS := \
 	-filter $(FILTER_FILE) \
@@ -437,16 +451,18 @@ MAP_OPTS := \
 	-xe n \
 	-xt 0
 
-
-#map -filter "J:/PDPx/pdp10/KS10/fpga/ise/iseconfig/filter.filter" -intstyle ise -p xc6slx45-fgg676-2 -w -logic_opt off -ol high -xe n -t 1 -xt 0 -register_duplication off -r 4 -global_opt off -mt 2 -ir off -pr off -lc off -power off -o ESM_KS10_map.ncd ESM_KS10.ngd ESM_KS10.pcf
-
 $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf : $(ISE)/$(PROJECT).ngd $(FILTER_FILE) makefile
-	$(MAP) $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf
+	@echo "$(MAP) $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf" > /dev/stderr
+	@$(MAP) $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf
 
 #
 # Place and Route
 #
-# par [options] infile[.ncd] outfile [pcf_file[.pcf]]
+# PAR accepts a mapped NCD file as input, places and routes the design,
+# and outputs an NCD file to be used by the bitstream generator (BitGen).
+#
+# usage:
+#   par [options] infile[.ncd] outfile [pcf_file[.pcf]]
 #
 # par options:
 #
@@ -467,17 +483,22 @@ PAR_OPTS := \
 	-xe n
 
 $(ISE)/$(PROJECT).ncd : $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(FILTER) makefile
-	$(PAR) $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf
-
-
-#par -filter "J:/PDPx/pdp10/KS10/fpga/ise/iseconfig/filter.filter" -w -intstyle ise -ol high -xe n -mt 4 ESM_KS10_map.ncd ESM_KS10.ncd ESM_KS10.pcf
+	@echo "$(PAR) $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf" > /dev/stderr
+	@$(PAR) $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf
 
 #
-#trce -filter J:/PDPx/pdp10/KS10/fpga/ise/iseconfig/filter.filter -intstyle ise -v 3 -s 2 -n 3 -fastpaths -xml ESM_KS10.twx ESM_KS10.ncd -o ESM_KS10.twr ESM_KS10.pcf
-
-
+# bitgen
 #
 # Generate Bit file from NCD file.
+#
+# usage:
+#   bitgen [options] infile[.ncd] [outfile] [pcf_file.pcf]
+#
+# bitgen options:
+#
+#   -g                    : Set configuration
+#   -intstyle             : Integration style
+#   -w                    : Overwrite existing output file
 #
 
 BITGEN_OPTS := \
@@ -517,28 +538,46 @@ $(ISE)/$(PROJECT).bit : $(ISE)/$(PROJECT).ncd
 	$(BITGEN) $(BITGEN_OPTS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit
 
 #
+# promgen
+#
 # Create the Intel Hex file for loading into the serial flash.
+#
+# usage:
+#   promgen [options]
+#
+# promgen options:
+#
+#   -c                    : Checksum
+#   -p                    : PROM format
+#   -s                    : PROM size
+#   -spi                  : Disable bit swapping
+#   -u                    : Load upward
+#   -w                    : Overwrite existing output file
 #
 
 PROMGEN_OPTS := \
-	-w \
-	-spi \
-	-p mcs \
 	-c ff \
+	-p mcs \
 	-s 4096 \
-	-u 0000 
+	-spi \
+	-u 0000 \
+	-w
 
 $(ISE)/$(PROJECT).mcs : $(ISE)/$(PROJECT).bit makefile
-	$(PROMGEN) $(PROMGEN_OPTS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs
+	@echo "$(PROMGEN) $(PROMGEN_OPTS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs" > /dev/stderr
+	@$(PROMGEN) $(PROMGEN_OPTS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs
 
 #
-# Run impact to program the KS10 flash
+# Run 'impact' to program the KS10 flash
 #
 # Gosh the documentation for impact is really poor.
 #
+# usage:
+#   impact [options]
+#
 
 IMPACT_CMDS := \
-  	'setmode -bscan' \
+	'setmode -bscan' \
 	'setcable -p auto' \
 	'identify -inferir' \
 	'identifyMPM' \
@@ -556,7 +595,8 @@ $(ISE)/impact.cmd : makefile
 	done
 
 load : $(ISE)/$(PROJECT).mcs $(ISE)/impact.cmd
-	$(IMPACT) -batch $(ISE)/impact.cmd
+	@echo "$(IMPACT) -batch $(ISE)/impact.cmd" > /dev/stderr
+	@$(IMPACT) -batch $(ISE)/impact.cmd
 
 
 #./t10backup.exe   -x smmon.sav -f ks_diag_gs.tap
