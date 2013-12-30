@@ -454,9 +454,10 @@ PAR_OPTS := \
 $(ISE)/$(PROJECT).ncd : $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(FILTER) makefile
 	@echo "par $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf" > /dev/stderr
 	@$(PAR) $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf
-	@mv -f $(PROJECT)_par.xrpt $(ISE)
-	@mv -f $(PROJECT)_map.xrpt $(ISE)
 	@mv -f par_usage_statistics.html $(ISE)
+	@mv -f $(PROJECT)_par.xrpt $(ISE)
+	@cp -af ./_xmsgs $(ISE)
+	@rm -rf ./_xmsgs
 
 #
 # bitgen
@@ -509,6 +510,9 @@ BITGEN_OPTS := \
 $(ISE)/$(PROJECT).bit : $(ISE)/$(PROJECT).ncd
 	@echo "bitgen $(BITGEN_OPTS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit" > /dev/stderr
 	@$(BITGEN) $(BITGEN_OPTS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit
+	@mv xilinx_device_details.xml $(ISE)
+	@cp -af ./_xmsgs $(ISE)
+	@rm -rf ./_xmsgs
 
 #
 # promgen
@@ -626,6 +630,7 @@ clean_ise:
                  $(ISE)/$(PROJECT).mcs \
                  $(ISE)/$(PROJECT).ncd \
                  $(ISE)/$(PROJECT).ngc \
+                 $(ISE)/$(PROJECT).ngc_xst.xrpt \
                  $(ISE)/$(PROJECT).ngd \
                  $(ISE)/$(PROJECT).ngr \
                  $(ISE)/$(PROJECT).pad \
@@ -648,7 +653,6 @@ clean_ise:
                  $(ISE)/$(PROJECT)_map.ncd \
                  $(ISE)/$(PROJECT)_map.ngm \
                  $(ISE)/$(PROJECT)_map.xrpt \
-                 $(ISE)/$(PROJECT)_ngc_xst.xrpt \
                  $(ISE)/$(PROJECT)_ngdbuild.xrpt \
                  $(ISE)/$(PROJECT)_pad.csv \
                  $(ISE)/$(PROJECT)_pad.txt \
