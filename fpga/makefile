@@ -454,6 +454,9 @@ PAR_OPTS := \
 $(ISE)/$(PROJECT).ncd : $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(FILTER) makefile
 	@echo "par $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf" > /dev/stderr
 	@$(PAR) $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf
+	@mv -f $(PROJECT)_par.xrpt $(ISE)
+	@mv -f $(PROJECT)_map.xrpt $(ISE)
+	@mv -f par_usage_statistics.html $(ISE)
 
 #
 # bitgen
