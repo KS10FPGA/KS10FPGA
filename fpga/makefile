@@ -323,8 +323,9 @@ $(ISE)/$(PROJECT).prj : makefile
 $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr : $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(XST_FILTER) makefile
 	@echo "xst $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log" > /dev/stderr
 	@$(XST) $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log
-	@mv -f ./$(PROJECT).lso $(ISE)/$(PROJECT).lso
-	@mv -f ./_xmsgs/* $(ISE)/_xmsgs
+	@mv  -f ./$(PROJECT).lso $(ISE)/$(PROJECT).lso
+	@cp -af ./_xmsgs $(ISE)
+	@rm -rf ./_xmsgs
 
 #
 # ngdbuild
@@ -357,11 +358,11 @@ NGD_OPTS := \
 $(ISE)/$(PROJECT).ngd : $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(XST_FILTER) makefile
 	@echo "ngd $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd" > /dev/stderr
 	@$(NGD) $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd
-	@cp -ar ./xlnx_auto_0_xdb $(ISE)
+	@cp -af ./xlnx_auto_0_xdb $(ISE)
 	@rm -rf ./xlnx_auto_0_xdb
-	@cp -ar ./_ngo $(ISE)
+	@cp -af ./_ngo $(ISE)
 	@rm -rf ./_ngo
-	@cp -ar ./_xmsgs $(ISE)
+	@cp -af ./_xmsgs $(ISE)
 	@rm -rf ./_xmsgs
 
 #
@@ -420,7 +421,7 @@ $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf : $(ISE)/$(PROJECT).ngd $(XST_FI
 	@$(MAP) $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf
 	@mv -f  ./xilinx_device_details.xml $(ISE)
 	@mv -f  ./$(PROJECT)_map.xrpt $(ISE)
-	@cp -ar ./_xmsgs $(ISE)
+	@cp -af ./_xmsgs $(ISE)
 	@rm -rf ./_xmsgs
 
 #
@@ -517,24 +518,26 @@ $(ISE)/$(PROJECT).bit : $(ISE)/$(PROJECT).ncd
 # promgen options:
 #
 #   -c                    : Checksum
+#   -o                    : Output File Name
 #   -p                    : PROM format
 #   -s                    : PROM size
 #   -spi                  : Disable bit swapping
-#   -u                    : Load upward
+#   -u                    : Load upward {addr filename}
 #   -w                    : Overwrite existing output file
 #
 
 PROMGEN_OPTS := \
 	-c ff \
+	-o $(ISE)/$(PROJECT).mcs \
 	-p mcs \
 	-s 4096 \
 	-spi \
-	-u 0000 \
+	-u 0000 $(ISE)/$(PROJECT).bit \
 	-w
 
 $(ISE)/$(PROJECT).mcs : $(ISE)/$(PROJECT).bit makefile
-	@echo "promgen $(PROMGEN_OPTS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs" > /dev/stderr
-	@$(PROMGEN) $(PROMGEN_OPTS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs
+	@echo "promgen $(PROMGEN_OPTS)" > /dev/stderr
+	@$(PROMGEN) $(PROMGEN_OPTS) 
 
 #
 # Run 'impact' to program the KS10 flash
@@ -642,6 +645,7 @@ clean_ise:
                  $(ISE)/$(PROJECT)_map.ncd \
                  $(ISE)/$(PROJECT)_map.ngm \
                  $(ISE)/$(PROJECT)_map.xrpt \
+                 $(ISE)/$(PROJECT)_ngc_xst.xrpt \
                  $(ISE)/$(PROJECT)_ngdbuild.xrpt \
                  $(ISE)/$(PROJECT)_pad.csv \
                  $(ISE)/$(PROJECT)_pad.txt \
