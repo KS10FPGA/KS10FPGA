@@ -1,56 +1,82 @@
-PROJECT   := esm_ks10
-PART      := xc6slx45-2-fgg676
+#
+# Project name.   Also top-level entity name (upper case)
+#
 
-RTL       := rtl
-ISE       := ise
-#ISETEMP   := $(ISE)/temp
-XILDIR    := `cygpath -u '$(XILINX)'`
-XILEXE    := $(XILDIR)/ISE_DS/ISE/bin/nt64/
-TOPMOD    := $(shell echo $(PROJECT) | tr a-z A-Z)
+PROJECT      := esm_ks10
+TOPMOD       := $(shell echo $(PROJECT) | tr a-z A-Z)
 
-BITGEN    := $(XILEXE)/bitgen.exe
-FUSE      := $(XILEXE)/fuse.exe
-MAP       := $(XILEXE)/map.exe
-NGD       := $(XILEXE)/ngdbuild.exe
-PAR       := $(XILEXE)/par.exe
-PROMGEN   := $(XILEXE)/promgen.exe
-IMPACT    := $(XILEXE)/impact.exe
-XST       := $(XILEXE)/xst.exe
+#
+# FPGA partnumber
+#
 
-WCFG      := ks10_useriot.wcfg
+PART         := xc6slx45-2-fgg676
 
-PRJFILE   := $(PROJECT).prj
-TESTBENCH := $(PROJECT)_testbench
-WORK      := work.testbench
+#
+# Directory structure
+#
 
-LOAD      := MAINDEC-10-DSKAA.SEQ
-#LOAD      := MAINDEC-10-DSKAB.SEQ
-#LOAD      := MAINDEC-10-DSKAC.SEQ
-#LOAD      := MAINDEC-10-DSKAD.SEQ
-#LOAD      := MAINDEC-10-DSKAE.SEQ
-#LOAD      := MAINDEC-10-DSKAF.SEQ
-#LOAD      := MAINDEC-10-DSKAG.SEQ
-#LOAD      := MAINDEC-10-DSKAH.SEQ		# runs 3.4 ms
-#LOAD      := MAINDEC-10-DSKAI.SEQ
-#LOAD      := MAINDEC-10-DSKAJ.SEQ
-#LOAD      := MAINDEC-10-DSKAK.SEQ
-#LOAD      := MAINDEC-10-DSKAL.SEQ
-#LOAD      := MAINDEC-10-DSKAM.SEQ
-#LOAD      := MAINDEC-10-DSKBA.SEQ
-#LOAD      := MAINDEC-10-DSKCA.SEQ
-#LOAD      := MAINDEC-10-DSKCB.SEQ
-#LOAD      := MAINDEC-10-DSKCC.SEQ
-#LOAD      := MAINDEC-10-DSKCD.SEQ
-#LOAD      := MAINDEC-10-DSKCE-RD00.SEQ
-#LOAD      := MAINDEC-10-DSKCF-RD00.SEQ	
-#LOAD      := MAINDEC-10-DSKEA-RD00.SEQ		# fails early
+RTL          := rtl
+ISE          := ise
 
-#LOAD     := MAINDEC-10-DSDZA.SEQ
-#LOAD     := fixed.SEQ
-#LOAD     := MAINDEC-10-DSKCG.fixed.txt
-#LOAD     := MAINDEC-10-DSKCG.txt
+#
+# Xilinx tools
+#
 
-#LOAD     := smmon.txt
+XILDIR       := `cygpath -u '$(XILINX)'`
+XILEXE       := $(XILDIR)/ISE_DS/ISE/bin/nt64
+BITGEN       := $(XILEXE)/bitgen.exe
+FUSE         := $(XILEXE)/fuse.exe
+MAP          := $(XILEXE)/map.exe
+NGD          := $(XILEXE)/ngdbuild.exe
+PAR          := $(XILEXE)/par.exe
+PROMGEN      := $(XILEXE)/promgen.exe
+IMPACT       := $(XILEXE)/impact.exe
+XST          := $(XILEXE)/xst.exe
+
+WCFG         := ks10_useriot.wcfg
+XST_FILTER   := $(ISE)/$(PROJECT).filter
+XST_INTSTYLE := ise
+
+PRJFILE      := $(PROJECT).prj
+TESTBENCH    := $(PROJECT)_testbench
+WORK         := work.testbench
+
+#
+# Initialized Memory Contents (Simulation only)
+#
+
+LOAD         := MAINDEC-10-DSKAA.SEQ
+#LOAD         := MAINDEC-10-DSKAB.SEQ
+#LOAD         := MAINDEC-10-DSKAC.SEQ
+#LOAD         := MAINDEC-10-DSKAD.SEQ
+#LOAD         := MAINDEC-10-DSKAE.SEQ
+#LOAD         := MAINDEC-10-DSKAF.SEQ
+#LOAD         := MAINDEC-10-DSKAG.SEQ
+#LOAD         := MAINDEC-10-DSKAH.SEQ		# runs 3.4 ms
+#LOAD         := MAINDEC-10-DSKAI.SEQ
+#LOAD         := MAINDEC-10-DSKAJ.SEQ
+#LOAD         := MAINDEC-10-DSKAK.SEQ
+#LOAD         := MAINDEC-10-DSKAL.SEQ
+#LOAD         := MAINDEC-10-DSKAM.SEQ
+#LOAD         := MAINDEC-10-DSKBA.SEQ
+#LOAD         := MAINDEC-10-DSKCA.SEQ
+#LOAD         := MAINDEC-10-DSKCB.SEQ
+#LOAD         := MAINDEC-10-DSKCC.SEQ
+#LOAD         := MAINDEC-10-DSKCD.SEQ
+#LOAD         := MAINDEC-10-DSKCE-RD00.SEQ
+#LOAD         := MAINDEC-10-DSKCF-RD00.SEQ	
+#LOAD         := MAINDEC-10-DSKEA-RD00.SEQ		# fails early
+
+#LOAD         := MAINDEC-10-DSDZA.SEQ
+#LOAD         := fixed.SEQ
+#LOAD         := MAINDEC-10-DSKCG.fixed.txt
+#LOAD         := MAINDEC-10-DSKCG.txt
+
+#LOAD         := smmon.txt
+
+#
+# Verilog source files
+#
 
 SRC := \
 	$(RTL)/ks10/utils/edgetrig.v \
@@ -106,6 +132,9 @@ SRC := \
 #	$(RTL)/ks10/uba/rh11/sd/sd.v \
 #	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
 
+#
+# Verilog inlcude files
+#
 
 INC := \
 	$(RTL)/ks10/cpu/useq/crom.vh  \
@@ -148,104 +177,33 @@ TESTBENCH := \
 asdf :  $(INC) $(SRC) $(BLD) $(DAT) $(UCF) $(DOC)
 	echo $(INC) $(SRC) $(BLD) $(DAT) $(UCF) $(DOC)
 
+#
+# Create the "Control ROM" microcode
+#
+
 $(RTL)/ks10/cpu/useq/crom.dat  : $(RTL)/ks10/cpu/useq/ks10.mcr $(RTL)/ks10/cpu/useq/crom.awk makefile
 	awk -f $(RTL)/ks10/cpu/useq/crom.awk $(RTL)/ks10/cpu/useq/ks10.mcr > $(RTL)/ks10/cpu/useq/crom.dat
+
+#
+# Create the "Dispatch ROM" microcode
+#
 
 $(RTL)/ks10/cpu/useq/drom.dat  : $(RTL)/ks10/cpu/useq/ks10.mcr $(RTL)/ks10/cpu/useq/drom.awk makefile
 	awk -f $(RTL)/ks10/cpu/useq/drom.awk $(RTL)/ks10/cpu/useq/ks10.mcr > $(RTL)/ks10/cpu/useq/drom.dat
 
+#
+# Initialize the SSRAM (simulation only)
+#
+
 $(RTL)/testbench/ssram.dat : $(RTL)/testbench/$(LOAD) $(RTL)/testbench/ssram.awk makefile
 	awk -f $(RTL)/testbench/ssram.awk -vfilename=$(LOAD) $(RTL)/testbench/$(LOAD) > $(RTL)/testbench/ssram.dat
 
-clean_rtl: 
-	rcsclean $(RTL)/*
-	rcsclean $(RTL)/testbench/*
-	rcsclean $(RTL)/esm/*
-	rcsclean $(RTL)/ks10/*
-	rcsclean $(RTL)/ks10/arb/*
-	rcsclean $(RTL)/ks10/csl/*
-	rcsclean $(RTL)/ks10/cpu/*
-	rcsclean $(RTL)/ks10/mem/*
-	rcsclean $(RTL)/ks10/utils/*
-	rcsclean $(RTL)/ks10/uba/dz11/uart/*
-	rcsclean $(RTL)/ks10/uba/dz11/*
-	rcsclean $(RTL)/ks10/uba/rh11/sd/*
-	rcsclean $(RTL)/ks10/uba/rh11/*
-	rcsclean $(RTL)/ks10/uba/*
-	rcsclean $(RTL)/ks10/cpu/useq/*
-	rm -f    $(RTL)/ks10/cpu/useq/*.dat
-	rm -f    $(RTL)/testbench/*.dat
-	find . -type f -name "*~" | xargs rm -fv
 
-clean_ise:
-	rcsclean $(ISE)/*
-	rm -rf   $(ISE)/xst \
-                 $(ISE)/_ngo \
-                 $(ISE)/_xmsgs \
-                 $(ISE)/iseconfig \
-                 $(ISE)/xlnx_auto_0_xdb      
-	rm -f    $(ISE)/$(PROJECT).bgn \
-	         $(ISE)/$(PROJECT).bit \
-	         $(ISE)/$(PROJECT).bld \
-	         $(ISE)/$(PROJECT).cfi \
-                 $(ISE)/$(PROJECT).cmd_log \
-                 $(ISE)/$(PROJECT).drc \
-                 $(ISE)/$(PROJECT).filter \
-                 $(ISE)/$(PROJECT).lso \
-                 $(ISE)/$(PROJECT).mcs \
-                 $(ISE)/$(PROJECT).ncd \
-                 $(ISE)/$(PROJECT).ngc \
-                 $(ISE)/$(PROJECT).ngd \
-                 $(ISE)/$(PROJECT).ngr \
-                 $(ISE)/$(PROJECT).pad \
-                 $(ISE)/$(PROJECT).par \
-                 $(ISE)/$(PROJECT).pcf\
-                 $(ISE)/$(PROJECT).prj\
-                 $(ISE)/$(PROJECT).prm\
-                 $(ISE)/$(PROJECT).ptwx \
-                 $(ISE)/$(PROJECT).stx \
-                 $(ISE)/$(PROJECT).twr \
-                 $(ISE)/$(PROJECT).twx \
-                 $(ISE)/$(PROJECT).unroutes \
-                 $(ISE)/$(PROJECT).xpi \
-                 $(ISE)/$(PROJECT).xst \
-                 $(ISE)/$(PROJECT)_bitgen.xwbt \
-                 $(ISE)/$(PROJECT)_envsettings.html \
-                 $(ISE)/$(PROJECT)_guide.ncd \
-                 $(ISE)/$(PROJECT)_map.map \
-                 $(ISE)/$(PROJECT)_map.mrp \
-                 $(ISE)/$(PROJECT)_map.ncd \
-                 $(ISE)/$(PROJECT)_map.ngm \
-                 $(ISE)/$(PROJECT)_map.xrpt \
-                 $(ISE)/$(PROJECT)_ngdbuild.xrpt \
-                 $(ISE)/$(PROJECT)_pad.csv \
-                 $(ISE)/$(PROJECT)_pad.txt \
-                 $(ISE)/$(PROJECT)_par.xrpt \
-                 $(ISE)/$(PROJECT)_summary.html \
-                 $(ISE)/$(PROJECT)_summary.xml \
-                 $(ISE)/$(PROJECT)_usage.xml \
-                 $(ISE)/$(PROJECT)_xst.log \
-                 $(ISE)/$(PROJECT)_xst.xrpt \
-                 $(ISE)/impact.cmd \
-                 $(ISE)/par_usage_statistics.html \
-                 $(ISE)/usage_statistics_webtalk.html \
-                 $(ISE)/webtalk.log \
-                 $(ISE)/webtalk_pn.xml
-
-
-
-
-
-archive_src: $(SRC)
-	tar -czvf ks10_fpga_src_`date '+%y%m%d'`.tgz $(SRC)
-
-archive_all:
-	tar -czvf ks10_fpga_all_`date '+%y%m%d'`.tgz *
 
 $(ISE)/$(TESTBENCH) : $(ISE)/$(PRJFILE) makefile
 	cd ise; \
 	$(FUSE) \
-	-intstyle ise \
+	-intstyle $(XST_INTSTYLE) \
 	-incremental \
 	-prj $(PRJFILE) \
 	-o $(TESTBENCH) \
@@ -254,7 +212,7 @@ $(ISE)/$(TESTBENCH) : $(ISE)/$(PRJFILE) makefile
 test : $(ISE)/$(TESTBENCH).exe
 	$(ISE)/$(TESTBENCH).exe \
 	-gui \
-	-intstyle ise \
+	-intstyle  $(XST_INTSTYLE) \
 	-tclbatch $(TESTBENCH).cmd \
 	-wdb $(TESTBENCH).wdb
 
@@ -264,14 +222,13 @@ test : $(ISE)/$(TESTBENCH).exe
 #	'    <filter task="xst" file="Xst" num="647" type="warning"></filter>'  \
 #	'    <filter task="xst" file="Xst" num="2677" type="warning"></filter>' \
 
-FILTER_FILE    := $(ISE)/$(PROJECT).filter
 
 FILTER_ARGS    := \
 	'<filters xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="filter.xsd">' \
 	'</filters>'
 
-$(FILTER_FILE) : makefile
-	@echo "Creating "$(FILTER_FILE) > /dev/stderr
+$(XST_FILTER) : makefile
+	@echo "Creating "$(XST_FILTER) > /dev/stderr
 	@echo "" > $@
 	@for FIL in $(FILTER_ARGS); \
 	do \
@@ -289,13 +246,14 @@ $(FILTER_FILE) : makefile
 #
 
 XST_OPTS := \
-	-filter $(FILTER_FILE) \
-	-intstyle ise 
+	-filter $(XST_FILTER) \
+	-intstyle $(XST_INTSTYLE) 
 
 XST_CMDS := \
 	'set -xsthdpdir "$(ISE)/xst"' \
 	'run' \
 	'-ifn $(ISE)/$(PROJECT).prj' \
+	'-iuc NO' \
 	'-ofn $(ISE)/$(PROJECT).ngc' \
 	'-ofmt ngc' \
 	'-p $(PART)' \
@@ -303,7 +261,6 @@ XST_CMDS := \
 	'-opt_mode Speed' \
 	'-opt_level 2' \
 	'-power NO' \
-	'-iuc NO' \
 	'-keep_hierarchy No' \
 	'-netlist_hierarchy As_Optimized' \
 	'-rtlview Yes' \
@@ -363,11 +320,11 @@ $(ISE)/$(PROJECT).prj : makefile
 	    echo 'verilog work "../'$$FILE'"' >> $@; \
 	done
 
-$(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr : $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(FILTER_FILE) makefile
+$(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr : $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(XST_FILTER) makefile
 	@echo "xst $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log" > /dev/stderr
 	@$(XST) $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log
-	@mv $(PROJECT).lso $(ISE)/$(PROJECT).lso
-	@mv ./_xmsgs $(ISE)/_xmsgs
+	@mv -f ./$(PROJECT).lso $(ISE)/$(PROJECT).lso
+	@mv -f ./_xmsgs/* $(ISE)/_xmsgs
 
 #
 # ngdbuild
@@ -391,19 +348,21 @@ $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr : $(ISE)/$(PROJECT).xst $(ISE)/$(PRO
 
 NGD_OPTS := \
 	-dd _ngo \
-	-filter $(FILTER_FILE) \
-	-intstyle ise \
+	-filter $(XST_FILTER) \
+	-intstyle $(XST_INTSTYLE) \
 	-nt timestamp \
 	-p $(PART) \
 	-uc $(RTL)/esm/$(PROJECT).ucf 
 
-$(ISE)/$(PROJECT).ngd : $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(FILTER_FILE) makefile
+$(ISE)/$(PROJECT).ngd : $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(XST_FILTER) makefile
 	@echo "ngd $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd" > /dev/stderr
 	@$(NGD) $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd
-	@mv ./_ngo $(ISE)
-	@mv ./xlnx_auto_0_xdb $(ISE)
-	@mv ./_xmsgs/* $(ISE)/_xmsgs
-	@rmdir _xmsgs
+	@cp -ar ./xlnx_auto_0_xdb $(ISE)
+	@rm -rf ./xlnx_auto_0_xdb
+	@cp -ar ./_ngo $(ISE)
+	@rm -rf ./_ngo
+	@cp -ar ./_xmsgs $(ISE)
+	@rm -rf ./_xmsgs
 
 #
 # MAP
@@ -438,9 +397,9 @@ $(ISE)/$(PROJECT).ngd : $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(FILTER
 #
 
 MAP_OPTS := \
-	-filter $(FILTER_FILE) \
+	-filter $(XST_FILTER) \
 	-global_opt off \
-	-intstyle ise \
+	-intstyle $(XST_INTSTYLE) \
 	-ir off \
 	-lc off \
 	-logic_opt off \
@@ -456,13 +415,13 @@ MAP_OPTS := \
 	-xe n \
 	-xt 0
 
-$(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf : $(ISE)/$(PROJECT).ngd $(FILTER_FILE) makefile
+$(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf : $(ISE)/$(PROJECT).ngd $(XST_FILTER) makefile
 	@echo "map $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf" > /dev/stderr
 	@$(MAP) $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf
-	@mv xilinx_device_details.xml $(ISE)
-	@mv $(PROJECT)_map.xrpt $(ISE)
-	@mv ./_xmsgs/* $(ISE)/_xmsgs
-	@rmdir _xmsgs
+	@mv -f  ./xilinx_device_details.xml $(ISE)
+	@mv -f  ./$(PROJECT)_map.xrpt $(ISE)
+	@cp -ar ./_xmsgs $(ISE)
+	@rm -rf ./_xmsgs
 
 #
 # Place and Route
@@ -484,8 +443,8 @@ $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf : $(ISE)/$(PROJECT).ngd $(FILTER
 #
 
 PAR_OPTS := \
-	-filter $(FILTER_FILE) \
-	-intstyle ise \
+	-filter $(XST_FILTER) \
+	-intstyle $(XST_INTSTYLE) \
 	-mt 4 \
 	-ol high \
 	-w \
@@ -498,7 +457,7 @@ $(ISE)/$(PROJECT).ncd : $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(FILTER
 #
 # bitgen
 #
-# Generate Bit file from NCD file.
+# Generate BIT file from NCD file.
 #
 # usage:
 #   bitgen [options] infile[.ncd] [outfile] [pcf_file.pcf]
@@ -512,7 +471,7 @@ $(ISE)/$(PROJECT).ncd : $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(FILTER
 
 BITGEN_OPTS := \
 	-w \
-	-intstyle ise \
+	-intstyle $(XST_INTSTYLE) \
 	-g DebugBitstream:No \
 	-g Binary:no \
 	-g CRC:Enable \
@@ -607,6 +566,107 @@ $(ISE)/impact.cmd : makefile
 load : $(ISE)/$(PROJECT).mcs $(ISE)/impact.cmd
 	@echo "impact -batch $(ISE)/impact.cmd" > /dev/stderr
 	@$(IMPACT) -batch $(ISE)/impact.cmd
+
+#
+# Clean everything
+#
+
+clean : clean_rtl clean_ise
+	@echo "Cleaned"
+
+#
+# Clean RTL
+#
+
+clean_rtl: 
+	rcsclean $(RTL)/*
+	rcsclean $(RTL)/testbench/*
+	rcsclean $(RTL)/esm/*
+	rcsclean $(RTL)/ks10/*
+	rcsclean $(RTL)/ks10/arb/*
+	rcsclean $(RTL)/ks10/csl/*
+	rcsclean $(RTL)/ks10/cpu/*
+	rcsclean $(RTL)/ks10/mem/*
+	rcsclean $(RTL)/ks10/utils/*
+	rcsclean $(RTL)/ks10/uba/dz11/uart/*
+	rcsclean $(RTL)/ks10/uba/dz11/*
+	rcsclean $(RTL)/ks10/uba/rh11/sd/*
+	rcsclean $(RTL)/ks10/uba/rh11/*
+	rcsclean $(RTL)/ks10/uba/*
+	rcsclean $(RTL)/ks10/cpu/useq/*
+	rm -f    $(RTL)/ks10/cpu/useq/*.dat
+	rm -f    $(RTL)/testbench/*.dat
+	find . -type f -name "*~" | xargs rm -fv
+
+#
+# Clean ISE
+#
+
+clean_ise:
+	rcsclean $(ISE)/*
+	rm -rf   $(ISE)/xst \
+                 $(ISE)/_ngo \
+                 $(ISE)/_xmsgs \
+                 $(ISE)/iseconfig \
+                 $(ISE)/xlnx_auto_0_xdb      
+	rm -f    $(ISE)/$(PROJECT).bgn \
+	         $(ISE)/$(PROJECT).bit \
+	         $(ISE)/$(PROJECT).bld \
+	         $(ISE)/$(PROJECT).cfi \
+                 $(ISE)/$(PROJECT).cmd_log \
+                 $(ISE)/$(PROJECT).drc \
+                 $(ISE)/$(PROJECT).filter \
+                 $(ISE)/$(PROJECT).lso \
+                 $(ISE)/$(PROJECT).mcs \
+                 $(ISE)/$(PROJECT).ncd \
+                 $(ISE)/$(PROJECT).ngc \
+                 $(ISE)/$(PROJECT).ngd \
+                 $(ISE)/$(PROJECT).ngr \
+                 $(ISE)/$(PROJECT).pad \
+                 $(ISE)/$(PROJECT).par \
+                 $(ISE)/$(PROJECT).pcf\
+                 $(ISE)/$(PROJECT).prj\
+                 $(ISE)/$(PROJECT).prm\
+                 $(ISE)/$(PROJECT).ptwx \
+                 $(ISE)/$(PROJECT).stx \
+                 $(ISE)/$(PROJECT).twr \
+                 $(ISE)/$(PROJECT).twx \
+                 $(ISE)/$(PROJECT).unroutes \
+                 $(ISE)/$(PROJECT).xpi \
+                 $(ISE)/$(PROJECT).xst \
+                 $(ISE)/$(PROJECT)_bitgen.xwbt \
+                 $(ISE)/$(PROJECT)_envsettings.html \
+                 $(ISE)/$(PROJECT)_guide.ncd \
+                 $(ISE)/$(PROJECT)_map.map \
+                 $(ISE)/$(PROJECT)_map.mrp \
+                 $(ISE)/$(PROJECT)_map.ncd \
+                 $(ISE)/$(PROJECT)_map.ngm \
+                 $(ISE)/$(PROJECT)_map.xrpt \
+                 $(ISE)/$(PROJECT)_ngdbuild.xrpt \
+                 $(ISE)/$(PROJECT)_pad.csv \
+                 $(ISE)/$(PROJECT)_pad.txt \
+                 $(ISE)/$(PROJECT)_par.xrpt \
+                 $(ISE)/$(PROJECT)_summary.html \
+                 $(ISE)/$(PROJECT)_summary.xml \
+                 $(ISE)/$(PROJECT)_usage.xml \
+                 $(ISE)/$(PROJECT)_xst.log \
+                 $(ISE)/$(PROJECT)_xst.xrpt \
+                 $(ISE)/impact.cmd \
+                 $(ISE)/par_usage_statistics.html \
+                 $(ISE)/usage_statistics_webtalk.html \
+                 $(ISE)/webtalk.log \
+                 $(ISE)/webtalk_pn.xml \
+                 $(ISE)/xilinx_device_details.xml
+
+#
+# Archive files
+#
+
+archive_src: $(SRC)
+	tar -czvf ks10_fpga_src_`date '+%y%m%d'`.tgz $(SRC) $(INC)
+
+archive_all:
+	tar -czvf ks10_fpga_all_`date '+%y%m%d'`.tgz *
 
 
 #./t10backup.exe   -x smmon.sav -f ks_diag_gs.tap
