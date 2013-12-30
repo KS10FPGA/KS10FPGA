@@ -283,10 +283,10 @@ $(FILTER_FILE) : makefile
 #
 # xst options:
 #
-#   -filter               : Filter File
-#   -intstyle             : Integration Style
-
-#	'set -tmpdir "/tmp"' \
+#   -filter                    : Filter File
+#   -intstyle                  : Integration Style
+#   -write_timing_constraints  : Write timing constraints
+#
 
 XST_OPTS := \
 	-filter $(FILTER_FILE) \
@@ -296,7 +296,7 @@ XST_CMDS := \
 	'set -xsthdpdir "$(ISE)/xst"' \
 	'run' \
 	'-ifn $(ISE)/$(PROJECT).prj' \
-	'-ofn $(ISE)/$(PROJECT)' \
+	'-ofn $(ISE)/$(PROJECT).ngc' \
 	'-ofmt ngc' \
 	'-p $(PART)' \
 	'-top $(TOPMOD)' \
@@ -364,9 +364,10 @@ $(ISE)/$(PROJECT).prj : makefile
 	done
 
 $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr : $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(FILTER_FILE) makefile
-	@echo "$(XST) $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log" > /dev/stderr
+	@echo "xst $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log" > /dev/stderr
 	@$(XST) $(XST_OPTS) -ifn $(ISE)/$(PROJECT).xst -ofn $(ISE)/$(PROJECT)_xst.log
 	@mv $(PROJECT).lso $(ISE)/$(PROJECT).lso
+	@mv ./_xmsgs $(ISE)/_xmsgs
 
 #
 # ngdbuild
@@ -397,8 +398,12 @@ NGD_OPTS := \
 	-uc $(RTL)/esm/$(PROJECT).ucf 
 
 $(ISE)/$(PROJECT).ngd : $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(FILTER_FILE) makefile
-	@echo "$(NGD) $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd" > /dev/stderr
+	@echo "ngd $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd" > /dev/stderr
 	@$(NGD) $(NGD_OPTS) $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngd
+	@mv ./_ngo $(ISE)
+	@mv ./xlnx_auto_0_xdb $(ISE)
+	@mv ./_xmsgs/* $(ISE)/_xmsgs
+	@rmdir _xmsgs
 
 #
 # MAP
@@ -452,8 +457,12 @@ MAP_OPTS := \
 	-xt 0
 
 $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf : $(ISE)/$(PROJECT).ngd $(FILTER_FILE) makefile
-	@echo "$(MAP) $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf" > /dev/stderr
+	@echo "map $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf" > /dev/stderr
 	@$(MAP) $(MAP_OPTS) -o $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).pcf
+	@mv xilinx_device_details.xml $(ISE)
+	@mv $(PROJECT)_map.xrpt $(ISE)
+	@mv ./_xmsgs/* $(ISE)/_xmsgs
+	@rmdir _xmsgs
 
 #
 # Place and Route
@@ -483,7 +492,7 @@ PAR_OPTS := \
 	-xe n
 
 $(ISE)/$(PROJECT).ncd : $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(FILTER) makefile
-	@echo "$(PAR) $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf" > /dev/stderr
+	@echo "par $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf" > /dev/stderr
 	@$(PAR) $(PAR_OPTS) $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).pcf
 
 #
@@ -535,7 +544,8 @@ BITGEN_OPTS := \
 	-g sw_gts_cycle:4
 
 $(ISE)/$(PROJECT).bit : $(ISE)/$(PROJECT).ncd
-	$(BITGEN) $(BITGEN_OPTS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit
+	@echo "bitgen $(BITGEN_OPTS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit" > /dev/stderr
+	@$(BITGEN) $(BITGEN_OPTS) $(ISE)/$(PROJECT).ncd $(ISE)/$(PROJECT).bit
 
 #
 # promgen
@@ -564,7 +574,7 @@ PROMGEN_OPTS := \
 	-w
 
 $(ISE)/$(PROJECT).mcs : $(ISE)/$(PROJECT).bit makefile
-	@echo "$(PROMGEN) $(PROMGEN_OPTS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs" > /dev/stderr
+	@echo "promgen $(PROMGEN_OPTS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs" > /dev/stderr
 	@$(PROMGEN) $(PROMGEN_OPTS) $(ISE)/$(PROJECT).bit -o $(ISE)/$(PROJECT).mcs
 
 #
@@ -595,7 +605,7 @@ $(ISE)/impact.cmd : makefile
 	done
 
 load : $(ISE)/$(PROJECT).mcs $(ISE)/impact.cmd
-	@echo "$(IMPACT) -batch $(ISE)/impact.cmd" > /dev/stderr
+	@echo "impact -batch $(ISE)/impact.cmd" > /dev/stderr
 	@$(IMPACT) -batch $(ISE)/impact.cmd
 
 
