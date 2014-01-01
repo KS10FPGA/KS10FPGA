@@ -33,7 +33,6 @@
 //
 //******************************************************************************
 
-
 #include "epi.h"
 #include "driverlib/rom.h"
 #include "driverlib/epi.h"
@@ -55,9 +54,9 @@ void EPIInitialize(void) {
     //
     // Enable EPI0
     //
- 
+
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_EPI0);
-    
+
     //
     // Enable GPIO
     //
@@ -75,41 +74,40 @@ void EPIInitialize(void) {
     //
     // Configure the GPIO pins for EPI mode
     //
-    
+
     ROM_GPIOPinTypeEPI(GPIO_PORTA_BASE, 0);
-    ROM_GPIOPinTypeEPI(GPIO_PORTB_BASE, (GPIO_PIN_5 |
-                                         GPIO_PIN_4));
-    ROM_GPIOPinTypeEPI(GPIO_PORTC_BASE, (GPIO_PIN_7 |
-                                         GPIO_PIN_6 |
-                                         GPIO_PIN_5 |
-                                         GPIO_PIN_4));
-    ROM_GPIOPinTypeEPI(GPIO_PORTD_BASE, (GPIO_PIN_7 |
-                                         GPIO_PIN_4 |
-                                         GPIO_PIN_3 |
-                                         GPIO_PIN_2));
-    ROM_GPIOPinTypeEPI(GPIO_PORTE_BASE, (GPIO_PIN_3 |
-                                         GPIO_PIN_2 |
-                                         GPIO_PIN_1 |
-                                         GPIO_PIN_0));
-    ROM_GPIOPinTypeEPI(GPIO_PORTF_BASE, (GPIO_PIN_5 |
-                                         GPIO_PIN_4));
-    ROM_GPIOPinTypeEPI(GPIO_PORTG_BASE, (GPIO_PIN_5 |
-                                         GPIO_PIN_1 |
-                                         GPIO_PIN_0));
-    ROM_GPIOPinTypeEPI(GPIO_PORTH_BASE, (GPIO_PIN_7 |
-                                         GPIO_PIN_6 |
-                                         GPIO_PIN_5 |
-                                         GPIO_PIN_4 |
-                                         GPIO_PIN_3 |
-                                         GPIO_PIN_2 |
-                                         GPIO_PIN_1 |
-                                         GPIO_PIN_0));
-    ROM_GPIOPinTypeEPI(GPIO_PORTJ_BASE, (GPIO_PIN_5 |
-                                         GPIO_PIN_4 |
-                                         GPIO_PIN_3 |
-                                         GPIO_PIN_2 |
-                                         GPIO_PIN_1 |
-                                         GPIO_PIN_0));
+    ROM_GPIOPinTypeEPI(GPIO_PORTB_BASE, (GPIO_PIN_5 |   // EPI0S22
+                                         GPIO_PIN_4));  // EPI0S23
+    ROM_GPIOPinTypeEPI(GPIO_PORTC_BASE, (GPIO_PIN_7 |   // EPI0S5
+                                         GPIO_PIN_6 |   // EPI0S4
+                                         GPIO_PIN_5 |   // EPI0S3
+                                         GPIO_PIN_4));  // EPI0S2
+    ROM_GPIOPinTypeEPI(GPIO_PORTD_BASE, (GPIO_PIN_7 |   // EPI0S30
+                                         GPIO_PIN_4 |   // EPI0S19
+                                         GPIO_PIN_3 |   // EPI0S21
+                                         GPIO_PIN_2));  // EPI0S20
+    ROM_GPIOPinTypeEPI(GPIO_PORTE_BASE, (GPIO_PIN_3 |   // EPI0S25
+                                         GPIO_PIN_2 |   // EPI0S24
+                                         GPIO_PIN_1 |   // EPI0S9
+                                         GPIO_PIN_0));  // EPI0S8
+    ROM_GPIOPinTypeEPI(GPIO_PORTF_BASE, (GPIO_PIN_5 |   // EPI0S15
+                                         GPIO_PIN_4));  // EPI0S12
+    ROM_GPIOPinTypeEPI(GPIO_PORTG_BASE, (GPIO_PIN_7 |   // EPI0S31
+                                         GPIO_PIN_1 |   // EPI0S14
+                                         GPIO_PIN_0));  // EPI0S13
+    ROM_GPIOPinTypeEPI(GPIO_PORTH_BASE, (GPIO_PIN_7 |   // EPI0S27
+                                         GPIO_PIN_6 |   // EPI0S26
+                                         GPIO_PIN_5 |   // EPI0S11
+                                         GPIO_PIN_4 |   // EPI0S10
+                                         GPIO_PIN_3 |   // EPI0S0
+                                         GPIO_PIN_2 |   // EPI0S1
+                                         GPIO_PIN_1 |   // EPI0S7
+                                         GPIO_PIN_0));  // EPI0S6
+    ROM_GPIOPinTypeEPI(GPIO_PORTJ_BASE, (GPIO_PIN_5 |   // EPI0S29
+                                         GPIO_PIN_4 |   // EPI0S28
+                                         GPIO_PIN_2 |   // EPI0S18
+                                         GPIO_PIN_1 |   // EPI0S17
+                                         GPIO_PIN_0));  // EPI0S16
 
     //
     // Configure EPI Pins
@@ -151,20 +149,20 @@ void EPIInitialize(void) {
     //
     // Configure EPI
     //
-    
+
     ROM_EPIModeSet(EPI0_BASE, EPI_MODE_HB16);
     ROM_EPIDividerSet(EPI0_BASE, 0);
     ROM_EPIConfigHB16Set(EPI0_BASE, (EPI_HB16_MODE_ADDEMUX  |
-				     EPI_HB16_WRWAIT_3      |
-				     EPI_HB16_RDWAIT_3      |
-				     EPI_HB16_BSEL          |
-				     EPI_HB16_WORD_ACCESS   |
-				     EPI_HB16_CSCFG_CS), 0);
+                                     EPI_HB16_WRWAIT_0      |
+                                     EPI_HB16_RDWAIT_0      |
+                                     EPI_HB16_BSEL          |
+                                     EPI_HB16_WORD_ACCESS   |
+                                     EPI_HB16_CSCFG_CS), 0);
 
     //
     // Set EPI address map
     //
-    
+
     ROM_EPIAddressMapSet(EPI0_BASE, (EPI_ADDR_RAM_SIZE_256B |
                                      EPI_ADDR_RAM_BASE_6));
 }
