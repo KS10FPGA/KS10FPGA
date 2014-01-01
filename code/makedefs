@@ -8,6 +8,7 @@ CFLAGS := \
 	-DTARGET_IS_TEMPEST_RC3 \
 	-DCONFIG_ESM \
 	-W -Wall \
+        -ffreestanding \
 	-mcpu=cortex-m3 \
 	-mthumb \
 	-Os \
@@ -20,7 +21,7 @@ CFLAGS := \
 	-fno-exceptions \
         -Wno-ctor-dtor-privacy \
 	-Wno-non-virtual-dtor \
-	-I ..
+	-I..
 
 %.o: %.c
 	@if [ 'x$(VERBOSE)' = x ];              \

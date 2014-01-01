@@ -108,11 +108,11 @@ static ks10_t::data_t parseOctal(const char *buf) {
 //!
 
 ks10_t::data_t rdword(const uint8_t *b) {
-    return (((uint64_t)b[0] << 28) |
-            ((uint64_t)b[1] << 20) |
-            ((uint64_t)b[2] << 12) |
-            ((uint64_t)b[3] <<  4) |
-            ((uint64_t)b[4] <<  0));
+    return (((ks10_t::data_t)b[0] << 28) |
+            ((ks10_t::data_t)b[1] << 20) |
+            ((ks10_t::data_t)b[2] << 12) |
+            ((ks10_t::data_t)b[3] <<  4) |
+            ((ks10_t::data_t)b[4] <<  0));
 }
 
 //
@@ -313,7 +313,7 @@ static void cmdCE(int argc, char *argv[]) {
 //
 //! Continue
 //!
-//! The <b>CO</b> (Continue) command causes the KS10 to exit the <b>HALT</b> 
+//! The <b>CO</b> (Continue) command causes the KS10 to exit the <b>HALT</b>
 //! state and continue operation.
 //!
 //! \sa cmdHA, cmdSI
@@ -544,7 +544,7 @@ static void cmdEN(int argc, char *[]) {
 //
 //! Execute the next instruction
 //!
-//! The <b>EX/b> (Execute) command causes the KS10 to execute the 
+//! The <b>EX/b> (Execute) command causes the KS10 to execute the
 //! instruction in the Console Instruction Register, then return to
 //! the halt state.
 //!
@@ -1026,8 +1026,8 @@ void parseCMD(char * buf) {
     //
 
     struct cmdList_t {
-            const char * name;
-            void (*function)(int argc, char *argv[]);
+        const char * name;
+        void (*function)(int argc, char *argv[]);
     };
 
     static const cmdList_t cmdList[] = {
