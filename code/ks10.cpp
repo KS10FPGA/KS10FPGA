@@ -112,11 +112,12 @@ extern "C" void gpiobIntHandler(void) {
 //
 
 void ks10_t::go(void) {
-    writeWord(regStat + 4, statGO);
-    ROM_SysCtlDelay(1);
-    // Wait for GO to negate
-    while (readWord(regStat + 4) & statGO) {
-        ;
+    writeReg(regStat, statGO);
+    for (int i = 0; i < 1000; i++) {
+        if (!(readReg(regStat) & statGO)) {
+            return;
+        }
+        ROM_SysCtlDelay(1);
     }
 }
 
@@ -276,7 +277,7 @@ uint16_t ks10_t::readIObyte(addr_t addr) {
 
 void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
     writeReg(regAddr, (addr & addrMask) | write | io | byte);
-    writeWord(regData, data);
+    writeReg(regData, data);
     go();
 }
 
@@ -289,11 +290,11 @@ void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
 //
 
 void ks10_t::run(bool enable) {
-    uint8_t status = readWord(regStat + 6);
+    data_t status = readReg(regStat);
     if (enable) {
-        writeWord(regStat + 6, status | statRUN);
+        writeReg(regStat, status | statRUN);
     } else {
-        writeWord(regStat + 6, status & ~statRUN);
+        writeReg(regStat, status & ~statRUN);
     }
 }
 
@@ -309,7 +310,7 @@ void ks10_t::run(bool enable) {
 //
 
 bool ks10_t::run(void) {
-    return readWord(regStat + 6) & statRUN;
+    return readReg(regStat) & statRUN;
 }
 
 //
@@ -321,11 +322,11 @@ bool ks10_t::run(void) {
 //
 
 void ks10_t::cont(bool enable) {
-    uint8_t status = readWord(regStat + 6);
+    data_t status = readReg(regStat);
     if (enable) {
-        writeWord(regStat + 6, status | statCONT);
+        writeReg(regStat, status | statCONT);
     } else {
-        writeWord(regStat + 6, status & ~statCONT);
+        writeReg(regStat, status & ~statCONT);
     }
 }
 
@@ -340,7 +341,7 @@ void ks10_t::cont(bool enable) {
 //
 
 bool ks10_t::cont(void) {
-    return readWord(regStat + 6) & statCONT;
+    return readReg(regStat) & statCONT;
 }
 
 //
@@ -352,11 +353,11 @@ bool ks10_t::cont(void) {
 //
 
 void ks10_t::exec(bool enable) {
-    uint8_t status = readWord(regStat + 6);
+    data_t status = readReg(regStat);
     if (enable) {
-        writeWord(regStat + 6, status | statEXEC);
+        writeReg(regStat, status | statEXEC);
     } else {
-        writeWord(regStat + 6, status & ~statEXEC);
+        writeReg(regStat, status & ~statEXEC);
     }
 }
 
@@ -371,7 +372,7 @@ void ks10_t::exec(bool enable) {
 //
 
 bool ks10_t::exec(void) {
-    return readWord(regStat + 6) & statEXEC;
+    return readReg(regStat) & statEXEC;
 }
 
 //
@@ -385,7 +386,7 @@ bool ks10_t::exec(void) {
 //
 
 bool ks10_t::halt(void) {
-    return readWord(regStat + 6) & statHALT;
+    return readReg(regStat) & statHALT;
 }
 
 //
@@ -397,7 +398,7 @@ bool ks10_t::halt(void) {
 //
 
 bool ks10_t::timerEnable(void) {
-    return readWord(regStat + 6) & statTIMEREN;
+    return readReg(regStat) & statTIMEREN;
 }
 
 //
@@ -409,11 +410,11 @@ bool ks10_t::timerEnable(void) {
 //
 
 void ks10_t::timerEnable(bool enable) {
-    uint8_t status = readWord(regStat + 6);
+    data_t status = readReg(regStat);
     if (enable) {
-        writeWord(regStat + 6, status | statTIMEREN);
+        writeReg(regStat, status | statTIMEREN);
     } else {
-        writeWord(regStat + 6, status & ~statTIMEREN);
+        writeReg(regStat, status & ~statTIMEREN);
     }
 }
 
@@ -426,7 +427,7 @@ void ks10_t::timerEnable(bool enable) {
 //
 
 bool ks10_t::trapEnable(void) {
-    return readWord(regStat + 6) & statTRAPEN;
+    return readReg(regStat) & statTRAPEN;
 }
 
 //
@@ -440,11 +441,11 @@ bool ks10_t::trapEnable(void) {
 //
 
 void ks10_t::trapEnable(bool enable) {
-    uint8_t status = readWord(regStat + 6);
+    data_t status = readReg(regStat);
     if (enable) {
-        writeWord(regStat + 6, status | statTRAPEN);
+        writeReg(regStat, status | statTRAPEN);
     } else {
-        writeWord(regStat + 6, status & ~statTRAPEN);
+        writeReg(regStat, status & ~statTRAPEN);
     }
 }
 
@@ -457,7 +458,7 @@ void ks10_t::trapEnable(bool enable) {
 //
 
 bool ks10_t::cacheEnable(void) {
-    return readWord(regStat + 6) & statCACHEEN;
+    return readReg(regStat) & statCACHEEN;
 }
 
 //
@@ -471,11 +472,11 @@ bool ks10_t::cacheEnable(void) {
 //
 
 void ks10_t::cacheEnable(bool enable) {
-    uint8_t status = readWord(regStat + 6);
+    data_t status = readReg(regStat);
     if (enable) {
-        writeWord(regStat + 6, status | statCACHEEN);
+        writeReg(regStat, status | statCACHEEN);
     } else {
-        writeWord(regStat + 6, status & ~statCACHEEN);
+        writeReg(regStat, status & ~statCACHEEN);
     }
 }
 
@@ -488,7 +489,7 @@ void ks10_t::cacheEnable(bool enable) {
 //
 
 bool ks10_t::cpuReset(void) {
-    return readWord(regStat + 6) & statRESET;
+    return readReg(regStat) & statRESET;
 }
 
 //
@@ -504,11 +505,11 @@ bool ks10_t::cpuReset(void) {
 //
 
 void ks10_t::cpuReset(bool enable) {
-    uint8_t status = readWord(regStat + 6);
+    data_t status = readReg(regStat);
     if (enable) {
-        writeWord(regStat + 6, status | statRESET);
+        writeReg(regStat, status | statRESET);
     } else {
-        writeWord(regStat + 6, status & ~statRESET);
+        writeReg(regStat, status & ~statRESET);
     }
 }
 
@@ -523,10 +524,10 @@ void ks10_t::cpuReset(bool enable) {
 //
 
 void ks10_t::cpuIntr(void) {
-    uint8_t status = readWord(regStat + 6);
-    writeWord(regStat + 6, status | statINTR);
+    data_t status = readReg(regStat);
+    writeReg(regStat, status | statINTR);
     ROM_SysCtlDelay(10);
-    writeWord(regStat + 6, status);
+    writeReg(regStat, status);
 }
 
 //
@@ -538,8 +539,8 @@ void ks10_t::cpuIntr(void) {
 //
 
 bool ks10_t::nxmnxd(void) {
-    uint16_t reg = readWord(regStat + 6);
-    writeWord(regStat + 6, reg & ~statNXMNXD);
+    data_t reg = readReg(regStat);
+    writeReg(regStat, reg & ~statNXMNXD);
     return reg & statNXMNXD;
 }
 
@@ -551,14 +552,7 @@ bool ks10_t::nxmnxd(void) {
 //
 
 const char *ks10_t::getFirmwareRev(void) {
-    union fwReg_t {
-        uint64_t ull;
-        char buffer[8];
-    };
-    static fwReg_t fwReg;
-
-    fwReg.ull = readReg(regFirmwareVersion);
-    return fwReg.buffer;
+    return regVers;
 }
 
 //!
@@ -577,6 +571,68 @@ ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
     haltStatusWord.pc     = readMem(1);
 
     return haltStatusWord;
+}
+
+
+bool ks10_t::testRegister(volatile void * addr, const char *name, uint64_t mask) {
+    volatile uint64_t * reg64 = (uint64_t*)addr;
+
+    uint64_t initialState = *reg64;
+    printf("test: %s: Initial State = 0x%016llx\n", name, initialState);
+
+    uint64_t vector64[] = {
+        0x0000000000000000ull,
+	0x00000000000000ffull,
+	0x000000000000ffffull,
+	0x0000000000ffffffull,
+	0x00000000ffffffffull,
+	0x000000ffffffffffull,
+	0x0000ffffffffffffull,
+	0x00ffffffffffffffull,
+	0xffffffffffffffffull,
+    };
+
+    printf("test: %s: Checking 64-bit write.\n", name);
+    for (unsigned int i = 0; i < sizeof(vector64)/sizeof(vector64[0]); i++) {
+        *reg64 = vector64[i];
+	uint64_t readback = *reg64;
+	if (readback != (vector64[i] & mask)) {
+  	    printf("test: %s, Register failure.  was 0x%016llx, should be 0x%016llx\n", name, readback, vector64[i]);
+	}
+    }
+
+    printf("test: %s: Checking byte lanes.\n", name);
+    volatile uint8_t * reg08 = (uint8_t*)addr;
+    *reg64 = vector64[0];
+    for (unsigned int i = 0; i < sizeof(vector64)/sizeof(vector64[0]); i++) {
+	uint64_t readback = *reg64;
+	if (readback != (vector64[i] & mask)) {
+  	    printf("test: %s: Register failure.  was 0x%016llx, should be 0x%016llx\n", name, readback, vector64[i]);
+	}
+	*reg08++ = 0xff;
+    }
+
+    printf("test: %s: Checking bits\n", name);
+    for (int i = 0; i < 64; i++) {
+        uint64_t bit = 1ull << i;
+	*reg64 = bit;
+	volatile uint64_t readback = *reg64;
+	if (readback != (bit & mask)) {
+	    printf("test: %s: Register failure.  was 0x%016llx, should be 0x%016llx\n", name, readback, bit);
+	}
+    }
+
+    *reg64 = initialState;
+    return true;
+}
+
+bool ks10_t::testRegs(void) {
+    bool success = true;
+    success &= testRegister(regAddr, "regADDR", 0xfffffffff);
+    success &= testRegister(regData, "regDATA", 0xfffffffff);
+    success &= testRegister(regCIR,  "regCIR", 0xfffffffff);
+    success &= testRegister(regTest, "regTEST");
+    return success;
 }
 
 //!

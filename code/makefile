@@ -38,6 +38,18 @@ HEADERS := \
 	fatfs/ff.h \
 	fatfs/ffconf.h \
 	fatfs/integer.h \
+	driverlib/cpu.h \
+	driverlib/epi.h \
+	driverlib/debug.h \
+	driverlib/gpio.h \
+	driverlib/interrupt.h \
+	driverlib/pin_map.h \
+	driverlib/rom.h \
+	driverlib/ssi.h \
+	driverlib/sysctl.h \
+	driverlib/systick.h \
+	driverlib/timer.h \
+	driverlib/uart.h \
 
 DRIVERLIB := \
 	driverlib/driverlib.a

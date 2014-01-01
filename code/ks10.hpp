@@ -136,12 +136,13 @@ class ks10_t {
         static void     cpuReset(bool enable);
         static void     cpuIntr(void);
         static bool     nxmnxd(void);
+        static bool     testRegs(void);
         static haltStatusWord_t  &getHaltStatusWord(void);
         static haltStatusBlock_t &getHaltStatusBlock(addr_t addr);
         static const char *getFirmwareRev(void);
         static void     (*consIntrHandler)(void);
 
-    private:
+  //    private:
 
         //
         // Misc constants
@@ -163,45 +164,51 @@ class ks10_t {
         // KS10 FPGA Register Addresses
         //
 
-        static constexpr uint16_t * const regAddr      =
-            reinterpret_cast<uint16_t * const>(epiOffset + 0x00); //!< KS10 Address Register
-        static constexpr uint16_t * const regData      =
-            reinterpret_cast<uint16_t * const>(epiOffset + 0x08); //!< KS10 Data Register
-        static constexpr uint16_t * const regStat      =
-            reinterpret_cast<uint16_t * const>(epiOffset + 0x10); //!< KS10 Status Regsiter
-        static constexpr uint16_t * const regCIR       =
-            reinterpret_cast<uint16_t * const>(epiOffset + 0x18); //!< KS10 Console Instruction Register
-        static constexpr uint16_t * const regRH11debug =
-            reinterpret_cast<uint16_t * const>(epiOffset + 0x30); //!< RH11 Debug Register
-        static constexpr uint16_t * const regFirmwareVersion =
-            reinterpret_cast<uint16_t * const>(epiOffset + 0x38); //!< Firmware Version Register
+        //!< KS10 Address Register
+        static constexpr void * regAddr = reinterpret_cast<void *>(epiOffset + 0x00);
 
+        //!< KS10 Data Register
+        static constexpr volatile void * regData = reinterpret_cast<volatile void *>(epiOffset + 0x08);
+
+        //!< KS10 Status Register
+        static constexpr volatile void * regStat = reinterpret_cast<volatile void *>(epiOffset + 0x10);
+
+        //!< KS10 Console Instruction Register
+        static constexpr void * regCIR  = reinterpret_cast<void *>(epiOffset + 0x18);
+
+        //!< KS10 Test Register
+        static constexpr void * regTest = reinterpret_cast<void *>(0x60000000 + 0x20);
+
+        //!< RH11 Debug Register
+        static constexpr const volatile uint64_t * regRH11 = reinterpret_cast<const volatile  uint64_t *>(epiOffset + 0x30);
+
+        //!< Firmware Version Register
+        static constexpr const char * regVers = reinterpret_cast<const char *>(epiOffset + 0x38);
+        
         //
         // Low level interface functions
         //
 
-        static uint16_t readWord(const uint16_t * reg);
-        static void     writeWord(uint16_t * reg, uint16_t data);
-        static data_t   readReg(const uint16_t * reg);
-        static void     writeReg(uint16_t * reg, data_t data);
-        static void     go(void);
+        static data_t readReg(const volatile void * reg);
+        static void   writeReg(volatile  void * reg, data_t data);
+        static void   go(void);
+        static bool   testRegister(volatile void * addr, const char *name, uint64_t mask = 0xffffffffffffffffull);
 
         //
         // Control/Status Register Bits
         //
 
-        static const uint16_t statGO      = 0x0001;
-
-        static const uint16_t statNXMNXD  = 0x0200;
-        static const uint16_t statHALT    = 0x0100;
-        static const uint16_t statRUN     = 0x0080;
-        static const uint16_t statCONT    = 0x0040;
-        static const uint16_t statEXEC    = 0x0020;
-        static const uint16_t statTIMEREN = 0x0010;
-        static const uint16_t statTRAPEN  = 0x0008;
-        static const uint16_t statCACHEEN = 0x0004;
-        static const uint16_t statINTR    = 0x0002;
-        static const uint16_t statRESET   = 0x0001;
+        static const data_t statGO      = 0x00010000UL;
+        static const data_t statNXMNXD  = 0x00000200UL;
+        static const data_t statHALT    = 0x00000100UL;
+        static const data_t statRUN     = 0x00000080UL;
+        static const data_t statCONT    = 0x00000040UL;
+        static const data_t statEXEC    = 0x00000020UL;
+        static const data_t statTIMEREN = 0x00000010UL;
+        static const data_t statTRAPEN  = 0x00000008UL;
+        static const data_t statCACHEEN = 0x00000004UL;
+        static const data_t statINTR    = 0x00000002UL;
+        static const data_t statRESET   = 0x00000001UL;
 };
 
 //
@@ -233,38 +240,6 @@ inline uint32_t ks10_t::rh(data_t data) {
 }
 
 //
-//! This function reads a byte from the FPGA
-//!
-//! The address is the register address mapped through the EPI.
-//!
-//! \param reg -
-//!     address of the register.
-//!
-//! \returns
-//!      Register contents.
-//
-
-inline uint16_t ks10_t::readWord(const uint16_t *reg) {
-    return *reg;
-}
-
-//
-//! This function writes a byte to the FPGA
-//!
-//! The address is the register address mapped through the EPI.
-//!
-//! \param
-//!     reg is the address of the register.
-//!
-//! \param
-//!     data is the data to be written to the register.
-//
-
-inline void ks10_t::writeWord(uint16_t * reg, uint16_t data) {
-    *reg = data;
-}
-
-//
 //! This function reads a 36-bit register from FPGA.
 //!
 //! The address is the register address mapped through the EPI.
@@ -276,8 +251,8 @@ inline void ks10_t::writeWord(uint16_t * reg, uint16_t data) {
 //!     Register contents.
 //
 
-inline ks10_t::data_t ks10_t::readReg(const uint16_t * reg) {
-    return *reinterpret_cast<const data_t*>(reg);
+inline ks10_t::data_t ks10_t::readReg(const volatile void * reg) {
+    return *reinterpret_cast<const volatile data_t*>(reg);
 }
 
 //
@@ -292,8 +267,8 @@ inline ks10_t::data_t ks10_t::readReg(const uint16_t * reg) {
 //!     data is the data to be written to the register.
 //
 
-inline void ks10_t::writeReg(uint16_t * reg, data_t data) {
-    *reinterpret_cast<data_t *>(reg) = data;
+inline void ks10_t::writeReg(volatile void * reg, data_t data) {
+    *reinterpret_cast<volatile data_t *>(reg) = data;
 }
 
 #endif
