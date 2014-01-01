@@ -722,6 +722,7 @@ void sdCardDetect(bool init) {
         initialized = false;
     }
     lastCardDetect = cardDetect;
+    ROM_IntEnable(INT_TIMER1A);
 }
 
 //
