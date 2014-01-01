@@ -754,7 +754,7 @@ static void cmdSD(int argc, char *argv[]) {
         FRESULT status = f_mount(0, &fatFS);
         printf("open status was %d\n", status);
     } else if (buf[0] == 'I' && buf[1] == 'N') {
-        SDInitializeCard();
+        sdInitializeCard();
     } else if (buf[0] == 'O' && buf[1] == 'P') {
         FIL fp;
         uint8_t buffer[256];
@@ -773,7 +773,7 @@ static void cmdSD(int argc, char *argv[]) {
         printf("###%s###\n", buffer);
     } else if (buf[0] == 'R' && buf[1] == 'D') {
         unsigned char buffer[512];
-        bool success = SDReadSector(buffer, 0);
+        bool success = sdReadSector(buffer, 0);
         if (!success) {
             printf("SD Card Read Failure...\n");
             return;

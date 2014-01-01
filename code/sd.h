@@ -43,12 +43,13 @@ extern "C"
 {
 #endif
 
-    void SDInitialize(void);
-    bool SDStatus(void);
-    void SDCardDetect(bool init);
-    bool SDInitializeCard(void);
-    bool SDReadSector(uint8_t *buf, uint32_t sector);
-    bool SDWriteSector(const uint8_t *buf, uint32_t sector);
+    void sdInitialize(void);
+    void sdEnable(bool enable);
+    bool sdStatus(void);
+    void sdCardDetect(bool init);
+    bool sdInitializeCard(void);
+    bool sdReadSector(uint8_t *buf, uint32_t sector);
+    bool sdWriteSector(const uint8_t *buf, uint32_t sector);
 
 #ifdef __cplusplus
 }

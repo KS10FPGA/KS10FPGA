@@ -53,7 +53,7 @@
 //!
 
 DSTATUS disk_initialize(BYTE pdrv) {
-    return ((pdrv == 0) && SDInitializeCard()) ? 0 : STA_NOINIT;
+    return ((pdrv == 0) && sdInitializeCard()) ? 0 : STA_NOINIT;
 }
 
 //!
@@ -71,7 +71,7 @@ DSTATUS disk_initialize(BYTE pdrv) {
 //!
 
 DSTATUS disk_status(BYTE pdrv) {
-    return ((pdrv == 0) && SDStatus()) ? 0 : STA_NOINIT;
+    return ((pdrv == 0) && sdStatus()) ? 0 : STA_NOINIT;
 }
 
 //!
@@ -107,13 +107,13 @@ DSTATUS disk_status(BYTE pdrv) {
 DRESULT disk_read(BYTE pdrv, BYTE *buf, DWORD sector, BYTE count) {
     if (pdrv != 0) {
         return RES_PARERR;
-    } else if (!SDStatus()) {
+    } else if (!sdStatus()) {
         return RES_NOTRDY;
     }
 
     BYTE * bufptr = buf;
     for (DWORD i = 0; i < count; i++) {
-        bool success = SDReadSector(bufptr, sector + i);
+        bool success = sdReadSector(bufptr, sector + i);
         if (!success) {
             return RES_ERROR;
         }

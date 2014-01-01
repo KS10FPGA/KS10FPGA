@@ -82,7 +82,7 @@ enum cmd_t {
     CMD58  = 58,	//!< READ_OCR Command
 };
 
-void SDInitialize(void) __attribute__((constructor(301)));
+void sdInitialize(void) __attribute__((constructor(301)));
 
 //
 //! Controls the chip enable of the SD Card.
@@ -254,7 +254,7 @@ void sendWriteStartToken(void) {
 //!     True if the SD Card is initialized properly, false otherwise.
 //
 
-bool SDInitializeCard(void) {
+bool sdInitializeCard(void) {
     
     debug("Initializing SD Card.\n");
 
@@ -486,7 +486,7 @@ bool SDInitializeCard(void) {
 //!     True if the read was successful, false otherwise.
 //!
 
-bool SDReadSector(uint8_t *buf, uint32_t sector) {
+bool sdReadSector(uint8_t *buf, uint32_t sector) {
 
     if (!initialized) {
         debug("CMD17: Card is not initialized.\n");
@@ -573,7 +573,7 @@ bool SDReadSector(uint8_t *buf, uint32_t sector) {
 //!     True if the write was successful, false otherwise.
 //!
 
-bool SDWriteSector(const uint8_t *buf, uint32_t sector) {
+bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
 
     uint8_t R1Response;
 
@@ -679,7 +679,7 @@ bool SDWriteSector(const uint8_t *buf, uint32_t sector) {
 //!     True if the SD Card has been initialized successfully, false otherwise.
 //
 
-bool SDStatus(void) {
+bool sdStatus(void) {
     return initialized;
 }
 
@@ -688,9 +688,9 @@ bool SDStatus(void) {
 //! 
 //! Detect SD Card insertions and removals.  When an insertion is detected,
 //! initialize the SD Card and mount the FAT32 Filesystem.
-//!
+//
 
-void SDCardDetect(bool init) {
+void sdCardDetect(bool init) {
     static uint32_t lastCardDetect = 0;
     static FATFS fatFS;
     uint32_t cardDetect = !ROM_GPIOPinRead(GPIO_PORTCD_BASE, GPIO_PIN_CD);
@@ -699,7 +699,7 @@ void SDCardDetect(bool init) {
             putchar('\n');
         }
         printf("KS10> SD Card inserted.\n");
-        if (SDInitializeCard()) {
+        if (sdInitializeCard()) {
 	    printf("KS10> SD Card initialized successfully.\n");
 	    FRESULT status = f_mount(0, &fatFS);
   	    if (status == FR_OK) {
@@ -732,7 +732,7 @@ void SDCardDetect(bool init) {
 //
 
 void timer1IntHandler(void) {
-    SDCardDetect(false);
+    sdCardDetect(false);
     ROM_TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
 }
 
@@ -740,7 +740,7 @@ void timer1IntHandler(void) {
 //! Initialize the SD Card Interface
 //
 
-void SDInitialize(void) {
+void sdInitialize(void) {
 
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
@@ -758,8 +758,19 @@ void SDInitialize(void) {
     ROM_TimerLoadSet(TIMER1_BASE, TIMER_A, SysCtlClockGet());
     ROM_TimerEnable(TIMER1_BASE, TIMER_A);
     ROM_TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
-    ROM_IntEnable(INT_TIMER1A);
     putchar('1');
     putchar(',');
     putchar(' ');
+}
+
+//
+// Enable/Disable SD Card insertion detection.
+//
+
+void sdEnable(bool enable) {
+    if (enable) {
+        ROM_IntEnable(INT_TIMER1A);
+    } else {
+        ROM_IntDisable(INT_TIMER1A);
+    }
 }
