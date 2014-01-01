@@ -6,7 +6,7 @@
 //!
 //! This object provides the interfaces that are required to load/program the
 //! FPGA.
-//!  
+//!
 //! The FPGA provides 3 interface signals to the console microcontroller:
 //! -#  PROG# output.  When asserted (low), this signal causes the FPGA to
 //!      begin to load firmware from the serial flash memory device.
@@ -55,24 +55,23 @@
 #define GPIO_PIN_PROG  GPIO_PIN_0
 #define GPIO_PIN_INIT  GPIO_PIN_1
 #define GPIO_PIN_DONE  GPIO_PIN_3
-   
+
 //!
 //! \brief
 //!     Program the FPGA with firmware.
 //!
 //! \note
-//!     PROG# is on PB0, 
+//!     PROG# is on PB0,
 //!     INIT# is on PB1, and
 //!     DONE is on PB3.
-//!  
+//!
 //! \returns
 //!     True if the FPGA was programmed successfully. False otherwise.
 //!
 
-
 bool programFPGA(void) {
 
-    printf("KS10> Programming FPGA with firmware.\n");
+    printf("KS10> Programming FPGA with firmware.");
 
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORT_BASE, GPIO_PIN_PROG);
@@ -87,44 +86,37 @@ bool programFPGA(void) {
     ROM_SysCtlDelay(10);
     ROM_GPIOPinWrite(GPIO_PORT_BASE, GPIO_PIN_PROG, GPIO_PIN_PROG);
     ROM_SysCtlDelay(10);
-    
+
     //
     // Verify DONE is negated.
     //
-    
+
     if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_DONE) != 0) {
-        printf("KS10> FPGA Programming Error.  FPGA Done should be negated.\n");
+        printf("\nKS10> FPGA Programming Error.  FPGA Done should be negated.\n");
         return false;
     }
-        
+
     //
-    // Wait for DONE to be asserted.
+    // Wait for DONE to be asserted.  Error after 10 seconds.
+    //  The INIT# pin is asserted (low) if a CRC error occurs
     //
 
-#ifdef CONFIG_KS10    
-
-    timer_t timeout(5 * timer_t::HZ);
-    do {
-
-        if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_INIT) == 0) {
-            printf("KS10> FPGA Programming Error.  CRC Failure.\n");
-            return false;
-        }
-    
-        if (timeout) {
-            printf("KS10> FPGA Programming Error.  "
-                   "Timed Out waiting for DONE.\n");
-            return false;
-        }
-
-    } while (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_DONE) == 0);
-
+    for (int i = 0; i < 10; i++) {
+        timer_t timeout(timer_t::HZ);
+        while (!timeout) {
+            if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_DONE) == GPIO_PIN_DONE) {
+                printf("\nKS10> FPGA programmed successfully.\n");
+                return true;
+            }
+#if 0
+            if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_INIT) == 0) {
+                printf("\nKS10> FPGA Programming Error.  CRC Failure.\n");
+                return false;
+            }
 #endif
-
-    //
-    // FPGA was successfully programmed.
-    //
-
-    printf("KS10> FPGA programmed successfully.\n");
-    return true;
+        }
+        printf(" .");
+   }
+    printf("\nKS10> FPGA Programming Error.  Programming timed out.\n");
+    return false;
 }
