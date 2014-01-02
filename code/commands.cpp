@@ -67,6 +67,19 @@ static char *strupper(char *buf) {
     return buf;
 }
 
+int strncmp(const char *s1, const char *s2, unsigned n) {
+    for ( ; n > 0; --n) {
+	if (*s1 != *s2) {
+	    return ((*(unsigned char *)s1 < *(unsigned char *)s2) ? -1 : +1);
+	} else if (*s1 == '\0') {
+	    return 0;
+        }
+        s1++;
+        s2++;
+    }
+    return 0;
+}
+
 //
 //! Parses an octal number from the command line
 //!
@@ -140,8 +153,8 @@ ks10_t::data_t getdata(FIL *fp) {
     static uint8_t buffer[255];
     static unsigned int index = sizeof(buffer);
 
-    static_assert((sizeof(buffer) % 5) == 0, "Buffer size must be a multiple"
-                  " of five bytes.");
+    static_assert((sizeof(buffer) % 5) == 0,
+                  "Buffer size must be a multiple of five bytes.");
 
     if (index == sizeof(buffer)) {
         unsigned int numbytes;
@@ -991,22 +1004,35 @@ static void cmdXX(int, char *argv[]) {
 //!    Array of pointers to the arguments.
 //
 
-static void cmdZZ(int, char *[]) {
+static void cmdZZ(int argc, char *argv[]) {
 
-    printf("This is a test (int decimal) %d\n", 23456);
-    printf("This is a test (int hex    ) %x\n", 0x123456);
-    printf("This is a test (int octal  ) %o\n", 01234567);
+    if (argc == 1) {
 
-    printf("This is a test (long decimal) %ld\n", 345699234ul);
-    printf("This is a test (long hex    ) %lx\n", 0x1234567aul);
-    printf("This is a test (long octal  ) %lo\n", 012345676543ul);
+        printf("This is a test (int decimal) %d\n", 23456);
+        printf("This is a test (int hex    ) %x\n", 0x123456);
+        printf("This is a test (int octal  ) %o\n", 01234567);
+        printf("This is a test (long decimal) %ld\n", 345699234ul);
+        printf("This is a test (long hex    ) %lx\n", 0x1234567aul);
+        printf("This is a test (long octal  ) %lo\n", 012345676543ul);
+        printf("This is a test (long long decimal) %lld\n", 345699234ull);
+        printf("This is a test (long long hex    ) %llx \n", 0x95232633ull);
+        printf("This is a test (long long octal  ) %012llo\n", 0123456ull);
+        printf("This is a test (long long hex    ) 0x%llx\n", 0x0123456789abcdefULL);
+        printf("This is a test (long long hex    ) 0x%llx\n", 0x95232633579bfe34ull);
 
-    printf("This is a test (long long decimal) %lld\n", 345699234ull);
-    printf("This is a test (long long hex    ) %llx \n", 0x95232633ull);
-    printf("This is a test (long long octal  ) %012llo\n", 0123456ull);
-    printf("This is a test (long long hex    ) 0x%llx\n", 0x0123456789abcdefULL);
-    printf("This is a test (long long hex    ) 0x%llx\n", 0x95232633579bfe34ull);
-
+    } else if (argc == 3) {
+        if (*argv[1] == 'R') {
+            if (strncmp(argv[2], "REGADDR", 4) == 0) {
+                printf("  Address Register: %012llo.\n", ks10_t::readReg(ks10_t::regAddr));
+            } else if (strncmp(argv[2], "REGDATA", 4) == 0) {
+                printf("  Data Register: %012llo.\n", ks10_t::readReg(ks10_t::regData));
+            } else if (strncmp(argv[2], "REGSTAT", 4) == 0) {
+                printf("  Status Register: %012llo.\n", ks10_t::readReg(ks10_t::regStat));
+            }
+        } else if (*argv[1] == 'w') {
+            ;
+        }
+    }
 }
 
 //
