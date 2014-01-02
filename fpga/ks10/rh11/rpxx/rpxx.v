@@ -95,38 +95,38 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    // RH Register Addresses
    //
 
-   parameter [18:35] cs1ADDR = rhADDR + `cs1OFFSET;
-   parameter [18:35] wcADDR  = rhADDR + `wcOFFSET;
-   parameter [18:35] baADDR  = rhADDR + `baOFFSET;
-   parameter [18:35] daADDR  = rhADDR + `daOFFSET;
+   localparam [18:35] cs1ADDR = rhADDR + `cs1OFFSET;
+   localparam [18:35] wcADDR  = rhADDR + `wcOFFSET;
+   localparam [18:35] baADDR  = rhADDR + `baOFFSET;
+   localparam [18:35] daADDR  = rhADDR + `daOFFSET;
 
-   parameter [18:35] cs2ADDR = rhADDR + `cs2OFFSET;
-   parameter [18:35] dsADDR  = rhADDR + `dsOFFSET;
-   parameter [18:35] er1ADDR = rhADDR + `er1OFFSET;
-   parameter [18:35] asADDR  = rhADDR + `asOFFSET;
+   localparam [18:35] cs2ADDR = rhADDR + `cs2OFFSET;
+   localparam [18:35] dsADDR  = rhADDR + `dsOFFSET;
+   localparam [18:35] er1ADDR = rhADDR + `er1OFFSET;
+   localparam [18:35] asADDR  = rhADDR + `asOFFSET;
 
-   parameter [18:35] laADDR  = rhADDR + `laOFFSET;
-   parameter [18:35] dbADDR  = rhADDR + `dbOFFSET;
-   parameter [18:35] mrADDR  = rhADDR + `mrOFFSET;
-   parameter [18:35] dtADDR  = rhADDR + `dtOFFSET;
+   localparam [18:35] laADDR  = rhADDR + `laOFFSET;
+   localparam [18:35] dbADDR  = rhADDR + `dbOFFSET;
+   localparam [18:35] mrADDR  = rhADDR + `mrOFFSET;
+   localparam [18:35] dtADDR  = rhADDR + `dtOFFSET;
 
-   parameter [18:35] snADDR  = rhADDR + `snOFFSET;
-   parameter [18:35] ofADDR  = rhADDR + `ofOFFSET;
-   parameter [18:35] dcADDR  = rhADDR + `dcOFFSET;
-   parameter [18:35] ccADDR  = rhADDR + `ccOFFSET;
+   localparam [18:35] snADDR  = rhADDR + `snOFFSET;
+   localparam [18:35] ofADDR  = rhADDR + `ofOFFSET;
+   localparam [18:35] dcADDR  = rhADDR + `dcOFFSET;
+   localparam [18:35] ccADDR  = rhADDR + `ccOFFSET;
 
-   parameter [18:35] er2ADDR = rhADDR + `er2OFFSET;
-   parameter [18:35] er3ADDR = rhADDR + `er3OFFSET;
-   parameter [18:35] ec1ADDR = rhADDR + `ec1OFFSET;
-   parameter [18:35] ec2ADDR = rhADDR + `ec2OFFSET;
+   localparam [18:35] er2ADDR = rhADDR + `er2OFFSET;
+   localparam [18:35] er3ADDR = rhADDR + `er3OFFSET;
+   localparam [18:35] ec1ADDR = rhADDR + `ec1OFFSET;
+   localparam [18:35] ec2ADDR = rhADDR + `ec2OFFSET;
 
-   parameter [18:35] undADDR = rhADDR + `undOFFSET;
+   localparam [18:35] undADDR = rhADDR + `undOFFSET;
 
    //
    // Timing Parameters
 
-   parameter [24:0] fiveMS = 100000;           // 5 milliseconds
-   parameter [24:0] oneUS  = 50;               // 1 microsecond
+   localparam [24:0] fiveMS = 100000;           // 5 milliseconds
+   localparam [24:0] oneUS  = 50;               // 1 microsecond
 
    //
    // Register Decode
@@ -212,21 +212,21 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    // State Definition
    //
 
-   parameter [4:0] stateIDLE    =  0,
-                   stateSEEK    =  1,
-                   stateSEEKDLY =  2,
-                   stateROTDLY  =  3,
-                   stateWAITSD  =  4,
-                   stateCLEAR   =  5,
-                   stateOFFSET  =  6,
-                   stateRETURN  =  7,
-                   statePRESET  =  8,
-                   statePAKACK  =  9,
-                   stateILLFUN  = 10,
-                   stateINVADDR = 11,
-                   stateWRLOCK  = 12,
-                   stateATA     = 13,
-                   stateDONE    = 31;
+   localparam [4:0] stateIDLE    =  0,
+                    stateSEEK    =  1,
+                    stateSEEKDLY =  2,
+                    stateROTDLY  =  3,
+                    stateWAITSD  =  4,
+                    stateCLEAR   =  5,
+                    stateOFFSET  =  6,
+                    stateRETURN  =  7,
+                    statePRESET  =  8,
+                    statePAKACK  =  9,
+                    stateILLFUN  = 10,
+                    stateINVADDR = 11,
+                    stateWRLOCK  = 12,
+                    stateATA     = 13,
+                    stateDONE    = 31;
    reg [ 4: 0] state;                   // RPxx State
 
    //

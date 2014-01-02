@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -6,14 +6,8 @@
 //   KS10 Wrapper for the ESM Reference Design.
 //
 // Details
-//   This wrapper allows the KS10 CPU Core to be customized for
-//   various FPGA Evaluation Board.  In this implmentation, the
-//   Console Interface and the Memory Interface can be customized.
-//
-//   The Console Interface is pretty generic.   The Console
-//   Implementation can range from a Microcontroller Interface like
-//   the KS10 to a simple front panel with switches and lights like
-//   the KA10 and KI10.
+//   This wrapper allows a tiny bit of customization of the KS10.
+//   For now, it just ties off a bunch of DZ11 IO.
 //
 // File
 //   esm_ks10.v
@@ -21,74 +15,69 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012-2013 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 
-module ESM_KS10(CLK50MHZ, RESET_N,
+module ESM_KS10(CLK50MHZ, RESET_N, MR_N,
                 // DZ11 Interfaces
-                TXD1, TXD2, RXD1, RXD2, RTS1, RTS2, CTS1, CTS2,
+                TXD, RXD,
                 // RH11 Interfaces
-                rh11CD, rh11WP, rh11MISO, rh11MOSI, rh11SCLK, rh11CS,
+                rh11CD, rh11MISO, rh11MOSI, rh11SCLK, rh11CS,
                 // Console Interfaces
-                cslCLK, cslALE, cslAD, cslRD_N, cslWR_N, cslINTR_N,
+                conADDR, conDATA, conBLE_N, conBHE_N, conRD_N, conWR_N, conINTR_N,
                 // SSRAM Interfaces
-                ssramCLK, ssramCLKEN, ssramADV, ssramBWA_N, ssramBWB_N,
-                ssramBWC_N, ssramBWD_N, ssramOE_N, ssramWE_N, ssramCE,
-                ssramADDR, ssramDATA, runLED);
+                ssramCLK, ssramCLKEN_N, ssramADV, ssramBWA_N, ssramBWB_N, ssramBWC_N,
+                ssramBWD_N, ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA,
+                // Test Interfaces
+                haltLED, test);
 
+   // Clock/Reset
    input         CLK50MHZ;      // Clock
    input         RESET_N;       // Reset
+   input         MR_N;          // Master Reset push button
    // DZ11 Interfaces
-   input         TXD1;          // DZ11 RS-232 Transmitted Data #1
-   input         TXD2;          // DZ11 RS-232 Transmitted Data #2
-   output        RXD1;          // DZ11 RS-232 Received Data #1
-   output        RXD2;          // DZ11 RS-232 Received Data #2
-   input         RTS1;          // DZ11 RS-232 Request to Send #1
-   input         RTS2;          // DZ11 RS-232 Request to Send #2
-   output        CTS1;          // DZ11 RS-232 Clear to Send #1
-   output        CTS2;          // DZ11 RS-232 Clear to Send #2
+   input  [1: 2] TXD;           // DZ11 RS-232 Transmitted Data
+   output [1: 2] RXD;           // DZ11 RS-232 Received Data
    // RH11 Interfaces
    input         rh11CD;        // RH11 Card Detect
-   input         rh11WP;        // RH11 Write Protect
    input         rh11MISO;      // RH11 Data In
    output        rh11MOSI;      // RH11 Data Out
    output        rh11SCLK;      // RH11 Clock
    output        rh11CS;        // RH11 Chip Select
-   // Console Interfaces
-   input         cslCLK;        // Console Clock
-   input         cslALE;        // Console Address Latch Enable
-   inout  [7: 0] cslAD;         // Console Multiplexed Address/Data Bus
-   input         cslRD_N;       // Console Read Strobe
-   input         cslWR_N;       // Console Write Strobe
-   output        cslINTR_N;     // Console Interrupt
+   // Console Microcontroller Interfaces
+   inout [15: 0] conDATA;       // Console Data Bus
+   input [ 5: 1] conADDR;       // Console Address Bus
+   input         conBLE_N;      // Console Bus Lane
+   input         conBHE_N;      // Console Bus Lane
+   input         conRD_N;       // Console Read Strobe
+   input         conWR_N;       // Console Write Strobe
+   output        conINTR_N;     // Console Interrupt
    // SSRAM Interfaces
    output        ssramCLK;      // SSRAM Clock
-   output        ssramCLKEN;    // SSRAM Clken
+   output        ssramCLKEN_N;  // SSRAM Clken
    output        ssramADV;      // SSRAM Advance
    output        ssramBWA_N;    // SSRAM BWA#
    output        ssramBWB_N;    // SSRAM BWB#
@@ -99,64 +88,49 @@ module ESM_KS10(CLK50MHZ, RESET_N,
    output        ssramCE;       // SSRAM CE
    output [0:22] ssramADDR;     // SSRAM Address Bus
    inout  [0:35] ssramDATA;     // SSRAM Data Bus
-   // Misc
-   output        runLED;        // RUN LED
+   output        haltLED;       // Halt LED
+   output [0: 7] test;          // Test signals
+
+   //
+   // RH-11 Stubs
+   //
+
+   wire          rh11WP = 0;    // RH11 Write Protect (stubbed)
 
    //
    // DZ-11 Interface Stubs
    //
 
-   wire [7: 0] dz11CO = 8'hff;  // DZ11 Carrier Input
-   wire [7: 0] dz11RI = 8'h00;  // DZ11 Ring Input
-   wire [7: 0] dz11DTR;         // DZ11 DTR Output
+   wire [7: 0] dz11CO = 8'hff;  // DZ11 Carrier Input (stubbed)
+   wire [7: 0] dz11RI = 8'h00;  // DZ11 Ring Input (stubbed)
+   wire [7: 0] dz11DTR;         // DZ11 DTR Output (stubbed)
    wire [7: 0] dz11TXD;         // DZ11 TXD
    wire [7: 0] dz11RXD;         // DZ11 RXD
 
    //
-   // Console Interfaces
+   // Clock Divider and Reset Synchronization
+   //   Clock is 20 MHz, for now.
    //
 
-   wire [0:35] cslREGADDR;      // Console Address Register
-   wire [0:35] cslREGDATI;      // Console Data Register In
-   wire [0:35] cslREGDATO;      // Console Data Register Out
-   wire [0:35] cslREGIR;        // Console Instruction Register
-   wire        cslSTEP;         // Console Single Step Switch
-   wire        cslCONT;         // Console Continue Switch
-   wire        cslRUN;          // Console Run Switch
-   wire        cslEXEC;         // Console Exec Switch
-   wire        cslHALT;         // Console Halt Switch
-   wire        cslTRAPEN;       // Console Trap Enable
-   wire        cslTIMEREN;      // Console Timer Enable
-   wire        cslCACHEEN;      // Console Cache Enable
-   wire        cslINTRI;        // Console Interrupt In
-   wire        cslINTRO;        // Console Interrupt Out
-   wire        cslRESET;        // Console Reset
-   wire        cslBUSY;         // Console Busy
-   wire        cslGO;           // Console GO
-   wire        cslNXM;          // Console NXM
+   wire clk;
+   wire rst;
+   wire locked;
 
-   //
-   // KS10 Outputs
-   //
-
-   wire        cpuHALT;         // CPU Halt
-   wire        cpuRUN;          // CPU Run
-   wire        cpuEXEC;         // CPU Exec
-   wire        cpuCONT;         // CPU Cont
-
-   //
-   // RH11 Outputs
-   //
-
-   wire [0:35] rh11DEBUG;
+   ESM_CLK uCLK (
+      .clkIn            (CLK50MHZ),
+      .rstIn            (~RESET_N),
+      .clkOut           (clk),
+      .rstOut           (rst),
+      .locked           (locked)
+   );
 
    //
    // KS10 Processor
    //
 
-   KS10 uKS10
-     (.clk              (CLK50MHZ),
-      .rst              (~RESET_N),
+   KS10 uKS10(
+      .clk              (clk),
+      .rst              (rst),
       // DZ11
       .dz11TXD          (dz11TXD),
       .dz11RXD          (dz11RXD),
@@ -170,34 +144,17 @@ module ESM_KS10(CLK50MHZ, RESET_N,
       .rh11MOSI         (rh11MOSI),
       .rh11SCLK         (rh11SCLK),
       .rh11CS           (rh11CS),
-      .rh11DEBUG        (rh11DEBUG),
       // Console
-      .cslREGADDR       (cslREGADDR),
-      .cslREGDATI       (cslREGDATI),
-      .cslREGDATO       (cslREGDATO),
-      .cslREGIR         (cslREGIR),
-      .cslBUSY          (cslBUSY),
-      .cslNXM           (cslNXM),
-      .cslGO            (cslGO),
-      .cslRESET         (cslRESET),
-      .cslSTEP          (cslSTEP),
-      .cslRUN           (cslRUN),
-      .cslEXEC          (cslEXEC),
-      .cslCONT          (cslCONT),
-      .cslHALT          (cslHALT),
-      .cslTIMEREN       (cslTIMEREN),
-      .cslTRAPEN        (cslTRAPEN),
-      .cslCACHEEN       (cslCACHEEN),
-      .cslINTRI         (cslINTRI),
-      .cslINTRO         (cslINTRO),
-      // CPU
-      .cpuHALT          (cpuHALT),
-      .cpuRUN           (cpuRUN),
-      .cpuEXEC          (cpuEXEC),
-      .cpuCONT          (cpuCONT),
+      .conADDR          (conADDR),
+      .conDATA          (conDATA ),
+      .conBLE_N         (conBLE_N),
+      .conBHE_N         (conBHE_N),
+      .conRD_N          (conRD_N),
+      .conWR_N          (conWR_N),
+      .conINTR_N        (conINTR_N),
       // Memory
       .ssramCLK         (ssramCLK),
-      .ssramCLKEN       (ssramCLKEN),
+      .ssramCLKEN_N     (ssramCLKEN_N),
       .ssramADV         (ssramADV),
       .ssramBWA_N       (ssramBWA_N),
       .ssramBWB_N       (ssramBWB_N),
@@ -207,71 +164,38 @@ module ESM_KS10(CLK50MHZ, RESET_N,
       .ssramWE_N        (ssramWE_N),
       .ssramCE          (ssramCE),
       .ssramADDR        (ssramADDR),
-      .ssramDATA        (ssramDATA)
-      );
-
-   //
-   // Console Wrapper
-   //
-
-   ESMCSL uESMCSL
-     (.RESET_N          (RESET_N),
-      .clk              (CLK50MHZ),
-      .cslCLK           (cslCLK),
-      .cslALE           (cslALE),
-      .cslAD            (cslAD),
-      .cslRD_N          (cslRD_N),
-      .cslWR_N          (cslWR_N),
-      .cslREGADDR       (cslREGADDR),
-      .cslREGDATI       (cslREGDATO),
-      .cslREGDATO       (cslREGDATI),
-      .cslREGIR         (cslREGIR),
-      .cslBUSY          (cslBUSY),
-      .cslNXM           (cslNXM),
-      .cslGO            (cslGO),
-      .cslSTEP          (cslSTEP),
-      .cslRUN           (cslRUN),
-      .cslEXEC          (cslEXEC),
-      .cslCONT          (cslCONT),
-      .cslHALT          (cslHALT),
-      .cslTIMEREN       (cslTIMEREN),
-      .cslTRAPEN        (cslTRAPEN),
-      .cslCACHEEN       (cslCACHEEN),
-      .cslINTRO         (cslINTRO),
-      .cslRESET         (cslRESET),
-      .rh11DEBUG        (rh11DEBUG),
-      .cpuHALT          (cpuHALT),
-      .cpuRUN           (cpuRUN),
-      .cpuEXEC          (cpuEXEC),
-      .cpuCONT          (cpuCONT)
-      );
+      .ssramDATA        (ssramDATA),
+      .haltLED          (haltLED)
+   );
 
    //
    // DZ11 Fixup
    //  TXD is an output of the FT4232.  RXD is an input to the
-   //  FT4232.  Therefore must twist TXD and RXD here.
+   //  FT4232.  Therefore TXD and RXD must get twisted here.
    //
 
-   assign dz11RXD[1]   = TXD2;
-   assign dz11RXD[0]   = TXD1;
+   assign dz11RXD[0]   = TXD[1];
+   assign dz11RXD[1]   = TXD[2];
+   assign RXD[1]       = dz11TXD[0];
+   assign RXD[2]       = dz11TXD[1];
 
-   assign RXD2         = dz11TXD[1];
-   assign RXD1         = dz11TXD[0];
+   //
+   // Wrap back unused ports
+   //
 
    assign dz11RXD[7:2] = dz11TXD[7:2];
-   assign CTS2         = RTS2;
-   assign CTS1         = RTS1;
 
    //
-   // KS10 Interrupt fixup
+   // Test points
    //
 
-   assign cslINTR_N    = ~cslINTRI;
-
-   //
-   // Run LED
-   //
-
-   assign runLED       = cpuRUN;
+   assign test[0] = clk;
+   assign test[1] = rst;
+   assign test[2] = RESET_N;
+   assign test[3] = ~RESET_N;
+   assign test[4] = locked;
+   assign test[5] = 0;
+   assign test[6] = 1;
+   assign test[7] = 0;
 
 endmodule

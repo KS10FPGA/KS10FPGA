@@ -50,7 +50,6 @@
 ////////////////////////////////////////////////////////////////////
 
 `default_nettype none
-`include "uba.vh"
 `include "../ks10.vh"
 
 module UBA(clk, rst, clken, ctlNUM,
@@ -104,23 +103,23 @@ module UBA(clk, rst, clken, ctlNUM,
    // IO Bridge Configuration
    //
 
-   parameter [14:17] ctlNUM0 = `ctlNUM0;        // IO Bridge Device 0
-   parameter [14:17] ctlNUM1 = `ctlNUM1;        // IO Bridge Device 1
-   parameter [14:17] ctlNUM2 = `ctlNUM2;        // IO Bridge Device 2
-   parameter [14:17] ctlNUM3 = `ctlNUM3;        // IO Bridge Device 3
-   parameter [18:35] wruNUM0 = `wruNUM0;        // IO Bridge Device 0 WRU Response (bit 18)
-   parameter [18:35] wruNUM1 = `wruNUM1;        // IO Bridge Device 1 WRU Response (bit 19)
-   parameter [18:35] wruNUM2 = `wruNUM2;        // IO Bridge Device 2 WRU Response (bit 20)
-   parameter [18:35] wruNUM3 = `wruNUM3;        // IO Bridge Device 3 WRU Response (bit 21)
+   localparam [14:17] ctlNUM1 = `ctlNUM1;       // IO Bridge Device 1
+   localparam [14:17] ctlNUM2 = `ctlNUM2;       // IO Bridge Device 2
+   localparam [14:17] ctlNUM3 = `ctlNUM3;       // IO Bridge Device 3
+   localparam [14:17] ctlNUM4 = `ctlNUM4;       // IO Bridge Device 4
+   localparam [18:35] wruNUM1 = `wruNUM1;       // IO Bridge Device 1 WRU Response (bit 19)
+   localparam [18:35] wruNUM2 = `wruNUM2;       // IO Bridge Device 2 WRU Response (bit 20)
+   localparam [18:35] wruNUM3 = `wruNUM3;       // IO Bridge Device 3 WRU Response (bit 21)
+   localparam [18:35] wruNUM4 = `wruNUM4;       // IO Bridge Device 4 WRU Response (bit 22)
 
    //
    // IO Addresses
    //
 
-   parameter [18:35] pageADDR  = 18'o763000;    // Paging RAM Address
-   parameter [18:35] statADDR  = 18'o763100;    // Status Register Address
-   parameter [18:35] maintADDR = 18'o763101;    // Maintenance Register Address
-   parameter [18:26] ctrlADDR  =  9'o763;       // Bridge Registers
+   localparam [18:26] ctrlADDR  = 9'o763;       	// Bridge Registers
+   localparam [18:35] pageADDR  = {ctrlADDR, 9'o000}; 	// Paging RAM Address
+   localparam [18:35] statADDR  = {ctrlADDR, 9'o100};   // Status Register Address
+   localparam [18:35] maintADDR = {ctrlADDR, 9'o101};   // Maintenance Register Address
 
    //
    // Address Bus
@@ -554,14 +553,14 @@ module UBA(clk, rst, clken, ctlNUM,
           begin
              busACKO  = 1'b1;
              case (ctlNUM)
-               ctlNUM0:
-                 busDATAO = wruNUM0;    // Bit 18
                ctlNUM1:
                  busDATAO = wruNUM1;    // Bit 19
                ctlNUM2:
                  busDATAO = wruNUM2;    // Bit 20
                ctlNUM3:
                  busDATAO = wruNUM3;    // Bit 21
+               ctlNUM4:
+                 busDATAO = wruNUM4;    // Bit 22
                default:
                  busDATAO = 36'b0;
              endcase

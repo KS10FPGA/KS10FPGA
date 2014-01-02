@@ -88,10 +88,14 @@
 // Comments are formatted for doxygen
 //
 
+`default_nettype none
+`include "../ks10.vh"
+
 module MEM(clk, rst, clken,
            busREQI, busACKO, busADDRI, busDATAI, busDATAO,
-           ssramCLK, ssramCLKEN, ssramADV, ssramBWA_N, ssramBWB_N, ssramBWC_N, ssramBWD_N,
-           ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA);
+           ssramCLK, ssramCLKEN_N, ssramADV, ssramBWA_N, ssramBWB_N,
+	   ssramBWC_N, ssramBWD_N, ssramOE_N, ssramWE_N, ssramCE,
+	   ssramADDR, ssramDATA);
 
    input         clk;           // Clock
    input         rst;           // Reset
@@ -102,7 +106,7 @@ module MEM(clk, rst, clken,
    input  [0:35] busDATAI;      // Data in
    output [0:35] busDATAO;      // Data out
    output        ssramCLK;      // SSRAM Clock
-   output        ssramCLKEN;    // SSRAM Clken
+   output        ssramCLKEN_N;  // SSRAM CLKEN#
    output        ssramADV;      // SSRAM Advance (burst)
    output        ssramBWA_N;    // SSRAM BWA#
    output        ssramBWB_N;    // SSRAM BWB#
@@ -115,11 +119,17 @@ module MEM(clk, rst, clken,
    inout  [0:35] ssramDATA;     // SSRAM Data Bus
    
    //
-   // Memory Status is Device 0
+   // The Memory Conroller is Device 0
    //
 
-   wire [ 0: 3] memDEV   = 4'b0000;
- 
+   localparam [0:3] memDEV = `ctlNUM0;
+   
+   //
+   // Memory Status Register IO Address
+   //
+   
+   localparam [18:35] addrMSR = 18'o100000;
+
    //
    // Memory flags
    //
@@ -133,7 +143,7 @@ module MEM(clk, rst, clken,
    wire         busWRITE  = busADDRI[ 5];
    wire         busIO     = busADDRI[10];
    wire [ 0: 3] busDEV    = busADDRI[14:17];
-   wire [16:35] busADDR   = busADDRI[16:35];
+   wire [16:35] busADDR   = busADDRI[18:35];
 
    //
    // Memory Status Register (IO Address 100000)
@@ -161,11 +171,14 @@ module MEM(clk, rst, clken,
           end
         else if (clken)
           begin
-             if (busIO & busWRITE  & (busDEV[0:3] == memDEV) & (busADDR == 18'o100000))
+             if (busIO & busWRITE  & (busDEV == memDEV) & (busADDR == addrMSR))
                begin
                   statPE <=  busDATAI[ 3];
                   statPF <=  busDATAI[12] & statPF;
                   statEE <= ~busDATAI[35];
+`ifndef SYNTHESIS
+                  $display("Memory Status Register Written.\n");
+`endif
                end
           end
      end
@@ -185,22 +198,19 @@ module MEM(clk, rst, clken,
    reg busACKO;
    reg [0:35] busDATAO;
    
-   always @(busIO or busADDR or busREAD or busWRITE or busWRTEST or ssramDATA or statREG)
+   always @(busIO or busDEV or busADDR or busREAD or busWRITE or busWRTEST or ssramDATA or statREG)
      begin
 
         //
         // Memory Status Register
         //
         
-        if (busIO & (busADDR == 18'o100000))
+        if (busIO & busREAD & (busDEV == memDEV) & (busADDR == addrMSR))
           begin
              busACKO  <= 1'b1;
              busDATAO <= statREG;
 `ifndef SYNTHESIS
-             if (busREAD)
-               $display("Memory Status Register Read.\n");
-             else if (busWRITE)
-               $display("Memory Status Register Written.\n");
+             $display("Memory Status Register Read.\n");
 `endif
           end
 
@@ -231,17 +241,38 @@ module MEM(clk, rst, clken,
    // SSRAM Interface
    //
 
-   assign ssramCLK   = clk;
-   assign ssramCLKEN = 1;
-   assign ssramADV   = 0;
-   assign ssramBWA_N = 0;
-   assign ssramBWB_N = 0;
-   assign ssramBWC_N = 0;
-   assign ssramBWD_N = 0;
-   assign ssramOE_N  = 0;
-   assign ssramWE_N  = ~(busWRITE & ~busIO);
-   assign ssramCE    = 1;
-   assign ssramADDR  = {3'b0, busADDR[16:35]};
-   assign ssramDATA  = (~ssramWE_N) ? busDATAI : 36'bz;
+   assign ssramCLKEN_N = 0;
+   assign ssramADV     = 0;
+   assign ssramBWA_N   = 0;
+   assign ssramBWB_N   = 0;
+   assign ssramBWC_N   = 0;
+   assign ssramBWD_N   = 0;
+   assign ssramOE_N    = 0;
+   assign ssramWE_N    = ~(busWRITE & ~busIO);
+   assign ssramCE      = 1;
+   assign ssramADDR    = {3'b0, busADDR[16:35]};
+   assign ssramDATA    = (~ssramWE_N) ? busDATAI : 36'bz;
+
+   //
+   // Funky clock forwarding for clock output
+   // Spartan6 will give errors if you try to drive a clock output.
+   //
+
+   ODDR2 #(
+       .DDR_ALIGNMENT("NONE"),  // Sets output alignment to "NONE", "C0" or "C1"
+       .INIT(1'b0),             // Sets initial state of the Q output to 1'b0 or 1'b1
+       .SRTYPE("SYNC")          // Specifies "SYNC" or "ASYNC"   set/reset
+   )
+   ODDR2_inst (
+       .Q(ssramCLK),   		// 1-bit DDR output data
+       .C0(clk), 		// 1-bit clock input
+       .C1(~clk), 		// 1-bit clock input
+       .CE(1'b1), 		// 1-bit clock enable input
+       .D0(1'b1), 		// 1-bit data input (associated with C0)
+       .D1(1'b0), 		// 1-bit data input (associated with C1)
+       .R(1'b0),   		// 1-bit reset input
+       .S(1'b0)    		// 1-bit set input
+   );
+
    
 endmodule

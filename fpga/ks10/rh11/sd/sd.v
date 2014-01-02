@@ -79,7 +79,7 @@ module SD(clk, rst,
    output        sdINCSECT;             // Increment Sector
    output        sdSTAT;		// Status
    // Diagnostics
-   output [35:0] sdDEBUG;               // Debug Output
+   output [0:63] sdDEBUG;               // Debug Output
 
    //
    // SD Commands:
@@ -185,7 +185,7 @@ module SD(clk, rst,
    reg [ 7:0] sdRDCNT;                  // Read Counter
    reg [ 7:0] sdWRCNT;                  // Write Counter
    reg [ 7:0] sdVAL;                    // Error Value
-   reg [ 4:0] sdERR;                    // Error State
+   reg [ 7:0] sdERR;                    // Error State
    reg        sdINCSECT;                // Increment Sector
    reg        sdINCWD;                  // Increment Word
    
@@ -194,7 +194,7 @@ module SD(clk, rst,
    reg        dmaREQ;			// DMA Request
    reg [0:35] dmaDATAO;   		// DMA Data Out
    
-   reg [ 6:0] state;                    // Current State
+   reg [ 7:0] state;                    // Current State
    wire       spiDONE;                  // Asserted by SPI when done
 
    //
@@ -965,7 +965,7 @@ module SD(clk, rst,
                         begin
                            sdRDCNT <= sdRDCNT + 1'b1;
                            readOP  <= 1;
-                           state    <= stateWRCHK00;
+                           state   <= stateWRCHK00;
                         end
                       default:
                         begin
@@ -1136,7 +1136,6 @@ module SD(clk, rst,
                       begin
                          spiOP           <= `spiTR;
                          spiTXD          <= 8'hff;
-                         loopCNT         <= loopCNT + 1'b1;
                          dmaDATAO[28:35] <= spiRXD;
                          state           <= stateREAD05;
                       end
@@ -1199,10 +1198,10 @@ module SD(clk, rst,
                  begin
                     if (spiDONE)
                       begin
-                         spiOP         <= `spiTR;
-                         spiTXD        <= 8'hff;
-                         dmaDATAO[0:3] <= spiRXD[4:7];
-                         state         <= stateREAD09;
+                         spiOP           <= `spiTR;
+                         spiTXD          <= 8'hff;
+                         dmaDATAO[ 0: 3] <= spiRXD[4:7];
+                         state           <= stateREAD09;
                       end
                  end
 
@@ -1306,16 +1305,47 @@ module SD(clk, rst,
                            begin
                               rwDONE <= 0;
                            end
+
+			 //
+			 // We just read the first SD Sector of 512 bytes.
+			 // Increment the SD Sector Address and read the
+			 // next sector.
+			 //
+			 
                          if (loopCNT == 63)
                            begin
-                              sdINCSECT <= 1;
-                              state     <= stateREAD00;
+			      sdWDCNT    <= sdWDCNT - 1'b1;
+                              loopCNT    <= loopCNT + 1'b1;
+                              sdSECTADDR <= sdSECTADDR + 1'b1;
+                              state      <= stateREAD00;
                            end
+
+			 //
+			 // We just read the second SD Sector of 512 bytes.
+			 // Increment the SD Sector Address, increment the RPxx
+			 // sector, and continue.
+			 //
+			 
                          else if (loopCNT == 127)
                            begin
-                              sdINCSECT <= 1;
-                              state     <= stateREAD00;
+			      sdWDCNT    <= sdWDCNT - 1'b1;
+                              loopCNT    <= loopCNT + 1'b1;
+                              sdSECTADDR <= sdSECTADDR + 1'b1;
+                              sdINCSECT  <= 1;
+                              state      <= stateREAD00;
                            end
+
+			 //
+			 // We're not done reading the SD Sector.  Keep reading
+			 //
+			 
+			 else
+			   begin
+			      sdWDCNT    <= sdWDCNT - 1'b1;
+                              loopCNT    <= loopCNT + 1'b1;
+                              state      <= stateREAD04;
+			   end
+			   
                       end
                  end
 
@@ -1911,7 +1941,7 @@ module SD(clk, rst,
    // Debug Output
    //
    
-   assign sdDEBUG = {sdERR[4:0], state[6:0], sdVAL[7:0], sdWRCNT[7:0], sdRDCNT[7:0]};
+   assign sdDEBUG = {sdERR, state, sdVAL, sdWRCNT, sdRDCNT, 24'b0};
 
    //
    // Create address

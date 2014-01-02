@@ -60,6 +60,10 @@
 `include "../../ks10.vh"
 `include "uart/uart_brg.vh"
 
+//  
+// FIXME.  Delete dzDEV and use ctlNUM everywhere.
+//
+  
 module DZ11(clk,      rst,      ctlNUM,
             dz11TXD,  dz11RXD,  dz11CO,   dz11RI,  dz11DTR,
             devRESET, devINTR,  devINTA,
@@ -100,7 +104,7 @@ module DZ11(clk,      rst,      ctlNUM,
    parameter [14:17] dzDEV  = `dzDEV;           // Device 3
    parameter [18:35] dzADDR = `dz1ADDR;         // DZ11 Base Address
    parameter [18:35] dzVECT = `dz1VECT;         // DZ11 Interrupt Vector
-   parameter [ 7: 4] dzINTR = `dzINTR;          // DZ11 Interrupt
+   parameter [ 7: 4] dzINTR = `dzINTR;          // DZ11 Interrupt
 
    //
    // DZ Register Addresses

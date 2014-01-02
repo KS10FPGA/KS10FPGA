@@ -86,12 +86,23 @@ module NI_DISP (clk, rst, clken, crom, aprFLAGS, pcFLAGS, cslTRAPEN,
    //
    // NICOND Dispatch
    //
+   // A dispatch value of 1, 2, or 3 causes the microcode to dispath to a
+   // trap handler after the instruction has completed.
+   //
+   // A dispatch value of 5 (caused by ~cpuRUN) causes the microcode to enter
+   // the HALT loop after the instruction has completed.
+   //
+   // A dispatch value of 7 cause the microcode to begin to execute the next
+   // instruction after the instruction has completed.
+   //
    // Trace
    //  CRA2/E147
+   //  DPE9/E125
    //
 
    reg [8:11] dispNI;
-   always @(cslTRAPEN or flagTRAPEN or flagTRAP1 or flagTRAP2 or cpuRUN or memory_cycle)
+   always @(cslTRAPEN or flagTRAPEN or flagTRAP1 or flagTRAP2 or
+            cpuRUN or memory_cycle)
      begin
         if (cslTRAPEN & flagTRAPEN)
           if (flagTRAP1 & flagTRAP2)
@@ -104,6 +115,8 @@ module NI_DISP (clk, rst, clken, crom, aprFLAGS, pcFLAGS, cslTRAPEN,
             dispNI[9:11] = 3'd5;
           else
             dispNI[9:11] = 3'd7;
+        else if (~cpuRUN)
+          dispNI[9:11] = 3'd5;
         else
           dispNI[9:11] = 3'd7;
         dispNI[8] = memory_cycle;

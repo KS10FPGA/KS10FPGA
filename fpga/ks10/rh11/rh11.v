@@ -50,6 +50,10 @@
 `include "rpxx.vh"
 `include "rh11.vh"
 `include "sd/sd.vh"
+  
+//  
+// FIXME.  Delete rhDEV and use ctlNUM everywhere.
+//
 
 module RH11(clk,      rst,      ctlNUM,
             rh11CD,   rh11WP,   rh11MISO, rh11MOSI, rh11SCLK, rh11CS, rh11DEBUG,
@@ -68,7 +72,7 @@ module RH11(clk,      rst,      ctlNUM,
    output         rh11MOSI;                     // RH11 Data Out
    output         rh11SCLK;                     // RH11 Clock
    output         rh11CS;                       // RH11 Chip Select
-   output [ 0:35] rh11DEBUG;                    // RH11 Debug Output
+   output [ 0:63] rh11DEBUG;                    // RH11 Debug Output
    // Reset
    input          devRESET;                     // IO Bus Bridge Reset
    // Interrupt
@@ -98,30 +102,30 @@ module RH11(clk,      rst,      ctlNUM,
    // RH Register Addresses
    //
 
-   parameter [18:35] cs1ADDR = rhADDR + `cs1OFFSET;     // Massbus Addr 00
-   parameter [18:35] wcADDR  = rhADDR + `wcOFFSET;      // RH Register
-   parameter [18:35] baADDR  = rhADDR + `baOFFSET;      // RH Register
-   parameter [18:35] daADDR  = rhADDR + `daOFFSET;      // Massbus Addr 05
+   localparam [18:35] cs1ADDR = rhADDR + `cs1OFFSET;     // Massbus Addr 00
+   localparam [18:35] wcADDR  = rhADDR + `wcOFFSET;      // RH Register
+   localparam [18:35] baADDR  = rhADDR + `baOFFSET;      // RH Register
+   localparam [18:35] daADDR  = rhADDR + `daOFFSET;      // Massbus Addr 05
 
-   parameter [18:35] cs2ADDR = rhADDR + `cs2OFFSET;     // RH Register
-   parameter [18:35] dsADDR  = rhADDR + `dsOFFSET;      // Massbus Addr 01
-   parameter [18:35] er1ADDR = rhADDR + `er1OFFSET;     // Massbus Addr 02
-   parameter [18:35] asADDR  = rhADDR + `asOFFSET;      // Massbus Addr 04 (Pseudo Reg)
+   localparam [18:35] cs2ADDR = rhADDR + `cs2OFFSET;     // RH Register
+   localparam [18:35] dsADDR  = rhADDR + `dsOFFSET;      // Massbus Addr 01
+   localparam [18:35] er1ADDR = rhADDR + `er1OFFSET;     // Massbus Addr 02
+   localparam [18:35] asADDR  = rhADDR + `asOFFSET;      // Massbus Addr 04 (Pseudo Reg)
 
-   parameter [18:35] laADDR  = rhADDR + `laOFFSET;      // Massbus Addr 07
-   parameter [18:35] dbADDR  = rhADDR + `dbOFFSET;      // RH Register
-   parameter [18:35] mrADDR  = rhADDR + `mrOFFSET;      // Massbus Addr 03
-   parameter [18:35] dtADDR  = rhADDR + `dtOFFSET;      // Massbus Addr 06
+   localparam [18:35] laADDR  = rhADDR + `laOFFSET;      // Massbus Addr 07
+   localparam [18:35] dbADDR  = rhADDR + `dbOFFSET;      // RH Register
+   localparam [18:35] mrADDR  = rhADDR + `mrOFFSET;      // Massbus Addr 03
+   localparam [18:35] dtADDR  = rhADDR + `dtOFFSET;      // Massbus Addr 06
 
-   parameter [18:35] snADDR  = rhADDR + `snOFFSET;      // Massbus Addr 10
-   parameter [18:35] ofADDR  = rhADDR + `ofOFFSET;      // Massbus Addr 11
-   parameter [18:35] dcADDR  = rhADDR + `dcOFFSET;      // Massbus Addr 12
-   parameter [18:35] ccADDR  = rhADDR + `ccOFFSET;      // Massbus Addr 13
+   localparam [18:35] snADDR  = rhADDR + `snOFFSET;      // Massbus Addr 10
+   localparam [18:35] ofADDR  = rhADDR + `ofOFFSET;      // Massbus Addr 11
+   localparam [18:35] dcADDR  = rhADDR + `dcOFFSET;      // Massbus Addr 12
+   localparam [18:35] ccADDR  = rhADDR + `ccOFFSET;      // Massbus Addr 13
 
-   parameter [18:35] er2ADDR = rhADDR + `er2OFFSET;     // Massbus Addr 14
-   parameter [18:35] er3ADDR = rhADDR + `er3OFFSET;     // Massbus Addr 15
-   parameter [18:35] ec1ADDR = rhADDR + `ec1OFFSET;     // Massbus Addr 16
-   parameter [18:35] ec2ADDR = rhADDR + `ec2OFFSET;     // Massbus Addr 17
+   localparam [18:35] er2ADDR = rhADDR + `er2OFFSET;     // Massbus Addr 14
+   localparam [18:35] er3ADDR = rhADDR + `er3OFFSET;     // Massbus Addr 15
+   localparam [18:35] ec1ADDR = rhADDR + `ec1OFFSET;     // Massbus Addr 16
+   localparam [18:35] ec2ADDR = rhADDR + `ec2OFFSET;     // Massbus Addr 17
 
    //
    // Memory Address and Flags
@@ -460,9 +464,9 @@ module RH11(clk,      rst,      ctlNUM,
    //  checks for drives that are requesting access to the SD Controller.
    //
 
-   parameter [2:0] stateSCAN = 0,
-                   stateBUSY = 1,
-                   stateACK  = 2;
+   localparam [2:0] stateSCAN = 0,
+                    stateBUSY = 1,
+                    stateACK  = 2;
 
    reg [2:0] state;
    reg [2:0] scan;
@@ -668,7 +672,10 @@ module RH11(clk,      rst,      ctlNUM,
       .sdSTAT    (sdSTAT),
       .sdDEBUG   (rh11DEBUG)
       );
+`else
+      assign sdINCSECT = 0;
 `endif
+
    //
    // Demux Disk Array Registers
    //

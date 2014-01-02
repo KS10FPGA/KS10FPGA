@@ -10,7 +10,7 @@
 // Notes
 //
 // File
-//   utils.v
+//   edgetrig.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net

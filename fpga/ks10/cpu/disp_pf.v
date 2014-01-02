@@ -218,7 +218,7 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    reg writetestENABLE;
    reg writeENABLE;
 
-   always @(crom or drom or dp)
+   always @(crom or drom or dp or memEN)
      begin
         if (memEN)
           begin
@@ -386,7 +386,7 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
      end
    
    
-//`define PAGEFAIL
+`define PAGEFAIL
 
 `ifdef PAGEFAIL
    

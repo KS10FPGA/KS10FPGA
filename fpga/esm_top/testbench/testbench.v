@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor Testbench
 //
@@ -14,35 +14,32 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // Copyright (C) 2012-2013 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from 
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `undef SIMCTY
 `undef SIMSSMON
-`define EOF 32'hFFFF_FFFF
 `default_nettype none
 
 module testbench;
@@ -53,35 +50,29 @@ module testbench;
 
    reg  clk;                    // Clock
    reg  reset;                  // Reset
-   wire runLED;                 // Run LED
 
    //
    // Console Interfaces
    //
 
-   wire       cslCLK = clk;     // Console Clock
-   wire [7:0] cslAD;            // Multiplexed Address/Data Bus
-   reg  [7:0] cslADOUT;         // Address/Data Bus Out
-   wire [7:0] cslADIN;          // Data Bus In
-   reg        cslALE;           // Address Latch Enable
-   reg        cslRD_N;          // Read Strobe
-   reg        cslWR_N;          // Write Strobe
-   wire       cslINTR_N;        // Console Interrupt
-   wire       cslINTR = ~cslINTR_N;
-
+   wire [15:0] conDATA;		// Data bus
+   reg  [ 5:1] conADDR;         // Address Bus
+   reg  [15:0] conDATO;         // Data Bus Out
+   reg         conALE;          // Address Latch Enable
+   reg         conBLE_N;        // Low Byte Lane
+   reg         conBHE_N;        // High Byte Lane
+   reg         conRD_N;         // Read Strobe
+   reg         conWR_N;         // Write Strobe
+   wire        conINTR_N;       // Console Interrupt
+   wire        conINTR = ~conINTR_N;
+   wire        haltLED;		// Halt LED
 
    //
    // DZ11 Serial Interface
    //
 
-   wire       TXD1 = 1;         // DZ11 RS-232 Received Data #1
-   wire       TXD2 = 1;         // DZ11 RS-232 Received Data #2
-   wire       RXD1;             // DZ11 RS-232 Transmitted Data #1
-   wire       RXD2;             // DZ11 RS-232 Transmitted Data #2
-   wire       RTS1 = 1;         // DZ11 RS-232 Request to Send #1
-   wire       RTS2 = 1;         // DZ11 RS-232 Request to Send #2
-   wire       CTS1;             // DZ11 RS-232 Clear to Send #1
-   wire       CTS2;             // DZ11 RS-232 Clear to Send #2
+   wire [1:2]  TXD;     	// DZ11 RS-232 Received Data
+   wire [1:2]  RXD = 2'b11;     // DZ11 RS-232 Transmitted Data
 
    //
    // RH11 Secure Digital Interface
@@ -112,19 +103,30 @@ module testbench;
    wire        ssramBWD_N;      // SSRAM BWD#
 
    //
-   // Data to KS10
+   // Control/Status Register Definitions
    //
 
-   parameter [0:35] valREGSTATUS = 36'o000005_003000;
+   localparam [0:15] statRESET    = 16'h0001;
+   localparam [0:15] statINTR     = 16'h0002;
+   localparam [0:15] statCACHEEN  = 16'h0004;
+   localparam [0:15] statTRAPEN   = 16'h0008;
+   localparam [0:15] statTIMEREN  = 16'h0010;
+   localparam [0:15] statEXEC     = 16'h0020;
+   localparam [0:15] statCONT     = 16'h0040;
+   localparam [0:15] statRUN      = 16'h0080;
+   localparam [0:15] statHALT     = 16'h0100;
+   localparam [0:15] statNXMNXD   = 16'h0200;
+   localparam [0:15] statGO       = 16'h0001;
+   
 `ifdef SIMSSMON
-   parameter [0:35] valREGCIR    = 36'o254000_020000;
+   localparam [0:35] valREGCIR    = 36'o254000_020000;
 `else
-// parameter [0:35] valREGCIR    = 36'o254000_030601;   // DSKAA-DSKAH
-   parameter [0:35] valREGCIR    = 36'o254000_030010;   // DSKAI-DSKAM,DSKCF, DSKEA
-// parameter [0:35] valREGCIR    = 36'o254000_030660;
-// parameter [0:35] valREGCIR    = 36'o254000_030620;   // DSKCG
-// parameter [0:35] valREGCIR    = 36'o254000_030622;
-// parameter [0:35] valREGCIR    = 36'o254000_020000;   // DSQDC
+// localparam [0:35] valREGCIR    = 36'o254000_030601;   // DSKAA-DSKAH
+   localparam [0:35] valREGCIR    = 36'o254000_030010;   // DSKAI-DSKAM,DSKCF, DSKEA
+// localparam [0:35] valREGCIR    = 36'o254000_030660;
+// localparam [0:35] valREGCIR    = 36'o254000_030620;   // DSKCG
+// localparam [0:35] valREGCIR    = 36'o254000_030622;
+// localparam [0:35] valREGCIR    = 36'o254000_020000;   // DSQDC
 
 `endif
 
@@ -132,10 +134,12 @@ module testbench;
    // Register Addresses
    //
 
-   parameter [7:0] addrREGADDR   = 8'h00;
-   parameter [7:0] addrREGDATA   = 8'h10;
-   parameter [7:0] addrREGSTATUS = 8'h20;
-   parameter [7:0] addrREGCIR    = 8'h30;
+   localparam [7:0] addrREGADDR   = 8'h00;
+   localparam [7:0] addrREGDATA   = 8'h08;
+   localparam [7:0] addrREGSTATUS = 8'h10;
+   localparam [7:0] addrREGCIR    = 8'h18;
+   localparam [7:0] addrRH11DEB   = 8'h30;
+   localparam [7:0] addrVersion   = 8'h38;
 
    //
    // Task to write to KS10 memory
@@ -144,13 +148,13 @@ module testbench;
    //  Write address.  Write data.
    //
 
-   task cslWRKS10MEM;
+   task conWRITEMEM;
       input [18:35] address;
       input [ 0:35] data;
       begin
-         cslWRITE (addrREGADDR, {18'o010000, address});
-         cslWRITE (addrREGDATA, data);
-         cslWRITEb(addrREGSTATUS+3, 8'h01);
+         conWRITE(addrREGADDR, {18'o010000, address});
+         conWRITE(addrREGDATA, data);
+         conGO(address);
       end
    endtask
 
@@ -158,91 +162,206 @@ module testbench;
    // Task to read from KS10 memory
    //
 
-   task cslRDKS10MEM;
+   task conREADMEM;
       input  [18:35] address;
       output [ 0:35] data;
       begin
-         cslWRITE (addrREGADDR, {18'o040000, address});
-         cslWRITEb(addrREGSTATUS+3, 8'h01);
-         #40;
-         cslREAD  (addrREGDATA, data);
+         conWRITE(addrREGADDR, {18'o040000, address});
+         conGO(address);
+         conREAD(addrREGDATA, data);
       end
    endtask
 
    //
-   // Task to write a word to console register
-   //
-   // Note:
-   //  A 36-bit write requires 5 byte operations.
+   // Task to read from KS10 memory (physical)
    //
 
-   task cslWRITE;
+   task conREADMEMP;
+      input  [18:35] address;
+      output [ 0:35] data;
+      reg    [ 0:15] status;
+      begin
+         conWRITE(addrREGADDR, {18'o041000, address});
+         conGO(address);
+         conREAD(addrREGDATA, data);
+      end
+   endtask
+   
+   //
+   // Task to write a 36-bit word to console register
+   //
+   // Note:
+   //  A 36-bit write requires 3 16-bit word operations.
+   //
+
+   task conWRITE;
       input [7: 0] addr;
       input [0:35] data;
       begin
-         cslWRITEb(addr+3, {4'b0, data[0:3]});
-         cslWRITEb(addr+4, data[ 4:11]);
-         cslWRITEb(addr+5, data[12:19]);
-         cslWRITEb(addr+6, data[20:27]);
-         cslWRITEb(addr+7, data[28:35]);
+         conWRITEw(addr+0, data[20:35]);
+         conWRITEw(addr+2, data[ 4:19]);
+         conWRITEw(addr+4, {12'b0, data[0:3]});
          #100;
       end
    endtask
 
    //
-   // Task to read word from console register
+   // Task to read a 36-bit word from console register
    //
    // Note:
-   //  A 36-bit read requires 5 byte operations.
+   //  A 36-bit read requires 3 16-bit word operations.
    //
 
-   task cslREAD;
+   task conREAD;
       input [7:0] addr;
       output reg [0:35] data;
       begin
-         cslREADb(addr+3, data[ 0: 3]);
-         cslREADb(addr+4, data[ 4:11]);
-         cslREADb(addr+5, data[12:19]);
-         cslREADb(addr+6, data[20:27]);
-         cslREADb(addr+7, data[28:35]);
+         conREADw(addr+0, data[20:35]);
+         conREADw(addr+2, data[ 4:19]);
+         conREADw(addr+4, data[ 0: 3]);
          #100;
       end
    endtask
 
    //
-   // Task to write byte to console register
+   // Set the GO bit then poll the GO bit.
+   // Whine about NXM/NXD response
+   //
+   
+   task conGO;
+      input [18:35] address;
+      reg   [ 0:15] status;
+      begin
+         conWRITEw(addrREGSTATUS+2, statGO);
+         
+         conREADw(addrREGSTATUS+2, status);
+         while (status & statGO)
+           #10 conREADw(addrREGSTATUS+2, status);
+         
+         conREADw(addrREGSTATUS, status);
+         if (status & statNXMNXD)
+           $display("NXM/NXD at address %06o", address);
+
+         conWRITEw(addrREGSTATUS, status & ~statNXMNXD);
+        
+      end
+   endtask
+   
+   //
+   // Task to write 16-bit word to console register.  The EPI is 16-bit
+   // word oriented therefore the LSB (A0) is not available.   The individual
+   // bytes are addressed using the byte lanes, BHE and BLE.
    //
 
-   task cslWRITEb;
-      input [7:0] addr;
-      input [7:0] data;
+   task conWRITEw;
+      input [ 7:0] addr;
+      input [15:0] data;
       begin
-         #50 cslADOUT = addr;
-         #5  cslALE   = 1;
-         #5  cslADOUT = data;
-         #5  cslALE   = 0;
-         #5  cslWR_N  = 0;
-         #50 cslWR_N  = 1;
+         conADDR = addr[5:1];
+         conDATO = data;
+         #50 conWR_N = 0;
+         conBLE_N = 0;
+         conBHE_N = 0;
+         #50 conWR_N = 1;
+         conBLE_N = 1;
+         conBHE_N = 1;
+         #50;
       end
    endtask
 
    //
-   // Task to read byte from console register
+   // Task to read 16-bit word from console register.  The EPI is 16-bit
+   // word oriented therefore the LSB (A0) is not available.  The individual
+   // bytes are addressed using the byte lanes, BHE and BLE.
    //
 
-   task cslREADb;
+   task conREADw;
       input [7:0] addr;
-      output reg [7:0] data;
+      output reg [15:0] data;
       begin
-        #5  cslADOUT = addr;
-        #5  cslALE   = 1;
-        #5  cslALE   = 0;
-        #5  cslRD_N  = 0;
-        #25 data     = cslAD;
-        #25 cslRD_N  = 1;
+         conADDR = addr[5:1];
+         #50 conRD_N = 0;
+         conBLE_N = 0;
+         conBHE_N = 0;
+         #50 conRD_N  = 1;
+         conBLE_N = 1;
+         conBHE_N = 1;
+         data = conDATA;
+         #50;
       end
    endtask
 
+   //
+   // Print Halt Status Block
+   //
+
+   task printHaltStatusBlock;
+      input [18:35] address;
+      begin
+         conREADMEMP(address +  0, temp);
+         $display("MAG is %012o",  temp);
+         conREADMEMP(address +  1, temp);
+         $display("PC  is %012o",  temp);
+         conREADMEMP(address +  2, temp);
+         $display("HR  is %012o",  temp);
+         conREADMEMP(address +  3, temp);
+         $display("AR  is %012o",  temp);
+         conREADMEMP(address +  4, temp);
+         $display("ARX is %012o",  temp);
+         conREADMEMP(address +  5, temp);
+         $display("BR  is %012o",  temp);
+         conREADMEMP(address +  6, temp);
+         $display("BRX is %012o",  temp);
+         conREADMEMP(address +  7, temp);
+         $display("ONE is %012o",  temp);
+         conREADMEMP(address + 10, temp);
+         $display("EBR is %012o",  temp);
+         conREADMEMP(address + 11, temp);
+         $display("UBR is %012o",  temp);
+         conREADMEMP(address + 12, temp);
+         $display("MSK is %012o",  temp);
+         conREADMEMP(address + 13, temp);
+         $display("FLG is %012o",  temp);
+         conREADMEMP(address + 14, temp);
+         $display("PI  is %012o",  temp);
+         conREADMEMP(address + 15, temp);
+         $display("X1  is %012o",  temp);
+         conREADMEMP(address + 16, temp);
+         $display("TO  is %012o",  temp);
+         conREADMEMP(address + 17, temp);
+         $display("T1  is %012o",  temp);
+         conREADMEMP(address + 20, temp);
+         $display("VMA is %012o",  temp);
+         conREADMEMP(address + 21, temp);
+         $display("FE  is %012o",  temp);
+      end
+   endtask; // printHaltStatusBlock
+   
+   //
+   // Print Halt Status Word
+   //
+   
+   task printHaltStatus;
+      begin
+         conREADMEMP(0, temp);
+         case (temp[24:35])
+           12'o0000 : $display("Halt Status: Microcode Startup.");
+           12'o0001 : $display("Halt Status: Halt Instruction.");
+           12'o0002 : $display("Halt Status: Console Halt.");
+           12'o0100 : $display("Halt Status: IO Page Failure.");
+           12'o0101 : $display("Halt Status: Illegal Interrupt Instruction.");
+           12'o0102 : $display("Halt Status: Pointer to Unibus Vector is zero.");
+           12'o1000 : $display("Halt Status: Illegal Microcode Dispatch.");
+           12'o1005 : $display("Halt Status: Microcode Startup Check Failed.");
+           default  : $display("Halt Status: Unknown Halt Cause.");
+         endcase
+         if (temp[24:35] != 0)
+           begin
+              printHaltStatusBlock(18'o376000);
+           end
+      end
+   endtask
+   
    //
    // Initialization
    //
@@ -251,125 +370,80 @@ module testbench;
 
    initial
      begin
-        $display("KS10 Simulation Starting");
+        $display("KS10: Simulation Starting");
 
         //
         // Initial state
         //
 
-        clk     = 0;
-        reset   = 1;
-        cslALE  = 0;
-        cslWR_N = 1;
-        cslRD_N = 1;
+        clk      = 0;
+        reset    = 1;
+        conALE   = 0;
+        conWR_N  = 1;
+        conRD_N  = 1;
+        conBLE_N = 1;
+        conBHE_N = 1;
+        conADDR <= 0;
+        conDATO <= 0;
 
         //
         // Release reset at 95 nS
         //
 
-        #95 reset = 1'b0;
+        #95 reset = 0;
 
         //
         //  Write to Console Instruction Register
         //
 
-        cslWRITE(addrREGCIR, valREGCIR);
+        #500 conWRITE(addrREGCIR, valREGCIR);
 
+	//conWRITE(addrREGSTATUS, statRESET);
+	//conWRITE(addrREGSTATUS, statTRAPEN  | statRESET);
+	//conWRITE(addrREGSTATUS, statTIMEREN | statTRAPEN  | statRESET );
+	//conWRITE(addrREGSTATUS, statCACHEEN | statTIMEREN | statTRAPEN | statRESET );
+	
+	
         //
         // Write to Control/Status Register
-        //  Set EXEC, RUN, and release RESET
+        // Release RESET and set RUN.
+        // (Run is only required for the simulator).
         //
 
-        cslWRITE(addrREGSTATUS, valREGSTATUS);
-
+        conWRITE(addrREGSTATUS, statRUN);
+        
         //
         // Readback Console Instruction Register
         //
 
-        cslREAD(addrREGCIR, temp);
+        conREAD(addrREGCIR, temp);
+        $display("CIR is : \"%12o\"", temp);
 
         //
         // Initialize Console Status
         //
 
-        cslWRKS10MEM(18'o000031, 36'b0);
-        cslWRKS10MEM(18'o000036, 36'b0);
-        cslWRKS10MEM(18'o025741, 36'b0);
-        cslWRKS10MEM(18'o026040, 36'b0);
-        cslWRKS10MEM(18'o030024, 36'b0);
-        cslWRKS10MEM(18'o030037, 36'b0);
+        conWRITEMEM(18'o000031, 36'b0);
+        conWRITEMEM(18'o000036, 36'b0);
+        conWRITEMEM(18'o025741, 36'b0);
+        conWRITEMEM(18'o026040, 36'b0);
+        conWRITEMEM(18'o030024, 36'b0);
+        conWRITEMEM(18'o030037, 36'b0);
+        conWRITEMEM(18'o061121, 36'b0);
+        conWRITEMEM(18'o061125, 36'b0);
 
+        // clear run
+        //#60000 conWRITE(addrREGSTATUS, statEXEC |statCONT);
+        
      end
-
-   //
-   // Clock generator
-   //
-   // Details
-   //  Clock is inverted every ten nS
-   //
-
-   always
-     begin
-        #10 clk = ~clk;
-     end
-
-   assign cslAD = (~cslRD_N) ? 8'bz : cslADOUT;
-
-   //
-   // KS10
-   //
-
-   ESM_KS10 uKS10
-     (.CLK50MHZ         (clk),
-      .RESET_N          (~reset),
-      // DZ11 Interfaces
-      .TXD1             (TXD1),
-      .TXD2             (TXD2),
-      .RXD1             (RXD1),
-      .RXD2             (RXD2),
-      .RTS1             (RTS1),
-      .RTS2             (RTS2),
-      .CTS1             (CTS1),
-      .CTS2             (CTS2),
-      // RH11 Interfaces
-      .rh11CD           (rh11CD),
-      .rh11WP           (rh11WP),
-      .rh11MISO         (rh11MISO),
-      .rh11MOSI         (rh11MOSI),
-      .rh11SCLK         (rh11SCLK),
-      .rh11CS           (rh11CS),
-      // Console Interfaces
-      .cslCLK               (cslCLK),
-      .cslALE           (cslALE),
-      .cslAD            (cslAD),
-      .cslRD_N          (cslRD_N),
-      .cslWR_N          (cslWR_N),
-      .cslINTR_N        (cslINTR_N),
-      // SSRAM Interfaces
-      .ssramCLK         (ssramCLK),
-      .ssramCLKEN       (ssramCLKEN),
-      .ssramADV         (ssramADV),
-      .ssramBWA_N       (ssramBWA_N),
-      .ssramBWB_N       (ssramBWB_N),
-      .ssramBWC_N       (ssramBWC_N),
-      .ssramBWD_N       (ssramBWD_N),
-      .ssramOE_N        (ssramOE_N),
-      .ssramWE_N        (ssramWE_N),
-      .ssramCE          (ssramCE),
-      .ssramADDR        (ssramADDR),
-      .ssramDATA        (ssramDATA),
-      .runLED           (runLED)
-      );
 
    //
    // Display run/halt status
    //
 
-   always @(negedge runLED)
-     $display("KS10 CPU Halted at t = %f us.", $time / 1.0e3);
-
-   always @(posedge runLED)
-     $display("KS10 CPU Unhalted at t = %f us", $time / 1.0e3);
+   always @(negedge haltLED)
+     if ($time != 0)
+       $display("KS10 CPU Unhalted at t = %f us", $time / 1.0e3);
 
    //
    // Handle Startup.
@@ -377,17 +451,18 @@ module testbench;
    // Details
    //  The Microcode will always halt at startup.  Catch the halt
    //  at startup (only).  When this occurs momentarily push the
-   //  continue button to continue execution.  Otherwise let the
-   //  KS10 halt.
+   //  RUN, EXEC, and CONT button to continue execution.  Otherwise
+   //  let the KS10 halt.
    //
-
-   always @(negedge runLED)
+   
+   always @(posedge haltLED)
      begin
-        if ($time > 13000 && $time < 15000)
-          begin
-             cslWRITEb(8'h25, 8'h16);
-             cslWRITEb(8'h25, 8'h14);
-          end
+        $display("KS10 CPU Halted at t = %f us.", $time / 1.0e3);
+        printHaltStatus;
+        if ($time > 30000 && $time < 40000)
+          conWRITE(addrREGSTATUS, (statEXEC |
+                                   statCONT |
+                                   statRUN));
      end
 
    //
@@ -407,6 +482,90 @@ module testbench;
      begin
        `include "../testbench/ssram.dat"
      end
+
+`ifdef SIMCTY
+
+   //
+   // File IO
+   //
+
+   integer cty_ofile;
+   integer cty_ifile;
+
+   initial
+     begin
+        cty_ofile = $fopen("cty_out.txt", "w");
+        cty_ifile = $fopen("cty_in.txt",  "r");
+        #1500000;
+        $fclose(cty_ofile);
+        $fclose(cty_ifile);
+        $finish;
+     end
+
+   //
+   //  CTY Output Processing
+   //
+   //  Note:
+   //   A Console Interrupt (conINTR asserted) may indicate that a
+   //   character is available to print or that a character can be
+   //   accepted by the KS10, or both, or neither.
+   //
+
+   reg [0:35] dataCOUT;
+   localparam [18:35] addrCOUT = 18'o000033;
+
+   always @(posedge clk or posedge reset)
+     begin
+        if (reset)
+          dataCOUT <= 36'b0;
+        else if (conINTR)
+          begin
+
+             //$display("KS10 CPU has interrupted the console at t = %f us", $time / 1.0e3);
+
+             //
+             // Read CTYOUT Memory Location
+             //
+
+             conREADMEM(addrCOUT, dataCOUT);
+
+             //
+             // Print character if character is available.
+             // Zero the flag when done printing.
+             //
+
+             if (dataCOUT[27])
+               begin
+                  if ((dataCOUT[28:35] >= 8'h20) && (dataCOUT[28:35] < 8'h7f))
+                    $display("KS10 CTY Output: \"%s\"", dataCOUT[28:35]);
+                  else
+                    $display("KS10 CTY Output: \"%02x\"", dataCOUT[28:35]);
+                  $fwrite(cty_ofile, "%s", dataCOUT[28:35]);
+                  conWRITEMEM(addrCOUT, 36'b0);
+               end
+          end
+     end
+
+`endif
+
+
+   //
+   // Clock generator
+   //
+   // Details
+   //  Clock is inverted every ten nS
+   //
+
+   always
+     begin
+        #10 clk = ~clk;
+     end
+
+   //
+   // Bidirectional Data Bus
+   //
+   
+   assign conDATA = (~conRD_N) ? 16'bz : conDATO;
 
    //
    // Synchronous RAM
@@ -436,70 +595,46 @@ module testbench;
      end
 
    assign ssramDATA = (ssramWE_N) ? SSRAM[rd_addr] : 36'bz;
-
-`ifdef SIMCTY
-
+   
    //
-   // File IO
+   // KS10
    //
 
-   integer cty_ofile;
-   integer cty_ifile;
-
-   initial
-     begin
-        cty_ofile = $fopen("cty_out.txt", "w");
-        cty_ifile = $fopen("cty_in.txt",  "r");
-        #1500000;
-        $fclose(cty_ofile);
-        $fclose(cty_ifile);
-        $finish;
-     end
-
-   //
-   //  CTY Output Processing
-   //
-   //  Note:
-   //   A Console Interrupt (cslINTR asserted) may indicate that a
-   //   character is available to print or that a character can be
-   //   accepted by the KS10, or both, or neither.
-   //
-
-   reg [0:35] dataCOUT;
-   parameter [18:35] addrCOUT = 18'o000033;
-
-   always @(posedge clk or posedge reset)
-     begin
-        if (reset)
-          dataCOUT <= 36'b0;
-        else if (cslINTR)
-          begin
-
-             //$display("KS10 CPU has interrupted the console at t = %f us", $time / 1.0e3);
-
-             //
-             // Read CTYOUT Memory Location
-             //
-
-             cslRDKS10MEM(addrCOUT, dataCOUT);
-
-             //
-             // Print character if character is available.
-             // Zero the flag when done printing.
-             //
-
-             if (dataCOUT[27])
-               begin
-                  if ((dataCOUT[28:35] >= 8'h20) && (dataCOUT[28:35] < 8'h7f))
-                    $display("KS10 CTY Output: \"%s\"", dataCOUT[28:35]);
-                  else
-                    $display("KS10 CTY Output: \"%02x\"", dataCOUT[28:35]);
-                  $fwrite(cty_ofile, "%s", dataCOUT[28:35]);
-                  cslWRKS10MEM(addrCOUT, 36'b0);
-               end
-          end
-     end
-
-`endif
-
+   ESM_KS10 uKS10
+     (.CLK50MHZ         (clk),
+      .RESET_N          (~reset),
+      // DZ11 Interfaces
+      .TXD              (TXD),
+      .RXD              (RXD),
+      // RH11 Interfaces
+      .rh11CD           (rh11CD),
+      .rh11WP           (rh11WP),
+      .rh11MISO         (rh11MISO),
+      .rh11MOSI         (rh11MOSI),
+      .rh11SCLK         (rh11SCLK),
+      .rh11CS           (rh11CS),
+      // Console Interfaces
+      .conADDR          (conADDR),
+      .conDATA          (conDATA),
+      .conBLE_N		(conBLE_N),
+      .conBHE_N		(conBHE_N),
+      .conRD_N          (conRD_N),
+      .conWR_N          (conWR_N),
+      .conINTR_N        (conINTR_N),
+      // SSRAM Interfaces
+      .ssramCLK         (ssramCLK),
+      .ssramCLKEN       (ssramCLKEN),
+      .ssramADV         (ssramADV),
+      .ssramBWA_N       (ssramBWA_N),
+      .ssramBWB_N       (ssramBWB_N),
+      .ssramBWC_N       (ssramBWC_N),
+      .ssramBWD_N       (ssramBWD_N),
+      .ssramOE_N        (ssramOE_N),
+      .ssramWE_N        (ssramWE_N),
+      .ssramCE          (ssramCE),
+      .ssramADDR        (ssramADDR),
+      .ssramDATA        (ssramDATA),
+      .haltLED		(haltLED)
+      );
+   
 endmodule

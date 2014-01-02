@@ -46,7 +46,7 @@
 `include "useq/crom.vh"
 
 module INTF(clk, rst, clken, crom,
-            cslRUN, cslCONT, cslEXEC, cslHALT,
+            cslSET, cslRUN, cslCONT, cslEXEC,
             cpuRUN, cpuCONT, cpuEXEC, cpuHALT);
 
    parameter cromWidth = `CROM_WIDTH;
@@ -55,10 +55,10 @@ module INTF(clk, rst, clken, crom,
    input                 rst;                   // reset
    input                 clken;                 // clock enable
    input [0:cromWidth-1] crom;                  // Control ROM Data
+   input                 cslSET;		// Console modify RUN, CONT, EXEC
    input                 cslRUN;                // Console Run Switch
    input                 cslCONT;               // Console Continue Switch
    input                 cslEXEC;               // Console Execute Switch
-   input                 cslHALT;               // Console Halt Switch
    output reg            cpuRUN;                // CPU Run Status
    output reg            cpuCONT;               // CPU Continue Status
    output reg            cpuEXEC;               // CPU Execute Status
@@ -107,10 +107,10 @@ module INTF(clk, rst, clken, crom,
           cpuRUN <= 0;
         else if (clken)
           begin
-             if (cslRUN)
-               cpuRUN <= 1;
-             else if (specCONS & `cromCONS_CLR_RUN)
+             if (specCONS & `cromCONS_CLR_RUN)
                cpuRUN <= 0;
+             else if (cslSET)
+               cpuRUN <= cslRUN;
           end
      end
 
@@ -128,10 +128,10 @@ module INTF(clk, rst, clken, crom,
           cpuEXEC <= 0;
         else if (clken)
           begin
-             if (cslEXEC)
-               cpuEXEC <= 1;
-             else if (specCONS & `cromCONS_CLR_EXEC)
-               cpuEXEC <= 0;
+             if (specCONS & `cromCONS_CLR_EXEC)
+               cpuEXEC <= 0;             
+             else if (cslSET)
+               cpuEXEC <= cslEXEC;
           end
      end
 
@@ -149,10 +149,10 @@ module INTF(clk, rst, clken, crom,
           cpuCONT <= 0;
         else if (clken)
           begin
-             if (cslCONT)
-               cpuCONT <= 1;
-             else if (specCONS & `cromCONS_CLR_CONT)
-               cpuCONT <= 0;
+             if (specCONS & `cromCONS_CLR_CONT)
+               cpuCONT <= 0;             
+             else if (cslSET)
+               cpuCONT <= cslCONT;
           end
      end
 

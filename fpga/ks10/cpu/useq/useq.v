@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -14,7 +14,7 @@
 // author
 //      Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 //  Copyright (C) 2012 Rob Doyle
 //
@@ -38,7 +38,7 @@
 // Public License along with this source; if not, download it
 // from http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `include "crom.vh"
 `include "drom.vh"
@@ -124,7 +124,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    // ALU Zero
    //
 
-   wire txxx    = aluZERO != `dromTXXXEN;               // Test Instruction Results
+   wire txxx    = aluZERO != `dromTXXXEN;      	// Test Instruction Results
 
    //
    // Dispatch Addresses
@@ -138,12 +138,12 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    // Skip Logic
    //
    // Details
-   //  The skip logic allows the sequencer to conditionally
-   //  jump forward one micro-instruction.
+   //  The skip logic allows the sequencer to conditionally jump forward one
+   //  micro-instruction.
    //
    // Note:
-   //  Like the dispatch, the skip logic can only set bits.
-   //  The skip must take place on an even address.
+   //  Like the dispatch, the skip logic can only set bits.  The skip must take
+   //  place on an even address.
    //
 
    SKIP uSKIP
@@ -158,15 +158,15 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    // Dispatch Logic
    //
    // Details
-   //  The dromJ is implemented slightly different than the KS-10.
-   //  In the KS10, the DROM J value is constained to be between 1400
-   //  and 1777.  This allows the dispatch function to hardwire
-   //  the upper 4 data bits instead of storing them in the DROM.
-   //  I've hooked all data lines up and will let the optimizer do
-   //  it's thing.  The optimizer will determine that these lines
-   //  never change and replace the DROM columns with hardwired
-   //  constants.  This design approach makes the design intent
-   //  much more obvious.
+   //  The dromJ is implemented slightly different than the KS-10.  In the
+   //  KS10, the DROM J value is constained to be between 1400 and 1777.  This
+   //  allows the dispatch function to hardwire the upper 4 data bits instead
+   //  of storing them in the DROM.
+   //
+   //  I've hooked all data lines up and will let the optimizer do it's thing.
+   //  The optimizer will determine that these lines never change and replace
+   //  the DROM columns with hardwired constants.  This design approach makes
+   //  the design intent much more obvious.
    //
    // Notes
    //  Watch the index numbering on DROM_J!
@@ -175,17 +175,15 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
    //  Quoting the KS10 Technical Manual:
    //
-   //   dromAEQJ -  "This bit causes an immediate dispatch on the J
-   //               field when the microword calls for the standard
-   //               AREAD dispatch on the A field. This is used for
-   //               instructions that require no memory access or
-   //               special setup (for example, MOVEI, JFCL)".
+   //   dromAEQJ -  "This bit causes an immediate dispatch on the J field when
+   //               the microword calls for the standard AREAD dispatch on the
+   //               A field. This is used for instructions that require no
+   //               memory access or special setup (for example, MOVEI, JFCL)".
    //
-   //  dromACDISP - "This bit causes the AC field of the instruction
-   //               word to replace the right four bits of the J
-   //               field so that a jump to begin instruction
-   //               execution will actually dispatch to one of 16
-   //               locations where the instruction code is expanded
+   //  dromACDISP - "This bit causes the AC field of the instruction word to
+   //               replace the right four bits of the J field so that a jump
+   //               to begin instruction execution will actually dispatch to
+   //               one of 16 locations where the instruction code is expanded
    //               to 13 bits."
    //
    // Trace:
@@ -210,10 +208,10 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    reg [0:11] dispJ;
    always @(dromACDISP, regIR_AC, dromJ)
      begin
-        if (dromACDISP)                                 // Dispatch Address Range:
-          dispJ = {dromJ[0:7], regIR_AC};               // 1400 to 1777  (4 upper address were hardwired)
+        if (dromACDISP)                   	// Dispatch Address Range:
+          dispJ = {dromJ[0:7], regIR_AC};       // 1400 to 1777  (4 upper address were hardwired)
         else
-          dispJ = {dromJ[0:7], dromJ[8:11]};            // 1400 to 1777  (4 upper address were hardwired)
+          dispJ = {dromJ[0:7], dromJ[8:11]};    // 1400 to 1777  (4 upper address were hardwired)
      end
 
    //
@@ -227,10 +225,10 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    reg [0:11] dispAREAD;
    always @(dromAEQJ, dispJ, dromA)
      begin
-        if (dromAEQJ)                                   // Dispatch Address Range:
-          dispAREAD = dispJ;                            // 1400 to 1777  (4 upper address were hardwired)
+        if (dromAEQJ)                           // Dispatch Address Range:
+          dispAREAD = dispJ;                    // 1400 to 1777  (4 upper address were hardwired)
         else
-          dispAREAD = {8'b00000010, dromA};             // 0040 to 0057
+          dispAREAD = {8'b00000010, dromA};     // 0040 to 0057
      end
 
    //

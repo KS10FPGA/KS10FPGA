@@ -40,73 +40,53 @@
 //
 ////////////////////////////////////////////////////////////////////
 
+`default_nettype none
 `include "ks10.vh"
-`include "uba/uba.vh"
 `include "uba/dz11/dz11.vh"
 `include "uba/rh11/rh11.vh"
-`default_nettype none
 
- module KS10(clk, rst,
+module KS10(clk, rst,
             // DZ11 Interfaces
-            dz11TXD, dz11RXD, dz11DTR, dz11CO, dz11RI,
+            dz11TXD, dz11RXD, dz11CO, dz11RI, dz11DTR,
             // RH11 Interfaces
-            rh11CD, rh11WP, rh11MISO, rh11MOSI, rh11SCLK, rh11CS, rh11DEBUG,
+            rh11CD, rh11WP, rh11MISO, rh11MOSI, rh11SCLK, rh11CS,
             // Console Interfaces
-            cslREGADDR, cslREGDATI, cslREGDATO, cslREGIR, cslBUSY, cslNXM,
-            cslGO,  cslRESET, cslSTEP, cslRUN, cslEXEC, cslCONT, cslHALT, cslTIMEREN,
-            cslTRAPEN, cslCACHEEN, cslINTRI, cslINTRO,
-            // CPU Interfaces
-            cpuHALT, cpuRUN, cpuEXEC, cpuCONT,
+            conADDR, conDATA, conBLE_N, conBHE_N, conRD_N, conWR_N, conINTR_N,
             // SSRAM Interfaces
-            ssramCLK, ssramCLKEN, ssramADV, ssramBWA_N, ssramBWB_N, ssramBWC_N, ssramBWD_N,
-            ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA);
+            ssramCLK, ssramCLKEN_N, ssramADV, ssramBWA_N, ssramBWB_N, ssramBWC_N, ssramBWD_N,
+            ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA,
+            haltLED);
 
-   parameter [14:17] ctlNUM1 = `ctlNUM1;
-   parameter [14:17] ctlNUM3 = `ctlNUM3;
+   localparam [14:17] ctlNUM1 = `ctlNUM1;
+   localparam [14:17] ctlNUM3 = `ctlNUM3;
 
+   // Clock/Reset
    input         clk;           // Clock
    input         rst;           // Reset
    // DZ11 Interfaces
-   output [7: 0] dz11TXD;       // DZ11 Transmitter Serial Data
-   input  [7: 0] dz11RXD;       // DZ11 Receiver Serial Data
-   input  [7: 0] dz11CO;        // DZ11 Carrier Detect Input
-   input  [7: 0] dz11RI;        // DZ11 Ring Indicator Input
-   output [7: 0] dz11DTR;       // DZ11 Data Terminal Ready Output
+   output [ 7: 0] dz11TXD;      // DZ11 Transmitter Serial Data
+   input  [ 7: 0] dz11RXD;      // DZ11 Receiver Serial Data
+   input  [ 7: 0] dz11CO;       // DZ11 Carrier Detect Input
+   input  [ 7: 0] dz11RI;       // DZ11 Ring Indicator Input
+   output [ 7: 0] dz11DTR;      // DZ11 Data Terminal Ready Output
    // RH11 Interfaces
    input         rh11CD;        // RH11 Card Detect
    input         rh11WP;        // RH11 Write Protect
    input         rh11MISO;      // RH11 Data In
    output        rh11MOSI;      // RH11 Data Out
    output        rh11SCLK;      // RH11 Clock
-   output        rh11CS;        // RH11 Chip Select
-   output [0:35] rh11DEBUG;     // RH11 Debug
+   output        rh11CS;        // SD11 Chip Select
    // Console Interfaces
-   input  [0:35] cslREGADDR;    // Console Address Register
-   input  [0:35] cslREGDATI;    // Console Data Register In
-   output [0:35] cslREGDATO;    // Console Data Register Out
-   input  [0:35] cslREGIR;      // Console Instruction Register
-   output        cslBUSY;       // Console Busy
-   output        cslNXM;        // Console NXM/NXD
-   input         cslGO;         // Console Go
-   input         cslRESET;      // Console Reset
-   input         cslSTEP;       // Console Step
-   input         cslRUN;        // Console Run
-   input         cslEXEC;       // Console Exec
-   input         cslCONT;       // Console Cont
-   input         cslHALT;       // Console Halt
-   input         cslTIMEREN;    // Console Timer Enable
-   input         cslTRAPEN;     // Console Trap Enable
-   input         cslCACHEEN;    // Console Cache Enable
-   input         cslINTRI;      // Console Interrupt In
-   output        cslINTRO;      // Console Interrupt Out
-   // CPU Interfaces
-   output        cpuHALT;       // CPU Halt
-   output        cpuRUN;        // CPU Run
-   output        cpuEXEC;       // CPU Exec
-   output        cpuCONT;       // CPU Cont
+   inout [15: 0] conDATA;       // Console Data Bus
+   input [ 5: 1] conADDR;       // Console Address Bus
+   input         conBLE_N;      // Console Bus Lane
+   input         conBHE_N;      // Console Bus Lane
+   input         conRD_N;       // Console Read Strobe
+   input         conWR_N;       // Console Write Strobe
+   output        conINTR_N;     // KS10 Interrupt to Console
    // SSRAM Interfaces
    output        ssramCLK;      // SSRAM Clock
-   output        ssramCLKEN;    // SSRAM Clken
+   output        ssramCLKEN_N;  // SSRAM CLKEN#
    output        ssramADV;      // SSRAM Advance
    output        ssramBWA_N;    // SSRAM BWA#
    output        ssramBWB_N;    // SSRAM BWB#
@@ -117,6 +97,7 @@
    output        ssramCE;       // SSRAM CE
    output [0:22] ssramADDR;     // SSRAM Address Bus
    inout  [0:35] ssramDATA;     // SSRAM Data Bus
+   output        haltLED;       // Halt LED
 
    //
    // Bus Arbiter Outputs
@@ -136,15 +117,17 @@
    wire [0:35] cslADDRO;        // Console Address Out
    wire [0:35] cslDATAI;        // Console Data In
    wire [0:35] cslDATAO;        // Console Data Out
-   wire        cslSTEP;         // Console Single Step Switch
-   wire        cslCONT;         // Console Continue Switch
+   wire        cslSET;          // Console Set State
    wire        cslRUN;          // Console Run Switch
+   wire        cslCONT;         // Console Continue Switch
    wire        cslEXEC;         // Console Exec Switch
-   wire        cslHALT;         // Console Halt Switch
    wire        cslTRAPEN;       // Console Trap Enable
    wire        cslTIMEREN;      // Console Timer Enable
    wire        cslCACHEEN;      // Console Cache Enable
-
+   wire        cslINTR;         // Console Interrupt to KS10
+   wire        cslRESET;        // KS10 Reset
+   wire        cslINTRO;        // KS10 Interrupt to Console
+   
    //
    // CPU Interfaces
    //
@@ -158,7 +141,13 @@
    wire        cpuRUN;          // CPU Run Status
    wire        cpuEXEC;         // CPU Exec Status
    wire        cpuCONT;         // CPU Cont Status
+   
+   //
+   // DZ11 Interfaces
+   //
 
+   wire [0:63] rh11DEBUG;       // RH11 Debug
+   
    //
    // Memory Interfaces
    //
@@ -181,7 +170,7 @@
    wire [0:35] ubaDATAI;        // Unibus Data In
    wire [0:35] ubaDATAO[0:3];   // Unibus Data Out
    wire [1: 7] ubaINTRO[0:3];   // Unibus Interrupt
-
+   
    //
    // Bus Arbiter
    //
@@ -234,15 +223,14 @@
       .rst              (rst),
       // Console
       .cslRESET         (cslRESET),
-      .cslSTEP          (cslSTEP),
+      .cslSET           (cslSET),
       .cslRUN           (cslRUN),
-      .cslEXEC          (cslEXEC),
       .cslCONT          (cslCONT),
-      .cslHALT          (cslHALT),
+      .cslEXEC          (cslEXEC),
       .cslTIMEREN       (cslTIMEREN),
       .cslTRAPEN        (cslTRAPEN),
       .cslCACHEEN       (cslCACHEEN),
-      .cslINTRI         (cslINTRI),
+      .cslINTRI         (cslINTR),
       .cslINTRO         (cslINTRO),
       // UBA
       .ubaINTR          (ubaINTR),
@@ -265,15 +253,14 @@
    CSL uCSL
      (.clk              (clk),
       .rst              (rst),
-      // Console Wrapper Interfaces
-      .cslREGADDR       (cslREGADDR),
-      .cslREGDATI       (cslREGDATI),
-      .cslREGDATO       (cslREGDATO),
-      .cslREGIR         (cslREGIR),
-      .cslBUSY          (cslBUSY),
-      .cslNXM           (cslNXM),
-      .cslGO            (cslGO),
-      // KS10 Interfaces
+      // Console Microcontroller Interfaces
+      .conADDR          (conADDR),
+      .conDATA          (conDATA),
+      .conBLE_N         (conBLE_N),
+      .conBHE_N         (conBHE_N),
+      .conRD_N          (conRD_N),
+      .conWR_N          (conWR_N),
+      // Bus Interfaces
       .busREQI          (cslREQI),
       .busREQO          (cslREQO),
       .busACKI          (cslACKI),
@@ -281,7 +268,24 @@
       .busADDRI         (arbADDRO),
       .busADDRO         (cslADDRO),
       .busDATAI         (cslDATAI),
-      .busDATAO         (cslDATAO)
+      .busDATAO         (cslDATAO),
+      // CPU Interfaces
+      .cpuRUN           (cpuRUN),
+      .cpuHALT          (cpuHALT),
+      .cpuEXEC          (cpuEXEC),
+      .cpuCONT          (cpuCONT),
+      // Console Interfaces
+      .cslSET		(cslSET),
+      .cslRUN           (cslRUN),
+      .cslCONT          (cslCONT),
+      .cslEXEC          (cslEXEC),
+      .cslTIMEREN       (cslTIMEREN),
+      .cslTRAPEN        (cslTRAPEN),
+      .cslCACHEEN       (cslCACHEEN),
+      .cslINTR          (cslINTR),
+      .cslRESET         (cslRESET),
+      // RH11 Interfaces
+      .rh11DEBUG        (rh11DEBUG)
       );
 
    //
@@ -298,7 +302,7 @@
       .busDATAI         (memDATAI),
       .busDATAO         (memDATAO),
       .ssramCLK         (ssramCLK),
-      .ssramCLKEN       (ssramCLKEN),
+      .ssramCLKEN_N     (ssramCLKEN_N),
       .ssramADV         (ssramADV),
       .ssramBWA_N       (ssramBWA_N),
       .ssramBWB_N       (ssramBWB_N),
@@ -331,11 +335,11 @@
    // Stub Connected to IO Bridge 1 Device 2
    //
 
-   wire         ctl1dev2REQI  = 0;
-   wire         ctl1dev2ACKI  = 0;
-   wire [ 0:35] ctl1dev2ADDRI = 36'b0;
-   wire [ 0:35] ctl1dev2DATAI = 36'b0;
-   wire [ 7: 4] ctl1dev2INTR  =  4'b0;
+   wire         ctl1dev2REQI    = 0;
+   wire         ctl1dev2ACKI    = 0;
+   wire [ 0:35] ctl1dev2ADDRI   = 36'b0;
+   wire [ 0:35] ctl1dev2DATAI   = 36'b0;
+   wire [ 7: 4] ctl1dev2INTR    =  4'b0;
    wire         ctl1dev2ACKO;
 
    UBA UBA1
@@ -498,6 +502,12 @@
       );
 
    //
+   // Console Interrupt fixup
+   //
+
+   assign conINTR_N = ~cslINTRO;
+
+   //
    // Interrupts
    //
 
@@ -518,4 +528,6 @@
    assign ubaINTRO[0] = 0;
    assign ubaINTRO[2] = 0;
 
+   assign haltLED = cpuHALT;
+   
 endmodule

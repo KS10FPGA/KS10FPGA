@@ -86,10 +86,10 @@ module IOLATCH(clk, rst, clken, crom, vmaFLAGS, iolatch);
    // State definition
    //
 
-   parameter [0:1] stateIDLE   =  0,    // Waiting for IO Cycle
-                   stateDELAY1 =  1,    // Delay
-                   stateDELAY2 =  2,    // Delay
-                   stateWAIT   =  3;    // IO Latch cleared, wait for IO Cycle to complete
+   localparam [0:1] stateIDLE   =  0,   // Waiting for IO Cycle
+                    stateDELAY1 =  1,   // Delay
+                    stateDELAY2 =  2,   // Delay
+                    stateWAIT   =  3;   // IO Latch cleared, wait for IO Cycle to complete
 
    //
    // VMA Flags

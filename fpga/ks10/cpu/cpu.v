@@ -45,7 +45,7 @@
 `include "apr.vh"
 
 module CPU(clk, rst, cslRESET,
-           cslSTEP, cslRUN, cslEXEC, cslCONT, cslHALT, cslTIMEREN,
+           cslSET, cslRUN, cslCONT, cslEXEC, cslTIMEREN,
            cslTRAPEN, cslCACHEEN, cslINTRI, cslINTRO, ubaINTR,
            cpuREQO, cpuACKI, cpuADDRO, cpuDATAI, cpuDATAO,
            cpuHALT, cpuRUN, cpuEXEC, cpuCONT);
@@ -57,11 +57,10 @@ module CPU(clk, rst, cslRESET,
    input          rst;          // Reset
    // Console
    input          cslRESET;     // CPU Reset
-   input          cslSTEP;      // Single Step
+   input          cslSET;	// Set Console RUN, EXEC, CONT
    input          cslRUN;       // Run
-   input          cslEXEC;      // Execute
    input          cslCONT;      // Continue
-   input          cslHALT;      // HALT
+   input          cslEXEC;      // Execute
    input          cslTIMEREN;   // Timer Enable
    input          cslTRAPEN;    // Enable Traps
    input          cslCACHEEN;   // Enable Cache
@@ -377,10 +376,10 @@ module CPU(clk, rst, cslRESET,
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
+      .cslSET           (cslSET),
       .cslRUN           (cslRUN),
       .cslCONT          (cslCONT),
       .cslEXEC          (cslEXEC),
-      .cslHALT          (cslHALT),
       .cpuRUN           (cpuRUN),
       .cpuCONT          (cpuCONT),
       .cpuEXEC          (cpuEXEC),
