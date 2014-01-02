@@ -545,7 +545,7 @@ bool ks10_t::nxmnxd(void) {
 }
 
 //
-//! Get the firmware revision of the KS10 FPGA firmware
+//! This function gets the firmware revision of the KS10 FPGA firmware
 //!
 //! \returns
 //!     character string with firmware information
@@ -555,14 +555,14 @@ const char *ks10_t::getFirmwareRev(void) {
     return regVers;
 }
 
-//!
+//
 //! Get Halt Status Word
 //!
 //! This function return the contents of the Halt Status Word.
 //!
 //! \returns
 //!     Contents of the Halt Status Word
-//!
+//
 
 ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
     static haltStatusWord_t haltStatusWord;
@@ -573,76 +573,124 @@ ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
     return haltStatusWord;
 }
 
+//
+//! This function tests a console interface register doing 64-bit
+//! writes and reads.
+//!
+//! \returns
+//!     True if test pass, false otherwise.
+//
 
-bool ks10_t::testRegister(volatile void * addr, const char *name, uint64_t mask) {
+bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
+    printf("KS10>   %s: Checking 64-bit accesses.\n", name);
+
     volatile uint64_t * reg64 = (uint64_t*)addr;
+    uint64_t write64 = 0;
 
-    uint64_t initialState = *reg64;
-    printf("test: %s: Initial State = 0x%016llx\n", name, initialState);
-
-    uint64_t vector64[] = {
-        0x0000000000000000ull,
-	0x00000000000000ffull,
-	0x000000000000ffffull,
-	0x0000000000ffffffull,
-	0x00000000ffffffffull,
-	0x000000ffffffffffull,
-	0x0000ffffffffffffull,
-	0x00ffffffffffffffull,
-	0xffffffffffffffffull,
-    };
-
-    printf("test: %s: Checking 64-bit write.\n", name);
-    for (unsigned int i = 0; i < sizeof(vector64)/sizeof(vector64[0]); i++) {
-        *reg64 = vector64[i];
-	uint64_t readback = *reg64;
-	if (readback != (vector64[i] & mask)) {
-  	    printf("test: %s, Register failure.  was 0x%016llx, should be 0x%016llx\n", name, readback, vector64[i]);
-	}
+    for (unsigned int i = 0; i < 9; i++) {
+        *reg64 = write64;
+        uint64_t read64 = *reg64;
+        if (read64 != (write64 & mask)) {
+            printf("KS10>   %s, Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
+            *reg64 = 0;
+            return false;
+        }
+        write64 = (write64 << 8) | 0xff;
     }
-
-    printf("test: %s: Checking byte lanes.\n", name);
-    volatile uint8_t * reg08 = (uint8_t*)addr;
-    *reg64 = vector64[0];
-    for (unsigned int i = 0; i < sizeof(vector64)/sizeof(vector64[0]); i++) {
-	uint64_t readback = *reg64;
-	if (readback != (vector64[i] & mask)) {
-  	    printf("test: %s: Register failure.  was 0x%016llx, should be 0x%016llx\n", name, readback, vector64[i]);
-	}
-	*reg08++ = 0xff;
-    }
-
-    printf("test: %s: Checking bits\n", name);
-    for (int i = 0; i < 64; i++) {
-        uint64_t bit = 1ull << i;
-	*reg64 = bit;
-	volatile uint64_t readback = *reg64;
-	if (readback != (bit & mask)) {
-	    printf("test: %s: Register failure.  was 0x%016llx, should be 0x%016llx\n", name, readback, bit);
-	}
-    }
-
-    *reg64 = initialState;
+    *reg64 = 0;
     return true;
 }
 
-bool ks10_t::testRegs(void) {
+//
+//! This function tests a console interface register doing 8-bit
+//! writes and 64-bit reads.  Writes use the byte lanes, reads
+//! ignore the byte lanes.
+//!
+//! \returns
+//!     True if test pass, false otherwise.
+//
+
+bool ks10_t::testReg08(volatile void * addr, const char *name, uint64_t mask) {
+    printf("KS10>   %s: Checking 8-bit accesses.\n", name);
+    volatile uint64_t * addr64 = (uint64_t *)addr;
+    volatile uint8_t  * addr08 = (uint8_t  *)addr;
+
+    uint64_t test64 = 0xffull;
+    for (unsigned int i = 0; i < 9; i++) {
+        *addr08 = 0xff;
+        uint64_t read64 = *addr64;
+        if (read64 != (test64 & mask)) {
+            printf("KS10>   %s, Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, test64);
+            *addr64 = 0;
+            return false;
+        }
+        addr08++;
+        test64 = (test64 << 8) | 0xff;
+    }
+    *addr64 = 0;
+    return true;
+}
+
+//
+//!
+//! This function tests a KS10 register
+//!
+//! \returns
+//!     True if test pass, false otherwise.
+//
+
+bool ks10_t::testRegister(volatile void * addr, const char *name, uint64_t mask) {
     bool success = true;
-    success &= testRegister(regAddr, "regADDR", 0xfffffffff);
-    success &= testRegister(regData, "regDATA", 0xfffffffff);
-    success &= testRegister(regCIR,  "regCIR", 0xfffffffff);
-    success &= testRegister(regTest, "regTEST");
+
+    //
+    // Save register contents
+    //
+
+    uint64_t save = readReg(addr);
+
+    //
+    // Perform tests
+    //
+
+    success &= testReg64(addr, name, mask);
+    success &= testReg08(addr, name, mask);
+
+    //
+    // Restore register contents
+    //
+
+    writeReg(addr, save);
     return success;
 }
 
+//
+//! Test all of the KS10 Registers
 //!
+//! \returns
+//!     True if test pass, false otherwise.
+//
+
+bool ks10_t::testRegs(void) {
+    bool success = true;
+    printf("KS10> Testing KS10 Interface Registers.\n");
+    success &= testRegister(regAddr, "regADDR", 0xfffffffff);
+    success &= testRegister(regData, "regDATA", 0xfffffffff);
+    success &= testRegister(regCIR,  "regCIR ", 0xfffffffff);
+    success &= testRegister(regTest, "regTEST");
+    if (success) {
+        printf("KS10> Registers tested successfully.\n");
+    }
+    return success;
+}
+
+//
 //! Get Halt Status Word.
 //!
 //! This function return the contents of the Halt Status Block.
 //!
 //! \returns
 //!     Contents of the Halt Status Block.
-//!
+//
 
 ks10_t::haltStatusBlock_t &ks10_t::getHaltStatusBlock(addr_t addr) {
     static haltStatusBlock_t haltStatusBlock;

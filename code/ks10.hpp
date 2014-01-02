@@ -15,7 +15,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013 Rob Doyle
+// Copyright (C) 2013-2014 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -184,7 +184,7 @@ class ks10_t {
 
         //!< Firmware Version Register
         static constexpr const char * regVers = reinterpret_cast<const char *>(epiOffset + 0x38);
-        
+
         //
         // Low level interface functions
         //
@@ -192,6 +192,8 @@ class ks10_t {
         static data_t readReg(const volatile void * reg);
         static void   writeReg(volatile  void * reg, data_t data);
         static void   go(void);
+        static bool   testReg08(volatile void * addr, const char *name, uint64_t mask);
+        static bool   testReg64(volatile void * addr, const char *name, uint64_t mask);
         static bool   testRegister(volatile void * addr, const char *name, uint64_t mask = 0xffffffffffffffffull);
 
         //
