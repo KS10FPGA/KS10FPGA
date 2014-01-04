@@ -1,6 +1,7 @@
 include ../makedefs
 
-TARGET  := libfatfs
+TARGET := \
+	libfatfs
 
 FILES := \
 	dir.o \
@@ -14,15 +15,17 @@ HEADERS := \
 	ffconf.h \
 	integer.h
 
-$(TARGET).a : $(FILES) $(HEADERS)
+$(TARGET).a: $(FILES) $(HEADERS)
 
-clean :
+clean:
 	rm -f *.o
 	rm -f *.a
 	rm -f *.d
 
-rcsclean : clean
+rcsclean: clean
 	rcsclean *
+
+rcsfetch: $(HEADERS) $(FILES:.o=.c) makefile
 
 ifneq (${MAKECMDGOALS}, clean)
 -include ${wildcard *.d} __dummy__

@@ -76,17 +76,17 @@ $(LIBFATFS) :
 # Program the flash in the target
 #
 
-load : $(TARGET).bin $(OPENOCD_CFG)
+load: $(TARGET).bin $(OPENOCD_CFG)
 	-openocd -f $(OPENOCD_CFG) -c "program_device ()"
 
 #
 # Reset the target from the JTAG port
 #
 
-reset : $(OPENOCD_CFG)
+reset: $(OPENOCD_CFG)
 	-openocd -f $(OPENOCD_CFG) -c "reset" -c "shutdown"
 
-clean :
+clean:
 	rm -f *.elf
 	rm -f *.map
 	rm -f *.bin
@@ -96,12 +96,16 @@ clean :
 	make -C driverlib clean
 	make -C fatfs clean
 
-rcsclean : clean
+rcsclean: clean
 	rcsclean *
 	make -C driverlib rcsclean
 	make -C fatfs rcsclean
 
-archive_all :
+rcsfetch: $(HEADERS) $(FILES:.o=.cpp) $(OPENOCD_CFG) $(TARGET).ld makefile makedefs
+	make -C driverlib rcsfetch
+	make -C fatfs rcsfetch
+
+archive_all:
 	tar -czvf ks10_code_all_`date '+%y%m%d'`.tgz *
 
 ifneq (${MAKECMDGOALS}, clean)
