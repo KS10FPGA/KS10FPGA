@@ -288,7 +288,7 @@ module CSL(clk, rst,
    //
    // Synchronize bus interface to KS10 clock
    //
-     
+
    wire cslWR;
    wire cslRD;
    wire cslBLE;
@@ -603,7 +603,8 @@ module CSL(clk, rst,
             stateFAIL :
               state <= stateDONE;
             stateDONE :
-              state <= stateIDLE;
+              if (~cslGO)
+                state <= stateIDLE;
           endcase
      end
 
@@ -661,5 +662,5 @@ module CSL(clk, rst,
    assign cslCACHEEN = regCTRL_CACHEEN;
    assign cslINTR    = cslWR & (cslADDR == 6'h10) & cslBLE & conDATA[1];
    assign cslRESET   = regCTRL_RESET;
-   
+
  endmodule

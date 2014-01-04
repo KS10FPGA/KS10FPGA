@@ -89,14 +89,14 @@ module ESM_CLK(clkIn, rstIn, clkOut, rstOut, locked);
        .CLKFX              (clkfx),
        .CLKFX180           (),
        .CLKDV              (),
-       .PSCLK              (0),
-       .PSEN               (0),
-       .PSINCDEC           (0),
+       .PSCLK              (1'b0),
+       .PSEN               (1'b0),
+       .PSINCDEC           (1'b0),
        .PSDONE             (),
        .LOCKED             (locked),
        .STATUS             (),
        .RST                (rstIn),
-       .DSSEN              (0)
+       .DSSEN              (1'b0)
    );
 
    //

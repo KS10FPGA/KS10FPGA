@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2013 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -55,23 +55,23 @@ module testbench;
    // Console Interfaces
    //
 
-   wire [15:0] conDATA;		// Data bus
+   wire [15:0] conDATA;         // Data bus
    reg  [ 5:1] conADDR;         // Address Bus
    reg  [15:0] conDATO;         // Data Bus Out
-   reg         conALE;          // Address Latch Enable
    reg         conBLE_N;        // Low Byte Lane
    reg         conBHE_N;        // High Byte Lane
    reg         conRD_N;         // Read Strobe
    reg         conWR_N;         // Write Strobe
    wire        conINTR_N;       // Console Interrupt
    wire        conINTR = ~conINTR_N;
-   wire        haltLED;		// Halt LED
+   wire        haltLED;         // Halt LED
+   wire [0 :7] test;            // Test port
 
    //
    // DZ11 Serial Interface
    //
 
-   wire [1:2]  TXD;     	// DZ11 RS-232 Received Data
+   wire [1:2]  TXD;             // DZ11 RS-232 Received Data
    wire [1:2]  RXD = 2'b11;     // DZ11 RS-232 Transmitted Data
 
    //
@@ -79,7 +79,6 @@ module testbench;
    //
 
    wire        rh11CD;          // RH11 Card Detect
-   wire        rh11WP;          // RH11 Write Protect
    wire        rh11MISO;        // RH11 Data In
    wire        rh11MOSI;        // RH11 Data Out
    wire        rh11SCLK;        // RH11 Clock
@@ -96,7 +95,7 @@ module testbench;
    wire        ssramWE_N;       // SSRAM Write
    wire        ssramOE_N;       // SSRAM OE#
    wire        ssramCE;         // SSRAM CE
-   wire        ssramCLKEN;      // SSRAM Clken
+   wire        ssramCLKEN_N;    // SSRAM CLKEN#
    wire        ssramBWA_N;      // SSRAM BWA#
    wire        ssramBWB_N;      // SSRAM BWB#
    wire        ssramBWC_N;      // SSRAM BWC#
@@ -233,10 +232,10 @@ module testbench;
       reg   [ 0:15] status;
       begin
          conWRITEw(addrREGSTATUS+2, statGO);
-         
+         #100
          conREADw(addrREGSTATUS+2, status);
          while (status & statGO)
-           #10 conREADw(addrREGSTATUS+2, status);
+           #100 conREADw(addrREGSTATUS+2, status);
          
          conREADw(addrREGSTATUS, status);
          if (status & statNXMNXD)
@@ -252,20 +251,24 @@ module testbench;
    // word oriented therefore the LSB (A0) is not available.   The individual
    // bytes are addressed using the byte lanes, BHE and BLE.
    //
+   // This timing assumes an 8 MHz CPU clock
+   //
 
    task conWRITEw;
       input [ 7:0] addr;
       input [15:0] data;
       begin
-         conADDR = addr[5:1];
-         conDATO = data;
-         #50 conWR_N = 0;
          conBLE_N = 0;
          conBHE_N = 0;
-         #50 conWR_N = 1;
+         conADDR  = addr[5:1];
+         conDATO  = data;
+         #250
+         conWR_N  = 0;
+	 #250
+         conWR_N  = 1;
          conBLE_N = 1;
          conBHE_N = 1;
-         #50;
+         #250;
       end
    endtask
 
@@ -274,20 +277,25 @@ module testbench;
    // word oriented therefore the LSB (A0) is not available.  The individual
    // bytes are addressed using the byte lanes, BHE and BLE.
    //
+   // This timing assumes an 8 MHz CPU clock
+   //
 
    task conREADw;
       input [7:0] addr;
       output reg [15:0] data;
       begin
-         conADDR = addr[5:1];
-         #50 conRD_N = 0;
          conBLE_N = 0;
          conBHE_N = 0;
-         #50 conRD_N  = 1;
+         conADDR  = addr[5:1];
+	 #250
+         conRD_N  = 0;
+	 #250
+         conRD_N  = 1;
+         data     = conDATA;
+	 #250
          conBLE_N = 1;
          conBHE_N = 1;
-         data = conDATA;
-         #50;
+         #250;
       end
    endtask
 
@@ -378,7 +386,6 @@ module testbench;
 
         clk      = 0;
         reset    = 1;
-        conALE   = 0;
         conWR_N  = 1;
         conRD_N  = 1;
         conBLE_N = 1;
@@ -390,27 +397,25 @@ module testbench;
         // Release reset at 95 nS
         //
 
-        #95 reset = 0;
+        #95
+	reset = 0;
 
         //
         //  Write to Console Instruction Register
         //
 
-        #500 conWRITE(addrREGCIR, valREGCIR);
+        #600
+        $display("KS10 time is t = %f us.", $time / 1.0e3);
+	conWRITE(addrREGCIR, valREGCIR);
 
-	//conWRITE(addrREGSTATUS, statRESET);
-	//conWRITE(addrREGSTATUS, statTRAPEN  | statRESET);
-	//conWRITE(addrREGSTATUS, statTIMEREN | statTRAPEN  | statRESET );
-	//conWRITE(addrREGSTATUS, statCACHEEN | statTIMEREN | statTRAPEN | statRESET );
-	
-	
         //
         // Write to Control/Status Register
         // Release RESET and set RUN.
         // (Run is only required for the simulator).
         //
 
-        conWRITE(addrREGSTATUS, statRUN);
+//      conWRITE(addrREGSTATUS, statCACHEEN | statTIMEREN | statTRAPEN | statRUN);
+	conWRITE(addrREGSTATUS, statRUN);
         
         //
         // Readback Console Instruction Register
@@ -419,22 +424,6 @@ module testbench;
         conREAD(addrREGCIR, temp);
         $display("CIR is : \"%12o\"", temp);
 
-        //
-        // Initialize Console Status
-        //
-
-        conWRITEMEM(18'o000031, 36'b0);
-        conWRITEMEM(18'o000036, 36'b0);
-        conWRITEMEM(18'o025741, 36'b0);
-        conWRITEMEM(18'o026040, 36'b0);
-        conWRITEMEM(18'o030024, 36'b0);
-        conWRITEMEM(18'o030037, 36'b0);
-        conWRITEMEM(18'o061121, 36'b0);
-        conWRITEMEM(18'o061125, 36'b0);
-
-        // clear run
-        //#60000 conWRITE(addrREGSTATUS, statEXEC |statCONT);
-        
      end
 
    //
@@ -454,15 +443,43 @@ module testbench;
    //  RUN, EXEC, and CONT button to continue execution.  Otherwise
    //  let the KS10 halt.
    //
+
+   time haltTIME;
    
    always @(posedge haltLED)
      begin
+	haltTIME <= $time;
         $display("KS10 CPU Halted at t = %f us.", $time / 1.0e3);
         printHaltStatus;
-        if ($time > 30000 && $time < 40000)
-          conWRITE(addrREGSTATUS, (statEXEC |
-                                   statCONT |
-                                   statRUN));
+        if (haltTIME > 30000 && haltTIME < 40000)
+	  begin
+
+             //
+             // Initialize Console Status
+             //
+
+             conWRITEMEM(18'o000031, 36'b0);
+
+	     //
+	     // Initialize Other stuff
+	     //
+	     
+             conWRITEMEM(18'o000036, 36'b0);
+             conWRITEMEM(18'o025741, 36'b0);
+             conWRITEMEM(18'o026040, 36'b0);
+             conWRITEMEM(18'o030024, 36'b0);
+             conWRITEMEM(18'o030037, 36'b0);
+             conWRITEMEM(18'o061121, 36'b0);
+             conWRITEMEM(18'o061125, 36'b0);
+
+	     //
+	     // Start executing code
+	     //
+	     
+             conWRITE(addrREGSTATUS, (statEXEC |
+                                      statCONT |
+                                      statRUN));
+	  end
      end
 
    //
@@ -603,12 +620,12 @@ module testbench;
    ESM_KS10 uKS10
      (.CLK50MHZ         (clk),
       .RESET_N          (~reset),
+      .MR_N             (1'b0),
       // DZ11 Interfaces
       .TXD              (TXD),
       .RXD              (RXD),
       // RH11 Interfaces
       .rh11CD           (rh11CD),
-      .rh11WP           (rh11WP),
       .rh11MISO         (rh11MISO),
       .rh11MOSI         (rh11MOSI),
       .rh11SCLK         (rh11SCLK),
@@ -616,14 +633,14 @@ module testbench;
       // Console Interfaces
       .conADDR          (conADDR),
       .conDATA          (conDATA),
-      .conBLE_N		(conBLE_N),
-      .conBHE_N		(conBHE_N),
+      .conBLE_N         (conBLE_N),
+      .conBHE_N         (conBHE_N),
       .conRD_N          (conRD_N),
       .conWR_N          (conWR_N),
       .conINTR_N        (conINTR_N),
       // SSRAM Interfaces
       .ssramCLK         (ssramCLK),
-      .ssramCLKEN       (ssramCLKEN),
+      .ssramCLKEN_N     (ssramCLKEN_N),
       .ssramADV         (ssramADV),
       .ssramBWA_N       (ssramBWA_N),
       .ssramBWB_N       (ssramBWB_N),
@@ -634,7 +651,8 @@ module testbench;
       .ssramCE          (ssramCE),
       .ssramADDR        (ssramADDR),
       .ssramDATA        (ssramDATA),
-      .haltLED		(haltLED)
+      .haltLED          (haltLED),
+      .test             (test)
       );
    
 endmodule

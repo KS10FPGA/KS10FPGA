@@ -19,12 +19,6 @@ NET "RESET_N"           LOC = "M24"  | IOSTANDARD = LVCMOS33;
 NET "MR_N"              LOC = "N23"  | IOSTANDARD = LVCMOS33;
 
 #
-# Halt LED
-#
-
-NET "haltLED"           LOC = "B2"   | IOSTANDARD = LVCMOS33;   // VA31
-
-#
 # SSRAM Interface
 #
 
@@ -132,12 +126,12 @@ NET "conADDR<5>"        LOC = "Y26"  | IOSTANDARD = LVCMOS33;   // EPI0S20  A4
 #NET "conADDR<9>"       LOC = "AF25" | IOSTANDARD = LVCMOS33;   // EPI0S24  A8
 #NET "conADDR<10>"      LOC = "AE25" | IOSTANDARD = LVCMOS33;   // EPI0S25  A9
 
-NET "conBLE_N"          LOC = "AB24" | IOSTANDARD = LVCMOS33;   // EPI0S26 (BSEL0)
-NET "conBHE_N"          LOC = "W26"  | IOSTANDARD = LVCMOS33;   // EPI0S27 (BSEL1)
+NET "conBLE_N"          LOC = "AB24" | IOSTANDARD = LVCMOS33;   // EPI0S26 (BSEL0#)
+NET "conBHE_N"          LOC = "W26"  | IOSTANDARD = LVCMOS33;   // EPI0S27 (BSEL1#)
 NET "conRD_N"           LOC = "AA24" | IOSTANDARD = LVCMOS33;   // EPI0S28
 NET "conWR_N"           LOC = "T26"  | IOSTANDARD = LVCMOS33;   // EPI0S29
-#NET "conCS_N"          LOC = "AF24" | IOSTANDARD = LVCMOS33;   // EPI0S30
-#NET "conCLK"           LOC = "V24"  | IOSTANDARD = LVCMOS33;   // EPI0S31
+NET "haltLED"           LOC = "AF24" | IOSTANDARD = LVCMOS33;   // EPI0S30 (CS#)
+#NET "conCLK"           LOC = "V24"  | IOSTANDARD = LVCMOS33;   // EPI0S31 (CLK)
 NET "conINTR_N"         LOC = "R26"  | IOSTANDARD = LVCMOS33;   // PB7/NMI
 
 #
