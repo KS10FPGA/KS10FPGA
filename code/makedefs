@@ -1,5 +1,8 @@
 G++     := arm-none-eabi-g++.exe
 GCC     := arm-none-eabi-gcc.exe
+LD      := arm-none-eabi-ld.exe
+OBJCOPY := arm-none-eabi-objcopy
+
 PART    := LM3S9B92
 
 CFLAGS := \
@@ -23,31 +26,39 @@ CFLAGS := \
 	-Wno-non-virtual-dtor \
 	-I..
 
-%.o: %.c
-	@if [ 'x$(VERBOSE)' = x ];              \
-         then                                   \
-             echo "  gcc $<";                   \
-         else                                   \
-             echo $(GCC) $(CFLAGS) -c $< -o $@;	\
-         fi
-	@$(G++) $(CFLAGS) -c $< -o $@
+#
+# Rule to compile C programs
+#
 
+%.o: %.c
+	$(G++) $(CFLAGS) -c $< -o $@
+
+#
+# Rule to compile C++ programs
+#
 
 %.o: %.cpp
-	@if [ 'x$(VERBOSE)' = x ];              \
-         then                                   \
-             echo "  g++ $<";                   \
-         else                                   \
-             echo $(G++) $(CFLAGS) -c $< -o $@;	\
-         fi
-	@$(G++) $(CFLAGS)  -c $< -o $@
+	$(G++) $(CFLAGS) -c $< -o $@
+
+#
+# Rule to build archive file
+#
 
 %.a:
-	@if [ 'x${VERBOSE}' = x ]; 	        \
-         then                                   \
-             echo "  ar ${@}";                  \
-         else                                   \
-             echo $(AR) -cr $@ $^;              \
-         fi
-	@${AR} -cr $@ $^
+	${AR} -cr $@ $^
+
+#
+# Location of libgcc.a
+#
+
+LIBGCC := \
+	${shell ${GCC} ${CFLAGS} -print-libgcc-file-name}
+
+
+#
+# Location of libc.a
+#
+
+LIBC := \
+	${shell ${GCC} ${CFLAGS} -print-file-name=libc.a}
 

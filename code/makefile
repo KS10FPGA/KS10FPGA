@@ -1,8 +1,5 @@
-LD      := arm-none-eabi-ld.exe
-OBJCOPY := arm-none-eabi-objcopy
 TARGET  := console
 
-#OPENOCD_CFG := ek-lm3s9b9x.cfg
 OPENOCD_CFG := ks10.cfg
 
 LDFLAGS := \
@@ -57,13 +54,7 @@ DRIVERLIB := \
 LIBFATFS := \
 	fatfs/libfatfs.a
 
-LIBS := \
-	/usr/local/lib/gcc/arm-none-eabi/4.6.2/thumb/libgcc.a \
-	/usr/local/arm-none-eabi/lib/thumb/libc.a \
-
-
 include makedefs
-
 
 $(TARGET).bin : $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
@@ -71,7 +62,7 @@ $(TARGET).bin : $(TARGET).elf
 $(TARGET).elf :$(TARGET).ld $(FILES) $(DRIVERLIB) $(LIBFATFS)
 	make -C driverlib
 	make -C fatfs
-	$(LD) $(LDFLAGS) $(FILES) $(DRIVERLIB) $(LIBFATFS) $(LIBS) -o $(TARGET).elf
+	$(LD) $(LDFLAGS) $(FILES) $(DRIVERLIB) $(LIBFATFS) $(LIBGCC) $(LIBC) -o $(TARGET).elf
 
 $(TARGET).o : $(TARGET).cpp $(HEADERS)
 
@@ -85,7 +76,7 @@ $(LIBFATFS) :
 # Program the flash in the target
 #
 
-load :  $(TARGET).bin $(OPENOCD_CFG)
+load : $(TARGET).bin $(OPENOCD_CFG)
 	-openocd -f $(OPENOCD_CFG) -c "program_device ()"
 
 #
@@ -95,8 +86,7 @@ load :  $(TARGET).bin $(OPENOCD_CFG)
 reset : $(OPENOCD_CFG)
 	-openocd -f $(OPENOCD_CFG) -c "reset" -c "shutdown"
 
-clean:
-	rcsclean *
+clean :
 	rm -f *.elf
 	rm -f *.map
 	rm -f *.bin
@@ -106,7 +96,12 @@ clean:
 	make -C driverlib clean
 	make -C fatfs clean
 
-archive_all:
+rcsclean : clean
+	rcsclean *
+	make -C driverlib rcsclean
+	make -C fatfs rcsclean
+
+archive_all :
 	tar -czvf ks10_code_all_`date '+%y%m%d'`.tgz *
 
 ifneq (${MAKECMDGOALS}, clean)

@@ -25,11 +25,13 @@ HEADERS := \
 
 $(TARGET).a : $(FILES) $(HEADERS)
 
-clean:
-	rcsclean *
+clean :
 	rm -f *.o
 	rm -f *.a
 	rm -f *.d
+
+rcsclean : clean
+	rcsclean *
 
 ifneq (${MAKECMDGOALS}, clean)
 -include ${wildcard *.d} __dummy__
