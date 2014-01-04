@@ -126,6 +126,7 @@ class ks10_t {
         static void     exec(bool enable);
         static bool     exec(void);
         static bool     halt(void);
+        static bool     waitHalt(void);
         static bool     timerEnable(void);
         static void     timerEnable(bool enable);
         static bool     trapEnable(void);

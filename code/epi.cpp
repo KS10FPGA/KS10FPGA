@@ -74,6 +74,8 @@ void EPIInitialize(void) {
     //
     // Configure the GPIO pins for EPI mode
     //
+    // EPI0S30 (CS#) and EPI0S31 (CLK) are not configured for EPI use
+    //
 
     ROM_GPIOPinTypeEPI(GPIO_PORTA_BASE, 0);
     ROM_GPIOPinTypeEPI(GPIO_PORTB_BASE, (GPIO_PIN_5 |   // EPI0S22
@@ -82,8 +84,7 @@ void EPIInitialize(void) {
                                          GPIO_PIN_6 |   // EPI0S4
                                          GPIO_PIN_5 |   // EPI0S3
                                          GPIO_PIN_4));  // EPI0S2
-    ROM_GPIOPinTypeEPI(GPIO_PORTD_BASE, (GPIO_PIN_7 |   // EPI0S30
-                                         GPIO_PIN_4 |   // EPI0S19
+    ROM_GPIOPinTypeEPI(GPIO_PORTD_BASE, (GPIO_PIN_4 |   // EPI0S19
                                          GPIO_PIN_3 |   // EPI0S21
                                          GPIO_PIN_2));  // EPI0S20
     ROM_GPIOPinTypeEPI(GPIO_PORTE_BASE, (GPIO_PIN_3 |   // EPI0S25
@@ -92,8 +93,7 @@ void EPIInitialize(void) {
                                          GPIO_PIN_0));  // EPI0S8
     ROM_GPIOPinTypeEPI(GPIO_PORTF_BASE, (GPIO_PIN_5 |   // EPI0S15
                                          GPIO_PIN_4));  // EPI0S12
-    ROM_GPIOPinTypeEPI(GPIO_PORTG_BASE, (GPIO_PIN_7 |   // EPI0S31
-                                         GPIO_PIN_1 |   // EPI0S14
+    ROM_GPIOPinTypeEPI(GPIO_PORTG_BASE, (GPIO_PIN_1 |   // EPI0S14
                                          GPIO_PIN_0));  // EPI0S13
     ROM_GPIOPinTypeEPI(GPIO_PORTH_BASE, (GPIO_PIN_7 |   // EPI0S27
                                          GPIO_PIN_6 |   // EPI0S26
@@ -111,6 +111,8 @@ void EPIInitialize(void) {
 
     //
     // Configure EPI Pins
+    //
+    // EPI0S30 (CS#) and EPI0S31 (CLK) are not configured for EPI use
     //
 
     ROM_GPIOPinConfigure(GPIO_PH3_EPI0S0);
@@ -143,8 +145,6 @@ void EPIInitialize(void) {
     ROM_GPIOPinConfigure(GPIO_PH7_EPI0S27);
     ROM_GPIOPinConfigure(GPIO_PJ4_EPI0S28);
     ROM_GPIOPinConfigure(GPIO_PJ5_EPI0S29);
-    ROM_GPIOPinConfigure(GPIO_PD7_EPI0S30);
-    ROM_GPIOPinConfigure(GPIO_PG7_EPI0S31);
 
     //
     // Configure EPI

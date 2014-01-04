@@ -39,6 +39,7 @@
 
 #include "epi.h"
 #include "ks10.hpp"
+#include "timer.hpp"
 #include "driverlib/rom.h"
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
@@ -48,6 +49,7 @@
 #include "driverlib/inc/hw_memmap.h"
 
 #include "stdio.h"
+#define GPIO_HALT_LED  GPIO_PIN_7
 
 void (*ks10_t::consIntrHandler)(void);
 
@@ -62,12 +64,19 @@ void (*ks10_t::consIntrHandler)(void);
 //! We use PB7 for the interrupt from the KS10.  Normally PB7 is the NMI but
 //! we don't want NMI semantics.  Therefore this code configures PB7 to
 //! be a normal active low GPIO-based interrupt.
-///
+//!
+//! We use PD7 (EPI0S30) for the haltLED.
+//
 
 ks10_t::ks10_t(void (*consIntrHandler)(void)) {
     ks10_t::consIntrHandler = consIntrHandler;
 
     EPIInitialize();
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+
+    // Configure the HALT LED input
+    ROM_GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, GPIO_HALT_LED);
 
     // Unlock and change PB7 behavior - default is NMI
     HWREG(GPIO_PORTB_BASE + GPIO_O_LOCK) = GPIO_LOCK_KEY;
@@ -386,7 +395,31 @@ bool ks10_t::exec(void) {
 //
 
 bool ks10_t::halt(void) {
+#if 0
     return readReg(regStat) & statHALT;
+#else
+    return ROM_GPIOPinRead(GPIO_PORTD_BASE, GPIO_HALT_LED) == GPIO_HALT_LED;
+#endif
+}
+
+//
+//! Wait for halt to be asserted.
+//!
+//! This function waits for upto one second for halt to be asserted.
+//!
+//! \returns
+//!     This function returns true if halt is asserted within one second,
+//!     false otherwise.
+//
+
+bool ks10_t::waitHalt(void) {
+    timer_t timeout(timer_t::HZ);
+    while (!timeout) {
+        if (ks10_t::halt()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 //
