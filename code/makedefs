@@ -3,7 +3,7 @@ GCC     := arm-none-eabi-gcc.exe
 LD      := arm-none-eabi-ld.exe
 OBJCOPY := arm-none-eabi-objcopy
 
-PART    := LM3S9B92
+PART    := LM3S9B96
 
 CFLAGS := \
 	-Dgcc \
