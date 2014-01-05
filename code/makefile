@@ -108,6 +108,10 @@ rcsfetch: $(HEADERS) $(FILES:.o=.cpp) $(OPENOCD_CFG) $(TARGET).ld makefile maked
 archive_all:
 	tar -czvf ks10_code_all_`date '+%y%m%d'`.tgz *
 
+archive_dist:
+	make rcsfetch
+	tar --exclude-vcs -czvf ks10_code_dist_`date '+%y%m%d'`.tgz *
+
 ifneq (${MAKECMDGOALS}, clean)
 -include ${wildcard *.d} __dummy__
 endif
