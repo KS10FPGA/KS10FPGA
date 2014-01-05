@@ -194,7 +194,12 @@
     <file xil_pn:name="../rtl/esm/esm_ks10.ucf" xil_pn:type="FILE_UCF">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../rtl/esm/esm_testbench.v" xil_pn:type="FILE_VERILOG"/>
+    <file xil_pn:name="../rtl/esm/esm_testbench.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="49"/>
+      <association xil_pn:name="PostMapSimulation" xil_pn:seqID="46"/>
+      <association xil_pn:name="PostRouteSimulation" xil_pn:seqID="46"/>
+      <association xil_pn:name="PostTranslateSimulation" xil_pn:seqID="46"/>
+    </file>
     <file xil_pn:name="../rtl/esm/esm_ks10.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="48"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="49"/>
@@ -258,8 +263,8 @@
     <property xil_pn:name="Create Mask File" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Create ReadBack Data Files" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Cross Clock Analysis" xil_pn:value="false" xil_pn:valueState="default"/>
-    <property xil_pn:name="Custom Simulation Command File" xil_pn:value="esm_ks10.cmd" xil_pn:valueState="non-default"/>
-    <property xil_pn:name="Custom Waveform Configuration File Behav" xil_pn:value="ks10_divide.wcfg" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Custom Simulation Command File" xil_pn:value="esm_ks10_isim.cmd" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Custom Waveform Configuration File Behav" xil_pn:value="esm_ks10.wcfg" xil_pn:valueState="non-default"/>
     <property xil_pn:name="DSP Utilization Ratio" xil_pn:value="100" xil_pn:valueState="default"/>
     <property xil_pn:name="Decoder Extraction" xil_pn:value="true" xil_pn:valueState="default"/>
     <property xil_pn:name="Delay Values To Be Read from SDF" xil_pn:value="Setup Time" xil_pn:valueState="default"/>
@@ -578,14 +583,13 @@
     <file xil_pn:name="../rtl/ks10/cpu/pager.vh" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/ks10/cpu/pxct.vh" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/ks10/ks10.vh" xil_pn:type="FILE_VERILOG"/>
+    <file xil_pn:name="../rtl/ks10/cpu/useq/crom.dat" xil_pn:type="FILE_VERILOG"/>
+    <file xil_pn:name="../rtl/ks10/cpu/useq/drom.dat" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/ks10/uba/dz11/dz11.vh" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/ks10/uba/rh11/rh11.vh" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_brg.vh" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/ks10/uba/rh11/rpxx.vh" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/ks10/uba/rh11/sd/sd.vh" xil_pn:type="FILE_VERILOG"/>
-    <file xil_pn:name="../rtl/ks10/uba/rh11/sd/sdspi.vh" xil_pn:type=""/>
-    <file xil_pn:name="../rtl/ks10/cpu/useq/crom.dat" xil_pn:type="FILE_VERILOG"/>
-    <file xil_pn:name="../rtl/ks10/cpu/useq/drom.dat" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="../rtl/testbench/ssram.dat" xil_pn:type="FILE_VERILOG"/>
   </autoManagedFiles>
 

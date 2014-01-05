@@ -43,6 +43,7 @@
     <file xil_pn:fileType="FILE_XPI" xil_pn:name="ESM_KS10.xpi"/>
     <file xil_pn:fileType="FILE_HTML" xil_pn:name="ESM_KS10_envsettings.html"/>
     <file xil_pn:fileType="FILE_NCD" xil_pn:name="ESM_KS10_guide.ncd" xil_pn:origination="imported"/>
+    <file xil_pn:branch="BehavioralSim" xil_pn:fileType="FILE_ISIM_EXE" xil_pn:name="ESM_KS10_isim_beh.exe"/>
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_MAP_REPORT" xil_pn:name="ESM_KS10_map.map" xil_pn:subbranch="Map"/>
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_MAP_REPORT" xil_pn:name="ESM_KS10_map.mrp" xil_pn:subbranch="Map"/>
     <file xil_pn:branch="Implementation" xil_pn:fileType="FILE_NCD" xil_pn:name="ESM_KS10_map.ncd" xil_pn:subbranch="Map"/>
@@ -83,62 +84,197 @@
   </files>
 
   <transforms xmlns="http://www.xilinx.com/XMLSchema">
-    <transform xil_pn:end_ts="1388828022" xil_pn:name="TRAN_copyInitialToAbstractSimulation" xil_pn:start_ts="1388828022">
+    <transform xil_pn:end_ts="1388902144" xil_pn:name="TRAN_copyInitialToAbstractSimulation" xil_pn:start_ts="1388902144">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
     </transform>
-    <transform xil_pn:end_ts="1388828022" xil_pn:in_ck="3034394407044722352" xil_pn:name="TRAN_copyAbstractToPostAbstractSimulation" xil_pn:start_ts="1388828022">
+    <transform xil_pn:end_ts="1388902144" xil_pn:in_ck="-8277970560415732625" xil_pn:name="TRAN_copyAbstractToPostAbstractSimulation" xil_pn:start_ts="1388902144">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
       <status xil_pn:value="OutOfDateForInputs"/>
       <status xil_pn:value="OutOfDateForOutputs"/>
       <status xil_pn:value="InputChanged"/>
-      <status xil_pn:value="InputRemoved"/>
       <status xil_pn:value="OutputChanged"/>
-      <status xil_pn:value="OutputRemoved"/>
+      <outfile xil_pn:name="../rtl/esm/esm_clk.v"/>
+      <outfile xil_pn:name="../rtl/esm/esm_ks10.v"/>
+      <outfile xil_pn:name="../rtl/esm/esm_testbench.v"/>
+      <outfile xil_pn:name="../rtl/ks10/arb/arb.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/alu.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/alu.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/apr.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/apr.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/bus.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/byte_disp.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/cpu.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/dbm.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/dbus.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/debug.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/intf.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/intr.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/iolatch.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/ni_disp.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pager.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pager.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pcflags.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pcflags.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pf_disp.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pxct.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pxct.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/ram1kx36.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/ramfile.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/regir.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/regir.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/scad.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/timer.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/timing.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/crom.dat"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/crom.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/crom.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/dispatch.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/drom.dat"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/drom.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/drom.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/skip.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/stack.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/useq.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/vma.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/vma.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/csl/csl.v"/>
+      <outfile xil_pn:name="../rtl/ks10/ks10.v"/>
+      <outfile xil_pn:name="../rtl/ks10/ks10.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/mem/mem.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/dz11.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/dz11.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/dzfifo.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_brg.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_brg.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_bufrx.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_buftx.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_rx.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_tx.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/rh11.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/rh11.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/rpxx.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/rpxx.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/sd/sd.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/sdaddr.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/uba.v"/>
+      <outfile xil_pn:name="../rtl/ks10/utils/edgetrig.v"/>
+      <outfile xil_pn:name="../rtl/ks10/utils/sync.v"/>
+      <outfile xil_pn:name="../rtl/testbench/ssram.dat"/>
     </transform>
-    <transform xil_pn:end_ts="1388828022" xil_pn:name="TRAN_xawsToSimhdl" xil_pn:prop_ck="1854889385420917559" xil_pn:start_ts="1388828022">
+    <transform xil_pn:end_ts="1388902144" xil_pn:name="TRAN_xawsToSimhdl" xil_pn:prop_ck="1854889385420917559" xil_pn:start_ts="1388902144">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
     </transform>
-    <transform xil_pn:end_ts="1388828022" xil_pn:name="TRAN_schematicsToHdlSim" xil_pn:prop_ck="-4440119131342655243" xil_pn:start_ts="1388828022">
+    <transform xil_pn:end_ts="1388902144" xil_pn:name="TRAN_schematicsToHdlSim" xil_pn:prop_ck="-4440119131342655243" xil_pn:start_ts="1388902144">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
     </transform>
-    <transform xil_pn:end_ts="1388828022" xil_pn:name="TRAN_regenerateCoresSim" xil_pn:prop_ck="5629003441094319785" xil_pn:start_ts="1388828022">
+    <transform xil_pn:end_ts="1388902144" xil_pn:name="TRAN_regenerateCoresSim" xil_pn:prop_ck="5629003441094319785" xil_pn:start_ts="1388902144">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
     </transform>
-    <transform xil_pn:end_ts="1388828022" xil_pn:in_ck="-8277970560415732625" xil_pn:name="TRAN_copyPostAbstractToPreSimulation" xil_pn:start_ts="1388828022">
+    <transform xil_pn:end_ts="1388902144" xil_pn:in_ck="-8277970560415732625" xil_pn:name="TRAN_copyPostAbstractToPreSimulation" xil_pn:start_ts="1388902144">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="ReadyToRun"/>
       <status xil_pn:value="OutOfDateForInputs"/>
       <status xil_pn:value="OutOfDateForPredecessor"/>
       <status xil_pn:value="OutOfDateForOutputs"/>
       <status xil_pn:value="InputChanged"/>
-      <status xil_pn:value="InputRemoved"/>
       <status xil_pn:value="OutputChanged"/>
-      <status xil_pn:value="OutputRemoved"/>
+      <outfile xil_pn:name="../rtl/esm/esm_clk.v"/>
+      <outfile xil_pn:name="../rtl/esm/esm_ks10.v"/>
+      <outfile xil_pn:name="../rtl/esm/esm_testbench.v"/>
+      <outfile xil_pn:name="../rtl/ks10/arb/arb.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/alu.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/alu.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/apr.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/apr.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/bus.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/byte_disp.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/cpu.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/dbm.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/dbus.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/debug.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/intf.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/intr.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/iolatch.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/ni_disp.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pager.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pager.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pcflags.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pcflags.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pf_disp.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pxct.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/pxct.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/ram1kx36.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/ramfile.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/regir.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/regir.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/scad.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/timer.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/timing.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/crom.dat"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/crom.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/crom.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/dispatch.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/drom.dat"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/drom.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/drom.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/skip.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/stack.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/useq/useq.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/vma.v"/>
+      <outfile xil_pn:name="../rtl/ks10/cpu/vma.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/csl/csl.v"/>
+      <outfile xil_pn:name="../rtl/ks10/ks10.v"/>
+      <outfile xil_pn:name="../rtl/ks10/ks10.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/mem/mem.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/dz11.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/dz11.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/dzfifo.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_brg.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_brg.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_bufrx.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_buftx.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_rx.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/dz11/uart/uart_tx.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/rh11.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/rh11.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/rpxx.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/rpxx.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/sd/sd.vh"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/rh11/sdaddr.v"/>
+      <outfile xil_pn:name="../rtl/ks10/uba/uba.v"/>
+      <outfile xil_pn:name="../rtl/ks10/utils/edgetrig.v"/>
+      <outfile xil_pn:name="../rtl/ks10/utils/sync.v"/>
+      <outfile xil_pn:name="../rtl/testbench/ssram.dat"/>
     </transform>
-    <transform xil_pn:end_ts="1388828069" xil_pn:in_ck="-8277970560415732625" xil_pn:name="TRAN_ISimulateBehavioralModelRunFuse" xil_pn:prop_ck="-4369301261354119187" xil_pn:start_ts="1388828022">
+    <transform xil_pn:end_ts="1388902192" xil_pn:in_ck="-8277970560415732625" xil_pn:name="TRAN_ISimulateBehavioralModelRunFuse" xil_pn:prop_ck="-4369301261354119187" xil_pn:start_ts="1388902144">
       <status xil_pn:value="SuccessfullyRun"/>
-      <status xil_pn:value="NotReadyToRun"/>
+      <status xil_pn:value="ReadyToRun"/>
       <status xil_pn:value="OutOfDateForInputs"/>
       <status xil_pn:value="OutOfDateForPredecessor"/>
       <status xil_pn:value="OutOfDateForOutputs"/>
       <status xil_pn:value="InputChanged"/>
-      <status xil_pn:value="InputRemoved"/>
       <status xil_pn:value="OutputChanged"/>
-      <status xil_pn:value="OutputRemoved"/>
+      <outfile xil_pn:name="fuse.log"/>
+      <outfile xil_pn:name="isim"/>
+      <outfile xil_pn:name="isim.log"/>
+      <outfile xil_pn:name="testbench_beh.prj"/>
+      <outfile xil_pn:name="testbench_isim_beh.exe"/>
+      <outfile xil_pn:name="xilinxsim.ini"/>
     </transform>
-    <transform xil_pn:end_ts="1388828069" xil_pn:in_ck="7130759491340027311" xil_pn:name="TRAN_ISimulateBehavioralModel" xil_pn:prop_ck="1377258567463686139" xil_pn:start_ts="1388828069">
+    <transform xil_pn:end_ts="1388902192" xil_pn:in_ck="7130759491340027311" xil_pn:name="TRAN_ISimulateBehavioralModel" xil_pn:prop_ck="1056679673786694012" xil_pn:start_ts="1388902192">
       <status xil_pn:value="SuccessfullyRun"/>
-      <status xil_pn:value="NotReadyToRun"/>
-      <status xil_pn:value="OutOfDateForInputs"/>
+      <status xil_pn:value="ReadyToRun"/>
       <status xil_pn:value="OutOfDateForPredecessor"/>
       <status xil_pn:value="OutOfDateForOutputs"/>
-      <status xil_pn:value="InputRemoved"/>
-      <status xil_pn:value="OutputRemoved"/>
+      <status xil_pn:value="OutputChanged"/>
+      <outfile xil_pn:name="C:/Users/Rob/Desktop/ks10.wdb"/>
+      <outfile xil_pn:name="isim.cmd"/>
+      <outfile xil_pn:name="isim.log"/>
     </transform>
     <transform xil_pn:end_ts="1388302133" xil_pn:name="TRAN_copyInitialToXSTAbstractSynthesis" xil_pn:start_ts="1388302133">
       <status xil_pn:value="SuccessfullyRun"/>
@@ -189,7 +325,7 @@
     <transform xil_pn:end_ts="1388302267" xil_pn:in_ck="2495679290819231288" xil_pn:name="TRANEXT_ngdbuild_FPGA" xil_pn:prop_ck="1077464498857144714" xil_pn:start_ts="1388302250">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="WarningsGenerated"/>
-      <status xil_pn:value="NotReadyToRun"/>
+      <status xil_pn:value="ReadyToRun"/>
       <status xil_pn:value="OutOfDateForInputs"/>
       <status xil_pn:value="OutOfDateForPredecessor"/>
       <status xil_pn:value="OutOfDateForOutputs"/>
@@ -199,7 +335,7 @@
     </transform>
     <transform xil_pn:end_ts="1388302402" xil_pn:in_ck="2495679290819231289" xil_pn:name="TRANEXT_map_spartan6" xil_pn:prop_ck="-1124890443453431567" xil_pn:start_ts="1388302267">
       <status xil_pn:value="SuccessfullyRun"/>
-      <status xil_pn:value="NotReadyToRun"/>
+      <status xil_pn:value="ReadyToRun"/>
       <status xil_pn:value="OutOfDateForInputs"/>
       <status xil_pn:value="OutOfDateForPredecessor"/>
       <status xil_pn:value="OutOfDateForOutputs"/>
@@ -210,7 +346,7 @@
     <transform xil_pn:end_ts="1388302482" xil_pn:in_ck="9074087465083437522" xil_pn:name="TRANEXT_par_spartan6" xil_pn:prop_ck="7846039340612803429" xil_pn:start_ts="1388302402">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="WarningsGenerated"/>
-      <status xil_pn:value="NotReadyToRun"/>
+      <status xil_pn:value="ReadyToRun"/>
       <status xil_pn:value="OutOfDateForInputs"/>
       <status xil_pn:value="OutOfDateForPredecessor"/>
       <status xil_pn:value="OutOfDateForOutputs"/>
@@ -221,7 +357,7 @@
     <transform xil_pn:end_ts="1388302516" xil_pn:in_ck="3618237003893182342" xil_pn:name="TRANEXT_bitFile_spartan6" xil_pn:prop_ck="294979196767144184" xil_pn:start_ts="1388302482">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="WarningsGenerated"/>
-      <status xil_pn:value="NotReadyToRun"/>
+      <status xil_pn:value="ReadyToRun"/>
       <status xil_pn:value="OutOfDateForInputs"/>
       <status xil_pn:value="OutOfDateForPredecessor"/>
       <status xil_pn:value="OutOfDateForOutputs"/>
@@ -231,7 +367,7 @@
     <transform xil_pn:end_ts="1388302482" xil_pn:in_ck="2495679290819231157" xil_pn:name="TRAN_postRouteTrce" xil_pn:prop_ck="445577401284416184" xil_pn:start_ts="1388302457">
       <status xil_pn:value="SuccessfullyRun"/>
       <status xil_pn:value="WarningsGenerated"/>
-      <status xil_pn:value="NotReadyToRun"/>
+      <status xil_pn:value="ReadyToRun"/>
       <status xil_pn:value="OutOfDateForInputs"/>
       <status xil_pn:value="OutOfDateForPredecessor"/>
       <status xil_pn:value="OutOfDateForOutputs"/>
