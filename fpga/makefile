@@ -3,7 +3,8 @@
 #
 
 PROJECT      := esm_ks10
-TOPMOD       := $(shell echo $(PROJECT) | tr a-z A-Z)
+RTLTOP       := ESM_KS10
+SIMTOP       := testbench
 
 #
 # FPGA partnumber
@@ -17,13 +18,14 @@ PART         := xc6slx45-2-fgg676
 
 RTL          := rtl
 ISE          := ise
+TESTFILES    := $(RTL)/testbench
 USEQ         := $(RTL)/ks10/cpu/useq
 
 #
 # Xilinx tools
 #
 
-XILDIR       := `cygpath -u '$(XILINX)'`
+XILDIR       := $(shell cygpath -u '$(XILINX)')
 XILEXE       := $(XILDIR)/ISE_DS/ISE/bin/nt64
 BITGEN       := $(XILEXE)/bitgen.exe
 FUSE         := $(XILEXE)/fuse.exe
@@ -33,15 +35,7 @@ PAR          := $(XILEXE)/par.exe
 PROMGEN      := $(XILEXE)/promgen.exe
 IMPACT       := $(XILEXE)/impact.exe
 XST          := $(XILEXE)/xst.exe
-
-#
-# Random stuff
-#
-
-TESTBENCH    := $(RTL)/esm/esm_testbench.v
-TESTFILES    := $(RTL)/testbench
-WORK         := work.testbench
-XST_INTSTYLE := ise
+INTSTYLE     := ise
 
 #
 # Initialized Memory Contents (Simulation only)
@@ -100,7 +94,7 @@ DIAGS := \
 # Verilog source files
 #
 
-SRC := \
+RTL_SRC := \
 	$(RTL)/ks10/utils/edgetrig.v \
 	$(RTL)/ks10/utils/sync.v \
 	$(RTL)/ks10/cpu/useq/crom.v \
@@ -150,6 +144,9 @@ SRC := \
 	$(RTL)/esm/esm_clk.v \
 	$(RTL)/esm/esm_ks10.v
 
+SIM_SRC := \
+	$(RTL)/esm/esm_testbench.v
+
 #
 # These files are broken and stubbed out, for now.
 #	$(RTL)/ks10/uba/rh11/sd/sd.v \
@@ -193,15 +190,17 @@ BLD := \
 #
 # Filter file arguments
 #
-#	'    <filter task="xst" file="Xst" num="2677" type="warning"></filter>' \
 
 FILTER_ARGS := \
 	'<filters xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="filter.xsd">' \
-	'    <filter task="xst" file="Xst" num="284"  type="warning"></filter>'  \
+	'    <filter task="map" file="Map" num="284"  type="warning"></filter>'  \
 	'    <filter task="xst" file="Xst" num="647"  type="warning"></filter>'  \
 	'    <filter task="xst" file="Xst" num="1710" type="warning"></filter>'  \
 	'    <filter task="xst" file="Xst" num="1895" type="warning"></filter>'  \
+	'    <filter task="xst" file="Xst" num="2677" type="warning"></filter>'  \
 	'</filters>'
+
+build: $(ISE)/$(PROJECT).mcs
 
 #
 # Create the "Control ROM" microcode for microsequencer
@@ -243,10 +242,23 @@ $(ISE)/$(PROJECT).xst: makefile
 $(ISE)/$(PROJECT).prj: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
-	@for FILE in $(SRC); \
+	@for FILE in $(RTL_SRC); \
 	do \
 	    echo 'verilog work "../'$$FILE'"' >> $@; \
 	done
+
+$(ISE)/$(PROJECT)_isim.prj: makefile
+	@echo "Creating "$@ > /dev/stderr
+	@echo "" > $@
+	@for FILE in $(RTL_SRC); \
+	do \
+	    echo 'verilog work "../'$$FILE'"' >> $@; \
+	done
+	@for FILE in $(SIM_SRC); \
+	do \
+	    echo 'verilog work "../'$$FILE'"' >> $@; \
+	done
+	echo 'verilog work "$(XILINX)/ISE_DS/ISE/verilog/src/glbl.v"' >> $@;
 
 $(ISE)/$(PROJECT)_isim.cmd: makefile
 	@echo "Creating "$@ > /dev/stderr
@@ -265,30 +277,45 @@ $(ISE)/$(PROJECT)_impact.cmd: makefile
 	done
 
 #
+# FUSE
+#
+
+FUSE_ARGS := \
+	-intstyle $(INTSTYLE) \
+	-incremental \
+	-o   $(PROJECT)_isim.exe \
+	-prj $(PROJECT)_isim.prj \
+	-lib unisims_ver \
+	-lib unimacro_ver \
+	-lib secureip \
+	-lib xilinxcorelib_ver \
+	work.$(SIMTOP) \
+	work.glbl
+
+$(ISE)/$(PROJECT)_isim.exe: $(ISE)/$(PROJECT)_isim.prj $(RTL_SRC) $(SIM_SRC) $(INC) $(DAT) makefile
+	cd ise; \
+	$(FUSE) $(FUSE_ARGS)
+
+#
 # ISIM Commands
+#
+# README: Apparently ISIM must be run from a WINDOWS command shell.
 #
 
 ISIM_CMDS := \
 	'onerror {resume}' \
 	'isim set maxtraceablesize 1180000'
 
-#$(ISE)/$(TESTBENCH): $(ISE)/$(PROJECT).prj makefile
-#	cd ise; \
-#	$(FUSE) \
-#	-intstyle $(XST_INTSTYLE) \
-#	-incremental \
-#	-prj $(PROJECT).prj \
-#	-o $(TESTBENCH) \
-#	work.testbench
+ISIM_ARGS := \
+	-intstyle $(INTSTYLE) \
+	-gui \
+	-tclbatch $(PROJECT)_isim.cmd \
+	-view $(PROJECT).wcfg \
+	-wdb $(PROJECT).wdb
 
-#test: $(ISE)/$(TESTBENCH).exe
-#	$(ISE)/$(TESTBENCH).exe \
-#	-gui \
-#	-intstyle  $(XST_INTSTYLE) \
-#	-tclbatch $(TESTBENCH).cmd \
-#	-wdb $(TESTBENCH).wdb
-
-
+isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg makefile
+	cd ise; \
+	$(shell cygpath -u '$(COMSPEC)') /c $(shell cygpath -m '$(XILINX)')/ISE_DS/settings64.bat $(PROJECT)_isim.exe $(ISIM_ARGS)
 
 #
 # xst
@@ -302,17 +329,17 @@ ISIM_CMDS := \
 
 XST_OPTS := \
 	-filter $(PROJECT).filter \
-	-intstyle $(XST_INTSTYLE) 
+	-intstyle $(INTSTYLE) 
 
 XST_CMDS := \
-	'set -xsthdpdir "$(ISE)/xst"' \
+	'set -xsthdpdir "xst"' \
 	'run' \
 	'-ifn $(PROJECT).prj' \
 	'-iuc NO' \
 	'-ofn $(PROJECT).ngc' \
 	'-ofmt ngc' \
 	'-p $(PART)' \
-	'-top $(TOPMOD)' \
+	'-top $(RTLTOP)' \
 	'-opt_mode Speed' \
 	'-opt_level 2' \
 	'-power NO' \
@@ -359,7 +386,7 @@ XST_CMDS := \
 	'-equivalent_register_removal YES' \
 	'-slice_utilization_ratio_maxmargin 5'
 
-$(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr: $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(ISE)/$(PROJECT).filter $(RTL)/esm/$(PROJECT).ucf $(SRC) $(INC) $(DAT) makefile
+$(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr: $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(ISE)/$(PROJECT).filter $(RTL)/esm/$(PROJECT).ucf $(RTL_SRC) $(INC) $(DAT) makefile
 	cd $(ISE); \
 	$(XST) $(XST_OPTS) -ifn $(PROJECT).xst -ofn $(PROJECT)_xst.log
 
@@ -386,7 +413,7 @@ $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr: $(ISE)/$(PROJECT).xst $(ISE)/$(PROJ
 NGD_OPTS := \
 	-dd _ngo \
 	-filter $(PROJECT).filter \
-	-intstyle $(XST_INTSTYLE) \
+	-intstyle $(INTSTYLE) \
 	-nt timestamp \
 	-p $(PART) \
 	-uc ../$(RTL)/esm/$(PROJECT).ucf
@@ -430,7 +457,7 @@ $(ISE)/$(PROJECT).ngd: $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(ISE)/$(
 MAP_OPTS:= \
 	-filter $(PROJECT).filter \
 	-global_opt off \
-	-intstyle $(XST_INTSTYLE) \
+	-intstyle $(INTSTYLE) \
 	-ir off \
 	-lc off \
 	-logic_opt off \
@@ -471,7 +498,7 @@ $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf: $(ISE)/$(PROJECT).ngd $(ISE)/$(
 
 PAR_OPTS := \
 	-filter $(PROJECT).filter \
-	-intstyle $(XST_INTSTYLE) \
+	-intstyle $(INTSTYLE) \
 	-mt 4 \
 	-ol high \
 	-w \
@@ -498,7 +525,7 @@ $(ISE)/$(PROJECT).ncd: $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(ISE)/$(
 
 BITGEN_OPTS := \
 	-w \
-	-intstyle $(XST_INTSTYLE) \
+	-intstyle $(INTSTYLE) \
 	-g DebugBitstream:No \
 	-g Binary:no \
 	-g CRC:Enable \
@@ -611,6 +638,7 @@ clean_ise:
 	rm -rf   $(ISE)/xst \
                  $(ISE)/_ngo \
                  $(ISE)/_xmsgs \
+                 $(ISE)/isim \
                  $(ISE)/iseconfig \
                  $(ISE)/xlnx_auto_0_xdb      
 	rm -f    $(ISE)/$(PROJECT).bgn \
@@ -637,6 +665,7 @@ clean_ise:
                  $(ISE)/$(PROJECT).twr \
                  $(ISE)/$(PROJECT).twx \
                  $(ISE)/$(PROJECT).unroutes \
+                 $(ISE)/$(PROJECT).wdb \
                  $(ISE)/$(PROJECT).xpi \
                  $(ISE)/$(PROJECT).xst \
                  $(ISE)/$(PROJECT)_bitgen.xwbt \
@@ -644,6 +673,8 @@ clean_ise:
                  $(ISE)/$(PROJECT)_guide.ncd \
                  $(ISE)/$(PROJECT)_impact.cmd \
                  $(ISE)/$(PROJECT)_isim.cmd \
+                 $(ISE)/$(PROJECT)_isim.exe \
+                 $(ISE)/$(PROJECT)_isim.prj \
                  $(ISE)/$(PROJECT)_map.map \
                  $(ISE)/$(PROJECT)_map.mrp \
                  $(ISE)/$(PROJECT)_map.ncd \
@@ -658,12 +689,18 @@ clean_ise:
                  $(ISE)/$(PROJECT)_usage.xml \
                  $(ISE)/$(PROJECT)_xst.log \
                  $(ISE)/$(PROJECT)_xst.xrpt \
+                 $(ISE)/fuse.log \
+                 $(ISE)/fuse.xmsgs \
+                 $(ISE)/fuseRelaunch.cmd \
                  $(ISE)/_impactbatch.log \
+                 $(ISE)/isim.cmd \
+                 $(ISE)/isim.log \
                  $(ISE)/par_usage_statistics.html \
                  $(ISE)/usage_statistics_webtalk.html \
                  $(ISE)/webtalk.log \
                  $(ISE)/webtalk_pn.xml \
-                 $(ISE)/xilinx_device_details.xml
+                 $(ISE)/xilinx_device_details.xml \
+                 $(ISE)/xilinxsim.ini
 
 #
 # rcsclean everything
@@ -703,7 +740,7 @@ rcsclean_rtl: clean_rtl
 # Fetch design from RCS
 #
 
-rcsfetch: $(INC) $(SRC) $(BLD) $(DAT) $(RTL)/esm/$(PROJECT).ucf $(DOC) $(DIAGS)
+rcsfetch: $(INC) $(RTL_SRC) $(SIM_SRC) $(BLD) $(DAT) $(DOC) $(DIAGS) $(RTL)/esm/$(PROJECT).ucf 
 
 #
 # Archive files
@@ -714,7 +751,7 @@ archive_all:
 
 archive_dist: $(SRC)
 	make rcsfetch
-	tar  --exclude-vcs -czvf ks10_fpga_dist_`date '+%y%m%d'`.tgz $(SRC) $(INC)
+	tar  --exclude-vcs -czvf ks10_fpga_dist_`date '+%y%m%d'`.tgz *
 
 #./t10backup.exe   -x smmon.sav -f ks_diag_gs.tap
 #	-prj testbench_beh.prj \
