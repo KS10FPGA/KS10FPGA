@@ -26,7 +26,7 @@ USEQ         := $(RTL)/ks10/cpu/useq
 #
 
 XILDIR       := $(shell cygpath -u '$(XILINX)')
-XILEXE       := $(XILDIR)/ISE_DS/ISE/bin/nt64
+XILEXE       := $(XILDIR)/ISE_DS/ISE/bin/nt
 BITGEN       := $(XILEXE)/bitgen.exe
 FUSE         := $(XILEXE)/fuse.exe
 MAP          := $(XILEXE)/map.exe
@@ -48,7 +48,7 @@ LOAD         := MAINDEC-10-DSKAA.SEQ
 #LOAD         := MAINDEC-10-DSKAE.SEQ
 #LOAD         := MAINDEC-10-DSKAF.SEQ
 #LOAD         := MAINDEC-10-DSKAG.SEQ
-#LOAD         := MAINDEC-10-DSKAH.SEQ		# runs 3.4 ms
+#LOAD         := MAINDEC-10-DSKAH.SEQ
 #LOAD         := MAINDEC-10-DSKAI.SEQ
 #LOAD         := MAINDEC-10-DSKAJ.SEQ
 #LOAD         := MAINDEC-10-DSKAK.SEQ
@@ -139,18 +139,17 @@ RTL_SRC := \
 	$(RTL)/ks10/uba/rh11/rpxx.v \
 	$(RTL)/ks10/uba/rh11/sdaddr.v \
 	$(RTL)/ks10/uba/rh11/rh11.v \
+	$(RTL)/ks10/uba/rh11/sd/sd.v \
+	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
 	$(RTL)/ks10/uba/uba.v \
+	$(RTL)/ks10/uba/ubapag.v \
 	$(RTL)/ks10/ks10.v \
 	$(RTL)/esm/esm_clk.v \
 	$(RTL)/esm/esm_ks10.v
 
 SIM_SRC := \
+	$(RTL)/esm/cy7c1460av33.v \
 	$(RTL)/esm/esm_testbench.v
-
-#
-# These files are broken and stubbed out, for now.
-#	$(RTL)/ks10/uba/rh11/sd/sd.v \
-#	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
 
 #
 # Verilog inlcude files
