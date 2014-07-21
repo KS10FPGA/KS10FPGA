@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2013 Rob Doyle
+//  Copyright (C) 2012-2014 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -42,10 +42,12 @@
 
 `default_nettype none
 `include "ks10.vh"
+`include "uba/uba.vh"
 `include "uba/dz11/dz11.vh"
 `include "uba/rh11/rh11.vh"
+`include "uba/rh11/rpxx.vh"
 
-module KS10(clk, rst,
+module KS10(clk, clkT, rst,
             // DZ11 Interfaces
             dz11TXD, dz11RXD, dz11CO, dz11RI, dz11DTR,
             // RH11 Interfaces
@@ -57,11 +59,9 @@ module KS10(clk, rst,
             ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA,
             haltLED);
 
-   localparam [14:17] ctlNUM1 = `ctlNUM1;
-   localparam [14:17] ctlNUM3 = `ctlNUM3;
-
    // Clock/Reset
    input         clk;           // Clock
+   input [1:4]   clkT;          // ClkT
    input         rst;           // Reset
    // DZ11 Interfaces
    output [ 7: 0] dz11TXD;      // DZ11 Transmitter Serial Data
@@ -85,7 +85,7 @@ module KS10(clk, rst,
    input         conWR_N;       // Console Write Strobe
    output        conINTR_N;     // KS10 Interrupt to Console
    // SSRAM Interfaces
-   output        ssramCLK;      // SSRAM Clock
+   input         ssramCLK;      // SSRAM Clock
    output        ssramCLKEN_N;  // SSRAM CLKEN#
    output        ssramADV;      // SSRAM Advance
    output        ssramBWA_N;    // SSRAM BWA#
@@ -127,7 +127,7 @@ module KS10(clk, rst,
    wire        cslINTR;         // Console Interrupt to KS10
    wire        cslRESET;        // KS10 Reset
    wire        cslINTRO;        // KS10 Interrupt to Console
-   
+
    //
    // CPU Interfaces
    //
@@ -141,13 +141,13 @@ module KS10(clk, rst,
    wire        cpuRUN;          // CPU Run Status
    wire        cpuEXEC;         // CPU Exec Status
    wire        cpuCONT;         // CPU Cont Status
-   
+
    //
    // DZ11 Interfaces
    //
 
    wire [0:63] rh11DEBUG;       // RH11 Debug
-   
+
    //
    // Memory Interfaces
    //
@@ -170,13 +170,13 @@ module KS10(clk, rst,
    wire [0:35] ubaDATAI;        // Unibus Data In
    wire [0:35] ubaDATAO[0:3];   // Unibus Data Out
    wire [1: 7] ubaINTRO[0:3];   // Unibus Interrupt
-   
+
    //
    // Bus Arbiter
    //
 
-   ARB uARB
-     (.clk              (clk),
+   ARB uARB (
+      .clk              (clk),
       // CPU
       .cpuREQI          (cpuREQO),
       .cpuACKO          (cpuACKI),
@@ -212,14 +212,14 @@ module KS10(clk, rst,
       .memDATAO         (memDATAI),
       // Arb
       .arbADDRO         (arbADDRO)
-      );
+   );
 
    //
    // The KS10 CPU
    //
 
-   CPU uCPU
-     (.clk              (clk),
+   CPU uCPU (
+      .clk              (clk),
       .rst              (rst),
       // Console
       .cslRESET         (cslRESET),
@@ -244,14 +244,14 @@ module KS10(clk, rst,
       .cpuRUN           (cpuRUN),
       .cpuEXEC          (cpuEXEC),
       .cpuCONT          (cpuCONT)
-      );
+   );
 
    //
    // Console
    //
 
-   CSL uCSL
-     (.clk              (clk),
+   CSL uCSL (
+      .clk              (clk),
       .rst              (rst),
       // Console Microcontroller Interfaces
       .conADDR          (conADDR),
@@ -275,7 +275,7 @@ module KS10(clk, rst,
       .cpuEXEC          (cpuEXEC),
       .cpuCONT          (cpuCONT),
       // Console Interfaces
-      .cslSET		(cslSET),
+      .cslSET           (cslSET),
       .cslRUN           (cslRUN),
       .cslCONT          (cslCONT),
       .cslEXEC          (cslEXEC),
@@ -286,14 +286,15 @@ module KS10(clk, rst,
       .cslRESET         (cslRESET),
       // RH11 Interfaces
       .rh11DEBUG        (rh11DEBUG)
-      );
+   );
 
    //
    // Memory
    //
 
-   MEM uMEM
-     (.clk              (clk),
+   MEM uMEM (
+      .clk              (clk),
+      .clkT             (clkT),
       .rst              (rst),
       .clken            (1'b1),
       .busREQI          (memREQ),
@@ -313,7 +314,7 @@ module KS10(clk, rst,
       .ssramCE          (ssramCE),
       .ssramADDR        (ssramADDR),
       .ssramDATA        (ssramDATA)
-      );
+   );
 
    //
    // IO Bridge #1
@@ -340,13 +341,14 @@ module KS10(clk, rst,
    wire [ 0:35] ctl1dev2ADDRI   = 36'b0;
    wire [ 0:35] ctl1dev2DATAI   = 36'b0;
    wire [ 7: 4] ctl1dev2INTR    =  4'b0;
-   wire         ctl1dev2ACKO;
 
-   UBA UBA1
-     (.clk              (clk),
+   UBA #(
+      .ubaNUM           (`devUBA1),
+      .ubaADDR          (`ubaADDR)
+   )
+   UBA1 (
+      .clk              (clk),
       .rst              (rst),
-      .clken            (1'b1),
-      .ctlNUM           (ctlNUM1),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO[1]),
       .busACKI          (ubaACKI[1]),
@@ -372,17 +374,24 @@ module KS10(clk, rst,
       .dev2ADDRI        (ctl1dev2ADDRI),
       .dev2DATAI        (ctl1dev2DATAI),
       .dev2INTR         (ctl1dev2INTR),
-      .dev2ACKO         (ctl1dev2ACKO)
+      .dev2ACKO         ()
       );
 
    //
    // RH11 #1 Connected to IO Bridge 1 Device 1
    //
 
-   RH11 uRH11
-     (.clk              (clk),
+   RH11 #(
+      .rhDEV            (`rh1DEV),
+      .rhADDR           (`rh1ADDR),
+      .rhVECT           (`rh1VECT),
+      .rhINTR           (`rh1INTR),
+      .drvTYPE          (`rpRP06),
+      .simTIME          (1'b0)
+   )
+   uRH11 (
+      .clk              (clk),
       .rst              (rst),
-      .ctlNUM           (ctlNUM1),
       // RH11 IO
       .rh11CD           (rh11CD),
       .rh11WP           (rh11WP),
@@ -434,13 +443,14 @@ module KS10(clk, rst,
    wire [ 0:35] ctl3dev2ADDRI   = 36'b0;
    wire [ 0:35] ctl3dev2DATAI   = 36'b0;
    wire [ 7: 4] ctl3dev2INTR    =  4'b0;
-   wire         ctl3dev2ACKO;
 
-   UBA UBA3
-     (.clk              (clk),
+   UBA #(
+      .ubaNUM           (`devUBA3),
+      .ubaADDR          (`ubaADDR)
+   )
+   UBA3 (
+      .clk              (clk),
       .rst              (rst),
-      .clken            (1'b1),
-      .ctlNUM           (ctlNUM3),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO[3]),
       .busACKI          (ubaACKI[3]),
@@ -466,17 +476,22 @@ module KS10(clk, rst,
       .dev2ADDRI        (ctl3dev2ADDRI),
       .dev2DATAI        (ctl3dev2DATAI),
       .dev2INTR         (ctl3dev2INTR),
-      .dev2ACKO         (ctl3dev2ACKO)
-      );
+      .dev2ACKO         ()
+   );
 
    //
    // DZ11 #1 Connected to IO Bridge 3 Device 1
    //
 
-   DZ11 uDZ11
-     (.clk              (clk),
+   DZ11 #(
+      .dzDEV            (`dz1DEV),
+      .dzADDR           (`dz1ADDR),
+      .dzVECT           (`dz1VECT),
+      .dzINTR           (`dz1INTR)
+   )
+   uDZ11 (
+      .clk              (clk),
       .rst              (rst),
-      .ctlNUM           (ctlNUM3),
       // DZ11 IO
       .dz11TXD          (dz11TXD),
       .dz11RXD          (dz11RXD),
@@ -529,5 +544,5 @@ module KS10(clk, rst,
    assign ubaINTRO[2] = 0;
 
    assign haltLED = cpuHALT;
-   
+
 endmodule

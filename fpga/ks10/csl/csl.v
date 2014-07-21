@@ -190,6 +190,7 @@
 
 `default_nettype none
 `include "../ks10.vh"
+`include "../uba/uba.vh"
 
 module CSL(clk, rst,
            conDATA,  conADDR,  conBLE_N, conBHE_N, conRD_N,  conWR_N,
@@ -249,7 +250,7 @@ module CSL(clk, rst,
    // The Console is Device 0
    //
 
-   localparam [0:3] cslDEV = `ctlNUM0;
+   localparam [0:3] cslDEV = `devUBA0;
 
    //
    // Console Instruction Register IO Address
@@ -278,23 +279,22 @@ module CSL(clk, rst,
    // State Machine States
    //
 
-   localparam [0:2] stateIDLE  = 0,
-                    stateCHECK = 1,
-                    stateREAD  = 2,
-                    stateWRITE = 3,
-                    stateFAIL  = 4,
-                    stateDONE  = 5;
+   localparam [0:2] stateIDLE      = 0,
+                    stateREADWAIT  = 1,
+                    stateREAD      = 2,
+                    stateWRITEWAIT = 3,
+                    stateWRITE     = 4,
+                    stateFAIL      = 5,
+                    stateDONE      = 6;
 
    //
    // Synchronize bus interface to KS10 clock
    //
 
    wire cslWR;
-   wire cslRD;
    wire cslBLE;
    wire cslBHE;
    sync syncWR (clk, rst, cslWR,  ~conWR_N);
-   sync syncRD (clk, rst, cslRD,  ~conRD_N);
    sync syncBLE(clk, rst, cslBLE, ~conBLE_N);
    sync syncBHE(clk, rst, cslBHE, ~conBHE_N);
 
@@ -438,8 +438,8 @@ module CSL(clk, rst,
                  6'h24 : regTEST[24:31] <= conDATA[7:0];
                  6'h26 : regTEST[ 8:15] <= conDATA[7:0];
 
-               endcase // case (cslADDR)
-          end // if (cslWR)
+               endcase
+          end
 
         else if (state == stateREAD)
           regDATA <= busDATAI;
@@ -581,28 +581,42 @@ module CSL(clk, rst,
           end
         else
           case (state)
-            stateIDLE :
+            stateIDLE:
               begin
-                 timeout <= 0;
-                 if ((cslGO & regADDR[3]) | (cslGO & regADDR[5]))
-                   state <= stateCHECK;
+                 if (cslGO & regADDR[3])
+                   state <= stateREADWAIT;
+                 else if (cslGO & regADDR[5])
+                   state <= stateWRITEWAIT;
               end
-            stateCHECK :
+            stateREADWAIT:
+              if (!cslGO)
+                begin
+                   timeout <= 0;
+                   state   <= stateREAD;
+                end
+            stateREAD:
               if (timeout == 31)
                 state <= stateFAIL;
-              else if (busACKI & regADDR[3])
-                state <= stateREAD;
-              else if (busACKI & regADDR[5])
-                state <= stateWRITE;
+              else if (busACKI)
+                state <= stateDONE;
               else
                 timeout <= timeout + 1'b1;
-            stateREAD :
+            stateWRITEWAIT:
+              if (!cslGO)
+                begin
+                   timeout <= 0;
+                   state   <= stateWRITE;
+                end
+            stateWRITE:
+              if (timeout == 31)
+                state <= stateFAIL;
+              else if (busACKI)
+                state <= stateDONE;
+              else
+                timeout <= timeout + 1'b1;
+            stateFAIL:
               state <= stateDONE;
-            stateWRITE :
-              state <= stateDONE;
-            stateFAIL :
-              state <= stateDONE;
-            stateDONE :
+            stateDONE:
               if (~cslGO)
                 state <= stateIDLE;
           endcase
@@ -627,8 +641,7 @@ module CSL(clk, rst,
    // Bus REQ
    //
 
-   assign busREQO = ((state == stateCHECK) ||
-                     (state == stateREAD ) ||
+   assign busREQO = ((state == stateREAD ) ||
                      (state == stateWRITE));
 
    //

@@ -57,27 +57,4 @@
 
 `define CLKFRQ    20000000              // Clock Speed
 
-//
-// Device Number Definitions
-//  The KS10 supports 16 external devices.  Only the first 5 are meaningful.
-//
-
-`define ctlNUM0 (4'd0)                  // Memory Controller and Console
-`define ctlNUM1 (4'd1)                  // IO Bridge Controller #1
-`define ctlNUM2 (4'd2)                  // IO Bridge Controller #2 (not implemented)
-`define ctlNUM3 (4'd3)                  // IO Bridge Controller #3
-`define ctlNUM4 (4'd4)                  // IO Bridge Controller #4 (not implemented)
-
-//
-// Who Are You (WRU) Responses
-//  The KS10 microcode will actually handle 18 devices.  It checks for the
-//  'right half' to be non-zero.
-//
-
-`define wruNUM0 36'o000000_400000       // Memory Controller and Console.  Never generates interrupts.
-`define wruNUM1 36'o000000_200000       // IO Bridge Controller #1 WRU Response
-`define wruNUM2 36'o000000_100000       // IO Bridge Controller #2 WRU Response
-`define wruNUM3 36'o000000_040000       // IO Bridge Controller #3 WRU Response
-`define wruNUM4 36'o000000_020000       // IO Bridge Controller #4 WRU Response
-
 `endif
