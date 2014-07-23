@@ -114,14 +114,16 @@ module ESM_KS10(CLK50MHZ, RESET_N, MR_N,
 
    wire clk;
    wire rst;
-   wire locked;
+   wire [1:4] clkT;
 
    ESM_CLK uCLK (
       .clkIn            (CLK50MHZ),
       .rstIn            (~RESET_N),
-      .clkOut           (clk),
-      .rstOut           (rst),
-      .locked           (locked)
+      .clkOutT          (clk),
+      .clkOutR          (),
+      .clkT             (clkT),
+      .ssramCLK         (ssramCLK),
+      .rstOut           (rst)
    );
 
    //
@@ -130,6 +132,7 @@ module ESM_KS10(CLK50MHZ, RESET_N, MR_N,
 
    KS10 uKS10(
       .clk              (clk),
+      .clkT             (clkT),
       .rst              (rst),
       // DZ11
       .dz11TXD          (dz11TXD),
@@ -193,7 +196,7 @@ module ESM_KS10(CLK50MHZ, RESET_N, MR_N,
    assign test[1] = rst;
    assign test[2] = RESET_N;
    assign test[3] = ~RESET_N;
-   assign test[4] = locked;
+   assign test[4] = 0;
    assign test[5] = 0;
    assign test[6] = 1;
    assign test[7] = 0;

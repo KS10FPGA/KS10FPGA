@@ -177,6 +177,7 @@ module KS10(clk, clkT, rst,
 
    ARB uARB (
       .clk              (clk),
+      .rst              (rst),
       // CPU
       .cpuREQI          (cpuREQO),
       .cpuACKO          (cpuACKI),

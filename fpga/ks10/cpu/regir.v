@@ -47,7 +47,7 @@
 `default_nettype none
 `include "useq/crom.vh"
 
-module regIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, opJRST0);
+module REGIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, opJRST0);
 
    parameter cromWidth = `CROM_WIDTH;
 

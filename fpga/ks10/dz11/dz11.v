@@ -59,13 +59,9 @@
 `include "dz11.vh"
 `include "../../ks10.vh"
 `include "uart/uart_brg.vh"
-
-//  
-// FIXME.  Delete dzDEV and use ctlNUM everywhere.
-//
   
-module DZ11(clk,      rst,      ctlNUM,
-            dz11TXD,  dz11RXD,  dz11CO,   dz11RI,  dz11DTR,
+module DZ11(clk,      rst,
+            dz11TXD,  dz11RXD,  dz11CO,  dz11RI,  dz11DTR,
             devRESET, devINTR,  devINTA,
             devREQI,  devACKO,  devADDRI,
             devREQO,  devACKI,  devADDRO,
@@ -73,7 +69,6 @@ module DZ11(clk,      rst,      ctlNUM,
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input  [ 0: 3] ctlNUM;                       // Bridge Device Number
    // DZ11 Interfaces
    output [ 7: 0] dz11TXD;                      // DZ11 Transmitter Serial Data
    input  [ 7: 0] dz11RXD;                      // DZ11 Receiver Serial Data
@@ -101,28 +96,28 @@ module DZ11(clk,      rst,      ctlNUM,
    // DZ Parameters
    //
 
-   parameter [14:17] dzDEV  = `dzDEV;           // Device 3
+   parameter [14:17] dzDEV  = `dz1DEV;          // DZ11 Device Number
    parameter [18:35] dzADDR = `dz1ADDR;         // DZ11 Base Address
    parameter [18:35] dzVECT = `dz1VECT;         // DZ11 Interrupt Vector
-   parameter [ 7: 4] dzINTR = `dzINTR;          // DZ11 Interrupt
+   parameter [ 7: 4] dzINTR = `dz1INTR;         // DZ11 Interrupt
 
    //
    // DZ Register Addresses
    //
 
-   parameter [18:35] csrADDR = dzADDR + `csrOFFSET;
-   parameter [18:35] rbfADDR = dzADDR + `rbfOFFSET;
-   parameter [18:35] lprADDR = dzADDR + `lprOFFSET;
-   parameter [18:35] tcrADDR = dzADDR + `tcrOFFSET;
-   parameter [18:35] msrADDR = dzADDR + `msrOFFSET;
-   parameter [18:35] tdrADDR = dzADDR + `tdrOFFSET;
+   localparam [18:35] csrADDR = dzADDR + `csrOFFSET;     // CSR Register
+   localparam [18:35] rbfADDR = dzADDR + `rbfOFFSET;     // RBF Register
+   localparam [18:35] lprADDR = dzADDR + `lprOFFSET;     // LPR Register
+   localparam [18:35] tcrADDR = dzADDR + `tcrOFFSET;     // TCR Register
+   localparam [18:35] msrADDR = dzADDR + `msrOFFSET;     // MSR Register
+   localparam [18:35] tdrADDR = dzADDR + `tdrOFFSET;     // TDR Register
 
    //
    // DZ Interrupt Vectors
    //
 
-   parameter [18:35] rxVECT = dzVECT;           // DZ11 Receiver Interrupt Vector
-   parameter [18:35] txVECT = dzVECT + 4;       // DZ11 Transmitter Interrupt Vector
+   localparam [18:35] rxVECT = dzVECT;           // DZ11 Receiver Interrupt Vector
+   localparam [18:35] txVECT = dzVECT + 4;       // DZ11 Transmitter Interrupt Vector
 
    //
    // Memory Address and Flags
@@ -166,7 +161,7 @@ module DZ11(clk,      rst,      ctlNUM,
    // Interrupt Vector Read Operation
    //
 
-   wire vectREAD  = devIO & devVECT & (devDEV == ctlNUM);
+   wire vectREAD  = devIO & devVECT & (devDEV == dzDEV);
 
    //
    // Big-endian to little-endian data bus fixup
@@ -174,8 +169,7 @@ module DZ11(clk,      rst,      ctlNUM,
 
    wire [35:0] dzDATAI = devDATAI[0:35];
 
-   //
-   // CSR[CLR] 15us one-shot
+   //[CLR] 15us one-shot
    //
 
    reg [9:0] clrCOUNT;
@@ -448,9 +442,8 @@ module DZ11(clk,      rst,      ctlNUM,
    //  The 'generate' loops below builds 8 UARTS.
    //
    // Note
-   //  For some reason, Xilinx ISE requires that the
-   //  genvar line is inside the generate statement.
-   //  Other tools don't seem to care.
+   //  For some reason, Xilinx ISE requires that the genvar line is inside
+   //  the generate statement.  Other tools don't seem to care.
    //
 
    wire [7:0] ttyRXFULL;                // UART receiver has data

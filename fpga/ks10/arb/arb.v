@@ -42,7 +42,7 @@
 
 `include "../cpu/vma.vh"
 
-module ARB(clk,
+module ARB(clk, rst,
            cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
            cslREQI, cslREQO, cslACKI, cslACKO, cslADDRI, cslDATAI, cslDATAO,
            ubaREQI, ubaREQO, ubaACKI, ubaACKO,
@@ -51,6 +51,7 @@ module ARB(clk,
            memREQO, memACKI, memDATAI, memDATAO, arbADDRO);
 
    input         clk;           // Clock
+   input         rst;		// Reset
    input         cpuREQI;       // CPU Bus Request
    output        cpuACKO;       // CPU Bus Acknowledge
    input  [0:35] cpuADDRI;      // CPU Address
@@ -339,17 +340,35 @@ module ARB(clk,
    //
 
 `ifndef SYNTHESIS
+   
+   reg        [0:3] ackCount;
+   localparam [0:3] ackTimeout = 15;
 
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          ackCount <= 0;
+        else if (cpuREQI & ~cpuACKO)
+          ackCount <= ackTimeout;
+        else if (ackCount != 0)
+          begin
+             if (cpuACKO)
+               ackCount <= 0;
+             else
+               ackCount <= ackCount - 1'b1;
+          end
+     end
+   
    always @(posedge clk)
      begin
-        if (cpuREQI & ~cpuACKO)
+        if (ackCount == 1)
           begin
              $display("");
              $display("Unacknowledged bus cycle.  Addr Bus = %012o", cpuADDRI);
              $display("");
           end
      end
-
+   
 `endif
 
 endmodule

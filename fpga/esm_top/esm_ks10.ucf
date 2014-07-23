@@ -147,11 +147,11 @@ NET "RXD<2>"            LOC = "K26"  | IOSTANDARD = LVCMOS33;
 # SD Card Interfaces
 #
 
-NET "rh11CD"            LOC = "B25"  | IOSTANDARD = LVCMOS33;
-#NET "rh11CS"           LOC = "B26"  | IOSTANDARD = LVCMOS33;
+NET "rh11CD"            LOC = "D26"  | IOSTANDARD = LVCMOS33;
+NET "rh11CS"            LOC = "B25"  | IOSTANDARD = LVCMOS33;
 NET "rh11MISO"          LOC = "C25"  | IOSTANDARD = LVCMOS33;
-#NET "rh11MOSI"         LOC = "A25"  | IOSTANDARD = LVCMOS33;
-#NET "rh11SCLK"         LOC = "C26"  | IOSTANDARD = LVCMOS33;
+NET "rh11MOSI"          LOC = "A25"  | IOSTANDARD = LVCMOS33;
+NET "rh11SCLK"          LOC = "C26"  | IOSTANDARD = LVCMOS33;
 
 #
 # Testpoints
@@ -180,6 +180,6 @@ NET "test<7>"           LOC = "F3"   | IOSTANDARD = LVCMOS33;   // VB24
 #TIMESPEC "TS24" = FROM "FFS" THRU "aluOUT" THRU "dp" THRU "dbm" THRU "dbus" THRU aluIN TO "FFS" TIG;
 #TIMESPEC "TS25" = FROM "FFS" THRU "aluOUT" THRU "dp" THRU "scad" THRU "dbm" THRU "dbus" THRU aluIN TO "FFS" TIG;
 
-NET "uKS10/uCPU/uALU/r*" TIG;
-PIN "uCLK/clkout_buf.O" CLOCK_DEDICATED_ROUTE = FALSE;
+#NET "uKS10/uCPU/uALU/r*" TIG;
+#PIN "uCLK/clkout_buf.O" CLOCK_DEDICATED_ROUTE = FALSE;
 

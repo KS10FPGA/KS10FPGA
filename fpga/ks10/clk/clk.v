@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2013 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -39,109 +39,121 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-module ESM_CLK(clkIn, rstIn, clkOut, rstOut, locked);
+module ESM_CLK(clkIn, rstIn, clkOutT, clkOutR, clkT, ssramCLK, rstOut);
 
-   input  clkIn;
-   input  rstIn;
-   output clkOut;
-   output rstOut;
-   output locked;
-
-   //
-   // Input buffer
-   //
-
-   wire bclkin;
-   IBUFG clkin_buf (
-       .I (clkIn),
-       .O (bclkin)
-   );
+   input        clkIn;
+   input        rstIn;
+   output       clkOutT;
+   output       clkOutR;
+   output [1:4] clkT;
+   output       ssramCLK;
+   output       rstOut;
 
    //
-   // PLL
+   // Synchronize rstOut to the clock
    //
 
-   wire clkfb;
-   wire clk0;
-   wire clkfx;
+   reg [1:0] d;
+   always @(posedge clkIn or posedge rstIn)
+     begin
+        if (rstIn)
+          d[1:0] <= 2'b11;
+        else
+          d[1:0] <= {d[0], 1'b0};
+     end
 
-   DCM_SP #(
-       .CLKDV_DIVIDE       (2.500),
-       .CLKFX_DIVIDE       (5),
-       .CLKFX_MULTIPLY     (2),
-       .CLKIN_DIVIDE_BY_2  ("FALSE"),
-       .CLKIN_PERIOD       (20.0),
-       .CLKOUT_PHASE_SHIFT ("NONE"),
-       .CLK_FEEDBACK       ("1X"),
-       .DESKEW_ADJUST      ("SYSTEM_SYNCHRONOUS"),
-       .PHASE_SHIFT        (0),
-       .STARTUP_WAIT       ("FALSE")
-   )
-   dcm_sp_inst (
-       .CLKIN              (bclkin),
-       .CLKFB              (clkfb),
-       .CLK0               (clk0),
-       .CLK90              (),
-       .CLK180             (),
-       .CLK270             (),
-       .CLK2X              (),
-       .CLK2X180           (),
-       .CLKFX              (clkfx),
-       .CLKFX180           (),
-       .CLKDV              (),
-       .PSCLK              (1'b0),
-       .PSEN               (1'b0),
-       .PSINCDEC           (1'b0),
-       .PSDONE             (),
-       .LOCKED             (locked),
-       .STATUS             (),
-       .RST                (rstIn),
-       .DSSEN              (1'b0)
-   );
+   assign rstOut = d[1];
 
    //
-   // Output buffers
+   // Clock Generator
    //
 
-   BUFG clkf_buf (
-       .I (clk0),
-       .O (clkfb)
-   );
+   parameter [0:1] stateT1 = 0,
+                   stateT2 = 1,
+                   stateT3 = 2,
+                   stateT4 = 3;
 
-   BUFG clkout_buf (
-       .I (clkfx),
-       .O (clkOut)
-   );
+   reg [0:1] clkState;
+   reg [1:4] clkT;
+   reg       clkOutT;
+   reg       clkOutR;
 
-   //
-   // Synchronize rstOut to the new clock domain.
-   //
-
-   reg d0;
-   reg d1;
-
-   always @(posedge clkOut or posedge rstIn)
+   always @(posedge clkIn or posedge rstOut)
      begin
         if (rstIn)
           begin
-             d0 <= 1;
-             d1 <= 1;
+             clkT[1]  <= 0;
+             clkT[2]  <= 0;
+             clkT[3]  <= 0;
+             clkT[4]  <= 0;
+             clkOutR  <= 0;
+             clkOutT  <= 1;
+             clkState <= stateT1;
           end
         else
-          begin
-             if (locked)
-               begin
-                  d0 <= 0;
-                  d1 <= d0;
-               end
-             else
-               begin
-                  d0 <= 1;
-                  d1 <= 1;
-               end
-          end
+          case (clkState)
+            stateT1:
+              begin
+                 clkT[1]  <= 1;
+                 clkT[2]  <= 0;
+                 clkT[3]  <= 0;
+                 clkT[4]  <= 0;
+                 clkOutR  <= 0;
+                 clkOutT  <= 1;
+                 clkState <= stateT2;
+              end
+            stateT2:
+              begin
+                 clkT[1]  <= 0;
+                 clkT[2]  <= 1;
+                 clkT[3]  <= 0;
+                 clkT[4]  <= 0;
+                 clkOutR  <= 0;
+                 clkOutT  <= 1;
+                 clkState <= stateT3;
+              end
+            stateT3:
+              begin
+                 clkT[1]  <= 0;
+                 clkT[2]  <= 0;
+                 clkT[3]  <= 1;
+                 clkT[4]  <= 0;
+                 clkOutR  <= 1;
+                 clkOutT  <= 0;
+                 clkState <= stateT4;
+              end
+            stateT4:
+              begin
+                 clkT[1]  <= 0;
+                 clkT[2]  <= 0;
+                 clkT[3]  <= 0;
+                 clkT[4]  <= 1;
+                 clkOutR  <= 1;
+                 clkOutT  <= 0;
+                 clkState <= stateT1;
+              end
+            endcase
      end
 
-   assign rstOut = d1;
+   //
+   // Funky clock forwarding circuit for the ssramCLK output
+   // Spartan6 will give errors if you try to drive a clock output.
+   //
+
+   ODDR2 #(
+       .DDR_ALIGNMENT   ("NONE"),       // Sets output alignment
+       .INIT            (1'b0),         // Initial state of the Q output
+       .SRTYPE          ("SYNC")        // Reset type: "SYNC" or "ASYNC"
+   )
+   iODDR2 (
+       .Q               (ssramCLK),     // 1-bit DDR output data
+       .C0              (~clkIn),       // 1-bit clock input
+       .C1              (clkIn),        // 1-bit clock input
+       .CE              (1'b1),         // 1-bit clock enable input
+       .D0              (1'b1),         // 1-bit data input (associated with C0)
+       .D1              (1'b0),         // 1-bit data input (associated with C1)
+       .R               (1'b0),         // 1-bit reset input
+       .S               (1'b0)          // 1-bit set input
+   );
 
 endmodule

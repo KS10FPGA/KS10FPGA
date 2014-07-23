@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor Testbench
 //
@@ -351,8 +351,9 @@ module testbench;
    
    task printHaltStatus;
       begin
-         conREADMEMP(0, temp);
-         case (temp[24:35])
+         conREADMEMP(0, haltStatus);
+         conREADMEMP(1, haltAddr);
+         case (haltStatus[24:35])
            12'o0000 : $display("Halt Status: Microcode Startup.");
            12'o0001 : $display("Halt Status: Halt Instruction.");
            12'o0002 : $display("Halt Status: Console Halt.");
@@ -363,8 +364,9 @@ module testbench;
            12'o1005 : $display("Halt Status: Microcode Startup Check Failed.");
            default  : $display("Halt Status: Unknown Halt Cause.");
          endcase
-         if (temp[24:35] != 0)
+         if (haltStatus[24:35] != 0)
            begin
+	      $display("Halt Address: %06o", haltAddr[18:35]);
               printHaltStatusBlock(18'o376000);
            end
       end
@@ -375,6 +377,8 @@ module testbench;
    //
 
    reg [0:35] temp;
+   reg [0:35] haltStatus;
+   reg [0:35] haltAddr;
 
    initial
      begin
@@ -443,7 +447,7 @@ module testbench;
    //  RUN, EXEC, and CONT button to continue execution.  Otherwise
    //  let the KS10 halt.
    //
-
+  
    time haltTIME;
    
    always @(posedge haltLED)
@@ -451,7 +455,7 @@ module testbench;
 	haltTIME <= $time;
         $display("KS10 CPU Halted at t = %f us.", $time / 1.0e3);
         printHaltStatus;
-        if (haltTIME > 30000 && haltTIME < 40000)
+        if (haltTIME > 40000 && haltTIME < 60000)
 	  begin
 
              //
@@ -480,24 +484,6 @@ module testbench;
                                       statCONT |
                                       statRUN));
 	  end
-     end
-
-   //
-   // PDP10 Memory Initialization
-   //
-   // Note:
-   //  We initialize the PDP10 memory with the diagnostic
-   //  code.  This saves having to figure out how to load
-   //  the code into memory by some other means.
-   //
-   //  Object code is extracted from the listing file by a
-   //  'simple' AWK script and is included below.
-   //
-
-   reg [0:35] SSRAM [0:32767];
-   initial
-     begin
-       `include "../testbench/ssram.dat"
      end
 
 `ifdef SIMCTY
@@ -565,7 +551,6 @@ module testbench;
 
 `endif
 
-
    //
    // Clock generator
    //
@@ -583,42 +568,13 @@ module testbench;
    //
    
    assign conDATA = (~conRD_N) ? 16'bz : conDATO;
-
-   //
-   // Synchronous RAM
-   //
-   // Details
-   //  This is KS10 memory.
-   //
-   // Note:
-   //  Only 32K is implemented.  This is sufficient to run the
-   //  MAINDEC diagnostics.  Adding more memory makes the
-   //  simulation run very slow.
-   //
-   // FIXME
-   //  This is temporary
-   //
-
-   reg  [0:14] rd_addr;
-   wire [0:14] wr_addr = ssramADDR[8:22];
-
-   always @(negedge clk or posedge reset)
-     begin
-        if (reset)
-          ;
-        else if (~ssramWE_N)
-          SSRAM[wr_addr] <= ssramDATA;
-        rd_addr <= wr_addr;
-     end
-
-   assign ssramDATA = (ssramWE_N) ? SSRAM[rd_addr] : 36'bz;
    
    //
    // KS10
    //
 
-   ESM_KS10 uKS10
-     (.CLK50MHZ         (clk),
+   ESM_KS10 uKS10 (
+      .CLK50MHZ         (clk),
       .RESET_N          (~reset),
       .MR_N             (1'b0),
       // DZ11 Interfaces
@@ -653,6 +609,26 @@ module testbench;
       .ssramDATA        (ssramDATA),
       .haltLED          (haltLED),
       .test             (test)
-      );
+   );
+
+   //
+   // SSRAM
+   //
+   
+   CY7C1460 SSRAM (
+      .clk		(ssramCLK),
+      .cenb		(ssramCLKEN_N),
+      .adv_lb		(ssramADV),
+      .bws		({ssramBWA_N, ssramBWB_N,ssramBWC_N, ssramBWD_N}),
+      .oeb		(ssramOE_N),
+      .we_b		(ssramWE_N),
+      .ce1b		(1'b0),
+      .ce2		(ssramCE),
+      .ce3b		(1'b0),
+      .mode		(1'b0),
+      .a		(ssramADDR[3:22]),
+      .d		(ssramDATA[0:35])
+   );
+
    
 endmodule

@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -17,46 +17,90 @@
 //      763100        : IO Bridge Status Register
 //      763101        : IO Bridge Maintenace Register
 //
+//
+
+//
+// IO Bridge Status Register:
+//
+//            0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17
+//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+//    (LH)  |                                                                       |
+//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+//
+//           18  19  20  21  22  23  24 25 26 27 28 29 30 31 32 33 34 35
+//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+//    (RH)  |TMO|BMD|BPE|NXD|   |   |HI |LO |PWR|   |DXF|INI|    PIH    |    PIL    |
+//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+//
+//   Register Definitions
+//
+//      TMO : Non-existent Memory - Set by TMO.  Cleared by writing a 1.
+//      BMD : Bad Memory Data     - Always read as 0.  Writes are ignored.
+//      BPE : Bus Parity Error    - Always read as 0.  Writes are ignored.
+//      NXD : Non-existant Device - Set by NXD.  Cleared by writing a 1.
+//      HI  : Hi level intr pend  - IRQ on BR7 or BR6.  Writes are ignored.
+//      LO  : Lo level intr pend  - IRQ on BR5 or BR4.  Writes are ignored.
+//      PWR : Power Fail          - Always read as 0.  Writes are ignored.
+//      DXF : Diable Transfer     - Read/Write.  Does nothing.
+//      INI : Initialize          - Always read as 0.  Writing 1 resets all IO Bridge Devices.
+//      PIH : Hi level PIA        - R/W
+//      PIL : Lo level PIA        - R/W
+//
+// IO Bridge Maintenance Register:
+//
+//  SIMH reads this register as zero always and ignores writes.
+//
+//             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (LH)  |                                                     |
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//            18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (RH)  |                                                  |CR|
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//
+//
+//      CR  : Change Register     - Always read as 0.  Writes
+//                                  are ignored.
+//
 // File
-//      uba.v
+//   uba.v
 //
 // Author
-//      Rob Doyle - doyle (at) cox (dot) net
+//   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+//  Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`include "uba.vh"
 `include "../ks10.vh"
 
-module UBA(clk, rst, clken, ctlNUM,
+module UBA(clk, rst,
            // KS10 Bus Interface
-           busREQI,  busREQO,  busACKI,  busACKO,
-           busADDRI, busADDRO, busDATAI, busDATAO,
-           busINTR,
+           busREQI, busREQO, busACKI, busACKO, busADDRI, busADDRO, busDATAI, busDATAO, busINTR,
            // Device Interface
            devREQO, devADDRO, devDATAO, devINTA, devRESET,
            // Device #1 Interface
@@ -66,8 +110,6 @@ module UBA(clk, rst, clken, ctlNUM,
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          clken;                        // Clock enable
-   input  [ 0: 3] ctlNUM;                       // Bridge Device Number
    // KS10 Backplane Bus Interface
    input          busREQI;                      // Backplane Bus Request In
    output         busREQO;                      // Backplane Bus Request Out
@@ -103,23 +145,12 @@ module UBA(clk, rst, clken, ctlNUM,
    // IO Bridge Configuration
    //
 
-   localparam [14:17] ctlNUM1 = `ctlNUM1;       // IO Bridge Device 1
-   localparam [14:17] ctlNUM2 = `ctlNUM2;       // IO Bridge Device 2
-   localparam [14:17] ctlNUM3 = `ctlNUM3;       // IO Bridge Device 3
-   localparam [14:17] ctlNUM4 = `ctlNUM4;       // IO Bridge Device 4
-   localparam [18:35] wruNUM1 = `wruNUM1;       // IO Bridge Device 1 WRU Response (bit 19)
-   localparam [18:35] wruNUM2 = `wruNUM2;       // IO Bridge Device 2 WRU Response (bit 20)
-   localparam [18:35] wruNUM3 = `wruNUM3;       // IO Bridge Device 3 WRU Response (bit 21)
-   localparam [18:35] wruNUM4 = `wruNUM4;       // IO Bridge Device 4 WRU Response (bit 22)
-
-   //
-   // IO Addresses
-   //
-
-   localparam [18:26] ctrlADDR  = 9'o763;       	// Bridge Registers
-   localparam [18:35] pageADDR  = {ctrlADDR, 9'o000}; 	// Paging RAM Address
-   localparam [18:35] statADDR  = {ctrlADDR, 9'o100};   // Status Register Address
-   localparam [18:35] maintADDR = {ctrlADDR, 9'o101};   // Maintenance Register Address
+   parameter  [14:17] ubaNUM    = `devUBA1;                // Bridge Device Number
+   parameter  [18:35] ubaADDR   = 18'o763000;              // Base address
+   localparam [18:35] pageADDR  = ubaADDR + `pageOFFSET;   // Paging RAM Address
+   localparam [18:35] statADDR  = ubaADDR + `statOFFSET;   // Status Register Address
+   localparam [18:35] maintADDR = ubaADDR + `maintOFFSET;  // Maintenance Register Address
+   localparam [ 0:35] wruRESP   = `getWRU(ubaNUM);         // Lookup WRU Response
 
    //
    // Address Bus
@@ -137,7 +168,7 @@ module UBA(clk, rst, clken, ctlNUM,
    wire         busVECT   = busADDRI[12];       // 1 = Read interrupt vector
    wire         busIOBYTE = busADDRI[13];       // 1 = IO Bridge Byte IO Operation
    wire [15:17] busPI     = busADDRI[15:17];    // IO Bridge PI Request
-   wire [14:17] busCTL    = busADDRI[14:17];    // IO Bridge Device Number
+   wire [14:17] busDEV    = busADDRI[14:17];    // IO Bridge Device Number
    wire [18:35] busADDR   = busADDRI[18:35];    // IO Address
 
    //
@@ -145,13 +176,15 @@ module UBA(clk, rst, clken, ctlNUM,
    //
 
    wire wruREAD    = busIO & busWRU   &  busPHYS;
-   wire vectREAD   = busIO & busVECT  & (busCTL == ctlNUM);
-   wire pageREAD   = busIO & busREAD  & (busCTL == ctlNUM) & (busADDR[18:29] == pageADDR[18:29]);
-   wire pageWRITE  = busIO & busWRITE & (busCTL == ctlNUM) & (busADDR[18:29] == pageADDR[18:29]);
-   wire statWRITE  = busIO & busWRITE & (busCTL == ctlNUM) & (busADDR[18:35] == statADDR[18:35]);
-   wire statREAD   = busIO & busREAD  & (busCTL == ctlNUM) & (busADDR[18:35] == statADDR[18:35]);
-   wire devREAD    = busIO & busREAD  & (busCTL == ctlNUM) & (busADDR[18:20] == ctrlADDR[18:20]) & (busADDR[21:26] != ctrlADDR[21:26]);
-   wire devWRITE   = busIO & busWRITE & (busCTL == ctlNUM) & (busADDR[18:20] == ctrlADDR[18:20]) & (busADDR[21:26] != ctrlADDR[21:26]);
+   wire vectREAD   = busIO & busVECT  & (busDEV == ubaNUM);
+   wire pageREAD   = busIO & busREAD  & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
+   wire pageWRITE  = busIO & busWRITE & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
+   wire statWRITE  = busIO & busWRITE & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
+   wire statREAD   = busIO & busREAD  & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
+   wire maintWRITE = busIO & busWRITE & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
+   wire maintREAD  = busIO & busREAD  & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
+   wire devREAD    = busIO & busREAD  & (busDEV == ubaNUM) & (busADDR[18:20] == ubaADDR[18:20]) & (busADDR[21:26] != ubaADDR[21:26]);
+   wire devWRITE   = busIO & busWRITE & (busDEV == ubaNUM) & (busADDR[18:20] == ubaADDR[18:20]) & (busADDR[21:26] != ubaADDR[21:26]);
 
    //
    // IO Bridge Interrupt Request
@@ -188,7 +221,7 @@ module UBA(clk, rst, clken, ctlNUM,
      end
 
    //
-   // High Priority Interrupt
+   // Low Priority Interrupt
    //
    // Trace
    //  UBA3/E182
@@ -239,291 +272,264 @@ module UBA(clk, rst, clken, ctlNUM,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          devINTA = 4'b0;
+          devINTA = `ubaINTNUL;
         else
           begin
              if (wruREAD & (busPI == statPIH))
                begin
                   if (intREQ[7])
-                    devINTA = 4'b1000;
+                    devINTA = `ubaINTR7;
                   else if (intREQ[6])
-                    devINTA = 4'b0100;
+                    devINTA = `ubaINTR6;
                   else
-                    devINTA = 4'b0000;
+                    devINTA = `ubaINTNUL;
                end
              else if (wruREAD & (busPI == statPIL))
                begin
                   if (intREQ[5])
-                    devINTA = 4'b0010;
+                    devINTA = `ubaINTR5;
                   else if (intREQ[4])
-                    devINTA = 4'b0001;
+                    devINTA = `ubaINTR4;
                   else
-                    devINTA = 4'b0000;
+                    devINTA = `ubaINTNUL;
                end
              else
-               devINTA = 4'b0000;
+               devINTA = `ubaINTNUL;
           end
      end
 
    //
-   // NXM and NXD Decoding
-   //
-   // Details
-   //  NXD is asserted on an 'un-acked' IO request to the devices.
-   //  NXM is asserted on an 'un-acked' memory request to the devices.
+   // Control/Status Register
    //
 
-   wire devACKI = dev1ACKI | dev2ACKI;
-   wire setNXD  = ((devREQO & busREAD  &  busIO & ~devACKI) |
-                   (devREQO & busWRITE &  busIO & ~devACKI));
-   wire setNXM  = ((devREQO & busREAD  & ~busIO & ~devACKI) |
-                   (devREQO & busWRITE & ~busIO & ~devACKI));
-
-   //
-   // IO Bridge Status Register (IO Address 763100)
-   //
-   // Details:
-   //
-   //             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-   //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //     (LH)  |                                                     |
-   //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //
-   //            18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-   //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //     (RH)  |NM|BM|PE|ND|     |HI|LO|PF|  |DX|IN|  PIH   |  PIL   |
-   //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //
-   //     Register Definitions
-   //
-   //           NM  : Non-existent Memory - Set by NXM.  Cleared by
-   //                                       writing a 1.
-   //           BM  : Bad Memory Data     - Always read as 0.  Writes
-   //                                       are ignored.
-   //           PE  : Bus Parity Error    - Always read as 0.  Writes
-   //                                       are ignored.
-   //           ND  : Non-existant Device - Set by NXD.  Cleared by
-   //                                       writing a 1.
-   //           HI  : Hi level intr pend  - IRQ on BR7 or BR6.  Writes
-   //                                       are ignored.
-   //           LO  : Lo level intr pend  - IRQ on BR5 or BR4.  Writes
-   //                                       are ignored.
-   //           PF  : Power Fail          - Always read as 0.  Writes
-   //                                       are ignored.
-   //           DX  : Diable Transfer     - Read/Write.  Does nothing.
-   //           IN  : Initialize          - Always read as 0.  Writing
-   //                                       1 resets all IO Bridge Devices.
-   //           PIH : Hi level PIA        - R/W
-   //           PIL : Lo level PIA        - R/W
-   //
-
-   reg       statNM;
-   reg       statND;
-   reg       statDX;
+   reg       statTMO;
+   reg       statNXD;
+   reg       statDXF;
    reg [0:2] statPIH;
    reg [0:2] statPIL;
+   wire      setNXD;
+   wire      setTMO;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             statNM  <= 0;
-             statND  <= 0;
-             statDX  <= 0;
-             statPIH <= 0;
-             statPIL <= 0;
+             statTMO  <= 0;
+             statNXD  <= 0;
+             statDXF  <= 0;
+             statPIH  <= 0;
+             statPIL  <= 0;
           end
-        else if (clken)
+        else
           begin
              if (statWRITE)
                begin
-                  if (busDATAI[29])
+                  if (busDATAI[`statINI])
                     begin
-                       statNM  <= 0;
-                       statND  <= 0;
-                       statDX  <= 0;
+                       statTMO <= 0;
+                       statNXD <= 0;
+                       statDXF <= 0;
                        statPIH <= 0;
                        statPIL <= 0;
                     end
                   else
                     begin
-                       statNM  <= statNM & ~busDATAI[18];
-                       statND  <= statND & ~busDATAI[21];
-                       statDX  <= busDATAI[28];
-                       statPIH <= busDATAI[30:32];
-                       statPIL <= busDATAI[33:35];
+                       statTMO <= statTMO & !busDATAI[`statTMO];
+                       statNXD <= statNXD & !busDATAI[`statNXD];
+                       statDXF <= busDATAI[`statDXF];
+                       statPIH <= busDATAI[`statPIH];
+                       statPIL <= busDATAI[`statPIL];
                     end
                end
              else
                begin
-                  // FIXME
-                  //statNM <= statNM | setNXM;
-                  //statND <= statNM | setNXD;
+`ifdef FIXME
+                  if (setTMO | setNXD)
+                    statTMO <= 1;
+                  if (setNXD)
+                    statNXD <= 1;
+`endif
                end
           end
      end
 
-   wire [18:35] regSTAT = {statNM, 2'b0, statND, 2'b0, statINTHI, statINTLO,
-                           2'b0, statDX, 1'b0, statPIH, statPIL};
+   wire [0:35] regSTAT = {18'b0, statTMO, 2'b0, statNXD, 2'b0, statINTHI,
+                          statINTLO, 2'b0, statDXF, 1'b0, statPIH, statPIL};
 
    //
-   // IO Bridge Reset Output
+   // Device reset
    //
 
-   assign devRESET = statWRITE & busDATAI[29];
+   reg devRESET;
+   reg [0:5] count;
 
-   //
-   // IO Bridge Maintenance Register (IO Address 763101)
-   //
-   // Details
-   //  SIMH reads this register as zero always and ignores writes.
-   //
-   //             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-   //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //     (LH)  |                                                     |
-   //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //
-   //            18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-   //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //     (RH)  |                                                  |CR|
-   //           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //
-   //
-   //           CR  : Change Register     - Always read as 0.  Writes
-   //                                       are ignored.
-   //
-
-
-   //
-   //
-   // IO Bridge Pager.   IO Bridge Paging RAM is 763000 - 763077
-   //
-   // Details
-   //  The page table translates IO Bridge addresses to phyical
-   //  addresses.  There are 64 virtual pages which map to 2048
-   //  physical pages.
-   //
-   //  The IO Bridge Paging RAM is 64x15 bits.
-   //
-   // Note
-   //  The implementation is different than the KS10 implementation.
-   //  I have chosen to use a Dual Port RAM which allows the KS10 bus
-   //  interface to be implemented on one port (Read/Write) and the
-   //  IO Bridge Paging to be implemented on the second port (Read-only).
-   //
-   //  This saves a whole ton of multiplexers and uses some free DPRAM.
-   //
-   //  The IO Bridge addressing was little endian.  This has all been
-   //  converted to big-endian to keep things consistent.
-   //
-   //            18 19                24 25                33 34 35
-   //           +--+--------------------+--------------------+--+--+
-   //           | 0| Virtual Page Number|      Word Number   |W | B|
-   //           +--+--------------------+--------------------+--+--+
-   //                       |6                      |9
-   //                       |                       |
-   //                      \ /                      |
-   //               +-------+-------+               |
-   //               |      Page     |               |
-   //               |  Translation  |               |
-   //               +-------+-------+               |
-   //                       |                       |
-   //                       |                       |
-   //                      \ /11                   \ /9
-   //          +------------------------+------------------------+
-   //          |  Physical Page Number  |        Word Number     |
-   //          +------------------------+------------------------+
-   //           16                    26 27                    35
-   //
-   //  Paging RAM Write
-   //
-   //           0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-   //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //    (LH)  |                                                     |
-   //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //
-   //           18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-   //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //    (RH)  |FR|ES|FM|VA| 0| 0| 0|             PPN                |
-   //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //
-   //  Paging RAM Read
-   //
-   //           0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-   //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //    (LH)  |           | 0|FR|ES|FM|VA|                    | PPN |
-   //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //
-   //           18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-   //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //    (RH)  |        PPN (cont)        |                          |
-   //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //
-   //  Paging RAM Internal Format:
-   //
-   //            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14
-   //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //          |FR|ES|FM|PV|            PPN                 |
-   //          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   //
-   //  Paging RAM Definitions
-   //
-   //          FR  : Force Read-Pause-Write (AKA Read Reverse in the
-   //                documents).
-   //          ES  : Enable 16-bit IO Bridge Transfers.  Disable 18-bit
-   //                IO Bridge transfers.
-   //          FM  : Fast Transfer Mode.  In this mode, both odd and
-   //                even words of IO Bridge data are transferred during
-   //                a single KS10 memory operation (i.e., all 36 bits).
-   //          PV  : Page valid.  This bit is set to one when the page
-   //                data is loaded.
-   //          PPN : Physical Page Number.
-   //
-
-   wire [0: 5] addr = busADDRI[30:35];
-   reg  [0:14] pageRAM[0:63];
-
-   always @(negedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (pageWRITE)
-          pageRAM[addr] <= {busDATAI[18:21], busDATAI[25:35]};
+        if (rst)
+          begin
+             count    <= 0;
+             devRESET <= 0;
+          end
+        else if (statWRITE & busDATAI[`statINI])
+          begin
+             count    <= 0;
+             devRESET <= 1;
+          end
+        else
+          begin
+             if (count == 31)
+               devRESET <= 0;
+             else
+               count <= count + 1'b1;
+          end
+     end;
+
+   //
+   // KS10 to device
+   //
+
+   reg devREQO;
+   reg [0:35] devDATAO;
+   reg [0:35] devADDRO;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          begin
+             devREQO  <= 0;
+             devDATAO <= 0;
+             devADDRO <= 0;
+          end
+        else
+          begin
+             devREQO  <= busREQI;
+             devDATAO <= busDATAI;
+             devADDRO <= busADDRI;
+          end
      end
 
    //
-   // KS10 readback of Paging RAM
+   // IO Bus Arbiter
    //
 
-   wire [0:35] pageDATAO = {5'b0, pageRAM[addr][0:3], 7'b0, pageRAM[addr][4:14], 9'b0};
+   localparam [0:1] arbIDLE = 0,
+                    arbDEV1 = 1,
+                    arbDEV2 = 2;
+
+   reg [0:1] arbState;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          arbState <= arbIDLE;
+        else
+          case (arbState)
+            arbIDLE:
+              if (dev1REQI)
+                arbState <= arbDEV1;
+              else if (dev2REQI)
+                arbState <= arbDEV2;
+            arbDEV1:
+              if (!dev1REQI)
+                if (dev2REQI)
+                  arbState <= arbDEV2;
+                else
+                  arbState <= arbIDLE;
+            arbDEV2:
+              if (!dev2REQI)
+                if (dev1REQI)
+                  arbState <= arbDEV1;
+                else
+                  arbState <= arbIDLE;
+          endcase;
+     end;
+
+   wire        devREQI   = dev1REQI | dev2REQI;
+   wire        devACKI   = (arbState == arbDEV1 ? dev1ACKI :
+                            (arbState == arbDEV2 ? dev2ACKI :
+                             36'b0));
+   wire [0:35] devADDRI  = (arbState == arbDEV1 ? dev1ADDRI :
+                            (arbState == arbDEV2 ? dev2ADDRI :
+                             36'b0));
+
+   assign busREQO = devREQI;
 
    //
-   // IO Bridge Paging
+   // NXD is asserted on an 'un-acked' IO request to the devices.
    //
 
-   wire [ 0:35] devADDRI  = ((dev1REQI) ? dev1ADDRI :
-                             (dev2REQI) ? dev2ADDRI :
-                             36'b0);
+   reg        [0:3] nxdCount;
+   localparam [0:3] nxdTimeout = 15;
+   
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          nxdCount <= 0;
+        else
+          begin
+             if (devREQO & busIO & (busREAD | busWRITE))
+               nxdCount <= nxdTimeout;
+             else if (nxdCount != 0)
+               begin
+                  if (devACKI)
+                    nxdCount <= 0;
+                  else
+                    nxdCount <= nxdCount - 1'b1;
+               end
+          end
+     end
 
-   wire [ 0: 5] virtPAGE  = devADDRI[19:24];            // Virtual Page Number
-   wire         forceRPW  = pageRAM[virtPAGE][0];
-   wire         enable16  = pageRAM[virtPAGE][1];
-   wire         fastMode  = pageRAM[virtPAGE][2];
-   wire         pageVALID = pageRAM[virtPAGE][3];
-   wire [16:26] physPAGE  = pageRAM[virtPAGE][4:14];
+   assign setNXD = (nxdCount == 1);
 
    //
-   // Bus Initiator Paging
+   // TMO is asserted on an 'un-acked' KS10 bus request
    //
 
-   assign busADDRO = {devADDRI[0:13], 2'b0, physPAGE[16:26], devADDRI[27:35]};
-   assign busREQO  = dev1REQI | dev2REQI;
+   reg        [0:3] tmoCount;
+   localparam [0:3] tmoTimeout = 15;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          tmoCount <= 0;
+        else
+          begin
+             if (busREQO)
+	       tmoCount <= tmoTimeout;
+	     else if (tmoCount != 0)
+	       begin
+                  if (busACKI)
+                    tmoCount <= 0;
+                  else
+                    tmoCount <= tmoCount - 1'b1;
+	       end
+	  end
+     end
+   
+   assign setTMO = (tmoCount == 1);
 
    //
-   // Bus Target Paging
+   // IO Bus Paging
    //
 
-   assign devADDRO = busADDRI;
-   assign dev1ACKO = 0;         // FIXME
-   assign dev2ACKO = 0;         // FIXME
+   wire        pageNXM;
+   wire [0:35] pageDATAO;
+
+   UBAPAG uUBAPAG (
+      .clk          (clk),
+      .rst          (rst),
+      // KS10 Bus Interface
+      .busADDRI     (busADDRI),
+      .busDATAI     (busDATAI),
+      .busADDRO     (busADDRO),
+      .pageWRITE    (pageWRITE),
+      .pageDATAO    (pageDATAO),
+      // Device Interface
+      .devREQI      (devREQI),
+      .devADDRI     (devADDRI),
+      // Status
+      .pageNXM      (pageNXM)
+   );
 
    //
    // Bus Data Out
@@ -531,62 +537,49 @@ module UBA(clk, rst, clken, ctlNUM,
 
    reg busACKO;
    reg [0:35] busDATAO;
-   always @(pageREAD or pageDATAO or
-            statREAD or regSTAT   or
-            wruREAD  or wruNUM1   or wruNUM3  or ctlNUM    or statINTHI or statINTLO or busPI or statPIH or statPIL or
-            devREAD  or devWRITE  or vectREAD or dev1ACKI  or dev2ACKI  or dev1DATAI or dev2DATAI or statWRITE)
+
+   always @(pageREAD   or pageWRITE or pageDATAO  or
+            statREAD   or statWRITE or regSTAT    or
+            maintWRITE or maintREAD or
+            wruREAD    or ubaNUM    or statINTHI  or statINTLO or busPI    or statPIH   or statPIL   or
+            devREAD    or devWRITE  or vectREAD   or dev1ACKI  or dev2ACKI or dev1DATAI or dev2DATAI or arbState)
      begin
-        busACKO  = 1'b0;
-        busDATAO = 36'bx;
+        busACKO  = 0;
+        busDATAO = 36'b0;
         if (pageREAD)
           begin
-             busACKO  = 1'b1;
+             busACKO  = 1;
              busDATAO = pageDATAO;
           end
         if (statREAD)
           begin
-             busACKO  = 1'b1;
-             busDATAO = {18'b0, regSTAT};
+             busACKO  = 1;
+             busDATAO = regSTAT;
           end
         if ((wruREAD & (busPI == statPIH)) |
-            (wruREAD & (busPI == statPIL)))
+	    (wruREAD & (busPI == statPIL)))
           begin
-             busACKO  = 1'b1;
-             case (ctlNUM)
-               ctlNUM1:
-                 busDATAO = wruNUM1;    // Bit 19
-               ctlNUM2:
-                 busDATAO = wruNUM2;    // Bit 20
-               ctlNUM3:
-                 busDATAO = wruNUM3;    // Bit 21
-               ctlNUM4:
-                 busDATAO = wruNUM4;    // Bit 22
-               default:
-                 busDATAO = 36'b0;
-             endcase
+             busACKO  = 1;
+             busDATAO = wruRESP;
           end
         if (devREAD | devWRITE | vectREAD)
           begin
-             busACKO = dev1ACKI | dev2ACKI;
              if (dev1ACKI)
-               busDATAO = dev1DATAI;
+               begin
+                  busACKO  = 1;
+                  busDATAO = dev1DATAI;
+               end
              else if (dev2ACKI)
-               busDATAO = dev2DATAI;
-             else
-               busDATAO = 36'b0;
+               begin
+                  busACKO  = 1;
+                  busDATAO = dev2DATAI;
+               end
           end
-        if (statWRITE)
+        if (statWRITE | maintWRITE | maintREAD | pageWRITE)
           begin
-             busACKO = 1;
+             busACKO  = 1;
              busDATAO = 36'b0;
           end
      end
 
-   //
-   // Device Data Out
-   //
-
-   assign devDATAO = busDATAI;
-
 endmodule
-

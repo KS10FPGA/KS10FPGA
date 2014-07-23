@@ -43,7 +43,7 @@
 
 `default_nettype none
 
-module sync(clk, rst, o, i);
+module SYNC(clk, rst, o, i);
 
    parameter INIT  = 0;
    parameter WIDTH = 1;

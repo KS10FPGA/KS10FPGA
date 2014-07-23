@@ -322,15 +322,17 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
         // CPU Interrupt
         //
         
-        else if (cpuINTR & vmaPHYSICAL)
+        else if (cpuINTR/* & vmaPHYSICAL*/)
           pfDISP = 4'b0001;
 
         //
         // Timer Interrupt
         //
         
-        else if (timerINTR & vmaPHYSICAL)
+        else if (timerINTR/* & vmaPHYSICAL */)
           pfDISP = 4'b0001;
+
+`ifdef broken
 
         //
         // Page not valid/present
@@ -352,7 +354,9 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
         
         else if (flagPAGEEN & vmaVIRTUAL & (vmaADDR[18:31] != 0) & writetestENABLE & ~pageWRITEABLE)
           pfDISP = 4'b1000;
-        
+
+`endif	
+	
         //
         // No Page Failure or Interrupt
         //
