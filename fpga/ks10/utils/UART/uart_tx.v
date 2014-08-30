@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -11,16 +11,14 @@
 //   - no parity
 //   - 1 stop bit
 //
-//   To transmit a word of data, provide the data on the data
-//   bus and assert the 'load' input for a clock cycle.  When
-//   the data is sent, the 'intr' output will be asserted for
-//   a single clock cycle.
+//   To transmit a word of data, provide the data on the data bus and assert
+//   the 'load' input for a clock cycle.  When the data is sent, the 'intr'
+//   output will be asserted for a single clock cycle.
 //
 // Note
-//   This UART primitive transmitter is kept simple ntentionally and
-//   is therefore unbuffered.  If you require a double buffered UART,
-//   then you will need to layer a set of buffers on top of this
-//   device.
+//   This UART primitive transmitter is kept simple ntentionally and is
+//   therefore unbuffered.  If you require a double buffered UART, then you
+//   will need to layer a set of buffers on top of this device.
 //
 // File
 //   uart_tx.vhd
@@ -28,31 +26,29 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2009, 2010, 2011, 2012 Rob Doyle
+//  Copyright (C) 2009-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 module UART_TX(clk, rst, clkBR, load, intr, data, txd);
 
@@ -80,12 +76,12 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
                    stateBIT7  =  9,     // Working on Bit 0
                    stateSTOP  = 10,     // Working on Stop Bit
                    stateDONE  = 11;     // Generate Interrupt
-   
+
     //
     // UART Transmitter:
     //
     //  The clkBR is 16 clocks per bit.  The UART transmits LSB first.
-    // 
+    //
     //  When the load input is asserted, the data is loaded into the
     //  Transmit Register and the state machine is started.
     //
@@ -122,11 +118,11 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
         else
 
           case (state)
-            
+
             //
             // Transmitter is Idle
             //
-            
+
             stateIDLE:
               if (load)
                 begin
@@ -134,7 +130,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
                    txREG <= data;
                    state <= stateSTART;
                 end
-            
+
             //
             // Transmit Start Bit
             //
@@ -148,7 +144,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
                   end
                 else
                   brdiv <= brdiv - 1'b1;
- 
+
             //
             // Transmit Bit 0 (LSB)
             //
@@ -162,7 +158,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
                   end
                 else
                   brdiv <= brdiv - 1'b1;
-            
+
             //
             // Transmit Bit 1
             //
@@ -176,7 +172,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
                   end
                 else
                   brdiv <= brdiv - 1'b1;
- 
+
             //
             // Transmit Bit 2
             //
@@ -204,7 +200,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
                   end
                 else
                   brdiv <= brdiv - 1'b1;
- 
+
             //
             // Transmit Bit 4
             //
@@ -218,7 +214,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
                   end
                 else
                   brdiv <= brdiv - 1'b1;
-               
+
             //
             // Transmit Bit 5
             //
@@ -232,7 +228,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
                   end
                 else
                   brdiv <= brdiv - 1'b1;
-            
+
             //
             // Transmit Bit 6
             //
@@ -246,7 +242,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
                   end
                 else
                   brdiv <= brdiv - 1'b1;
-  
+
             //
             // Transmit Bit 7 (MSB)
             //
@@ -260,7 +256,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
                   end
                 else
                   brdiv <= brdiv - 1'b1;
- 
+
             //
             // Transmit Stop Bit
             //
@@ -271,7 +267,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
                   state <= stateDONE;
                 else
                   brdiv <= brdiv - 1'b1;
- 
+
             //
             // Generate Interrupt
             //
@@ -285,7 +281,7 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
 
             default:
               state <= stateIDLE;
-             
+
           endcase
      end
 
@@ -313,8 +309,8 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
    //
    // Interrupt
    //
-   
+
    assign intr = (state == stateDONE);
    assign txd  = txdata;
-   
+
 endmodule
