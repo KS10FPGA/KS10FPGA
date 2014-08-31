@@ -1,27 +1,25 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-// KS10 Processor
+// KS-10 Processor
 //
 // Brief
 //   DZ11 Asynchronous Terminal Multiplexer
 //
 // Details
-//   The information used to design the DZ11 was obtained from the
-//   following DEC docmument:
+//   The information used to design the DZ11 was obtained from the following
+//   DEC docmument:
 //
-//   DZ11 Asynchronous Multiplexer Technical Manual
-//   DEC Publication EK-DZ110-TM-002
+//     "DZ11 Asynchronous Multiplexer Technical Manual" DEC Publication
+//     EK-DZ110-TM-002
 //
 // Notes
-//   The KS10 is 36-bit big-endian and uses [0:35] notation.
+//   Regarding endian-ness:
+//     The KS10 backplane bus is 36-bit big-endian and uses [0:35] notation.
+//     The IO Device are 36-bit little-endian (after Unibus) and uses [35:0]
+//     notation.
 //
-//   The 'Unibus' IO Bus is 16-bit little-endian and uses [15:0]
-//   notation.   Sorry about the mixed endian-ism.  I didn't
-//   create this stuff - I've just matched the exising notation.
-//
-//   Whereas the 'Unibus' is 18-bit data and 16-bit address, I've
-//   implemented the IO bus as 18-bit address and 36-bit data just
-//   to keep things simple.
+//     Whereas the 'Unibus' is 18-bit data and 16-bit address, I've implemented
+//     the IO bus as 36-bit address and 36-bit data just to keep things simple.
 //
 // File
 //   dz11.v
@@ -29,37 +27,40 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2013 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "dz11.vh"
+`include "dzcsr.vh"
+`include "dzlpr.vh"
+`include "dztcr.vh"
+`include "dztdr.vh"
+`include "../ubabus.vh"
 `include "../../ks10.vh"
 `include "uart/uart_brg.vh"
-  
+
 module DZ11(clk,      rst,
             dz11TXD,  dz11RXD,  dz11CO,  dz11RI,  dz11DTR,
             devRESET, devINTR,  devINTA,
@@ -72,9 +73,9 @@ module DZ11(clk,      rst,
    // DZ11 Interfaces
    output [ 7: 0] dz11TXD;                      // DZ11 Transmitter Serial Data
    input  [ 7: 0] dz11RXD;                      // DZ11 Receiver Serial Data
-   input  [ 7: 0] dz11CO;                       // DZ11 Carrier Detect Input
-   input  [ 7: 0] dz11RI;                       // DZ11 Ring Indicator Input
-   output [ 7: 0] dz11DTR;                      // DZ11 Data Terminal Ready Output
+   input  [ 7: 0] dz11CO;                       // DZ11 Carrier Detect
+   input  [ 7: 0] dz11RI;                       // DZ11 Ring Indicator
+   output [ 7: 0] dz11DTR;                      // DZ11 Data Terminal Ready
    // Reset
    input          devRESET;                     // IO Bus Bridge Reset
    // Interrupt
@@ -105,57 +106,46 @@ module DZ11(clk,      rst,
    // DZ Register Addresses
    //
 
-   localparam [18:35] csrADDR = dzADDR + `csrOFFSET;     // CSR Register
-   localparam [18:35] rbfADDR = dzADDR + `rbfOFFSET;     // RBF Register
-   localparam [18:35] lprADDR = dzADDR + `lprOFFSET;     // LPR Register
-   localparam [18:35] tcrADDR = dzADDR + `tcrOFFSET;     // TCR Register
-   localparam [18:35] msrADDR = dzADDR + `msrOFFSET;     // MSR Register
-   localparam [18:35] tdrADDR = dzADDR + `tdrOFFSET;     // TDR Register
+   localparam [18:35] csrADDR = dzADDR + `csrOFFSET;    // CSR Register
+   localparam [18:35] rbfADDR = dzADDR + `rbfOFFSET;    // RBF Register
+   localparam [18:35] lprADDR = dzADDR + `lprOFFSET;    // LPR Register
+   localparam [18:35] tcrADDR = dzADDR + `tcrOFFSET;    // TCR Register
+   localparam [18:35] msrADDR = dzADDR + `msrOFFSET;    // MSR Register
+   localparam [18:35] tdrADDR = dzADDR + `tdrOFFSET;    // TDR Register
 
    //
    // DZ Interrupt Vectors
    //
 
-   localparam [18:35] rxVECT = dzVECT;           // DZ11 Receiver Interrupt Vector
-   localparam [18:35] txVECT = dzVECT + 4;       // DZ11 Transmitter Interrupt Vector
+   localparam [18:35] rxVECT = dzVECT;          // DZ11 RX Interrupt Vector
+   localparam [18:35] txVECT = dzVECT + 4;      // DZ11 TX Interrupt Vector
 
    //
-   // Memory Address and Flags
-   //
-   // Details:
-   //  devADDRI[ 0:13] is flags
-   //  devADDRI[14:35] is address
+   // Device Address and Flags
    //
 
-   wire         devREAD   = devADDRI[ 3];       // 1 = Read Cycle (IO or Memory)
-   wire         devWRITE  = devADDRI[ 5];       // 1 = Write Cycle (IO or Memory)
-   wire         devIO     = devADDRI[10];       // 1 = IO Cycle, 0 = Memory Cycle
-   wire         devVECT   = devADDRI[12];       // 1 = Read interrupt vector
-   wire         devIOBYTE = devADDRI[13];       // 1 = Byte IO Operation
-   wire [14:17] devDEV    = devADDRI[14:17];    // Device Number
-   wire [18:35] devADDR   = devADDRI[18:35];    // Device Address
-   wire         devHIBYTE = devADDRI[35];       // Register High Byte
-   wire         devLOBYTE = ~devHIBYTE;         // Register Low Byte
+   wire         devREAD   = `devREAD(devADDRI);         // Read Cycle
+   wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle
+   wire         devIO     = `devIO(devADDRI);           // IO Cycle
+   wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
+   wire         devIOBYTE = `devIOBYTE(devADDRI);       // Byte IO Operation
+   wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
+   wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
+   wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
+   wire         devLOBYTE = `devLOBYTE(devADDRI);       // Device Low Byte
 
    //
    // Address Decoding
    //
 
-   wire csrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR[18:34] == csrADDR[18:34]);
-   wire csrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR[18:34] == csrADDR[18:34]);
-   wire rbufREAD  = devIO & devREAD  & (devDEV == dzDEV) & (devADDR[18:34] == rbfADDR[18:34]) & ~devIOBYTE;
-   wire lprWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR[18:34] == lprADDR[18:34]) & ~devIOBYTE;
-   wire tcrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR[18:34] == tcrADDR[18:34]);
-   wire tcrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR[18:34] == tcrADDR[18:34]);
-   wire msrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR[18:34] == msrADDR[18:34]);
-   wire tdrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR[18:34] == tdrADDR[18:34]);
-
-   wire csrWRITEH = ((csrWRITE & devIOBYTE & devHIBYTE) | (csrWRITE & ~devIOBYTE));
-   wire csrWRITEL = ((csrWRITE & devIOBYTE & devLOBYTE) | (csrWRITE & ~devIOBYTE));
-   wire tcrWRITEH = ((tcrWRITE & devIOBYTE & devHIBYTE) | (tcrWRITE & ~devIOBYTE));
-   wire tcrWRITEL = ((tcrWRITE & devIOBYTE & devLOBYTE) | (tcrWRITE & ~devIOBYTE));
-   wire tdrWRITEH = ((tdrWRITE & devIOBYTE & devHIBYTE) | (tdrWRITE & ~devIOBYTE));
-   wire tdrWRITEL = ((tdrWRITE & devIOBYTE & devLOBYTE) | (tdrWRITE & ~devIOBYTE));
+   wire csrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
+   wire csrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
+   wire rbufREAD  = devIO & devREAD  & (devDEV == dzDEV) & (devADDR == rbfADDR[18:34]) & !devIOBYTE;
+   wire lprWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR == lprADDR[18:34]) & !devIOBYTE;
+   wire tcrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
+   wire tcrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
+   wire msrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR == msrADDR[18:34]);
+   wire tdrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR == tdrADDR[18:34]);
 
    //
    // Interrupt Vector Read Operation
@@ -164,30 +154,33 @@ module DZ11(clk,      rst,
    wire vectREAD  = devIO & devVECT & (devDEV == dzDEV);
 
    //
-   // Big-endian to little-endian data bus fixup
+   // Big-endian to little-endian data bus swap
    //
 
    wire [35:0] dzDATAI = devDATAI[0:35];
 
-   //[CLR] 15us one-shot
+   //
+   // CSR[CLR]
+   //   This is a 15us one-shot in the KS10
    //
 
    reg [9:0] clrCOUNT;
-   always @(posedge clk or posedge rst or posedge devRESET)
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | devRESET)
-          clrCOUNT <= 2;
+        if (rst)
+          clrCOUNT <= 0;
         else
           begin
-             if (csrWRITEL & dzDATAI[4])
-               clrCOUNT <= `CLKFRQ / 1000000 * 15;
-             else if (csrCLR)
+             if (devRESET)
+               clrCOUNT <= 0;
+             if (csrWRITE & devLOBYTE & `dzCSR_CLR(dzDATAI))
+               clrCOUNT <= 15 * `CLKFRQ / 1000000;
+             else if (clrCOUNT != 0)
                clrCOUNT <= clrCOUNT - 1'b1;
           end
      end
 
    wire csrCLR = (clrCOUNT != 0);
-   wire regRESET = csrCLR;
 
    //
    // CSR Register
@@ -204,9 +197,9 @@ module DZ11(clk,      rst,
    reg [2:0] csrTLINE;
    reg       csrMAINT;
 
-   always @(posedge clk or posedge regRESET)
+   always @(posedge clk or posedge rst)
      begin
-        if (regRESET)
+        if (rst)
           begin
              csrTRDY  <= 0;
              csrTIE   <= 0;
@@ -218,35 +211,33 @@ module DZ11(clk,      rst,
           end
         else
           begin
-
-             //
-             // Write to high byte
-             //
-
-             if (csrWRITEH)
+             if (csrCLR | devRESET)
                begin
-                  csrTIE   <= dzDATAI[14];
-                  csrSAE   <= dzDATAI[12];
+                  csrTRDY  <= 0;
+                  csrTIE   <= 0;
+                  csrSAE   <= 0;
+                  csrRIE   <= 0;
+                  csrMSE   <= 0;
+                  csrTLINE <= 0;
+                  csrMAINT <= 0;
                end
-
-             //
-             // Write to low byte
-             //
-
-             if (csrWRITEL)
+             else if (csrWRITE)
                begin
-                  csrRIE   <= dzDATAI[ 6];
-                  csrMSE   <= dzDATAI[ 5];
-                  csrMAINT <= dzDATAI[ 3];
+                  if (devHIBYTE)
+                    begin
+                       csrTIE <= `dzCSR_TIE(dzDATAI);
+                       csrSAE <= `dzCSR_SAE(dzDATAI);
+                    end
+                  if (devLOBYTE)
+                    begin
+                       csrRIE   <= `dzCSR_RIE(dzDATAI);
+                       csrMSE   <= `dzCSR_MSE(dzDATAI);
+                       csrMAINT <= `dzCSR_MAINT(dzDATAI);
+                    end
                end
-
-             //
-             // Transmitter Scan
-             //
-
-             if (csrTRDY & tdrWRITEL)
+             else if (csrTRDY & tdrWRITE & devLOBYTE)
                csrTRDY <= 0;
-             else if (tcrLIN[scan] & ttyTXEMPTY[scan])
+             else if (tcrLIN[scan] & uartTXEMPTY[scan])
                begin
                   csrTRDY  <= 1;
                   csrTLINE <= scan;
@@ -262,6 +253,7 @@ module DZ11(clk,      rst,
    //
 
    reg [7:0] tlineMUX;
+
    always @(csrTLINE)
      begin
         case (csrTLINE)
@@ -277,37 +269,48 @@ module DZ11(clk,      rst,
      end
 
    //
-   // RBUF Register
-   //
-   // Details
-   //  RBUF is read only and can only be read as words
-   //
-
-   wire [15:0] regRBUF  = rbufDATA;
-
-   //
    // LPR Register
    //
    // Details
    //  LPR is write-only and can only be written as words.
+   //  The LINE field selects which receiver is being updated.
    //
 
-   reg lprRXON;
+   reg lprRXEN[0:7];
 
-   always @(posedge clk or posedge regRESET)
+   always @(posedge clk or posedge rst)
      begin
-        if (regRESET)
+        if (rst)
           begin
-             lprRXON  <= 0;
+             lprRXEN[0] <= 0;
+             lprRXEN[1] <= 0;
+             lprRXEN[2] <= 0;
+             lprRXEN[3] <= 0;
+             lprRXEN[4] <= 0;
+             lprRXEN[5] <= 0;
+             lprRXEN[6] <= 0;
+             lprRXEN[7] <= 0;
           end
-        else if (lprWRITE)
+        else
           begin
-             lprRXON <= dzDATAI[12];
+             if (csrCLR | devRESET)
+               begin
+                  lprRXEN[0] <= 0;
+                  lprRXEN[1] <= 0;
+                  lprRXEN[2] <= 0;
+                  lprRXEN[3] <= 0;
+                  lprRXEN[4] <= 0;
+                  lprRXEN[5] <= 0;
+                  lprRXEN[6] <= 0;
+                  lprRXEN[7] <= 0;
+               end
+             else if (lprWRITE)
+               lprRXEN[`dzLPR_LINE(dzDATAI)] <= `dzLPR_RXEN(dzDATAI);
           end
      end
 
    //
-   // TCR Reguster
+   // TCR Register
    //
    // Details
    //  TCR is read/write and can be accessed as bytes or words
@@ -317,23 +320,33 @@ module DZ11(clk,      rst,
 
    reg [7:0] tcrDTR;
    reg [7:0] tcrLIN;
-   always @(posedge clk or posedge rst or posedge devRESET)
+
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | devRESET)
+        if (rst)
           begin
              tcrDTR <= 0;
              tcrLIN <= 0;
           end
-        else if (csrCLR)
-          begin
-             tcrLIN <= 0;
-          end
         else
           begin
-             if (tcrWRITEH)
-               tcrDTR <= dzDATAI[15:8];
-             if (tcrWRITEL)
-               tcrLIN <= dzDATAI[ 7:0];
+             if (devRESET)
+               begin
+                  tcrDTR <= 0;
+                  tcrLIN <= 0;
+               end
+             else if (csrCLR)
+               tcrLIN <= 0;
+             else
+               begin
+                  if (tcrWRITE)
+                    begin
+                       if (devHIBYTE)
+                         tcrDTR <= `dzTCR_DTR(dzDATAI);
+                       if (devLOBYTE)
+                         tcrLIN <= `dzTCR_LIN(dzDATAI);
+                    end
+               end
           end
      end
 
@@ -359,8 +372,8 @@ module DZ11(clk,      rst,
    //  The Break circuitry is not implemented
    //
 
-   wire [7:0] ttyTXDATA = dzDATAI[7:0];
-   wire [7:0] ttyTXLOAD = (tdrWRITEL) ? (tlineMUX & tcrLIN) : 8'b0;
+   wire [7:0] uartTXDATA = `dzTDR_TBUF(dzDATAI);
+   wire [7:0] uartTXLOAD = (tdrWRITE & devLOBYTE) ? (tlineMUX & tcrLIN) : 8'b0;
 
    //
    // Scanner
@@ -370,12 +383,18 @@ module DZ11(clk,      rst,
    //
 
    reg [2:0] scan;
-   always @(posedge clk or posedge rst or posedge csrCLR)
+
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | csrCLR)
+        if (rst)
           scan <= 0;
-        else if (csrMSE)
-          scan <= scan + 1'b1;
+        else
+          begin
+             if (csrCLR | devRESET)
+               scan <= 0;
+             else if (csrMSE)
+               scan <= scan + 1'b1;
+          end
      end
 
    //
@@ -386,6 +405,7 @@ module DZ11(clk,      rst,
    //
 
    reg [7:0] scanMUX;
+
    always @(scan)
      begin
         case (scan)
@@ -404,8 +424,8 @@ module DZ11(clk,      rst,
    // Maintenance Loopback
    //
    // Details:
-   //  When CSR[MAINT] is asserted, the transmitter is looped
-   //  back to the receiver.
+   //  When CSR[MAINT] is asserted, the transmitter is looped back to the
+   //  receiver.
    //
 
    wire [7:0] ttyRXD = (csrMAINT) ? dz11TXD : dz11RXD;
@@ -414,26 +434,26 @@ module DZ11(clk,      rst,
    // Clear receiver full flag
    //
    // Details:
-   //  If the receiver is full, empty the receiver into the
-   //  RXFIFO and clear the full flag.
+   //  If the receiver is full, empty the receiver into the FIFO and clear
+   //  the full flag.
    //
 
-   wire [7:0] ttyRXCLR = scanMUX & ttyRXFULL;
+   wire [7:0] uartRXCLR = scanMUX & uartRXFULL;
 
    //
    // UART Baud Rate Generators
    //
    // Details
-   //  For now the UARTS are fixed programmed to 9600 baud
+   //  For now the UARTS are fixed programmed to 115200 baud
    //
 
    wire clkBR;
-   UART_BRG ttyBRG
-     (.clk        (clk),
+   UART_BRG ttyBRG (
+      .clk        (clk),
       .rst        (rst | devRESET),
       .brgSEL     (`BR115200),
       .brgCLKEN   (clkBR)
-      );
+   );
 
    //
    // Generate Array of UARTS
@@ -441,14 +461,10 @@ module DZ11(clk,      rst,
    // Details
    //  The 'generate' loops below builds 8 UARTS.
    //
-   // Note
-   //  For some reason, Xilinx ISE requires that the genvar line is inside
-   //  the generate statement.  Other tools don't seem to care.
-   //
 
-   wire [7:0] ttyRXFULL;                // UART receiver has data
-   wire [7:0] ttyRXDATA[0:7];           // UART received data
-   wire [7:0] ttyTXEMPTY;               // UART transmitter buffer is empty
+   wire [7:0] uartRXFULL;               // UART receiver has data
+   wire [7:0] uartRXDATA[0:7];          // UART received data
+   wire [7:0] uartTXEMPTY;              // UART transmitter buffer is empty
 
    generate
 
@@ -462,29 +478,30 @@ module DZ11(clk,      rst,
            // UART Transmitters
            //
 
-           UART_BUFTX ttyTX
-             (.clk      (clk),
+           UART_BUFTX ttyTX (
+              .clk      (clk),
               .rst      (rst | devRESET),
-              .clkBR    (lprRXON & clkBR),
-              .load     (ttyTXLOAD[i]),
-              .data     (ttyTXDATA),
-              .empty    (ttyTXEMPTY[i]),
+              .clkBR    (lprRXEN[i] & clkBR),
+              .load     (uartTXLOAD[i]),
+              .data     (uartTXDATA),
+              .empty    (uartTXEMPTY[i]),
               .txd      (dz11TXD[i])
-              );
+           );
 
            //
            // UART Receivers
            //
 
-           UART_BUFRX ttyRX
-             (.clk      (clk),
+           UART_BUFRX ttyRX (
+              .clk      (clk),
               .rst      (rst | devRESET),
               .clkBR    (clkBR),
-              .clr      (ttyRXCLR[i]),
               .rxd      (ttyRXD[i]),
-              .full     (ttyRXFULL[i]),
-              .data     (ttyRXDATA[i])
-              );
+              .clr      (uartRXCLR[i]),
+              .full     (uartRXFULL[i]),
+              .data     (uartRXDATA[i])
+           );
+
         end
 
    endgenerate
@@ -493,8 +510,8 @@ module DZ11(clk,      rst,
    // Read FIFO edge trigger
    //
    // Details:
-   //  The FIFO state is updated on the trailing edge of the read
-   //  pulse; i.e., after the read is completed.
+   //  The FIFO state is updated on the trailing edge of the read pulse; i.e.,
+   //  after the read is completed.
    //
 
    wire fifoREAD;
@@ -503,36 +520,79 @@ module DZ11(clk,      rst,
    //
    // RBUF FIFO
    //
+   // Details:
+   //  Framing Error and Parity Error are not implemented.  UART status should
+   //  be pushed into the FIFO with the data.
+   //
 
-   wire [15:0] rbufDATA;
+   wire [14:0] fifoDATA;
    wire        fifoEMPTY;
-   wire        fifoWRITE = ttyRXFULL[scan];
+   wire        fifoWRITE = uartRXFULL[scan];
 
-   DZFIFO uDZFIFO
-     (.clk      (clk),
-      .rst      (rst | csrCLR | devRESET),
-      .din      ({scan, ttyRXDATA[scan]}),
+   DZFIFO uDZFIFO (
+      .clk      (clk),
+      .rst      (rst),
+      .clr      (csrCLR | devRESET),
+      .din      ({4'b0, scan, uartRXDATA[scan]}),
       .wr       (fifoWRITE),
-      .dout     (rbufDATA),
+      .dout     (fifoDATA),
       .rd       (fifoREAD),
       .empty    (fifoEMPTY)
-      );
+   );
 
-   wire csrRDONE  = ~fifoEMPTY;
+   wire csrRDONE = !fifoEMPTY;
 
    //
-   // SILO Alarm Counter
+   // RBUF DVAL
    //
 
-   reg [0:4] depth;
-   always @(posedge clk or posedge regRESET)
+   reg rbufDVAL;
+
+   always @(posedge clk or posedge rst)
      begin
-        if (regRESET)
-          depth <= 0;
-        else if (fifoREAD)
-          depth <= 0;
-        else if (fifoWRITE)
-          depth <= depth + 1'b1;
+        if (rst)
+          rbufDVAL  <= 0;
+        else
+          begin
+             if (csrCLR | devRESET)
+               rbufDVAL <= 0;
+             else if (fifoREAD | fifoWRITE)
+               rbufDVAL <= !fifoEMPTY;
+          end
+     end
+
+   //
+   // RBUF Register
+   //
+   // Details
+   //  RBUF is read only and can only be read as words.
+   //
+   //  RBUF[DVAL] is the FIFO Status.  Everything else is read from the FIFO.
+   //
+
+   wire [15:0] regRBUF = {rbufDVAL, fifoDATA};
+
+   //
+   // SILO Alarm Counter.
+   //  This increments every time a character is stored in the FIFO. The
+   //  counter is reset by a rbufREAD.  This is not the FIFO depth.
+   //
+
+   reg [0:4] countSA;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          countSA <= 0;
+        else
+          begin
+             if (csrCLR | devRESET)
+               countSA <= 0;
+             else if (fifoREAD)
+               countSA <= 0;
+             else if (fifoWRITE)
+               countSA <= countSA + 1'b1;
+          end
      end
 
    //
@@ -540,14 +600,20 @@ module DZ11(clk,      rst,
    //
 
    reg csrSA;
-   always @(posedge clk or posedge regRESET)
+
+   always @(posedge clk or posedge rst)
      begin
-        if (regRESET)
+        if (rst)
           csrSA <= 0;
-        else if (fifoREAD)
-          csrSA <= 0;
-        else if (depth == 16)
-          csrSA <= 1;
+        else
+          begin
+             if (csrCLR | devRESET)
+               csrSA <= 0;
+             else if (fifoREAD)
+               csrSA <= 0;
+             else if (countSA == 16)
+               csrSA <= 1;
+          end
      end
 
    //
@@ -556,23 +622,23 @@ module DZ11(clk,      rst,
 
    wire intTX;
    wire intTX0 = csrTRDY & csrTIE;
-   EDGETRIG uINTTX(clk, rst, 1'b1, 1'b0, intTX0, intTX);
+   EDGETRIG uINTTX(clk, rst, 1'b1, 1'b1, intTX0, intTX);
 
    //
    // RX Interrupts
    //
 
    wire intRX;
-   wire intRX0 = ((~csrSAE & csrRDONE & csrRIE) |
+   wire intRX0 = ((!csrSAE & csrRDONE & csrRIE) |
                   (csrSAE  & csrSA    & csrRIE));
-   EDGETRIG uINTRX(clk, rst, 1'b1, 1'b0, intRX0, intRX);
+   EDGETRIG uINTRX(clk, rst, 1'b1, 1'b1, intRX0, intRX);
 
    //
    // Receiver Interrupts
    //
    // Details:
-   //  This process generates the receiver interrupt from the silo
-   //  alarm and from the receiver done register bits.
+   //  This process generates the receiver interrupt from the silo alarm and
+   //  from the receiver done register bits.
    //
    // Notes:
    //  The receiver interrupt is cleared when:
@@ -585,42 +651,55 @@ module DZ11(clk,      rst,
 
    reg dzRXINTR;
 
-   always @(posedge clk or posedge regRESET)
+   always @(posedge clk or posedge rst)
      begin
-        if (regRESET)
+        if (rst)
           dzRXINTR <= 0;
-        else if (devINTA & dzINTR)
-          dzRXINTR <= 0;
-        else if (intRX)
-          dzRXINTR <= 1;
+        else
+          begin
+             if (csrCLR | devRESET)
+               dzRXINTR <= 0;
+             else if (devINTA & dzINTR)
+               dzRXINTR <= 0;
+             else if (intRX)
+               dzRXINTR <= 1;
+          end
      end
 
    //
    // Transmiter Interrupts
    //
    // Details:
-   //   This process generates the transmitter interrupt from the
-   //   transmitter ready register bit.
+   //  This process generates the transmitter interrupt from the transmitter
+   //  ready register bit.
    //
    // Notes:
-   //   The transmitter interrupt is cleared when:
-   //   1.  Reset
-   //   2.  IO Bus Reset
-   //   3.  CSR[CLR]
-   //   4.  Transmitter interrupts are disabled
-   //   5.  The interrupt is acknowledged
+   //  The transmitter interrupt is generated when:
+   //  1.  CSR[TRDY] is asserted when CSR[TIE] is asserted.
+   //
+   //  The transmitter interrupt is cleared when:
+   //  1.  Reset
+   //  2.  IO Bus Reset
+   //  3.  CSR[CLR]
+   //  4.  Transmitter interrupts are disabled
+   //  5.  The interrupt is acknowledged
    //
 
    reg dzTXINTR;
 
-   always @(posedge clk or posedge regRESET)
+   always @(posedge clk or posedge rst)
      begin
-        if (regRESET)
+        if (rst)
           dzTXINTR <= 0;
-        else if (devINTA & dzINTR)
-          dzTXINTR <= 0;
-        else if (intTX)
-          dzTXINTR <= 1;
+        else
+          begin
+             if (csrCLR | devRESET)
+               dzTXINTR <= 0;
+             else if (devINTA & dzINTR)
+               dzTXINTR <= 0;
+             else if (intTX)
+               dzTXINTR <= 1;
+          end
      end
 
    //
@@ -629,14 +708,19 @@ module DZ11(clk,      rst,
 
    reg dzRXVECT;
 
-   always @(posedge clk or posedge regRESET)
+   always @(posedge clk or posedge rst)
      begin
-        if (regRESET)
+        if (rst)
           dzRXVECT <= 0;
-        else if (intRX)
-          dzRXVECT <= 1;
-        else if (intTX)
-          dzRXVECT <= 0;
+        else
+          begin
+             if (csrCLR | devRESET)
+               dzRXVECT <= 0;
+             else if (intRX)
+               dzRXVECT <= 1;
+             else if (intTX)
+               dzRXVECT <= 0;
+          end
      end
 
    //
@@ -676,16 +760,8 @@ module DZ11(clk,      rst,
           end
         if (vectREAD)
           begin
-             if (dzRXVECT)
-               begin
-                  devACKO  = 1;
-                  devDATAO = rxVECT;
-               end
-             else
-               begin
-                  devACKO  = 1;
-                  devDATAO = txVECT;
-               end
+             devACKO  = 1;
+             devDATAO = (dzRXVECT) ? rxVECT : txVECT;
           end
      end
 
