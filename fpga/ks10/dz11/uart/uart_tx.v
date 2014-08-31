@@ -3,7 +3,7 @@
 // KS-10 Processor
 //
 // Brief
-//  Generic UART Transmitter
+//   Generic UART Transmitter
 //
 // Details
 //   The UART Transmitter is hard configured for:
@@ -28,7 +28,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2009-2014 Rob Doyle
+// Copyright (C) 2009-2014 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
