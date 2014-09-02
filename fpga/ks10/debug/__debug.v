@@ -88,7 +88,7 @@
         else if (loadIR)
           begin
              PC <= debugDATA;
-             $display("debug: PC is %06o", debugDATA[18:35]);
+             $display("debug: [%.3f]: PC is %06o", $time/1.0e3, debugDATA[18:35]);
           end
      end
 `endif

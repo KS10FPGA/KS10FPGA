@@ -36,10 +36,10 @@
 //   UE  : Uncorrectable Error - Always read as 0.  Writes ignored.
 //   RE  : Refresh Error       - Always read as 0.  Writes ignored.
 //   PE  : Parity Error        - Read/Writes PE bit.
-//   EE  : ECC Enable          - Reads back inverse value set by write to ED bit.
-//                               Writes ignored. See ED bit below.
-//   PF  : Power Failure       - Initialized to 1 at power-up.  Cleared by writing
-//                               0.
+//   EE  : ECC Enable          - Reads back inverse value set by write to the
+//                               ED bit.  Writes ignored. See ED bit below.
+//   PF  : Power Failure       - Initialized to 1 at power-up.  Cleared by
+//                               writing 0.
 //   ED  : ECC Disable         - Always read as 0.  Writing zero sets EE bit,
 //                               Writing one clears EE bit.
 //   FCB : Force Check Bits    - Always read as 0.  Writes ignored.
@@ -48,12 +48,15 @@
 // File
 //   mem.v
 //
+// FIXME
+//   This file has conditionally compiled test memory.
+//
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -77,6 +80,7 @@
 
 `default_nettype none
 `include "../uba/uba.vh"
+`include "../cpu/bus.vh"
 `include "../ks10.vh"
 
 //`define SIMPLE
@@ -129,20 +133,21 @@ module MEM(clk, clkT, rst, clken,
    //  busADDRI[14:35] is address
    //
 
-   wire         busREAD   = busADDRI[ 3];
-   wire         busWRTEST = busADDRI[ 4];
-   wire         busWRITE  = busADDRI[ 5];
-   wire         busPHYS   = busADDRI[ 8];
-   wire         busIO     = busADDRI[10];
-   wire [ 0: 3] busDEV    = busADDRI[14:17];
-   wire [16:35] busADDR   = busADDRI[18:35];
+   wire         busREAD   = `busREAD(busADDRI);
+   wire         busWRTEST = `busWRTEST(busADDRI);
+   wire         busWRITE  = `busWRITE(busADDRI);
+   wire         busPHYS   = `busPHYS(busADDRI);
+   wire         busIO     = `busIO(busADDRI);
+   wire [ 0: 3] busDEV    = `busDEV(busADDRI);
+   wire [18:35] busADDR   = `busADDR(busADDRI);
+   wire [16:35] busADDR20 = `busADDR20(busADDRI);
+   wire         busACREF  = `busACREF(busADDRI);
 
    //
    // Memory Status Register (IO Address 100000)
    //
    // Details
-   //  Only the PE, EE, and PF change... and they are not really
-   //  implemented.
+   //  Only the PE, EE, and PF change... and they are not really implemented.
    //
 
    reg statPE;          // Parity Error
@@ -192,11 +197,7 @@ module MEM(clk, clkT, rst, clken,
         //
 
         busACKO  <= 0;
-`ifdef SIMPLE
-        busDATAO <= mem[rd_addr];
-`else
-        busDATAO <= ssramDATA;
-`endif
+        busDATAO <= 36'bx;
 
         //
         // Memory Status Register
@@ -230,12 +231,11 @@ module MEM(clk, clkT, rst, clken,
      end
 
    //
-   // Create the write signal.  Don't write to memory when writing to ACs.
-   //  The ACs are never physical
+   // Create the write signal.  Don't write to memory when writing to IO or the
+   // ACs.
    //
 
-   wire acREF = !busPHYS & (busADDR[18:31] == 14'b0);
-   wire memWrite = busWRITE & !busIO & !acREF;
+   wire memWrite = busWRITE & !busIO & !busACREF;
 
 `ifdef SIMPLE
 
@@ -273,7 +273,7 @@ module MEM(clk, clkT, rst, clken,
    assign ssramOE_N    = !(busREAD  & !busIO & clkT[4]);
    assign ssramWE_N    = !(memWrite & clkT[2]);
    assign ssramCE      = 1;
-   assign ssramADDR    = {3'b0, busADDR[16:35]};
+   assign ssramADDR    = {3'b0, busADDR20};
    assign ssramDATA    = (memWrite  & clkT[4]) ? busDATAI : 36'bz;
 
 endmodule

@@ -3,7 +3,7 @@
 // KS-10 Processor
 //
 // Brief
-//   KS-10 Console
+//   KS10 Console
 //
 // Details
 //
@@ -164,33 +164,32 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "../ks10.vh"
 `include "../uba/uba.vh"
+`include "../cpu/bus.vh"
 
 module CSL(clk, rst,
            conDATA,  conADDR,  conBLE_N, conBHE_N, conRD_N,  conWR_N,
@@ -262,12 +261,11 @@ module CSL(clk, rst,
    // Memory Address and Flags
    //
 
-   wire         busREAD     = busADDRI[ 3];
-   wire         busWRITE    = busADDRI[ 5];
-   wire         busPHYSICAL = busADDRI[ 8];
-   wire         busIO       = busADDRI[10];
-   wire [14:17] busDEV      = busADDRI[14:17];
-   wire [18:35] busADDR     = busADDRI[18:35];
+   wire         busREAD  = `busREAD(busADDRI);
+   wire         busWRITE = `busWRITE(busADDRI);
+   wire         busIO    = `busIO(busADDRI);
+   wire [14:17] busDEV   = `busDEV(busADDRI);
+   wire [18:35] busADDR  = `busADDR(busADDRI);
 
    //
    // Console Instruction Register Read
@@ -294,9 +292,9 @@ module CSL(clk, rst,
    wire cslWR;
    wire cslBLE;
    wire cslBHE;
-   sync syncWR (clk, rst, cslWR,  ~conWR_N);
-   sync syncBLE(clk, rst, cslBLE, ~conBLE_N);
-   sync syncBHE(clk, rst, cslBHE, ~conBHE_N);
+   SYNC syncWR (clk, rst, cslWR,  ~conWR_N);
+   SYNC syncBLE(clk, rst, cslBLE, ~conBLE_N);
+   SYNC syncBHE(clk, rst, cslBHE, ~conBHE_N);
 
    //
    // Fixup addresses for byte addressing
@@ -675,5 +673,24 @@ module CSL(clk, rst,
    assign cslCACHEEN = regCTRL_CACHEEN;
    assign cslINTR    = cslWR & (cslADDR == 6'h10) & cslBLE & conDATA[1];
    assign cslRESET   = regCTRL_RESET;
+
+`ifndef SYNTHESIS
+
+   //
+   // Whine about unacked bus cycles
+   //
+
+   always @(posedge clk)
+     begin
+        if (state == stateFAIL)
+          begin
+             $display("");
+             $display("CSL: Unacknowledged bus cycle.  Addr Bus = %012o",
+                      busADDRO);
+             $display("");
+          end
+     end
+
+`endif
 
  endmodule

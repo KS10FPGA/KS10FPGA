@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -14,50 +14,46 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2013 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `include "../cpu/vma.vh"
 
-module ARB(clk, rst,
-           cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
+module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
            cslREQI, cslREQO, cslACKI, cslACKO, cslADDRI, cslDATAI, cslDATAO,
            ubaREQI, ubaREQO, ubaACKI, ubaACKO,
            uba0ADDRI, uba1ADDRI, uba2ADDRI, uba3ADDRI,
            uba0DATAI, uba1DATAI, uba2DATAI, uba3DATAI, ubaDATAO,
            memREQO, memACKI, memDATAI, memDATAO, arbADDRO);
 
-   input         clk;           // Clock
-   input         rst;		// Reset
+   // CPU Interfaces
    input         cpuREQI;       // CPU Bus Request
    output        cpuACKO;       // CPU Bus Acknowledge
    input  [0:35] cpuADDRI;      // CPU Address
    input  [0:35] cpuDATAI;      // CPU Data In
    output [0:35] cpuDATAO;      // CPU Data Out
-
+   // Console Interfaces
    input         cslREQI;       // CSL Bus Request In
    output        cslREQO;       // CSL Bus Request Out
    input         cslACKI;       // CSL Bus Acknowledge In
@@ -65,7 +61,7 @@ module ARB(clk, rst,
    input  [0:35] cslADDRI;      // CSL Address In
    input  [0:35] cslDATAI;      // CSL Data In
    output [0:35] cslDATAO;      // CSL Data Out
-
+   // UBA Interfaces
    input  [0: 3] ubaREQI;       // UBA Bus RequestIn
    output        ubaREQO;       // UBA Bus Request Out
    input  [0: 3] ubaACKI;       // UBA Bus Acknowledge In
@@ -79,12 +75,12 @@ module ARB(clk, rst,
    input  [0:35] uba2DATAI;     // UBA 2 Data In
    input  [0:35] uba3DATAI;     // UBA 3 Data In
    output [0:35] ubaDATAO;      // UBA Data Out
-
+   // Memory Interfaces
    output        memREQO;       // MEM Bus Request Out
    input         memACKI;       // MEM Bus Acknowledge In
    input  [0:35] memDATAI;      // MEM Data In
    output [0:35] memDATAO;      // MEM Data Out
-
+   // ARB Output
    output [0:35] arbADDRO;      // ARB Address
 
    //
@@ -276,8 +272,7 @@ module ARB(clk, rst,
         // Bus Request from the CPU
         //
         // Details
-        //  The CPU can access the memory, unibus or
-        //  console.
+        //  The CPU can access the memory, unibus or console.
         //
 
         else if (cpuREQI)
@@ -322,8 +317,8 @@ module ARB(clk, rst,
                end
 
              //
-             // Ack an otherwise un-acked WRU cycle
-             // WRU Cycles really aren't arbitrated.
+             // Ack an otherwise un-acked WRU cycle.  WRU Cycles really aren't
+	     // arbitrated.  Only one device should respond.
              //
 
              else if (vmaPHYSICAL & vmaIOCYCLE & vmaWRUCYCLE)
@@ -333,42 +328,5 @@ module ARB(clk, rst,
                end
           end
      end
-
-
-   //
-   // Whine about unacked bus cycles
-   //
-
-`ifndef SYNTHESIS
-   
-   reg        [0:3] ackCount;
-   localparam [0:3] ackTimeout = 15;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          ackCount <= 0;
-        else if (cpuREQI & ~cpuACKO)
-          ackCount <= ackTimeout;
-        else if (ackCount != 0)
-          begin
-             if (cpuACKO)
-               ackCount <= 0;
-             else
-               ackCount <= ackCount - 1'b1;
-          end
-     end
-   
-   always @(posedge clk)
-     begin
-        if (ackCount == 1)
-          begin
-             $display("");
-             $display("Unacknowledged bus cycle.  Addr Bus = %012o", cpuADDRI);
-             $display("");
-          end
-     end
-   
-`endif
 
 endmodule

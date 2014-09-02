@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -7,10 +7,6 @@
 //
 // Details
 //   See comments in microcode at PAGE-FAIL entry point.
-//
-//   The dispatch is via "DP LEFT".  The dispatch into the CROM
-//   Address (see DISP/PAGE FAIL=63) is never used.  It looks
-//   like the traces are delete from the board.
 //
 //   The microcode has the following dispatches defined:
 //
@@ -24,49 +20,55 @@
 //        1010  0  Page not valid
 //        1011  1  Exec/User Mismatch
 //
-//   The the Page Fail dispatch is actually a combination of a
-//   Dispatch and a Skip operating simulataneously.
-//
 //   Important things:
-//     1.  The pageFAIL signal must be asserted on the cycle before
-//         the memory access.  This will vector the microcode to
-//         Page Fail handler (location 7777 PAGE_FAIL:) during the
-//         memory cycle.
-
+//     1.  The pageFAIL signal must be asserted on the cycle before the memory
+//         access.  This will vector the microcode to Page Fail handler
+//         (location 7777 PAGE_FAIL:) during the memory cycle.
+//
+// Hardware notes:
+//
+//   The dispatch is via "DP LEFT".  The dispatch into the CROM Address is never
+//   used.   See microcode DISP/PAGE FAIL=63).  It looks like the traces are
+//   deleted from the board.
+//
+//   The the Page Fail dispatch is actually a combination of a Dispatch and a
+//   Skip operating simulataneously.
+//
+// FIXME
+//   This needs a lot of work.
+//
 // File
 //   pf_disp.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.S
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
-  
+
 `include "apr.vh"
 `include "vma.vh"
 `include "pager.vh"
@@ -93,7 +95,7 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    input                   timerINTR;   // Timer Interrupt
    input                   cpuINTR;     // CPU Interrupt
    input                   nxmINTR;     // NXM Interrupt
-   output                  pageFAIL;    // Page Fail                  
+   output                  pageFAIL;    // Page Fail
    output [ 0: 3]          dispPF;      // Page Fail Dispatch
 
    //
@@ -107,6 +109,8 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
 
    wire specMEMCLR     = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
    wire specSWEEP      = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRCACHE);
+
+`ifdef BROKEN_BADLY
 
    //
    // aprFLAGS
@@ -129,7 +133,7 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    //  DPE5/E53
    //  DPE5/E76
    //
-   
+
    wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) |
                  (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA) |
                  (specSWEEP));
@@ -140,7 +144,7 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    // Trace
    //  DPM5/E118
    //
-   
+
    wire memEN = ((`cromMEM_CYCLE  & `cromMEM_WAIT                   ) |
                  (`cromMEM_CYCLE  & `cromMEM_BWRITE & `dromCOND_FUNC));
 
@@ -148,18 +152,17 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    // vmaFLAGS
    //
 
-   wire [14:35] vmaADDR     = dp[14:35];		// VMA Address
+   wire [14:35] vmaADDR     = dp[14:35];                // VMA Address
    wire         vmaUSER     = vmaEN &  dp[0];           // VMA User
-   wire         vmaPHYSICAL = vmaEN &  dp[8];     	// VMA is physical
-   wire         vmaVIRTUAL  = vmaEN & ~dp[8];		// VMA is virtual
-                
+   wire         vmaPHYSICAL = vmaEN &  dp[8];           // VMA is physical
+   wire         vmaVIRTUAL  = vmaEN & ~dp[8];           // VMA is virtual
+
    //
    // AC Reference
    //
    // Details
-   //  True when addressing lowest 16 addresses using and not
-   //  physical addressing.  References to the ACs are never
-   //  physical.
+   //  True when addressing lowest 16 addresses using and not physical
+   //  addressing.  References to the ACs are never physical.
    //
    // Trace
    //  DPM4/E160
@@ -176,7 +179,7 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    wire debugREADCYCLE   = `vmaREADCYCLE(vmaFLAGSx);       // Read Cycle (IO or Memory)
    wire debugWRTESTCYCLE = `vmaWRTESTCYCLE(vmaFLAGSx);     // Write Test Cycle
    wire debugWRITECYCLE  = `vmaWRITECYCLE(vmaFLAGSx);      // Write Cycle (IO or Memory)
-   
+
    //
    // vmaJUSTLOADED
    //
@@ -188,13 +191,9 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    //  DPMC/E10
    //
 
-`ifdef broken
-   
    wire vmaJUSTLOADED = vmaEN;
-   
-
    reg  vmaJUSTLOADED;
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -202,11 +201,9 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
         else if (clken)
           vmaJUSTLOADED <= vmaEN;
      end
-   
-`endif //  `ifdef broken
-   
-   wire vmaJUSTLOADED = 0;
-   
+
+   //wire vmaJUSTLOADED = 0;
+
    //
    // Read/Write Enable
    //
@@ -249,8 +246,8 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
              writeENABLE     <= 0;
           end
      end
-        
-   
+
+
    //
    // pagingACCESS
    //
@@ -261,34 +258,32 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    //  DPM6/E47
    //
 
-   //wire pagedACCESS = ~vmaACREF & ~vmaPHYSICAL;
-   
+   wire pagedACCESS = ~vmaACREF & ~vmaPHYSICAL;
+
    //
    // Page Fail Dispatch
    //
    // Details:
-   //  This logic generates a PAGE FAIL dispatch into the microcode.
-   //  Actually PAGE FAIL is a misnomer because the PAGE FAIL
-   //  dispatch also handles External Interrupts, Timer Interrupts,
-   //  and NXM Interrupts, Uncorrectable Memory Interrupts, (not
-   //  implemented) and Page Failures.
+   //  This logic generates a PAGE FAIL dispatch into the microcode.  Actually
+   //  PAGE FAIL is a misnomer because the PAGE FAIL dispatch also handles
+   //  External Interrupts, Timer Interrupts, NXM Interrupts, Uncorrectable
+   //  Memory Interrupts, (not implemented) and Page Failures.
    //
    //  The PAGE-FAIL dispatch operates as follows:
-   //  1.  This module creates the pageFAIL signal coincident with
-   //      Memory Reads and Memory Write Test bus cycles.  This will
-   //      be explained below.
+   //  1.  This module creates the pageFAIL signal coincident with Memory Reads
+   //      and Memory Write Test bus cycles.  This will be explained below.
    //  2.  The Microsequencer dispatches to address 7777 (or 3777) which is
    //      hard coded into the microsequencer address logic.
-   //  3.  The Microsequencer also stores the address of the Read
-   //      or Write Test microcode operations.
-   //  4.  The PAGE-FAIL code runs.  The microcode will handle the
-   //      various causes of the dispatch.
-   //  5.  Eventually the microcode returns and re-executes the
-   //      instruction that caused the page fail dispatch.
+   //  3.  The Microsequencer also stores the address of the Read or Write Test
+   //      microcode operations.
+   //  4.  The PAGE-FAIL code runs.  The microcode will handle the various
+   //      causes of the dispatch.
+   //  5.  Eventually the microcode returns and re-executes the instruction
+   //      that caused the page fail dispatch.
    //
-   //  As explained above, when a operation causes a page failure,
-   //  the KS10 CPU executes the Page Fill microcode and then
-   //  re-executes the instruction that caused the Page Failure.
+   //  As explained above, when a operation causes a page failure, the KS10 CPU
+   //  executes the Page Fill microcode and then re-executes the instruction
+   //  that caused the Page Failure.
    //
    //  Interrupts have a higher priority than page failures.
    //
@@ -303,9 +298,9 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    //  DPM6/E115
    //  DPM6/E124
    //
-   
+
    reg [0:3] pfDISP;
-   
+
    always @(nxmINTR or cpuINTR or timerINTR or vmaPHYSICAL or vmaVIRTUAL or
             flagPAGEEN or vmaADDR or pageVALID or pageUSER or vmaUSER or
             writetestENABLE or pageWRITEABLE)
@@ -314,93 +309,101 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
         //
         // Non-existent Memory
         //
-        
+
         if (nxmINTR)
           pfDISP = 4'b0101;
 
         //
         // CPU Interrupt
         //
-        
-        else if (cpuINTR/* & vmaPHYSICAL*/)
+
+        else if (cpuINTR & vmaPHYSICAL)
           pfDISP = 4'b0001;
 
         //
         // Timer Interrupt
         //
-        
-        else if (timerINTR/* & vmaPHYSICAL */)
-          pfDISP = 4'b0001;
 
-`ifdef broken
+        else if (timerINTR & vmaPHYSICAL)
+          pfDISP = 4'b0001;
 
         //
         // Page not valid/present
         //
-        
+
         else if (flagPAGEEN & vmaVIRTUAL & (vmaADDR[18:31] != 0) & ~pageVALID)
           pfDISP = 4'b1010;
-        
+
         //
         // EXEC / USER Mismatch
         //
-                  
+
         else if (flagPAGEEN & vmaVIRTUAL & (vmaADDR[18:31] != 0) & (pageUSER != vmaUSER))
           pfDISP = 4'b1011;
-             
+
         //
         // Write Violation
         //
-        
+
         else if (flagPAGEEN & vmaVIRTUAL & (vmaADDR[18:31] != 0) & writetestENABLE & ~pageWRITEABLE)
           pfDISP = 4'b1000;
 
-`endif	
-	
         //
         // No Page Failure or Interrupt
         //
-        
+
         else
           pfDISP = 4'b0000;
-        
+
      end
 
    //
-   // Create pageFAIL signal.   This must only be asserted
-   // for a single clock cycle (to jam the page fail address
-   // into the microsequencer address).
+   // Create pageFAIL signal.   This must only be asserted for a single clock
+   // cycle (to jam the page fail address into the microsequencer address).
    //
 
    wire PF = (readENABLE | writeENABLE) & ~vmaJUSTLOADED & (pfDISP != 0);
 
-   
    reg [0:3] dispPF;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           dispPF <= 0;
         else if (clken)
-          begin 
+          begin
              if (PF)
                dispPF <= pfDISP;
              else if (specMEMCLR)
                dispPF <= 0;
           end
      end
-   
-   
-`define PAGEFAIL
 
-`ifdef PAGEFAIL
-   
    assign pageFAIL = PF;
 
-`else
-   
-   assign pageFAIL = 0;
-
 `endif
-   
-endmodule
 
+   //
+   // This is seriously hacked to just make interrupts work
+   //
+   // Note
+   //   Address 0110 is the next instruction dispatch address
+   //
+
+   wire pageFAIL = (((crom[0:11] == 12'o0110) & cpuINTR) |
+                    ((crom[0:11] == 12'o0110) & timerINTR));
+
+   reg [0:3] dispPF;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          dispPF <= 4'b0000;
+        else if (clken)
+          begin
+             if (pageFAIL)
+               dispPF <= 4'b0001;
+             else if (specMEMCLR)
+               dispPF <= 4'b0000;
+          end
+     end
+
+endmodule

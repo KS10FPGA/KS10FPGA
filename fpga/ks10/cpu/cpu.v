@@ -403,7 +403,7 @@ module CPU(clk, rst, cslRESET,
    // Instruction Register
    //
 
-   regIR uIR
+   REGIR uIR
      (.clk              (clk),
       .rst              (rst),
       .clken            (clkenDP),

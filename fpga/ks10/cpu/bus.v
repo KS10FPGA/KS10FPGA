@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -57,34 +57,29 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "apr.vh"
@@ -136,7 +131,7 @@ module BUS(clk, rst, clken, crom, dp,
    // Paged Reference
    //
 
-   wire pagedREF = ~vmaPHYSICAL & flagPAGEEN;
+   wire pagedREF = !vmaPHYSICAL & flagPAGEEN;
 
    //
    // Data Output
@@ -150,7 +145,8 @@ module BUS(clk, rst, clken, crom, dp,
 
    reg [0:35] cpuADDRO;
 
-   always @(pagedREF or vmaEXTENDED or vmaFLAGS or vmaADDR or pageADDR or vmaWRUCYCLE or curINTP)
+   always @(pagedREF or vmaEXTENDED or vmaFLAGS or vmaADDR or pageADDR or
+            vmaWRUCYCLE or curINTP)
      begin
         if (pagedREF)
           cpuADDRO <= {vmaFLAGS, vmaADDR[14:15], pageADDR[16:26], vmaADDR[27:35]};
@@ -172,20 +168,21 @@ module BUS(clk, rst, clken, crom, dp,
    // Bus Request on the various cycles
    //
 
-   assign cpuREQO = vmaREADCYCLE | vmaWRITECYCLE | vmaWRTESTCYCLE | vmaWRUCYCLE | vmaVECTORCYCLE;
+   assign cpuREQO = vmaREADCYCLE | vmaWRITECYCLE | vmaWRTESTCYCLE |
+                    vmaWRUCYCLE  | vmaVECTORCYCLE;
 
    //
    // Bus Monitor
    //
    // Details
-   //  Wait for Bus ACK on bus accesses.  Generate a NXM Interrupt
-   //  on a bus timeout.
+   //  Wait for Bus ACK on bus accesses.  Generate a NXM Interrupt on a bus
+   //  timeout.
    //
 
    localparam [0:3] tNXM  = 14;
    localparam [0:3] tDONE = 15;
    reg        [0:3] timeout;
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -201,7 +198,7 @@ module BUS(clk, rst, clken, crom, dp,
                timeout <= 0;
           end
      end
-   
+
    //
    // Wait for memory (REQ with no ACK) unless the bus has
    //  timed out.
@@ -213,7 +210,26 @@ module BUS(clk, rst, clken, crom, dp,
    //
    // Generate an NXM trap
    //
-   
+
    assign nxmINTR = (timeout == tNXM);
+
+   `ifndef SYNTHESIS
+
+   //
+   // Whine about unacked bus cycles
+   //
+
+   always @(posedge clk)
+     begin
+        if (nxmINTR)
+          begin
+             $display("");
+             $display("CPU: Unacknowledged bus cycle.  Addr Bus = %012o",
+                      cpuADDRO);
+             $display("");
+          end
+     end
+
+`endif
 
 endmodule

@@ -8,7 +8,10 @@
 // Details
 //    This is a 16-way dispatch base on the next instruction.
 //
-// Todo
+// Note:
+//    Trap 1 is an arithmetic overflow.
+//    Trap 2 is a stack overflow
+//    Trap 3 is a software trap.
 //
 // File
 //    ni_disp.v
@@ -87,10 +90,10 @@ module NI_DISP (clk, rst, clken, crom, aprFLAGS, pcFLAGS, cslTRAPEN,
    // NICOND Dispatch
    //
    // A dispatch value of 1, 2, or 3 causes the microcode to dispath to a
-   // trap handler after the instruction has completed.
+   // trap handler.
    //
    // A dispatch value of 5 (caused by ~cpuRUN) causes the microcode to enter
-   // the HALT loop after the instruction has completed.
+   // the HALT loop.
    //
    // A dispatch value of 7 cause the microcode to begin to execute the next
    // instruction after the instruction has completed.
