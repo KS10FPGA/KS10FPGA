@@ -1,15 +1,20 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
 // Brief
-//   KS-10 RP Style Disk Drive
+//   RPxx Style Massbus Disk Drive
 //
 // Details
 //
 // Notes
-//   Unibus is little-endian and uses [15:0] notation
-//   KS10 is big-endian and uses [0:35] notation.
+//   Regarding endian-ness:
+//     The KS10 backplane bus is 36-bit big-endian and uses [0:35] notation.
+//     The IO Device are 36-bit little-endian (after Unibus) and uses [35:0]
+//     notation.
+//
+//     Whereas the 'Unibus' is 18-bit data and 16-bit address, I've implemented
+//     the IO bus as 36-bit address and 36-bit data just to keep things simple.
 //
 // File
 //   rpxx.v
@@ -17,38 +22,42 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
-`include "rh11.vh"
 `include "rpxx.vh"
+`include "rh11.vh"
 `include "sd/sd.vh"
+`include "rpda.vh"
+`include "rpds.vh"
+`include "rpof.vh"
+`include "rpcs1.vh"
+`include "rper1.vh"
+`include "../ubabus.vh"
 
-module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
+module RPXX(clk, rst,
             unitSEL, incSECTOR, rhCLR, ataCLR,
             devRESET, devADDRI, rhDATAI, rpCD, rpWP,
             rpDA, rpDS, rpER1, rpLA, rpMR, rpOF, rpDC, rpCC,
@@ -56,10 +65,6 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          simTIME;                      // Simulate Timing
-   input  [ 4: 0] lastSECT;                     // Last Sectors
-   input  [ 4: 0] lastSURF;                     // Last Surfaces
-   input  [ 9: 0] lastCYL;                      // Last Cylinder
    input          unitSEL;                      // Unit Select
    input          incSECTOR;                    // Increment Sector
    input          rhCLR;                        // Clear
@@ -88,8 +93,10 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    // RH Parameters
    //
 
-   parameter [14:17] rhDEV   = `rhDEV;          // Device 3
-   parameter [18:35] rhADDR  = `rh1ADDR;        // RH11 #1 Base Address
+   parameter [14:17] rhDEV    = `rh1DEV;        // Device 3
+   parameter [18:35] rhADDR   = `rh1ADDR;       // RH11 #1 Base Address
+   parameter [15: 0] drvTYPE  = `rpRP06;        // Drive type
+   parameter         simTIME  = 1'b0;           // Simulate timing
 
    //
    // RH Register Addresses
@@ -124,9 +131,31 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
 
    //
    // Timing Parameters
+   //
 
    localparam [24:0] fiveMS = 100000;           // 5 milliseconds
    localparam [24:0] oneUS  = 50;               // 1 microsecond
+
+   //
+   // Lookup Drive Geometries
+   //
+
+   localparam [4:0] lastSECT = `getLASTSECT(drvTYPE);
+   localparam [4:0] lastSURF = `getLASTSURF(drvTYPE);
+   localparam [9:0] lastCYL  = `getLASTCYL (drvTYPE);
+
+   //
+   // Device Address and Flags
+   //
+
+   wire         devREAD   = `devREAD(devADDRI);         // Read Cycle (IO or Memory)
+   wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle (IO or Memory)
+   wire         devIO     = `devIO(devADDRI);           // IO Cycle
+   wire         devIOBYTE = `devIOBYTE(devADDRI);       // Byte IO Operation
+   wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
+   wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
+   wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device Hi byte select
+   wire         devLOBYTE = `devLOBYTE(devADDRI);       // Device Lo byte select
 
    //
    // Register Decode
@@ -180,33 +209,10 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    endfunction
 
    //
-   // Memory Address and Flags
-   //
-   // Details:
-   //  devADDRI[ 0:13] is flags
-   //  devADDRI[14:35] is address
-   //
-
-   wire         devREAD   = devADDRI[ 3];       // 1 = Read Cycle (IO or Memory)
-   wire         devWRITE  = devADDRI[ 5];       // 1 = Write Cycle (IO or Memory)
-   wire         devIO     = devADDRI[10];       // 1 = IO Cycle, 0 = Memory Cycle
-   wire         devIOBYTE = devADDRI[13];       // 1 = Byte IO Operation
-   wire [14:17] devDEV    = devADDRI[14:17];    // Device Number
-   wire [18:34] devADDR   = devADDRI[18:34];    // Device Address
-   wire         devBYTE   = devADDRI[35];       // 1 = High byte, 0 = low byte
-
-   //
-   // Byte Selects
-   //
-
-   wire devHIBYTE = (devIOBYTE &  devBYTE) | ~devIOBYTE;
-   wire devLOBYTE = (devIOBYTE & ~devBYTE) | ~devIOBYTE;
-
-   //
    // rpGO
    //
 
-   wire cmdGO = devLOBYTE & devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & rhDATAI[0];
+   wire cmdGO = devLOBYTE & devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & `rpCS1_GO(rhDATAI);
 
    //
    // State Definition
@@ -236,24 +242,27 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    reg       rpGO;
    reg [5:1] rpFUN;
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | rhCLR | devRESET)
+        if (rst)
           begin
-             rpGO     <= 0;
-             rpFUN    <= 0;
+             rpGO  <= 0;
+             rpFUN <= 0;
           end
-        else if (rpcsWRITE & unitSEL)
+        else
           begin
-             if (devLOBYTE & rpDRY)
+             if (rhCLR | devRESET)
                begin
-                  rpFUN <= rhDATAI[5:1];
-                  rpGO  <= rhDATAI[  0];
+                  rpGO  <= 0;
+                  rpFUN <= 0;
                end
-          end
-        else if (state == stateDONE)
-          begin
-             rpGO <= 0;
+             else if (rpcsWRITE & unitSEL & rpDRY & devLOBYTE)
+               begin
+                  rpFUN <= `rpCS1_FUN(rhDATAI);
+                  rpGO  <= `rpCS1_GO (rhDATAI);
+               end
+             else if (state == stateDONE)
+               rpGO <= 0;
           end
      end
 
@@ -269,47 +278,52 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    reg  [4:0] rpTA;
    reg  [2:0] rpSAS;
    reg  [4:0] rpSA;
-   wire       incSECTOR = 0;
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | rhCLR | devRESET | (state == statePRESET))
+        if (rst)
           begin
              rpTAS <= 0;
              rpTA  <= 0;
              rpSAS <= 0;
              rpSA  <= 0;
           end
-        else if (rpdaWRITE & unitSEL)
+        else
           begin
-             if (devHIBYTE & rpDRY)
+             if (rhCLR | devRESET | (state == statePRESET))
                begin
-                  rpTAS <= rhDATAI[15:13];
-                  rpTA  <= rhDATAI[12: 8];
+                  rpTAS <= 0;
+                  rpTA  <= 0;
+                  rpSAS <= 0;
+                  rpSA  <= 0;
                end
-             if (devLOBYTE & rpDRY)
+             else if (rpdaWRITE & unitSEL & rpDRY)
                begin
-                  rpSAS <= rhDATAI[7:5];
-                  rpSA  <= rhDATAI[4:0];
-               end
-          end
-        else if (incSECTOR & unitSEL)
-          begin
-             if (rpSA == lastSECT)
-               begin
-                  if (rpTA == lastSURF)
+                  if (devHIBYTE)
                     begin
-                       rpTA <= 0;
+                       rpTAS <= `rpDA_TAS(rhDATAI);
+                       rpTA  <= `rpDA_TA (rhDATAI);
+                    end
+                  if (devLOBYTE)
+                    begin
+                       rpSAS <= `rpDA_SAS(rhDATAI);
+                       rpSA  <= `rpDA_SA (rhDATAI);
+                    end
+               end
+             else if (incSECTOR & unitSEL)
+               begin
+                  if (rpSA == lastSECT)
+                    begin
+                       if (rpTA == lastSURF)
+                         rpTA <= 0;
+                       else
+                         begin
+                            rpSA <= 0;
+                            rpTA <= rpTA + 1'b1;
+                         end
                     end
                   else
-                    begin
-                       rpSA <= 0;
-                       rpTA <= rpTA + 1'b1;
-                    end
-               end
-             else
-               begin
-                  rpSA <= rpSA + 1'b1;
+                    rpSA <= rpSA + 1'b1;
                end
           end
      end
@@ -325,60 +339,48 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    reg rpVV;
    reg rpOM;
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | rhCLR | devRESET)
+        if (rst)
           begin
              rpATA <= 0;
              rpLST <= 0;
              rpVV  <= 0;
              rpOM  <= 0;
           end
-        else if (ataCLR)
-          begin
-             rpATA <= 0;
-          end
         else
           begin
-
-             if (incSECTOR & (rpSA == lastSECT) & unitSEL)
+             if (rhCLR | devRESET)
                begin
-                  rpLST <= 1;
-               end
-             else if (rpdaWRITE & unitSEL)
-               begin
+                  rpATA <= 0;
                   rpLST <= 0;
+                  rpVV  <= 0;
+                  rpOM  <= 0;
                end
-
+             else if (ataCLR)
+               rpATA <= 0;
+             else
+               begin
+                  if (incSECTOR & unitSEL & (rpSA == lastSECT))
+                    rpLST <= 1;
+                  else if (rpdaWRITE & unitSEL)
+                    rpLST <= 0;
+               end
              case (state)
                stateIDLE:
-                 begin
-                    rpVV <= rpVV & rpCD;
-                 end
+                 rpVV <= rpVV & rpCD;
                stateATA:
-                 begin
-                    rpATA <= 1;
-                 end
+                 rpATA <= 1;
                stateCLEAR:
-                 begin
-                    rpATA <= 0;
-                 end
+                 rpATA <= 0;
                statePRESET:
-                 begin
-                    rpVV <= rpCD;
-                 end
+                 rpVV <= rpCD;
                stateOFFSET:
-                 begin
-                    rpOM <= 1;
-                 end
+                 rpOM <= 1;
                stateRETURN:
-                 begin
-                    rpOM <= 0;
-                 end
+                 rpOM <= 0;
                statePAKACK:
-                 begin
-                    rpVV <= rpCD;
-                 end
+                 rpVV <= rpCD;
              endcase
           end
      end
@@ -415,9 +417,9 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    reg rpILR;
    reg rpILF;
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | rhCLR | devRESET | (state == stateCLEAR))
+        if (rst)
           begin
              rpDCK  <= 0;
              rpUNS  <= 0;
@@ -436,69 +438,67 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
              rpILR  <= 0;
              rpILF  <= 0;
           end
-        else if (rperWRITE & unitSEL)
-          begin
-             if (rpDRY)
-               begin
-                  rpDCK  <= rhDATAI[15];
-                  rpUNS  <= rhDATAI[14];
-                  rpOPI  <= rhDATAI[13];
-                  rpDTE  <= rhDATAI[12];
-                  rpWLE  <= rhDATAI[11];
-                  rpIAE  <= rhDATAI[10];
-                  rpAOE  <= rhDATAI[ 9];
-                  rpHCRC <= rhDATAI[ 8];
-                  rpHCE  <= rhDATAI[ 7];
-                  rpECH  <= rhDATAI[ 6];
-                  rpWCF  <= rhDATAI[ 5];
-                  rpFER  <= rhDATAI[ 4];
-                  rpPAR  <= rhDATAI[ 3];
-                  rpRMR  <= rhDATAI[ 2];
-                  rpILR  <= rhDATAI[ 1];
-                  rpILF  <= rhDATAI[ 0];
-               end
-             else
-               begin
-                  rpRMR <= 1;
-               end
-          end
         else
-          begin
+          if (rhCLR | devRESET | (state == statePRESET))
+            begin
+               rpDCK  <= 0;
+               rpUNS  <= 0;
+               rpOPI  <= 0;
+               rpDTE  <= 0;
+               rpWLE  <= 0;
+               rpIAE  <= 0;
+               rpAOE  <= 0;
+               rpHCRC <= 0;
+               rpHCE  <= 0;
+               rpECH  <= 0;
+               rpWCF  <= 0;
+               rpFER  <= 0;
+               rpPAR  <= 0;
+               rpRMR  <= 0;
+               rpILR  <= 0;
+               rpILF  <= 0;
+            end
+          else if (rperWRITE & unitSEL & rpDRY)
+            begin
+               rpDCK  <= `rpER1_DCK(rhDATAI);
+               rpUNS  <= `rpER1_UNS(rhDATAI);
+               rpOPI  <= `rpER1_OPI(rhDATAI);
+               rpDTE  <= `rpER1_DTE(rhDATAI);
+               rpWLE  <= `rpER1_WLE(rhDATAI);
+               rpIAE  <= `rpER1_IAE(rhDATAI);
+               rpAOE  <= `rpER1_AOE(rhDATAI);
+               rpHCRC <= `rpER1_HCRC(rhDATAI);
+               rpHCE  <= `rpER1_HCE(rhDATAI);
+               rpECH  <= `rpER1_ECH(rhDATAI);
+               rpWCF  <= `rpER1_WCF(rhDATAI);
+               rpFER  <= `rpER1_FER(rhDATAI);
+               rpPAR  <= `rpER1_PAR(rhDATAI);
+               rpRMR  <= `rpER1_RMR(rhDATAI);
+               rpILR  <= `rpER1_ILR(rhDATAI);
+               rpILF  <= `rpER1_ILF(rhDATAI);
+            end
+          else
+            begin
 
-             if (incSECTOR & (rpDC == lastCYL) & (rpTA == lastSURF) & (rpSA == lastSECT) & unitSEL)
-               begin
-                  rpAOE <= 1;
-               end
+               if (incSECTOR & (rpDC == lastCYL) & (rpTA == lastSURF) & (rpSA == lastSECT) & unitSEL)
+                 rpAOE <= 1;
 
-             if (~rpDRY & unitSEL)
-               begin
-                  if (rpcsWRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)
-                    begin
-                       rpRMR <= 1;
-                    end
-               end
+               if (~rpDRY & unitSEL)
+                 if (rpcsWRITE | rperWRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)
+                   rpRMR <= 1;
 
-             if (devWRITE & devIO & (devDEV == rhDEV) & (devADDR >= undADDR[18:34]) & unitSEL)
-               begin
-                  rpILR <= 1;
-               end
+               if (devWRITE & unitSEL & devIO & (devDEV == rhDEV) & (devADDR >= undADDR[18:34]))
+                 rpILR <= 1;
 
-             case (state)
-               stateWRLOCK:
-                 begin
-                    rpWLE <= 1;
-                 end
-               stateINVADDR:
-                 begin
-                    rpIAE <= 1;
-                 end
-               stateILLFUN:
-                 begin
-                    rpILF <= 1;
-                 end
-             endcase
-
-          end
+               case (state)
+                 stateWRLOCK:
+                   rpWLE <= 1;
+                 stateINVADDR:
+                   rpIAE <= 1;
+                 stateILLFUN:
+                   rpILF <= 1;
+               endcase
+            end
      end
 
    assign rpER1 = {rpDCK, rpUNS, rpOPI, rpDTE, rpWLE, rpIAE, rpAOE, rpHCRC,
@@ -524,47 +524,46 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    reg rpECI;
    reg rpHCI;
    reg rpOFD;
-   reg rpNU;
-   reg rpOF800;
-   reg rpOF400;
-   reg rpOF200;
-   reg rpOF100;
-   reg rpOF050;
-   reg rpOF025;
+   reg [6:0] rpOFS;
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | rhCLR | devRESET | (state == statePRESET))
+        if (rst)
           begin
-             rpF16    <= 0;
-             rpECI    <= 0;
-             rpHCI    <= 0;
-             rpOFD    <= 0;
+             rpF16 <= 0;
+             rpECI <= 0;
+             rpHCI <= 0;
+             rpOFD <= 0;
+             rpOFS <= 0;
           end
-        else if (rpofWRITE & unitSEL)
+        else
           begin
-             if (devHIBYTE & rpDRY)
+             if (rhCLR | devRESET | (state == statePRESET))
                begin
-                  rpF16 <= rhDATAI[12];
-                  rpECI <= rhDATAI[11];
-                  rpECI <= rhDATAI[10];
+                  rpF16 <= 0;
+                  rpECI <= 0;
+                  rpHCI <= 0;
+                  rpOFD <= 0;
+                  rpOFS <= 0;
                end
-             if (devLOBYTE & rpDRY)
+             else if (rpofWRITE & unitSEL & rpDRY)
                begin
-                  rpOFD   <= rhDATAI[7];
-                  rpNU    <= rhDATAI[6];
-                  rpOF800 <= rhDATAI[5];
-                  rpOF400 <= rhDATAI[4];
-                  rpOF200 <= rhDATAI[3];
-                  rpOF100 <= rhDATAI[2];
-                  rpOF050 <= rhDATAI[1];
-                  rpOF025 <= rhDATAI[0];
+                  if (devHIBYTE)
+                    begin
+                       rpF16 <= `rpOF_F16(rhDATAI);
+                       rpECI <= `rpOF_ECI(rhDATAI);
+                       rpHCI <= `rpOF_HCI(rhDATAI);
+                    end
+                  if (devLOBYTE)
+                    begin
+                       rpOFD <= `rpOF_OFD(rhDATAI);
+                       rpOFS <= `rpOF_OFS(rhDATAI);
+                    end
                end
           end
      end
 
-   assign rpOF = {3'b0, rpF16, rpECI, rpHCI, 2'b0,
-                  rpOFD, rpNU, rpOF800, rpOF400, rpOF200, rpOF100, rpOF050, rpOF025};
+   assign rpOF = {3'b0, rpF16, rpECI, rpHCI, 2'b0, rpOFD, rpOFS};
 
    //
    // RPxx Desired Cylinder (RPDC) Register
@@ -572,29 +571,23 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
 
    reg [9:0] rpDCA;
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | rhCLR | devRESET | (state == statePRESET))
+        if (rst)
+          rpDCA <= 0;
+        else
           begin
-             rpDCA <= 0;
-          end
-        else if (rpdcWRITE & unitSEL)
-          begin
-             if (devHIBYTE & rpDRY)
+             if (rhCLR | devRESET | (state == statePRESET))
+               rpDCA <= 0;
+             else if (rpdcWRITE & unitSEL & rpDRY)
                begin
-                  rpDCA[9:8] <= rhDATAI[9:8];
+                  if (devHIBYTE)
+                    rpDCA[9:8] <= rhDATAI[9:8];
+                  if (devLOBYTE)
+                    rpDCA[7:0] <= rhDATAI[7:0];
                end
-             if (devLOBYTE & rpDRY)
-               begin
-                  rpDCA[7:0] <= rhDATAI[7:0];
-               end
-          end
-        else if (incSECTOR & unitSEL)
-          begin
-             if ((rpTA == lastSURF) & (rpSA == lastSECT))
-               begin
-                  rpDCA <= rpDCA + 1'b1;
-               end
+             else if (incSECTOR & unitSEL & (rpTA == lastSURF) & (rpSA == lastSECT))
+               rpDCA <= rpDCA + 1'b1;
           end
      end
 
@@ -627,7 +620,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
    reg [ 9: 0] tempCYL;                 // Temporary Cylinder
 
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst | rhCLR | devRESET)
           begin
@@ -834,7 +827,7 @@ module RPXX(clk, rst, lastSECT, lastSURF, lastCYL, simTIME,
                              state <= stateINVADDR;
                         end
 
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
                       //
                       // Write Commands

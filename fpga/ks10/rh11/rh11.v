@@ -1,18 +1,24 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
 // Brief
-//   KS-10 RH11
+//   KS-10 RH11 Massbus Disk Controller
 //
 // Details
 //
 // Notes
-//   Unibus is little-endian and uses [15:0] notation
-//   KS10 is big-endian and uses [0:35] notation.
+//   Regarding endian-ness:
+//     The KS10 backplane bus is 36-bit big-endian and uses [0:35] notation.
+//     The IO Device are 36-bit little-endian (after Unibus) and uses [35:0]
+//     notation.
 //
-//   The addressing big-endian from the KS10.
-//   The data bus little-endian from Unibus. Confusing? Sorry.
+//     Whereas the 'Unibus' is 18-bit data and 16-bit address, I've implemented
+//     the IO bus as 36-bit address and 36-bit data just to keep things simple.
+//
+//   Regarding interrupts:
+//     Please read the white pager entited "PDP-11 Interrupts: Variations On A
+//     Theme", Bob Supnik, 03-Feb-2002 [revised 20-Feb-2004]
 //
 // File
 //   rh11.v
@@ -20,42 +26,40 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "rpxx.vh"
 `include "rh11.vh"
+`include "rhcs1.vh"
+`include "rhcs2.vh"
+`include "rpcs1.vh"
 `include "sd/sd.vh"
-  
-//  
-// FIXME.  Delete rhDEV and use ctlNUM everywhere.
-//
+`include "../ubabus.vh"
 
-module RH11(clk,      rst,      ctlNUM,
+module RH11(clk,      rst,
             rh11CD,   rh11WP,   rh11MISO, rh11MOSI, rh11SCLK, rh11CS, rh11DEBUG,
             devRESET, devINTR,  devINTA,
             devREQI,  devACKO,  devADDRI,
@@ -64,7 +68,6 @@ module RH11(clk,      rst,      ctlNUM,
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input  [ 0: 3] ctlNUM;                       // Bridge Device Number
    // RH11 Interfaces
    input          rh11CD;                       // RH11 Card Detect
    input          rh11WP;                       // RH11 Write Protect
@@ -94,9 +97,12 @@ module RH11(clk,      rst,      ctlNUM,
    // RH Parameters
    //
 
-   parameter [ 7: 4] rhINTR  = `rhINTR;         // Interrupt 5
-   parameter [14:17] rhDEV   = `rhDEV;          // Device 3
-   parameter [18:35] rhADDR  = `rh1ADDR;        // RH11 #1 Base Address
+   parameter [14:17] rhDEV   = `devUBA1;        // RH11 Device Number
+   parameter [18:35] rhADDR  = `rh1ADDR;        // RH11 Base Address
+   parameter [18:35] rhVECT  = `rh1VECT;        // RH11 Interrupt Vector
+   parameter [ 7: 4] rhINTR  = `rh1INTR;        // RH11 Interrupt
+   parameter [15: 0] drvTYPE = `rpRP06;         // Drive type
+   parameter         simTIME = 1'b0;            // Simulate timing
 
    //
    // RH Register Addresses
@@ -128,20 +134,17 @@ module RH11(clk,      rst,      ctlNUM,
    localparam [18:35] ec2ADDR = rhADDR + `ec2OFFSET;     // Massbus Addr 17
 
    //
-   // Memory Address and Flags
-   //
-   // Details:
-   //  devADDRI[ 0:13] is flags
-   //  devADDRI[14:35] is address
+   // Device Address and Flags
    //
 
-   wire         devREAD   = devADDRI[ 3];               // 1 = Read Cycle (IO or Memory)
-   wire         devWRITE  = devADDRI[ 5];               // 1 = Write Cycle (IO or Memory)
-   wire         devIO     = devADDRI[10];               // 1 = IO Cycle, 0 = Memory Cycle
-   wire         devIOBYTE = devADDRI[13];               // 1 = Byte IO Operation
-   wire [14:17] devDEV    = devADDRI[14:17];            // Device Number
-   wire [18:34] devADDR   = devADDRI[18:34];            // Device Address
-   wire         devBYTE   = devADDRI[35];               // 1 = High byte, 0 = low byte
+   wire         devREAD   = `devREAD(devADDRI);         // Read Cycle (IO or Memory)
+   wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle (IO or Memory)
+   wire         devIO     = `devIO(devADDRI);           // IO Cycle, 0 = Memory Cycle
+   wire         devIOBYTE = `devIOBYTE(devADDRI);       // Byte IO Operation
+   wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
+   wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
+   wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device Hi byte select
+   wire         devLOBYTE = `devLOBYTE(devADDRI);       // Device Lo byte select
 
    //
    // Big-endian to little-endian data bus swap
@@ -161,110 +164,110 @@ module RH11(clk,      rst,      ctlNUM,
    wire rhasWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
 
    //
-   // Byte Selects
-   //
-
-   wire devHIBYTE = (devIOBYTE &  devBYTE) | ~devIOBYTE;
-   wire devLOBYTE = (devIOBYTE & ~devBYTE) | ~devIOBYTE;
-
-   //
-   // Clear Signal
-   // CSR2[CLR]
-   //
-
-   wire rhCLR = rhcs2WRITE & rhDATAI[5];
-
-   //
    // Transfer Error Clear
    //
 
-   wire treCLR = rhcs1WRITE & rhDATAI[14];
+   wire treCLR = rhcs1WRITE & devHIBYTE & `rhCS1_TRE(rhDATAI);
 
    //
-   // Clear Command
+   // Controller Clear
    //
 
-   wire goCLR = rhcs1WRITE & (rhDATAI[5:1] == `funCLEAR) & rhDATAI[0] & rhRDY;
+   wire rhCLR = rhcs2WRITE & devLOBYTE & `rhCS2_CLR(rhDATAI);
+
+   //
+   // Go Clear Command
+   //
+
+   wire goCLR = rhcs1WRITE & (rhDATAI[5:1] == `funCLEAR) & `rpCS1_GO(rhDATAI) & rhRDY;
 
    //
    // RH11 Control/Status #1 (RHCS1) Register
    //
 
-   reg rhTRE;
-   reg rhPSEL;
-   reg rhRDY;
-   reg rhIE;
-   reg rhIFF;
+   reg rhTRE;           // [14] Transfer Error
+   reg rhPSEL;          // [11] Port Select
+   reg rhRDY;           // [ 7] Ready
+   reg rhIE;            // [ 6] Interrupt Enable
+   reg rhIFF;           // Interrupt Flip-flop
    reg lastWCE;
    reg lastPE;
    reg lastNEM;
-   reg lastPGE;
    reg lastMXF;
    reg lastRDY;
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | rhCLR | devRESET)
+        if (rst)
           begin
-             rhTRE       <= 0;
-             rhPSEL      <= 0;
-             rhRDY       <= 1;
-             rhIE        <= 0;
-             rhIFF       <= 0;
-             lastWCE     <= 0;
-             lastPE      <= 0;
-             lastNEM     <= 0;
-             lastPGE     <= 0;
-             lastMXF     <= 0;
-             lastRDY     <= 0;
+             rhTRE   <= 0;
+             rhPSEL  <= 0;
+             rhRDY   <= 1;
+             rhIE    <= 0;
+             rhIFF   <= 0;
+             lastWCE <= 0;
+             lastPE  <= 0;
+             lastNEM <= 0;
+             lastMXF <= 0;
+             lastRDY <= 0;
           end
-        else if (rhcs1WRITE)
+        else
           begin
-             if (devHIBYTE)
+             if (rhCLR | devRESET)
                begin
-                  rhPSEL      <= rhDATAI[10];
-                  if (rhDATAI[14])
+                  rhTRE   <= 0;
+                  rhPSEL  <= 0;
+                  rhRDY   <= 1;
+                  rhIE    <= 0;
+                  rhIFF   <= 0;
+                  lastWCE <= 0;
+                  lastPE  <= 0;
+                  lastNEM <= 0;
+                  lastMXF <= 0;
+                  lastRDY <= 0;
+               end
+             else if (rhcs1WRITE)
+               begin
+                  if (devHIBYTE)
                     begin
-                       rhTRE <= 0;
+                       rhPSEL <= rhDATAI[10];
+                       if (rhDATAI[14])
+                         begin
+                            rhTRE <= 0;
+                         end
+                    end
+                  if (devLOBYTE)
+                    begin
+                       rhIE <= rhDATAI[6];
                     end
                end
-             if (devLOBYTE)
+
+             if (goCLR)
                begin
-                  rhIE <= rhDATAI[6];
+                  rhTRE <= 0;
                end
-          end
+             else if ((rhWCE & ~lastWCE) | (rhPE & ~lastPE) | (rhNEM & ~lastNEM) | (rhPGE & ~lastNEM) | (rhMXF & ~lastMXF))
+               begin
+                  rhTRE <= 1;
+               end
 
-        if (goCLR)
-          begin
-             rhTRE <= 0;
-          end
-        else if ((rhWCE & ~lastWCE) | (rhPE & ~lastPE) | (rhNEM & ~lastNEM) | (rhPGE & ~lastNEM) | (rhMXF & ~lastMXF))
-          begin
-             rhTRE <= 1;
-          end
+             //
+             // Done Interrupt Flip-flop
+             //  Set on transition or RDY from 0 -> 1
+             //  Cleared by interrupt acknowledge
+             //
 
-        //
-        // Done Interrupt Flip-flop
-        //  Set on transition or RDY from 0 -> 1
-        //  Cleared by interrupt acknowledge
-        //
+             if (devINTA == rhINTR)
+               rhIFF <= 0;
+             else if (rhRDY & ~lastRDY)
+               rhIFF <= rhIE;
 
-        if (devINTA == rhINTR)
-          begin
-             rhIFF <= 0;
+             lastWCE <= rhWCE;
+             lastPE  <= rhPE;
+             lastNEM <= rhNEM;
+             lastMXF <= rhMXF;
+             lastRDY <= rhRDY;
           end
-        else if (rhRDY & ~lastRDY)
-          begin
-             rhIFF <= rhIE;
-          end
-
-        lastWCE <= rhWCE;
-        lastPE  <= rhPE;
-        lastNEM <= rhNEM;
-        lastPGE <= rhPGE;
-        lastMXF <= rhMXF;
-        lastRDY <= rhRDY;
-
      end
 
    wire        rhSC   = (rhTRE |
@@ -284,26 +287,26 @@ module RH11(clk,      rst,      ctlNUM,
 
    reg  [15:0] rhWC;
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | rhCLR | devRESET)
+        if (rst)
+          rhWC <= 0;
+        else
           begin
-             rhWC   <= 0;
-          end
-        else if (rhwcWRITE)
-          begin
-             if (devHIBYTE)
+             if (rhCLR | devRESET)
+               rhWC <= 0;
+             else
                begin
-                  rhWC[15:8] <= rhDATAI[15:8];
+                  if (rhwcWRITE)
+                    begin
+                       if (devHIBYTE)
+                         rhWC[15:8] <= rhDATAI[15:8];
+                       if (devLOBYTE)
+                         rhWC[ 7:0] <= rhDATAI[ 7:0];
+                    end
+                  else if (sdINCWD)
+                    rhWC <= rhWC + 1'b1;
                end
-             if (devLOBYTE)
-               begin
-                  rhWC[7:0] <= rhDATAI[7:0];
-               end
-          end
-        else if (sdINCWD)
-          begin
-             rhWC <= rhWC + 1'b1;
           end
      end
 
@@ -313,33 +316,31 @@ module RH11(clk,      rst,      ctlNUM,
 
    reg [17:0] rhBA;
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (rst | rhCLR | devRESET)
+        if (rst)
+          rhBA[17:0] <= 0;
+        else
           begin
-             rhBA[17:0] <= 0;
-          end
-        else if (rhbaWRITE)
-          begin
-             if (devHIBYTE)
+             if (rhCLR | devRESET)
+               rhBA[17:0] <= 0;
+             else
                begin
-                  rhBA[15:8]  <= rhDATAI[15:8];
+                  if (rhbaWRITE)
+                    begin
+                       if (devHIBYTE)
+                         rhBA[15:8] <= rhDATAI[15:8];
+                       if (devLOBYTE)
+                         rhBA[ 7:0] <= rhDATAI[ 7:0];
+                    end
+                  else if (rhcs1WRITE)
+                    begin
+                       if (devHIBYTE)
+                         rhBA[17:16] <= rhDATAI[9:8];
+                    end
+                  else if (sdINCWD & !rhBAI)
+                    rhBA <= rhBA + 2'd2;
                end
-             if (devLOBYTE)
-               begin
-                  rhBA[7:0] <= rhDATAI[7:0];
-               end
-          end
-        else if (rhcs1WRITE)
-          begin
-             if (devHIBYTE)
-               begin
-                  rhBA[17:16] <= rhDATAI[9:8];
-               end
-          end
-        else if (sdINCWD & ~rhBAI)
-          begin
-             rhBA <= rhBA + 2'd2;
           end
      end
 
@@ -361,7 +362,7 @@ module RH11(clk,      rst,      ctlNUM,
 
    always @(posedge clk)
      begin
-        if (rst | rhCLR | devRESET)
+        if (rst)
           begin
              rhWCE  <= 0;
              rhPE   <= 0;
@@ -372,46 +373,56 @@ module RH11(clk,      rst,      ctlNUM,
              rhBAI  <= 0;
              rhUNIT <= 0;
           end
-        else if (treCLR)
+        else
           begin
-             rhWCE <= 0;
-             rhPE  <= 0;
-             rhNEM <= 0;
-             rhPGE <= 0;
-             rhMXF <= 0;
-          end
-        else if (goCLR)
-          begin
-             rhWCE <= 0;
-             rhPE  <= 0;
-             rhNEM <= 0;
-             rhMXF <= 0;
-          end
-        else if (rhcs2WRITE)
-          begin
-             if (devHIBYTE)
+             if (rhCLR | devRESET)
                begin
-                 rhPE   <= rhDATAI[13];
-                 rhMXF  <= rhDATAI[ 9];
-              end
-             if (devLOBYTE)
+                  rhWCE  <= 0;
+                  rhPE   <= 0;
+                  rhNEM  <= 0;
+                  rhPGE  <= 0;
+                  rhMXF  <= 0;
+                  rhPAT  <= 0;
+                  rhBAI  <= 0;
+                  rhUNIT <= 0;
+               end
+             else if (treCLR)
                begin
-                  rhPAT  <= rhDATAI[4];
-                  rhBAI  <= rhDATAI[3];
-                  rhUNIT <= rhDATAI[2:0];
+                  rhWCE <= 0;
+                  rhPE  <= 0;
+                  rhNEM <= 0;
+                  rhPGE <= 0;
+                  rhMXF <= 0;
+               end
+             else if (goCLR)
+               begin
+                  rhWCE <= 0;
+                  rhPE  <= 0;
+                  rhNEM <= 0;
+                  rhMXF <= 0;
+               end
+             else if (rhcs2WRITE)
+               begin
+                  if (devHIBYTE)
+                    begin
+                       rhPE   <= rhDATAI[13];
+                       rhMXF  <= rhDATAI[ 9];
+                    end
+                  if (devLOBYTE)
+                    begin
+                       rhPAT  <= rhDATAI[4];
+                       rhBAI  <= rhDATAI[3];
+                       rhUNIT <= rhDATAI[2:0];
+                    end
+               end
+             else
+               begin
+                  if (setWCE)
+                    rhWCE <= 1;
+                  if (setNEM)
+                    rhNEM <= 1;
                end
           end
-
-        if (setWCE)
-          begin
-             rhWCE <= 1;
-          end
-
-        if (setNEM)
-          begin
-             rhNEM <= 1;
-          end
-
      end
 
    wire        rhDLT  = 0;                      // CS2[15] : Device Late
@@ -571,7 +582,7 @@ module RH11(clk,      rst,      ctlNUM,
    // Build Array 8 RP Register Sets
    //
 
-   wire [15: 0] rpSN  [7:0];          // SN  Register
+   wire [15: 0] rpSN    [7:0];          // SN  Register
    wire [15: 0] rpDA    [7:0];          // DA  Register
    wire [15: 0] rpDS    [7:0];          // DS  Register
    wire [15: 0] rpER1   [7:0];          // ER1 Register
@@ -587,10 +598,6 @@ module RH11(clk,      rst,      ctlNUM,
    wire [ 7: 0] rpSDREQ;                // RP is ready for SD
    wire [ 7: 0] rpSDACK;                // SD is done with RP
 
-   wire         simTIME = 0;            //
-   wire         sdINCWD = 0;            // SD has transferred a word
-   wire         sdINCSECT;              //
-
    assign rpSN[0] = `rpSN0;
    assign rpSN[1] = `rpSN1;
    assign rpSN[2] = `rpSN2;
@@ -600,7 +607,6 @@ module RH11(clk,      rst,      ctlNUM,
    assign rpSN[6] = `rpSN6;
    assign rpSN[7] = `rpSN7;
 
-
    //
    // Build Array 8 RPxx (RP06 in this case) disk drives
    //
@@ -609,13 +615,13 @@ module RH11(clk,      rst,      ctlNUM,
    generate
       for (i = 0; i < 8; i = i + 1)
         begin : disk_loop
-           RPXX uRPXX
-             (.clk      (clk),
+           RPXX #(
+              .drvTYPE  (`rpRP06),
+              .simTIME  (simTIME)
+           )
+           uRPXX (
+              .clk      (clk),
               .rst      (rst | rhCLR | devRESET),
-              .simTIME  (simTIME),
-              .lastSECT (`rp06LASTSECT),
-              .lastSURF (`rp06LASTSURF),
-              .lastCYL  (`rp06LASTCYL),
               .unitSEL  (rhUNITSEL[i]),
               .incSECTOR(sdINCSECT),
               .rhCLR    (rhCLR),
@@ -639,31 +645,34 @@ module RH11(clk,      rst,      ctlNUM,
               .rpSDREQ  (rpSDREQ[i]),
               .rpSDACK  (rpSDACK[i]),
               .rpSDADDR (rpSDADDR[i])
-              );
+           );
         end
    endgenerate
 
    //
    // SD Controller
    //
-`ifdef notyet
+
    wire sdSTAT;
-   SD uSD
-     (.clk       (clk),
+   wire sdINCWD;
+   wire sdINCSECT;
+
+   SD uSD (
+      .clk       (clk),
       .rst       (rst),
       .sdMISO    (rh11MISO),
       .sdMOSI    (rh11MOSI),
       .sdSCLK    (rh11SCLK),
       .sdCS      (rh11CS),
-      .sdREQ     (rpSDREQ[sdUNITSEL]),
+      //.sdREQ     (rpSDREQ[sdUNITSEL]), // here
       .sdOP      (rpSDOP[sdUNITSEL]),
       .sdSECTADDR(rpSDADDR[sdUNITSEL]),
       .sdWDCNT   (rhWC),
       //here
       //.sdBUSADDR (sdBUSADDR),
       .dmaDATAI  (devDATAI),
-      .dmaDATAO  (devDATAO),
-      .dmaADDR   (devADDR),
+      //.dmaDATAO  (devDATAO),   // here
+      //.dmaADDR   (devADDR),
       .dmaREQ    (devREQO),
       .dmaACK    (devACKI),
       .sdINCWD   (sdINCWD),
@@ -671,10 +680,7 @@ module RH11(clk,      rst,      ctlNUM,
 
       .sdSTAT    (sdSTAT),
       .sdDEBUG   (rh11DEBUG)
-      );
-`else
-      assign sdINCSECT = 0;
-`endif
+   );
 
    //
    // Demux Disk Array Registers
@@ -697,8 +703,10 @@ module RH11(clk,      rst,      ctlNUM,
    reg devACKO;
    reg [0:35] devDATAO;
 
-   always @(devREAD or devIO or devDEV or rhDEV or devADDR or rhCS1 or rhWC or
-            rhBA or muxRPDA or rhCS2 or muxRPDS or muxRPER1 or rhAS or muxRPLA or rhDB or muxRPMR or muxRPSN or muxRPOF or muxRPDC or muxRPCC)
+   always @(devREAD or devIO    or devDEV  or rhDEV   or devADDR or rhCS1 or
+            rhWC    or rhBA     or rhCS2   or rhAS    or rhDB    or
+            muxRPDA or muxRPDS or muxRPER1 or muxRPLA or muxRPMR or
+            muxRPSN or muxRPOF  or muxRPDC or muxRPCC)
      begin
         if (devREAD & devIO & (devDEV == rhDEV))
           begin
@@ -757,5 +765,50 @@ module RH11(clk,      rst,      ctlNUM,
    //
 
    assign devINTR = (rhIFF | (rhSC & rhRDY & rhIE)) ? rhINTR : 4'b0;
+
+`ifndef SYNTHESIS
+
+   //
+   // Bus Monitor
+   //
+   // Details
+   //  Wait for Bus ACK on bus accesses.  Generate message on a timeout.
+   //
+
+   localparam [0:3] nxmTimeout = 15;
+   reg        [0:3] nxmCount;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          nxmCount <= nxmTimeout;
+        else
+          begin
+             if (devREQO & !devACKI)
+               begin
+                  if (nxmCount != 0)
+                    nxmCount <= nxmCount - 1'b1;
+               end
+             else
+               nxmCount <= nxmTimeout;
+          end
+     end
+
+   //
+   // Whine about unacked bus cycles
+   //
+
+   always @(posedge clk)
+     begin
+        if (nxmCount == 1)
+          begin
+             $display("");
+             $display("RH11: Unacknowledged bus cycle.  Addr Bus = %012o",
+                      devADDRO);
+             $display("");
+          end
+     end
+
+`endif
 
 endmodule

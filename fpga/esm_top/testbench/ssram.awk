@@ -208,9 +208,9 @@ BEGIN {
 END {
    for (i = 0; i < 077777; i++) { 
        if (map[i] != "") {
-           printf "         SSRAM[%05d] = 36'o%s;	// %06o\n", i, map[i], i
+           printf "         mem[%05d] = 36'o%s;	// %06o\n", i, map[i], i
        } else {
-           #printf "         SSRAM[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
+           #printf "         mem[%05d] = 36'o%s;	// %06o (unused)\n", i, "000000000000", i
        }
    }
 }
