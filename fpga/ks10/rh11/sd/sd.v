@@ -1,11 +1,13 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-// KS10 Processor
+// KS-10 Processor
 //
 // Brief
 //   RPXX Secure Digital Interface
 //
 // Details
+//   This module contains an interfaced to an SDHC device via a serial SPI
+//   connection.
 //
 // File
 //   sd.vhd
@@ -13,32 +15,31 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
+`default_nettype none
 `include "sd.vh"
 `include "sdspi.vh"
 
@@ -66,18 +67,18 @@ module SD(clk, rst,
    input  [31:0] sdSECTADDR;            // SD Sector Number
    input  [15:0] sdWDCNT;               // SD Word Count
    input  [15:0] sdBUSADDR;             // SD Bus Address
-   
+
    // DMA Interface
    input  [0:35] dmaDATAI;              // DMA Data Input
    output [0:35] dmaDATAO;              // DMA Data Output
    output [0:35] dmaADDR;               // DMA Address
    output        dmaREQ;                // DMA Request
    input         dmaACK;                // DMA Acknowledge
-   
+
    // Outputs
    output        sdINCWD;               // Increment Word Count
    output        sdINCSECT;             // Increment Sector
-   output        sdSTAT;		// Status
+   output        sdSTAT;                // Status
    // Diagnostics
    output [0:63] sdDEBUG;               // Debug Output
 
@@ -86,26 +87,26 @@ module SD(clk, rst,
    // Sending leading 0xff just sends clocks with data parked.
    //
 
-   parameter [7:0] sdCMD0   [0:5] = {8'h40, 8'h00, 8'h00, 8'h00, 8'h00, 8'h95};
-   parameter [7:0] sdCMD8   [0:5] = {8'h48, 8'h00, 8'h00, 8'h01, 8'haa, 8'h87};
-   parameter [7:0] sdCMD13  [0:5] = {8'h4d, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
-   parameter [7:0] sdACMD41 [0:5] = {8'h69, 8'h40, 8'h00, 8'h00, 8'h00, 8'hff};
-   parameter [7:0] sdCMD55  [0:5] = {8'h77, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
-   parameter [7:0] sdCMD58  [0:5] = {8'h7a, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
+   wire [7:0] sdCMD0   [0:5] = {8'h40, 8'h00, 8'h00, 8'h00, 8'h00, 8'h95};
+   wire [7:0] sdCMD8   [0:5] = {8'h48, 8'h00, 8'h00, 8'h01, 8'haa, 8'h87};
+   wire [7:0] sdCMD13  [0:5] = {8'h4d, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
+   wire [7:0] sdACMD41 [0:5] = {8'h69, 8'h40, 8'h00, 8'h00, 8'h00, 8'hff};
+   wire [7:0] sdCMD55  [0:5] = {8'h77, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
+   wire [7:0] sdCMD58  [0:5] = {8'h7a, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
 
    //
-   // Timing parameters
+   // Timing wires
    //
-   
-   parameter [15:0] nCR  =    8;        // NCR from SD Spec
-   parameter [15:0] nAC  = 1023;        // NAC from SD Spec
-   parameter [15:0] nWR  =   20;        // NWR from SD Spec
+
+   wire [15:0] nCR  =    8;        // NCR from SD Spec
+   wire [15:0] nAC  = 1023;        // NAC from SD Spec
+   wire [15:0] nWR  =   20;        // NWR from SD Spec
 
    //
    // States
    //
-   
-   parameter [ 6:0] stateRESET   =  0,
+
+   localparam [ 6:0] stateRESET   =  0,
                     // Init States
                     stateINIT00  =  1,
                     stateINIT01  =  2,
@@ -159,11 +160,11 @@ module SD(clk, rst,
                     stateWRITE14 = 48,
                     stateWRITE15 = 49,
                     stateWRITE16 = 50,
-                 
+
                     // Write Check States
                     stateWRCHK00 = 51,
-                 
-                    
+
+
                     // Other States
                     stateFINI    = 52,
                     stateIDLE    = 53,
@@ -172,7 +173,6 @@ module SD(clk, rst,
                     stateRWFAIL  = 56;
 
    reg [ 2:0] spiOP;                    // SPI Op
-   reg [ 7:0] spiRXD;                   // SPI Received Data
    reg [ 7:0] spiTXD;                   // SPI Transmit Data
    reg [15:0] loopCNT;                  // Byte Counter
    reg [ 7:0] sdCMD17[0:5];             // CMD17
@@ -184,18 +184,22 @@ module SD(clk, rst,
    reg [19:0] timeout;                  // Timeout
    reg [ 7:0] sdRDCNT;                  // Read Counter
    reg [ 7:0] sdWRCNT;                  // Write Counter
+   reg [15:0] wdCNT;                    // Word Count
+   reg [31:0] sectADDR;                 // Sector Address
+
    reg [ 7:0] sdVAL;                    // Error Value
    reg [ 7:0] sdERR;                    // Error State
    reg        sdINCSECT;                // Increment Sector
    reg        sdINCWD;                  // Increment Word
-   
    reg        rwDONE;                   // Read/Write Completed
    reg        readOP;                   // Read/Write Operation
-   reg        dmaREQ;			// DMA Request
-   reg [0:35] dmaDATAO;   		// DMA Data Out
-   
+   reg        dmaREQ;                   // DMA Request
+   reg [0:35] dmaDATAO;                 // DMA Data Out
+
    reg [ 7:0] state;                    // Current State
+
    wire       spiDONE;                  // Asserted by SPI when done
+   wire[ 7:0] spiRXD;                   // SPI Received Data
 
    //
    // SD_STATE:
@@ -210,19 +214,21 @@ module SD(clk, rst,
              sdVAL      <= 0;
              sdRDCNT    <= 0;
              sdWRCNT    <= 0;
+             wdCNT      <= 0;
+             sectADDR   <= 0;
              sdINCSECT  <= 0;
              sdINCWD    <= 0;
              loopCNT    <= 0;
-             
+
              dmaDATAO   <= 0;
-             
-             
+
+
              readOP     <= 0;
-             
+
              spiTXD     <= 0;
              abort      <= 0;
              rwDONE     <= 0;
-             
+
              sdCMD17[0] <= 0;
              sdCMD17[1] <= 0;
              sdCMD17[2] <= 0;
@@ -951,21 +957,27 @@ module SD(clk, rst,
                         end
                       `sdopRD:
                         begin
-                           sdRDCNT <= sdRDCNT + 1'b1;
-                           readOP  <= 1;
-                           state   <= stateREAD00;
+                           readOP   <= 1;
+                           wdCNT    <= sdWDCNT;
+                           sectADDR <= sdSECTADDR;
+                           sdRDCNT  <= sdRDCNT + 1'b1;
+                           state    <= stateREAD00;
                         end
                       `sdopWR:
                         begin
-                           sdWRCNT <= sdWRCNT + 1'b1;
-                           readOP  <= 0;
-                           state   <= stateWRITE00;
+                           readOP   <= 0;
+                           wdCNT    <= sdWDCNT;
+                           sectADDR <= sdSECTADDR;
+                           sdWRCNT  <= sdWRCNT + 1'b1;
+                           state    <= stateWRITE00;
                         end
                       `sdopWRCHK:
                         begin
-                           sdRDCNT <= sdRDCNT + 1'b1;
-                           readOP  <= 1;
-                           state   <= stateWRCHK00;
+                           readOP   <= 1;
+                           wdCNT    <= sdWDCNT;
+                           sectADDR <= sdSECTADDR;
+                           sdRDCNT  <= sdRDCNT + 1'b1;
+                           state    <= stateWRCHK00;
                         end
                       default:
                         begin
@@ -983,10 +995,10 @@ module SD(clk, rst,
                stateREAD00:
                  begin
                     sdCMD17[0] <= 8'h51;
-                    sdCMD17[1] <= sdSECTADDR[31:24];
-                    sdCMD17[2] <= sdSECTADDR[23:16];
-                    sdCMD17[3] <= sdSECTADDR[15: 8];
-                    sdCMD17[4] <= sdSECTADDR[ 7: 0];
+                    sdCMD17[1] <= sectADDR[31:24];
+                    sdCMD17[2] <= sectADDR[23:16];
+                    sdCMD17[3] <= sectADDR[15: 8];
+                    sdCMD17[4] <= sectADDR[ 7: 0];
                     sdCMD17[5] <= 8'hff;
                     loopCNT    <= 0;
                     spiOP      <= `spiCSL;
@@ -1200,7 +1212,7 @@ module SD(clk, rst,
                       begin
                          spiOP           <= `spiTR;
                          spiTXD          <= 8'hff;
-                         dmaDATAO[ 0: 3] <= spiRXD[4:7];
+                         dmaDATAO[ 0: 3] <= spiRXD[7:4];
                          state           <= stateREAD09;
                       end
                  end
@@ -1236,7 +1248,7 @@ module SD(clk, rst,
                          state  <= stateREAD11;
                       end
                  end
-    
+
                //
                // stateREAD11:
                //  Read byte[7] of data from disk.
@@ -1260,7 +1272,7 @@ module SD(clk, rst,
                            end
                       end
                  end
-               
+
                //
                // stateREAD12:
                //  Write disk data to memory.
@@ -1275,6 +1287,7 @@ module SD(clk, rst,
                  end
 
 ////////////////////////////////////////////////////////////////////
+
                //
                // stateREAD13:
                //  The SIMH uses 1024 byte sectors.   This is
@@ -1301,51 +1314,51 @@ module SD(clk, rst,
                       end
                     else
                       begin
-                         if (sdWDCNT == 0)
+                         if (wdCNT == 0)
                            begin
                               rwDONE <= 0;
                            end
 
-			 //
-			 // We just read the first SD Sector of 512 bytes.
-			 // Increment the SD Sector Address and read the
-			 // next sector.
-			 //
-			 
+                         //
+                         // We just read the first SD Sector of 512 bytes.
+                         // Increment the SD Sector Address and read the
+                         // next sector.
+                         //
+
                          if (loopCNT == 63)
                            begin
-			      sdWDCNT    <= sdWDCNT - 1'b1;
-                              loopCNT    <= loopCNT + 1'b1;
-                              sdSECTADDR <= sdSECTADDR + 1'b1;
-                              state      <= stateREAD00;
+                              wdCNT    <= wdCNT - 1'b1;
+                              loopCNT  <= loopCNT + 1'b1;
+                              sectADDR <= sectADDR + 1'b1;
+                              state    <= stateREAD00;
                            end
 
-			 //
-			 // We just read the second SD Sector of 512 bytes.
-			 // Increment the SD Sector Address, increment the RPxx
-			 // sector, and continue.
-			 //
-			 
+                         //
+                         // We just read the second SD Sector of 512 bytes.
+                         // Increment the SD Sector Address, increment the RPxx
+                         // sector, and continue.
+                         //
+
                          else if (loopCNT == 127)
                            begin
-			      sdWDCNT    <= sdWDCNT - 1'b1;
-                              loopCNT    <= loopCNT + 1'b1;
-                              sdSECTADDR <= sdSECTADDR + 1'b1;
-                              sdINCSECT  <= 1;
-                              state      <= stateREAD00;
+                              wdCNT     <= wdCNT - 1'b1;
+                              loopCNT   <= loopCNT + 1'b1;
+                              sectADDR  <= sectADDR + 1'b1;
+                              sdINCSECT <= 1;
+                              state     <= stateREAD00;
                            end
 
-			 //
-			 // We're not done reading the SD Sector.  Keep reading
-			 //
-			 
-			 else
-			   begin
-			      sdWDCNT    <= sdWDCNT - 1'b1;
+                         //
+                         // We're not done reading the SD Sector.  Keep reading
+                         //
+
+                         else
+                           begin
+                              wdCNT      <= wdCNT - 1'b1;
                               loopCNT    <= loopCNT + 1'b1;
                               state      <= stateREAD04;
-			   end
-			   
+                           end
+
                       end
                  end
 
@@ -1390,10 +1403,10 @@ module SD(clk, rst,
                stateWRITE00:
                  begin
                     sdCMD24[0] <= 8'h58;
-                    sdCMD24[1] <= sdSECTADDR[31: 24];
-                    sdCMD24[2] <= sdSECTADDR[23: 16];
-                    sdCMD24[3] <= sdSECTADDR[15:  8];
-                    sdCMD24[4] <= sdSECTADDR[ 7:  0];
+                    sdCMD24[1] <= sectADDR[31: 24];
+                    sdCMD24[2] <= sectADDR[23: 16];
+                    sdCMD24[3] <= sectADDR[15:  8];
+                    sdCMD24[4] <= sectADDR[ 7:  0];
                     sdCMD24[5] <= 8'hff;
                     loopCNT    <= 0;
                     spiOP      <= `spiCSL;
@@ -1659,7 +1672,7 @@ module SD(clk, rst,
                  begin
                     if (spiDONE)
                       begin
-                         if (spiRXD[3:7] == 5'b0_010_1)
+                         if (spiRXD[4:0] == 5'b0_010_1)
                            begin
                               spiOP   <= `spiTR;
                               spiTXD  <= 8'hff;
@@ -1845,14 +1858,14 @@ module SD(clk, rst,
                // stateWRCHK00:
                //  Setup Read Single Block (CMD17) - (same as stateRD00)
                //
-               
+
                stateWRCHK00:
                  begin
                     sdCMD17[0] <= 8'h51;
-                    sdCMD17[1] <= sdSECTADDR[31:24];
-                    sdCMD17[2] <= sdSECTADDR[23:16];
-                    sdCMD17[3] <= sdSECTADDR[15: 8];
-                    sdCMD17[4] <= sdSECTADDR[ 7: 0];
+                    sdCMD17[1] <= sectADDR[31:24];
+                    sdCMD17[2] <= sectADDR[23:16];
+                    sdCMD17[3] <= sectADDR[15: 8];
+                    sdCMD17[4] <= sectADDR[ 7: 0];
                     sdCMD17[5] <= 8'hff;
                     loopCNT    <= 0;
                     spiOP      <= `spiCSL;
@@ -1860,7 +1873,7 @@ module SD(clk, rst,
                  end
 
 
-               
+
                //
                // stateFINI:
                //  Send 8 clock cycles
@@ -1940,16 +1953,16 @@ module SD(clk, rst,
    //
    // Debug Output
    //
-   
+
    assign sdDEBUG = {sdERR, state, sdVAL, sdWRCNT, sdRDCNT, 24'b0};
 
    //
    // Create address
    //
-   
-   parameter [0:19] rdFLAGS = 20'b0001_0000_0000_0000_0000;
-   parameter [0:19] wrFLAGS = 20'b0000_0100_0000_0000_0000;
+
+   localparam [0:19] rdFLAGS = 20'b0001_0000_0000_0000_0000;
+   localparam [0:19] wrFLAGS = 20'b0000_0100_0000_0000_0000;
 
    assign dmaADDR = (readOP) ? {rdFLAGS, sdBUSADDR} :  {wrFLAGS, sdBUSADDR};
-   
+
 endmodule

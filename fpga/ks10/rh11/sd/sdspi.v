@@ -1,13 +1,12 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-// KS10 Processor
+// KS-10 Processor
 //
 // Brief
 //   Secure Digital SPI Interface
 //
 // Details
-//   This interface communicates with the Secure Digital Chip
-//   at the physical layer.
+//   This interface communicates with the SDHC Chip at the physical layer.
 //
 // File
 //   sdspi.v
@@ -15,32 +14,31 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
+`default_nettype none
 `include "sdspi.vh"
 
 module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
@@ -48,7 +46,7 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
 
    input        clk;            // Clock
    input        rst;            // Reset
-   input  [1:0] spiOP;          // Operation
+   input  [2:0] spiOP;          // Operation
    input  [7:0] spiTXD;         // Transmit Data
    output [7:0] spiRXD;         // Receive Data
    input        spiMISO;        // SD Data In
@@ -126,25 +124,15 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
                     spiDONE <= 0;
                     case (spiOP)
                       `spiNOP:
-                        begin
-                           ;
-                        end
+                        ;
                       `spiCSL:
-                        begin
-                           spiCS <= 0;
-                        end
+                        spiCS <= 0;
                       `spiCSH:
-                        begin
-                           spiCS <= 1;
-                        end
+                        spiCS <= 1;
                       `spiFAST:
-                        begin
-                           clkdiv <= fastDiv;
-                        end
+                        clkdiv <= fastDiv;
                       `spiSLOW:
-                        begin
-                           clkdiv <= slowDiv;
-                        end
+                        clkdiv <= slowDiv;
                       `spiTR:
                         begin
                            clkcnt <= clkdiv;
@@ -153,9 +141,7 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
                            state  <= stateTXL;
                         end
                       default:
-                        begin
-                           state <= stateIDLE;
-                        end
+                        state <= stateIDLE;
                     endcase;
                  end
 
@@ -172,9 +158,7 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
                          state  <= stateTXH;
                       end
                     else
-                      begin
-                         clkcnt <= clkcnt - 1'b1;
-                      end
+                      clkcnt <= clkcnt - 1'b1;
                  end
 
                //
@@ -199,9 +183,7 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
                            end
                       end
                     else
-                      begin
-                         clkcnt <= clkcnt - 1;
-                      end
+                      clkcnt <= clkcnt - 1'b1;
                  end
 
                //
@@ -234,9 +216,7 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
                          state   <= stateIDLE;
                       end
                     else
-                      begin
-                         clkcnt <= clkcnt - 1;
-                      end
+                      clkcnt <= clkcnt - 1'b1;
                  end
 
                //
@@ -244,9 +224,7 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
                //
 
                default:
-                 begin
-                    state <= stateIDLE;
-                 end
+                 state <= stateIDLE;
              endcase
           end
      end

@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -6,8 +6,7 @@
 //   RPxx definitions
 //
 // Details
-//
-// Todo
+//   This file provides definitions for the various types of disks.
 //
 // File
 //   rpxx.vh
@@ -15,31 +14,29 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `ifndef __RPXX_VH
 `define __RPXX_VH
@@ -62,45 +59,105 @@
 //
 
 `define rpRP04 16'o020020
-`define rpRP05 16'o020021		// Single Port RP05
-`define rpRP06 16'o020022		// Single Port RP06
+`define rpRP05 16'o020021
+`define rpRP06 16'o020022
 `define rpRM03 16'o020024
 `define rpRM80 16'o020026
 `define rpRM05 16'o020027
-`define rpRM07 16'o020042
+`define rpRP07 16'o020042
 
 //
-// RP/RM Functions
-//
-// Note
-//  The function code numbering in the book is a little strange -
-//  It includes the GO bit, apparently.  The LSB is always set.
+// RP04 Disk Parameters
 //
 
-`define funNOP     6'o00        // 01
-`define funUNLOAD  6'o01        // 03
-`define funSEEK    6'o02        // 05
-`define funRECAL   6'o03        // 07
-`define funCLEAR   6'o04        // 11
-`define funRELEASE 6'o05        // 13
-`define funOFFSET  6'o06        // 15
-`define funRETURN  6'o07        // 17
-`define funPRESET  6'o10        // 21
-`define funPAKACK  6'o11        // 23
-`define funSEARCH  6'o14        // 31
-`define funWRCHK   6'o24        // 51
-`define funWRCHKH  6'o25        // 53
-`define funWRITE   6'o30        // 61
-`define funWRITEH  6'o31        // 63
-`define funREAD    6'o34        // 71
-`define funREADH   6'o35        // 73
+`define rp04LASTSECT    6'd19           // 20 sectors per track numbered 0 to 19
+`define rp04LASTSURF    5'd18           // 19 tracks per cylinder numbered 0 to 18
+`define rp04LASTCYL     10'd410         // 411 Cylinders
 
 //
-// rp06 Disk Parametes
+// RP05 Disk Parameters
 //
 
-`define rp06LASTSECT    5'd19           // 20 sectors per track numbered 0 to 19
+`define rp05LASTSECT    6'd19           // 20 sectors per track numbered 0 to 19
+`define rp05LASTSURF    5'd18           // 19 tracks per cylinder numbered 0 to 18
+`define rp05LASTCYL     10'd410         // 411 Cylinders
+
+//
+// RP06 Disk Parameters
+//
+
+`define rp06LASTSECT    6'd19           // 20 sectors per track numbered 0 to 19
 `define rp06LASTSURF    5'd18           // 19 tracks per cylinder numbered 0 to 18
 `define rp06LASTCYL     10'd814         // 815 Cylinders
+
+//
+// RP07 Disk Parameters
+//
+
+`define rp07LASTSECT    6'd42           // 43 sectors per track numbered 0 to 42
+`define rp07LASTSURF    5'd31           // 31 tracks per cylinder numbered 0 to 18
+`define rp07LASTCYL     10'd629         // 630 Cylinders
+
+//
+// RM03 Disk Parameters
+//
+
+`define rm03LASTSECT    6'd29           // 30 sectors per track numbered 0 to 29
+`define rm03LASTSURF    5'd4            // 5 tracks per cylinder numbered 0 to 4
+`define rm03LASTCYL     10'd822         // 823 Cylinders
+
+//
+// RM05 Disk Parameters
+//
+
+`define rm05LASTSECT    6'd29           // 30 sectors per track numbered 0 to 29
+`define rm05LASTSURF    5'd18           // 19 tracks per cylinder numbered 0 to 18
+`define rm05LASTCYL     10'd822         // 823 Cylinders
+
+//
+// RM80 Disk Parameters
+//
+
+`define rm80LASTSECT    6'd29           // 30 sectors per track numbered 0 to 29
+`define rm80LASTSURF    5'd13           // 14 tracks per cylinder numbered 0 to 13
+`define rm80LASTCYL     10'd558         // 559 Cylinders
+
+//
+// getLASTSECT(type)
+//
+
+`define getLASTSECT(type) (((type) == `rpRP04) ? `rp04LASTSECT : \
+                           (((type) == `rpRP05) ? `rp05LASTSECT : \
+                            (((type) == `rpRP06) ? `rp06LASTSECT : \
+                             (((type) == `rpRP07) ? `rp07LASTSECT : \
+                              (((type) == `rpRM03) ? `rm03LASTSECT : \
+                               (((type) == `rpRM05) ? `rm05LASTSECT : \
+                                (((type) == `rpRM80) ? `rm80LASTSECT : \
+                                 `rp06LASTSECT)))))))
+//
+// getLASTSURF(type)
+//
+
+`define getLASTSURF(type) (((type) == `rpRP04) ? `rp04LASTSURF : \
+                           (((type) == `rpRP05) ? `rp05LASTSURF : \
+                            (((type) == `rpRP06) ? `rp06LASTSURF : \
+                             (((type) == `rpRP07) ? `rp07LASTSURF : \
+                              (((type) == `rpRM03) ? `rm03LASTSURF : \
+                               (((type) == `rpRM05) ? `rm05LASTSURF : \
+                                (((type) == `rpRM80) ? `rm80LASTSURF : \
+                                 `rp06LASTSURF)))))))
+
+//
+// getLASTCYL(type)
+//
+
+`define getLASTCYL(type) (((type) == `rpRP04) ? `rp04LASTCYL : \
+                          (((type) == `rpRP05) ? `rp05LASTCYL : \
+                           (((type) == `rpRP06) ? `rp06LASTCYL : \
+                            (((type) == `rpRP07) ? `rp07LASTCYL : \
+                             (((type) == `rpRM03) ? `rm03LASTCYL : \
+                              (((type) == `rpRM05) ? `rm05LASTCYL : \
+                               (((type) == `rpRM80) ? `rm80LASTCYL : \
+                                `rp06LASTCYL)))))))
 
 `endif
