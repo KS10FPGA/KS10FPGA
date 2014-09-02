@@ -2,44 +2,43 @@
 //
 // KS-10 Processor
 //
-// brief
-//      Microsequencer
+// Brief
+//   Microsequencer
 //
-// details
-//      This file implements the KS10 microsequencer.
+// Details
+//   This file implements the KS10 microsequencer.
 //
-// file
-//      useq.v
+// File
+//   useq.v
 //
-// author
-//      Rob Doyle - doyle (at) cox (dot) net
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+`default_nettype none
 `include "crom.vh"
 `include "drom.vh"
 `include "../alu.vh"
@@ -124,12 +123,12 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    // ALU Zero
    //
 
-   wire txxx    = aluZERO != `dromTXXXEN;      	// Test Instruction Results
+   wire txxx    = aluZERO != `dromTXXXEN;       // Test Instruction Results
 
    //
    // Dispatch Addresses
    //
-   
+
    wire [8:11] dispMUL  = {1'b0,     aluQR37, 1'b0,      1'b0};
    wire [8:11] dispEA   = {~opJRST0, regIR_I, regXRZERO, 1'b0};
    wire [8:11] dispNORM = {aluZERO,  dp[8:9], aluLSIGN};
@@ -146,13 +145,13 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //  place on an even address.
    //
 
-   SKIP uSKIP
-     (.crom(crom),
+   SKIP uSKIP (
+      .crom(crom),
       .skip40({aluCRY0,   aluLZERO, aluRZERO, ~flagUSER,  flagFPD,  regACZERO, cpuINTR   }),
       .skip20({aluCRY2,   aluLSIGN, aluRSIGN, flagUSERIO, skipJFCL, aluCRY1,   txxx      }),
       .skip10({trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    ~iolatch, ~cpuCONT,  ~timerINTR}),
       .skipADDR(skipADDR)
-      );
+   );
 
    //
    // Dispatch Logic
@@ -208,10 +207,10 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    reg [0:11] dispJ;
    always @(dromACDISP, regIR_AC, dromJ)
      begin
-        if (dromACDISP)                   	// Dispatch Address Range:
-          dispJ = {dromJ[0:7], regIR_AC};       // 1400 to 1777  (4 upper address were hardwired)
+        if (dromACDISP)                         // Dispatch Address Range:
+          dispJ = {dromJ[0:7], regIR_AC};       // 1400 to 1777
         else
-          dispJ = {dromJ[0:7], dromJ[8:11]};    // 1400 to 1777  (4 upper address were hardwired)
+          dispJ = {dromJ[0:7], dromJ[8:11]};    // 1400 to 1777
      end
 
    //
@@ -226,7 +225,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    always @(dromAEQJ, dispJ, dromA)
      begin
         if (dromAEQJ)                           // Dispatch Address Range:
-          dispAREAD = dispJ;                    // 1400 to 1777  (4 upper address were hardwired)
+          dispAREAD = dispJ;                    // 1400 to 1777
         else
           dispAREAD = {8'b00000010, dromA};     // 0040 to 0057
      end
@@ -234,9 +233,9 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
    // Dispatch MUX
    //
-           
-   DISPATCH uDISPATCH
-     (.crom             (crom),
+
+   DISPATCH uDISPATCH (
+      .crom             (crom),
       .dp               (dp),
       .dispDIAG         (dispDIAG),
       .dispRET          (dispRET),
@@ -252,42 +251,36 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
       .dispDROM_A       (dromA),
       .dispDROM_B       (dromB),
       .dispADDR         (dispADDR)
-      );
+   );
 
    //
    // Address 'MUX'
    //
    // Details
    //  The CROM registers have been absorbed by the synchronous FPGA ROM.
-   //  Therefore the initial state of the microcode (address zero) must
-   //  be handled explicitly.
+   //  Therefore the initial state of the microcode (address zero) must be
+   //  handled explicitly.
    //
    //  The Microcode should begin execution at address o0000.
    //
    //  The microsequencer continuously re-executes instruction at address
-   //  o0000 while the rst signal is asserted.  It can only execute the
-   //  second instruction after the 'rst' signal is negated.
+   //  o0000 while the rst signal is asserted.  It can only execute the second
+   //  instruction after the 'rst' signal is negated.
    //
-   //  This process assumes that the 'rst' negation is synchronized to
-   //  the clock and that the 'rst' signal is asserted for a few clock
-   //  cycles minimum to ensure that the instruction at address o0000
-   //  is executed at least once.
+   //  This process assumes that the 'rst' negation is synchronized to the
+   //  clock and that the 'rst' signal is asserted for a few clock cycles
+   //  minimum to ensure that the instruction at address o0000 is executed at
+   //  least once.
    //
    //  The synchronous 'rst' negation is handled earlier in the design
    //  heirarchy.
    //
-   //  The Page Fail address is hard coded to address o3777 in the
-   //  microcode.
+   //  The Page Fail address is hard coded to address o3777 in the microcode.
    //
    // Notes:
-   //  The microcode address space is 12-bits but only 11-bits (2048
-   //  microcode words) are actually implemented.  Therefore the amount
-   //  of microcode can be easily doubled without changing the micro-
-   //  architecture.
-   //
-   //  If all 12-bits of the microcode ROM are implemented, the PAGE FAIL
-   //  code will have to be moved to address o7777 or otherwise dealt
-   //  with.
+   //  The microcode address space is 12-bits but only 11-bits (2048 microcode
+   //  words) are actually implemented.  Therefore the amountof microcode can
+   //  be easily doubled without changing the micro-architecture.
    //
    // Trace:
    //  CRA1/E9
@@ -305,31 +298,31 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
 
    assign addr = (rst)      ? 12'o0000 :
-                 (pageFAIL) ? 12'o7777 :
+                 (pageFAIL) ? 12'o3777 :
                  (dispADDR  | skipADDR | `cromJ);
 
    //
    // Control ROM
    //
 
-   CROM uCROM
-     (.clk      (clk),
+   CROM uCROM (
+      .clk      (clk),
       .clken    (clken),
       .rst      (rst),
       .addr     (addr),
       .crom     (crom)
-      );
+   );
 
    //
    // Call/Return Instruction Decode:
    //
    // Details:
-   //  The address is pushed on the stack during a call or when a
-   //  PAGE FAIL occurs.
+   //  The address is pushed on the stack during a call or when a PAGE FAIL
+   //  occurs.
    //
    // Note:
-   //  The KS10 logic decodes a 'return dispatch' as "x0xx01" but
-   //  only o01 and o41 are used by the microcode.
+   //  The KS10 logic decodes a 'return dispatch' as "x0xx01" but only o01 and
+   //  o41 are used by the microcode.
    //
    // Trace
    //  CRA2/E33
@@ -350,14 +343,14 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    // Call/Return Stack
    //
 
-   STACK uSTACK
-     (.clk      (clk),
+   STACK uSTACK (
+      .clk      (clk),
       .rst      (rst),
       .clken    (clken),
       .call     (call),
       .ret      (ret),
       .addrIN   (addr),
       .addrOUT  (dispRET)
-      );
+   );
 
 endmodule
