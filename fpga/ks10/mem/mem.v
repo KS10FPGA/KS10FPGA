@@ -48,9 +48,6 @@
 // File
 //   mem.v
 //
-// FIXME
-//   This file has conditionally compiled test memory.
-//
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
@@ -82,8 +79,6 @@
 `include "../uba/uba.vh"
 `include "../cpu/bus.vh"
 `include "../ks10.vh"
-
-//`define SIMPLE
 
 module MEM(clk, clkT, rst, clken,
            busREQI, busACKO, busADDRI, busDATAI, busDATAO,
@@ -221,11 +216,7 @@ module MEM(clk, clkT, rst, clken,
             (!busIO & busWRTEST))
           begin
              busACKO  <= 1;
-`ifdef SIMPLE
-             busDATAO <= mem[rd_addr];
-`else
              busDATAO <= ssramDATA;
-`endif
           end
 
      end
@@ -236,33 +227,6 @@ module MEM(clk, clkT, rst, clken,
    //
 
    wire memWrite = busWRITE & !busIO & !busACREF;
-
-`ifdef SIMPLE
-
-   //
-   // Syncrhonous SRAM for test
-   //
-
-   reg [0:35] mem [0:32767];
-   initial
-     begin
-        `include "../../testbench/ssram.dat"
-     end
-
-   reg  [0:14] rd_addr;
-   wire [0:14] wr_addr = busADDR[21:35];
-
-   always @(negedge clk)
-     begin
-        if (clken & !busIO)
-          begin
-             if (memWrite)
-               mem[wr_addr] <= busDATAI;
-             rd_addr <= wr_addr;
-          end
-     end
-
-`endif
 
    assign ssramCLKEN_N = 0;
    assign ssramADV     = 0;

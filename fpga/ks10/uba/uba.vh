@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -89,17 +89,17 @@
 // Status Register Bits
 //
 
-`define statTMO         18                      // Timeout/NXM
-`define statBMD         19                      // Bad memory data
-`define statBPE         20                      // Bus parity error
-`define statNXD         21                      // Non-existant device
-`define statHI          24                      // Hi interrupt
-`define statLO          25                      // Lo interrupt
-`define statPWR         26                      // Powerfail
-`define statDXF         28                      // Disable transfer
-`define statINI         29                      // Initialized
-`define statPIH         30:32                   // Hi priority PIA
-`define statPIL         33:35                   // Lo priority PIA
+`define statTMO(bus)    (bus[18])               // Timeout/NXM
+`define statBMD(bus)    (bus[19])               // Bad memory data
+`define statBPE(bus)    (bus[20])               // Bus parity error
+`define statNXD(bus)    (bus[21])               // Non-existant device
+`define statHI(bus)     (bus[24])               // Hi interrupt
+`define statLO(bus)     (bus[25])               // Lo interrupt
+`define statPWR(bus)    (bus[26])               // Powerfail
+`define statDXF(bus)    (bus[28])               // Disable transfer
+`define statINI(bus)    (bus[29])               // Initialized
+`define statPIH(bus)    (bus[30:32])            // Hi priority PIA
+`define statPIL(bus)    (bus[33:35])            // Lo priority PIA
 
 //
 // Lookup WRU response from ubaNUM

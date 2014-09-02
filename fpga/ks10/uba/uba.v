@@ -6,31 +6,28 @@
 //   KS10 IO Bus Bridge
 //
 // Details
-//   This device 'bridges' the KS10 FPGA backplane bus to the IO
-//   IO Bus.  On a real KS10, the IO bus was UNIBUS.  The IO
-//   Bus in the KS10 FPGA is not UNIBUS.
+//   This device 'bridges' the KS10 FPGA backplane bus to the IO Bus.  On a
+//   real KS10, the IO bus was UNIBUS.  The IO Bus in the KS10 FPGA is not
+//   UNIBUS.
 //
 // Notes
-//      Important addresses:
+//   Important addresses:
 //
-//      763000-763077 : IO Bridge Paging RAM
-//      763100        : IO Bridge Status Register
-//      763101        : IO Bridge Maintenace Register
-//
-//
-
+//   763000-763077 : IO Bridge Paging RAM
+//   763100        : IO Bridge Status Register
+//   763101        : IO Bridge Maintenace Register
 //
 // IO Bridge Status Register:
 //
-//            0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17
-//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-//    (LH)  |                                                                       |
-//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+//     0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17
+//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+//   |                                                                       |
+//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 //
-//           18  19  20  21  22  23  24 25 26 27 28 29 30 31 32 33 34 35
-//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-//    (RH)  |TMO|BMD|BPE|NXD|   |   |HI |LO |PWR|   |DXF|INI|    PIH    |    PIL    |
-//          +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+//    18  19  20  21  22  23  24 25 26 27 28 29 30 31 32 33 34 35
+//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+//   |TMO|BMD|BPE|NXD|   |   |HI |LO |PWR|   |DXF|INI|    PIH    |    PIL    |
+//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 //
 //   Register Definitions
 //
@@ -42,27 +39,28 @@
 //      LO  : Lo level intr pend  - IRQ on BR5 or BR4.  Writes are ignored.
 //      PWR : Power Fail          - Always read as 0.  Writes are ignored.
 //      DXF : Diable Transfer     - Read/Write.  Does nothing.
-//      INI : Initialize          - Always read as 0.  Writing 1 resets all IO Bridge Devices.
+//      INI : Initialize          - Always read as 0.  Writing 1 resets all IO
+//                                  Bridge Devices.
 //      PIH : Hi level PIA        - R/W
 //      PIL : Lo level PIA        - R/W
 //
 // IO Bridge Maintenance Register:
 //
-//  SIMH reads this register as zero always and ignores writes.
+//     0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17
+//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+//   |                                                                       |
+//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 //
-//             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//     (LH)  |                                                     |
-//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//    18  19  20  21  22  23  24 25 26 27 28 29 30 31 32 33 34 35
+//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+//   |                                                                   |CR |
+//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 //
-//            18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//     (RH)  |                                                  |CR|
-//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//   Register Definitions
 //
+//      CR  : Change Register     - Always read as 0.  Writes are ignored.
 //
-//      CR  : Change Register     - Always read as 0.  Writes
-//                                  are ignored.
+//      SIMH reads this register as zero always and ignores writes.
 //
 // File
 //   uba.v
@@ -72,7 +70,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -97,6 +95,7 @@
 `default_nettype none
 `include "uba.vh"
 `include "../ks10.vh"
+`include "../cpu/bus.vh"
 
 module UBA(clk, rst,
            // KS10 Bus Interface
@@ -160,16 +159,16 @@ module UBA(clk, rst,
    //  busADDRI[14:35] is address
    //
 
-   wire         busREAD   = busADDRI[ 3];       // 1 = Read Cycle (IO or Memory)
-   wire         busWRITE  = busADDRI[ 5];       // 1 = Write Cycle (IO or Memory)
-   wire         busPHYS   = busADDRI[ 8];       // 1 = Physical reference
-   wire         busIO     = busADDRI[10];       // 1 = IO Cycle, 0 = Memory Cycle
-   wire         busWRU    = busADDRI[11];       // 1 = Read interrupting controller number
-   wire         busVECT   = busADDRI[12];       // 1 = Read interrupt vector
-   wire         busIOBYTE = busADDRI[13];       // 1 = IO Bridge Byte IO Operation
-   wire [15:17] busPI     = busADDRI[15:17];    // IO Bridge PI Request
-   wire [14:17] busDEV    = busADDRI[14:17];    // IO Bridge Device Number
-   wire [18:35] busADDR   = busADDRI[18:35];    // IO Address
+   wire         busREAD   = `busREAD(busADDRI);  // 1 = Read Cycle (IO or Memory)
+   wire         busWRITE  = `busWRITE(busADDRI); // 1 = Write Cycle (IO or Memory)
+   wire         busPHYS   = `busPHYS(busADDRI);  // 1 = Physical reference
+   wire         busIO     = `busIO(busADDRI);    // 1 = IO Cycle, 0 = Memory Cycle
+   wire         busWRU    = `busWRU(busADDRI);   // 1 = Read interrupting controller number
+   wire         busVECT   = `busVECT(busADDRI);  // 1 = Read interrupt vector
+   wire         busIOBYTE = `busIOBYTE(busADDRI);// 1 = IO Bridge Byte IO Operation
+   wire [15:17] busPI     = `busPI(busADDRI);    // IO Bridge PI Request
+   wire [14:17] busDEV    = `busDEV(busADDRI);   // IO Bridge Device Number
+   wire [18:35] busADDR   = `busADDR(busADDRI);  // IO Address
 
    //
    // Address Decoding
@@ -324,7 +323,7 @@ module UBA(clk, rst,
           begin
              if (statWRITE)
                begin
-                  if (busDATAI[`statINI])
+                  if (`statINI(busDATAI))
                     begin
                        statTMO <= 0;
                        statNXD <= 0;
@@ -334,11 +333,11 @@ module UBA(clk, rst,
                     end
                   else
                     begin
-                       statTMO <= statTMO & !busDATAI[`statTMO];
-                       statNXD <= statNXD & !busDATAI[`statNXD];
-                       statDXF <= busDATAI[`statDXF];
-                       statPIH <= busDATAI[`statPIH];
-                       statPIL <= busDATAI[`statPIL];
+                       statTMO <= statTMO & !`statTMO(busDATAI);
+                       statNXD <= statNXD & !`statNXD(busDATAI);
+                       statDXF <= `statDXF(busDATAI);
+                       statPIH <= `statPIH(busDATAI);
+                       statPIL <= `statPIL(busDATAI);
                     end
                end
              else
@@ -370,7 +369,7 @@ module UBA(clk, rst,
              count    <= 0;
              devRESET <= 0;
           end
-        else if (statWRITE & busDATAI[`statINI])
+        else if (statWRITE & `statINI(busDATAI))
           begin
              count    <= 0;
              devRESET <= 1;
@@ -460,26 +459,43 @@ module UBA(clk, rst,
 
    reg        [0:3] nxdCount;
    localparam [0:3] nxdTimeout = 15;
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           nxdCount <= 0;
         else
           begin
-             if (devREQO & busIO & (busREAD | busWRITE))
-               nxdCount <= nxdTimeout;
-             else if (nxdCount != 0)
+             if (devREQO & !devACKI & busIO & (busREAD | busWRITE))
                begin
-                  if (devACKI)
-                    nxdCount <= 0;
-                  else
+                  if (nxdCount != 0)
                     nxdCount <= nxdCount - 1'b1;
                end
+             else
+               nxdCount <= nxdTimeout;
           end
      end
 
    assign setNXD = (nxdCount == 1);
+
+`ifndef SYNTHESIS
+
+   //
+   // Whine about NXD
+   //
+
+   always @(posedge clk)
+     begin
+        if (setTMO)
+          begin
+             $display("");
+             $display("UBA%d: Non-implemented device.  Addr Bus = %012o",
+                      ubaNUM, busADDRI);
+             $display("");
+          end
+     end
+
+`endif
 
    //
    // TMO is asserted on an 'un-acked' KS10 bus request
@@ -494,19 +510,36 @@ module UBA(clk, rst,
           tmoCount <= 0;
         else
           begin
-             if (busREQO)
-	       tmoCount <= tmoTimeout;
-	     else if (tmoCount != 0)
-	       begin
-                  if (busACKI)
-                    tmoCount <= 0;
-                  else
+             if (busREQO & !busACKI)
+               begin
+                  if (tmoCount != 0)
                     tmoCount <= tmoCount - 1'b1;
-	       end
-	  end
+               end
+             else
+               tmoCount <= tmoTimeout;
+          end
      end
-   
+
    assign setTMO = (tmoCount == 1);
+
+`ifndef SYNTHESIS
+
+   //
+   // Whine about unacked bus cycles
+   //
+
+   always @(posedge clk)
+     begin
+        if (setTMO)
+          begin
+             $display("");
+             $display("UBA%d: Unacknowledged bus cycle.  Addr Bus = %012o",
+                      ubaNUM, busADDRO);
+             $display("");
+          end
+     end
+
+`endif
 
    //
    // IO Bus Paging
@@ -541,8 +574,10 @@ module UBA(clk, rst,
    always @(pageREAD   or pageWRITE or pageDATAO  or
             statREAD   or statWRITE or regSTAT    or
             maintWRITE or maintREAD or
-            wruREAD    or ubaNUM    or statINTHI  or statINTLO or busPI    or statPIH   or statPIL   or
-            devREAD    or devWRITE  or vectREAD   or dev1ACKI  or dev2ACKI or dev1DATAI or dev2DATAI or arbState)
+            wruREAD    or ubaNUM    or statINTHI  or statINTLO or
+            busPI      or statPIH   or statPIL    or
+            devREAD    or devWRITE  or vectREAD   or dev1ACKI  or
+            dev2ACKI   or dev1DATAI or dev2DATAI or arbState)
      begin
         busACKO  = 0;
         busDATAO = 36'b0;
@@ -557,7 +592,7 @@ module UBA(clk, rst,
              busDATAO = regSTAT;
           end
         if ((wruREAD & (busPI == statPIH)) |
-	    (wruREAD & (busPI == statPIL)))
+            (wruREAD & (busPI == statPIL)))
           begin
              busACKO  = 1;
              busDATAO = wruRESP;
