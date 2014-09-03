@@ -1,0 +1,18 @@
+
+rtl/cpu/dbus.v:
+
+   Special hacks for certain addresses.  Why?
+
+rtl/cpu/cpu.v:
+
+   Memory_cycle is always negated.
+   Mangled arguments to pf_disp module
+
+rtl/cpu/pf_disp.v
+
+   Everything is hacked.
+   Rename to pagefail.v
+
+
+
+
