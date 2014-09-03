@@ -78,7 +78,7 @@ module ESM_CLK(clkIn, rstIn, clkOutT, clkOutR, clkT, ssramCLK, rstOut);
    reg       clkOutT;
    reg       clkOutR;
 
-   always @(posedge clkIn or posedge rstOut)
+   always @(posedge clkIn or posedge rstIn)
      begin
         if (rstIn)
           begin
@@ -91,48 +91,50 @@ module ESM_CLK(clkIn, rstIn, clkOutT, clkOutR, clkT, ssramCLK, rstOut);
              clkState <= stateT1;
           end
         else
-          case (clkState)
-            stateT1:
-              begin
-                 clkT[1]  <= 1;
-                 clkT[2]  <= 0;
-                 clkT[3]  <= 0;
-                 clkT[4]  <= 0;
-                 clkOutR  <= 0;
-                 clkOutT  <= 1;
-                 clkState <= stateT2;
+	  begin
+             case (clkState)
+               stateT1:
+		 begin
+                    clkT[1]  <= 1;
+                    clkT[2]  <= 0;
+                    clkT[3]  <= 0;
+                    clkT[4]  <= 0;
+                    clkOutR  <= 0;
+                    clkOutT  <= 1;
+                    clkState <= stateT2;
               end
-            stateT2:
-              begin
-                 clkT[1]  <= 0;
-                 clkT[2]  <= 1;
-                 clkT[3]  <= 0;
-                 clkT[4]  <= 0;
-                 clkOutR  <= 0;
-                 clkOutT  <= 1;
-                 clkState <= stateT3;
-              end
-            stateT3:
-              begin
-                 clkT[1]  <= 0;
-                 clkT[2]  <= 0;
-                 clkT[3]  <= 1;
-                 clkT[4]  <= 0;
-                 clkOutR  <= 1;
-                 clkOutT  <= 0;
-                 clkState <= stateT4;
-              end
-            stateT4:
-              begin
-                 clkT[1]  <= 0;
-                 clkT[2]  <= 0;
-                 clkT[3]  <= 0;
-                 clkT[4]  <= 1;
-                 clkOutR  <= 1;
-                 clkOutT  <= 0;
-                 clkState <= stateT1;
-              end
-            endcase
+               stateT2:
+		 begin
+                    clkT[1]  <= 0;
+                    clkT[2]  <= 1;
+                    clkT[3]  <= 0;
+                    clkT[4]  <= 0;
+                    clkOutR  <= 0;
+                    clkOutT  <= 1;
+                    clkState <= stateT3;
+		 end
+               stateT3:
+		 begin
+                    clkT[1]  <= 0;
+                    clkT[2]  <= 0;
+                    clkT[3]  <= 1;
+                    clkT[4]  <= 0;
+                    clkOutR  <= 1;
+                    clkOutT  <= 0;
+                    clkState <= stateT4;
+		 end
+               stateT4:
+		 begin
+                    clkT[1]  <= 0;
+                    clkT[2]  <= 0;
+                    clkT[3]  <= 0;
+                    clkT[4]  <= 1;
+                    clkOutR  <= 1;
+                    clkOutT  <= 0;
+                    clkState <= stateT1;
+		 end
+             endcase
+	  end
      end
 
    //

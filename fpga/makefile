@@ -176,6 +176,13 @@ INC := \
 	$(RTL)/ks10/uba/dz11/uart/uart_brg.vh \
 	$(RTL)/ks10/uba/rh11/sd/sdspi.vh \
 	$(RTL)/ks10/uba/rh11/sd/sd.vh \
+	$(RTL)/ks10/uba/rh11/rhcs1.vh \
+	$(RTL)/ks10/uba/rh11/rhcs2.vh \
+	$(RTL)/ks10/uba/rh11/rpcs1.vh \
+	$(RTL)/ks10/uba/rh11/rpda.vh \
+	$(RTL)/ks10/uba/rh11/rpds.vh \
+	$(RTL)/ks10/uba/rh11/rper1.vh \
+	$(RTL)/ks10/uba/rh11/rpof.vh \
 	$(RTL)/ks10/uba/rh11/rpxx.vh \
 	$(RTL)/ks10/uba/rh11/rh11.vh \
 	$(RTL)/ks10/uba/uba.vh \
