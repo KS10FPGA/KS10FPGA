@@ -26,7 +26,7 @@ USEQ         := $(RTL)/ks10/cpu/useq
 #
 
 XILDIR       := $(shell cygpath -u '$(XILINX)')
-XILEXE       := $(XILDIR)/ISE_DS/ISE/bin/nt
+XILEXE       := $(XILDIR)/ISE_DS/ISE/bin/nt64
 BITGEN       := $(XILEXE)/bitgen.exe
 FUSE         := $(XILEXE)/fuse.exe
 MAP          := $(XILEXE)/map.exe
@@ -41,7 +41,7 @@ INTSTYLE     := ise
 # Initialized Memory Contents (Simulation only)
 #
 
-LOAD         := MAINDEC-10-DSKAA.SEQ
+#LOAD         := MAINDEC-10-DSKAA.SEQ
 #LOAD         := MAINDEC-10-DSKAB.SEQ
 #LOAD         := MAINDEC-10-DSKAC.SEQ
 #LOAD         := MAINDEC-10-DSKAD.SEQ
@@ -54,7 +54,7 @@ LOAD         := MAINDEC-10-DSKAA.SEQ
 #LOAD         := MAINDEC-10-DSKAK.SEQ
 #LOAD         := MAINDEC-10-DSKAL.SEQ
 #LOAD         := MAINDEC-10-DSKAM.SEQ
-#LOAD         := MAINDEC-10-DSKBA.SEQ
+#LOAD         := MAINDEC-10-DSKBA-RD00.SEQ
 #LOAD         := MAINDEC-10-DSKCA.SEQ
 #LOAD         := MAINDEC-10-DSKCB.SEQ
 #LOAD         := MAINDEC-10-DSKCC.SEQ
@@ -62,8 +62,8 @@ LOAD         := MAINDEC-10-DSKAA.SEQ
 #LOAD         := MAINDEC-10-DSKCE-RD00.SEQ
 #LOAD         := MAINDEC-10-DSKCF-RD00.SEQ	
 #LOAD         := MAINDEC-10-DSKCG.SEQ	
-#LOAD         := MAINDEC-10-DSKEA-RD00.SEQ		# fails early
-#LOAD         := MAINDEC-10-DSDZA-RD00.SEQ
+#LOAD         := MAINDEC-10-DSKEA-RD00.SEQ
+LOAD         := MAINDEC-10-DSDZA-RD00.SEQ
 
 DIAGS := \
         $(TESTFILES)/MAINDEC-10-DSKAA.SEQ \
@@ -134,6 +134,7 @@ RTL_SRC := \
 	$(RTL)/ks10/uba/dz11/uart/uart_tx.v \
 	$(RTL)/ks10/uba/dz11/uart/uart_bufrx.v \
 	$(RTL)/ks10/uba/dz11/uart/uart_buftx.v \
+	$(RTL)/ks10/uba/dz11/dzintr.v \
 	$(RTL)/ks10/uba/dz11/dzfifo.v \
 	$(RTL)/ks10/uba/dz11/dz11.v \
 	$(RTL)/ks10/uba/rh11/rpxx.v \
@@ -160,17 +161,25 @@ INC := \
 	$(RTL)/ks10/cpu/useq/drom.vh  \
 	$(RTL)/ks10/cpu/alu.vh \
 	$(RTL)/ks10/cpu/apr.vh \
+	$(RTL)/ks10/cpu/bus.vh \
 	$(RTL)/ks10/cpu/pager.vh \
 	$(RTL)/ks10/cpu/pcflags.vh \
 	$(RTL)/ks10/cpu/pxct.vh \
 	$(RTL)/ks10/cpu/regir.vh \
 	$(RTL)/ks10/cpu/vma.vh \
-	$(RTL)/ks10/uba/dz11/uart/uart_brg.vh \
 	$(RTL)/ks10/uba/dz11/dz11.vh \
+	$(RTL)/ks10/uba/dz11/dzcsr.vh \
+	$(RTL)/ks10/uba/dz11/dzlpr.vh \
+	$(RTL)/ks10/uba/dz11/dzrbuf.vh \
+	$(RTL)/ks10/uba/dz11/dztcr.vh \
+	$(RTL)/ks10/uba/dz11/dztdr.vh \
+	$(RTL)/ks10/uba/dz11/uart/uart_brg.vh \
 	$(RTL)/ks10/uba/rh11/sd/sdspi.vh \
 	$(RTL)/ks10/uba/rh11/sd/sd.vh \
 	$(RTL)/ks10/uba/rh11/rpxx.vh \
 	$(RTL)/ks10/uba/rh11/rh11.vh \
+	$(RTL)/ks10/uba/uba.vh \
+	$(RTL)/ks10/uba/ubabus.vh \
 	$(RTL)/ks10/ks10.vh
 
 DAT := \
@@ -205,14 +214,14 @@ build: $(ISE)/$(PROJECT).mcs
 # Create the "Control ROM" microcode for microsequencer
 #
 
-$(USEQ)/crom.dat: $(USEQ)/ks10.mcr $(USEQ)/crom.awk makefile
+$(USEQ)/crom.dat: $(USEQ)/ks10.mcr $(USEQ)/crom.awk
 	awk -f $(USEQ)/crom.awk $(USEQ)/ks10.mcr > $(USEQ)/crom.dat
 
 #
 # Create the "Dispatch ROM" microcode for microsequencer
 #
 
-$(USEQ)/drom.dat: $(USEQ)/ks10.mcr $(USEQ)/drom.awk makefile
+$(USEQ)/drom.dat: $(USEQ)/ks10.mcr $(USEQ)/drom.awk
 	awk -f $(USEQ)/drom.awk $(USEQ)/ks10.mcr > $(USEQ)/drom.dat
 
 #
@@ -310,7 +319,7 @@ ISIM_ARGS := \
 	-gui \
 	-tclbatch $(PROJECT)_isim.cmd \
 	-view $(PROJECT).wcfg \
-	-wdb $(PROJECT).wdb
+	-wdb c:/temp/$(PROJECT).wdb
 
 isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg makefile
 	cd ise; \
