@@ -76,13 +76,13 @@
         else
           case (rxstate)
             stateIDLE:
-              if (rxin)
+              if (rxin & rxen)
                 rxstate <= stateACT;
             stateACT:
               if (rxclr)
                 rxstate <= stateWAIT;
             stateWAIT:
-              if (!rxin)
+              if (!rxin | !rxen)
                 rxstate <= stateIDLE;
           endcase
      end
@@ -102,13 +102,13 @@
         else
           case (txstate)
             stateIDLE:
-              if (txin)
+              if (txin & txen)
                 txstate <= stateACT;
             stateACT:
               if (txclr)
                 txstate <= stateWAIT;
             stateWAIT:
-              if (!txin)
+              if (!txin | !txen)
                 txstate <= stateIDLE;
           endcase
      end

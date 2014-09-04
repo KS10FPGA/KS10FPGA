@@ -9,17 +9,18 @@
 //   The information used to design the DZ11 was obtained from the following
 //   DEC docmument:
 //
-//     "DZ11 Asynchronous Multiplexer Technical Manual" DEC Publication
-//     EK-DZ110-TM-002
+//   "DZ11 Asynchronous Multiplexer Technical Manual" DEC Publication
+//   EK-DZ110-TM-002
 //
 // Notes
 //   Regarding endian-ness:
-//     The KS10 backplane bus is 36-bit big-endian and uses [0:35] notation.
-//     The IO Device are 36-bit little-endian (after Unibus) and uses [35:0]
-//     notation.
 //
-//     Whereas the 'Unibus' is 18-bit data and 16-bit address, I've implemented
-//     the IO bus as 36-bit address and 36-bit data just to keep things simple.
+//   The KS10 backplane bus is 36-bit big-endian and uses [0:35] notation.
+//   The IO Device are 36-bit little-endian (after Unibus) and uses [35:0]
+//   notation.
+//
+//   Whereas the 'Unibus' is 18-bit data and 16-bit address, I've implemented
+//   the IO bus as 36-bit address and 36-bit data just to keep things simple.
 //
 // File
 //   dz11.v
@@ -155,315 +156,131 @@ module DZ11(clk,      rst,
    wire [35:0] dzDATAI = devDATAI[0:35];
 
    //
-   // CSR[CLR]
-   //   This is a 15us one-shot in the KS10
+   // Control/Status Register (CSR)
    //
 
-   reg [9:0] clrCOUNT;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          clrCOUNT <= 0;
-        else
-          begin
-             if (devRESET)
-               clrCOUNT <= 0;
-             if (csrWRITE & devLOBYTE & `dzCSR_CLR(dzDATAI))
-               clrCOUNT <= 15 * `CLKFRQ / 1000000;
-             else if (clrCOUNT != 0)
-               clrCOUNT <= clrCOUNT - 1'b1;
-          end
-     end
+   wire [ 2:0] scan;
+   wire [15:0] regCSR;
+   wire        csrCLR   = `dzCSR_CLR(regCSR);
+   wire        csrTIE   = `dzCSR_TIE(regCSR);
+   wire        csrRIE   = `dzCSR_RIE(regCSR);
+   wire        csrMSE   = `dzCSR_MSE(regCSR);
+   wire        csrSA    = `dzCSR_SA(regCSR);
+   wire        csrSAE   = `dzCSR_SAE(regCSR);
+   wire        csrMAINT = `dzCSR_MAINT(regCSR);
+   wire        csrRDONE = `dzCSR_RDONE(regCSR);
+   wire [ 2:0] csrTLINE = `dzCSR_TLINE(regCSR);
+   wire        csrTRDY  = `dzCSR_TRDY(regCSR);
 
-   wire csrCLR = (clrCOUNT != 0);
-
-   //
-   // CSR Register
-   //
-   // Details
-   //  The CSR is read/write and can be accessed as bytes or words.
-   //
-
-   reg csrTIE;
-   reg csrSAE;
-   reg csrRIE;
-   reg csrMSE;
-   reg csrMAINT;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          begin
-             csrTIE   <= 0;
-             csrSAE   <= 0;
-             csrRIE   <= 0;
-             csrMSE   <= 0;
-             csrMAINT <= 0;
-          end
-        else
-          begin
-             if (csrCLR | devRESET)
-               begin
-                  csrTIE   <= 0;
-                  csrSAE   <= 0;
-                  csrRIE   <= 0;
-                  csrMSE   <= 0;
-                  csrMAINT <= 0;
-               end
-             else if (csrWRITE)
-               begin
-                  if (devHIBYTE)
-                    begin
-                       csrTIE   <= `dzCSR_TIE(dzDATAI);
-                       csrSAE   <= `dzCSR_SAE(dzDATAI);
-                    end
-                  if (devLOBYTE)
-                    begin
-                       csrRIE   <= `dzCSR_RIE(dzDATAI);
-                       csrMSE   <= `dzCSR_MSE(dzDATAI);
-                       csrMAINT <= `dzCSR_MAINT(dzDATAI);
-                    end
-               end
-          end
-     end
+   DZCSR CSR (
+      .clk        (clk),
+      .rst        (rst),
+      .devRESET   (devRESET),
+      .devLOBYTE  (devLOBYTE),
+      .devHIBYTE  (devHIBYTE),
+      .devDATAI   (devDATAI),
+      .csrWRITE   (csrWRITE),
+      .tdrWRITE   (tdrWRITE),
+      .scan       (scan),
+      .rbufRDONE  (rbufRDONE),
+      .rbufSA     (rbufSA),
+      .uartTXEMPTY(uartTXEMPTY),
+      .regTCR     (regTCR),
+      .regCSR     (regCSR)
+   );
 
    //
-   // CSR[TLINE] and CSR[TRDY]
-   //
-   // Note:
-   //  The pipelining in the TLINE indexing is a little weird.  This way the
-   //  multiplexing is strictly round-robbin.
+   // Line Parameter Register (LPR)
    //
 
-   reg       csrTRDY;
-   reg [2:0] csrTLINE;
+   wire [0:7] lprRXEN;
 
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          begin
-             csrTRDY  <= 0;
-             csrTLINE <= 0;
-          end
-        else
-          begin
-             if (csrCLR | devRESET)
-               begin
-                  csrTRDY  <= 0;
-                  csrTLINE <= 0;
-               end
-             else
-               begin
-                  if (csrTRDY)
-                    begin
-                       if (tdrWRITE & devLOBYTE)
-                         csrTRDY <= 0;
-                    end
-                  else
-                    begin
-                       csrTLINE <= csrTLINE + 1'b1;
-                       if (((csrTLINE == 7) & tcrLIN[0] & uartTXEMPTY[0]) |
-                           ((csrTLINE == 0) & tcrLIN[1] & uartTXEMPTY[1]) |
-                           ((csrTLINE == 1) & tcrLIN[2] & uartTXEMPTY[2]) |
-                           ((csrTLINE == 2) & tcrLIN[3] & uartTXEMPTY[3]) |
-                           ((csrTLINE == 3) & tcrLIN[4] & uartTXEMPTY[4]) |
-                           ((csrTLINE == 4) & tcrLIN[5] & uartTXEMPTY[5]) |
-                           ((csrTLINE == 5) & tcrLIN[6] & uartTXEMPTY[6]) |
-                           ((csrTLINE == 6) & tcrLIN[7] & uartTXEMPTY[7]))
-                         csrTRDY <= 1;
-                    end
-               end
-          end
-     end
-
-   wire [15:0] regCSR = {csrTRDY,  csrTIE, csrSA, csrSAE,  1'b0, csrTLINE[2:0],
-                         csrRDONE, csrRIE, csrMSE, csrCLR, csrMAINT, 3'b0};
-
+   DZLPR LPR (
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (devRESET | csrCLR),
+      .devDATAI   (devDATAI),
+      .lprWRITE   (lprWRITE),
+      .lprRXEN    (lprRXEN)
+   );
 
    //
-   // LPR Register
-   //
-   // Details
-   //  LPR is write-only and can only be written as words.
-   //  The LINE field selects which receiver is being updated.
+   // Transmit Control Register (TCR)
    //
 
-   reg lprRXEN[0:7];
+   wire [15:0] regTCR;
+   wire [ 7:0] tcrLIN = `dzTCR_LIN(regTCR);
 
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          begin
-             lprRXEN[0] <= 0;
-             lprRXEN[1] <= 0;
-             lprRXEN[2] <= 0;
-             lprRXEN[3] <= 0;
-             lprRXEN[4] <= 0;
-             lprRXEN[5] <= 0;
-             lprRXEN[6] <= 0;
-             lprRXEN[7] <= 0;
-          end
-        else
-          begin
-             if (csrCLR | devRESET)
-               begin
-                  lprRXEN[0] <= 0;
-                  lprRXEN[1] <= 0;
-                  lprRXEN[2] <= 0;
-                  lprRXEN[3] <= 0;
-                  lprRXEN[4] <= 0;
-                  lprRXEN[5] <= 0;
-                  lprRXEN[6] <= 0;
-                  lprRXEN[7] <= 0;
-               end
-             else if (lprWRITE)
-               lprRXEN[`dzLPR_LINE(dzDATAI)] <= `dzLPR_RXEN(dzDATAI);
-          end
-     end
+   DZTCR TCR (
+      .clk        (clk),
+      .rst        (rst),
+      .devRESET   (devRESET),
+      .devLOBYTE  (devLOBYTE),
+      .devHIBYTE  (devHIBYTE),
+      .devDATAI   (devDATAI),
+      .csrCLR     (csrCLR),
+      .tcrWRITE   (tcrWRITE),
+      .regTCR     (regTCR)
+   );
+
+   assign dz11DTR = `dzTCR_DTR(regTCR);
 
    //
-   // TCR Register
-   //
-   // Details
-   //  TCR is read/write and can be accessed as bytes or words
-   //
-   //  The DTR registers are not reset by CSR[CLR].
+   // Modem Status Register (MSR)
    //
 
-   reg [7:0] tcrDTR;
-   reg [7:0] tcrLIN;
+   wire [15:0] regMSR;
 
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          begin
-             tcrDTR <= 0;
-             tcrLIN <= 0;
-          end
-        else
-          begin
-             if (devRESET)
-               begin
-                  tcrDTR <= 0;
-                  tcrLIN <= 0;
-               end
-             else if (csrCLR)
-               tcrLIN <= 0;
-             else
-               begin
-                  if (tcrWRITE)
-                    begin
-                       if (devHIBYTE)
-                         tcrDTR <= `dzTCR_DTR(dzDATAI);
-                       if (devLOBYTE)
-                         tcrLIN <= `dzTCR_LIN(dzDATAI);
-                    end
-               end
-          end
-     end
-
-   wire [15:0] regTCR = {tcrDTR, tcrLIN};
-   assign dz11DTR = tcrDTR;
-
-   //
-   // MSR Register
-   //
-   // Details
-   //  MSR can be accessed as bytes or words
-   //
-
-   wire [15:0] regMSR = {dz11CO, dz11RI};
+   DZMSR MSR (
+      .clk        (clk),
+      .rst        (rst),
+      .dz11CO     (dz11CO),
+      .dz11RI     (dz11RI),
+      .msrREAD    (msrREAD),
+      .regMSR     (regMSR)
+   );
 
    //
    // TDR Register
    //
-   // Details
-   //  TDR is write-only and can be accessed as bytes or words
+
+   wire [15:0] regTDR;
+   wire [ 7:0] uartTXLOAD;
+   wire [ 7:0] uartTXDATA = `dzTDR_TBUF(regTDR);
+
+   DZTDR TDR (
+      .clk        (clk),
+      .rst        (rst),
+      .devLOBYTE  (devLOBYTE),
+      .devHIBYTE  (devHIBYTE),
+      .devDATAI   (devDATAI),
+      .csrTLINE   (csrTLINE),
+      .tdrWRITE   (tdrWRITE),
+      .uartTXLOAD (uartTXLOAD),
+      .regTDR     (regTDR)
+   );
+
    //
-   // Note
-   //  The Break circuitry is not implemented
+   // Line Scanner
    //
 
-   wire [7:0] uartTXDATA = `dzTDR_TBUF(dzDATAI);
-
-   //
-   // Scanner
-   //
-   // Details
-   //  This just increments the scan signal.
-   //
-
-   reg [2:0] scan;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          scan <= 0;
-        else
-          begin
-             if (csrCLR | devRESET)
-               scan <= 0;
-             else if (csrMSE)
-               scan <= scan + 1'b1;
-          end
-     end
+   DZSCAN SCAN (
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (csrCLR | devRESET),
+      .csrMSE     (csrMSE),
+      .scan       (scan)
+   );
 
    //
    // Maintenance Loopback
    //
    // Details:
-   //  When CSR[MAINT] is asserted, the transmitter is looped back to the
-   //  receiver.
+   //  When CSR[MAINT] is asserted, the transmitters are looped back to the
+   //  receivers.
    //
 
    wire [7:0] ttyRXD = (csrMAINT) ? dz11TXD : dz11RXD;
-
-   //
-   // Load the transmitter UART(s)
-   //
-
-   reg  [7:0] uartTXLOAD;
-
-   always @(csrTLINE or tcrLIN or tdrWRITE or devLOBYTE)
-     begin
-        if (tdrWRITE & devLOBYTE)
-          case (csrTLINE)
-            0: uartTXLOAD <= 8'b0000_0001;
-            1: uartTXLOAD <= 8'b0000_0010;
-            2: uartTXLOAD <= 8'b0000_0100;
-            3: uartTXLOAD <= 8'b0000_1000;
-            4: uartTXLOAD <= 8'b0001_0000;
-            5: uartTXLOAD <= 8'b0010_0000;
-            6: uartTXLOAD <= 8'b0100_0000;
-            7: uartTXLOAD <= 8'b1000_0000;
-          endcase
-        else
-          uartTXLOAD <= 8'b0000_0000;
-     end
-
-   //
-   // Clear receiver full flag
-   //
-   // Details:
-   //  If the receiver is full, empty the receiver into the FIFO and clear
-   //  the full flag.
-   //
-
-   reg [7:0] uartRXCLR;
-
-   always @(scan or uartRXFULL)
-     begin
-        case (scan)
-          0: uartRXCLR <= uartRXFULL & 8'b0000_0001;
-          1: uartRXCLR <= uartRXFULL & 8'b0000_0010;
-          2: uartRXCLR <= uartRXFULL & 8'b0000_0100;
-          3: uartRXCLR <= uartRXFULL & 8'b0000_1000;
-          4: uartRXCLR <= uartRXFULL & 8'b0001_0000;
-          5: uartRXCLR <= uartRXFULL & 8'b0010_0000;
-          6: uartRXCLR <= uartRXFULL & 8'b0100_0000;
-          7: uartRXCLR <= uartRXFULL & 8'b1000_0000;
-        endcase
-     end
 
    //
    // UART Baud Rate Generators
@@ -481,7 +298,7 @@ module DZ11(clk,      rst,
    );
 
    //
-   // Generate Array of UARTS
+   // Array of UARTS
    //
    // Details
    //  The 'generate' loops below builds 8 UARTS.
@@ -490,6 +307,7 @@ module DZ11(clk,      rst,
    wire [7:0] uartRXFULL;               // UART receiver has data
    wire [7:0] uartRXDATA[0:7];          // UART received data
    wire [7:0] uartTXEMPTY;              // UART transmitter buffer is empty
+   wire [7:0] uartRXCLR;                // UART receiver clear
 
    generate
 
@@ -506,7 +324,7 @@ module DZ11(clk,      rst,
            UART_BUFTX ttyTX (
               .clk      (clk),
               .rst      (rst | devRESET),
-              .clkBR    (lprRXEN[i] & clkBR),
+              .clkBR    (clkBR),
               .load     (uartTXLOAD[i]),
               .data     (uartTXDATA),
               .empty    (uartTXEMPTY[i]),
@@ -520,7 +338,7 @@ module DZ11(clk,      rst,
            UART_BUFRX ttyRX (
               .clk      (clk),
               .rst      (rst | devRESET),
-              .clkBR    (clkBR),
+              .clkBR    (lprRXEN[i] & clkBR),
               .rxd      (ttyRXD[i]),
               .clr      (uartRXCLR[i]),
               .full     (uartRXFULL[i]),
@@ -532,144 +350,32 @@ module DZ11(clk,      rst,
    endgenerate
 
    //
-   // Read FIFO edge trigger
-   //
-   // Details:
-   //  The FIFO state is updated on the trailing edge of the read pulse; i.e.,
-   //  after the read is completed.
-   //
-
-   wire fifoREAD;
-   EDGETRIG uFIFOREAD(clk, rst, 1'b1, 1'b0, rbufREAD, fifoREAD);
-
-   //
-   // RBUF FIFO
+   // Receiver Buffer Register (RBUF)
    //
    // Details:
    //  Framing Error and Parity Error are not implemented.  UART status should
    //  be pushed into the FIFO with the data.
    //
 
-   wire [14:0] fifoDATA;
-   wire        fifoEMPTY;
-   wire        fifoWRITE = uartRXFULL[scan];
+   wire        rbufSA;
+   wire        rbufRDONE;
+   wire [15:0] regRBUF;
 
-   DZFIFO uDZFIFO (
-      .clk      (clk),
-      .rst      (rst),
-      .clr      (csrCLR | devRESET),
-      .din      ({4'b0, scan, uartRXDATA[scan]}),
-      .wr       (fifoWRITE),
-      .dout     (fifoDATA),
-      .rd       (fifoREAD),
-      .empty    (fifoEMPTY)
+   DZRBUF RBUF (
+      .clk       (clk),
+      .rst       (rst),
+      .clr       (csrCLR | devRESET),
+      .csrMSE    (csrMSE),
+      .csrSAE    (csrSAE),
+      .scan      (scan),
+      .uartRXDATA({5'b0, scan, uartRXDATA[scan]}),
+      .uartRXFULL(uartRXFULL),
+      .uartRXCLR (uartRXCLR),
+      .rbufREAD  (rbufREAD),
+      .rbufRDONE (rbufRDONE),
+      .rbufSA    (rbufSA),
+      .regRBUF   (regRBUF)
    );
-
-`ifdef TEST31
-
-   wire csrRDONE = !fifoEMPTY;
-
-`else
-
-   reg  csrRDONE;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          csrRDONE <= 0;
-        else
-          begin
-             if (fifoREAD)
-               csrRDONE <= 0;
-             else
-               csrRDONE <= !fifoEMPTY;
-          end
-     end
-
-`endif
-
-   //
-   // RBUF DVAL
-   //
-
-`ifdef TEST31
-
-   reg rbufDVAL;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          rbufDVAL  <= 0;
-        else
-          begin
-             if (csrCLR | devRESET)
-               rbufDVAL <= 0;
-             else if (fifoREAD | fifoWRITE)
-               rbufDVAL <= !fifoEMPTY;
-          end
-     end
-
-`else
-
-   wire rbufDVAL = !fifoEMPTY;
-
-`endif
-
-
-
-   //
-   // RBUF Register
-   //
-   // Details
-   //  RBUF is read only and can only be read as words.
-   //
-   //  RBUF[DVAL] is the FIFO Status.  Everything else is read from the FIFO.
-   //
-
-   wire [15:0] regRBUF = {rbufDVAL, fifoDATA};
-
-   //
-   // SILO Alarm Counter.
-   //  This increments every time a character is stored in the FIFO. The
-   //  counter is reset by a rbufREAD.  This is not the FIFO depth.
-   //
-
-   reg [0:4] countSA;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          countSA <= 0;
-        else
-          begin
-             if (csrCLR | devRESET)
-               countSA <= 0;
-             else if (fifoREAD | !csrSAE)
-               countSA <= 0;
-             else if (fifoWRITE)
-               countSA <= countSA + 1'b1;
-          end
-     end
-
-   //
-   // SILO Alarm
-   //
-
-   reg csrSA;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          csrSA <= 0;
-        else
-          begin
-             if (csrCLR | devRESET)
-               csrSA <= 0;
-             else if (fifoREAD | !csrSAE)
-               csrSA <= 0;
-             else if (countSA == 16)
-               csrSA <= 1;
-          end
-     end
 
    //
    // Interrupts
@@ -688,8 +394,7 @@ module DZ11(clk,      rst,
    //  1.  Reset
    //  2.  IO Bus Reset
    //  3.  CSR[CLR]
-   //  4.  Receiver interrupts are disabled
-   //  5.  The interrupt is acknowledged
+   //  4.  The interrupt is acknowledged
    //
    //  The transmitter interrupt is generated when:
    //  1.  CSR[TRDY] is asserted when CSR[TIE] is asserted.
@@ -698,8 +403,9 @@ module DZ11(clk,      rst,
    //  1.  Reset
    //  2.  IO Bus Reset
    //  3.  CSR[CLR]
-   //  4.  Transmitter interrupts are disabled
-   //  5.  The interrupt is acknowledged
+   //  4.  The interrupt is acknowledged and the receiver interrupt is
+   //      not asserted.  This gives the receiver priority over the
+   //      transmitter.
    //
 
    wire txINTR;
@@ -762,7 +468,7 @@ module DZ11(clk,      rst,
 
    //
    // DZ11 Device Interface
-   //
+   //  The DZ11 is not a KS10 bus initiator.
 
    assign devINTR  = (rxINTR | txINTR) ? dzINTR : 4'b0;
    assign devADDRO = 0;
