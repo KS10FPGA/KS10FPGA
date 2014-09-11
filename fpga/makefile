@@ -1,3 +1,4 @@
+
 #
 # Project name.   Also top-level entity name (upper case)
 #
@@ -36,6 +37,7 @@ PROMGEN      := $(XILEXE)/promgen.exe
 IMPACT       := $(XILEXE)/impact.exe
 XST          := $(XILEXE)/xst.exe
 INTSTYLE     := ise
+XILPATH      := $(XILDIR)/ISE_DS/ISE/bin/nt64:$(XILDIR)/ISE_DS/ISE/lib/nt64:$(XILDIR)/ISE_DS/common/bin/nt64:$(XILDIR)/ISE_DS/common/lib/nt64
 
 #
 # Initialized Memory Contents (Simulation only)
@@ -63,7 +65,8 @@ INTSTYLE     := ise
 #LOAD         := MAINDEC-10-DSKCF-RD00.SEQ	
 #LOAD         := MAINDEC-10-DSKCG.SEQ	
 #LOAD         := MAINDEC-10-DSKEA-RD00.SEQ
-LOAD         := MAINDEC-10-DSDZA-RD00.SEQ
+#LOAD         := MAINDEC-10-DSDZA-RD00.SEQ
+LOAD         := MAINDEC-10-DSUBA-RD00.SEQ
 
 DIAGS := \
         $(TESTFILES)/MAINDEC-10-DSKAA.SEQ \
@@ -134,8 +137,14 @@ RTL_SRC := \
 	$(RTL)/ks10/uba/dz11/uart/uart_tx.v \
 	$(RTL)/ks10/uba/dz11/uart/uart_bufrx.v \
 	$(RTL)/ks10/uba/dz11/uart/uart_buftx.v \
+	$(RTL)/ks10/uba/dz11/dzcsr.v \
+	$(RTL)/ks10/uba/dz11/dzlpr.v \
+	$(RTL)/ks10/uba/dz11/dzmsr.v \
+	$(RTL)/ks10/uba/dz11/dztcr.v \
+	$(RTL)/ks10/uba/dz11/dztdr.v \
 	$(RTL)/ks10/uba/dz11/dzintr.v \
-	$(RTL)/ks10/uba/dz11/dzfifo.v \
+	$(RTL)/ks10/uba/dz11/dzrbuf.v \
+	$(RTL)/ks10/uba/dz11/dzscan.v \
 	$(RTL)/ks10/uba/dz11/dz11.v \
 	$(RTL)/ks10/uba/rh11/rpxx.v \
 	$(RTL)/ks10/uba/rh11/sdaddr.v \
@@ -143,7 +152,9 @@ RTL_SRC := \
 	$(RTL)/ks10/uba/rh11/sd/sd.v \
 	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
 	$(RTL)/ks10/uba/uba.v \
+	$(RTL)/ks10/uba/ubasr.v \
 	$(RTL)/ks10/uba/ubapag.v \
+	$(RTL)/ks10/uba/ubaintr.v \
 	$(RTL)/ks10/ks10.v \
 	$(RTL)/esm/esm_clk.v \
 	$(RTL)/esm/esm_ks10.v
@@ -186,6 +197,7 @@ INC := \
 	$(RTL)/ks10/uba/rh11/rpxx.vh \
 	$(RTL)/ks10/uba/rh11/rh11.vh \
 	$(RTL)/ks10/uba/uba.vh \
+	$(RTL)/ks10/uba/ubasr.vh \
 	$(RTL)/ks10/uba/ubabus.vh \
 	$(RTL)/ks10/ks10.vh
 
@@ -314,8 +326,6 @@ $(ISE)/$(PROJECT)_isim.exe: $(ISE)/$(PROJECT)_isim.prj $(RTL_SRC) $(SIM_SRC) $(I
 #
 # ISIM Commands
 #
-# README: Apparently ISIM must be run from a WINDOWS command shell.
-#
 
 ISIM_CMDS := \
 	'onerror {resume}' \
@@ -329,8 +339,9 @@ ISIM_ARGS := \
 	-wdb c:/temp/$(PROJECT).wdb
 
 isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg makefile
-	cd ise; \
-	$(shell cygpath -u '$(COMSPEC)') /c $(shell cygpath -m '$(XILINX)')/ISE_DS/settings64.bat $(PROJECT)_isim.exe $(ISIM_ARGS)
+	@cd ise; \
+	export PATH=$(XILPATH):$$PATH; \
+	./$(PROJECT)_isim.exe $(ISIM_ARGS) &
 
 #
 # xst
