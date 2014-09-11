@@ -1,18 +1,23 @@
 
-rtl/cpu/dbus.v:
-
+rtl/ks10/cpu/dbus.v:
    Special hacks for certain addresses.  Why?
 
-rtl/cpu/cpu.v:
-
+rtl/ks10/cpu/cpu.v:
    Memory_cycle is always negated.
    Mangled arguments to pf_disp module
+   flagINTREQ is not used
+   fix aprFLAGS argument of INTR
+   IO Page Fail Broken
+      fix iobusy
+      fix io timeout
 
-rtl/cpu/pf_disp.v
-
+rtl/ks10/cpu/pf_disp.v
    Everything is hacked.
    Rename to pagefail.v
 
+rtl/ks10/cpu/intr.v
+   flagINTREQ is not used.
 
-
-
+rtl/ks10/uba/uba.v
+   dev1ACKO is stubbed.
+   dev2ACK0 is stubbed.

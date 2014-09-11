@@ -46,7 +46,7 @@
 `include "../regir.vh"
 
 module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
-            cpuINTR, cpuEXEC, cpuCONT, iolatch, timerINTR,
+            cpuINTR, cpuEXEC, cpuCONT, ioBUSY, timerINTR,
             skipJFCL, opJRST0, trapCYCLE, scSIGN, aluFLAGS,
             dispPF, dispNI, dispBYTE, dispSCAD,
             regIR, pcFLAGS, drom, crom);
@@ -63,7 +63,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    input                  cpuINTR;      // Extenal Interrupt
    input                  cpuEXEC;      // Execute Switch Active
    input                  cpuCONT;      // Continue Switch Active
-   input                  iolatch;      // IO Latch
+   input                  ioBUSY;       // IO Busy
    input                  timerINTR;    // Timer Interrupt
    input                  trapCYCLE;    // Trap Cycle
    input                  scSIGN;       // SC Sign
@@ -149,7 +149,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
       .crom(crom),
       .skip40({aluCRY0,   aluLZERO, aluRZERO, ~flagUSER,  flagFPD,  regACZERO, cpuINTR   }),
       .skip20({aluCRY2,   aluLSIGN, aluRSIGN, flagUSERIO, skipJFCL, aluCRY1,   txxx      }),
-      .skip10({trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    ~iolatch, ~cpuCONT,  ~timerINTR}),
+      .skip10({trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    ~ioBUSY , ~cpuCONT,  ~timerINTR}),
       .skipADDR(skipADDR)
    );
 
