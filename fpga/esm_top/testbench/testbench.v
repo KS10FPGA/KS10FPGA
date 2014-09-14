@@ -3,10 +3,7 @@
 // KS-10 Processor Testbench
 //
 // Brief
-//
-// Details
-//
-// Todo
+//   KS-10 FPGA Test Bench
 //
 // File
 //   testbench.v
@@ -33,7 +30,7 @@
 // for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with this source; if not, download it from 
+// along with this source; if not, download it from
 // http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -96,10 +93,7 @@ module testbench;
    wire        ssramOE_N;       // SSRAM OE#
    wire        ssramCE;         // SSRAM CE
    wire        ssramCLKEN_N;    // SSRAM CLKEN#
-   wire        ssramBWA_N;      // SSRAM BWA#
-   wire        ssramBWB_N;      // SSRAM BWB#
-   wire        ssramBWC_N;      // SSRAM BWC#
-   wire        ssramBWD_N;      // SSRAM BWD#
+   wire [1: 4] ssramBW_N;       // SSRAM BW#
 
    //
    // Control/Status Register Definitions
@@ -116,7 +110,7 @@ module testbench;
    localparam [0:15] statHALT     = 16'h0100;
    localparam [0:15] statNXMNXD   = 16'h0200;
    localparam [0:15] statGO       = 16'h0001;
-   
+
 `ifdef SIMSSMON
    localparam [0:35] valREGCIR    = 36'o254000_020000;
 `else
@@ -185,7 +179,7 @@ module testbench;
          conREAD(addrREGDATA, data);
       end
    endtask
-   
+
    //
    // Task to write a 36-bit word to console register
    //
@@ -226,7 +220,7 @@ module testbench;
    // Set the GO bit then poll the GO bit.
    // Whine about NXM/NXD response
    //
-   
+
    task conGO;
       input [18:35] address;
       reg   [ 0:15] status;
@@ -236,16 +230,16 @@ module testbench;
          conREADw(addrREGSTATUS+2, status);
          while (status & statGO)
            #100 conREADw(addrREGSTATUS+2, status);
-         
+
          conREADw(addrREGSTATUS, status);
          if (status & statNXMNXD)
-           $display("NXM/NXD at address %06o", address);
+           $display("[%10.3f] KS10: NXM/NXD at address %06o", $time/1.0e3, address);
 
          conWRITEw(addrREGSTATUS, status & ~statNXMNXD);
-        
+
       end
    endtask
-   
+
    //
    // Task to write 16-bit word to console register.  The EPI is 16-bit
    // word oriented therefore the LSB (A0) is not available.   The individual
@@ -264,7 +258,7 @@ module testbench;
          conDATO  = data;
          #250
          conWR_N  = 0;
-	 #250
+         #250
          conWR_N  = 1;
          conBLE_N = 1;
          conBHE_N = 1;
@@ -287,12 +281,12 @@ module testbench;
          conBLE_N = 0;
          conBHE_N = 0;
          conADDR  = addr[5:1];
-	 #250
+         #250
          conRD_N  = 0;
-	 #250
+         #250
          conRD_N  = 1;
          data     = conDATA;
-	 #250
+         #250
          conBLE_N = 1;
          conBHE_N = 1;
          #250;
@@ -307,71 +301,71 @@ module testbench;
       input [18:35] address;
       begin
          conREADMEMP(address +  0, temp);
-         $display("MAG is %012o",  temp);
+         $display("[%10.3f] KS10:   MAG is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  1, temp);
-         $display("PC  is %012o",  temp);
+         $display("[%10.3f] KS10:   PC  is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  2, temp);
-         $display("HR  is %012o",  temp);
+         $display("[%10.3f] KS10:   HR  is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  3, temp);
-         $display("AR  is %012o",  temp);
+         $display("[%10.3f] KS10:   AR  is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  4, temp);
-         $display("ARX is %012o",  temp);
+         $display("[%10.3f] KS10:   ARX is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  5, temp);
-         $display("BR  is %012o",  temp);
+         $display("[%10.3f] KS10:   BR  is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  6, temp);
-         $display("BRX is %012o",  temp);
+         $display("[%10.3f] KS10:   BRX is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  7, temp);
-         $display("ONE is %012o",  temp);
+         $display("[%10.3f] KS10:   ONE is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 10, temp);
-         $display("EBR is %012o",  temp);
+         $display("[%10.3f] KS10:   EBR is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 11, temp);
-         $display("UBR is %012o",  temp);
+         $display("[%10.3f] KS10:   UBR is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 12, temp);
-         $display("MSK is %012o",  temp);
+         $display("[%10.3f] KS10:   MSK is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 13, temp);
-         $display("FLG is %012o",  temp);
+         $display("[%10.3f] KS10:   FLG is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 14, temp);
-         $display("PI  is %012o",  temp);
+         $display("[%10.3f] KS10:   PI  is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 15, temp);
-         $display("X1  is %012o",  temp);
+         $display("[%10.3f] KS10:   X1  is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 16, temp);
-         $display("TO  is %012o",  temp);
+         $display("[%10.3f] KS10:   TO  is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 17, temp);
-         $display("T1  is %012o",  temp);
+         $display("[%10.3f] KS10:   T1  is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 20, temp);
-         $display("VMA is %012o",  temp);
+         $display("[%10.3f] KS10:   VMA is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 21, temp);
-         $display("FE  is %012o",  temp);
+         $display("[%10.3f] KS10:   FE  is %012o", $time/1.0e3, temp);
       end
-   endtask; // printHaltStatusBlock
-   
+   endtask
+
    //
    // Print Halt Status Word
    //
-   
+
    task printHaltStatus;
       begin
          conREADMEMP(0, haltStatus);
          conREADMEMP(1, haltAddr);
          case (haltStatus[24:35])
-           12'o0000 : $display("Halt Status: Microcode Startup.");
-           12'o0001 : $display("Halt Status: Halt Instruction.");
-           12'o0002 : $display("Halt Status: Console Halt.");
-           12'o0100 : $display("Halt Status: IO Page Failure.");
-           12'o0101 : $display("Halt Status: Illegal Interrupt Instruction.");
-           12'o0102 : $display("Halt Status: Pointer to Unibus Vector is zero.");
-           12'o1000 : $display("Halt Status: Illegal Microcode Dispatch.");
-           12'o1005 : $display("Halt Status: Microcode Startup Check Failed.");
-           default  : $display("Halt Status: Unknown Halt Cause.");
+           12'o0000 : $display("[%10.3f] KS10: Halt Status: Microcode Startup", $time/1.0e3);
+           12'o0001 : $display("[%10.3f] KS10: Halt Status: Halt Instruction", $time/1.0e3);
+           12'o0002 : $display("[%10.3f] KS10: Halt Status: Console Halt", $time/1.0e3);
+           12'o0100 : $display("[%10.3f] KS10: Halt Status: IO Page Failure", $time/1.0e3);
+           12'o0101 : $display("[%10.3f] KS10: Halt Status: Illegal Interrupt Instruction", $time/1.0e3);
+           12'o0102 : $display("[%10.3f] KS10: Halt Status: Pointer to Unibus Vector is zero", $time/1.0e3);
+           12'o1000 : $display("[%10.3f] KS10: Halt Status: Illegal Microcode Dispatch", $time/1.0e3);
+           12'o1005 : $display("[%10.3f] KS10: Halt Status: Microcode Startup Check Failed", $time/1.0e3);
+           default  : $display("[%10.3f] KS10: Halt Status: Unknown Halt Cause", $time/1.0e3);
          endcase
          if (haltStatus[24:35] != 0)
            begin
-	      $display("Halt Address: %06o", haltAddr[18:35]);
+              $display("[%10.3f] KS10: Halt Address: %06o", $time/1.0e3, haltAddr[18:35]);
               printHaltStatusBlock(18'o376000);
            end
       end
    endtask
-   
+
    //
    // Initialization
    //
@@ -382,7 +376,7 @@ module testbench;
 
    initial
      begin
-        $display("KS10: Simulation Starting");
+        $display("[%10.3f] KS10: Simulation Starting", $time/1.0e3);
 
         //
         // Initial state
@@ -402,15 +396,15 @@ module testbench;
         //
 
         #95
-	reset = 0;
+        reset = 0;
+        $display("[%10.3f] KS10: Negating Reset", $time/1.0e3);
 
         //
         //  Write to Console Instruction Register
         //
 
         #600
-        $display("KS10 time is t = %f us.", $time / 1.0e3);
-	conWRITE(addrREGCIR, valREGCIR);
+        conWRITE(addrREGCIR, valREGCIR);
 
         //
         // Write to Control/Status Register
@@ -419,14 +413,15 @@ module testbench;
         //
 
 //      conWRITE(addrREGSTATUS, statCACHEEN | statTIMEREN | statTRAPEN | statRUN);
-	conWRITE(addrREGSTATUS, statRUN);
-        
+        conWRITE(addrREGSTATUS, statRUN);
+        $display("[%10.3f] KS10: Starting KS10", $time/1.0e3);
+
         //
         // Readback Console Instruction Register
         //
 
         conREAD(addrREGCIR, temp);
-        $display("CIR is : \"%12o\"", temp);
+        $display("[%10.3f] KS10: CIR is \"%12o\"", $time/1.0e3, temp);
 
      end
 
@@ -436,7 +431,7 @@ module testbench;
 
    always @(negedge haltLED)
      if ($time != 0)
-       $display("KS10 CPU Unhalted at t = %f us", $time / 1.0e3);
+       $display("[%10.3f] KS10: CPU Unhalted", $time/1.0e3);
 
    //
    // Handle Startup.
@@ -447,16 +442,16 @@ module testbench;
    //  RUN, EXEC, and CONT button to continue execution.  Otherwise
    //  let the KS10 halt.
    //
-  
+
    time haltTIME;
-   
+
    always @(posedge haltLED)
      begin
-	haltTIME <= $time;
-        $display("KS10 CPU Halted at t = %f us.", $time / 1.0e3);
+        haltTIME <= $time;
+        $display("[%10.3f] KS10: CPU Halted", $time/1.0e3);
         printHaltStatus;
         if (haltTIME > 40000 && haltTIME < 60000)
-	  begin
+          begin
 
              //
              // Initialize Console Status
@@ -464,10 +459,10 @@ module testbench;
 
              conWRITEMEM(18'o000031, 36'b0);
 
-	     //
-	     // Initialize Other stuff
-	     //
-	     
+             //
+             // Initialize Other stuff
+             //
+
              conWRITEMEM(18'o000036, 36'b0);
              conWRITEMEM(18'o025741, 36'b0);
              conWRITEMEM(18'o026040, 36'b0);
@@ -476,14 +471,14 @@ module testbench;
              conWRITEMEM(18'o061121, 36'b0);
              conWRITEMEM(18'o061125, 36'b0);
 
-	     //
-	     // Start executing code
-	     //
-	     
+             //
+             // Start executing code
+             //
+
              conWRITE(addrREGSTATUS, (statEXEC |
                                       statCONT |
                                       statRUN));
-	  end
+          end
      end
 
 `ifdef SIMCTY
@@ -524,7 +519,7 @@ module testbench;
         else if (conINTR)
           begin
 
-             //$display("KS10 CPU has interrupted the console at t = %f us", $time / 1.0e3);
+             //$display("[%10.3f] KS10: CPU has interrupted the console", $time/1.0e3);
 
              //
              // Read CTYOUT Memory Location
@@ -540,9 +535,9 @@ module testbench;
              if (dataCOUT[27])
                begin
                   if ((dataCOUT[28:35] >= 8'h20) && (dataCOUT[28:35] < 8'h7f))
-                    $display("KS10 CTY Output: \"%s\"", dataCOUT[28:35]);
+                    $display("[%10.3f] KS10: CTY Output: \"%s\"", $time/1.0e3, dataCOUT[28:35]);
                   else
-                    $display("KS10 CTY Output: \"%02x\"", dataCOUT[28:35]);
+                    $display("[%10.3f] KS10: CTY Output: \"%02x\"", $time/1.0e3, dataCOUT[28:35]);
                   $fwrite(cty_ofile, "%s", dataCOUT[28:35]);
                   conWRITEMEM(addrCOUT, 36'b0);
                end
@@ -566,9 +561,9 @@ module testbench;
    //
    // Bidirectional Data Bus
    //
-   
+
    assign conDATA = (~conRD_N) ? 16'bz : conDATO;
-   
+
    //
    // KS10
    //
@@ -598,10 +593,7 @@ module testbench;
       .ssramCLK         (ssramCLK),
       .ssramCLKEN_N     (ssramCLKEN_N),
       .ssramADV         (ssramADV),
-      .ssramBWA_N       (ssramBWA_N),
-      .ssramBWB_N       (ssramBWB_N),
-      .ssramBWC_N       (ssramBWC_N),
-      .ssramBWD_N       (ssramBWD_N),
+      .ssramBW_N        (ssramBW_N),
       .ssramOE_N        (ssramOE_N),
       .ssramWE_N        (ssramWE_N),
       .ssramCE          (ssramCE),
@@ -614,21 +606,20 @@ module testbench;
    //
    // SSRAM
    //
-   
+
    CY7C1460 SSRAM (
-      .clk		(ssramCLK),
-      .cenb		(ssramCLKEN_N),
-      .adv_lb		(ssramADV),
-      .bws		({ssramBWA_N, ssramBWB_N,ssramBWC_N, ssramBWD_N}),
-      .oeb		(ssramOE_N),
-      .we_b		(ssramWE_N),
-      .ce1b		(1'b0),
-      .ce2		(ssramCE),
-      .ce3b		(1'b0),
-      .mode		(1'b0),
-      .a		(ssramADDR[3:22]),
-      .d		(ssramDATA[0:35])
+      .clk              (ssramCLK),
+      .cenb             (ssramCLKEN_N),
+      .adv_lb           (ssramADV),
+      .bws              (ssramBW_N),
+      .oeb              (ssramOE_N),
+      .we_b             (ssramWE_N),
+      .ce1b             (1'b0),
+      .ce2              (ssramCE),
+      .ce3b             (1'b0),
+      .mode             (1'b0),
+      .a                (ssramADDR[3:22]),
+      .d                (ssramDATA[0:35])
    );
 
-   
 endmodule

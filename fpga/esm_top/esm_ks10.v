@@ -41,7 +41,7 @@
 
 `default_nettype none
 
-module ESM_KS10(CLK50MHZ, RESET_N, MR_N,
+module ESM_KS10(RESET_N, CLK50MHZ, MR_N,
                 // DZ11 Interfaces
                 TXD, RXD,
                 // RH11 Interfaces
@@ -49,14 +49,14 @@ module ESM_KS10(CLK50MHZ, RESET_N, MR_N,
                 // Console Interfaces
                 conADDR, conDATA, conBLE_N, conBHE_N, conRD_N, conWR_N, conINTR_N,
                 // SSRAM Interfaces
-                ssramCLK, ssramCLKEN_N, ssramADV, ssramBWA_N, ssramBWB_N, ssramBWC_N,
-                ssramBWD_N, ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA,
+                ssramCLK, ssramCLKEN_N, ssramADV, ssramBW_N, ssramOE_N,
+                ssramWE_N, ssramCE, ssramADDR, ssramDATA,
                 // Test Interfaces
                 haltLED, test);
 
    // Clock/Reset
-   input         CLK50MHZ;      // Clock
    input         RESET_N;       // Reset
+   input         CLK50MHZ;      // Clock
    input         MR_N;          // Master Reset push button
    // DZ11 Interfaces
    input  [1: 2] TXD;           // DZ11 RS-232 Transmitted Data
@@ -68,34 +68,31 @@ module ESM_KS10(CLK50MHZ, RESET_N, MR_N,
    output        rh11SCLK;      // RH11 Clock
    output        rh11CS;        // RH11 Chip Select
    // Console Microcontroller Interfaces
-   inout [15: 0] conDATA;       // Console Data Bus
-   input [ 5: 1] conADDR;       // Console Address Bus
-   input         conBLE_N;      // Console Bus Lane
-   input         conBHE_N;      // Console Bus Lane
-   input         conRD_N;       // Console Read Strobe
-   input         conWR_N;       // Console Write Strobe
-   output        conINTR_N;     // Console Interrupt
+   inout  [15: 0] conDATA;      // Console Data Bus
+   input  [ 5: 1] conADDR;      // Console Address Bus
+   input          conBLE_N;     // Console Bus Lane
+   input          conBHE_N;     // Console Bus Lane
+   input          conRD_N;      // Console Read Strobe
+   input          conWR_N;      // Console Write Strobe
+   output         conINTR_N;    // Console Interrupt
    // SSRAM Interfaces
-   output        ssramCLK;      // SSRAM Clock
-   output        ssramCLKEN_N;  // SSRAM Clken
-   output        ssramADV;      // SSRAM Advance
-   output        ssramBWA_N;    // SSRAM BWA#
-   output        ssramBWB_N;    // SSRAM BWB#
-   output        ssramBWC_N;    // SSRAM BWC#
-   output        ssramBWD_N;    // SSRAM BWD#
-   output        ssramOE_N;     // SSRAM OE#
-   output        ssramWE_N;     // SSRAM WE#
-   output        ssramCE;       // SSRAM CE
-   output [0:22] ssramADDR;     // SSRAM Address Bus
-   inout  [0:35] ssramDATA;     // SSRAM Data Bus
-   output        haltLED;       // Halt LED
-   output [0: 7] test;          // Test signals
+   output         ssramCLK;     // SSRAM Clock
+   output         ssramCLKEN_N; // SSRAM Clken
+   output         ssramADV;     // SSRAM Advance
+   output [ 1: 4] ssramBW_N;    // SSRAM BWA#
+   output         ssramOE_N;    // SSRAM OE#
+   output         ssramWE_N;    // SSRAM WE#
+   output         ssramCE;      // SSRAM CE
+   output [ 0:22] ssramADDR;    // SSRAM Address Bus
+   inout  [ 0:35] ssramDATA;    // SSRAM Data Bus
+   output         haltLED;      // Halt LED
+   output [ 0: 7] test;         // Test signals
 
    //
    // RH-11 Stubs
    //
 
-   wire          rh11WP = 0;    // RH11 Write Protect (stubbed)
+   wire rh11WP = 0;             // RH11 Write Protect (stubbed)
 
    //
    // DZ-11 Interface Stubs
@@ -108,32 +105,12 @@ module ESM_KS10(CLK50MHZ, RESET_N, MR_N,
    wire [7: 0] dz11RXD;         // DZ11 RXD
 
    //
-   // Clock Divider and Reset Synchronization
-   //   Clock is 20 MHz, for now.
-   //
-
-   wire clk;
-   wire rst;
-   wire [1:4] clkT;
-
-   ESM_CLK uCLK (
-      .clkIn            (CLK50MHZ),
-      .rstIn            (~RESET_N),
-      .clkOutT          (clk),
-      .clkOutR          (),
-      .clkT             (clkT),
-      .ssramCLK         (ssramCLK),
-      .rstOut           (rst)
-   );
-
-   //
    // KS10 Processor
    //
 
    KS10 uKS10(
-      .clk              (clk),
-      .clkT             (clkT),
-      .rst              (rst),
+      .RESET_N          (RESET_N),
+      .CLK50MHZ         (CLK50MHZ),
       // DZ11
       .dz11TXD          (dz11TXD),
       .dz11RXD          (dz11RXD),
@@ -159,15 +136,13 @@ module ESM_KS10(CLK50MHZ, RESET_N, MR_N,
       .ssramCLK         (ssramCLK),
       .ssramCLKEN_N     (ssramCLKEN_N),
       .ssramADV         (ssramADV),
-      .ssramBWA_N       (ssramBWA_N),
-      .ssramBWB_N       (ssramBWB_N),
-      .ssramBWC_N       (ssramBWC_N),
-      .ssramBWD_N       (ssramBWD_N),
+      .ssramBW_N        (ssramBW_N),
       .ssramOE_N        (ssramOE_N),
       .ssramWE_N        (ssramWE_N),
       .ssramCE          (ssramCE),
       .ssramADDR        (ssramADDR),
       .ssramDATA        (ssramDATA),
+      .test             (test),
       .haltLED          (haltLED)
    );
 
@@ -187,18 +162,5 @@ module ESM_KS10(CLK50MHZ, RESET_N, MR_N,
    //
 
    assign dz11RXD[7:2] = dz11TXD[7:2];
-
-   //
-   // Test points
-   //
-
-   assign test[0] = clk;
-   assign test[1] = rst;
-   assign test[2] = RESET_N;
-   assign test[3] = ~RESET_N;
-   assign test[4] = 0;
-   assign test[5] = 0;
-   assign test[6] = 1;
-   assign test[7] = 0;
 
 endmodule

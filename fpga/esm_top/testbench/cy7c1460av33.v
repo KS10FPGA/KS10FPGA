@@ -32,7 +32,7 @@
 // define fixed values
 
 `define wordsize (36 -1)                //
-`define no_words (32768  -1)            // 1M x 36 RAM
+`define no_words (32768  -1)            // 32k x 36 RAM
 //`define no_words (1048576  -1)        // 1M x 36 RAM
 
 module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
@@ -58,9 +58,9 @@ module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
 //**********************************************************************
 
 `define MHZ166
-  
+
 `ifdef MHZ166
-   
+
 `define teohz #3.4
 `define teolz #0
 `define tchz  #3.4
@@ -69,15 +69,15 @@ module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
 `define tdoh  #1.5
 `define tas   1.5
 `define tah   0.5
-   
+
 `endif
-   
+
 //***********************************************************************
 //  Timings for 200MHz
 //**********************************************************************
 
 `ifdef MHZ200
-   
+
 `define teohz #3.0
 `define teolz #0
 `define tchz  #3.0
@@ -88,13 +88,13 @@ module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
 `define tah   0.4
 
 `endif
-   
+
 //***********************************************************************
 //  Timings for 250MHz
 //**********************************************************************
 
 `ifdef MHZ250
-   
+
 `define teohz #2.6
 `define teolz #0
 `define tchz  #2.6
@@ -104,8 +104,8 @@ module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
 `define tas   1.2
 `define tah   0.3
 
-`endif   
-    
+`endif
+
    reg notifier;                // error support reg's
    reg noti1_0;
    reg noti1_1;
@@ -124,7 +124,7 @@ module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
    wire writestate;             // holds 1 if any of writebus is low
    reg  writestate_d;
    reg  writestate_o;
-   
+
    wire loadcyc;                // holds 1 for load cycles (setup and hold checks)
    wire writecyc;               // holds 1 for write cycles (setup and hold checks)
    wire [3:0] bws;              // holds the bws values
@@ -132,19 +132,19 @@ module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
    wire [3:0] writebusb;        // holds the "internal" bws bus based on we_b
    reg  [3:0] writebusb_d;
    reg  [3:0] writebusb_o;
-   
+
    wire [2:0] operation;        // holds chipen, adv_ld and writestate
    reg  [2:0] operation_d;
    reg  [2:0] operation_o;
-   
+
    wire [19:0] a;               // address input bus
    reg  [19:0] a_d;
    reg  [19:0] a_o;
-   
+
    reg  [`wordsize:0] do;       // data output reg
    reg  [`wordsize:0] di;       // data input bus
    reg  [`wordsize:0] dd;       // data delayed bus
-   
+
    wire tristate;               // tristate output (on a bytewise basis) when asserted
    reg  cetri;                  // register set by chip disable which sets the tristate
    reg  oetri;                  // register set by oe which sets the tristate
@@ -183,16 +183,10 @@ module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
 
    pullup(mode);
 
-// formers for notices/errors etc
-//
-//$display("NOTICE      : xxx :");
-//$display("WARNING     : xxx :");
-//$display("ERROR   *** : xxx :");
-
 //
 // Initialization
 //  Initialize the output to be tri-state, ram to be disabled
-//   
+//
 
 initial
   begin
@@ -235,47 +229,47 @@ end
 
    always @(noti2)
      begin
-        $display("NOTICE : 020 : Data bus corruption");
+        $display("[%10.3f] CY7C1460: Data bus corruption", $time/1.0e3);
         force d =36'bx;
         #1;
         release d;
      end
-   
+
    always @(noti1_0)
      begin
-        $display("NOTICE : 010 : Byte write corruption");
+        $display("[%10.3f] CY7C1460: Byte write corruption", $time/1.0e3);
         force bws = 4'bx;
         #1;
         release bws;
      end
-   
+
    always @(noti1_1)
      begin
-        $display("NOTICE : 011 : Byte enable corruption");
+        $display("[%10.3f] CY7C1460: Byte enable corruption", $time/1.0e3);
         force we_b = 1'bx;
         #1;
         release we_b;
      end
-   
+
    always @(noti1_2)
      begin
-        $display("NOTICE : 012 : CE1B corruption");
+        $display("[%10.3f] CY7C1460: CE1B corruption", $time/1.0e3);
         force ce1b =1'bx;
         #1;
         release ce1b;
      end
-   
+
    always @(noti1_3)
      begin
-        $display("NOTICE : 013 : CE2 corruption");
+        $display("[%10.3f] CY7C1460: CE2 corruption", $time/1.0e3);
         force ce2 =1'bx;
         #1;
         release ce2;
      end
-   
+
    always @(noti1_4)
      begin
-        $display("NOTICE : 014 : CE3B corruption");
+        $display("[%10.3f] CY7C1460: CE3B corruption", $time/1.0e3);
         force ce3b =1'bx;
         #1;
         release ce3b;
@@ -283,15 +277,15 @@ end
 
    always @(noti1_5)
      begin
-        $display("NOTICE : 015 : CENB corruption");
+        $display("[%10.3f] CY7C1460: CENB corruption", $time/1.0e3);
         force cenb =1'bx;
         #1;
         release cenb;
      end
-   
+
    always @(noti1_6)
      begin
-        $display("NOTICE : 016 : ADV_LB corruption");
+        $display("[%10.3f] CY7C1460: ADV_LB corruption", $time/1.0e3);
         force adv_lb = 1'bx;
         #1;
         release adv_lb;
@@ -305,14 +299,14 @@ end
      if (!cenb)
        begin
           #0.01;
-          
+
           // latch conditions on adv_lb
 
           if (adv_lb)
             we_bl      <= we_bl;
           else
             we_bl      <= we_b;
-          
+
           chipen_d     <= chipen;
           chipen_o     <= chipen;
 
@@ -333,12 +327,12 @@ end
              loadwrite;
              lw =0;
           end
-          
+
           if (bw) begin
              burstwrite;
              bw =0;
           end
-          
+
           // decode input/piplined state
 
           casex (operation_o)
@@ -361,7 +355,7 @@ end
    task read;
       begin
          if (enable)
-	   cetri <= `tclz 0;
+           cetri <= `tclz 0;
          writetri <= `tchz 0;
          do <= `tdoh 36'hx;
          pipereg = mem[addreg];
@@ -389,14 +383,14 @@ end
          writetri <= `tchz 1;    // tristate the outputs
       end
    endtask
-   
+
    task setbw;
       begin
          bw =1;
          writetri <= `tchz 1;    // tristate the outputs
       end
    endtask
-   
+
    task loadread;
       begin
          burstinit = a_o[0];
@@ -405,7 +399,7 @@ end
          read;
       end
    endtask
-   
+
    task loadwrite;
       begin
          burstinit = a_d[0];
@@ -428,7 +422,7 @@ end
          write;
       end
    endtask
-   
+
    task unknown;
       begin
          do = 36'bx;
@@ -474,29 +468,29 @@ end
    //
 
    specify
-      
+
       // specify the setup and hold checks
       // notifier will wipe memory as result is indeterminent
-      
+
       $setuphold(posedge clk &&& loadcyc, a, `tas, `tah, notifier);
 
       // noti1 should make ip = 'bx;
-      
+
       $setuphold(posedge clk, bws,  `tas, `tah, noti1_0);
       $setuphold(posedge clk, we_b, `tas, `tah, noti1_1);
       $setuphold(posedge clk, ce1b, `tas, `tah, noti1_2);
       $setuphold(posedge clk, ce2,  `tas, `tah, noti1_3);
       $setuphold(posedge clk, ce3b, `tas, `tah, noti1_4);
-      
+
       // noti2 should make d = 36'hxxxxxxxxx;
-      
+
       $setuphold(posedge clk &&& writecyc, d, `tas, `tah, noti2);
-      
+
       // add extra tests here.
 
       $setuphold(posedge clk, cenb,   `tas, `tah, noti1_5);
       $setuphold(posedge clk, adv_lb, `tas, `tah, noti1_6);
-      
+
    endspecify
-   
+
 endmodule
