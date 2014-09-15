@@ -49,8 +49,8 @@
 `default_nettype none
 `include "useq/crom.vh"
 
-module INTR(clk, rst, clken, crom, dp, flagINTREQ,
-            ubaINTR, aprINTR, reqINTP, curINTP, cpuINTR);
+module INTR(clk, rst, clken, crom, dp, ubaINTR, aprINTR, reqINTP,
+            curINTP, cpuINTR);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -59,7 +59,6 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
    input                  clken;        // Clock enable
    input  [0:cromWidth-1] crom;         // Control ROM Data
    input  [0:35]          dp;           // Data path
-   input                  flagINTREQ;   // Interrupt Request
    input  [1: 7]          aprINTR;      // Arithmetic Processor request
    input  [1: 7]          ubaINTR;      // Unibus request
    output [0: 2]          reqINTP;      // Requested Interrupt Priority
@@ -143,8 +142,8 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
                              reqINTR[4] ? 4'b0100 :
                              reqINTR[5] ? 4'b0101 :
                              reqINTR[6] ? 4'b0110 :
-                             reqINTR[7] ? 4'b0111 :   	// Lowest priority
-                             4'b1000);             	// Nothing active
+                             reqINTR[7] ? 4'b0111 :     // Lowest priority
+                             4'b1000);                  // Nothing active
 
    assign reqINTP = reqPRIORITY[1:3];
 
@@ -164,8 +163,8 @@ module INTR(clk, rst, clken, crom, dp, flagINTREQ,
                              curINTR[4] ? 4'b0100 :
                              curINTR[5] ? 4'b0101 :
                              curINTR[6] ? 4'b0110 :
-                             curINTR[7] ? 4'b0111 :	// Lowest priority
-                             4'b1000);                 	// Nothing active	
+                             curINTR[7] ? 4'b0111 :     // Lowest priority
+                             4'b1000);                  // Nothing active
 
    assign curINTP = curPRIORITY[1:3];
 

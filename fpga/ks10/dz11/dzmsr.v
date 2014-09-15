@@ -40,13 +40,12 @@
 
 `default_nettype none
 
-  module DZMSR(clk, rst, dz11CO, dz11RI, msrREAD, regMSR);
+  module DZMSR(clk, rst, dz11CO, dz11RI, regMSR);
 
    input         clk;                           // Clock
    input         rst;                           // Reset
    input  [ 7:0] dz11CO;                        // DZ11 Carrier Detect
    input  [ 7:0] dz11RI;                        // DZ11 Ring Indicator
-   input         msrREAD;                       // Read MSR
    output [15:0] regMSR;                        // MSR Output
 
    //
@@ -60,8 +59,8 @@
      begin
         if (rst)
           begin
-             tmpMSR <= 0;
-             regMSR <= 0;
+             tmpMSR <= 16'b0;
+             regMSR <= 16'b0;
           end
         else
           begin

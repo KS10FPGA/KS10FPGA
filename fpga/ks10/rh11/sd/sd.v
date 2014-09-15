@@ -82,6 +82,8 @@ module SD(clk, rst,
    // Diagnostics
    output [0:63] sdDEBUG;               // Debug Output
 
+`ifdef broken
+   
    //
    // SD Commands:
    // Sending leading 0xff just sends clocks with data parked.
@@ -558,11 +560,6 @@ module SD(clk, rst,
                                   end
                              end
                         end
-                      default:
-                        begin
-                           ;
-                        end
-
                     endcase
                  end
 
@@ -877,41 +874,37 @@ module SD(clk, rst,
                         begin
                            if (spiDONE)
                              begin
-                                spiOP      <= `spiTR;
-                                spiTXD     <= 8'hff;
-                                loopCNT    <= 2;
+                                spiOP   <= `spiTR;
+                                spiTXD  <= 8'hff;
+                                loopCNT <= 2;
                              end
                         end
                       2:
                         begin
                            if (spiDONE)
                              begin
-                                spiOP      <= `spiTR;
-                                spiTXD     <= 8'hff;
-                                loopCNT    <= 3;
+                                spiOP   <= `spiTR;
+                                spiTXD  <= 8'hff;
+                                loopCNT <= 3;
                              end
                         end
                       3:
                         begin
                            if (spiDONE)
                              begin
-                                spiOP      <= `spiTR;
-                                spiTXD     <= 8'hff;
-                                loopCNT    <= 4;
+                                spiOP   <= `spiTR;
+                                spiTXD  <= 8'hff;
+                                loopCNT <= 4;
                              end
                         end
                       4:
                         begin
                            if (spiDONE)
                              begin
-                                spiOP      <= `spiCSH;
-                                loopCNT    <= 0;
-                                state      <= stateINIT17;
+                                spiOP   <= `spiCSH;
+                                loopCNT <= 0;
+                                state   <= stateINIT17;
                              end
-                        end
-                      default
-                        begin
-                           ;
                         end
                     endcase
                  end
@@ -1923,7 +1916,7 @@ module SD(clk, rst,
                     state   <= stateRWFAIL;
                  end
 
-             endcase;
+             endcase
 
              if (timeout == 0)
                begin
@@ -1937,8 +1930,8 @@ module SD(clk, rst,
    // SPI Interface
    //
 
-   SDSPI uSDSPI
-     (.clk      (clk),
+   SDSPI uSDSPI (
+      .clk      (clk),
       .rst      (rst),
       .spiOP    (spiOP),
       .spiTXD   (spiTXD),
@@ -1948,7 +1941,7 @@ module SD(clk, rst,
       .spiSCLK  (sdSCLK),
       .spiCS    (sdCS),
       .spiDONE  (spiDONE)
-      );
+   );
 
    //
    // Debug Output
@@ -1965,4 +1958,6 @@ module SD(clk, rst,
 
    assign dmaADDR = (readOP) ? {rdFLAGS, sdBUSADDR} :  {wrFLAGS, sdBUSADDR};
 
+`endif
+   
 endmodule

@@ -673,7 +673,7 @@ module RH11(clk,      rst,
       .dmaDATAI  (devDATAI),
       //.dmaDATAO  (devDATAO),   // here
       //.dmaADDR   (devADDR),
-      .dmaREQ    (devREQO),
+      .dmaREQ    (/*devREQO*/),  // fixme
       .dmaACK    (devACKI),
       .sdINCWD   (sdINCWD),
       .sdINCSECT (sdINCSECT),
@@ -682,6 +682,8 @@ module RH11(clk,      rst,
       .sdDEBUG   (rh11DEBUG)
    );
 
+   assign devREQO = 0; // fixme
+   
    //
    // Demux Disk Array Registers
    //
@@ -802,10 +804,8 @@ module RH11(clk,      rst,
      begin
         if (nxmCount == 1)
           begin
-             $display("");
-             $display("RH11: Unacknowledged bus cycle.  Addr Bus = %012o",
-                      devADDRO);
-             $display("");
+             $display("[%10.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o",  $time/1.0e3, devADDRO);
+	     $stop;
           end
      end
 

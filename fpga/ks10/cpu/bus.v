@@ -12,42 +12,27 @@
 //
 //                   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//    Memory Write |                 VMA Flags               |                      Memory Address                             |
+//      Memory R/W |                 VMA Flags               |                      Memory Address                             |
 //                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
 //                   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//     Memory Read |                 VMA Flags               |                      Memory Address                             |
+//          IO R/W |                 VMA Flags               |  DEV NO   |             Register Address                        |
 //                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
 //                   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//      RMW Memory |                 VMA Flags               |                      Memory Address                             |
+//     Byte IO R/W |                 VMA Flags               |  DEV NO   |             Register Address                        |
 //                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
 //                   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//        IO Write |                 VMA Flags               |  DEV NO   |             Register Address                        |
+//       WRU Cycle |                 VMA Flags               | 0|  PI NO |                 Unused                              |
 //                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
 //                   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
 //                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//   IO Write Byte |                 VMA Flags               |  DEV NO   |             Register Address                        |
-//                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//
-//                   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//         IO Read |                 VMA Flags               |  DEV NO   |             Register Address                        |
-//                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//
-//                   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//                 +-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//  Read Controller|                 VMA Flags               |  |  PI NO |                 Unused                              |
-//      Number     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//
-//                   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//  Read Intr Vect |                 VMA Flags               |  DEV NO   |                 Unused                              |
+//    Vector Cycle |                 VMA Flags               |  DEV NO   |                 Unused                              |
 //                 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
 //
@@ -86,29 +71,19 @@
 `include "vma.vh"
 `include "useq/crom.vh"
 
-module BUS(clk, rst, clken, crom, dp,
-           vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR, aprFLAGS,
-           cpuDATAO, cpuADDRO, cpuREQO, cpuACKI, curINTP, memWAIT, nxmINTR);
+module BUS(dp, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
+	   aprFLAGS, curINTP, cpuDATAO, cpuADDRO, cpuREQO);
 
-   parameter  cromWidth = `CROM_WIDTH;
-
-   input                   clk;         // Clock
-   input                   rst;         // Reset
-   input                   clken;       // Clock enable
-   input  [ 0:cromWidth-1] crom;        // Control ROM Data
    input  [ 0:35]          dp;          // Data path
    input                   vmaEXTENDED; // Extended VMA
    input  [ 0:13]          vmaFLAGS;    // VMA Flags
    input  [14:35]          vmaADDR;     // Virtual Memory Address
    input  [16:26]          pageADDR;    // Page Address
    input  [22:35]          aprFLAGS;    // APR Flags
+   input  [ 0: 2]          curINTP;     // Current Interrupt Priority
    output [ 0:35]          cpuDATAO;    // CPU Data Out
    output [ 0:35]          cpuADDRO;    // CPU Address Out
    output                  cpuREQO;     // CPU Request
-   input                   cpuACKI;     // CPU Bus Acknowledge
-   input  [ 0: 2]          curINTP;     // Current Interrupt Priority
-   output                  memWAIT;     // Wait for Memory
-   output                  nxmINTR;     // Non-existant Memory Interrupt
 
    //
    // APR Flags
@@ -124,6 +99,7 @@ module BUS(clk, rst, clken, crom, dp,
    wire vmaWRTESTCYCLE = `vmaWRTESTCYCLE(vmaFLAGS);
    wire vmaWRITECYCLE  = `vmaWRITECYCLE(vmaFLAGS);
    wire vmaPHYSICAL    = `vmaPHYSICAL(vmaFLAGS);
+   wire vmaIOCYCLE     = `vmaIOCYCLE(vmaFLAGS);
    wire vmaWRUCYCLE    = `vmaWRUCYCLE(vmaFLAGS);
    wire vmaVECTORCYCLE = `vmaVECTORCYCLE(vmaFLAGS);
 
@@ -134,10 +110,17 @@ module BUS(clk, rst, clken, crom, dp,
    wire pagedREF = !vmaPHYSICAL & flagPAGEEN;
 
    //
+   // Bus Request Output
+   //  vmaIOCYCLE is asserted during WRU and VECT cycles
+   //
+
+   assign cpuREQO = vmaREADCYCLE | vmaWRITECYCLE  | vmaWRTESTCYCLE | vmaIOCYCLE;
+
+   //
    // Data Output
    //
 
-   assign cpuDATAO[0:35] = dp[0:35];
+   assign cpuDATAO = dp;
 
    //
    // Address Output
@@ -145,8 +128,7 @@ module BUS(clk, rst, clken, crom, dp,
 
    reg [0:35] cpuADDRO;
 
-   always @(pagedREF or vmaEXTENDED or vmaFLAGS or vmaADDR or pageADDR or
-            vmaWRUCYCLE or curINTP)
+   always @*
      begin
         if (pagedREF)
           cpuADDRO <= {vmaFLAGS, vmaADDR[14:15], pageADDR[16:26], vmaADDR[27:35]};
@@ -163,73 +145,5 @@ module BUS(clk, rst, clken, crom, dp,
                end
           end
      end
-
-   //
-   // Bus Request on the various cycles
-   //
-
-   assign cpuREQO = vmaREADCYCLE | vmaWRITECYCLE | vmaWRTESTCYCLE |
-                    vmaWRUCYCLE  | vmaVECTORCYCLE;
-
-   //
-   // Bus Monitor
-   //
-   // Details
-   //  Wait for Bus ACK on bus accesses.  Generate a NXM Interrupt on a bus
-   //  timeout.
-   //
-
-   localparam [0:3] tNXM  = 14;
-   localparam [0:3] tDONE = 15;
-   reg        [0:3] timeout;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          timeout <= 0;
-        else
-          begin
-             if (cpuREQO & ~cpuACKI)
-               begin
-                  if (timeout != tDONE)
-                    timeout <= timeout + 1'b1;
-               end
-             else
-               timeout <= 0;
-          end
-     end
-
-   //
-   // Wait for memory (REQ with no ACK) unless the bus has
-   //  timed out.
-   //
-
-   assign memWAIT = ((cpuREQO & ~cpuACKI & (timeout != tNXM)) &
-                     (cpuREQO & ~cpuACKI & (timeout != tDONE)));
-
-   //
-   // Generate an NXM trap
-   //
-
-   assign nxmINTR = (timeout == tNXM);
-
-   `ifndef SYNTHESIS
-
-   //
-   // Whine about unacked bus cycles
-   //
-
-   always @(posedge clk)
-     begin
-        if (nxmINTR)
-          begin
-             $display("");
-             $display("CPU: Unacknowledged bus cycle.  Addr Bus = %012o",
-                      cpuADDRO);
-             $display("");
-          end
-     end
-
-`endif
 
 endmodule

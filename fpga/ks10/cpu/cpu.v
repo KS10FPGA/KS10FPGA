@@ -44,7 +44,7 @@
 `include "useq/drom.vh"
 `include "apr.vh"
 
-module CPU(clk, rst, cslRESET,
+module CPU(rst, clkT, clkR, cslRESET,
            cslSET, cslRUN, cslCONT, cslEXEC, cslTIMEREN,
            cslTRAPEN, cslCACHEEN, cslINTRI, cslINTRO, ubaINTR,
            cpuREQO, cpuACKI, cpuADDRO, cpuDATAI, cpuDATAO,
@@ -53,11 +53,12 @@ module CPU(clk, rst, cslRESET,
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
 
-   input          clk;          // Clock
    input          rst;          // Reset
+   input          clkT;         // Clock
+   input          clkR;         // Clock
    // Console
    input          cslRESET;     // CPU Reset
-   input          cslSET;	// Set Console RUN, EXEC, CONT
+   input          cslSET;       // Set Console RUN, EXEC, CONT
    input          cslRUN;       // Run
    input          cslCONT;      // Continue
    input          cslEXEC;      // Execute
@@ -70,9 +71,9 @@ module CPU(clk, rst, cslRESET,
    input  [ 1: 7] ubaINTR;      // Unibus Interrupt Request
    // CPU
    output         cpuREQO;      // CPU Bus Request
-   input          cpuACKI;     // Bus Acknowledge
+   input          cpuACKI;      // Bus Acknowledge
    output [ 0:35] cpuADDRO;     // CPU Addr and Flags
-   input  [ 0:35] cpuDATAI;    // Bus Data Input
+   input  [ 0:35] cpuDATAI;     // Bus Data Input
    output [ 0:35] cpuDATAO;     // CPU Data Output
    output         cpuHALT;      // CPU Halt Status
    output         cpuRUN;       // CPU Run Status
@@ -91,7 +92,7 @@ module CPU(clk, rst, cslRESET,
    //
 
    wire memory_cycle = 0;       // FIXME
-   wire iolatch;                // FIXME
+   wire ioBUSY;                 // FIXME
    wire opJRST0;                // JRST 0 Instruction
    wire skipJFCL;               // JFCL Instruction
    wire trapCYCLE;              // Trap Cycle
@@ -213,22 +214,22 @@ module CPU(clk, rst, cslRESET,
    // Timing and Wait States
    //
 
-   TIMING uTIMING
-     (.clk              (clk),
+   TIMING uTIMING (
+      .clk              (clkT),
       .rst              (rst),
       .crom             (crom),
       .feSIGN           (feSIGN),
       .clkenDP          (clkenDP),
       .clkenCR          (clkenCR),
       .memWAIT          (memWAIT)
-      );
+   );
 
    //
    // Arithmetic Logic Unit
    //
 
-   ALU uALU
-     (.clk              (clk),
+   ALU uALU (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -237,14 +238,14 @@ module CPU(clk, rst, cslRESET,
       .aluOUT           (dp),
       .debugADDR        (debugADDR),
       .debugDATA        (debugDATA)
-      );
+   );
 
    //
    // APR
    //
 
-   APR uAPR
-     (.clk              (clk),
+   APR uAPR (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -253,47 +254,80 @@ module CPU(clk, rst, cslRESET,
       .cslINTR          (cslINTRI),
       .aprFLAGS         (aprFLAGS),
       .aprINTR          (aprINTR)
-      );
+   );
 
    //
    // Byte Dispatch
    //
 
-   BYTE_DISP uBYTE_DISP
-     (.dp               (dp),
+   DISP_BYTE uDISP_BYTE (
+      .dp               (dp),
       .dispBYTE         (dispBYTE)
-      );
+   );
+
+   //
+   // Next Instruction Dispatch
+   //
+
+   DISP_NI uDISP_NI (
+      .clk              (clkT),
+      .rst              (rst),
+      .clken            (clkenDP),
+      .crom             (crom),
+      .aprFLAGS         (aprFLAGS),
+      .pcFLAGS          (pcFLAGS),
+      .cslTRAPEN        (cslTRAPEN),
+      .cpuRUN           (cpuRUN),
+      .memory_cycle     (memory_cycle),
+      .dispNI           (dispNI),
+      .trapCYCLE        (trapCYCLE)
+   );
+
+   //
+   // Page Fail Dispatch
+   //
+
+   DISP_PF uDISP_PF (
+      .clk              (clkT),
+      .rst              (rst),
+      .clken            (clkenDP),
+      .crom             (crom),
+      .drom             (drom),
+      .dp               (dp),
+      .vmaFLAGS         (vmaFLAGS),
+      .vmaADDR          (vmaADDR),
+      .aprFLAGS         (aprFLAGS),
+      .pageFLAGS        (pageFLAGS),
+      .cpuINTR          (cpuINTR),
+      .nxmINTR          (nxmINTR),
+      .timerINTR        (timerINTR),
+      .pageFAIL         (pageFAIL),
+      .dispPF           (dispPF)
+   );
 
    //
    // Memory/IO Bus
    //
 
-   BUS uBUS
-     (.clk              (clk),
-      .rst              (rst),
-      .clken            (clkenDP),
-      .crom             (crom),
+   BUS uBUS (
       .dp               (dp),
       .vmaEXTENDED      (vmaEXTENDED),
       .vmaFLAGS         (vmaFLAGS),
       .vmaADDR          (vmaADDR),
       .pageADDR         (pageADDR),
       .aprFLAGS         (aprFLAGS),
+      .curINTP          (curINTP),
       .cpuDATAO         (cpuDATAO),
       .cpuADDRO         (cpuADDRO),
-      .cpuREQO          (cpuREQO),
-      .cpuACKI          (cpuACKI),
-      .curINTP          (curINTP),
-      .memWAIT          (memWAIT),
-      .nxmINTR          (nxmINTR)
-      );
+      .cpuREQO          (cpuREQO)
+   );
 
    //
    // Data Bus
    //
 
-   DBM uDBM
-     (.crom             (crom),
+   DBM uDBM (
+      .crom             (crom),
       .dp               (dp),
       .scad             (scad),
       .dispPF           (dispPF),
@@ -303,27 +337,27 @@ module CPU(clk, rst, cslRESET,
       .vmaADDR          (vmaADDR),
       .cpuDATAI         (cpuDATAI),
       .dbm              (dbm)
-      );
+   );
 
    //
    // DEBUG
    //
 
-   DEBUG uDEBUG
-      (.clk             (clk),
-       .rst             (rst),
-       .clken           (clkenDP),
-       .crom            (crom),
-       .debugDATA       (debugDATA),
-       .debugADDR       (debugADDR)
-       );
+   DEBUG uDEBUG (
+      .clk              (clkT),
+      .rst              (rst),
+      .clken            (clkenDP),
+      .crom             (crom),
+      .debugDATA        (debugDATA),
+      .debugADDR        (debugADDR)
+   );
 
    //
    // DBUS MUX
    //
 
-   DBUS uDBUS
-     (.crom             (crom),
+   DBUS uDBUS (
+      .crom             (crom),
       .cacheHIT         (cacheHIT),
       .reqINTP          (reqINTP),
       .vmaFLAGS         (vmaFLAGS),
@@ -333,46 +367,45 @@ module CPU(clk, rst, cslRESET,
       .ramfile          (ramfile),
       .dbm              (dbm),
       .dbus             (dbus)
-      );
+   );
 
    //
    // Dispatch ROM
    //
 
-   DROM uDROM
-     (.clk              (clk),
+   DROM uDROM (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .dbus             (dbus),
       .crom             (crom),
       .drom             (drom)
-      );
+   );
 
    //
    // Interrupt Controller
    //
 
-   INTR uINTR
-     (.clk              (clk),
+   INTR uINTR (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
       .dp               (dp),
-      .flagINTREQ       (`flagINTREQ(aprFLAGS)),
       .aprINTR          (aprINTR),
       .ubaINTR          (ubaINTR),
       .reqINTP          (reqINTP),
       .curINTP          (curINTP),
       .cpuINTR          (cpuINTR)
-      );
+   );
 
    //
    // INTF
    //  Console Interface
    //
 
-   INTF uINTF
-     (.clk              (clk),
+   INTF uINTF (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -384,27 +417,14 @@ module CPU(clk, rst, cslRESET,
       .cpuCONT          (cpuCONT),
       .cpuEXEC          (cpuEXEC),
       .cpuHALT          (cpuHALT)
-      );
-
-   //
-   // IO Latch
-   //
-
-   IOLATCH uIOLATCH
-     (.clk              (clk),
-      .rst              (rst),
-      .clken            (clkenDP),
-      .crom             (crom),
-      .vmaFLAGS         (vmaFLAGS),
-      .iolatch          (iolatch)
-      );
+   );
 
    //
    // Instruction Register
    //
 
-   REGIR uIR
-     (.clk              (clk),
+   REGIR uIR (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -413,14 +433,14 @@ module CPU(clk, rst, cslRESET,
       .regIR            (regIR),
       .xrPREV           (xrPREV),
       .opJRST0          (opJRST0)
-      );
+   );
 
    //
    // Microsequencer
    //
 
-   USEQ uUSEQ
-     (.clk              (clk),
+   USEQ uUSEQ (
+      .clk              (clkT),
       .rst              (cslRESET),
       .clken            (clkenCR),
       .dp               (dp),
@@ -428,7 +448,7 @@ module CPU(clk, rst, cslRESET,
       .cpuINTR          (cpuINTR),
       .cpuEXEC          (cpuEXEC),
       .cpuCONT          (cpuCONT),
-      .iolatch          (iolatch),
+      .ioBUSY           (ioBUSY),
       .timerINTR        (timerINTR),
       .trapCYCLE        (trapCYCLE),
       .scSIGN           (scSIGN),
@@ -444,32 +464,42 @@ module CPU(clk, rst, cslRESET,
       .pcFLAGS          (pcFLAGS),
       .drom             (drom),
       .crom             (crom)
-      );
+   );
 
    //
-   // Next Instruction Dispatch
+   // Non-existant Device
    //
 
-   NI_DISP uNI_DISP
-     (.clk              (clk),
+   NXD uNXD (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
-      .aprFLAGS         (aprFLAGS),
-      .pcFLAGS          (pcFLAGS),
-      .cslTRAPEN        (cslTRAPEN),
-      .cpuRUN           (cpuRUN),
-      .memory_cycle     (memory_cycle),
-      .dispNI           (dispNI),
-      .trapCYCLE        (trapCYCLE)
-      );
+      .cpuADDRO         (cpuADDRO),
+      .cpuACKI          (cpuACKI),
+      .ioBUSY           (ioBUSY)
+   );
 
    //
-   // Page Tables
+   // Non-existant Memory
    //
 
-   PAGER uPAGER
-     (.clk              (clk),
+   NXM uNXM (
+      .clk              (clkT),
+      .rst              (rst),
+      .cpuADDRO         (cpuADDRO),
+      .cpuREQO          (cpuREQO),
+      .cpuACKI          (cpuACKI),
+      .memWAIT          (memWAIT),
+      .nxmINTR          (nxmINTR)
+   );
+
+   //
+   // Pager
+   //
+
+   PAGER uPAGER (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -479,14 +509,14 @@ module CPU(clk, rst, cslRESET,
       .vmaFLAGS         (vmaFLAGS),
       .pageFLAGS        (pageFLAGS),
       .pageADDR         (pageADDR)
-      );
+   );
 
    //
    // PC Flags
    //
 
-   PCFLAGS uPCFLAGS
-     (.clk              (clk),
+   PCFLAGS uPCFLAGS (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -496,50 +526,28 @@ module CPU(clk, rst, cslRESET,
       .aluFLAGS         (aluFLAGS),
       .pcFLAGS          (pcFLAGS),
       .skipJFCL         (skipJFCL)
-      );
-
-   //
-   // Page Fail Dispatch
-   //
-
-   PF_DISP uPF_DISP
-     (.clk              (clk),
-      .rst              (rst),
-      .clken            (clkenDP),
-      .crom             (crom),
-      .drom             (drom),
-      .dp               (dp),
-      .vmaFLAGSx         (vmaFLAGS),
-      .vmaADDRx          (vmaADDR),
-      .aprFLAGS         (aprFLAGS),
-      .pageFLAGS        (pageFLAGS),
-      .cpuINTR          (cpuINTR),
-      .nxmINTR          (nxmINTR),
-      .timerINTR        (timerINTR),
-      .pageFAIL         (pageFAIL),
-      .dispPF           (dispPF)
-      );
+   );
 
    //
    // PXCT
    //  Previous context
 
-   PXCT uPXCT
-     (.clk              (clk),
+   PXCT uPXCT (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
       .dp               (dp),
       .prevEN           (prevEN),
       .acBLOCK          (acBLOCK)
-      );
+   );
 
    //
    // RAMFILE
    //
 
-   RAMFILE uRAMFILE
-     (.clk              (clk),
+   RAMFILE uRAMFILE (
+      .clk              (clkR),
       .rst              (rst),
       .clken            (1'b1),
       .crom             (crom),
@@ -551,14 +559,14 @@ module CPU(clk, rst, cslRESET,
       .vmaADDR          (vmaADDR),
       .acBLOCK          (acBLOCK),
       .ramfile          (ramfile)
-      );
+   );
 
    //
    // SCAD
    //
 
-   SCAD uSCAD
-     (.clk              (clk),
+   SCAD uSCAD (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -567,28 +575,28 @@ module CPU(clk, rst, cslRESET,
       .feSIGN           (feSIGN),
       .scad             (scad),
       .dispSCAD         (dispSCAD)
-      );
+   );
 
    //
    // One millisecond (more or less) interval timer.
    //
 
-   TIMER uTIMER
-     (.clk              (clk),
+   TIMER uTIMER (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
       .timerEN          (cslTIMEREN),
       .timerINTR        (timerINTR),
       .timerCOUNT       (timerCOUNT)
-      );
+   );
 
    //
    // VMA
    //
 
-   VMA uVMA
-     (.clk              (clk),
+   VMA uVMA (
+      .clk              (clkT),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -600,7 +608,7 @@ module CPU(clk, rst, cslRESET,
       .vmaEXTENDED      (vmaEXTENDED),
       .vmaFLAGS         (vmaFLAGS),
       .vmaADDR          (vmaADDR)
-      );
+   );
 
    //
    //  KS10 Interrupt to Console

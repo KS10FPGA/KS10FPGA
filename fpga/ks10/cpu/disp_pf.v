@@ -38,7 +38,7 @@
 //   This needs a lot of work.
 //
 // File
-//   pf_disp.v
+//   disp_pf.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -75,9 +75,8 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
-               aprFLAGS, pageFLAGS, cpuINTR, nxmINTR, timerINTR,
-               pageFAIL, dispPF);
+module DISP_PF(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, aprFLAGS,
+               pageFLAGS, cpuINTR, nxmINTR, timerINTR, pageFAIL, dispPF);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -88,8 +87,8 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    input  [ 0:cromWidth-1] crom;        // Control ROM Data
    input  [ 0:dromWidth-1] drom;        // Dispatch ROM Data
    input  [ 0:35]          dp;          // Datapath
-   input  [ 0:13]          vmaFLAGSx;   // Virtual Memory Flags
-   input  [14:35]          vmaADDRx;    // Virtual Memory Address
+   input  [ 0:13]          vmaFLAGS;    // Virtual Memory Flags
+   input  [14:35]          vmaADDR;     // Virtual Memory Address
    input  [22:35]          aprFLAGS;    // APR Flags
    input  [ 0: 3]          pageFLAGS;   // Page Flags
    input                   timerINTR;   // Timer Interrupt
@@ -176,9 +175,9 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    // debug
    //
 
-   wire debugREADCYCLE   = `vmaREADCYCLE(vmaFLAGSx);       // Read Cycle (IO or Memory)
-   wire debugWRTESTCYCLE = `vmaWRTESTCYCLE(vmaFLAGSx);     // Write Test Cycle
-   wire debugWRITECYCLE  = `vmaWRITECYCLE(vmaFLAGSx);      // Write Cycle (IO or Memory)
+   wire debugREADCYCLE   = `vmaREADCYCLE(vmaFLAGS);     // Read Cycle (IO or Memory)
+   wire debugWRTESTCYCLE = `vmaWRTESTCYCLE(vmaFLAGS);   // Write Test Cycle
+   wire debugWRITECYCLE  = `vmaWRITECYCLE(vmaFLAGS);    // Write Cycle (IO or Memory)
 
    //
    // vmaJUSTLOADED
@@ -389,7 +388,7 @@ module PF_DISP(clk, rst, clken, crom, drom, dp, vmaFLAGSx, vmaADDRx,
    //   Address 0110 is the next instruction dispatch address
    //
 
-   wire pageFAIL = (((crom[0:11] == 12'o0110) & cpuINTR) |
+   wire pageFAIL = (((crom[0:11] == 12'o0110) & cpuINTR  ) |
                     ((crom[0:11] == 12'o0110) & timerINTR));
 
    reg [0:3] dispPF;

@@ -17,33 +17,6 @@
 //   763100        : IO Bridge Status Register
 //   763101        : IO Bridge Maintenace Register
 //
-// IO Bridge Status Register:
-//
-//     0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17
-//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-//   |                                                                       |
-//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-//
-//    18  19  20  21  22  23  24 25 26 27 28 29 30 31 32 33 34 35
-//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-//   |TMO|BMD|BPE|NXD|   |   |HI |LO |PWR|   |DXF|INI|    PIH    |    PIL    |
-//   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-//
-//   Register Definitions
-//
-//      TMO : Non-existent Memory - Set by TMO.  Cleared by writing a 1.
-//      BMD : Bad Memory Data     - Always read as 0.  Writes are ignored.
-//      BPE : Bus Parity Error    - Always read as 0.  Writes are ignored.
-//      NXD : Non-existant Device - Set by NXD.  Cleared by writing a 1.
-//      HI  : Hi level intr pend  - IRQ on BR7 or BR6.  Writes are ignored.
-//      LO  : Lo level intr pend  - IRQ on BR5 or BR4.  Writes are ignored.
-//      PWR : Power Fail          - Always read as 0.  Writes are ignored.
-//      DXF : Diable Transfer     - Read/Write.  Does nothing.
-//      INI : Initialize          - Always read as 0.  Writing 1 resets all IO
-//                                  Bridge Devices.
-//      PIH : Hi level PIA        - R/W
-//      PIL : Lo level PIA        - R/W
-//
 // IO Bridge Maintenance Register:
 //
 //     0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17
@@ -94,10 +67,11 @@
 
 `default_nettype none
 `include "uba.vh"
+`include "ubasr.vh"
 `include "../ks10.vh"
 `include "../cpu/bus.vh"
 
-module UBA(clk, rst,
+module UBA(rst, clkT, clkR,
            // KS10 Bus Interface
            busREQI, busREQO, busACKI, busACKO, busADDRI, busADDRO, busDATAI, busDATAO, busINTR,
            // Device Interface
@@ -107,8 +81,9 @@ module UBA(clk, rst,
            // Device #2 Interface
            dev2REQI, dev2ACKI, dev2ADDRI, dev2DATAI, dev2INTR, dev2ACKO);
 
-   input          clk;                          // Clock
    input          rst;                          // Reset
+   input          clkT;                         // Clock
+   input          clkR;                         // Clock
    // KS10 Backplane Bus Interface
    input          busREQI;                      // Backplane Bus Request In
    output         busREQO;                      // Backplane Bus Request Out
@@ -144,12 +119,13 @@ module UBA(clk, rst,
    // IO Bridge Configuration
    //
 
-   parameter  [14:17] ubaNUM    = `devUBA1;                // Bridge Device Number
-   parameter  [18:35] ubaADDR   = 18'o763000;              // Base address
+   parameter  [14:17] ubaNUM    = 4'd0;                    // Bridge Device Number
+   parameter  [18:35] ubaADDR   = `ubaADDR;                // Base address
    localparam [18:35] pageADDR  = ubaADDR + `pageOFFSET;   // Paging RAM Address
    localparam [18:35] statADDR  = ubaADDR + `statOFFSET;   // Status Register Address
    localparam [18:35] maintADDR = ubaADDR + `maintOFFSET;  // Maintenance Register Address
    localparam [ 0:35] wruRESP   = `getWRU(ubaNUM);         // Lookup WRU Response
+   localparam [ 0: 3] timeout = 12;                        // NXD, TMO Timeout
 
    //
    // Address Bus
@@ -159,13 +135,13 @@ module UBA(clk, rst,
    //  busADDRI[14:35] is address
    //
 
-   wire         busREAD   = `busREAD(busADDRI);  // 1 = Read Cycle (IO or Memory)
-   wire         busWRITE  = `busWRITE(busADDRI); // 1 = Write Cycle (IO or Memory)
-   wire         busPHYS   = `busPHYS(busADDRI);  // 1 = Physical reference
-   wire         busIO     = `busIO(busADDRI);    // 1 = IO Cycle, 0 = Memory Cycle
-   wire         busWRU    = `busWRU(busADDRI);   // 1 = Read interrupting controller number
-   wire         busVECT   = `busVECT(busADDRI);  // 1 = Read interrupt vector
-   wire         busIOBYTE = `busIOBYTE(busADDRI);// 1 = IO Bridge Byte IO Operation
+   wire         busREAD   = `busREAD(busADDRI);  // Read Cycle (IO or Memory)
+   wire         busWRITE  = `busWRITE(busADDRI); // Write Cycle (IO or Memory)
+   wire         busPHYS   = `busPHYS(busADDRI);  // Physical reference
+   wire         busIO     = `busIO(busADDRI);    // IO Cycle
+   wire         busWRU    = `busWRU(busADDRI);   // Read interrupting controller number
+   wire         busVECT   = `busVECT(busADDRI);  // Read interrupt vector
+   wire         busIOBYTE = `busIOBYTE(busADDRI);// IO Bridge Byte IO Operation
    wire [15:17] busPI     = `busPI(busADDRI);    // IO Bridge PI Request
    wire [14:17] busDEV    = `busDEV(busADDRI);   // IO Bridge Device Number
    wire [18:35] busADDR   = `busADDR(busADDRI);  // IO Address
@@ -174,224 +150,154 @@ module UBA(clk, rst,
    // Address Decoding
    //
 
-   wire wruREAD    = busIO & busWRU   &  busPHYS;
-   wire vectREAD   = busIO & busVECT  & (busDEV == ubaNUM);
-   wire pageREAD   = busIO & busREAD  & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
-   wire pageWRITE  = busIO & busWRITE & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
-   wire statWRITE  = busIO & busWRITE & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
-   wire statREAD   = busIO & busREAD  & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
-   wire maintWRITE = busIO & busWRITE & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
-   wire maintREAD  = busIO & busREAD  & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
-   wire devREAD    = busIO & busREAD  & (busDEV == ubaNUM) & (busADDR[18:20] == ubaADDR[18:20]) & (busADDR[21:26] != ubaADDR[21:26]);
-   wire devWRITE   = busIO & busWRITE & (busDEV == ubaNUM) & (busADDR[18:20] == ubaADDR[18:20]) & (busADDR[21:26] != ubaADDR[21:26]);
+   wire wruREAD    = busIO & busPHYS & busWRU;
+   wire vectREAD   = busIO & busPHYS & busVECT  & (busDEV == ubaNUM);
+
+   wire pageREAD   = busIO & busPHYS & busREAD  & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
+   wire pageWRITE  = busIO & busPHYS & busWRITE & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
+
+   wire statWRITE  = busIO & busPHYS & busWRITE & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
+   wire statREAD   = busIO & busPHYS & busREAD  & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
+
+   wire maintWRITE = busIO & busPHYS & busWRITE & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
+   wire maintREAD  = busIO & busPHYS & busREAD  & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
+
+   wire ubaREAD    = busIO & busPHYS & busREAD  & (busDEV == ubaNUM) & (busADDR[18:28] == ubaADDR[18:28]);
+   wire ubaWRITE   = busIO & busPHYS & busWRITE & (busDEV == ubaNUM) & (busADDR[18:28] == ubaADDR[18:28]);
+
+   wire devREAD    = busIO & busPHYS & busREAD  & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]);
+   wire devWRITE   = busIO & busPHYS & busWRITE & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]);
 
    //
-   // IO Bridge Interrupt Request
+   // Status Register
    //
 
-   wire [7:4] intREQ = dev1INTR  | dev2INTR;
-   wire       statINTHI = intREQ[7] | intREQ[6];
-   wire       statINTLO = intREQ[5] | intREQ[4];
+   wire        setNXD;
+   wire        statINTHI;
+   wire        statINTLO;
+   wire [0:35] regUBASR;
+   wire        statINI = `statINI(regUBASR);
+   wire [0: 2] statPIH = `statPIH(regUBASR);
+   wire [0: 2] statPIL = `statPIL(regUBASR);
+
+   UBASR SR (
+      .rst        (rst),
+      .clk        (clkT),
+      .busDATAI   (busDATAI),
+      .statWRITE  (statWRITE),
+      .statINTHI  (statINTHI),
+      .statINTLO  (statINTLO),
+      .setNXD     (setNXD),
+      .setTMO     (setTMO),
+      .regUBASR   (regUBASR)
+   );
+
+   assign devRESET = statINI;
 
    //
-   // High Priority Interrupt
-   //
-   // Trace
-   //  UBA3/E180
+   // NXD Bus Monitor
+   //  NXD is asserted on an 'un-acked' IO request to the devices.
    //
 
-   reg [1:7] devINTRH;
-
-   always @(statINTHI or statPIH)
-     begin
-        if (statINTHI)
-          case (statPIH)
-            0: devINTRH <= 7'b0000000;
-            1: devINTRH <= 7'b1000000;
-            2: devINTRH <= 7'b0100000;
-            3: devINTRH <= 7'b0010000;
-            4: devINTRH <= 7'b0001000;
-            5: devINTRH <= 7'b0000100;
-            6: devINTRH <= 7'b0000010;
-            7: devINTRH <= 7'b0000001;
-          endcase
-        else
-          devINTRH <= 7'b0000000;
-     end
+   UBANXD NXD (
+      .rst        (rst),
+      .clk        (clkT),
+      .devINT     (ubaREAD  | ubaWRITE),
+      .devEXT     (devREAD  | devWRITE),
+      .devACKI    (dev1ACKI | dev2ACKI),
+      .busREQI    (busREQI),
+      .busACKO    (busACKO),
+      .setNXD     (setNXD)
+   );
 
    //
-   // Low Priority Interrupt
-   //
-   // Trace
-   //  UBA3/E182
+   // TMO Bus Monitor
+   //  TMO is asserted on an 'un-acked' KS10 bus request
    //
 
-   reg [1:7] devINTRL;
+   reg [0:3] countTMO;
 
-   always @(statINTLO or statPIL)
-     begin
-        if (statINTLO)
-          case (statPIL)
-            0: devINTRL <= 7'b0000000;
-            1: devINTRL <= 7'b1000000;
-            2: devINTRL <= 7'b0100000;
-            3: devINTRL <= 7'b0010000;
-            4: devINTRL <= 7'b0001000;
-            5: devINTRL <= 7'b0000100;
-            6: devINTRL <= 7'b0000010;
-            7: devINTRL <= 7'b0000001;
-          endcase
-        else
-          devINTRL <= 7'b0000000;
-     end
-
-   //
-   // IO Bridge Interrupt Request
-   //
-   // Trace
-   //  UBA3/E179
-   //  UBA3/E181
-   //
-
-   assign busINTR = devINTRL | devINTRH;
-
-   //
-   // IO Bridge Interrupt Acknowledge
-   //
-   // Trace
-   //  UBA7/E27
-   //  UBA7/E39
-   //  UBA7/E53
-   //  UBA7/E113
-   //  UBA7/E184
-   //  UBA7/E185
-   //
-
-   reg [7:4] devINTA;
-   always @(posedge clk or posedge rst)
+   always @(posedge clkT or posedge rst)
      begin
         if (rst)
-          devINTA = `ubaINTNUL;
+          countTMO <= 0;
         else
           begin
-             if (wruREAD & (busPI == statPIH))
-               begin
-                  if (intREQ[7])
-                    devINTA = `ubaINTR7;
-                  else if (intREQ[6])
-                    devINTA = `ubaINTR6;
-                  else
-                    devINTA = `ubaINTNUL;
-               end
-             else if (wruREAD & (busPI == statPIL))
-               begin
-                  if (intREQ[5])
-                    devINTA = `ubaINTR5;
-                  else if (intREQ[4])
-                    devINTA = `ubaINTR4;
-                  else
-                    devINTA = `ubaINTNUL;
-               end
-             else
-               devINTA = `ubaINTNUL;
+             if (busREQO & !busACKI)
+               countTMO <= timeout;
+             else if (busACKI)
+               countTMO <= 0;
+             else if (countTMO != 0)
+               countTMO <= countTMO - 1'b1;
           end
      end
 
+   wire setTMO = (countTMO == 1);
+
    //
-   // Control/Status Register
+   // Whine about NXD and TMO
    //
 
-   reg       statTMO;
-   reg       statNXD;
-   reg       statDXF;
-   reg [0:2] statPIH;
-   reg [0:2] statPIL;
-   wire      setNXD;
-   wire      setTMO;
+`ifndef SYNTHESIS
 
-   always @(posedge clk or posedge rst)
+   reg [0:35] addr;
+
+   always @(posedge clkT or posedge rst)
      begin
         if (rst)
-          begin
-             statTMO  <= 0;
-             statNXD  <= 0;
-             statDXF  <= 0;
-             statPIH  <= 0;
-             statPIL  <= 0;
-          end
+          addr <= 0;
         else
           begin
-             if (statWRITE)
+             if (busREQI)
+               addr <= busADDRI;
+             if (devREQI)
+               addr <= devADDRI;
+             if (setNXD)
                begin
-                  if (`statINI(busDATAI))
-                    begin
-                       statTMO <= 0;
-                       statNXD <= 0;
-                       statDXF <= 0;
-                       statPIH <= 0;
-                       statPIL <= 0;
-                    end
-                  else
-                    begin
-                       statTMO <= statTMO & !`statTMO(busDATAI);
-                       statNXD <= statNXD & !`statNXD(busDATAI);
-                       statDXF <= `statDXF(busDATAI);
-                       statPIH <= `statPIH(busDATAI);
-                       statPIL <= `statPIL(busDATAI);
-                    end
+                  $display("[%10.3f] UBA%d: Non-implemented device.  Addr = %012o", $time/1.0e3, ubaNUM, addr);
+                  $stop;
                end
-             else
+             if (setTMO)
                begin
-`ifdef FIXME
-                  if (setTMO | setNXD)
-                    statTMO <= 1;
-                  if (setNXD)
-                    statNXD <= 1;
+                  $display("[%10.3f] UBA%d: Unacknowledged bus cycle.  Addr = %012o", $time/1.0e3, ubaNUM, addr);
+                  $stop;
+               end
+          end
+     end
+
 `endif
-               end
-          end
-     end
-
-   wire [0:35] regSTAT = {18'b0, statTMO, 2'b0, statNXD, 2'b0, statINTHI,
-                          statINTLO, 2'b0, statDXF, 1'b0, statPIH, statPIL};
 
    //
-   // Device reset
+   // Interrupts
    //
 
-   reg devRESET;
-   reg [0:5] count;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          begin
-             count    <= 0;
-             devRESET <= 0;
-          end
-        else if (statWRITE & `statINI(busDATAI))
-          begin
-             count    <= 0;
-             devRESET <= 1;
-          end
-        else
-          begin
-             if (count == 31)
-               devRESET <= 0;
-             else
-               count <= count + 1'b1;
-          end
-     end;
+   UBAINTR INTR (
+      .rst        (rst),
+      .clk        (clkT),
+      // Bus Interface
+      .busPI      (busPI),
+      .busINTR    (busINTR),
+      .wruREAD    (wruREAD),
+      // Status Interface
+      .statPIH    (statPIH),
+      .statPIL    (statPIL),
+      .statINTHI  (statINTHI),
+      .statINTLO  (statINTLO),
+      // Device Interface
+      .dev1INTR   (dev1INTR),
+      .dev2INTR   (dev2INTR),
+      .devINTA    (devINTA)
+   );
 
    //
-   // KS10 to device
+   // KS10 to Device
    //
 
    reg devREQO;
    reg [0:35] devDATAO;
    reg [0:35] devADDRO;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clkT or posedge rst)
      begin
         if (rst)
           begin
@@ -408,7 +314,7 @@ module UBA(clk, rst,
      end
 
    //
-   // IO Bus Arbiter
+   // Device to KS10
    //
 
    localparam [0:1] arbIDLE = 0,
@@ -417,7 +323,7 @@ module UBA(clk, rst,
 
    reg [0:1] arbState;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clkT or posedge rst)
      begin
         if (rst)
           arbState <= arbIDLE;
@@ -440,106 +346,15 @@ module UBA(clk, rst,
                   arbState <= arbDEV1;
                 else
                   arbState <= arbIDLE;
-          endcase;
-     end;
+          endcase
+     end
 
-   wire        devREQI   = dev1REQI | dev2REQI;
-   wire        devACKI   = (arbState == arbDEV1 ? dev1ACKI :
-                            (arbState == arbDEV2 ? dev2ACKI :
-                             36'b0));
-   wire [0:35] devADDRI  = (arbState == arbDEV1 ? dev1ADDRI :
-                            (arbState == arbDEV2 ? dev2ADDRI :
-                             36'b0));
+   wire        devREQI  = dev1REQI | dev2REQI;
+   wire [0:35] devADDRI = (arbState == arbDEV1 ? dev1ADDRI :
+                           (arbState == arbDEV2 ? dev2ADDRI :
+                            36'b0));
 
    assign busREQO = devREQI;
-
-   //
-   // NXD is asserted on an 'un-acked' IO request to the devices.
-   //
-
-   reg        [0:3] nxdCount;
-   localparam [0:3] nxdTimeout = 15;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          nxdCount <= 0;
-        else
-          begin
-             if (devREQO & !devACKI & busIO & (busREAD | busWRITE))
-               begin
-                  if (nxdCount != 0)
-                    nxdCount <= nxdCount - 1'b1;
-               end
-             else
-               nxdCount <= nxdTimeout;
-          end
-     end
-
-   assign setNXD = (nxdCount == 1);
-
-`ifndef SYNTHESIS
-
-   //
-   // Whine about NXD
-   //
-
-   always @(posedge clk)
-     begin
-        if (setTMO)
-          begin
-             $display("");
-             $display("UBA%d: Non-implemented device.  Addr Bus = %012o",
-                      ubaNUM, busADDRI);
-             $display("");
-          end
-     end
-
-`endif
-
-   //
-   // TMO is asserted on an 'un-acked' KS10 bus request
-   //
-
-   reg        [0:3] tmoCount;
-   localparam [0:3] tmoTimeout = 15;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          tmoCount <= 0;
-        else
-          begin
-             if (busREQO & !busACKI)
-               begin
-                  if (tmoCount != 0)
-                    tmoCount <= tmoCount - 1'b1;
-               end
-             else
-               tmoCount <= tmoTimeout;
-          end
-     end
-
-   assign setTMO = (tmoCount == 1);
-
-`ifndef SYNTHESIS
-
-   //
-   // Whine about unacked bus cycles
-   //
-
-   always @(posedge clk)
-     begin
-        if (setTMO)
-          begin
-             $display("");
-             $display("UBA%d: Unacknowledged bus cycle.  Addr Bus = %012o",
-                      ubaNUM, busADDRO);
-             $display("");
-          end
-     end
-
-`endif
 
    //
    // IO Bus Paging
@@ -549,8 +364,8 @@ module UBA(clk, rst,
    wire [0:35] pageDATAO;
 
    UBAPAG uUBAPAG (
-      .clk          (clk),
       .rst          (rst),
+      .clk          (clkR),
       // KS10 Bus Interface
       .busADDRI     (busADDRI),
       .busDATAI     (busDATAI),
@@ -565,56 +380,36 @@ module UBA(clk, rst,
    );
 
    //
-   // Bus Data Out
+   // Bus Data Multiplexer
    //
 
-   reg busACKO;
    reg [0:35] busDATAO;
 
-   always @(pageREAD   or pageWRITE or pageDATAO  or
-            statREAD   or statWRITE or regSTAT    or
-            maintWRITE or maintREAD or
-            wruREAD    or ubaNUM    or statINTHI  or statINTLO or
-            busPI      or statPIH   or statPIL    or
-            devREAD    or devWRITE  or vectREAD   or dev1ACKI  or
-            dev2ACKI   or dev1DATAI or dev2DATAI or arbState)
+   always @*
      begin
-        busACKO  = 0;
         busDATAO = 36'b0;
         if (pageREAD)
-          begin
-             busACKO  = 1;
-             busDATAO = pageDATAO;
-          end
+          busDATAO = pageDATAO;
         if (statREAD)
+          busDATAO = regUBASR;
+        if (devREAD | vectREAD)
           begin
-             busACKO  = 1;
-             busDATAO = regSTAT;
+             if (dev1ACKI)
+               busDATAO = dev1DATAI;
+             else if (dev2ACKI)
+               busDATAO = dev2DATAI;
           end
         if ((wruREAD & (busPI == statPIH)) |
             (wruREAD & (busPI == statPIL)))
-          begin
-             busACKO  = 1;
-             busDATAO = wruRESP;
-          end
-        if (devREAD | devWRITE | vectREAD)
-          begin
-             if (dev1ACKI)
-               begin
-                  busACKO  = 1;
-                  busDATAO = dev1DATAI;
-               end
-             else if (dev2ACKI)
-               begin
-                  busACKO  = 1;
-                  busDATAO = dev2DATAI;
-               end
-          end
-        if (statWRITE | maintWRITE | maintREAD | pageWRITE)
-          begin
-             busACKO  = 1;
-             busDATAO = 36'b0;
-          end
+          busDATAO = wruRESP;
      end
+
+   //
+   // FIXME
+   //  These assignments are stubbed
+   //
+
+   assign dev1ACKO = 0;
+   assign dev2ACKO = 0;
 
 endmodule

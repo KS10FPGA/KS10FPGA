@@ -64,7 +64,7 @@
                     stateTXDONE  = 7;
 
    //
-   // RX State Machine
+   // RX Interrupt State Machine
    //
 
    reg [2:0] rxstate;
@@ -74,23 +74,28 @@
         if (rst)
           rxstate <= stateIDLE;
         else
-          case (rxstate)
-            stateIDLE:
-              if (rxin & rxen)
-                rxstate <= stateACT;
-            stateACT:
-              if (rxclr)
-                rxstate <= stateWAIT;
-            stateWAIT:
-              if (!rxin | !rxen)
-                rxstate <= stateIDLE;
-          endcase
+          begin
+             if (!rxen)
+               rxstate <= stateIDLE;
+             else
+               case (rxstate)
+                 stateIDLE:
+                   if (rxin)
+                     rxstate <= stateACT;
+                 stateACT:
+                   if (rxclr)
+                     rxstate <= stateWAIT;
+                 stateWAIT:
+                   if (!rxin)
+                     rxstate <= stateIDLE;
+               endcase
+          end
      end
 
    wire rxout = (rxstate == stateACT);
 
    //
-   // TX State Machine
+   // TX Interrupt State Machine
    //
 
    reg [2:0] txstate;
@@ -100,17 +105,22 @@
         if (rst)
           txstate <= stateIDLE;
         else
-          case (txstate)
-            stateIDLE:
-              if (txin & txen)
-                txstate <= stateACT;
-            stateACT:
-              if (txclr)
-                txstate <= stateWAIT;
-            stateWAIT:
-              if (!txin | !txen)
-                txstate <= stateIDLE;
-          endcase
+          begin
+             if (!txen)
+               txstate <= stateIDLE;
+             else
+               case (txstate)
+                 stateIDLE:
+                   if (txin)
+                     txstate <= stateACT;
+                 stateACT:
+                   if (txclr)
+                     txstate <= stateWAIT;
+                 stateWAIT:
+                   if (!txin)
+                     txstate <= stateIDLE;
+               endcase
+          end
      end
 
    wire txout = (txstate == stateACT);

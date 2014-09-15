@@ -78,7 +78,7 @@
    // Clear
    //
    // Details
-   //    //  The CSR[CLR] is a 15us one-shot in the KS10
+   //  The CSR[CLR] is a 15us one-shot in the KS10
    //
 
    reg [9:0] clrCOUNT;

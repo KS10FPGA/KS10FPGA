@@ -85,7 +85,7 @@ module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
    reg [0:35] ram [0:1023];
    reg [0: 9] rd_addr;
 
-   always @(negedge clk or posedge rst)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin

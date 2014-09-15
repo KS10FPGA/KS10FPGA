@@ -142,7 +142,7 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
                         end
                       default:
                         state <= stateIDLE;
-                    endcase;
+                    endcase
                  end
 
                //

@@ -174,6 +174,8 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
 
    //
    // DVAL
+   //  This must be set to pass TEST21
+   //  ???This must be unset to pass TEST27
    //
 
 `define TEST31A
@@ -182,6 +184,7 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
    wire rbufDVAL = !empty;
 
 `else
+   
    reg rbufDVAL;
 
    always @(posedge clk or posedge rst)
