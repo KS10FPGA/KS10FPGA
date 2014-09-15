@@ -233,7 +233,8 @@ module testbench;
 
          conREADw(addrREGSTATUS, status);
          if (status & statNXMNXD)
-           $display("[%10.3f] KS10: NXM/NXD at address %06o", $time/1.0e3, address);
+           $display("[%10.3f] KS10: NXM/NXD at address %06o", $time/1.0e3,
+		    address);
 
          conWRITEw(addrREGSTATUS, status & ~statNXMNXD);
 
@@ -316,26 +317,26 @@ module testbench;
          $display("[%10.3f] KS10:   BRX is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  7, temp);
          $display("[%10.3f] KS10:   ONE is %012o", $time/1.0e3, temp);
-         conREADMEMP(address + 10, temp);
+         conREADMEMP(address +  8, temp);
          $display("[%10.3f] KS10:   EBR is %012o", $time/1.0e3, temp);
-         conREADMEMP(address + 11, temp);
+         conREADMEMP(address +  9, temp);
          $display("[%10.3f] KS10:   UBR is %012o", $time/1.0e3, temp);
-         conREADMEMP(address + 12, temp);
+         conREADMEMP(address + 10, temp);
          $display("[%10.3f] KS10:   MSK is %012o", $time/1.0e3, temp);
-         conREADMEMP(address + 13, temp);
-         $display("[%10.3f] KS10:   FLG is %012o", $time/1.0e3, temp);
-         conREADMEMP(address + 14, temp);
+         conREADMEMP(address + 11, temp);
+         $display("[%10.3f] KS104   FLG is %012o", $time/1.0e3, temp);
+         conREADMEMP(address + 12, temp);
          $display("[%10.3f] KS10:   PI  is %012o", $time/1.0e3, temp);
-         conREADMEMP(address + 15, temp);
+         conREADMEMP(address + 13, temp);
          $display("[%10.3f] KS10:   X1  is %012o", $time/1.0e3, temp);
-         conREADMEMP(address + 16, temp);
+         conREADMEMP(address + 14, temp);
          $display("[%10.3f] KS10:   TO  is %012o", $time/1.0e3, temp);
-         conREADMEMP(address + 17, temp);
+         conREADMEMP(address + 15, temp);
          $display("[%10.3f] KS10:   T1  is %012o", $time/1.0e3, temp);
-         conREADMEMP(address + 20, temp);
+         conREADMEMP(address + 16, temp);
          $display("[%10.3f] KS10:   VMA is %012o", $time/1.0e3, temp);
-         conREADMEMP(address + 21, temp);
-         $display("[%10.3f] KS10:   FE  is %012o", $time/1.0e3, temp);
+         //conREADMEMP(address + 17, temp);
+         //$display("[%10.3f] KS10:   FE  is %012o", $time/1.0e3, temp);
       end
    endtask
 
@@ -437,10 +438,9 @@ module testbench;
    // Handle Startup.
    //
    // Details
-   //  The Microcode will always halt at startup.  Catch the halt
-   //  at startup (only).  When this occurs momentarily push the
-   //  RUN, EXEC, and CONT button to continue execution.  Otherwise
-   //  let the KS10 halt.
+   //  The Microcode will always halt at startup.  Catch the halt at startup 
+   //  (only).  When this occurs momentarily push the RUN, EXEC, and CONT button
+   //  to continue execution.  Otherwise let the KS10 halt.
    //
 
    time haltTIME;
@@ -450,7 +450,9 @@ module testbench;
         haltTIME <= $time;
         $display("[%10.3f] KS10: CPU Halted", $time/1.0e3);
         printHaltStatus;
-        if (haltTIME > 40000 && haltTIME < 60000)
+        if (haltTIME < 40000 || haltTIME > 60000)
+	  $stop;
+	else
           begin
 
              //
@@ -475,9 +477,7 @@ module testbench;
              // Start executing code
              //
 
-             conWRITE(addrREGSTATUS, (statEXEC |
-                                      statCONT |
-                                      statRUN));
+             conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN));
           end
      end
 
