@@ -80,16 +80,15 @@
 `include "../cpu/bus.vh"
 `include "../ks10.vh"
 
-module MEM(clk, clkT, rst, clken,
+module MEM(rst, clkT, clkR, clkPHS, 
            busREQI, busACKO, busADDRI, busDATAI, busDATAO,
-           ssramCLK, ssramCLKEN_N, ssramADV, ssramBWA_N, ssramBWB_N,
-           ssramBWC_N, ssramBWD_N, ssramOE_N, ssramWE_N, ssramCE,
-           ssramADDR, ssramDATA);
+           ssramCLK, ssramCLKEN_N, ssramADV, ssramBW_N, ssramOE_N, ssramWE_N,
+           ssramCE, ssramADDR, ssramDATA);
 
-   input         clk;           // Clock
-   input  [1: 4] clkT;          // ClkT
    input         rst;           // Reset
-   input         clken;         // Clock enable
+   input         clkT;          // Clock T
+   input         clkR;          // Clock R
+   input  [1: 4] clkPHS;        // Clock Phase
    input         busREQI;       // Memory Request In
    output        busACKO;       // Memory Acknowledge Out
    input  [0:35] busADDRI;      // Address Address In
@@ -98,10 +97,7 @@ module MEM(clk, clkT, rst, clken,
    input         ssramCLK;      // SSRAM Clock
    output        ssramCLKEN_N;  // SSRAM CLKEN#
    output        ssramADV;      // SSRAM Advance (burst)
-   output        ssramBWA_N;    // SSRAM BWA#
-   output        ssramBWB_N;    // SSRAM BWB#
-   output        ssramBWC_N;    // SSRAM BWC#
-   output        ssramBWD_N;    // SSRAM BWD#
+   output [1: 4] ssramBW_N;     // SSRAM BW#
    output        ssramOE_N;     // SSRAM OE#
    output        ssramWE_N;     // SSRAM WE#
    output        ssramCE;       // SSRAM CE
@@ -149,7 +145,7 @@ module MEM(clk, clkT, rst, clken,
    reg statEE;          // ECC Enabled
    reg statPF;          // Power Failure
 
-   always @(negedge clk or posedge rst)
+   always @(posedge clkR or posedge rst)
      begin
         if (rst)
           begin
@@ -157,7 +153,7 @@ module MEM(clk, clkT, rst, clken,
              statEE <= 1'b1;
              statPF <= 1'b1;
           end
-        else if (clken)
+        else
           begin
              if (busIO & busWRITE & (busDEV == memDEV) & (busADDR == addrMSR))
                begin
@@ -165,7 +161,7 @@ module MEM(clk, clkT, rst, clken,
                   statPF <=  busDATAI[12] & statPF;
                   statEE <= !busDATAI[35];
 `ifndef SYNTHESIS
-                  $display("Memory Status Register Written.\n");
+                  $display("[%10.3f] MEM: Memory Status Register Written", $time/1.0e3);
 `endif
                end
           end
@@ -203,7 +199,7 @@ module MEM(clk, clkT, rst, clken,
              busACKO  <= 1;
              busDATAO <= statREG;
 `ifndef SYNTHESIS
-             $display("Memory Status Register Read.\n");
+             $display("[%10.3f] MEM: Memory Status Register Read", $time/1.0e3);
 `endif
           end
 
@@ -230,14 +226,11 @@ module MEM(clk, clkT, rst, clken,
 
    assign ssramCLKEN_N = 0;
    assign ssramADV     = 0;
-   assign ssramBWA_N   = 0;
-   assign ssramBWB_N   = 0;
-   assign ssramBWC_N   = 0;
-   assign ssramBWD_N   = 0;
-   assign ssramOE_N    = !(busREAD  & !busIO & clkT[4]);
-   assign ssramWE_N    = !(memWrite & clkT[2]);
+   assign ssramBW_N    = 0;
+   assign ssramOE_N    = !(busREAD  & !busIO & clkPHS[4]);
+   assign ssramWE_N    = !(memWrite & clkPHS[2]);
    assign ssramCE      = 1;
    assign ssramADDR    = {3'b0, busADDR20};
-   assign ssramDATA    = (memWrite  & clkT[4]) ? busDATAI : 36'bz;
+   assign ssramDATA    = (memWrite  & clkPHS[4]) ? busDATAI : 36'bz;
 
 endmodule

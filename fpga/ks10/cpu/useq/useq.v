@@ -279,7 +279,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
    // Notes:
    //  The microcode address space is 12-bits but only 11-bits (2048 microcode
-   //  words) are actually implemented.  Therefore the amountof microcode can
+   //  words) are actually implemented.  Therefore the amount of microcode can
    //  be easily doubled without changing the micro-architecture.
    //
    // Trace:

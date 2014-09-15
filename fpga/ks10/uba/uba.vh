@@ -86,22 +86,6 @@
 `define ubaINTNUL       (4'b0000)               // No interrupt
 
 //
-// Status Register Bits
-//
-
-`define statTMO(bus)    (bus[18])               // Timeout/NXM
-`define statBMD(bus)    (bus[19])               // Bad memory data
-`define statBPE(bus)    (bus[20])               // Bus parity error
-`define statNXD(bus)    (bus[21])               // Non-existant device
-`define statHI(bus)     (bus[24])               // Hi interrupt
-`define statLO(bus)     (bus[25])               // Lo interrupt
-`define statPWR(bus)    (bus[26])               // Powerfail
-`define statDXF(bus)    (bus[28])               // Disable transfer
-`define statINI(bus)    (bus[29])               // Initialized
-`define statPIH(bus)    (bus[30:32])            // Hi priority PIA
-`define statPIL(bus)    (bus[33:35])            // Lo priority PIA
-
-//
 // Lookup WRU response from ubaNUM
 //
 

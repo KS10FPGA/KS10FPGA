@@ -684,10 +684,9 @@ module CSL(clk, rst,
      begin
         if (state == stateFAIL)
           begin
-             $display("");
-             $display("CSL: Unacknowledged bus cycle.  Addr Bus = %012o",
-                      busADDRO);
-             $display("");
+             $display("[%10.0f] CSL: Unacknowledged bus cycle.  Addr was %012o",
+		      $time/1.0e3, busADDRO);
+	     $stop;
           end
      end
 

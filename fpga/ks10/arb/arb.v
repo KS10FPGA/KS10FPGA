@@ -93,13 +93,6 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
    wire vmaWRUCYCLE    = `vmaWRUCYCLE(cpuADDRI);
 
    //
-   // Build Vector
-   //
-
-   wire [0:35] ubaADDR[0:3] = {uba0ADDRI, uba1ADDRI, uba2ADDRI, uba3ADDRI};
-   wire [0:35] ubaDATA[0:3] = {uba0DATAI, uba1DATAI, uba2DATAI, uba3DATAI};
-
-   //
    // Bus Request Arbitration
    //
    // Details:
@@ -123,8 +116,8 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
    always @(cpuREQI or cpuADDRI or cpuDATAI or cpuDATAO or
             cslREQI or cslACKI  or cslADDRI or cslDATAI or
             ubaREQI or ubaACKI  or
-            ubaADDR[0] or ubaADDR[1] or ubaADDR[2] or ubaADDR[3] or
-            ubaDATA[0] or ubaDATA[1] or ubaDATA[2] or ubaDATA[3] or
+            uba0ADDRI or uba1ADDRI or uba2ADDRI or uba3ADDRI or
+            uba0DATAI or uba1DATAI or uba2DATAI or uba3DATAI or
             memACKI or memDATAI or
             vmaPHYSICAL or vmaIOCYCLE or vmaWRUCYCLE)
 
@@ -165,22 +158,22 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
              else if (ubaACKI[0])
                begin
                   cslACKO  = 1;
-                  cslDATAO = ubaDATA[0];
+                  cslDATAO = uba0DATAI;
                end
              else if (ubaACKI[1])
                begin
                   cslACKO  = 1;
-                  cslDATAO = ubaDATA[1];
+                  cslDATAO = uba1DATAI;
                end
              else if (ubaACKI[2])
                begin
                   cslACKO  = 1;
-                  cslDATAO = ubaDATA[2];
+                  cslDATAO = uba2DATAI;
                end
              else if (ubaACKI[3])
                begin
                   cslACKO  = 1;
-                  cslDATAO = ubaDATA[3];
+                  cslDATAO = uba3DATAI;
                end
           end
 
@@ -194,10 +187,10 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
         else if (ubaREQI[0])
           begin
              memREQO  = 1;
-             arbADDRO = ubaADDR[0];
-             cslDATAO = ubaDATA[0];
-             cpuDATAO = ubaDATA[0];
-             memDATAO = ubaDATA[0];
+             arbADDRO = uba0ADDRI;
+             cslDATAO = uba0DATAI;
+             cpuDATAO = uba0DATAI;
+             memDATAO = uba0DATAI;
              if (memACKI)
                begin
                   ubaACKO[0] = 1;
@@ -215,10 +208,10 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
         else if (ubaREQI[1])
           begin
              memREQO  = 1;
-             arbADDRO = ubaADDR[1];
-             cslDATAO = ubaDATA[1];
-             cpuDATAO = ubaDATA[1];
-             memDATAO = ubaDATA[1];
+             arbADDRO = uba1ADDRI;
+             cslDATAO = uba1DATAI;
+             cpuDATAO = uba1DATAI;
+             memDATAO = uba1DATAI;
              if (memACKI)
                begin
                   ubaACKO[1] = 1;
@@ -236,10 +229,10 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
         else if (ubaREQI[2])
           begin
              memREQO  = 1;
-             arbADDRO = ubaADDR[2];
-             cslDATAO = ubaDATA[2];
-             cpuDATAO = ubaDATA[2];
-             memDATAO = ubaDATA[2];
+             arbADDRO = uba2ADDRI;
+             cslDATAO = uba2DATAI;
+             cpuDATAO = uba2DATAI;
+             memDATAO = uba2DATAI;
              if (memACKI)
                begin
                   ubaACKO[2] = 1;
@@ -257,10 +250,10 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
         else if (ubaREQI[3])
           begin
              memREQO  = 1;
-             arbADDRO = ubaADDR[3];
-             cslDATAO = ubaDATA[3];
-             cpuDATAO = ubaDATA[3];
-             memDATAO = ubaDATA[3];
+             arbADDRO = uba3ADDRI;
+             cslDATAO = uba3DATAI;
+             cpuDATAO = uba3DATAI;
+             memDATAO = uba3DATAI;
              if (memACKI)
                begin
                   ubaACKO[3] = 1;
@@ -293,22 +286,22 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
              else if (ubaACKI[0])
                begin
                   cpuACKO  = 1;
-                  cpuDATAO = ubaDATA[0];
+                  cpuDATAO = uba0DATAI;
                end
              else if (ubaACKI[1])
                begin
                   cpuACKO  = 1;
-                  cpuDATAO = ubaDATA[1];
+                  cpuDATAO = uba1DATAI;
                end
              else if (ubaACKI[2])
                begin
                   cpuACKO  = 1;
-                  cpuDATAO = ubaDATA[2];
+                  cpuDATAO = uba2DATAI;
                end
              else if (ubaACKI[3])
                begin
                   cpuACKO  = 1;
-                  cpuDATAO = ubaDATA[3];
+                  cpuDATAO = uba3DATAI;
                end
              else if (cslACKI)
                begin

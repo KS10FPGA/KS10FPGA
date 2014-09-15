@@ -155,7 +155,7 @@ module UBAPAG(clk, rst,
    //
    
    reg [0:14] pageRAM[0:63];
-   always @(negedge clk)
+   always @(posedge clk)
      begin
         if (pageWRITE)
           pageRAM[pageADDR] <= {busDATAI[18:21], busDATAI[25:35]};

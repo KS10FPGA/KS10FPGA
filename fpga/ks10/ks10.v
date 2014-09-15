@@ -6,8 +6,9 @@
 //   KS10 System
 //
 // Details
-//   The system consists of a CPU, a Bus Aribter, a Memory Controller, two
-//   Unibus Interfaces, and Console Interface, a DZ11, and a RH11.
+//   The system consists of a Clock Generator, a CPU, a Bus Aribter, a Memory
+//   Controller, two Unibus Interfaces, and Console Interface, a DZ11 Terminal
+//   Multiplexer, and an RH11 Disk Controller.
 //
 // File
 //   ks10.v
@@ -46,7 +47,7 @@
 `include "uba/rh11/rh11.vh"
 `include "uba/rh11/rpxx.vh"
 
-module KS10(clk, clkT, rst,
+module KS10(RESET_N, CLK50MHZ,
             // DZ11 Interfaces
             dz11TXD, dz11RXD, dz11CO, dz11RI, dz11DTR,
             // RH11 Interfaces
@@ -54,14 +55,13 @@ module KS10(clk, clkT, rst,
             // Console Interfaces
             conADDR, conDATA, conBLE_N, conBHE_N, conRD_N, conWR_N, conINTR_N,
             // SSRAM Interfaces
-            ssramCLK, ssramCLKEN_N, ssramADV, ssramBWA_N, ssramBWB_N, ssramBWC_N, ssramBWD_N,
+            ssramCLK, ssramCLKEN_N, ssramADV, ssramBW_N,
             ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA,
-            haltLED);
+            haltLED, test);
 
    // Clock/Reset
-   input         clk;           // Clock
-   input [1:4]   clkT;          // ClkT
-   input         rst;           // Reset
+   input         RESET_N;       // Reset
+   input         CLK50MHZ;      // Clock
    // DZ11 Interfaces
    output [ 7: 0] dz11TXD;      // DZ11 Transmitter Serial Data
    input  [ 7: 0] dz11RXD;      // DZ11 Receiver Serial Data
@@ -84,19 +84,17 @@ module KS10(clk, clkT, rst,
    input         conWR_N;       // Console Write Strobe
    output        conINTR_N;     // KS10 Interrupt to Console
    // SSRAM Interfaces
-   input         ssramCLK;      // SSRAM Clock
+   output        ssramCLK;      // SSRAM Clock
    output        ssramCLKEN_N;  // SSRAM CLKEN#
    output        ssramADV;      // SSRAM Advance
-   output        ssramBWA_N;    // SSRAM BWA#
-   output        ssramBWB_N;    // SSRAM BWB#
-   output        ssramBWC_N;    // SSRAM BWC#
-   output        ssramBWD_N;    // SSRAM BWD#
+   output [1: 4] ssramBW_N;     // SSRAM BW#
    output        ssramOE_N;     // SSRAM OE#
    output        ssramWE_N;     // SSRAM WE#
    output        ssramCE;       // SSRAM CE
    output [0:22] ssramADDR;     // SSRAM Address Bus
    inout  [0:35] ssramDATA;     // SSRAM Data Bus
    output        haltLED;       // Halt LED
+   output [0: 7] test;          // Test signals
 
    //
    // Bus Arbiter Outputs
@@ -171,6 +169,25 @@ module KS10(clk, clkT, rst,
    wire [1: 7] ubaINTRO[0:3];   // Unibus Interrupt
 
    //
+   // Clock Generator and Reset Synchronization
+   //
+
+   wire rst;
+   wire clkT;
+   wire clkR;
+   wire [1:4] clkPHS;
+
+   CLK uCLK (
+      .RESET_N          (RESET_N),
+      .CLK50MHZ         (CLK50MHZ),
+      .clkT          	(clkT),
+      .clkR          	(clkR),
+      .clkPHS           (clkPHS),
+      .ssramCLK         (ssramCLK),
+      .rst           	(rst)
+   );
+   
+   //
    // Bus Arbiter
    //
 
@@ -217,8 +234,9 @@ module KS10(clk, clkT, rst,
    //
 
    CPU uCPU (
-      .clk              (clk),
       .rst              (rst),
+      .clkT             (clkT),
+      .clkR             (clkR),
       // Console
       .cslRESET         (cslRESET),
       .cslSET           (cslSET),
@@ -249,8 +267,8 @@ module KS10(clk, clkT, rst,
    //
 
    CSL uCSL (
-      .clk              (clk),
       .rst              (rst),
+      .clk              (clkT),
       // Console Microcontroller Interfaces
       .conADDR          (conADDR),
       .conDATA          (conDATA),
@@ -291,10 +309,10 @@ module KS10(clk, clkT, rst,
    //
 
    MEM uMEM (
-      .clk              (clk),
-      .clkT             (clkT),
       .rst              (rst),
-      .clken            (1'b1),
+      .clkT             (clkT),
+      .clkR             (clkR),
+      .clkPHS           (clkPHS),
       .busREQI          (memREQ),
       .busACKO          (memACK),
       .busADDRI         (arbADDRO),
@@ -303,10 +321,7 @@ module KS10(clk, clkT, rst,
       .ssramCLK         (ssramCLK),
       .ssramCLKEN_N     (ssramCLKEN_N),
       .ssramADV         (ssramADV),
-      .ssramBWA_N       (ssramBWA_N),
-      .ssramBWB_N       (ssramBWB_N),
-      .ssramBWC_N       (ssramBWC_N),
-      .ssramBWD_N       (ssramBWD_N),
+      .ssramBW_N        (ssramBW_N),
       .ssramOE_N        (ssramOE_N),
       .ssramWE_N        (ssramWE_N),
       .ssramCE          (ssramCE),
@@ -345,8 +360,9 @@ module KS10(clk, clkT, rst,
       .ubaADDR          (`ubaADDR)
    )
    UBA1 (
-      .clk              (clk),
       .rst              (rst),
+      .clkT             (clkT),
+      .clkR             (clkR),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO[1]),
       .busACKI          (ubaACKI[1]),
@@ -388,8 +404,8 @@ module KS10(clk, clkT, rst,
       .simTIME          (1'b0)
    )
    uRH11 (
-      .clk              (clk),
       .rst              (rst),
+      .clk              (clkT),
       // RH11 IO
       .rh11CD           (rh11CD),
       .rh11WP           (rh11WP),
@@ -447,8 +463,9 @@ module KS10(clk, clkT, rst,
       .ubaADDR          (`ubaADDR)
    )
    UBA3 (
-      .clk              (clk),
       .rst              (rst),
+      .clkT             (clkT),
+      .clkR             (clkR),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO[3]),
       .busACKI          (ubaACKI[3]),
@@ -488,8 +505,8 @@ module KS10(clk, clkT, rst,
       .dzINTR           (`dz1INTR)
    )
    uDZ11 (
-      .clk              (clk),
       .rst              (rst),
+      .clk              (clkT),
       // DZ11 IO
       .dz11TXD          (dz11TXD),
       .dz11RXD          (dz11RXD),
@@ -541,6 +558,23 @@ module KS10(clk, clkT, rst,
    assign ubaINTRO[0] = 0;
    assign ubaINTRO[2] = 0;
 
+   //
+   // Test Signals
+   //
+   
+   assign test[0] = RESET_N;
+   assign test[1] = rst;
+   assign test[2] = clkT;
+   assign test[3] = clkR;
+   assign test[4] = clkPHS[1];
+   assign test[5] = clkPHS[2];
+   assign test[6] = clkPHS[3];
+   assign test[7] = clkPHS[4];
+
+   //
+   // Halt LED
+   //
+   
    assign haltLED = cpuHALT;
 
 endmodule
