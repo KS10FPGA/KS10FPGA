@@ -42,8 +42,6 @@
 `default_nettype none
 `include "useq/crom.vh"
 
-//`define DEBUG_DSDZA
-  
   module DEBUG(clk, rst, clken, crom, debugDATA, debugADDR);
 
    parameter cromWidth = `CROM_WIDTH;
@@ -78,33 +76,41 @@
    //
 
    reg [0:35] PC;
-   reg [0: 5] test;
+   reg [14*8:1] test;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
              PC   <= 0;
-             test <= 0;
+             test <= "TRACE";
           end
         else if (loadIR)
           begin
              PC <= debugDATA;
 	     if (PC[18:35] ==  18'o030057)
-	         $stop;
+  	       begin
+		  $display("Test Completed\n"); 
+	          $stop;
+	       end
 
-             `ifdef DEBUG_DSKCG
-                `include "debug_dskcg.vh"
-             `elsif DEBUG_DSDZA
+             `ifdef DEBUG_DSKBA
+                 `include "debug_dskba.vh"
+	     
+	     `elsif DEBUG_DSKCG
+	         `include "debug_dskcg.vh"
+               
+	     `elsif DEBUG_DSDZA
                  `include "debug_dsdza.vh"
-             `elsif DEBUG_DSUBA
-                 `include "debug_dsuba.vh"
-             `else
-                  $display("[%10.3f] debug: PC is %06o", $time/1.0e3,
-			   debugDATA[18:35]);
+               
+	     `elsif DEBUG_DSUBA
+  	         `include "debug_dsuba.vh"
+               
              `endif
+             
+ 	     $display("[%10.3f] %s: PC is %06o", $time/1.0e3, test, debugDATA[18:35]);
           end
-     end // always @ (posedge clk or posedge rst)
+     end
    
 `endif
 

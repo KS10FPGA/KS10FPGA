@@ -92,7 +92,7 @@ module RH11(clk,      rst,
    // Data
    input  [ 0:35] devDATAI;                     // Data In
    output [ 0:35] devDATAO;                     // Data Out
-
+   
    //
    // RH Parameters
    //
@@ -285,6 +285,7 @@ module RH11(clk,      rst,
    // RH11 Word Count (RHWC) Register
    //
 
+   wire sdINCWD;
    reg  [15:0] rhWC;
 
    always @(posedge clk or posedge rst)
@@ -607,6 +608,8 @@ module RH11(clk,      rst,
    assign rpSN[6] = `rpSN6;
    assign rpSN[7] = `rpSN7;
 
+   wire [7:0] sdINCSECT;
+   
    //
    // Build Array 8 RPxx (RP06 in this case) disk drives
    //
@@ -623,7 +626,7 @@ module RH11(clk,      rst,
               .clk      (clk),
               .rst      (rst | rhCLR | devRESET),
               .unitSEL  (rhUNITSEL[i]),
-              .incSECTOR(sdINCSECT),
+              .incSECTOR(sdINCSECT[i]),
               .rhCLR    (rhCLR),
               .ataCLR   (ataCLR[i]),
               .devRESET (devRESET),
@@ -653,9 +656,11 @@ module RH11(clk,      rst,
    // SD Controller
    //
 
+
+`ifdef BROKEN
+   
+   
    wire sdSTAT;
-   wire sdINCWD;
-   wire sdINCSECT;
 
    SD uSD (
       .clk       (clk),
@@ -676,13 +681,24 @@ module RH11(clk,      rst,
       .dmaREQ    (/*devREQO*/),  // fixme
       .dmaACK    (devACKI),
       .sdINCWD   (sdINCWD),
-      .sdINCSECT (sdINCSECT),
+      .sdINCSECT (sdINCSECT != 8'b0),
 
       .sdSTAT    (sdSTAT),
       .sdDEBUG   (rh11DEBUG)
    );
 
-   assign devREQO = 0; // fixme
+
+`else
+
+   // fixme
+   assign sdINCWD = 0;
+   assign devREQO = 0;
+   assign rh11MOSI = 0;
+   assign rh11SCLK = 0;
+   assign rh11CS = 0;
+   assign rh11DEBUG = 0;
+   
+`endif
    
    //
    // Demux Disk Array Registers

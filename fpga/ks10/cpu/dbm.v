@@ -118,7 +118,7 @@ module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaFLAGS,
 
    reg [0:35] dbm;
 
-   always @(crom or scad or dispPF or aprFLAGS or dp or timerCOUNT or vmaFLAGS or vmaADDR or cpuDATAI)
+   always @*
      begin
         case (`cromDBM_SEL)
           `cromDBM_SEL_SCADPFAPR:

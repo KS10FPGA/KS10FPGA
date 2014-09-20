@@ -76,7 +76,7 @@
 `include "useq/drom.vh"
 
 module DISP_PF(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, aprFLAGS,
-               pageFLAGS, cpuINTR, nxmINTR, timerINTR, pageFAIL, dispPF);
+               pageFLAGS, piINTR, nxmINTR, timerINTR, pageFAIL, dispPF);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -92,7 +92,7 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, aprFLAGS,
    input  [22:35]          aprFLAGS;    // APR Flags
    input  [ 0: 3]          pageFLAGS;   // Page Flags
    input                   timerINTR;   // Timer Interrupt
-   input                   cpuINTR;     // CPU Interrupt
+   input                   piINTR;      // CPU Interrupt
    input                   nxmINTR;     // NXM Interrupt
    output                  pageFAIL;    // Page Fail
    output [ 0: 3]          dispPF;      // Page Fail Dispatch
@@ -214,7 +214,7 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, aprFLAGS,
    reg writetestENABLE;
    reg writeENABLE;
 
-   always @(crom or drom or dp or memEN)
+   always @*
      begin
         if (memEN)
           begin
@@ -300,9 +300,7 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, aprFLAGS,
 
    reg [0:3] pfDISP;
 
-   always @(nxmINTR or cpuINTR or timerINTR or vmaPHYSICAL or vmaVIRTUAL or
-            flagPAGEEN or vmaADDR or pageVALID or pageUSER or vmaUSER or
-            writetestENABLE or pageWRITEABLE)
+   always @*
      begin
 
         //
@@ -316,7 +314,7 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, aprFLAGS,
         // CPU Interrupt
         //
 
-        else if (cpuINTR & vmaPHYSICAL)
+        else if (piINTR & vmaPHYSICAL)
           pfDISP = 4'b0001;
 
         //
@@ -388,8 +386,9 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, aprFLAGS,
    //   Address 0110 is the next instruction dispatch address
    //
 
-   wire pageFAIL = (((crom[0:11] == 12'o0110) & cpuINTR  ) |
-                    ((crom[0:11] == 12'o0110) & timerINTR));
+   wire pageFAIL = (((crom[0:11] == 12'o0363) & piINTR   ) |
+		    ((crom[0:11] == 12'o0201) & piINTR   ) |
+                    ((crom[0:11] == 12'o0363) & timerINTR));
 
    reg [0:3] dispPF;
    always @(posedge clk or posedge rst)

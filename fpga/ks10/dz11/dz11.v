@@ -157,11 +157,19 @@ module DZ11(clk,      rst,
    wire [35:0] dzDATAI = devDATAI[0:35];
 
    //
-   // Control/Status Register (CSR)
+   // Registers
    //
 
-   wire [ 2:0] scan;
    wire [15:0] regCSR;
+   wire [15:0] regMSR;
+   wire [15:0] regTCR;
+   wire [15:0] regTDR;
+   wire [15:0] regRBUF;
+
+   //
+   // Signals
+   //
+   
    wire        csrCLR   = `dzCSR_CLR(regCSR);
    wire        csrTIE   = `dzCSR_TIE(regCSR);
    wire        csrRIE   = `dzCSR_RIE(regCSR);
@@ -172,6 +180,21 @@ module DZ11(clk,      rst,
    wire        csrRDONE = `dzCSR_RDONE(regCSR);
    wire [ 2:0] csrTLINE = `dzCSR_TLINE(regCSR);
    wire        csrTRDY  = `dzCSR_TRDY(regCSR);
+   wire        rbufRDONE;
+   wire        rbufSA;
+   wire [ 0:7] lprRXEN;
+   wire [ 2:0] scan;
+   wire [ 7:0] tcrLIN = `dzTCR_LIN(regTCR);
+   wire [ 7:0] uartTXEMPTY;
+   wire [ 7:0] uartTXLOAD;
+   wire [ 7:0] uartRXFULL;
+   wire [ 7:0] uartRXDATA[0:7];
+   wire [ 7:0] uartRXCLR;
+   wire [ 7:0] uartTXDATA = `dzTDR_TBUF(regTDR);
+   
+   //
+   // Control/Status Register (CSR)
+   //
 
    DZCSR CSR (
       .clk        (clk),
@@ -194,8 +217,6 @@ module DZ11(clk,      rst,
    // Line Parameter Register (LPR)
    //
 
-   wire [0:7] lprRXEN;
-
    DZLPR LPR (
       .clk        (clk),
       .rst        (rst),
@@ -208,9 +229,6 @@ module DZ11(clk,      rst,
    //
    // Transmit Control Register (TCR)
    //
-
-   wire [15:0] regTCR;
-   wire [ 7:0] tcrLIN = `dzTCR_LIN(regTCR);
 
    DZTCR TCR (
       .clk        (clk),
@@ -230,8 +248,6 @@ module DZ11(clk,      rst,
    // Modem Status Register (MSR)
    //
 
-   wire [15:0] regMSR;
-
    DZMSR MSR (
       .clk        (clk),
       .rst        (rst),
@@ -243,10 +259,6 @@ module DZ11(clk,      rst,
    //
    // TDR Register
    //
-
-   wire [15:0] regTDR;
-   wire [ 7:0] uartTXLOAD;
-   wire [ 7:0] uartTXDATA = `dzTDR_TBUF(regTDR);
 
    DZTDR TDR (
       .clk        (clk),
@@ -304,11 +316,6 @@ module DZ11(clk,      rst,
    //  The 'generate' loops below builds 8 UARTS.
    //
 
-   wire [7:0] uartRXFULL;               // UART receiver has data
-   wire [7:0] uartRXDATA[0:7];          // UART received data
-   wire [7:0] uartTXEMPTY;              // UART transmitter buffer is empty
-   wire [7:0] uartRXCLR;                // UART receiver clear
-
    generate
 
       genvar  i;
@@ -356,10 +363,6 @@ module DZ11(clk,      rst,
    //  Framing Error and Parity Error are not implemented.  UART status should
    //  be pushed into the FIFO with the data.
    //
-
-   wire        rbufSA;
-   wire        rbufRDONE;
-   wire [15:0] regRBUF;
 
    DZRBUF RBUF (
       .clk       (clk),
@@ -431,11 +434,7 @@ module DZ11(clk,      rst,
    reg devACKO;
    reg [0:35] devDATAO;
 
-   always @(csrREAD  or csrWRITE or regCSR  or
-            rbufREAD or lprWRITE or regRBUF or
-            tcrREAD  or tcrWRITE or regTCR  or
-            msrREAD  or tdrWRITE or regMSR  or
-            vectREAD or rxINTR   or rxVECT   or txVECT)
+   always @*
      begin
         devACKO  = 0;
         devDATAO = 36'bx;

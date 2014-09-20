@@ -72,7 +72,7 @@
 `include "useq/crom.vh"
 
 module BUS(dp, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
-	   aprFLAGS, curINTP, cpuDATAO, cpuADDRO, cpuREQO);
+	   aprFLAGS, piCURPRI, cpuDATAO, cpuADDRO, cpuREQO);
 
    input  [ 0:35]          dp;          // Data path
    input                   vmaEXTENDED; // Extended VMA
@@ -80,7 +80,7 @@ module BUS(dp, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
    input  [14:35]          vmaADDR;     // Virtual Memory Address
    input  [16:26]          pageADDR;    // Page Address
    input  [22:35]          aprFLAGS;    // APR Flags
-   input  [ 0: 2]          curINTP;     // Current Interrupt Priority
+   input  [ 0: 2]          piCURPRI;    // Current Interrupt Priority
    output [ 0:35]          cpuDATAO;    // CPU Data Out
    output [ 0:35]          cpuADDRO;    // CPU Address Out
    output                  cpuREQO;     // CPU Request
@@ -135,7 +135,7 @@ module BUS(dp, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
         else
           begin
              if (vmaWRUCYCLE)
-               cpuADDRO[0:35] <= {vmaFLAGS, 1'b0, curINTP, vmaADDR[18:35]};
+               cpuADDRO[0:35] <= {vmaFLAGS, 1'b0, piCURPRI, vmaADDR[18:35]};
              else
                begin
                   if (vmaEXTENDED)

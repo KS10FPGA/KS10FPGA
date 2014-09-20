@@ -92,21 +92,20 @@ module CPU(rst, clkT, clkR, cslRESET,
    //
 
    wire memory_cycle = 0;       // FIXME
-   wire ioBUSY;                 // FIXME
+   wire nxmINTR;     		// Non-existent memory interrupt
+   wire ioBUSY;                 // IO is busy
    wire opJRST0;                // JRST 0 Instruction
    wire skipJFCL;               // JFCL Instruction
    wire trapCYCLE;              // Trap Cycle
 
    //
-   // Interrupts
+   // Prioity Interrupts
    //
 
-   wire cpuINTR;                // Extenal Interrupt
-   wire nxmINTR;                // Non-existent memory interrupt
-   wire [ 0: 2] reqINTP;        // Requested Interrupt Priority
-   wire [ 0: 2] curINTP;        // Current Interrupt Priority
-   wire [ 1: 7] aprINTR;        // APR Interrupt Request
-
+   wire piINTR;                 // Priority Interrupt
+   wire [ 0: 2] piCURPRI;       // Current Interrupt Priority
+   wire [ 0: 2] piREQPRI;       // Requested Interrupt Priority
+   
    //
    // PXCT
    //
@@ -130,7 +129,8 @@ module CPU(rst, clkT, clkR, cslRESET,
    // APR Flags
    //
 
-   wire [22:35] aprFLAGS;       // Arithmetic Processor Flags
+   wire [22:35] aprFLAGS;       // APR Flags
+   wire [ 1: 7] aprINTR;        // APR Interrupt Request
 
    //
    // VMA Registers
@@ -199,16 +199,16 @@ module CPU(rst, clkT, clkR, cslRESET,
    // DEBUG
    //
 
-   wire [0: 3]  debugADDR;      // DEBUG Address
-   wire [0:35]  debugDATA;      // DEBUG Data
+   wire [ 0: 3] debugADDR;      // DEBUG Address
+   wire [ 0:35] debugDATA;      // DEBUG Data
 
    //
    // Timing
    //
 
-   wire clkenDP;                // Clock Enable for Datapaths
-   wire clkenCR;                // Clock Enable for Control ROM
-   wire memWAIT;                // Wait for memory
+   wire         clkenDP;    	// Clock Enable for Datapaths
+   wire         clkenCR;        // Clock Enable for Control ROM
+   wire         memWAIT;        // Wait for memory
 
    //
    // Timing and Wait States
@@ -298,7 +298,7 @@ module CPU(rst, clkT, clkR, cslRESET,
       .vmaADDR          (vmaADDR),
       .aprFLAGS         (aprFLAGS),
       .pageFLAGS        (pageFLAGS),
-      .cpuINTR          (cpuINTR),
+      .piINTR           (piINTR),
       .nxmINTR          (nxmINTR),
       .timerINTR        (timerINTR),
       .pageFAIL         (pageFAIL),
@@ -316,7 +316,7 @@ module CPU(rst, clkT, clkR, cslRESET,
       .vmaADDR          (vmaADDR),
       .pageADDR         (pageADDR),
       .aprFLAGS         (aprFLAGS),
-      .curINTP          (curINTP),
+      .piCURPRI         (piCURPRI),
       .cpuDATAO         (cpuDATAO),
       .cpuADDRO         (cpuADDRO),
       .cpuREQO          (cpuREQO)
@@ -359,7 +359,7 @@ module CPU(rst, clkT, clkR, cslRESET,
    DBUS uDBUS (
       .crom             (crom),
       .cacheHIT         (cacheHIT),
-      .reqINTP          (reqINTP),
+      .piREQPRI         (piREQPRI),
       .vmaFLAGS         (vmaFLAGS),
       .vmaADDR          (vmaADDR),
       .pcFLAGS          (pcFLAGS),
@@ -383,23 +383,6 @@ module CPU(rst, clkT, clkR, cslRESET,
    );
 
    //
-   // Interrupt Controller
-   //
-
-   INTR uINTR (
-      .clk              (clkT),
-      .rst              (rst),
-      .clken            (clkenDP),
-      .crom             (crom),
-      .dp               (dp),
-      .aprINTR          (aprINTR),
-      .ubaINTR          (ubaINTR),
-      .reqINTP          (reqINTP),
-      .curINTP          (curINTP),
-      .cpuINTR          (cpuINTR)
-   );
-
-   //
    // INTF
    //  Console Interface
    //
@@ -417,6 +400,23 @@ module CPU(rst, clkT, clkR, cslRESET,
       .cpuCONT          (cpuCONT),
       .cpuEXEC          (cpuEXEC),
       .cpuHALT          (cpuHALT)
+   );
+
+   //
+   // Priority Interrupt Controller
+   //
+
+   PI uPI (
+      .clk              (clkT),
+      .rst              (rst),
+      .clken            (clkenDP),
+      .crom             (crom),
+      .dp               (dp),
+      .aprINTR          (aprINTR),
+      .ubaINTR          (ubaINTR),
+      .piREQPRI         (piREQPRI),
+      .piCURPRI         (piCURPRI),
+      .piINTR           (piINTR)
    );
 
    //
@@ -445,7 +445,7 @@ module CPU(rst, clkT, clkR, cslRESET,
       .clken            (clkenCR),
       .dp               (dp),
       .pageFAIL         (pageFAIL),
-      .cpuINTR          (cpuINTR),
+      .piINTR           (piINTR),
       .cpuEXEC          (cpuEXEC),
       .cpuCONT          (cpuCONT),
       .ioBUSY           (ioBUSY),

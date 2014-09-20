@@ -109,7 +109,6 @@ module NXM(clk, rst, cpuADDRO, cpuREQO, cpuACKI, memWAIT, nxmINTR);
           begin
              $display("[%10.3f] CPU: Unacknowledged bus cycle.  Addr was %012o",
                       $time/1.0e3, cpuADDRO);
-             $stop;
           end
      end
 
