@@ -57,7 +57,7 @@ module ESM_KS10(RESET_N, CLK50MHZ, MR_N,
    // Clock/Reset
    input         RESET_N;       // Reset
    input         CLK50MHZ;      // Clock
-   input         MR_N;          // Master Reset push button
+   output        MR_N;          // Master Reset push button
    // DZ11 Interfaces
    input  [1: 2] TXD;           // DZ11 RS-232 Transmitted Data
    output [1: 2] RXD;           // DZ11 RS-232 Received Data
@@ -163,4 +163,10 @@ module ESM_KS10(RESET_N, CLK50MHZ, MR_N,
 
    assign dz11RXD[7:2] = dz11TXD[7:2];
 
+   //
+   // Master Reset Push Button
+   //
+
+   assign MR_N = 1'bz;
+     
 endmodule

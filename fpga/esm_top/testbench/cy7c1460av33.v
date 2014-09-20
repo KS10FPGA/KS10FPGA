@@ -26,14 +26,23 @@
 
 `timescale  1ns /  10ps
 
+//
 // NOTE :  Any setup/hold errors will force input signal to x state
 //         or if results indeterminant (write addr) core is reset x
 
 // define fixed values
 
-`define wordsize (36 -1)                //
+`define wordsize (36 -1)
+
+//
+// Simulating all memory makes things really slow
+//
+
+`ifdef SMALL_MEM
 `define no_words (32768  -1)            // 32k x 36 RAM
-//`define no_words (1048576  -1)        // 1M x 36 RAM
+`else
+`define no_words (1048576  -1)          // 1M x 36 RAM
+`endif
 
 module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
 

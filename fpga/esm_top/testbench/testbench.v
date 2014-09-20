@@ -324,7 +324,7 @@ module testbench;
          conREADMEMP(address + 10, temp);
          $display("[%10.3f] KS10:   MSK is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 11, temp);
-         $display("[%10.3f] KS104   FLG is %012o", $time/1.0e3, temp);
+         $display("[%10.3f] KS10:   FLG is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 12, temp);
          $display("[%10.3f] KS10:   PI  is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 13, temp);
@@ -559,6 +559,15 @@ module testbench;
      end
 
    //
+   // Periodically flush the output
+   //
+   
+   always
+     begin
+	#1000000 $fflush;
+     end
+   
+   //
    // Bidirectional Data Bus
    //
 
@@ -571,7 +580,7 @@ module testbench;
    ESM_KS10 uKS10 (
       .CLK50MHZ         (clk),
       .RESET_N          (~reset),
-      .MR_N             (1'b0),
+      .MR_N             (),
       // DZ11 Interfaces
       .TXD              (TXD),
       .RXD              (RXD),

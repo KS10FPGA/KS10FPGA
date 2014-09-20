@@ -179,7 +179,7 @@
 `define cromSPEC_SEL_CLRCACHE   3'b100          //   20: Clear/Sweep cache
 `define cromSPEC_SEL_ASHTEST    3'b100          //   40: ASH Test
 `define cromSPEC_SEL_LOADNICOND 3'b101          //   10: Load NICOND
-`define cromSPEC_SEL_LOADAPR    3'b101          //   20: Load APR
+`define cromSPEC_SEL_APRENABLE  3'b101          //   20: Load APR
 `define cromSPEC_SEL_EXPTEST    3'b101          //   40: EXP Test
 `define cromSPEC_SEL_PXCTEN     3'b110          //   10: Enable PXCT
 `define cromSPEC_SEL_PXCTOFF    3'b110          //   20: Turn off PXCT

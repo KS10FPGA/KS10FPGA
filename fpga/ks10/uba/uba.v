@@ -152,19 +152,14 @@ module UBA(rst, clkT, clkR,
 
    wire wruREAD    = busIO & busPHYS & busWRU;
    wire vectREAD   = busIO & busPHYS & busVECT  & (busDEV == ubaNUM);
-
    wire pageREAD   = busIO & busPHYS & busREAD  & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
    wire pageWRITE  = busIO & busPHYS & busWRITE & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
-
    wire statWRITE  = busIO & busPHYS & busWRITE & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
    wire statREAD   = busIO & busPHYS & busREAD  & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
-
    wire maintWRITE = busIO & busPHYS & busWRITE & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
    wire maintREAD  = busIO & busPHYS & busREAD  & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
-
    wire ubaREAD    = busIO & busPHYS & busREAD  & (busDEV == ubaNUM) & (busADDR[18:28] == ubaADDR[18:28]);
    wire ubaWRITE   = busIO & busPHYS & busWRITE & (busDEV == ubaNUM) & (busADDR[18:28] == ubaADDR[18:28]);
-
    wire devREAD    = busIO & busPHYS & busREAD  & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]);
    wire devWRITE   = busIO & busPHYS & busWRITE & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]);
 
@@ -173,6 +168,7 @@ module UBA(rst, clkT, clkR,
    //
 
    wire        setNXD;
+   wire        setTMO;
    wire        statINTHI;
    wire        statINTLO;
    wire [0:35] regUBASR;
@@ -202,11 +198,12 @@ module UBA(rst, clkT, clkR,
    UBANXD NXD (
       .rst        (rst),
       .clk        (clkT),
-      .devINT     (ubaREAD  | ubaWRITE),
-      .devEXT     (devREAD  | devWRITE),
-      .devACKI    (dev1ACKI | dev2ACKI),
       .busREQI    (busREQI),
       .busACKO    (busACKO),
+      .ubaREQ     (busIO & busPHYS & !busWRU & (busDEV == ubaNUM) & (busADDR[18:28] == ubaADDR[18:28])),
+      .devREQ     (busIO & busPHYS & !busWRU & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28])),
+      .ubaACK     (ubaREAD  | ubaWRITE),
+      .devACK     (dev1ACKI | dev2ACKI),
       .setNXD     (setNXD)
    );
 
@@ -232,7 +229,7 @@ module UBA(rst, clkT, clkR,
           end
      end
 
-   wire setTMO = (countTMO == 1);
+   assign setTMO = (countTMO == 1);
 
    //
    // Whine about NXD and TMO
@@ -253,15 +250,11 @@ module UBA(rst, clkT, clkR,
              if (devREQI)
                addr <= devADDRI;
              if (setNXD)
-               begin
-                  $display("[%10.3f] UBA%d: Non-implemented device.  Addr = %012o", $time/1.0e3, ubaNUM, addr);
-                  $stop;
-               end
+               $display("[%10.3f] UBA%d: Nonexistent device (NXD).  Addr = %012o.",
+			$time/1.0e3, ubaNUM, addr);
              if (setTMO)
-               begin
-                  $display("[%10.3f] UBA%d: Unacknowledged bus cycle.  Addr = %012o", $time/1.0e3, ubaNUM, addr);
-                  $stop;
-               end
+               $display("[%10.3f] UBA%d: Unacknowledged bus cycle.  Addr = %012o.",
+			$time/1.0e3, ubaNUM, addr);
           end
      end
 
@@ -403,7 +396,7 @@ module UBA(rst, clkT, clkR,
             (wruREAD & (busPI == statPIL)))
           busDATAO = wruRESP;
      end
-
+   
    //
    // FIXME
    //  These assignments are stubbed

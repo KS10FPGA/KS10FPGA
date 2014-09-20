@@ -40,15 +40,16 @@
 
 `default_nettype none
 
-  module UBANXD(clk, rst, devINT, devEXT, devACKI, busREQI, busACKO, setNXD);
+  module UBANXD(clk, rst, busREQI, busACKO, ubaREQ, ubaACK, devREQ, devACK, setNXD);
 
    input  clk;                                  // Clock
    input  rst;                                  // Reset
-   input  devINT;                               // Device in on UBA Card
-   input  devEXT;                               // Device is on IO Bus
-   input  devACKI;                              // Device ACK
    input  busREQI;                              // Bus Request
    output busACKO;                              // Bus Acknowledge
+   input  ubaREQ;                               // Request for UBA
+   input  ubaACK;                               // Ack from UBA
+   input  devREQ;                               // Request for device
+   input  devACK;                               // Ack from device
    output setNXD;                               // Set NXD
 
    localparam [0:3] stateNULL =  0,
@@ -63,89 +64,110 @@
                     stateCNT8 =  9,
                     stateCNT9 = 10,
                     stateNXD  = 11,
-                    stateACK  = 12;
-
+                    stateACK  = 12,
+                    stateWAIT = 13;
+   
+   reg uba;
    reg [0:3] state;
-
+   
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          state <= stateNULL;
+	  begin
+	     uba   <= 0;
+             state <= stateNULL;
+	  end
         else
           case (state)
-
             stateNULL:
-              if (busREQI & devINT)
-                state <= stateACK;
-              else if (busREQI & devEXT)
-                state <= stateCNT0;
-
+	      begin
+		 if (busREQI & ubaREQ)
+		   begin
+		      uba <= 1;
+		      if (ubaACK)
+			state <= stateACK;
+		      else
+			state <= stateCNT0;
+		   end
+		 else if (busREQI & devREQ)
+		   begin
+		      uba <= 0;
+		      if (devACK)
+			state <= stateACK;
+		      else
+			state <= stateCNT0;
+		   end
+	      end
             stateCNT0:
-              if (devACKI)
+              if ((uba & ubaACK) | (!uba & devACK))
                 state <= stateACK;
               else
                 state <= stateCNT1;
 
             stateCNT1:
-              if (devACKI)
+              if ((uba & ubaACK) | (!uba & devACK))
                 state <= stateACK;
               else
                 state <= stateCNT2;
 
             stateCNT2:
-              if (devACKI)
+              if ((uba & ubaACK) | (!uba & devACK))
                 state <= stateACK;
               else
                 state <= stateCNT3;
 
             stateCNT3:
-              if (devACKI)
+              if ((uba & ubaACK) | (!uba & devACK))
                 state <= stateACK;
               else
                 state <= stateCNT4;
 
             stateCNT4:
-              if (devACKI)
+              if ((uba & ubaACK) | (!uba & devACK))
                 state <= stateACK;
               else
                 state <= stateCNT5;
 
             stateCNT5:
-              if (devACKI)
+              if ((uba & ubaACK) | (!uba & devACK))
                 state <= stateACK;
               else
                 state <= stateCNT6;
 
             stateCNT6:
-              if (devACKI)
+              if ((uba & ubaACK) | (!uba & devACK))
                 state <= stateACK;
               else
                 state <= stateCNT7;
 
             stateCNT7:
-              if (devACKI)
+              if ((uba & ubaACK) | (!uba & devACK))
                 state <= stateACK;
               else
                 state <= stateCNT8;
 
             stateCNT8:
-              if (devACKI)
+              if ((uba & ubaACK) | (!uba & devACK))
                 state <= stateACK;
               else
                 state <= stateCNT9;
 
             stateCNT9:
-              if (devACKI)
+              if ((uba & ubaACK) | (!uba & devACK))
                 state <= stateACK;
               else
                 state <= stateNXD;
 
             stateACK:
               if (!busREQI)
-                state <= stateNULL;
+		state <= stateWAIT;
 
             stateNXD:
-              state <= stateNULL;
+	      state <= stateWAIT;
+
+	    stateWAIT:
+              if (!busREQI)
+		state <= stateNULL;
 
           endcase
      end

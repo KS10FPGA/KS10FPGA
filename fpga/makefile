@@ -40,33 +40,41 @@ INTSTYLE     := ise
 XILPATH      := $(XILDIR)/ISE_DS/ISE/bin/nt64:$(XILDIR)/ISE_DS/ISE/lib/nt64:$(XILDIR)/ISE_DS/common/bin/nt64:$(XILDIR)/ISE_DS/common/lib/nt64
 
 #
+# iverilog
+#
+
+IVERILOG     := iverilog
+VVP          := vvp
+
+#
 # Initialized Memory Contents (Simulation only)
 #
 
-#LOAD         := MAINDEC-10-DSKAA.SEQ
-#LOAD         := MAINDEC-10-DSKAB.SEQ
-#LOAD         := MAINDEC-10-DSKAC.SEQ
-#LOAD         := MAINDEC-10-DSKAD.SEQ
-#LOAD         := MAINDEC-10-DSKAE.SEQ
-#LOAD         := MAINDEC-10-DSKAF.SEQ
-#LOAD         := MAINDEC-10-DSKAG.SEQ
-#LOAD         := MAINDEC-10-DSKAH.SEQ
-#LOAD         := MAINDEC-10-DSKAI.SEQ
-#LOAD         := MAINDEC-10-DSKAJ.SEQ
-#LOAD         := MAINDEC-10-DSKAK.SEQ
-#LOAD         := MAINDEC-10-DSKAL.SEQ
-#LOAD         := MAINDEC-10-DSKAM.SEQ
-#LOAD         := MAINDEC-10-DSKBA-RD00.SEQ
-#LOAD         := MAINDEC-10-DSKCA.SEQ
-#LOAD         := MAINDEC-10-DSKCB.SEQ
-#LOAD         := MAINDEC-10-DSKCC.SEQ
-#LOAD         := MAINDEC-10-DSKCD.SEQ
-#LOAD         := MAINDEC-10-DSKCE-RD00.SEQ
-#LOAD         := MAINDEC-10-DSKCF-RD00.SEQ	
-#LOAD         := MAINDEC-10-DSKCG.SEQ	
-#LOAD         := MAINDEC-10-DSKEA-RD00.SEQ
-#LOAD         := MAINDEC-10-DSDZA-RD00.SEQ
-LOAD         := MAINDEC-10-DSUBA-RD00.SEQ
+#LOAD         := MAINDEC-10-DSKAA.SEQ		#    1.0 ms
+#LOAD         := MAINDEC-10-DSKAB.SEQ		#    1.1 ms
+#LOAD         := MAINDEC-10-DSKAC.SEQ		#    0.8 ms
+#LOAD         := MAINDEC-10-DSKAD.SEQ		#    0.9 ms
+#LOAD         := MAINDEC-10-DSKAE.SEQ		#    0.7 ms
+#LOAD         := MAINDEC-10-DSKAF.SEQ		#    0.8 ms
+#LOAD         := MAINDEC-10-DSKAG.SEQ		#    0.5 ms
+#LOAD         := MAINDEC-10-DSKAH.SEQ		#   15.0 ms
+#LOAD         := MAINDEC-10-DSKAI.SEQ		#    2.4 ms
+#LOAD         := MAINDEC-10-DSKAJ.SEQ		#    2.8 ms
+#LOAD         := MAINDEC-10-DSKAK.SEQ		#    4.2 ms
+#LOAD         := MAINDEC-10-DSKAL.SEQ		#    4.7 ms
+#LOAD         := MAINDEC-10-DSKAM.SEQ		#    2.3 ms
+#LOAD         := MAINDEC-10-DSKBA-RD00.SEQ  	#  ---630.0 ms
+#LOAD         := MAINDEC-10-DSKCA.SEQ		#    1.9 ms
+#LOAD         := MAINDEC-10-DSKCB.SEQ		#    1.3 ms
+#LOAD         := MAINDEC-10-DSKCC.SEQ		#    2.1 ms
+#LOAD         := MAINDEC-10-DSKCD.SEQ		#    5.2 ms
+#LOAD         := MAINDEC-10-DSKCE-RD00.SEQ	#    5.7 ms
+#LOAD         := MAINDEC-10-DSKCF-RD00.SEQ	#   10.6 ms	
+LOAD         := MAINDEC-10-DSKCG.SEQ		# ---1350.0 ms
+#LOAD         := MAINDEC-10-DSKDA-RD00.SEQ	#
+#LOAD         := MAINDEC-10-DSKEA-RD00.SEQ	#
+#LOAD         := MAINDEC-10-DSDZA-RD00.SEQ	#   
+#LOAD         := MAINDEC-10-DSUBA-RD00.SEQ	#   
 
 DIAGS := \
         $(TESTFILES)/MAINDEC-10-DSKAA.SEQ \
@@ -90,6 +98,7 @@ DIAGS := \
         $(TESTFILES)/MAINDEC-10-DSKCE-RD00.SEQ \
         $(TESTFILES)/MAINDEC-10-DSKCF-RD00.SEQ \
         $(TESTFILES)/MAINDEC-10-DSKCG.SEQ \
+        $(TESTFILES)/MAINDEC-10-DSKDA-RD00.SEQ \
         $(TESTFILES)/MAINDEC-10-DSKEA-RD00.SEQ \
         $(TESTFILES)/MAINDEC-10-DSDZA-RD00.SEQ
 
@@ -100,6 +109,10 @@ DIAGS := \
 RTL_SRC := \
 	$(RTL)/ks10/utils/edgetrig.v \
 	$(RTL)/ks10/utils/sync.v \
+	$(RTL)/ks10/clk/clk.v \
+	$(RTL)/ks10/csl/csl.v \
+	$(RTL)/ks10/mem/mem.v \
+	$(RTL)/ks10/arb/arb.v \
 	$(RTL)/ks10/cpu/useq/crom.v \
 	$(RTL)/ks10/cpu/useq/drom.v \
 	$(RTL)/ks10/cpu/useq/skip.v \
@@ -109,17 +122,18 @@ RTL_SRC := \
 	$(RTL)/ks10/cpu/alu.v \
 	$(RTL)/ks10/cpu/apr.v \
 	$(RTL)/ks10/cpu/bus.v \
-	$(RTL)/ks10/cpu/byte_disp.v \
+	$(RTL)/ks10/cpu/disp_byte.v \
+	$(RTL)/ks10/cpu/disp_ni.v \
+	$(RTL)/ks10/cpu/disp_pf.v \
 	$(RTL)/ks10/cpu/dbm.v \
 	$(RTL)/ks10/cpu/dbus.v \
 	$(RTL)/ks10/cpu/debug.v \
 	$(RTL)/ks10/cpu/intf.v \
-	$(RTL)/ks10/cpu/intr.v \
-	$(RTL)/ks10/cpu/iolatch.v \
-	$(RTL)/ks10/cpu/ni_disp.v \
+	$(RTL)/ks10/cpu/nxd.v \
+	$(RTL)/ks10/cpu/nxm.v \
 	$(RTL)/ks10/cpu/pager.v \
 	$(RTL)/ks10/cpu/pcflags.v \
-	$(RTL)/ks10/cpu/pf_disp.v \
+	$(RTL)/ks10/cpu/pi.v \
 	$(RTL)/ks10/cpu/pxct.v \
 	$(RTL)/ks10/cpu/ram1kx36.v \
 	$(RTL)/ks10/cpu/ramfile.v \
@@ -129,9 +143,6 @@ RTL_SRC := \
 	$(RTL)/ks10/cpu/timing.v \
 	$(RTL)/ks10/cpu/vma.v \
 	$(RTL)/ks10/cpu/cpu.v \
-	$(RTL)/ks10/csl/csl.v \
-	$(RTL)/ks10/mem/mem.v \
-	$(RTL)/ks10/arb/arb.v \
 	$(RTL)/ks10/uba/dz11/uart/uart_brg.v \
 	$(RTL)/ks10/uba/dz11/uart/uart_rx.v \
 	$(RTL)/ks10/uba/dz11/uart/uart_tx.v \
@@ -154,9 +165,9 @@ RTL_SRC := \
 	$(RTL)/ks10/uba/uba.v \
 	$(RTL)/ks10/uba/ubasr.v \
 	$(RTL)/ks10/uba/ubapag.v \
+	$(RTL)/ks10/uba/ubanxd.v \
 	$(RTL)/ks10/uba/ubaintr.v \
 	$(RTL)/ks10/ks10.v \
-	$(RTL)/esm/esm_clk.v \
 	$(RTL)/esm/esm_ks10.v
 
 SIM_SRC := \
@@ -173,6 +184,9 @@ INC := \
 	$(RTL)/ks10/cpu/alu.vh \
 	$(RTL)/ks10/cpu/apr.vh \
 	$(RTL)/ks10/cpu/bus.vh \
+	$(RTL)/ks10/cpu/debug_dsuba.vh \
+	$(RTL)/ks10/cpu/debug_dsdza.vh \
+	$(RTL)/ks10/cpu/debug_dskcg.vh \
 	$(RTL)/ks10/cpu/pager.vh \
 	$(RTL)/ks10/cpu/pcflags.vh \
 	$(RTL)/ks10/cpu/pxct.vh \
@@ -213,6 +227,15 @@ BLD := \
 	$(ISE)/esm_ks10.xise \
 	$(ISE)/esm_ks10.gise \
 	$(ISE)/esm_ks10.wcfg
+
+#
+#
+#
+
+SIM_ARGS := \
+        -D DEBUG_$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
+	-D DEBUG=$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
+        -D SMALL_MEM
 
 #
 # Filter file arguments
@@ -308,6 +331,8 @@ $(ISE)/$(PROJECT)_impact.cmd: makefile
 #
 
 FUSE_ARGS := \
+	$(SIM_ARGS) \
+        --define XILINX \
 	-intstyle $(INTSTYLE) \
 	-incremental \
 	-o   $(PROJECT)_isim.exe \
@@ -642,6 +667,24 @@ load: $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT)_impact.cmd
 	$(IMPACT) -batch $(PROJECT)_impact.cmd
 
 #
+# iverilog
+#
+
+$(PROJECT).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT) makefile
+	$(IVERILOG) -v -s testbench -o $(PROJECT).vvp $(SIM_SRC) $(RTL_SRC) $(SIM_ARGS)\
+       -I rtl/ks10 \
+       -I rtl/ks10/uba \
+       -I rtl/ks10/uba/rh11 \
+       -I rtl/ks10/uba/rh11/sd \
+       -I rtl/ks10/uba/dz11 \
+       -I rtl/ks10/uba/dz11/uart \
+       -I rtl/ks10/cpu \
+       -I rtl/ks10/cpu/useq 
+
+vvp : $(PROJECT).vvp
+	$(VVP) $(PROJECT).vvp
+
+#
 # Clean everything
 #
 
@@ -751,6 +794,7 @@ rcsclean_rtl: clean_rtl
 	rcsclean $(RTL)/testbench/*
 	rcsclean $(RTL)/ks10/*
 	rcsclean $(RTL)/ks10/arb/*
+	rcsclean $(RTL)/ks10/clk/*
 	rcsclean $(RTL)/ks10/csl/*
 	rcsclean $(RTL)/ks10/cpu/*
 	rcsclean $(RTL)/ks10/mem/*

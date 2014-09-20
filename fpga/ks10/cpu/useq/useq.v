@@ -46,7 +46,7 @@
 `include "../regir.vh"
 
 module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
-            cpuINTR, cpuEXEC, cpuCONT, ioBUSY, timerINTR,
+            piINTR, cpuEXEC, cpuCONT, ioBUSY, timerINTR,
             skipJFCL, opJRST0, trapCYCLE, scSIGN, aluFLAGS,
             dispPF, dispNI, dispBYTE, dispSCAD,
             regIR, pcFLAGS, drom, crom);
@@ -60,7 +60,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    input                  pageFAIL;     // Page Fail
    input  [0:35]          dp;           // Datapath
    input  [0:11]          dispDIAG;     // Diagnostic Addr
-   input                  cpuINTR;      // Extenal Interrupt
+   input                  piINTR;       // Extenal Interrupt
    input                  cpuEXEC;      // Execute Switch Active
    input                  cpuCONT;      // Continue Switch Active
    input                  ioBUSY;       // IO Busy
@@ -147,9 +147,9 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
 
    SKIP uSKIP (
       .crom(crom),
-      .skip40({aluCRY0,   aluLZERO, aluRZERO, ~flagUSER,  flagFPD,  regACZERO, cpuINTR   }),
+      .skip40({aluCRY0,   aluLZERO, aluRZERO, !flagUSER,  flagFPD,  regACZERO, piINTR    }),
       .skip20({aluCRY2,   aluLSIGN, aluRSIGN, flagUSERIO, skipJFCL, aluCRY1,   txxx      }),
-      .skip10({trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    ~ioBUSY , ~cpuCONT,  ~timerINTR}),
+      .skip10({trapCYCLE, aluZERO,  scSIGN,   cpuEXEC,    !ioBUSY , !cpuCONT,  !timerINTR}),
       .skipADDR(skipADDR)
    );
 

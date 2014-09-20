@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -13,31 +13,29 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "useq/crom.vh"
@@ -60,8 +58,8 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    // Microcode Decode
    //
 
-   wire specLOADAPR  = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADAPR);
-   wire specAPRFLAGS = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_APRFLAGS);
+   wire specAPRENABLE = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_APRENABLE);
+   wire specAPRFLAGS  = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_APRFLAGS);
 
    //
    // APR Flag Register 24
@@ -73,13 +71,13 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //  DPMB/E159
    //
 
-   reg flag24;
+   reg aprFLAG24;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flag24 <= 1'b0;
+          aprFLAG24 <= 1'b0;
         else if (clken & specAPRFLAGS)
-          flag24 <= dp[24];
+          aprFLAG24 <= dp[24];
      end
 
    //
@@ -93,13 +91,13 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //  DPMB/E159
    //
 
-   reg flag25;
+   reg aprFLAG25;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flag25 <= 1'b0;
+          aprFLAG25 <= 1'b0;
         else if (clken & specAPRFLAGS)
-          flag25 <= dp[25];
+          aprFLAG25 <= dp[25];
      end
 
    //
@@ -113,13 +111,13 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //  DPMB/E158
    //
 
-   reg flag26;
+   reg aprFLAG26;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flag26 <= 1'b0;
+          aprFLAG26 <= 1'b0;
         else if (clken & specAPRFLAGS)
-          flag26 <= dp[26];
+          aprFLAG26 <= dp[26];
      end
 
    //
@@ -133,15 +131,15 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //  DPMB/E139
    //
 
-   reg flag27;
+   reg aprFLAG27;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flag27 <= 1'b0;
+          aprFLAG27 <= 1'b0;
         else if (nxmINTR)
-          flag27 <= 1'b1;
+          aprFLAG27 <= 1'b1;
         else if (clken & specAPRFLAGS)
-          flag27 <= dp[27];
+          aprFLAG27 <= dp[27];
      end
 
    //
@@ -155,13 +153,13 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //  DPMB/E139
    //
 
-   reg flag28;
+   reg aprFLAG28;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flag28 <= 1'b0;
+          aprFLAG28 <= 1'b0;
         else if (clken & specAPRFLAGS)
-          flag28 <= dp[28];
+          aprFLAG28 <= dp[28];
      end
 
    //
@@ -175,33 +173,33 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //  DPMB/E147
    //
 
-   reg flag29;
+   reg aprFLAG29;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flag29 <= 1'b0;
+          aprFLAG29 <= 1'b0;
         else if (clken & specAPRFLAGS)
-          flag29 <= dp[29];
+          aprFLAG29 <= dp[29];
      end
 
    //
    // APR Flag Register 30
    //
    // Note
-   //  This interrupt indicates that an interval timer interrup
+   //  This interrupt indicates that an interval timer interrupt
    //  has occurred.   This microcode manages this bit.
    //
    // Trace
    //  DPMB/E147
    //
 
-   reg flag30;
+   reg aprFLAG30;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flag30 <= 1'b0;
+          aprFLAG30 <= 1'b0;
         else if (clken & specAPRFLAGS)
-          flag30 <= dp[30];
+          aprFLAG30 <= dp[30];
      end
 
    //
@@ -215,15 +213,15 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //  DPMB/E158
    //
 
-   reg flag31;
+   reg aprFLAG31;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          flag31 <= 1'b0;
+          aprFLAG31 <= 1'b0;
         else if (cslINTR)
-          flag31 <= 1'b1;
+          aprFLAG31 <= 1'b1;
         else if (clken & specAPRFLAGS)
-          flag31 <= dp[31];
+          aprFLAG31 <= dp[31];
      end
 
    //
@@ -235,37 +233,37 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //  DPEB/E173
    //
 
-   reg         flagTRAPEN;      // Trap Enable
-   reg         flagPAGEEN;      // Paging Enable
-   reg [24:31] flagAPREN;       // APR Enable
-   reg         flagSWINT;       // Software Interrupt
-   reg [ 0: 2] flagINTR;        // APR Interrupt Request
+   reg         aprTRAPEN;   	// Trap Enable
+   reg         aprPAGEEN;      	// Paging Enable
+   reg [24:31] aprENABLE;       // APR Enable
+   reg         aprSWINT;       	// Software Interrupt
+   reg [ 0: 2] aprPRI;          // APR Interrupt Request
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             flagTRAPEN <= 1'b0;
-             flagPAGEEN <= 1'b0;
-             flagAPREN  <= 8'b0;
-             flagSWINT  <= 1'b0;
-             flagINTR   <= 3'b0;
+             aprTRAPEN <= 1'b0;
+             aprPAGEEN <= 1'b0;
+             aprENABLE <= 8'b0;
+             aprSWINT  <= 1'b0;
+             aprPRI    <= 3'b0;
           end
-        else if (clken & specLOADAPR)
+        else if (clken & specAPRENABLE)
           begin
-             flagTRAPEN <= dp[22];
-             flagPAGEEN <= dp[23];
-             flagAPREN  <= dp[24:31];
-             flagSWINT  <= dp[32];
-             flagINTR   <= dp[33:35];
+             aprTRAPEN <= dp[22];
+             aprPAGEEN <= dp[23];
+             aprENABLE <= dp[24:31];
+             aprSWINT  <= dp[32];
+             aprPRI    <= dp[33:35];
           end
     end
-
+   
    //
    // APR Interrupt Mask
    //
    // Details
-   //  This masks the disabled interrupts.
+   //  Apr Interrupt Enables
    //
    // Trace
    //  DPMB/E154
@@ -274,15 +272,15 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //  DPMB/E174
    //
 
-   wire flagINTREQ = ((flag24 & flagAPREN[24]) ||
-                      (flag25 & flagAPREN[25]) ||
-                      (flag26 & flagAPREN[26]) ||
-                      (flag27 & flagAPREN[27]) ||
-                      (flag28 & flagAPREN[28]) ||
-                      (flag29 & flagAPREN[29]) ||
-                      (flag30 & flagAPREN[30]) ||
-                      (flag31 & flagAPREN[31]) ||
-                      (flagSWINT));
+   wire aprINTREQ = ((aprFLAG24 & aprENABLE[24]) ||
+                     (aprFLAG25 & aprENABLE[25]) ||
+                     (aprFLAG26 & aprENABLE[26]) ||
+                     (aprFLAG27 & aprENABLE[27]) ||
+                     (aprFLAG28 & aprENABLE[28]) ||
+                     (aprFLAG29 & aprENABLE[29]) ||
+                     (aprFLAG30 & aprENABLE[30]) ||
+                     (aprFLAG31 & aprENABLE[31]) ||
+                     (aprSWINT));
 
    //
    // APR Interrupt Request
@@ -295,11 +293,10 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //
 
    reg [1:7] aprINTR;
-   always @(flagINTREQ or flagINTR)
+   always @*
      begin
-        aprINTR <= 7'b0000000;
-        if (flagINTREQ)
-          case (flagINTR)
+        if (aprINTREQ)
+          case (aprPRI)
             3'b000 : aprINTR <= 7'b0000000;
             3'b001 : aprINTR <= 7'b1000000;
             3'b010 : aprINTR <= 7'b0100000;
@@ -308,25 +305,26 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
             3'b101 : aprINTR <= 7'b0000100;
             3'b110 : aprINTR <= 7'b0000010;
             3'b111 : aprINTR <= 7'b0000001;
-            default: aprINTR <= 7'b0000000;
           endcase
+	else
+          aprINTR <= 7'b0000000;
      end
 
    //
    // FIXUPS
    //
 
-   assign aprFLAGS[22] = flagTRAPEN;
-   assign aprFLAGS[23] = flagPAGEEN;
-   assign aprFLAGS[24] = flag24;
-   assign aprFLAGS[25] = flag25;
-   assign aprFLAGS[26] = flag26;
-   assign aprFLAGS[27] = flag27;
-   assign aprFLAGS[28] = flag28;
-   assign aprFLAGS[29] = flag29;
-   assign aprFLAGS[30] = flag30;
-   assign aprFLAGS[31] = flag31;
-   assign aprFLAGS[32] = flagINTREQ;
+   assign aprFLAGS[22] = aprTRAPEN;
+   assign aprFLAGS[23] = aprPAGEEN;
+   assign aprFLAGS[24] = aprFLAG24;
+   assign aprFLAGS[25] = aprFLAG25;
+   assign aprFLAGS[26] = aprFLAG26;
+   assign aprFLAGS[27] = aprFLAG27;
+   assign aprFLAGS[28] = aprFLAG28;
+   assign aprFLAGS[29] = aprFLAG29;
+   assign aprFLAGS[30] = aprFLAG30;
+   assign aprFLAGS[31] = aprFLAG31;
+   assign aprFLAGS[32] = aprINTREQ;
    assign aprFLAGS[33] = 1'b1;
    assign aprFLAGS[34] = 1'b1;
    assign aprFLAGS[35] = 1'b1;

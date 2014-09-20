@@ -292,9 +292,9 @@ module CSL(clk, rst,
    wire cslWR;
    wire cslBLE;
    wire cslBHE;
-   SYNC syncWR (clk, rst, cslWR,  ~conWR_N);
-   SYNC syncBLE(clk, rst, cslBLE, ~conBLE_N);
-   SYNC syncBHE(clk, rst, cslBHE, ~conBHE_N);
+   SYNC syncWR (clk, rst, cslWR,  !conWR_N);
+   SYNC syncBLE(clk, rst, cslBLE, !conBLE_N);
+   SYNC syncBHE(clk, rst, cslBHE, !conBHE_N);
 
    //
    // Fixup addresses for byte addressing
@@ -553,7 +553,7 @@ module CSL(clk, rst,
    // Handle bi-directional bus output to Console Microcontroller
    //
 
-   assign conDATA[15: 0] = ~conRD_N ? dout : 16'bz;
+   assign conDATA[15: 0] = !conRD_N ? dout : 16'bz;
 
    //
    // Read/Write State Machine
@@ -615,7 +615,7 @@ module CSL(clk, rst,
             stateFAIL:
               state <= stateDONE;
             stateDONE:
-              if (~cslGO)
+              if (!cslGO)
                 state <= stateIDLE;
           endcase
      end
