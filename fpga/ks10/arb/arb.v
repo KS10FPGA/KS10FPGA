@@ -309,16 +309,6 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
                   cpuDATAO = cslDATAI;
                end
 
-             //
-             // Ack an otherwise un-acked WRU cycle.  WRU Cycles really aren't
-	     // arbitrated.  Only one device should respond.
-             //
-
-             else if (vmaPHYSICAL & vmaIOCYCLE & vmaWRUCYCLE)
-               begin
-                  cpuACKO  = 1;
-                  cpuDATAO = 36'b0;
-               end
           end
      end
 
