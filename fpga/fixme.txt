@@ -1,23 +1,45 @@
 
+rtl/esm_ks10:
+   (done) Make MR a tristated output.  The tools whine about an unused input.
+
+rtl/ks10/clk
+   (done) This should all be a PLL or DCM for Xilinx
+
 rtl/ks10/cpu/dbus.v:
    Special hacks for certain addresses.  Why?
+   Kill off cache_hit
+
+rtl/ks10/cpu/dbm.v
+   Special hack for SELBYTE_5.  Why?
 
 rtl/ks10/cpu/cpu.v:
    Memory_cycle is always negated.
    Mangled arguments to pf_disp module
-   flagINTREQ is not used
-   fix aprFLAGS argument of INTR
-   IO Page Fail Broken
-      fix iobusy
-      fix io timeout
+   Kill off cache_hit
 
 rtl/ks10/cpu/pf_disp.v
    Everything is hacked.
    Rename to pagefail.v
 
+rtl/ks10/apr/apr.v
+   (done) Rename nets to match software
+
 rtl/ks10/cpu/intr.v
-   flagINTREQ is not used.
+   (done) Rename intr.v pi.v
+   (done) Rename nets to match software
+
+rtl/ks10/cpu/vma.v
+   Rename bits ot match bus.
 
 rtl/ks10/uba/uba.v
    dev1ACKO is stubbed.
    dev2ACK0 is stubbed.
+   Add maintenance mode so hardware will pass DSUBA?
+
+rtl/ks10/uba/dz11/dz11.v
+   (done) Remove byte io logic from lprWRITE and rbufREAD.
+
+rtl/ks10/uba/dz11/uart:
+   (done) uart_buftx : simplify buffering
+   (done) uart_bufrx : simplfiy buffering
+   (done) rename intr pin.

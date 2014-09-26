@@ -63,18 +63,18 @@ VVP          := vvp
 #LOAD         := MAINDEC-10-DSKAK.SEQ		#    4.2 ms
 #LOAD         := MAINDEC-10-DSKAL.SEQ		#    4.7 ms
 #LOAD         := MAINDEC-10-DSKAM.SEQ		#    2.3 ms
-#LOAD         := MAINDEC-10-DSKBA-RD00.SEQ  	#  ---630.0 ms
+#LOAD         := MAINDEC-10-DSKBA-RD00.SEQ  	#  630.0 ms ????
 #LOAD         := MAINDEC-10-DSKCA.SEQ		#    1.9 ms
 #LOAD         := MAINDEC-10-DSKCB.SEQ		#    1.3 ms
 #LOAD         := MAINDEC-10-DSKCC.SEQ		#    2.1 ms
 #LOAD         := MAINDEC-10-DSKCD.SEQ		#    5.2 ms
 #LOAD         := MAINDEC-10-DSKCE-RD00.SEQ	#    5.7 ms
 #LOAD         := MAINDEC-10-DSKCF-RD00.SEQ	#   10.6 ms	
-LOAD         := MAINDEC-10-DSKCG.SEQ		# ---1350.0 ms
+#LOAD         := MAINDEC-10-DSKCG.SEQ		# 1350.0 ms ???
 #LOAD         := MAINDEC-10-DSKDA-RD00.SEQ	#
 #LOAD         := MAINDEC-10-DSKEA-RD00.SEQ	#
-#LOAD         := MAINDEC-10-DSDZA-RD00.SEQ	#   
-#LOAD         := MAINDEC-10-DSUBA-RD00.SEQ	#   
+LOAD         := MAINDEC-10-DSDZA-RD00.SEQ	# 1700.0 ms ???
+#LOAD         := MAINDEC-10-DSUBA-RD00.SEQ	#   67.4 ms+
 
 DIAGS := \
         $(TESTFILES)/MAINDEC-10-DSKAA.SEQ \
@@ -146,8 +146,6 @@ RTL_SRC := \
 	$(RTL)/ks10/uba/dz11/uart/uart_brg.v \
 	$(RTL)/ks10/uba/dz11/uart/uart_rx.v \
 	$(RTL)/ks10/uba/dz11/uart/uart_tx.v \
-	$(RTL)/ks10/uba/dz11/uart/uart_bufrx.v \
-	$(RTL)/ks10/uba/dz11/uart/uart_buftx.v \
 	$(RTL)/ks10/uba/dz11/dzcsr.v \
 	$(RTL)/ks10/uba/dz11/dzlpr.v \
 	$(RTL)/ks10/uba/dz11/dzmsr.v \
@@ -227,15 +225,6 @@ BLD := \
 	$(ISE)/esm_ks10.xise \
 	$(ISE)/esm_ks10.gise \
 	$(ISE)/esm_ks10.wcfg
-
-#
-#
-#
-
-SIM_ARGS := \
-        -D DEBUG_$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
-	-D DEBUG=$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
-        -D SMALL_MEM
 
 #
 # Filter file arguments
@@ -331,8 +320,10 @@ $(ISE)/$(PROJECT)_impact.cmd: makefile
 #
 
 FUSE_ARGS := \
-	$(SIM_ARGS) \
-        --define XILINX \
+        -d DEBUG_$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
+	-d DEBUG=$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
+        -d SMALL_MEM \
+        -d XILINX \
 	-intstyle $(INTSTYLE) \
 	-incremental \
 	-o   $(PROJECT)_isim.exe \
@@ -671,15 +662,18 @@ load: $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT)_impact.cmd
 #
 
 $(PROJECT).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT) makefile
-	$(IVERILOG) -v -s testbench -o $(PROJECT).vvp $(SIM_SRC) $(RTL_SRC) $(SIM_ARGS)\
-       -I rtl/ks10 \
-       -I rtl/ks10/uba \
-       -I rtl/ks10/uba/rh11 \
-       -I rtl/ks10/uba/rh11/sd \
-       -I rtl/ks10/uba/dz11 \
-       -I rtl/ks10/uba/dz11/uart \
-       -I rtl/ks10/cpu \
-       -I rtl/ks10/cpu/useq 
+	$(IVERILOG) -v -s testbench -o $(PROJECT).vvp $(SIM_SRC) $(RTL_SRC) \
+        -D DEBUG_$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
+        -D DEBUG=$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
+        -D SMALL_MEM \
+	-I rtl/ks10 \
+	-I rtl/ks10/uba \
+	-I rtl/ks10/uba/rh11 \
+	-I rtl/ks10/uba/rh11/sd \
+	-I rtl/ks10/uba/dz11 \
+	-I rtl/ks10/uba/dz11/uart \
+	-I rtl/ks10/cpu \
+	-I rtl/ks10/cpu/useq 
 
 vvp : $(PROJECT).vvp
 	$(VVP) $(PROJECT).vvp
@@ -789,22 +783,23 @@ rcsclean_ise: clean_ise
 #
 
 rcsclean_rtl: clean_rtl
-	rcsclean $(RTL)/*
-	rcsclean $(RTL)/esm/*
-	rcsclean $(RTL)/testbench/*
-	rcsclean $(RTL)/ks10/*
-	rcsclean $(RTL)/ks10/arb/*
-	rcsclean $(RTL)/ks10/clk/*
-	rcsclean $(RTL)/ks10/csl/*
-	rcsclean $(RTL)/ks10/cpu/*
-	rcsclean $(RTL)/ks10/mem/*
-	rcsclean $(RTL)/ks10/utils/*
-	rcsclean $(RTL)/ks10/uba/dz11/uart/*
-	rcsclean $(RTL)/ks10/uba/dz11/*
-	rcsclean $(RTL)/ks10/uba/rh11/sd/*
-	rcsclean $(RTL)/ks10/uba/rh11/*
-	rcsclean $(RTL)/ks10/uba/*
-	rcsclean $(RTL)/ks10/cpu/useq/*
+	-rcsclean $(RTL)/*
+	-rcsclean $(RTL)/esm/*
+	-rcsclean $(RTL)/testbench/*
+	-rcsclean $(RTL)/ks10/*
+	-rcsclean $(RTL)/ks10/arb/*
+	-rcsclean $(RTL)/ks10/clk/*
+	-rcsclean $(RTL)/ks10/csl/*
+	-rcsclean $(RTL)/ks10/cpu/*
+	-rcsclean $(RTL)/ks10/mem/*
+	-rcsclean $(RTL)/ks10/utils/*
+	-rcsclean $(RTL)/ks10/uba/dz11/uart/*
+	-rcsclean $(RTL)/ks10/uba/dz11/*
+	-rcsclean $(RTL)/ks10/uba/rh11/sd/*
+	-rcsclean $(RTL)/ks10/uba/rh11/*
+	-rcsclean $(RTL)/ks10/uba/*
+	-rcsclean $(RTL)/ks10/cpu/useq/*
+	-find . -type f | grep -v RCS | grep -v archive | grep \\.v$$
 
 #
 # Fetch design from RCS
