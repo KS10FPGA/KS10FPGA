@@ -200,10 +200,14 @@ module UBA(rst, clkT, clkR,
       .clk        (clkT),
       .busREQI    (busREQI),
       .busACKO    (busACKO),
-      .ubaREQ     (busIO & busPHYS & !busWRU & (busDEV == ubaNUM) & (busADDR[18:28] == ubaADDR[18:28])),
-      .devREQ     (busIO & busPHYS & !busWRU & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28])),
+      .ubaREQ     ((busREAD  & busIO & !busWRU & busPHYS & (busDEV == ubaNUM) & (busADDR[18:28] == ubaADDR[18:28])) |
+                   (busWRITE & busIO & !busWRU & busPHYS & (busDEV == ubaNUM) & (busADDR[18:28] == ubaADDR[18:28]))),
+      .devREQ     ((busREAD  & busIO & !busWRU & busPHYS & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28])) |
+                   (busWRITE & busIO & !busWRU & busPHYS & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]))),
+      .wruREQ     (busREAD & busIO & busPHYS & busWRU),
       .ubaACK     (ubaREAD  | ubaWRITE),
       .devACK     (dev1ACKI | dev2ACKI),
+      .wruACK     (busREAD & busIO & busPHYS & wruREAD & ((busPI == statPIH) |(busPI == statPIL))),
       .setNXD     (setNXD)
    );
 
@@ -251,10 +255,10 @@ module UBA(rst, clkT, clkR,
                addr <= devADDRI;
              if (setNXD)
                $display("[%10.3f] UBA%d: Nonexistent device (NXD).  Addr = %012o.",
-			$time/1.0e3, ubaNUM, addr);
+                        $time/1.0e3, ubaNUM, addr);
              if (setTMO)
                $display("[%10.3f] UBA%d: Unacknowledged bus cycle.  Addr = %012o.",
-			$time/1.0e3, ubaNUM, addr);
+                        $time/1.0e3, ubaNUM, addr);
           end
      end
 
@@ -392,11 +396,10 @@ module UBA(rst, clkT, clkR,
              else if (dev2ACKI)
                busDATAO = dev2DATAI;
           end
-        if ((wruREAD & (busPI == statPIH)) |
-            (wruREAD & (busPI == statPIL)))
+        if (wruREAD)
           busDATAO = wruRESP;
      end
-   
+
    //
    // FIXME
    //  These assignments are stubbed
