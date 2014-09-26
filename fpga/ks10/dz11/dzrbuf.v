@@ -174,8 +174,8 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
 
    //
    // DVAL
-   //  This must be set to pass TEST21
-   //  ???This must be unset to pass TEST27
+   //  This must be set to pass TEST21 otherwise fails at 032016. t=923.4 ms.
+   //  This must be unset to pass TEST27 otherwise fails at 033014.
    //
 
 `define TEST31A
@@ -184,7 +184,7 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
    wire rbufDVAL = !empty;
 
 `else
-   
+
    reg rbufDVAL;
 
    always @(posedge clk or posedge rst)
@@ -206,28 +206,7 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
    // RDONE
    //
 
-`define TEST31B
-`ifdef TEST31B
-
    wire rbufRDONE = !empty;
-
-`else
-
-   reg  rbufRDONE;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          rbufRDONE <= 0;
-        else
-          begin
-             if (clr | rd)
-               rbufRDONE <= 0;
-             else
-               rbufRDONE <= !empty;
-          end
-     end
-
-`endif
 
    //
    // SILO Alarm Counter
@@ -289,5 +268,34 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
    //
 
    wire [15:0] regRBUF = {rbufDVAL, fifoDATA};
+
+   //
+   // Some of the simulations take forever.  Print some status messages.
+   //
+   // Use "tail -f dzstatus.txt" to view the output log
+   //
+
+`ifndef SYNTHESIS
+ `ifdef DEBUG_DSDZA
+
+   integer file;
+
+   initial
+     begin
+        file = $fopen("dzstatus.txt",  "w");
+     end
+
+   always @(posedge clk)
+     begin
+        if (wr)
+          begin
+             $fwrite(file, "Received character 0x%02x on channel %d\n",
+                      uartRXDATA[7:0], uartRXDATA[10:8]);
+             $fflush(file);
+          end
+     end
+
+ `endif
+`endif
 
 endmodule

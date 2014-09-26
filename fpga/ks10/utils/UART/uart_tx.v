@@ -16,7 +16,7 @@
 //   output will be asserted for a single clock cycle.
 //
 // Note
-//   This UART primitive transmitter is kept simple ntentionally and is
+//   This UART primitive transmitter is kept simple intentionally and is
 //   therefore unbuffered.  If you require a double buffered UART, then you
 //   will need to layer a set of buffers on top of this device.
 //
@@ -50,15 +50,16 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-module UART_TX(clk, rst, clkBR, load, intr, data, txd);
+module UART_TX(clk, rst, clkBR, data, load, empty, intr, txd);
 
    input        clk;                    // Clock
    input        rst;                    // Reset
-   input        clkBR;                  // Clock Enable from BRG
-   input  [7:0] data;                   // Transmitter Data
-   input        load;                   // Load Transmitter
-   output       intr;                   // Data ready
-   output       txd;                    // Transmitter Serial Data
+   input        clkBR;                  // Clock enable from BRG
+   input  [7:0] data;                   // Transmitter data
+   input        load;                   // Load transmitter
+   output       empty;                  // Transmitter empty
+   output       intr;                   // Transmitter interrupt
+   output       txd;                    // Transmitter serial data
 
    //
    // State machine states
@@ -307,10 +308,11 @@ module UART_TX(clk, rst, clkBR, load, intr, data, txd);
      end
 
    //
-   // Interrupt
+   // Outputs
    //
 
-   assign intr = (state == stateDONE);
-   assign txd  = txdata;
+   assign empty = (state == stateIDLE);
+   assign intr  = (state == stateDONE);
+   assign txd   = txdata;
 
 endmodule

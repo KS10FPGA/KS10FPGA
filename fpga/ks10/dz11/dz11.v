@@ -169,7 +169,7 @@ module DZ11(clk,      rst,
    //
    // Signals
    //
-   
+
    wire        csrCLR   = `dzCSR_CLR(regCSR);
    wire        csrTIE   = `dzCSR_TIE(regCSR);
    wire        csrRIE   = `dzCSR_RIE(regCSR);
@@ -191,7 +191,7 @@ module DZ11(clk,      rst,
    wire [ 7:0] uartRXDATA[0:7];
    wire [ 7:0] uartRXCLR;
    wire [ 7:0] uartTXDATA = `dzTDR_TBUF(regTDR);
-   
+
    //
    // Control/Status Register (CSR)
    //
@@ -292,7 +292,7 @@ module DZ11(clk,      rst,
    //  receivers.
    //
 
-   wire [7:0] ttyRXD = (csrMAINT) ? dz11TXD : dz11RXD;
+   wire [7:0] ttyRXD = (csrMAINT) ? dz11TXD[7:0] : dz11RXD[7:0];
 
    //
    // UART Baud Rate Generators
@@ -328,13 +328,14 @@ module DZ11(clk,      rst,
            // UART Transmitters
            //
 
-           UART_BUFTX ttyTX (
+           UART_TX ttyTX (
               .clk      (clk),
               .rst      (rst | devRESET),
               .clkBR    (clkBR),
               .load     (uartTXLOAD[i]),
               .data     (uartTXDATA),
               .empty    (uartTXEMPTY[i]),
+              .intr     (),
               .txd      (dz11TXD[i])
            );
 
@@ -342,13 +343,14 @@ module DZ11(clk,      rst,
            // UART Receivers
            //
 
-           UART_BUFRX ttyRX (
+           UART_RX ttyRX (
               .clk      (clk),
               .rst      (rst | devRESET),
               .clkBR    (lprRXEN[i] & clkBR),
               .rxd      (ttyRXD[i]),
               .clr      (uartRXCLR[i]),
               .full     (uartRXFULL[i]),
+              .intr     (),
               .data     (uartRXDATA[i])
            );
 

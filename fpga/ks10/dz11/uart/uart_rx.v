@@ -46,13 +46,15 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-module UART_RX(clk, rst, clkBR, rxd, intr, data);
+module UART_RX(clk, rst, clkBR, rxd, clr, full, intr, data);
 
    input        clk;                    // Clock
    input        rst;                    // Reset
-   input        clkBR;                  // Clock Enable from BRG
-   input        rxd;                    // Receiver Serial Data
-   output       intr;                   // Data ready
+   input        clkBR;                  // Clock enable from BRG
+   input        rxd;                    // Receiver serial data
+   input        clr;                    // Receiver clear
+   output       full;                   // Receiver full
+   output       intr;                   // Receiver interrupt
    output [7:0] data;                   // Received Data
 
    //
@@ -407,6 +409,29 @@ module UART_RX(clk, rst, clkBR, rxd, intr, data);
           endcase
      end
 
+   //
+   // Full flag
+   //
+
+   reg full;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          full <= 0;
+        else
+          begin
+             if (clr)
+               full <= 0;
+             else if (intr)
+               full <= 1;
+          end
+     end
+
+   //
+   // Create outputs
+   //
+   
    assign intr = (state == stateDONE);
    assign data = rxREG;
 
