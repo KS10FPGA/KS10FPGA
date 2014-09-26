@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -13,42 +13,39 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2013 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 `include "apr.vh"
 
-module CPU(rst, clkT, clkR, cslRESET,
-           cslSET, cslRUN, cslCONT, cslEXEC, cslTIMEREN,
-           cslTRAPEN, cslCACHEEN, cslINTRI, cslINTRO, ubaINTR,
-           cpuREQO, cpuACKI, cpuADDRO, cpuDATAI, cpuDATAO,
-           cpuHALT, cpuRUN, cpuEXEC, cpuCONT);
+module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
+           cslTIMEREN, cslTRAPEN, cslCACHEEN, cslINTRI, cslINTRO, ubaINTR,
+           cpuREQO, cpuACKI, cpuADDRO, cpuDATAI, cpuDATAO, cpuHALT, cpuRUN,
+           cpuEXEC, cpuCONT);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -92,7 +89,9 @@ module CPU(rst, clkT, clkR, cslRESET,
    //
 
    wire memory_cycle = 0;       // FIXME
-   wire nxmINTR;     		// Non-existent memory interrupt
+   wire nxmINTR;                // Non-existent memory interrupt
+   wire memWAIT;                // Wait for memory
+   wire ioWAIT;                 // Wait for memory
    wire ioBUSY;                 // IO is busy
    wire opJRST0;                // JRST 0 Instruction
    wire skipJFCL;               // JFCL Instruction
@@ -105,7 +104,7 @@ module CPU(rst, clkT, clkR, cslRESET,
    wire piINTR;                 // Priority Interrupt
    wire [ 0: 2] piCURPRI;       // Current Interrupt Priority
    wire [ 0: 2] piREQPRI;       // Requested Interrupt Priority
-   
+
    //
    // PXCT
    //
@@ -138,7 +137,7 @@ module CPU(rst, clkT, clkR, cslRESET,
 
    wire [14:35] vmaADDR;        // VMA Address
    wire [ 0:13] vmaFLAGS;       // VMA Flags
-   wire         vmaEXTENDED;    //  Extended VMA
+   wire         vmaEXTENDED;    // Extended VMA
 
    //
    // Paging
@@ -206,9 +205,8 @@ module CPU(rst, clkT, clkR, cslRESET,
    // Timing
    //
 
-   wire         clkenDP;    	// Clock Enable for Datapaths
+   wire         clkenDP;        // Clock Enable for Datapaths
    wire         clkenCR;        // Clock Enable for Control ROM
-   wire         memWAIT;        // Wait for memory
 
    //
    // Timing and Wait States
@@ -221,7 +219,7 @@ module CPU(rst, clkT, clkR, cslRESET,
       .feSIGN           (feSIGN),
       .clkenDP          (clkenDP),
       .clkenCR          (clkenCR),
-      .memWAIT          (memWAIT)
+      .memWAIT          (memWAIT | ioWAIT) // FIXME
    );
 
    //
@@ -310,7 +308,10 @@ module CPU(rst, clkT, clkR, cslRESET,
    //
 
    BUS uBUS (
+      .clk              (clkT),
+      .rst              (rst),
       .dp               (dp),
+      .crom             (crom),
       .vmaEXTENDED      (vmaEXTENDED),
       .vmaFLAGS         (vmaFLAGS),
       .vmaADDR          (vmaADDR),
@@ -473,10 +474,11 @@ module CPU(rst, clkT, clkR, cslRESET,
    NXD uNXD (
       .clk              (clkT),
       .rst              (rst),
-      .clken            (clkenDP),
       .crom             (crom),
       .cpuADDRO         (cpuADDRO),
+      .cpuREQO          (cpuREQO),
       .cpuACKI          (cpuACKI),
+      .ioWAIT           (ioWAIT),
       .ioBUSY           (ioBUSY)
    );
 
