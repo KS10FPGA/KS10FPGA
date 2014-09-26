@@ -64,7 +64,6 @@ module NXM(clk, rst, cpuADDRO, cpuREQO, cpuACKI, memWAIT, nxmINTR);
    //  cycles that are never acknowledged.
    //
 
-   localparam [0:3] tNXM  = 14;
    localparam [0:3] tDONE = 15;
    reg        [0:3] timeout;
 
@@ -75,12 +74,11 @@ module NXM(clk, rst, cpuADDRO, cpuREQO, cpuACKI, memWAIT, nxmINTR);
         else
           begin
              if (!busIO & cpuREQO & !cpuACKI)
-               begin
-                  if (timeout != tDONE)
-                    timeout <= timeout + 1'b1;
-               end
-             else
+               timeout <= tDONE;
+             else if (cpuACKI)
                timeout <= 0;
+             else if (timeout != 0)
+               timeout <= timeout - 1'b1;
           end
      end
 
@@ -88,14 +86,13 @@ module NXM(clk, rst, cpuADDRO, cpuREQO, cpuACKI, memWAIT, nxmINTR);
    // Wait for memory cycle ACK.  Timeout if no ACK occurs.
    //
 
-   assign memWAIT = ((!busIO & cpuREQO & !cpuACKI & (timeout != tNXM)) &
-                     (!busIO & cpuREQO & !cpuACKI & (timeout != tDONE)));
+   assign memWAIT = (cpuREQO & !cpuACKI & (timeout != 0));
 
    //
    // Generate an NXM trap
    //
 
-   assign nxmINTR = (timeout == tNXM);
+   assign nxmINTR = (timeout == 1);
 
 `ifndef SYNTHESIS
 

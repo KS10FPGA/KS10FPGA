@@ -32,5 +32,34 @@ begin
      18'o033151: test = "DSDZA TEST31";
      18'o033260: test = "DSDZA TEST32";
      18'o033437: test = "DSDZA TEST33";
+
+     //
+     // Error locations
+     //
+
+     18'o035006: test = "DZDZA TXERR1";
+     18'o034763: test = "DZDZA RXERR1";
+     18'o035023: test = "DZDZA DATER1";
+
+     18'o033246: test = "DZDZA TXERR2";
+     18'o033252: test = "DZDZA RXERR2";
+     18'o033256: test = "DZDZA DATER2";
+
+     18'o033425: test = "DZDZA TXERR3";
+     18'o033431: test = "DZDZA RXERR3";
+     18'o033435: test = "DZDZA DATER3";
+
+     //
+     // Wrong Vector
+     //
+
+     18'o034631:
+       begin
+          test = "DZDZA WRGVEC";
+          $display("[%10.3f] %s: Took the wrong interrupt vector.",
+                   $time/1.0e3, test);
+          $stop;
+       end
+
    endcase
 end

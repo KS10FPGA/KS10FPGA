@@ -71,10 +71,15 @@
 `include "vma.vh"
 `include "useq/crom.vh"
 
-module BUS(dp, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
-	   aprFLAGS, piCURPRI, cpuDATAO, cpuADDRO, cpuREQO);
+module BUS(clk, rst, dp, crom, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
+           aprFLAGS, piCURPRI, cpuDATAO, cpuADDRO, cpuREQO);
 
+   parameter  cromWidth = `CROM_WIDTH;
+
+   input          clk;                  // Clock
+   input          rst;                  // Reset
    input  [ 0:35]          dp;          // Data path
+   input  [ 0:cromWidth-1] crom;        // Control ROM Data
    input                   vmaEXTENDED; // Extended VMA
    input  [ 0:13]          vmaFLAGS;    // VMA Flags
    input  [14:35]          vmaADDR;     // Virtual Memory Address
@@ -110,11 +115,27 @@ module BUS(dp, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
    wire pagedREF = !vmaPHYSICAL & flagPAGEEN;
 
    //
-   // Bus Request Output
-   //  vmaIOCYCLE is asserted during WRU and VECT cycles
+   // The WRU cycle and VECTOR cycle are merged into a single long bus
+   // transaction.  This splits the transaction in half so that the WRU and
+   // VECTOR cycle and be arbitrated independantly.  This takes a clock cycle
+   // off of the end of the WRU cycle.
    //
 
-   assign cpuREQO = vmaREADCYCLE | vmaWRITECYCLE  | vmaWRTESTCYCLE | vmaIOCYCLE;
+   reg addr3666;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          addr3666  <= 0;
+        else
+          addr3666 <= (crom[0:11] == 12'o3666);
+     end
+
+   //
+   // Bus Request Output
+   //
+
+   assign cpuREQO = vmaREADCYCLE   | vmaWRITECYCLE  | vmaWRTESTCYCLE |
+                    vmaVECTORCYCLE | (vmaWRUCYCLE & !addr3666);
 
    //
    // Data Output
