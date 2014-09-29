@@ -41,10 +41,8 @@
 `default_nettype none
 `define SIZE 64
 
-module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
-              uartRXDATA, uartRXFULL, uartRXCLR,
-              rbufREAD, rbufRDONE, rbufSA,
-              regRBUF);
+module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXDATA, uartRXFULL,
+              uartRXCLR, rbufREAD, rbufRDONE, rbufSA, regRBUF);
 
    input         clk;                           // Clock
    input         rst;                           // Reset
@@ -101,9 +99,35 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
    EDGETRIG uFIFOREAD(clk, rst, 1'b1, 1'b0, rbufREAD, rd);
 
    //
+   // Delayed read and write
+   //
+   // Details:
+   //  Some status bits need to be updated after the FIFO read and the FIFO
+   //  write have completed and the FIFO depth has been updated.  See RBUF[OVRE]
+   //  and RBUF[DVAL].
+   //
+
+   reg rd_dly;
+   reg wr_dly;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          begin
+             rd_dly <= 0;
+             wr_dly <= 0;
+          end
+        else
+          begin
+             rd_dly <= rd;
+             wr_dly <= wr;
+          end
+     end
+
+   //
    // FIFO State
    //
-   // Note: FIFOs have a depth of 64 not 63.  Watch the counter sizes.
+   //  Note: FIFOs have a depth of 64 not 63.  Watch the counter sizes.
    //
 
    reg [0:6] depth;
@@ -136,54 +160,42 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
           end
      end
 
-   wire empty    = (depth ==     0);
-   wire full     = (depth == `SIZE);
-   wire rbufOVRE = full;
+   wire empty = (depth == 0);
+   wire full  = (depth == `SIZE);
 
    //
-   // Dual Port RAM
+   // RBUF[RDONE]
    //
    // Details
-   //  When the FIFO is full, the last character in the FIFO is replaced with
-   //  the current character and the Overrun Error bit (RBUF[OVRE]) is asserted.
+   //  RDONE is asserted when the FIFO is not empty.
    //
 
-`ifndef SYNTHESIS
-   integer i;
-`endif
+   wire rbufRDONE = !empty;
 
-   reg [14:0] fifoDATA;
-   reg [14:0] DPRAM[0:`SIZE];
+   //
+   // RBUF[OVRE]
+   //
+   //  An overrun error occurs when you write to a full FIFO.
+   //
+
+   reg rbufOVRE;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-`ifdef SYNTHESIS
-          ;
-`else
-          for (i = 0; i <= `SIZE; i = i + 1)
-            DPRAM[i] <= 0;
-`endif
+          rbufOVRE <= 0;
         else
           begin
-             if (wr)
-               DPRAM[wr_ptr] <= {rbufOVRE, uartRXDATA[13:0]};
-             fifoDATA <= DPRAM[rd_ptr];
+             if (clr)
+               rbufOVRE <= 0;
+             else if (wr | rd_dly)
+               rbufOVRE <= full;
           end
      end
 
    //
-   // DVAL
-   //  This must be set to pass TEST21 otherwise fails at 032016. t=923.4 ms.
-   //  This must be unset to pass TEST27 otherwise fails at 033014.
+   // RBUF[DVAL]
    //
-
-`define TEST31A
-`ifdef TEST31A
-
-   wire rbufDVAL = !empty;
-
-`else
 
    reg rbufDVAL;
 
@@ -195,18 +207,10 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
           begin
              if (clr)
                rbufDVAL <= 0;
-             else if (rd | wr)
+             else if (rd | wr_dly)
                rbufDVAL <= !empty;
           end
      end
-
-`endif
-
-   //
-   // RDONE
-   //
-
-   wire rbufRDONE = !empty;
 
    //
    // SILO Alarm Counter
@@ -259,6 +263,38 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
      end
 
    //
+   // Dual Port RAM
+   //
+   // Details
+   //  When the FIFO is full, the last character in the FIFO is replaced with
+   //  the current character and the Overrun Error bit (RBUF[OVRE]) is asserted.
+   //
+
+`ifndef SYNTHESIS
+   integer i;
+`endif
+
+   reg [14:0] fifoDATA;
+   reg [14:0] DPRAM[0:`SIZE];
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+`ifdef SYNTHESIS
+          ;
+`else
+          for (i = 0; i <= `SIZE; i = i + 1)
+            DPRAM[i] <= 0;
+`endif
+        else
+          begin
+             if (wr)
+               DPRAM[wr_ptr] <= {rbufOVRE, uartRXDATA[13:0]};
+             fifoDATA <= DPRAM[rd_ptr];
+          end
+     end
+
+   //
    // RBUF Register
    //
    // Details
@@ -269,6 +305,8 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan,
 
    wire [15:0] regRBUF = {rbufDVAL, fifoDATA};
 
+   //
+   // Status
    //
    // Some of the simulations take forever.  Print some status messages.
    //
