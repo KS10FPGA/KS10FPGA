@@ -75,7 +75,7 @@
    //  loaded.  This occurs once during the instruction execution.
    //
 
-   reg [0:35] PC;
+   reg [18:35] PC;
    reg [14*8:1] test;
 
    always @(posedge clk or posedge rst)
@@ -83,35 +83,36 @@
         if (rst)
           begin
              PC   <= 0;
-             test <= "TRACE";
+             test <= "";
           end
         else if (loadIR)
           begin
-             PC <= debugDATA;
-	     if (PC[18:35] ==  18'o030057)
-  	       begin
-		  $display("Test Completed\n"); 
-	          $stop;
-	       end
+             PC <= debugDATA[18:35];
+
+             if (PC ==  18'o030057)
+               begin
+                  $display("Test Completed\n");
+                  $stop;
+               end
 
              `ifdef DEBUG_DSKBA
                  `include "debug_dskba.vh"
-	     
-	     `elsif DEBUG_DSKCG
-	         `include "debug_dskcg.vh"
-               
-	     `elsif DEBUG_DSDZA
+
+             `elsif DEBUG_DSKCG
+                 `include "debug_dskcg.vh"
+
+             `elsif DEBUG_DSDZA
                  `include "debug_dsdza.vh"
-               
-	     `elsif DEBUG_DSUBA
-  	         `include "debug_dsuba.vh"
-               
+
+             `elsif DEBUG_DSUBA
+                 `include "debug_dsuba.vh"
+
              `endif
-             
- 	     $display("[%10.3f] %s: PC is %06o", $time/1.0e3, test, debugDATA[18:35]);
+
+             $display("[%10.3f] %-15s: PC is %06o", $time/1.0e3, test, PC);
           end
      end
-   
+
 `endif
 
    //

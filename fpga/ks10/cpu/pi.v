@@ -21,7 +21,7 @@
 //   The highest priority is interrupt 1, the lower priority is interrupt 7.
 //
 // File
-//   intr.v
+//   pi.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net

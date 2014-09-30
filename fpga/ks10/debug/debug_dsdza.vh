@@ -3,7 +3,7 @@
 //
 
 begin
-   case (PC[18:35])
+   case (PC)
      18'o000000: test = "DSDZA INIT";
      18'o030671: test = "DSDZA TEST1";
      18'o030753: test = "DSDZA TEST2";
@@ -37,27 +37,76 @@ begin
      // Error locations
      //
 
-     18'o035006: test = "DZDZA TXERR1";
-     18'o034763: test = "DZDZA RXERR1";
-     18'o035023: test = "DZDZA DATER1";
+     18'o035006:
+       begin
+          $display("[%10.3f] %-15s: PC is %06o", $time/1.0e3, "DSDZA TXERR1", PC);
+          $stop;
+       end
+     
+     18'o034763:
+       begin
+          $display("[%10.3f] %-15s: PC is %06o", $time/1.0e3, "DSDZA RXERR1", PC);
+          $stop;
+       end
+     
+     18'o035023:
+       begin
+          $display("[%10.3f] %-15s: PC is %06o", $time/1.0e3, "DSDZA DATER1", PC);
+          $stop;
+       end
 
-     18'o033246: test = "DZDZA TXERR2";
-     18'o033252: test = "DZDZA RXERR2";
-     18'o033256: test = "DZDZA DATER2";
+     18'o033246:
+       begin
+          $display("[%10.3f] %-15s: PC is %06o", $time/1.0e3, "DSDZA TXERR2", PC);
+          $stop;
+       end
+     
+     18'o033252:
+       begin
+          $display("[%10.3f] %-15s: PC is %06o", $time/1.0e3, "DSDZA RXERR2", PC);
+          $stop;
+       end
+     
+     18'o033256:
+       begin
+          $display("[%10.3f] %-15s: PC is %06o", $time/1.0e3, "DSDZA DATER2", PC);
+          $stop;
+       end
 
-     18'o033425: test = "DZDZA TXERR3";
-     18'o033431: test = "DZDZA RXERR3";
-     18'o033435: test = "DZDZA DATER3";
+     18'o033425:
+      begin
+          $display("[%10.3f] %-15s: PC is %06o", $time/1.0e3, "DSDZA TXERR3", PC);
+          $stop;
+       end
 
-     //
-     // Wrong Vector
-     //
+     18'o033431:
+       begin
+          $display("[%10.3f] %-15s: PC is %06o", $time/1.0e3, "DSDZA RXERR3", PC);
+          $stop;
+       end
+
+     18'o033435:
+       begin
+          $display("[%10.3f] %-15s: PC is %06o", $time/1.0e3, "DSDZA DATER3", PC);
+          $stop;
+       end
+
+     18'o034707: test = "DSDZA RXSER";
+     18'o034657: test = "DSDZA TXSER";
+     18'o033215: test = "DSDZA TEST31";
+     18'o033216: test = "DSDZA TEST31";
+     18'o033217: test = "DSDZA TEST31";
+     18'o033220: test = "DSDZA TEST31";
+     18'o033221: test = "DSDZA TEST31";
+     18'o033222: test = "DSDZA TEST31";
+     18'o033223: test = "DSDZA TEST31";
+     18'o033224: test = "DSDZA TEST31";
+     18'o033225: test = "DSDZA TEST31";
+     18'o033226: test = "DSDZA TEST31";
 
      18'o034631:
        begin
-          test = "DZDZA WRGVEC";
-          $display("[%10.3f] %s: Took the wrong interrupt vector.",
-                   $time/1.0e3, test);
+          $display("[%10.3f] %s: PC is %06o", $time/1.0e3, "DSDZA WRGVEC", PC);
           $stop;
        end
 
