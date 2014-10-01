@@ -82,14 +82,15 @@
      begin
         if (rst)
           begin
-             PC   <= 0;
-             test <= "";
+             PC   = 0;
+             test = "";
           end
         else if (loadIR)
           begin
-             PC <= debugDATA[18:35];
 
-             if (PC ==  18'o030057)
+             PC = debugDATA[18:35];
+	     
+             if (PC == 18'o030057)
                begin
                   $display("Test Completed\n");
                   $stop;
@@ -109,7 +110,8 @@
 
              `endif
 
-             $display("[%10.3f] %-15s: PC is %06o", $time/1.0e3, test, PC);
+             $display("[%10.3f] %15s: PC is %06o", $time/1.0e3, test, PC);
+
           end
      end
 

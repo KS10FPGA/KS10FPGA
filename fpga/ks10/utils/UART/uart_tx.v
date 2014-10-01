@@ -291,7 +291,7 @@ module UART_TX(clk, rst, clkBR, data, load, empty, intr, txd);
    //
 
    reg txdata;
-   always @(state or txREG)
+   always @*
      begin
         case (state)
           stateSTART : txdata = 0;
