@@ -45,7 +45,7 @@
 
   module DZCSR(clk, rst,
                devRESET, devLOBYTE, devHIBYTE, devDATAI, csrWRITE, tdrWRITE,
-               scan, rbufRDONE, rbufSA, uartTXEMPTY, regTCR, regCSR);
+               rbufRDONE, rbufSA, uartTXEMPTY, regTCR, regCSR);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
@@ -55,7 +55,6 @@
    input  [ 0:35] devDATAI;                     // Device Data In
    input          csrWRITE;                     // Write to CSR
    input          tdrWRITE;                     // Write to TDR
-   input  [ 2: 0] scan;                         // Scanner
    input          rbufRDONE;                    // RBUF Receiver Done
    input          rbufSA;                       // RBUF Silo Alarm
    input  [ 7: 0] uartTXEMPTY;                  // UART transmitter buffer empty
@@ -150,64 +149,125 @@
      end
 
    //
-   // Transmitter Scanner
-   //
-   // Details
-   //  If the CSR[TRDY] has 'locked' on a transmit line and that lines
-   //  becomes negated, the transmit scanner should resume scanning for
-   //  the next empty transmitter.
+   // State Machine states
    //
 
-   reg       csrTRDY;
+   localparam [1:0] stateSCAN =  0,
+                    stateHOLD =  1,
+                    stateWAIT =  2;
+
+   //
+   // Transmitter Scanner
+   //
+
+   reg [2:0] scan;
+   reg [1:0] state;
    reg [2:0] csrTLINE;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             csrTRDY  <= 0;
+             scan     <= 0;
              csrTLINE <= 0;
+             state    <= stateSCAN;
           end
         else
           begin
              if (csrCLR | devRESET)
                begin
-                  csrTRDY  <= 0;
+                  scan     <= 0;
                   csrTLINE <= 0;
+                  state    <= stateSCAN;
                end
              else
-               begin
-                  if (csrTRDY)
-                    begin
-                       if (((tdrWRITE & devLOBYTE))       |
-                           ((csrTLINE == 0) & !tcrLIN[0]) |
-                           ((csrTLINE == 1) & !tcrLIN[1]) |
-                           ((csrTLINE == 2) & !tcrLIN[2]) |
-                           ((csrTLINE == 3) & !tcrLIN[3]) |
-                           ((csrTLINE == 4) & !tcrLIN[4]) |
-                           ((csrTLINE == 5) & !tcrLIN[5]) |
-                           ((csrTLINE == 6) & !tcrLIN[6]) |
-                           ((csrTLINE == 7) & !tcrLIN[7]))
-                         csrTRDY <= 0;
-                    end
-                  else
-                    begin
-                       if (((scan == 0) & tcrLIN[0] & uartTXEMPTY[0]) |
-                           ((scan == 1) & tcrLIN[1] & uartTXEMPTY[1]) |
-                           ((scan == 2) & tcrLIN[2] & uartTXEMPTY[2]) |
-                           ((scan == 3) & tcrLIN[3] & uartTXEMPTY[3]) |
-                           ((scan == 4) & tcrLIN[4] & uartTXEMPTY[4]) |
-                           ((scan == 5) & tcrLIN[5] & uartTXEMPTY[5]) |
-                           ((scan == 6) & tcrLIN[6] & uartTXEMPTY[6]) |
-                           ((scan == 7) & tcrLIN[7] & uartTXEMPTY[7]))
-                         begin
-                            csrTRDY  <= 1;
-                            csrTLINE <= scan;
-                         end
-                    end
-               end
+
+               case (state)
+
+                 //
+                 // Scan for an empty UART transmitter that is enabled.
+                 //
+
+                 stateSCAN:
+                   begin
+                      if (csrMSE)
+
+                        //
+                        // Check for a line that is enabled that has an empty
+                        // UART Transmitter.  Save the line in csrTLINE.
+                        //
+
+                        if (((scan == 0) & tcrLIN[0] & uartTXEMPTY[0]) |
+                            ((scan == 1) & tcrLIN[1] & uartTXEMPTY[1]) |
+                            ((scan == 2) & tcrLIN[2] & uartTXEMPTY[2]) |
+                            ((scan == 3) & tcrLIN[3] & uartTXEMPTY[3]) |
+                            ((scan == 4) & tcrLIN[4] & uartTXEMPTY[4]) |
+                            ((scan == 5) & tcrLIN[5] & uartTXEMPTY[5]) |
+                            ((scan == 6) & tcrLIN[6] & uartTXEMPTY[6]) |
+                            ((scan == 7) & tcrLIN[7] & uartTXEMPTY[7]))
+                          begin
+                             csrTLINE <= scan;
+                             state    <= stateHOLD;
+                          end
+                        else
+                          begin
+                             scan <= scan + 1'b1;
+                          end
+                   end
+
+                 //
+                 // Hold the TLINE until data is written to the UART
+		 // transmitter.
+                 //
+
+                 stateHOLD:
+                   begin
+
+                      //
+                      // If the line is disabled while we are holding it
+                      // (i.e., tcrLIN ia modified), just dump it and go back
+                      // to scanning.
+                      //
+
+                      if (((csrTLINE == 0) & !tcrLIN[0]) |
+                          ((csrTLINE == 1) & !tcrLIN[1]) |
+                          ((csrTLINE == 2) & !tcrLIN[2]) |
+                          ((csrTLINE == 3) & !tcrLIN[3]) |
+                          ((csrTLINE == 4) & !tcrLIN[4]) |
+                          ((csrTLINE == 5) & !tcrLIN[5]) |
+                          ((csrTLINE == 6) & !tcrLIN[6]) |
+                          ((csrTLINE == 7) & !tcrLIN[7]))
+                        begin
+                           state <= stateSCAN;
+                        end
+
+                      //
+                      // Data is being written to the UART transmitter.
+                      //
+
+                      else if (tdrWRITE & devLOBYTE)
+                        begin
+                           state <= stateWAIT;
+                        end
+                   end
+
+                 //
+                 // Wait for the UART transmitter write cycle to complete
+                 // before resuming the scan.
+                 //
+
+                 stateWAIT:
+                   begin
+                      if (!(tdrWRITE & devLOBYTE))
+                        state <= stateSCAN;
+                   end
+
+               endcase
+
           end
      end
+
+   wire csrTRDY = (state != stateSCAN);
 
    //
    // Build CSR
