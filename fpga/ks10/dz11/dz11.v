@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
@@ -205,7 +204,6 @@ module DZ11(clk,      rst,
       .devDATAI   (devDATAI),
       .csrWRITE   (csrWRITE),
       .tdrWRITE   (tdrWRITE),
-      .scan       (scan),
       .rbufRDONE  (rbufRDONE),
       .rbufSA     (rbufSA),
       .uartTXEMPTY(uartTXEMPTY),
@@ -367,19 +365,19 @@ module DZ11(clk,      rst,
    //
 
    DZRBUF RBUF (
-      .clk       (clk),
-      .rst       (rst),
-      .clr       (csrCLR | devRESET),
-      .csrMSE    (csrMSE),
-      .csrSAE    (csrSAE),
-      .scan      (scan),
-      .uartRXDATA({5'b0, scan, uartRXDATA[scan]}),
-      .uartRXFULL(uartRXFULL),
-      .uartRXCLR (uartRXCLR),
-      .rbufREAD  (rbufREAD),
-      .rbufRDONE (rbufRDONE),
-      .rbufSA    (rbufSA),
-      .regRBUF   (regRBUF)
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (csrCLR | devRESET),
+      .csrMSE     (csrMSE),
+      .csrSAE     (csrSAE),
+      .scan       (scan),
+      .uartRXDATA ({5'b0, scan, uartRXDATA[scan]}),
+      .uartRXFULL (uartRXFULL),
+      .uartRXCLR  (uartRXCLR),
+      .rbufREAD   (rbufREAD),
+      .rbufRDONE  (rbufRDONE),
+      .rbufSA     (rbufSA),
+      .regRBUF    (regRBUF)
    );
 
    //
@@ -388,45 +386,34 @@ module DZ11(clk,      rst,
    // Details:
    //  This module generates the transmitter and receiver interrupts
    //
-   //  The receiver interrupt has priority over the transmitter interrupt.
-   //
    // Notes:
    //  The receiver interrupt is generated when:
-   //  1. csr[RDONE] asserted when csr[SAE] is negated
-   //  2. csr[SA] asserted
-   //
-   //  The receiver interrupt is cleared when:
-   //  1.  Reset
-   //  2.  IO Bus Reset
-   //  3.  CSR[CLR]
-   //  4.  The interrupt is acknowledged
+   //  1. csr[RDONE] asserted when csr[SAE] is negated, or
+   //  2. csr[SA] asserted.
    //
    //  The transmitter interrupt is generated when:
    //  1.  CSR[TRDY] is asserted when CSR[TIE] is asserted.
    //
-   //  The transmitter interrupt is cleared when:
-   //  1.  Reset
-   //  2.  IO Bus Reset
-   //  3.  CSR[CLR]
-   //  4.  The interrupt is acknowledged and the receiver interrupt is
-   //      not asserted.  This gives the receiver priority over the
-   //      transmitter.
-   //
-
+   
    wire txINTR;
    wire rxINTR;
+   wire rxVECTOR;
+
    DZINTR INTR (
-      .clk      (clk),
-      .rst      (rst),
-      .clr      (csrCLR | devRESET),
-      .rxen     (csrRIE),
-      .txen     (csrTIE),
-      .rxin     (csrSA | (!csrSAE & csrRDONE)),
-      .txin     (csrTRDY),
-      .ack      (devINTA == dzINTR),
-      .vect     (vectREAD),
-      .rxout    (rxINTR),
-      .txout    (txINTR)
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (csrCLR | devRESET),
+      .iack       (devINTA == dzINTR),
+      .vectREAD   (vectREAD),
+      .rxVECTOR   (rxVECTOR),
+      .csrRIE     (csrRIE),
+      .csrRRDY    (csrSA | (!csrSAE & csrRDONE)),
+      .rbufREAD   (rbufREAD),
+      .rxINTR     (rxINTR),
+      .csrTIE     (csrTIE),
+      .csrTRDY    (csrTRDY),
+      .tdrWRITE   (tdrWRITE),
+      .txINTR     (txINTR)
    );
 
    //
@@ -463,7 +450,7 @@ module DZ11(clk,      rst,
         if (vectREAD)
           begin
              devACKO  = 1;
-             devDATAO = rxINTR ? rxVECT : txVECT;
+             devDATAO = rxVECTOR ? rxVECT : txVECT;
           end
      end
 
