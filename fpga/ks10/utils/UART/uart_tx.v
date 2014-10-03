@@ -3,17 +3,12 @@
 // KS-10 Processor
 //
 // Brief
-//   Generic UART Transmitter
+//   Generic unbufffered UART transmitter
 //
 // Details
-//   The UART Transmitter is hard configured for:
-//   - 8 data bits
-//   - no parity
-//   - 1 stop bit
-//
-//   To transmit a word of data, provide the data on the data bus and assert
-//   the 'load' input for a clock cycle.  When the data is sent, the 'intr'
-//   output will be asserted for a single clock cycle.
+//   This module implements a genereric unbuffered UART transmitter.  Ports
+//   control the character length (5 to 8 bits), parity (even/odd/none), and
+//   number of stop bits (1 or 2).
 //
 // Note
 //   This UART primitive transmitter is kept simple intentionally and is
@@ -50,14 +45,22 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-module UART_TX(clk, rst, clkBR, data, load, empty, intr, txd);
+`default_nettype none
+`include "../dzuart.vh"
+
+module UART_TX(clk, rst, clr, length, parity, stop, brgCLKEN, data, load,
+               empty, intr, txd);
 
    input        clk;                    // Clock
    input        rst;                    // Reset
-   input        clkBR;                  // Clock enable from BRG
+   input        clr;                    // Clear
+   input  [1:0] length;                 // Character length
+   input  [1:0] parity;                 // Parity
+   input        stop;                   // Number of stop bits
+   input        brgCLKEN;               // Clock enable from BRG
    input  [7:0] data;                   // Transmitter data
    input        load;                   // Load transmitter
-   output       empty;                  // Transmitter empty
+   output       empty;                  // Transmitter buffer empty
    output       intr;                   // Transmitter interrupt
    output       txd;                    // Transmitter serial data
 
@@ -65,41 +68,50 @@ module UART_TX(clk, rst, clkBR, data, load, empty, intr, txd);
    // State machine states
    //
 
-   parameter [3:0] stateIDLE  =  0,     // Idle
-                   stateSTART =  1,     // Working on Start Bit
-                   stateBIT0  =  2,     // Working on Bit 7
-                   stateBIT1  =  3,     // Working on Bit 6
-                   stateBIT2  =  4,     // Working on Bit 5
-                   stateBIT3  =  5,     // Working on Bit 4
-                   stateBIT4  =  6,     // Working on Bit 3
-                   stateBIT5  =  7,     // Working on Bit 2
-                   stateBIT6  =  8,     // Working on Bit 1
-                   stateBIT7  =  9,     // Working on Bit 0
-                   stateSTOP  = 10,     // Working on Stop Bit
-                   stateDONE  = 11;     // Generate Interrupt
+   parameter [3:0] stateIDLE    =  0,   // Idle
+                   stateSYNC    =  1,   // Sync
+                   stateSTART   =  2,   // Start bit
+                   stateBIT0    =  3,   // Data bit 0 (LSB)
+                   stateBIT1    =  4,   // Data bit 1
+                   stateBIT2    =  5,   // Data bit 2
+                   stateBIT3    =  6,   // Data bit 3
+                   stateBIT4    =  7,   // Data bit 4
+                   stateBIT5    =  8,   // Data bit 5
+                   stateBIT6    =  9,   // Data bit 6
+                   stateBIT7    = 10,   // Data bit 7 (MSB)
+                   statePARITY  = 11,   // Parity bit
+                   stateSTOP1   = 12,   // Stop bit 1
+                   stateSTOP2   = 13,   // Stop bit 2
+                   stateDONE    = 14;   // Generate Interrupt
 
-    //
-    // UART Transmitter:
-    //
-    //  The clkBR is 16 clocks per bit.  The UART transmits LSB first.
-    //
-    //  When the load input is asserted, the data is loaded into the
-    //  Transmit Register and the state machine is started.
-    //
-    //  Once the state machine is started, it proceeds as follows:
-    //
-    //    - Send Start Bit, then
-    //    - Send bit 7 (LSB)
-    //    - Send bit 6
-    //    - Send bit 5
-    //    - Send bit 4
-    //    - Send bit 3
-    //    - Send bit 2
-    //    - Send bit 1
-    //    - Send bit 0 (MSB)
-    //    - Send Stop Bit 1
-    //    - Trigger Interrupt output
-    //
+   //
+   // UART Transmitter:
+   //
+   // Details
+   //   The brgCLKEN is 16 clocks per bit.  The UART transmits LSB first.
+   //
+   //   When the load input is asserted, the data is loaded into the
+   //   Transmit Register and the state machine is started.
+   //
+   //   Once the state machine is started, it proceeds as follows:
+   //
+   //    - Send Start Bit, then
+   //    - Send data bit 0 (LSB)
+   //    - Send data bit 1
+   //    - Send data bit 2
+   //    - Send data bit 3
+   //    - Send data bit 4
+   //    - Send data bit 5
+   //    - Send data bit 6
+   //    - Send data bit 7 (MSB)
+   //    - Send parity bit
+   //    - Send stop bit 1
+   //    - Send stop bit 2
+   //    - Trigger Interrupt output
+   //
+   // Note
+   //   Some states will be skipped depending on the configuration.
+   //
 
    reg [3:0] state;
    reg [7:0] txREG;
@@ -109,182 +121,272 @@ module UART_TX(clk, rst, clkBR, data, load, empty, intr, txd);
      begin
 
         if (rst)
-
           begin
-             state <= stateIDLE;
              txREG <= 0;
              brdiv <= 0;
+             state <= stateIDLE;
           end
 
         else
 
-          case (state)
+          if (clr)
+            begin
+               txREG <= 0;
+               brdiv <= 0;
+               state <= stateIDLE;
+            end
 
-            //
-            // Transmitter is Idle
-            //
+          else
 
-            stateIDLE:
-              if (load)
-                begin
-                   brdiv <= 15;
-                   txREG <= data;
-                   state <= stateSTART;
-                end
+            case (state)
 
-            //
-            // Transmit Start Bit
-            //
+              //
+              // Transmitter is idle
+              //
 
-            stateSTART:
-              if (clkBR)
-                if (brdiv == 0)
+              stateIDLE:
+                if (load)
                   begin
-                     brdiv <= 15;
-                     state <= stateBIT0;
+                     txREG <= data;
+                     state <= stateSYNC;
                   end
-                else
-                  brdiv <= brdiv - 1'b1;
 
-            //
-            // Transmit Bit 0 (LSB)
-            //
+              //
+              // Wait for clock
+              //
 
-            stateBIT0:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     state <= stateBIT1;
+              stateSYNC:
+               if (brgCLKEN)
+                 begin
+                    brdiv <= 15;
+                    state <= stateSTART;
+                 end
+              
+              //
+              // Transmit Start Bit
+              //
+
+              stateSTART:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       state <= stateBIT0;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
+
+              //
+              // Transmit Bit 0 (LSB)
+              //
+
+              stateBIT0:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       state <= stateBIT1;
                   end
-                else
-                  brdiv <= brdiv - 1'b1;
+                  else
+                    brdiv <= brdiv - 1'b1;
 
-            //
-            // Transmit Bit 1
-            //
+              //
+              // Transmit Bit 1
+              //
 
-            stateBIT1:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     state <= stateBIT2;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
+              stateBIT1:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       state <= stateBIT2;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
 
-            //
-            // Transmit Bit 2
-            //
+              //
+              // Transmit Bit 2
+              //
 
-            stateBIT2:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     state <= stateBIT3;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
+              stateBIT2:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       state <= stateBIT3;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
 
-            //
-            // Transmit Bit 3
-            //
+              //
+              // Transmit Bit 3
+              //
 
-            stateBIT3:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     state <= stateBIT4;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
+              stateBIT3:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       state <= stateBIT4;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
 
-            //
-            // Transmit Bit 4
-            //
+              //
+              // Transmit Bit 4
+              //
 
-            stateBIT4:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     state <= stateBIT5;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
+              stateBIT4:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       if (length == `UARTLEN_5)
+                         begin
+                            if ((parity == `UARTPAR_EVEN) ||
+                                (parity == `UARTPAR_ODD ))
+                              state <= statePARITY;
+                            else
+                              state <= stateSTOP1;
+                         end
+                       else
+                         state <= stateBIT5;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
 
-            //
-            // Transmit Bit 5
-            //
+              //
+              // Transmit Bit 5
+              //
 
-            stateBIT5:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     state <= stateBIT6;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
+              stateBIT5:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       if (length == `UARTLEN_6)
+                         begin
+                            if ((parity == `UARTPAR_EVEN) ||
+                                (parity == `UARTPAR_ODD ))
+                              state <= statePARITY;
+                            else
+                              state <= stateSTOP1;
+                         end
+                       else
+                         state <= stateBIT6;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
 
-            //
-            // Transmit Bit 6
-            //
+              //
+              // Transmit Bit 6
+              //
 
-            stateBIT6:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     state <= stateBIT7;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
+              stateBIT6:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       if (length == `UARTLEN_7)
+                         begin
+                            if ((parity == `UARTPAR_EVEN) ||
+                                (parity == `UARTPAR_ODD ))
+                              state <= statePARITY;
+                            else
+                              state <= stateSTOP1;
+                         end
+                       else
+                         state <= stateBIT7;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
 
-            //
-            // Transmit Bit 7 (MSB)
-            //
+              //
+              // Transmit Bit 7 (MSB)
+              //
 
-            stateBIT7:
-              if (clkBR)
-                if (brdiv == 0)
-                  begin
-                     brdiv <= 15;
-                     state <= stateSTOP;
-                  end
-                else
-                  brdiv <= brdiv - 1'b1;
+              stateBIT7:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       if ((parity == `UARTPAR_EVEN) ||
+                           (parity == `UARTPAR_ODD ))
+                         state <= statePARITY;
+                       else
+                         state <= stateSTOP1;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
 
-            //
-            // Transmit Stop Bit
-            //
+              //
+              // Parity
+              //
 
-            stateSTOP:
-              if (clkBR)
-                if (brdiv == 0)
-                  state <= stateDONE;
-                else
-                  brdiv <= brdiv - 1'b1;
+              statePARITY:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       state <= stateSTOP1;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
 
-            //
-            // Generate Interrupt
-            //
+              //
+              // Transmit Stop Bit 1
+              //
 
-            stateDONE:
-              state <= stateIDLE;
+              stateSTOP1:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       if (stop == `UARTSTOP_2)
+                         state <= stateSTOP2;
+                       else
+                         state <= stateDONE;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
 
-            //
-            // Everything else
-            //
+              //
+              // Transmit Stop Bit 2
+              //
 
-            default:
-              state <= stateIDLE;
+              stateSTOP2:
+                if (brgCLKEN)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       state <= stateDONE;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
 
-          endcase
+              //
+              // Generate Interrupt
+              //
+
+              stateDONE:
+                state <= stateIDLE;
+
+              //
+              // Everything else
+              //
+
+              default:
+                state <= stateIDLE;
+
+            endcase
      end
+
+   //
+   // Parity
+   //
+
+   wire evenpar = (txREG[0] ^ txREG[1] ^ txREG[2] ^ txREG[3] ^
+                   txREG[4] ^ txREG[5] ^ txREG[6] ^ txREG[7]);
 
    //
    // Data selector for TXD
@@ -294,16 +396,17 @@ module UART_TX(clk, rst, clkBR, data, load, empty, intr, txd);
    always @*
      begin
         case (state)
-          stateSTART : txdata = 0;
-          stateBIT0  : txdata = txREG[0];
-          stateBIT1  : txdata = txREG[1];
-          stateBIT2  : txdata = txREG[2];
-          stateBIT3  : txdata = txREG[3];
-          stateBIT4  : txdata = txREG[4];
-          stateBIT5  : txdata = txREG[5];
-          stateBIT6  : txdata = txREG[6];
-          stateBIT7  : txdata = txREG[7];
-          default    : txdata = 1;
+          stateSTART  : txdata = 0;
+          stateBIT0   : txdata = txREG[0];
+          stateBIT1   : txdata = txREG[1];
+          stateBIT2   : txdata = txREG[2];
+          stateBIT3   : txdata = txREG[3];
+          stateBIT4   : txdata = txREG[4];
+          stateBIT5   : txdata = txREG[5];
+          stateBIT6   : txdata = txREG[6];
+          stateBIT7   : txdata = txREG[7];
+          statePARITY : txdata = (parity == `UARTPAR_EVEN) ? evenpar : !evenpar;
+          default     : txdata = 1;
         endcase
      end
 

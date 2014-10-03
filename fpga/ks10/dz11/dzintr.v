@@ -148,12 +148,18 @@
                  stateACT:
                    if (txclr)
                      txstate <= stateWAIT;
+`ifdef BROKEN
                  stateWAIT:
                    if (tdrWRITE)
                      txstate <= stateDONE;
                  stateDONE:
                    if (!tdrWRITE)
                      txstate <= stateIDLE;
+`else
+                 stateWAIT:
+                   if (!csrTRDY)
+                     txstate <= stateIDLE;
+`endif
                endcase
           end
      end

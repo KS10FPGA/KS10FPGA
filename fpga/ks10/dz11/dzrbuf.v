@@ -41,8 +41,9 @@
 `default_nettype none
 `define SIZE 64
 
-module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXDATA, uartRXFULL,
-              uartRXCLR, rbufREAD, rbufRDONE, rbufSA, regRBUF);
+module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXOVRE, uartRXFRME,
+              uartRXPARE, uartRXDATA, uartRXFULL, uartRXCLR, rbufREAD, rbufRDONE,
+              rbufSA, regRBUF);
 
    input         clk;                           // Clock
    input         rst;                           // Reset
@@ -50,8 +51,11 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXDATA, uartRXFULL,
    input         csrMSE;                        // CSR[MSE]
    input         csrSAE;                        // CSR[SAE]
    input  [ 2:0] scan;                          // Scan
-   input  [15:0] uartRXDATA;                    // Data input
-   input  [ 7:0] uartRXFULL;                    // UART full
+   input         uartRXOVRE;                    // UART overrun error
+   input         uartRXFRME;                    // UART framing error
+   input         uartRXPARE;                    // UART parity error
+   input  [ 7:0] uartRXDATA;                    // UART data
+   input         uartRXFULL;                    // UART full
    output [ 7:0] uartRXCLR;                     // UART clear
    input         rbufREAD;                      // RBUF read
    output        rbufRDONE;                     // RBUF is empty
@@ -67,25 +71,29 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXDATA, uartRXFULL,
    //
 
    reg [7:0] uartRXCLR;
-
-   always @(scan or csrMSE or uartRXFULL)
+   
+   always @*
      begin
-        if (csrMSE)
+        if (uartRXFULL & csrMSE)
           case (scan)
-            0: uartRXCLR <= uartRXFULL & 8'b0000_0001;
-            1: uartRXCLR <= uartRXFULL & 8'b0000_0010;
-            2: uartRXCLR <= uartRXFULL & 8'b0000_0100;
-            3: uartRXCLR <= uartRXFULL & 8'b0000_1000;
-            4: uartRXCLR <= uartRXFULL & 8'b0001_0000;
-            5: uartRXCLR <= uartRXFULL & 8'b0010_0000;
-            6: uartRXCLR <= uartRXFULL & 8'b0100_0000;
-            7: uartRXCLR <= uartRXFULL & 8'b1000_0000;
+            0: uartRXCLR <= 8'b0000_0001;
+            1: uartRXCLR <= 8'b0000_0010;
+            2: uartRXCLR <= 8'b0000_0100;
+            3: uartRXCLR <= 8'b0000_1000;
+            4: uartRXCLR <= 8'b0001_0000;
+            5: uartRXCLR <= 8'b0010_0000;
+            6: uartRXCLR <= 8'b0100_0000;
+            7: uartRXCLR <= 8'b1000_0000;
           endcase
         else
           uartRXCLR <= 8'b0000_0000;
      end
 
-   wire wr = uartRXFULL[scan] & csrMSE;
+   //
+   // FIFO write
+   //
+
+   wire wr = uartRXFULL & csrMSE;
 
    //
    // FIFO read
@@ -289,7 +297,7 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXDATA, uartRXFULL,
         else
           begin
              if (wr)
-               DPRAM[wr_ptr] <= {rbufOVRE, uartRXDATA[13:0]};
+               DPRAM[wr_ptr] <= {rbufOVRE, uartRXFRME, uartRXPARE, 1'b0, scan, uartRXDATA[7:0]};
              fifoDATA <= DPRAM[rd_ptr];
           end
      end
@@ -328,7 +336,7 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXDATA, uartRXFULL,
         if (wr)
           begin
              $fwrite(file, "Received character 0x%02x on channel %d\n",
-                      uartRXDATA[7:0], uartRXDATA[10:8]);
+                      uartRXDATA[7:0], scan[2:0]);
              $fflush(file);
           end
      end

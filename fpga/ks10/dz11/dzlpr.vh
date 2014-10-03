@@ -45,7 +45,14 @@
 // DZLPR Register Bits
 //
 
-`define dzLPR_RXEN(bus) (bus[12])       // Receiver clock enable
-`define dzLPR_LINE(bus) (bus[2:0])      // Receiver line number
+`define dzLPR_DATA(bus)  (bus[12:3])    // Generic data
+
+`define dzLPR_RXEN(bus)  (bus[12])      // Parity type
+`define dzLPR_SPEED(bus) (bus[11:8])    // Baud rate
+`define dzLPR_PAR(bus)   (bus[7:6])     // Parity type
+`define dzLPR_STOP(bus)  (bus[5])       // Number of stop bits
+`define dzLPR_LEN(bus)   (bus[4:3])     // Character length
+
+`define dzLPR_LINE(bus)  (bus[2:0])     // Line number
 
 `endif

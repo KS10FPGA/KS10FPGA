@@ -55,12 +55,11 @@
 `default_nettype none
 `include "dz11.vh"
 `include "dzcsr.vh"
-`include "dzlpr.vh"
 `include "dztcr.vh"
 `include "dztdr.vh"
 `include "../ubabus.vh"
 `include "../../ks10.vh"
-`include "uart/uart_brg.vh"
+//`include "uart/uart_brg.vh"
 
 module DZ11(clk,      rst,
             dz11TXD,  dz11RXD,  dz11CO,  dz11RI,  dz11DTR,
@@ -181,7 +180,6 @@ module DZ11(clk,      rst,
    wire        csrTRDY  = `dzCSR_TRDY(regCSR);
    wire        rbufRDONE;
    wire        rbufSA;
-   wire [ 0:7] lprRXEN;
    wire [ 2:0] scan;
    wire [ 7:0] tcrLIN = `dzTCR_LIN(regTCR);
    wire [ 7:0] uartTXEMPTY;
@@ -189,6 +187,9 @@ module DZ11(clk,      rst,
    wire [ 7:0] uartRXFULL;
    wire [ 7:0] uartRXDATA[0:7];
    wire [ 7:0] uartRXCLR;
+   wire [ 7:0] uartRXFRME;
+   wire [ 7:0] uartRXPARE;
+   wire [ 7:0] uartRXOVRE;
    wire [ 7:0] uartTXDATA = `dzTDR_TBUF(regTDR);
 
    //
@@ -209,19 +210,6 @@ module DZ11(clk,      rst,
       .uartTXEMPTY(uartTXEMPTY),
       .regTCR     (regTCR),
       .regCSR     (regCSR)
-   );
-
-   //
-   // Line Parameter Register (LPR)
-   //
-
-   DZLPR LPR (
-      .clk        (clk),
-      .rst        (rst),
-      .clr        (devRESET | csrCLR),
-      .devDATAI   (devDATAI),
-      .lprWRITE   (lprWRITE),
-      .lprRXEN    (lprRXEN)
    );
 
    //
@@ -290,28 +278,11 @@ module DZ11(clk,      rst,
    //  receivers.
    //
 
-   wire [7:0] ttyRXD = (csrMAINT) ? dz11TXD[7:0] : dz11RXD[7:0];
+   wire [7:0] uartRXD = csrMAINT ? dz11TXD[7:0] : dz11RXD[7:0];
+   wire [7:0] uartTXD;
 
    //
-   // UART Baud Rate Generators
-   //
-   // Details
-   //  For now, all of the UARTS are fixed programmed at 115200 baud
-   //
-
-   wire clkBR;
-   UART_BRG ttyBRG (
-      .clk        (clk),
-      .rst        (rst | devRESET),
-      .brgSEL     (`BR115200),
-      .brgCLKEN   (clkBR)
-   );
-
-   //
-   // Array of UARTS
-   //
-   // Details
-   //  The 'generate' loops below builds 8 UARTS.
+   // Generate an array of eight UARTS
    //
 
    generate
@@ -320,36 +291,25 @@ module DZ11(clk,      rst,
 
       for (i = 0; i < 8; i = i + 1)
 
-        begin : uart_loop
+        begin : UART
 
-           //
-           // UART Transmitters
-           //
-
-           UART_TX ttyTX (
+           DZUART UART (
               .clk      (clk),
-              .rst      (rst | devRESET),
-              .clkBR    (clkBR),
-              .load     (uartTXLOAD[i]),
-              .data     (uartTXDATA),
-              .empty    (uartTXEMPTY[i]),
-              .intr     (),
-              .txd      (dz11TXD[i])
-           );
-
-           //
-           // UART Receivers
-           //
-
-           UART_RX ttyRX (
-              .clk      (clk),
-              .rst      (rst | devRESET),
-              .clkBR    (lprRXEN[i] & clkBR),
-              .rxd      (ttyRXD[i]),
-              .clr      (uartRXCLR[i]),
-              .full     (uartRXFULL[i]),
-              .intr     (),
-              .data     (uartRXDATA[i])
+              .rst      (rst),
+              .clr      (csrCLR | devRESET),
+              .lprWRITE (lprWRITE),
+              .dzDATAI  (dzDATAI),
+              .rxd      (uartRXD[i]),
+              .rxclr    (uartRXCLR[i]),
+              .rxfull   (uartRXFULL[i]),
+              .rxdata   (uartRXDATA[i]),
+              .rxpare   (uartRXPARE[i]),
+              .rxfrme   (uartRXFRME[i]),
+              .rxovre   (uartRXOVRE[i]),
+              .txd      (uartTXD[i]),
+              .txempty  (uartTXEMPTY[i]),
+              .txload   (uartTXLOAD[i]),
+              .txdata   (uartTXDATA)
            );
 
         end
@@ -359,10 +319,6 @@ module DZ11(clk,      rst,
    //
    // Receiver Buffer Register (RBUF)
    //
-   // Details:
-   //  Framing Error and Parity Error are not implemented.  UART status should
-   //  be pushed into the FIFO with the data.
-   //
 
    DZRBUF RBUF (
       .clk        (clk),
@@ -371,8 +327,11 @@ module DZ11(clk,      rst,
       .csrMSE     (csrMSE),
       .csrSAE     (csrSAE),
       .scan       (scan),
-      .uartRXDATA ({5'b0, scan, uartRXDATA[scan]}),
-      .uartRXFULL (uartRXFULL),
+      .uartRXOVRE (uartRXOVRE[scan]),
+      .uartRXFRME (uartRXFRME[scan]),
+      .uartRXPARE (uartRXPARE[scan]),
+      .uartRXDATA (uartRXDATA[scan]),
+      .uartRXFULL (uartRXFULL[scan]),
       .uartRXCLR  (uartRXCLR),
       .rbufREAD   (rbufREAD),
       .rbufRDONE  (rbufRDONE),
@@ -394,7 +353,7 @@ module DZ11(clk,      rst,
    //  The transmitter interrupt is generated when:
    //  1.  CSR[TRDY] is asserted when CSR[TIE] is asserted.
    //
-   
+
    wire txINTR;
    wire rxINTR;
    wire rxVECTOR;
@@ -453,6 +412,12 @@ module DZ11(clk,      rst,
              devDATAO = rxVECTOR ? rxVECT : txVECT;
           end
      end
+
+   //
+   // Serial output data
+   //
+
+   assign dz11TXD = uartTXD;
 
    //
    // DZ11 Device Interface
