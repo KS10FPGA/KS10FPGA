@@ -73,8 +73,8 @@ VVP          := vvp
 #LOAD         := MAINDEC-10-DSKCG.SEQ		# 1350.0 ms ???
 #LOAD         := MAINDEC-10-DSKDA-RD00.SEQ	#
 #LOAD         := MAINDEC-10-DSKEA-RD00.SEQ	#
-LOAD         := MAINDEC-10-DSDZA-RD00.SEQ	# 1700.0 ms ???
 #LOAD         := MAINDEC-10-DSUBA-RD00.SEQ	#   67.4 ms+
+#LOAD         := MAINDEC-10-DSDZA-RD00.SEQ	# 1212.4 ms
 
 DIAGS := \
         $(TESTFILES)/MAINDEC-10-DSKAA.SEQ \
@@ -147,13 +147,13 @@ RTL_SRC := \
 	$(RTL)/ks10/uba/dz11/uart/uart_rx.v \
 	$(RTL)/ks10/uba/dz11/uart/uart_tx.v \
 	$(RTL)/ks10/uba/dz11/dzcsr.v \
-	$(RTL)/ks10/uba/dz11/dzlpr.v \
 	$(RTL)/ks10/uba/dz11/dzmsr.v \
 	$(RTL)/ks10/uba/dz11/dztcr.v \
 	$(RTL)/ks10/uba/dz11/dztdr.v \
 	$(RTL)/ks10/uba/dz11/dzintr.v \
 	$(RTL)/ks10/uba/dz11/dzrbuf.v \
 	$(RTL)/ks10/uba/dz11/dzscan.v \
+	$(RTL)/ks10/uba/dz11/dzuart.v \
 	$(RTL)/ks10/uba/dz11/dz11.v \
 	$(RTL)/ks10/uba/rh11/rpxx.v \
 	$(RTL)/ks10/uba/rh11/sdaddr.v \
@@ -196,7 +196,7 @@ INC := \
 	$(RTL)/ks10/uba/dz11/dzrbuf.vh \
 	$(RTL)/ks10/uba/dz11/dztcr.vh \
 	$(RTL)/ks10/uba/dz11/dztdr.vh \
-	$(RTL)/ks10/uba/dz11/uart/uart_brg.vh \
+	$(RTL)/ks10/uba/dz11/dzuart.vh \
 	$(RTL)/ks10/uba/rh11/sd/sdspi.vh \
 	$(RTL)/ks10/uba/rh11/sd/sd.vh \
 	$(RTL)/ks10/uba/rh11/rhcs1.vh \
@@ -219,7 +219,8 @@ DAT := \
 	$(RTL)/testbench/ssram.dat
 
 DOC := \
-	$(RTL)/status.txt
+	$(RTL)/status.txt \
+	$(RTL)/fixme.txt
 
 BLD := \
 	$(ISE)/esm_ks10.xise \
