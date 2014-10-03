@@ -68,8 +68,8 @@ module testbench;
    // DZ11 Serial Interface
    //
 
-   wire [1:2]  TXD;             // DZ11 RS-232 Received Data
-   wire [1:2]  RXD = 2'b11;     // DZ11 RS-232 Transmitted Data
+   wire [1:2]  TXD = 2'b11;     // DZ11 RS-232 Received Data
+   wire [1:2]  RXD;     	// DZ11 RS-232 Transmitted Data
 
    //
    // RH11 Secure Digital Interface
