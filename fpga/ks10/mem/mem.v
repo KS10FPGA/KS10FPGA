@@ -108,7 +108,7 @@ module MEM(rst, clkT, clkR, clkPHS,
    // The Memory Conroller is Device 0
    //
 
-   localparam [0:3] memDEV = `devUBA0;
+   localparam [ 0: 3] memDEV  = `devUBA0;
 
    //
    // Memory Status Register IO Address
@@ -124,15 +124,15 @@ module MEM(rst, clkT, clkR, clkPHS,
    //  busADDRI[14:35] is address
    //
 
-   wire         busREAD   = `busREAD(busADDRI);
-   wire         busWRTEST = `busWRTEST(busADDRI);
-   wire         busWRITE  = `busWRITE(busADDRI);
-   wire         busPHYS   = `busPHYS(busADDRI);
-   wire         busIO     = `busIO(busADDRI);
-   wire [ 0: 3] busDEV    = `busDEV(busADDRI);
-   wire [18:35] busADDR   = `busADDR(busADDRI);
-   wire [16:35] busADDR20 = `busADDR20(busADDRI);
-   wire         busACREF  = `busACREF(busADDRI);
+   wire         busREAD    = `busREAD(busADDRI);
+   wire         busWRTEST  = `busWRTEST(busADDRI);
+   wire         busWRITE   = `busWRITE(busADDRI);
+   wire         busPHYS    = `busPHYS(busADDRI);
+   wire         busIO      = `busIO(busADDRI);
+   wire [ 0: 3] busDEV     = `busDEV(busADDRI);
+   wire [18:35] busIOADDR  = `busIOADDR(busADDRI);
+   wire [16:35] busMEMADDR = `busMEMADDR(busADDRI);
+   wire         busACREF   = `busACREF(busADDRI);
 
    //
    // Memory Status Register (IO Address 100000)
@@ -155,7 +155,7 @@ module MEM(rst, clkT, clkR, clkPHS,
           end
         else
           begin
-             if (busIO & busWRITE & (busDEV == memDEV) & (busADDR == addrMSR))
+             if (busIO & busPHYS & busWRITE & (busDEV == memDEV) & (busIOADDR == addrMSR))
                begin
                   statPE <=  busDATAI[ 3];
                   statPF <=  busDATAI[12] & statPF;
@@ -179,8 +179,7 @@ module MEM(rst, clkT, clkR, clkPHS,
    reg busACKO;
    reg [0:35] busDATAO;
 
-   always @(busIO or busDEV or busADDR or busREAD or busWRITE or busWRTEST or
-            ssramDATA or statREG)
+   always @*
      begin
 
         //
@@ -194,7 +193,7 @@ module MEM(rst, clkT, clkR, clkPHS,
         // Memory Status Register
         //
 
-        if (busIO & busREAD & (busDEV == memDEV) & (busADDR == addrMSR))
+        if (busIO & busPHYS & busREAD & (busDEV == memDEV) & (busIOADDR == addrMSR))
           begin
              busACKO  <= 1;
              busDATAO <= statREG;
@@ -207,9 +206,7 @@ module MEM(rst, clkT, clkR, clkPHS,
         // Memory
         //
 
-        if ((!busIO & busREAD  ) |
-            (!busIO & busWRITE ) |
-            (!busIO & busWRTEST))
+        if ((!busIO & busREAD) | (!busIO & busWRITE) | (!busIO & busWRTEST))
           begin
              busACKO  <= 1;
              busDATAO <= ssramDATA;
@@ -230,7 +227,7 @@ module MEM(rst, clkT, clkR, clkPHS,
    assign ssramOE_N    = !(busREAD  & !busIO & clkPHS[4]);
    assign ssramWE_N    = !(memWrite & clkPHS[2]);
    assign ssramCE      = 1;
-   assign ssramADDR    = {3'b0, busADDR20};
+   assign ssramADDR    = {3'b0, busMEMADDR};
    assign ssramDATA    = (memWrite  & clkPHS[4]) ? busDATAI : 36'bz;
 
 endmodule

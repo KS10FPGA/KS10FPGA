@@ -38,8 +38,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "../cpu/vma.vh"
-
 module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
            cslREQI, cslREQO, cslACKI, cslACKO, cslADDRI, cslDATAI, cslDATAO,
            ubaREQI, ubaREQO, ubaACKI, ubaACKO,
@@ -84,15 +82,6 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
    output [0:35] arbADDRO;      // ARB Address
 
    //
-   // Bus Address Flags
-   //
-
-   wire vmaPHYSICAL    = `vmaPHYSICAL(cpuADDRI);
-   wire vmaIOCYCLE     = `vmaIOCYCLE(cpuADDRI);
-   wire vmaVECTORCYCLE = `vmaVECTORCYCLE(cpuADDRI);
-   wire vmaWRUCYCLE    = `vmaWRUCYCLE(cpuADDRI);
-
-   //
    // Bus Request Arbitration
    //
    // Details:
@@ -113,13 +102,7 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
    reg [0:35] ubaDATAO;
    reg [0:35] arbADDRO;
 
-   always @(cpuREQI or cpuADDRI or cpuDATAI or cpuDATAO or
-            cslREQI or cslACKI  or cslADDRI or cslDATAI or
-            ubaREQI or ubaACKI  or
-            uba0ADDRI or uba1ADDRI or uba2ADDRI or uba3ADDRI or
-            uba0DATAI or uba1DATAI or uba2DATAI or uba3DATAI or
-            memACKI or memDATAI or
-            vmaPHYSICAL or vmaIOCYCLE or vmaWRUCYCLE)
+   always @*
 
      begin
 

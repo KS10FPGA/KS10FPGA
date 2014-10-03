@@ -1,11 +1,9 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
 // Brief
 //   DBM Multiplexer
-//
-// Details
 //
 // File
 //   dbm.v
@@ -13,40 +11,34 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2013 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
-//
-// Comments are formatted for doxygen
-//
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "useq/crom.vh"
 
-module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaFLAGS,
-           vmaADDR, cpuDATAI, dbm);
+module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaREG, cpuDATAI, dbm);
 
    parameter  cromWidth = `CROM_WIDTH;
 
@@ -56,8 +48,7 @@ module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaFLAGS,
    input  [ 8:11]          dispPF;      // Page Fail Dispatch
    input  [22:35]          aprFLAGS;    // APR Flags
    input  [18:35]          timerCOUNT;  // Timer Count
-   input  [ 0:13]          vmaFLAGS;    // VMA Flags
-   input  [14:35]          vmaADDR;     // VMA Address
+   input  [ 0:35]          vmaREG;      // VMA Register
    input  [ 0:35]          cpuDATAI;    // Memory Bus Data
    output [ 0:35]          dbm;         // DBM output
 
@@ -65,8 +56,7 @@ module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaFLAGS,
    // DBM Bus Mux
    //
    // Details
-   //  Special logic is available for grabbing BYTES from the
-   //  dp bus.
+   //  Special logic is available for grabbing BYTES from the dp bus.
    //
    // Trace
    //  Select Logic
@@ -142,11 +132,11 @@ module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaFLAGS,
                 dbm = {28'b0, scad[1:7], 1'b0};
               default:
                 dbm = dp[0:35];
-            endcase 
+            endcase
           `cromDBM_SEL_DPSWAP :
             dbm = {dp[18:35], dp[0:17]};
           `cromDBM_SEL_VMA :
-            dbm = {vmaFLAGS[0:13], vmaADDR[14:35]};
+            dbm = vmaREG;
           `cromDBM_SEL_MEM :
             dbm = cpuDATAI[0:35];
           `cromDBM_SEL_NUM :

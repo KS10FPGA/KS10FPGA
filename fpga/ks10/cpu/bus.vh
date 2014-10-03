@@ -6,6 +6,8 @@
 //   KS10 Bus Bit Definitions
 //
 // Details
+//   This file constains the KS10 bus definitions.  It is very similar to the
+//   VMA definitions for obvious reasons.
 //
 // File
 //   bus.vh
@@ -44,27 +46,40 @@
 // KS10 Bus Definitions
 //
 
-`define busUSER(bus)    (bus[ 0])       // User Mode
-`define busFETCH(bus)   (bus[ 2])       // Fetch cycle
-`define busREAD(bus)    (bus[ 3])       // Read cycle (IO or Memory)
-`define busWRTEST(bus)  (bus[ 4])       // Write test cycle
-`define busWRITE(bus)   (bus[ 5])       // Write cycle (IO or Memory)
-`define busCACHINH(bus) (bus[ 7])       // Cache inhibit
-`define busPHYS(bus)    (bus[ 8])       // Physical address
-`define busPREV(bus)    (bus[ 9])       // Previous context
-`define busIO(bus)      (bus[10])       // IO Cycle
-`define busWRU(bus)     (bus[11])       // Who are you cycle
-`define busVECT(bus)    (bus[12])       // Read interrupt vector
-`define busIOBYTE(bus)  (bus[13])       // Byte IO cycle
-`define busDEV(bus)     (bus[14:17])    // Device Number
-`define busPI(bus)      (bus[15:17])    // PI request/ack
-`define busADDR(bus)    (bus[18:35])    // IO/Mem Address
-`define busADDR20(bus)  (bus[16:35])    // Mem Address
+`define busUSER(bus)     (bus[ 0])      // User Mode
+`define busFETCH(bus)    (bus[ 2])      // Fetch cycle
+`define busREAD(bus)     (bus[ 3])      // Read cycle (IO or Memory)
+`define busWRTEST(bus)   (bus[ 4])      // Write test cycle (IO or Memory)
+`define busWRITE(bus)    (bus[ 5])      // Write cycle (IO or Memory)
+`define busCACHEINH(bus) (bus[ 7])      // Cache inhibit
+`define busPHYS(bus)     (bus[ 8])      // Physical address
+`define busPREV(bus)     (bus[ 9])      // Previous context
+`define busIO(bus)       (bus[10])      // IO cycle
+`define busWRU(bus)      (bus[11])      // Who are you cycle
+`define busVECT(bus)     (bus[12])      // Read interrupt vector cycle
+`define busIOBYTE(bus)   (bus[13])      // Byte IO cycle
+`define busDEV(bus)      (bus[14:17])   // Device number
+`define busPI(bus)       (bus[15:17])   // PI request/PI acknowledge
+
+//
+// Addressing
+//
+
+`define busIOADDR(bus)   (bus[18:35])   // IO Address
+`define busMEMADDR(bus)  (bus[16:35])   // Memory Address
+`define busDEVADDR(dev)  (dev[18:34])   // UBA Device Address
+
+//
+// This are valid during IOBYTE operations
+//
+
+`define busHIBYTE(dev)   (( dev[35] & `devIOBYTE(dev)) | !`devIOBYTE(dev))  // High byte select
+`define busLOBYTE(dev)   ((!dev[35] & `devIOBYTE(dev)) | !`devIOBYTE(dev))  // Low byte select
 
 //
 //  The ACs are addresses 0 to 15.  The ACs are never physically addressed.
 //
 
-`define busACREF(bus)   (!`busPHYS(bus) & (bus[18:31] == 14'b0))
+`define busACREF(bus)    (!`busPHYS(bus) & (bus[18:31] == 14'b0))
 
 `endif

@@ -44,22 +44,32 @@
 // UBA Bus Definitions
 //
 
-`define devUSER(dev)    (dev[ 0])       // User Mode
-`define devFETCH(dev)   (dev[ 2])       // Fetch cycle
-`define devREAD(dev)    (dev[ 3])       // Read cycle (IO or Memory)
-`define devWRTEST(dev)  (dev[ 4])       // Write test cycle
-`define devWRITE(dev)   (dev[ 5])       // Write cycle (IO or Memory)
-`define devCACHINH(dev) (dev[ 7])       // Cache inhibit
-`define devPHYS(dev)    (dev[ 8])       // Physical address
-`define devPREV(dev)    (dev[ 9])       // Previous context
-`define devIO(dev)      (dev[10])       // IO Cycle
-`define devWRU(dev)     (dev[11])       // Who are you cycle
-`define devVECT(dev)    (dev[12])       // Read interrupt vector
-`define devIOBYTE(dev)  (dev[13])       // Byte IO cycle
-`define devPI(dev)      (dev[15:17])    // PI request/PI acknowledge
-`define devDEV(dev)     (dev[14:17])    // Device Number
-`define devADDR(dev)    (dev[18:34])    // Device Address
-`define devHIBYTE(dev)  (( dev[35] & `devIOBYTE(dev)) | !`devIOBYTE(dev))  // High byte select
-`define devLOBYTE(dev)  ((!dev[35] & `devIOBYTE(dev)) | !`devIOBYTE(dev))  // Low byte select
+`define devUSER(dev)     (dev[ 0])      // User Mode
+`define devFETCH(dev)    (dev[ 2])      // Fetch cycle
+`define devREAD(dev)     (dev[ 3])      // Read cycle (IO or Memory)
+`define devWRTEST(dev)   (dev[ 4])      // Write test cycle
+`define devWRITE(dev)    (dev[ 5])      // Write cycle (IO or Memory)
+`define devCACHEINH(dev) (dev[ 7])      // Cache inhibit
+`define devPHYS(dev)     (dev[ 8])      // Physical address
+`define devPREV(dev)     (dev[ 9])      // Previous context
+`define devIO(dev)       (dev[10])      // IO cycle
+`define devWRU(dev)      (dev[11])      // Who are you cycle
+`define devVECT(dev)     (dev[12])      // Read interrupt vector
+`define devIOBYTE(dev)   (dev[13])      // Byte IO cycle
+`define devDEV(dev)      (dev[14:17])   // Device number
+`define devPI(dev)       (dev[15:17])   // PI request/PI acknowledge
+
+//
+// Addressing
+//
+
+`define devADDR(dev)     (dev[18:34])   // Device Address
+
+//
+// This are valid during IOBYTE operations
+//
+
+`define devHIBYTE(dev)   (( dev[35] & `devIOBYTE(dev)) | !`devIOBYTE(dev))  // High byte select
+`define devLOBYTE(dev)   ((!dev[35] & `devIOBYTE(dev)) | !`devIOBYTE(dev))  // Low byte select
 
 `endif

@@ -75,7 +75,7 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module DISP_PF(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, aprFLAGS,
+module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS,
                pageFLAGS, piINTR, nxmINTR, timerINTR, pageFAIL, dispPF);
 
    parameter cromWidth = `CROM_WIDTH;
@@ -87,8 +87,7 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, aprFLAGS,
    input  [ 0:cromWidth-1] crom;        // Control ROM Data
    input  [ 0:dromWidth-1] drom;        // Dispatch ROM Data
    input  [ 0:35]          dp;          // Datapath
-   input  [ 0:13]          vmaFLAGS;    // Virtual Memory Flags
-   input  [14:35]          vmaADDR;     // Virtual Memory Address
+   input  [ 0:35]          vmaREG;      // Virtual Memory Register
    input  [22:35]          aprFLAGS;    // APR Flags
    input  [ 0: 3]          pageFLAGS;   // Page Flags
    input                   timerINTR;   // Timer Interrupt
@@ -175,9 +174,9 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, aprFLAGS,
    // debug
    //
 
-   wire debugREADCYCLE   = `vmaREADCYCLE(vmaFLAGS);     // Read Cycle (IO or Memory)
-   wire debugWRTESTCYCLE = `vmaWRTESTCYCLE(vmaFLAGS);   // Write Test Cycle
-   wire debugWRITECYCLE  = `vmaWRITECYCLE(vmaFLAGS);    // Write Cycle (IO or Memory)
+   wire debugREADCYCLE   = `vmaREAD(vmaREG);     // Read Cycle (IO or Memory)
+   wire debugWRTESTCYCLE = `vmaWRTEST(vmaREG);   // Write Test Cycle
+   wire debugWRITECYCLE  = `vmaWRITE(vmaREG);    // Write Cycle (IO or Memory)
 
    //
    // vmaJUSTLOADED
@@ -387,7 +386,7 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaFLAGS, vmaADDR, aprFLAGS,
    //
 
    wire pageFAIL = (((crom[0:11] == 12'o0363) & piINTR   ) |
-		    ((crom[0:11] == 12'o0201) & piINTR   ) |
+                    ((crom[0:11] == 12'o0201) & piINTR   ) |
                     ((crom[0:11] == 12'o0363) & timerINTR));
 
    reg [0:3] dispPF;

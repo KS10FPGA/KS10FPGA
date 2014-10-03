@@ -144,7 +144,7 @@ module UBA(rst, clkT, clkR,
    wire         busIOBYTE = `busIOBYTE(busADDRI);// IO Bridge Byte IO Operation
    wire [15:17] busPI     = `busPI(busADDRI);    // IO Bridge PI Request
    wire [14:17] busDEV    = `busDEV(busADDRI);   // IO Bridge Device Number
-   wire [18:35] busADDR   = `busADDR(busADDRI);  // IO Address
+   wire [18:35] busADDR   = `busIOADDR(busADDRI);// IO Address
 
    //
    // Address Decoding

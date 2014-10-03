@@ -42,22 +42,31 @@
 `define __VMA_VH
 
 //
-// VMA Flags
+// VMA Bit Definitions
 //
 
-`define vmaUSER(reg)        (reg[ 0])   // 1 = User Mode
-`define vmaEXEC(reg)        (reg[ 1])   // 1 = Exec Mode
-`define vmaFETCH(reg)       (reg[ 2])   // 1 = Instruction fetch
-`define vmaREADCYCLE(reg)   (reg[ 3])   // 1 = Read Cycle (IO or Memory)
-`define vmaWRTESTCYCLE(reg) (reg[ 4])   // 1 = Perform write test for page fail
-`define vmaWRITECYCLE(reg)  (reg[ 5])   // 1 = Write Cycle (IO or Memory)
-`define vmaUNUSED(reg)      (reg[ 6])   // Spare/Unused bit
-`define vmaCACHEIHN(reg)    (reg[ 7])   // 1 = Cache is inhibited
-`define vmaPHYSICAL(reg)    (reg[ 8])   // 1 = Physical reference
-`define vmaPREVIOUS(reg)    (reg[ 9])   // 1 = VMA Previous Context
-`define vmaIOCYCLE(reg)     (reg[10])   // 1 = IO Cycle, 0 = Memory Cycle
-`define vmaWRUCYCLE(reg)    (reg[11])   // 1 = Read interrupt controller number
-`define vmaVECTORCYCLE(reg) (reg[12])   // 1 = Read interrupt vector
-`define vmaIOBYTECYCLE(reg) (reg[13])   // 1 = Unibus Byte IO Operation
+`define vmaUSER(reg)     reg[ 0]        // User Mode
+`define vmaEXEC(reg)     reg[ 1]        // Exec Mode
+`define vmaFETCH(reg)    reg[ 2]        // Instruction fetch
+`define vmaREAD(reg)     reg[ 3]        // Read cycle
+`define vmaWRTEST(reg)   reg[ 4]        // Write test cycle
+`define vmaWRITE(reg)    reg[ 5]        // Write cycle
+`define vmaUNUSED(reg)   reg[ 6]        // Spare/Unused bit
+`define vmaCACHEINH(reg) reg[ 7]        // Cache is inhibited
+`define vmaPHYS(reg)     reg[ 8]        // Physical address
+`define vmaPREV(reg)     reg[ 9]        // Previous context
+`define vmaIO(reg)       reg[10]        // IO cycle
+`define vmaWRU(reg)      reg[11]        // Who are you cycle
+`define vmaVECT(reg)     reg[12]        // Read interrupt vector
+`define vmaIOBYTE(reg)   reg[13]        // Byte IO cycle
+
+`define vmaFLAGS(reg)    reg[ 0:13]     // Flags
+`define vmaADDR(reg)     reg[14:35]     // Address
+
+//
+//  The ACs are addresses 0 to 15.  The ACs are never physically addressed.
+//
+
+`define vmaACREF(reg)    (!`vmaPHYS(reg) & (reg[18:31] == 14'b0))
 
 `endif

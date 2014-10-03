@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -13,39 +13,38 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`include "vma.vh"
 `include "pcflags.vh"
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
 module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
-           vmaEXTENDED, vmaFLAGS, vmaADDR);
+           vmaEXTENDED, vmaREG);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -60,8 +59,7 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
    input                   prevEN;      // Previous Enable
    input  [ 0:17]          pcFLAGS;     // PC Flags
    output                  vmaEXTENDED; // VMA Extended
-   output [ 0:13]          vmaFLAGS;    // VMA Flags
-   output [14:35]          vmaADDR;     // Virtual Memory Address
+   output [ 0:35]          vmaREG;      // VMA Register
 
    //
    // PC Flags
@@ -74,8 +72,7 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
    // Microcode Decode
    //
    // Note
-   //  The cache clear and the previous selection are exclusive
-   //  operations.
+   //  The cache clear and the previous selection are exclusive operations.
    //
    // Trace
    //  DPE5/E76
@@ -89,8 +86,7 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
    // VMA Register
    //
    // Details
-   //  The VMA is loaded when cromMEM_CYCLE is active and
-   //  the VMA is loaded.
+   //  The VMA is loaded when cromMEM_CYCLE is active and the VMA is loaded.
    //
    // Trace
    //  DPE3/E53
@@ -111,65 +107,57 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
    //  DPM4/E183
    //
 
-   reg [14:35] vmaADDR;
-   reg vmaEXTENDED;
-   reg vmaUSER;
-   reg vmaFETCH;
-   reg vmaPHYSICAL;
-   reg vmaPREVIOUS;
-   reg vmaIOCYCLE;
-   reg vmaWRUCYCLE;
-   reg vmaVECTORCYCLE;
-   reg vmaIOBYTECYCLE;
-
    wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) |
                  (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA) |
                  (cacheSWEEP));
+
+   reg [ 0:35] vmaREG;
+   reg         vmaEXTENDED;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             vmaADDR        <= 22'b0;
-             vmaEXTENDED    <=  1'b0;
-             vmaUSER        <=  1'b0;
-             vmaFETCH       <=  1'b0;
-             vmaPHYSICAL    <=  1'b0;
-             vmaPREVIOUS    <=  1'b0;
-             vmaIOCYCLE     <=  1'b0;
-             vmaWRUCYCLE    <=  1'b0;
-             vmaVECTORCYCLE <=  1'b0;
-             vmaIOBYTECYCLE <=  1'b0;
+             vmaEXTENDED        <= 0;
+             `vmaADDR(vmaREG)   <= 0;
+             `vmaUSER(vmaREG)   <= 0;
+             `vmaFETCH(vmaREG)  <= 0;
+             `vmaPHYS(vmaREG)   <= 0;
+             `vmaPREV(vmaREG)   <= 0;
+             `vmaIO(vmaREG)     <= 0;
+             `vmaWRU(vmaREG)    <= 0;
+             `vmaVECT(vmaREG)   <= 0;
+             `vmaIOBYTE(vmaREG) <= 0;
           end
         else if (clken & vmaEN)
           begin
-             vmaADDR     <= dp[14:35];
              vmaEXTENDED <= `cromMEM_EXTADDR;
+             `vmaADDR(vmaREG) <= dp[14:35];
              if (`cromMEM_DPFUNC)
                begin
-                  vmaUSER        <= dp[0];
-                  vmaFETCH       <= dp[2];
-                  vmaPHYSICAL    <= dp[8];
-                  vmaPREVIOUS    <= dp[9];
-                  vmaIOCYCLE     <= dp[10];
-                  vmaWRUCYCLE    <= dp[11];
-                  vmaVECTORCYCLE <= dp[12];
-                  vmaIOBYTECYCLE <= dp[13];
+                  `vmaUSER(vmaREG)   <= `vmaUSER(dp);
+                  `vmaFETCH(vmaREG)  <= `vmaFETCH(dp);
+                  `vmaPHYS(vmaREG)   <= `vmaPHYS(dp);
+                  `vmaPREV(vmaREG)   <= `vmaPREV(dp);
+                  `vmaIO(vmaREG)     <= `vmaIO(dp);
+                  `vmaWRU(vmaREG)    <= `vmaWRU(dp);
+                  `vmaVECT(vmaREG)   <= `vmaVECT(dp);
+                  `vmaIOBYTE(vmaREG) <= `vmaIOBYTE(dp);
                end
              else
                begin
-                  vmaUSER        <= ((~`cromMEM_FORCEEXEC & flagUSER & ~cpuEXEC) |
-                                     (`cromMEM_FETCHCYCLE & flagUSER           ) |
-                                     (prevEN              & flagPCU            ) |
-                                     (selPREVIOUS         & flagPCU            ) |
-                                     (`cromMEM_FORCEUSER));
-                  vmaFETCH       <= `cromMEM_FETCHCYCLE;
-                  vmaPHYSICAL    <= `cromMEM_PHYSICAL;
-                  vmaPREVIOUS    <= prevEN | selPREVIOUS;
-                  vmaIOCYCLE     <= 1'b0;
-                  vmaWRUCYCLE    <= 1'b0;
-                  vmaVECTORCYCLE <= 1'b0;
-                  vmaIOBYTECYCLE <= 1'b0;
+                  `vmaUSER(vmaREG)   <= ((~`cromMEM_FORCEEXEC & flagUSER & ~cpuEXEC) |
+                                         (`cromMEM_FETCHCYCLE & flagUSER           ) |
+                                         (prevEN              & flagPCU            ) |
+                                         (selPREVIOUS         & flagPCU            ) |
+                                         (`cromMEM_FORCEUSER));
+                  `vmaFETCH(vmaREG)  <= `cromMEM_FETCHCYCLE;
+                  `vmaPHYS(vmaREG)   <= `cromMEM_PHYSICAL;
+                  `vmaPREV(vmaREG)   <= prevEN | selPREVIOUS;
+                  `vmaIO(vmaREG)     <= 0;
+                  `vmaWRU(vmaREG)    <= 0;
+                  `vmaVECT(vmaREG)   <= 0;
+                  `vmaIOBYTE(vmaREG) <= 0;
                end
           end
     end
@@ -189,11 +177,6 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
    //  DPM5/E110
    //
 
-   reg vmaREADCYCLE;
-   reg vmaWRTESTCYCLE;
-   reg vmaWRITECYCLE;
-   reg vmaCACHEINH;
-
    wire memEN = ((`cromMEM_CYCLE  & `cromMEM_WAIT                   ) |
                  (`cromMEM_CYCLE  & `cromMEM_BWRITE & `dromCOND_FUNC));
 
@@ -201,55 +184,36 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
      begin
         if (rst)
           begin
-             vmaREADCYCLE   <= 1'b0;
-             vmaWRTESTCYCLE <= 1'b0;
-             vmaWRITECYCLE  <= 1'b0;
-             vmaCACHEINH    <= 1'b0;
+             `vmaREAD(vmaREG)     <= 0;
+             `vmaWRTEST(vmaREG)   <= 0;
+             `vmaWRITE(vmaREG)    <= 0;
+             `vmaCACHEINH(vmaREG) <= 0;
           end
         else if (clken & memEN)
           begin
              if (`cromMEM_AREAD)
                begin
-                  vmaREADCYCLE   <= `dromREADCYCLE;
-                  vmaWRTESTCYCLE <= `dromWRTESTCYCLE;
-                  vmaWRITECYCLE  <= `dromWRITECYCLE;
-                  vmaCACHEINH    <= 1'b0;
+                  `vmaREAD(vmaREG)     <= `dromREADCYCLE;
+                  `vmaWRTEST(vmaREG)   <= `dromWRTESTCYCLE;
+                  `vmaWRITE(vmaREG)    <= `dromWRITECYCLE;
+                  `vmaCACHEINH(vmaREG) <= 0;
                end
              else
                if (`cromMEM_DPFUNC)
                  begin
-                    vmaREADCYCLE   <= dp[3];
-                    vmaWRTESTCYCLE <= dp[4];
-                    vmaWRITECYCLE  <= dp[5];
-                    vmaCACHEINH    <= dp[7];
+                    `vmaREAD(vmaREG)     <= `vmaREAD(dp);
+                    `vmaWRTEST(vmaREG)   <= `vmaWRTEST(dp);
+                    `vmaWRITE(vmaREG)    <= `vmaWRITE(dp);
+                    `vmaCACHEINH(vmaREG) <= `vmaCACHEINH(dp);
                  end
                else
                  begin
-                    vmaREADCYCLE   <= `cromMEM_READCYCLE;
-                    vmaWRTESTCYCLE <= `cromMEM_WRTESTCYCLE;
-                    vmaWRITECYCLE  <= `cromMEM_WRITECYCLE;
-                    vmaCACHEINH    <= `cromMEM_CACHEINH;
+                    `vmaREAD(vmaREG)     <= `cromMEM_READCYCLE;
+                    `vmaWRTEST(vmaREG)   <= `cromMEM_WRTESTCYCLE;
+                    `vmaWRITE(vmaREG)    <= `cromMEM_WRITECYCLE;
+                    `vmaCACHEINH(vmaREG) <= `cromMEM_CACHEINH;
                  end
           end
      end
-
-   //
-   // Fixup vmaFLAGS
-   //
-
-   assign vmaFLAGS[ 0] = vmaUSER;
-   assign vmaFLAGS[ 1] = 1'b0;
-   assign vmaFLAGS[ 2] = vmaFETCH;
-   assign vmaFLAGS[ 3] = vmaREADCYCLE;
-   assign vmaFLAGS[ 4] = vmaWRTESTCYCLE;
-   assign vmaFLAGS[ 5] = vmaWRITECYCLE;
-   assign vmaFLAGS[ 6] = 1'b0;
-   assign vmaFLAGS[ 7] = vmaCACHEINH;
-   assign vmaFLAGS[ 8] = vmaPHYSICAL;
-   assign vmaFLAGS[ 9] = vmaPREVIOUS;
-   assign vmaFLAGS[10] = vmaIOCYCLE;
-   assign vmaFLAGS[11] = vmaWRUCYCLE;
-   assign vmaFLAGS[12] = vmaVECTORCYCLE;
-   assign vmaFLAGS[13] = vmaIOBYTECYCLE;
 
 endmodule

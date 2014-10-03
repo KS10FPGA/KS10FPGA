@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -8,6 +8,7 @@
 // Details
 //
 // Note
+//   The ramfile is addressed as follows:
 //
 //     +------+----------------+
 //     | 1777 |                |
@@ -52,13 +53,10 @@
 //     +------+----------------+
 //
 // Note
-//    In the original circuitry the Control ROM (microcode)
-//    was supplied to this module via the dbm input.  This
-//    has been replaced by a direct connection to the Control
-//    ROM. Presumably this was done because of circuit board
-//    interconnection limitations.
-//
-// Todo
+//   In the original circuitry the Control ROM (microcode) was supplied to this
+//   module via the dbm input.  This has been replaced by a direct connection
+//   to the Control ROM. Presumably this was done because of circuit board
+//   interconnection limitations.
 //
 // File
 //   ramfile.v
@@ -66,31 +64,29 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 
 `default_nettype none
@@ -101,8 +97,8 @@
 `include "useq/drom.vh"
 
 
-module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
-               vmaFLAGS, vmaADDR, acBLOCK, ramfile);
+module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV, vmaREG,
+               acBLOCK, ramfile);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -115,8 +111,7 @@ module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
    input  [ 0:35]          dbus;                // DBUS Input
    input  [ 0:17]          regIR;               // Instruction Register
    input                   xrPREV;              // XR Previous
-   input  [ 0:13]          vmaFLAGS;            // Virtual Memory Flags
-   input  [14:35]          vmaADDR;             // Virtual Memory Address
+   input  [ 0:35]          vmaREG;              // VMA Register
    input  [ 0: 5]          acBLOCK;             // AC Blocks
    output [ 0:35]          ramfile;             // RAMFILE output
 
@@ -131,9 +126,9 @@ module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
    // VMA Flags
    //
 
-   wire vmaWRITECYCLE = `vmaWRITECYCLE(vmaFLAGS);
-   wire vmaPHYSICAL   = `vmaPHYSICAL(vmaFLAGS);
-   wire vmaPREVIOUS   = `vmaPREVIOUS(vmaFLAGS);
+   wire vmaWRITE = `vmaWRITE(vmaREG);
+   wire vmaPHYS  = `vmaPHYS(vmaREG);
+   wire vmaPREV  = `vmaPREV(vmaREG);
 
    //
    // AC Reference
@@ -149,49 +144,45 @@ module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
    //  DPM4/E191
    //
 
-   wire vmaACREF = ~vmaPHYSICAL & (vmaADDR[18:31] == 14'b0);
+   wire vmaACREF = `vmaACREF(vmaREG);
 
    //
    // AC Blocks
    //
 
-   wire [0:2] currBLOCK = `currBLOCK(acBLOCK);	// Current AC Block
+   wire [0:2] currBLOCK = `currBLOCK(acBLOCK);  // Current AC Block
    wire [0:2] prevBLOCK = `prevBLOCK(acBLOCK);  // Previous AC Block
 
    //
    // Address Mux
    //
    // Details
-   //  This mux provide the address for various RAMFILE
-   //  operations.   Operations can be:
+   //  This mux provide the address for various RAMFILE operations.  The
+   //  operations can be:
    //
-   //  Access to the RAMFILE ACs are selected using the
-   //  AC field of the instruction.
+   //  Access to the RAMFILE ACs are selected using the AC field of the
+   //  instruction.
    //
-   //  1.  Access to an AC in the current context using
-   //      the AC field of the instruction.
-   //  2.  Access to an AC in the current context using
-   //      the XR field of the instruction.
-   //  3.  Access to an AC in the previous context using
-   //      the XR field of the instruction.
-   //  4.  Access to an AC in the current context using
-   //      a plain address.
-   //  5.  Access to an AC in the previous context using
-   //      a plain address.
+   //  1.  Access to an AC in the current context using the AC field of the
+   //      instruction.
+   //  2.  Access to an AC in the current context using the XR field of the
+   //      instruction.
+   //  3.  Access to an AC in the previous context using the XR field of the
+   //      instruction.
+   //  4.  Access to an AC in the current context using a plain address.
+   //  5.  Access to an AC in the previous context using a plain address.
    //  6.  Access to RAMFILE storage.
    //  7.  Access to the cache
    //
    // Note:
-   //  The KS10 used {dbm[26:28], dbm[11:17]} for the
-   //  cromRAMADDR_SEL_NUM case below.  Since the number
-   //  field in on both halves of the dbm, this is
-   //  equivalent to dbm[8:17].  This has been replaced
-   //  by a direct connection to the CROM.
+   //  The KS10 used {dbm[26:28], dbm[11:17]} for the cromRAMADDR_SEL_NUM case
+   //  below.  Since the number field in on both halves of the dbm, this is
+   //  equivalent to dbm[8:17].  This has been replaced by a direct connection
+   //  to the CROM.
    //
-   //  This was a 74LS181 ALU in the KS10.  Only the part of
-   //  that device that is used is implemented.  This adder is
-   //  controlled by one of the overloaded usages of the CROM
-   //  number field.
+   //  This was a 74LS181 ALU in the KS10.  Only the part of that device that
+   //  is used is implemented.  This adder is controlled by one of the
+   //  overloaded usages of the CROM number field.
    //
    // Trace
    //  DPE6/E3
@@ -209,10 +200,9 @@ module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
    //  DPE6/E79
    //
 
-   reg  [0:9] addr;
+   reg [0:9] addr;
 
-   always@(crom or currBLOCK or prevBLOCK or regIR_AC or regIR_XR or
-           xrPREV or vmaACREF or vmaPREVIOUS or vmaADDR)
+   always @*
      begin
         case(`cromRAMADDR_SEL)
           `cromRAMADDR_SEL_AC:
@@ -237,16 +227,16 @@ module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
             begin
                if (vmaACREF)
                  begin
-                    if (vmaPREVIOUS)
-                      addr = {3'b0, prevBLOCK, vmaADDR[32:35]};
+                    if (vmaPREV)
+                      addr = {3'b0, prevBLOCK, vmaREG[32:35]};
                     else
-                      addr = {3'b0, currBLOCK, vmaADDR[32:35]};
+                      addr = {3'b0, currBLOCK, vmaREG[32:35]};
                  end
                else
-                 addr = {1'b1, vmaADDR[27:35]};
+                 addr = {1'b1, vmaREG[27:35]};
             end
           `cromRAMADDR_SEL_RAM:
-            addr = vmaADDR[26:35];
+            addr = vmaREG[26:35];
           `cromRAMADDR_SEL_NUM:
             addr = `cromSNUM;
           default:
@@ -266,8 +256,7 @@ module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
    //  DPMA/E54
    //
 
-    wire ramfileWRITE = ((vmaACREF & vmaWRITECYCLE) |
-                         (`cromFMWRITE));
+   wire ramfileWRITE = ((vmaACREF & vmaWRITE) | (`cromFMWRITE));
 
    //
    // RAMFILE MEMORY
@@ -283,5 +272,5 @@ module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV,
       .din(dbus),
       .dout(ramfile)
   );
-   
+
 endmodule

@@ -71,8 +71,8 @@
 `include "vma.vh"
 `include "useq/crom.vh"
 
-module BUS(clk, rst, dp, crom, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
-           aprFLAGS, piCURPRI, cpuDATAO, cpuADDRO, cpuREQO);
+module BUS(clk, rst, dp, crom, vmaEXTENDED, vmaREG, pageADDR, aprFLAGS, piCURPRI,
+           cpuDATAO, cpuADDRO, cpuREQO);
 
    parameter  cromWidth = `CROM_WIDTH;
 
@@ -81,8 +81,7 @@ module BUS(clk, rst, dp, crom, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
    input  [ 0:35]          dp;          // Data path
    input  [ 0:cromWidth-1] crom;        // Control ROM Data
    input                   vmaEXTENDED; // Extended VMA
-   input  [ 0:13]          vmaFLAGS;    // VMA Flags
-   input  [14:35]          vmaADDR;     // Virtual Memory Address
+   input  [ 0:35]          vmaREG;      // VMA Register
    input  [16:26]          pageADDR;    // Page Address
    input  [22:35]          aprFLAGS;    // APR Flags
    input  [ 0: 2]          piCURPRI;    // Current Interrupt Priority
@@ -94,25 +93,25 @@ module BUS(clk, rst, dp, crom, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
    // APR Flags
    //
 
-   wire flagPAGEEN     = `flagPAGEEN(aprFLAGS);
+   wire flagPAGEEN = `flagPAGEEN(aprFLAGS);
 
    //
    // VMA Flags
    //
 
-   wire vmaREADCYCLE   = `vmaREADCYCLE(vmaFLAGS);
-   wire vmaWRTESTCYCLE = `vmaWRTESTCYCLE(vmaFLAGS);
-   wire vmaWRITECYCLE  = `vmaWRITECYCLE(vmaFLAGS);
-   wire vmaPHYSICAL    = `vmaPHYSICAL(vmaFLAGS);
-   wire vmaIOCYCLE     = `vmaIOCYCLE(vmaFLAGS);
-   wire vmaWRUCYCLE    = `vmaWRUCYCLE(vmaFLAGS);
-   wire vmaVECTORCYCLE = `vmaVECTORCYCLE(vmaFLAGS);
+   wire vmaREAD    = `vmaREAD(vmaREG);
+   wire vmaWRTEST  = `vmaWRTEST(vmaREG);
+   wire vmaWRITE   = `vmaWRITE(vmaREG);
+   wire vmaPHYS    = `vmaPHYS(vmaREG);
+   wire vmaIO      = `vmaIO(vmaREG);
+   wire vmaWRU     = `vmaWRU(vmaREG);
+   wire vmaVECT    = `vmaVECT(vmaREG);
 
    //
    // Paged Reference
    //
 
-   wire pagedREF = !vmaPHYSICAL & flagPAGEEN;
+   wire pagedREF = !vmaPHYS & flagPAGEEN;
 
    //
    // The WRU cycle and VECTOR cycle are merged into a single long bus
@@ -134,8 +133,8 @@ module BUS(clk, rst, dp, crom, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
    // Bus Request Output
    //
 
-   assign cpuREQO = vmaREADCYCLE   | vmaWRITECYCLE  | vmaWRTESTCYCLE |
-                    vmaVECTORCYCLE | (vmaWRUCYCLE & !addr3666);
+   assign cpuREQO = vmaREAD | vmaWRITE  | vmaWRTEST | vmaVECT |
+                    (vmaWRU & !addr3666);
 
    //
    // Data Output
@@ -152,17 +151,17 @@ module BUS(clk, rst, dp, crom, vmaEXTENDED, vmaFLAGS, vmaADDR, pageADDR,
    always @*
      begin
         if (pagedREF)
-          cpuADDRO <= {vmaFLAGS, vmaADDR[14:15], pageADDR[16:26], vmaADDR[27:35]};
+          cpuADDRO <= {vmaREG[0:13], vmaREG[14:15], pageADDR[16:26], vmaREG[27:35]};
         else
           begin
-             if (vmaWRUCYCLE)
-               cpuADDRO[0:35] <= {vmaFLAGS, 1'b0, piCURPRI, vmaADDR[18:35]};
+             if (vmaWRU)
+               cpuADDRO[0:35] <= {vmaREG[0:13], 1'b0, piCURPRI[0:2], vmaREG[18:35]};
              else
                begin
                   if (vmaEXTENDED)
-                    cpuADDRO <= {vmaFLAGS, vmaADDR};
+                    cpuADDRO <= vmaREG;
                   else
-                    cpuADDRO <= {vmaFLAGS, 4'b0000, vmaADDR[18:35]};
+                    cpuADDRO <= {vmaREG[0:13], 4'b0000, vmaREG[18:35]};
                end
           end
      end

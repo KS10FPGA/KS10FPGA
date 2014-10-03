@@ -264,14 +264,15 @@ module CSL(clk, rst,
    wire         busREAD  = `busREAD(busADDRI);
    wire         busWRITE = `busWRITE(busADDRI);
    wire         busIO    = `busIO(busADDRI);
+   wire         busPHYS  = `busPHYS(busADDRI);
    wire [14:17] busDEV   = `busDEV(busADDRI);
-   wire [18:35] busADDR  = `busADDR(busADDRI);
+   wire [18:35] busADDR  = `busIOADDR(busADDRI);
 
    //
    // Console Instruction Register Read
    //
 
-   wire cirREAD = busIO & busREAD & (busDEV == cslDEV) & (busADDR == addrCIR);
+   wire cirREAD = busIO & busPHYS & busREAD & (busDEV == cslDEV) & (busADDR == addrCIR);
 
    //
    // State Machine States
@@ -685,8 +686,8 @@ module CSL(clk, rst,
         if (state == stateFAIL)
           begin
              $display("[%10.0f] CSL: Unacknowledged bus cycle.  Addr was %012o",
-		      $time/1.0e3, busADDRO);
-	     $stop;
+                      $time/1.0e3, busADDRO);
+             $stop;
           end
      end
 

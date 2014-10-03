@@ -132,11 +132,10 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
    wire [ 1: 7] aprINTR;        // APR Interrupt Request
 
    //
-   // VMA Registers
+   // VMA Register
    //
 
-   wire [14:35] vmaADDR;        // VMA Address
-   wire [ 0:13] vmaFLAGS;       // VMA Flags
+   wire [ 0:35] vmaREG;         // VMA Register
    wire         vmaEXTENDED;    // Extended VMA
 
    //
@@ -292,8 +291,7 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .crom             (crom),
       .drom             (drom),
       .dp               (dp),
-      .vmaFLAGS         (vmaFLAGS),
-      .vmaADDR          (vmaADDR),
+      .vmaREG           (vmaREG),
       .aprFLAGS         (aprFLAGS),
       .pageFLAGS        (pageFLAGS),
       .piINTR           (piINTR),
@@ -313,8 +311,7 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .dp               (dp),
       .crom             (crom),
       .vmaEXTENDED      (vmaEXTENDED),
-      .vmaFLAGS         (vmaFLAGS),
-      .vmaADDR          (vmaADDR),
+      .vmaREG           (vmaREG),
       .pageADDR         (pageADDR),
       .aprFLAGS         (aprFLAGS),
       .piCURPRI         (piCURPRI),
@@ -334,8 +331,7 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .dispPF           (dispPF),
       .aprFLAGS         (aprFLAGS),
       .timerCOUNT       (timerCOUNT),
-      .vmaFLAGS         (vmaFLAGS),
-      .vmaADDR          (vmaADDR),
+      .vmaREG           (vmaREG),
       .cpuDATAI         (cpuDATAI),
       .dbm              (dbm)
    );
@@ -361,8 +357,7 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .crom             (crom),
       .cacheHIT         (cacheHIT),
       .piREQPRI         (piREQPRI),
-      .vmaFLAGS         (vmaFLAGS),
-      .vmaADDR          (vmaADDR),
+      .vmaREG           (vmaREG),
       .pcFLAGS          (pcFLAGS),
       .dp               (dp),
       .ramfile          (ramfile),
@@ -507,8 +502,7 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .crom             (crom),
       .drom             (drom),
       .dp               (dp),
-      .vmaADDR          (vmaADDR),
-      .vmaFLAGS         (vmaFLAGS),
+      .vmaREG           (vmaREG),
       .pageFLAGS        (pageFLAGS),
       .pageADDR         (pageADDR)
    );
@@ -557,8 +551,7 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .dbus             (dbus),
       .regIR            (regIR),
       .xrPREV           (xrPREV),
-      .vmaFLAGS         (vmaFLAGS),
-      .vmaADDR          (vmaADDR),
+      .vmaREG           (vmaREG),
       .acBLOCK          (acBLOCK),
       .ramfile          (ramfile)
    );
@@ -608,8 +601,7 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .prevEN           (prevEN),
       .pcFLAGS          (pcFLAGS),
       .vmaEXTENDED      (vmaEXTENDED),
-      .vmaFLAGS         (vmaFLAGS),
-      .vmaADDR          (vmaADDR)
+      .vmaREG           (vmaREG)
    );
 
    //
