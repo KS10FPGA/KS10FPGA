@@ -43,8 +43,7 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
-           vmaEXTENDED, vmaREG);
+module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS, vmaREG);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -58,7 +57,6 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
    input                   cpuEXEC;     // Execute
    input                   prevEN;      // Previous Enable
    input  [ 0:17]          pcFLAGS;     // PC Flags
-   output                  vmaEXTENDED; // VMA Extended
    output [ 0:35]          vmaREG;      // VMA Register
 
    //
@@ -112,15 +110,15 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
                  (cacheSWEEP));
 
    reg [ 0:35] vmaREG;
-   reg         vmaEXTENDED;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             vmaEXTENDED        <= 0;
+             `vmaEXTD(vmaREG)   <= 0;
              `vmaADDR(vmaREG)   <= 0;
              `vmaUSER(vmaREG)   <= 0;
+             `vmaEXEC(vmaREG)   <= 0;
              `vmaFETCH(vmaREG)  <= 0;
              `vmaPHYS(vmaREG)   <= 0;
              `vmaPREV(vmaREG)   <= 0;
@@ -131,7 +129,7 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS,
           end
         else if (clken & vmaEN)
           begin
-             vmaEXTENDED <= `cromMEM_EXTADDR;
+             `vmaEXTD(vmaREG) <= `cromMEM_EXTADDR;
              `vmaADDR(vmaREG) <= dp[14:35];
              if (`cromMEM_DPFUNC)
                begin

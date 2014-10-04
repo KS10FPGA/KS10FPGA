@@ -136,7 +136,6 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
    //
 
    wire [ 0:35] vmaREG;         // VMA Register
-   wire         vmaEXTENDED;    // Extended VMA
 
    //
    // Paging
@@ -310,7 +309,6 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .rst              (rst),
       .dp               (dp),
       .crom             (crom),
-      .vmaEXTENDED      (vmaEXTENDED),
       .vmaREG           (vmaREG),
       .pageADDR         (pageADDR),
       .aprFLAGS         (aprFLAGS),
@@ -600,7 +598,6 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .cpuEXEC          (cpuEXEC),
       .prevEN           (prevEN),
       .pcFLAGS          (pcFLAGS),
-      .vmaEXTENDED      (vmaEXTENDED),
       .vmaREG           (vmaREG)
    );
 

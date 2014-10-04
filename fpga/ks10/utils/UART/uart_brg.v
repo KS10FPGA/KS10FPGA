@@ -6,8 +6,10 @@
 //   DZ11 UART Baud Rate Generator
 //
 // Details
-//   This module contains a baud rate generator for use by the UART transmitter
-//   and the UART receiver modules
+//   This module provides a baud rate generator for use by the UART transmitter
+//   and the UART receiver modules.   It is implemented using a Fractional N
+//   divider instead of a counter so that the frequencier are more accurate -
+//   especially the higher frequencies.
 //
 // File
 //   uart_brg.v
@@ -92,8 +94,8 @@
 `else
 
         //
-        // This table is for simulation.  It is hacked to speed up the
-        // simulation.
+        // This table is for simulation.  The baud rates are hacked to
+        // speed up the simulation.
         //
 
         rom[    `UARTBR_50] = (2.0**32.0) * CLKDIV *  14865.0 / CLKFRQ;

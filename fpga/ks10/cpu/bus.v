@@ -71,7 +71,7 @@
 `include "vma.vh"
 `include "useq/crom.vh"
 
-module BUS(clk, rst, dp, crom, vmaEXTENDED, vmaREG, pageADDR, aprFLAGS, piCURPRI,
+module BUS(clk, rst, dp, crom, vmaREG, pageADDR, aprFLAGS, piCURPRI,
            cpuDATAO, cpuADDRO, cpuREQO);
 
    parameter  cromWidth = `CROM_WIDTH;
@@ -80,7 +80,6 @@ module BUS(clk, rst, dp, crom, vmaEXTENDED, vmaREG, pageADDR, aprFLAGS, piCURPRI
    input          rst;                  // Reset
    input  [ 0:35]          dp;          // Data path
    input  [ 0:cromWidth-1] crom;        // Control ROM Data
-   input                   vmaEXTENDED; // Extended VMA
    input  [ 0:35]          vmaREG;      // VMA Register
    input  [16:26]          pageADDR;    // Page Address
    input  [22:35]          aprFLAGS;    // APR Flags
@@ -102,6 +101,7 @@ module BUS(clk, rst, dp, crom, vmaEXTENDED, vmaREG, pageADDR, aprFLAGS, piCURPRI
    wire vmaREAD    = `vmaREAD(vmaREG);
    wire vmaWRTEST  = `vmaWRTEST(vmaREG);
    wire vmaWRITE   = `vmaWRITE(vmaREG);
+   wire vmaEXTD    = `vmaEXTD(vmaREG);
    wire vmaPHYS    = `vmaPHYS(vmaREG);
    wire vmaIO      = `vmaIO(vmaREG);
    wire vmaWRU     = `vmaWRU(vmaREG);
@@ -158,7 +158,7 @@ module BUS(clk, rst, dp, crom, vmaEXTENDED, vmaREG, pageADDR, aprFLAGS, piCURPRI
                cpuADDRO[0:35] <= {vmaREG[0:13], 1'b0, piCURPRI[0:2], vmaREG[18:35]};
              else
                begin
-                  if (vmaEXTENDED)
+                  if (vmaEXTD)
                     cpuADDRO <= vmaREG;
                   else
                     cpuADDRO <= {vmaREG[0:13], 4'b0000, vmaREG[18:35]};

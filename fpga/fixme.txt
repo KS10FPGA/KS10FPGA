@@ -1,9 +1,4 @@
-
-rtl/esm_ks10:
-   (done) Make MR a tristated output.  The tools whine about an unused input.
-
-rtl/ks10/clk
-   (done) This should all be a PLL or DCM for Xilinx
+**** IN WORK ****
 
 rtl/ks10/cpu/dbus.v:
    Special hacks for certain addresses.  Why?
@@ -14,12 +9,33 @@ rtl/ks10/cpu/dbm.v
 
 rtl/ks10/cpu/cpu.v:
    Memory_cycle is always negated.
-   Mangled arguments to pf_disp module
    Kill off cache_hit
 
 rtl/ks10/cpu/pf_disp.v
    Everything is hacked.
    Rename to pagefail.v
+
+rtl/ks10/uba/uba.v
+   dev1ACKO is stubbed.
+   dev2ACK0 is stubbed.
+   Add maintenance mode so hardware will pass DSUBA?
+
+rtl/ks10/uba/dz11/dzintr
+   Fix conditional compile.  Why doesn't this work?
+
+**** COMPLETED ****
+
+rtl/esm_ks10:
+   (done) Make MR a tristated output.  The tools whine about an unused input.
+
+rtl/ks10/clk
+   (done) This should all be a PLL or DCM for Xilinx
+
+rtl/ks10/cpu/bus:
+   (done) Move vmaEXTENDED from vma to bus?
+
+rtl/ks10/cpu/cpu.v:
+   (done) Mangled arguments to pf_disp module
 
 rtl/ks10/apr/apr.v
    (done) Rename nets to match software
@@ -29,12 +45,7 @@ rtl/ks10/cpu/intr.v
    (done) Rename nets to match software
 
 rtl/ks10/cpu/vma.v
-   Rename bits ot match bus.
-
-rtl/ks10/uba/uba.v
-   dev1ACKO is stubbed.
-   dev2ACK0 is stubbed.
-   Add maintenance mode so hardware will pass DSUBA?
+   (done) Rename bits to match bus.
 
 rtl/ks10/uba/dz11/dz11.v
    (done) Remove byte io logic from lprWRITE and rbufREAD.

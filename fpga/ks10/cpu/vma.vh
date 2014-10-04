@@ -51,7 +51,7 @@
 `define vmaREAD(reg)     reg[ 3]        // Read cycle
 `define vmaWRTEST(reg)   reg[ 4]        // Write test cycle
 `define vmaWRITE(reg)    reg[ 5]        // Write cycle
-`define vmaUNUSED(reg)   reg[ 6]        // Spare/Unused bit
+`define vmaEXTD(reg)     reg[ 6]        // Extended address
 `define vmaCACHEINH(reg) reg[ 7]        // Cache is inhibited
 `define vmaPHYS(reg)     reg[ 8]        // Physical address
 `define vmaPREV(reg)     reg[ 9]        // Previous context
