@@ -51,6 +51,6 @@ begin
      18'o060022: test = "DSKBA POPT";
      18'o060124: test = "DSKBA PUSHT";
      18'o060200: test = "DSKBA POPJ1";
-     18'o060236: test = "DSKBA PUSHJ1"
+     18'o060236: test = "DSKBA PUSHJ1";
    endcase
 end
