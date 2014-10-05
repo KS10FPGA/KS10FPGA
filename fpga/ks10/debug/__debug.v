@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -77,42 +77,59 @@
 
    reg [18:35] PC;
    reg [14*8:1] test;
+   integer last;
 
    always @(posedge clk or posedge rst)
      begin
+
         if (rst)
           begin
              PC   = 0;
              test = "";
+             last = 0;
           end
-        else if (loadIR)
-          begin
 
-             PC = debugDATA[18:35];
-	     
-             if (PC == 18'o030057)
-               begin
-                  $display("Test Completed\n");
-                  $stop;
-               end
+        else
 
-             `ifdef DEBUG_DSKBA
-                 `include "debug_dskba.vh"
+          if (loadIR)
+            begin
 
-             `elsif DEBUG_DSKCG
-                 `include "debug_dskcg.vh"
+               PC   = debugDATA[18:35];
+               last = $time;
 
-             `elsif DEBUG_DSDZA
-                 `include "debug_dsdza.vh"
+               if (PC == 18'o030057)
+                 begin
+                    $display("Test Completed.");
+                    $stop;
+                 end
 
-             `elsif DEBUG_DSUBA
-                 `include "debug_dsuba.vh"
+               `ifdef DEBUG_DSKBA
+                    `include "debug_dskba.vh"
+               `elsif DEBUG_DSKCG
+                    `include "debug_dskcg.vh"
+               `elsif DEBUG_DSDZA
+                    `include "debug_dsdza.vh"
+               `elsif DEBUG_DSUBA
+                    `include "debug_dsuba.vh"
+               `else
+                    `include "debug_default.vh"
+               `endif
 
-             `endif
+               $display("[%11.3f] %15s: PC is %06o", $time/1.0e3, test, PC);
 
-             $display("[%10.3f] %15s: PC is %06o", $time/1.0e3, test, PC);
+            end
 
-          end
+          else
+
+            //
+            // Whine if the PC gets stuck for 10 ms
+            //
+
+            if (($time - last) >  1000000)
+              begin
+                 $display("Test Failed.  PC got stuck.");
+                 $stop;
+              end
      end
 
 `endif
@@ -123,4 +140,4 @@
 
    assign debugADDR = 4'b0001;
 
- endmodule
+endmodule

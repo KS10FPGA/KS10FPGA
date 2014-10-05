@@ -106,7 +106,7 @@ begin
 
      18'o034631:
        begin
-          $display("[%10.3f] %s: PC is %06o", $time/1.0e3, "DSDZA WRGVEC", PC);
+          $display("[%10.3f] %15s: PC is %06o", $time/1.0e3, "DSDZA WRGVEC", PC);
           $stop;
        end
 

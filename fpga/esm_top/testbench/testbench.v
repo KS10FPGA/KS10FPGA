@@ -233,7 +233,7 @@ module testbench;
 
          conREADw(addrREGSTATUS, status);
          if (status & statNXMNXD)
-           $display("[%10.3f] KS10: NXM/NXD at address %06o", $time/1.0e3,
+           $display("[%11.3f] KS10: NXM/NXD at address %06o", $time/1.0e3,
 		    address);
 
          conWRITEw(addrREGSTATUS, status & ~statNXMNXD);
@@ -302,41 +302,41 @@ module testbench;
       input [18:35] address;
       begin
          conREADMEMP(address +  0, temp);
-         $display("[%10.3f] KS10:   MAG is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   MAG is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  1, temp);
-         $display("[%10.3f] KS10:   PC  is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   PC  is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  2, temp);
-         $display("[%10.3f] KS10:   HR  is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   HR  is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  3, temp);
-         $display("[%10.3f] KS10:   AR  is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   AR  is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  4, temp);
-         $display("[%10.3f] KS10:   ARX is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   ARX is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  5, temp);
-         $display("[%10.3f] KS10:   BR  is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   BR  is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  6, temp);
-         $display("[%10.3f] KS10:   BRX is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   BRX is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  7, temp);
-         $display("[%10.3f] KS10:   ONE is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   ONE is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  8, temp);
-         $display("[%10.3f] KS10:   EBR is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   EBR is %012o", $time/1.0e3, temp);
          conREADMEMP(address +  9, temp);
-         $display("[%10.3f] KS10:   UBR is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   UBR is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 10, temp);
-         $display("[%10.3f] KS10:   MSK is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   MSK is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 11, temp);
-         $display("[%10.3f] KS10:   FLG is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   FLG is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 12, temp);
-         $display("[%10.3f] KS10:   PI  is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   PI  is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 13, temp);
-         $display("[%10.3f] KS10:   X1  is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   X1  is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 14, temp);
-         $display("[%10.3f] KS10:   TO  is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   TO  is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 15, temp);
-         $display("[%10.3f] KS10:   T1  is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   T1  is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 16, temp);
-         $display("[%10.3f] KS10:   VMA is %012o", $time/1.0e3, temp);
+         $display("[%11.3f] KS10:   VMA is %012o", $time/1.0e3, temp);
          //conREADMEMP(address + 17, temp);
-         //$display("[%10.3f] KS10:   FE  is %012o", $time/1.0e3, temp);
+         //$display("[%11.3f] KS10:   FE  is %012o", $time/1.0e3, temp);
       end
    endtask
 
@@ -349,19 +349,19 @@ module testbench;
          conREADMEMP(0, haltStatus);
          conREADMEMP(1, haltAddr);
          case (haltStatus[24:35])
-           12'o0000 : $display("[%10.3f] KS10: Halt Status: Microcode Startup", $time/1.0e3);
-           12'o0001 : $display("[%10.3f] KS10: Halt Status: Halt Instruction", $time/1.0e3);
-           12'o0002 : $display("[%10.3f] KS10: Halt Status: Console Halt", $time/1.0e3);
-           12'o0100 : $display("[%10.3f] KS10: Halt Status: IO Page Failure", $time/1.0e3);
-           12'o0101 : $display("[%10.3f] KS10: Halt Status: Illegal Interrupt Instruction", $time/1.0e3);
-           12'o0102 : $display("[%10.3f] KS10: Halt Status: Pointer to Unibus Vector is zero", $time/1.0e3);
-           12'o1000 : $display("[%10.3f] KS10: Halt Status: Illegal Microcode Dispatch", $time/1.0e3);
-           12'o1005 : $display("[%10.3f] KS10: Halt Status: Microcode Startup Check Failed", $time/1.0e3);
-           default  : $display("[%10.3f] KS10: Halt Status: Unknown Halt Cause", $time/1.0e3);
+           12'o0000 : $display("[%11.3f] KS10: Halt Status: Microcode Startup", $time/1.0e3);
+           12'o0001 : $display("[%11.3f] KS10: Halt Status: Halt Instruction", $time/1.0e3);
+           12'o0002 : $display("[%11.3f] KS10: Halt Status: Console Halt", $time/1.0e3);
+           12'o0100 : $display("[%11.3f] KS10: Halt Status: IO Page Failure", $time/1.0e3);
+           12'o0101 : $display("[%11.3f] KS10: Halt Status: Illegal Interrupt Instruction", $time/1.0e3);
+           12'o0102 : $display("[%11.3f] KS10: Halt Status: Pointer to Unibus Vector is zero", $time/1.0e3);
+           12'o1000 : $display("[%11.3f] KS10: Halt Status: Illegal Microcode Dispatch", $time/1.0e3);
+           12'o1005 : $display("[%11.3f] KS10: Halt Status: Microcode Startup Check Failed", $time/1.0e3);
+           default  : $display("[%11.3f] KS10: Halt Status: Unknown Halt Cause", $time/1.0e3);
          endcase
          if (haltStatus[24:35] != 0)
            begin
-              $display("[%10.3f] KS10: Halt Address: %06o", $time/1.0e3, haltAddr[18:35]);
+              $display("[%11.3f] KS10: Halt Address: %06o", $time/1.0e3, haltAddr[18:35]);
               printHaltStatusBlock(18'o376000);
            end
       end
@@ -377,7 +377,7 @@ module testbench;
 
    initial
      begin
-        $display("[%10.3f] KS10: Simulation Starting", $time/1.0e3);
+        $display("[%11.3f] KS10: Simulation Starting", $time/1.0e3);
 
         //
         // Initial state
@@ -398,7 +398,7 @@ module testbench;
 
         #95
         reset = 0;
-        $display("[%10.3f] KS10: Negating Reset", $time/1.0e3);
+        $display("[%11.3f] KS10: Negating Reset", $time/1.0e3);
 
         //
         //  Write to Console Instruction Register
@@ -415,14 +415,14 @@ module testbench;
 
 //      conWRITE(addrREGSTATUS, statCACHEEN | statTIMEREN | statTRAPEN | statRUN);
         conWRITE(addrREGSTATUS, statRUN);
-        $display("[%10.3f] KS10: Starting KS10", $time/1.0e3);
+        $display("[%11.3f] KS10: Starting KS10", $time/1.0e3);
 
         //
         // Readback Console Instruction Register
         //
 
         conREAD(addrREGCIR, temp);
-        $display("[%10.3f] KS10: CIR is \"%12o\"", $time/1.0e3, temp);
+        $display("[%11.3f] KS10: CIR is \"%12o\"", $time/1.0e3, temp);
 
      end
 
@@ -432,7 +432,7 @@ module testbench;
 
    always @(negedge haltLED)
      if ($time != 0)
-       $display("[%10.3f] KS10: CPU Unhalted", $time/1.0e3);
+       $display("[%11.3f] KS10: CPU Unhalted", $time/1.0e3);
 
    //
    // Handle Startup.
@@ -448,7 +448,7 @@ module testbench;
    always @(posedge haltLED)
      begin
         haltTIME <= $time;
-        $display("[%10.3f] KS10: CPU Halted", $time/1.0e3);
+        $display("[%11.3f] KS10: CPU Halted", $time/1.0e3);
         printHaltStatus;
         if (haltTIME < 40000 || haltTIME > 60000)
 	  $stop;
@@ -519,7 +519,7 @@ module testbench;
         else if (conINTR)
           begin
 
-             //$display("[%10.3f] KS10: CPU has interrupted the console", $time/1.0e3);
+             //$display("[%11.3f] KS10: CPU has interrupted the console", $time/1.0e3);
 
              //
              // Read CTYOUT Memory Location
@@ -535,9 +535,9 @@ module testbench;
              if (dataCOUT[27])
                begin
                   if ((dataCOUT[28:35] >= 8'h20) && (dataCOUT[28:35] < 8'h7f))
-                    $display("[%10.3f] KS10: CTY Output: \"%s\"", $time/1.0e3, dataCOUT[28:35]);
+                    $display("[%11.3f] KS10: CTY Output: \"%s\"", $time/1.0e3, dataCOUT[28:35]);
                   else
-                    $display("[%10.3f] KS10: CTY Output: \"%02x\"", $time/1.0e3, dataCOUT[28:35]);
+                    $display("[%11.3f] KS10: CTY Output: \"%02x\"", $time/1.0e3, dataCOUT[28:35]);
                   $fwrite(cty_ofile, "%s", dataCOUT[28:35]);
                   conWRITEMEM(addrCOUT, 36'b0);
                end

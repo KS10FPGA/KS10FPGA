@@ -238,7 +238,7 @@ end
 
    always @(noti2)
      begin
-        $display("[%10.3f] CY7C1460: Data bus corruption", $time/1.0e3);
+        $display("[%11.3f] CY7C1460: Data bus corruption", $time/1.0e3);
         force d =36'bx;
         #1;
         release d;
@@ -246,7 +246,7 @@ end
 
    always @(noti1_0)
      begin
-        $display("[%10.3f] CY7C1460: Byte write corruption", $time/1.0e3);
+        $display("[%11.3f] CY7C1460: Byte write corruption", $time/1.0e3);
         force bws = 4'bx;
         #1;
         release bws;
@@ -254,7 +254,7 @@ end
 
    always @(noti1_1)
      begin
-        $display("[%10.3f] CY7C1460: Byte enable corruption", $time/1.0e3);
+        $display("[%11.3f] CY7C1460: Byte enable corruption", $time/1.0e3);
         force we_b = 1'bx;
         #1;
         release we_b;
@@ -262,7 +262,7 @@ end
 
    always @(noti1_2)
      begin
-        $display("[%10.3f] CY7C1460: CE1B corruption", $time/1.0e3);
+        $display("[%11.3f] CY7C1460: CE1B corruption", $time/1.0e3);
         force ce1b =1'bx;
         #1;
         release ce1b;
@@ -270,7 +270,7 @@ end
 
    always @(noti1_3)
      begin
-        $display("[%10.3f] CY7C1460: CE2 corruption", $time/1.0e3);
+        $display("[%11.3f] CY7C1460: CE2 corruption", $time/1.0e3);
         force ce2 =1'bx;
         #1;
         release ce2;
@@ -278,7 +278,7 @@ end
 
    always @(noti1_4)
      begin
-        $display("[%10.3f] CY7C1460: CE3B corruption", $time/1.0e3);
+        $display("[%11.3f] CY7C1460: CE3B corruption", $time/1.0e3);
         force ce3b =1'bx;
         #1;
         release ce3b;
@@ -286,7 +286,7 @@ end
 
    always @(noti1_5)
      begin
-        $display("[%10.3f] CY7C1460: CENB corruption", $time/1.0e3);
+        $display("[%11.3f] CY7C1460: CENB corruption", $time/1.0e3);
         force cenb =1'bx;
         #1;
         release cenb;
@@ -294,7 +294,7 @@ end
 
    always @(noti1_6)
      begin
-        $display("[%10.3f] CY7C1460: ADV_LB corruption", $time/1.0e3);
+        $display("[%11.3f] CY7C1460: ADV_LB corruption", $time/1.0e3);
         force adv_lb = 1'bx;
         #1;
         release adv_lb;
