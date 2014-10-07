@@ -103,7 +103,9 @@
                     $stop;
                  end
 
-               `ifdef DEBUG_DSKBA
+               `ifdef DEBUG_DSKAH
+                    `include "debug_dskah.vh"
+               `elsif DEBUG_DSKBA
                     `include "debug_dskba.vh"
                `elsif DEBUG_DSKCG
                     `include "debug_dskcg.vh"

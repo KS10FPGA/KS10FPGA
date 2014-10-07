@@ -100,7 +100,7 @@ module NXD(clk, rst, crom, cpuADDRO, cpuREQO, cpuACKI, ioWAIT, ioBUSY);
    //
 
    reg addr3666;
-   
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -277,7 +277,7 @@ module NXD(clk, rst, crom, cpuADDRO, cpuREQO, cpuACKI, ioWAIT, ioBUSY);
                 state <= stateNOACK;
 
             stateACKIO1:
-              state  <= stateACKIO2;
+              state <= stateACKIO2;
 
             stateACKIO2:
               if (ioCLEAR)
@@ -301,7 +301,14 @@ module NXD(clk, rst, crom, cpuADDRO, cpuREQO, cpuACKI, ioWAIT, ioBUSY);
                 end
 
             stateNOACK:
-              state  <= stateIDLE;
+              if (wru)
+                begin
+                   busy <= 0;
+                   if (!busWRU)
+                     state <= stateIDLE;
+                end
+              else
+                state <= stateIDLE;
 
           endcase
      end

@@ -250,6 +250,12 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
         // Details
         //  The CPU can access the memory, unibus or console.
         //
+        // Note
+        //  The ARB needs to assert a 36'b0 on the data bus if no device
+        //  acknowledges a WRU bus cycle.  This occurs on a PI interrupt.
+        //  This simulates the DEC KS10 which implemented this using a
+        //  tristated bus with pullups.
+        //
 
         else if (cpuREQI)
           begin
@@ -291,6 +297,8 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
                   cpuACKO  = 1;
                   cpuDATAO = cslDATAI;
                end
+             else
+               cpuDATAO = 0;
 
           end
      end
