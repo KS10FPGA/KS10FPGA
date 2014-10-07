@@ -1,4 +1,3 @@
-
 #
 # Project name.   Also top-level entity name (upper case)
 #
@@ -77,31 +76,33 @@ VVP          := vvp
 #DIAG         := DSUBA-RD00	#   67.4 ms
 #DIAG         := DSDZA-RD00	# 1212.4 ms
 
+PREFIX       := MAINDEC-10-
+
 DIAGFILES := \
-        $(TESTFILES)/MAINDEC-10-DSKAA.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAB.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAC.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAD.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAE.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAF.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAG.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAH.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAI.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAJ.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAK.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAL.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKAM.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKBA.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKCA.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKCB.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKCC.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKCD.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKCE-RD00.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKCF-RD00.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKCG.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKDA-RD00.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSKEA-RD00.SEQ \
-        $(TESTFILES)/MAINDEC-10-DSDZA-RD00.SEQ
+        $(TESTFILES)/${PREFIX}DSKAA.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAB.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAC.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAD.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAE.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAF.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAG.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAH.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAI.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAJ.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAK.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAL.SEQ \
+        $(TESTFILES)/${PREFIX}DSKAM.SEQ \
+        $(TESTFILES)/${PREFIX}DSKBA.SEQ \
+        $(TESTFILES)/${PREFIX}DSKCA.SEQ \
+        $(TESTFILES)/${PREFIX}DSKCB.SEQ \
+        $(TESTFILES)/${PREFIX}DSKCC.SEQ \
+        $(TESTFILES)/${PREFIX}DSKCD.SEQ \
+        $(TESTFILES)/${PREFIX}DSKCE-RD00.SEQ \
+        $(TESTFILES)/${PREFIX}DSKCF-RD00.SEQ \
+        $(TESTFILES)/${PREFIX}DSKCG.SEQ \
+        $(TESTFILES)/${PREFIX}DSKDA-RD00.SEQ \
+        $(TESTFILES)/${PREFIX}DSKEA-RD00.SEQ \
+        $(TESTFILES)/${PREFIX}DSDZA-RD00.SEQ
 
 #
 # Verilog source files
@@ -268,8 +269,8 @@ $(USEQ)/drom.dat: $(USEQ)/ks10.mcr $(USEQ)/drom.awk
 $(TESTFILES)/ssram.dat : FORCE
 FORCE:
 
-$(TESTFILES)/ssram.dat : $(TESTFILES)/MAINDEC-10-$(DIAG).SEQ $(TESTFILES)/ssram.awk makefile
-	awk -f $(TESTFILES)/ssram.awk -vfilename=MAINDEC-10-$(DIAG).SEQ $(TESTFILES)/MAINDEC-10-$(DIAG).SEQ > $(TESTFILES)/ssram.dat
+$(TESTFILES)/ssram.dat : $(TESTFILES)/${PREFIX}$(DIAG).SEQ $(TESTFILES)/ssram.awk makefile
+	awk -f $(TESTFILES)/ssram.awk -vfilename=${PREFIX}$(DIAG).SEQ $(TESTFILES)/${PREFIX}$(DIAG).SEQ > $(TESTFILES)/ssram.dat
 
 $(ISE)/$(PROJECT).filter: makefile
 	@echo "Creating "$@ > /dev/stderr
@@ -684,8 +685,8 @@ $(TESTSUITE)/$(DIAG).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT) makefile
 	-I rtl/ks10/cpu \
 	-I rtl/ks10/cpu/useq 
 
-vvp : $(PROJECT).vvp
-	$(VVP) $(PROJECT).vvp
+$(TESTSUITE)/$(DIAG).txt : $(TESTSUITE)/$(DIAG).vvp 
+	$(VVP) -n $< > $(TESTSUITE)/$(DIAG).txt
 
 #
 # Clean everything
