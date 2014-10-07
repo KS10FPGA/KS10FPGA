@@ -21,6 +21,7 @@ RTL          := rtl
 ISE          := ise
 TESTFILES    := $(RTL)/testbench
 USEQ         := $(RTL)/ks10/cpu/useq
+TESTSUITE    := testsuite
 
 #
 # Xilinx tools
@@ -50,33 +51,33 @@ VVP          := vvp
 # Initialized Memory Contents (Simulation only)
 #
 
-#LOAD         := MAINDEC-10-DSKAA.SEQ		#    1.0 ms
-#LOAD         := MAINDEC-10-DSKAB.SEQ		#    1.1 ms
-#LOAD         := MAINDEC-10-DSKAC.SEQ		#    0.8 ms
-#LOAD         := MAINDEC-10-DSKAD.SEQ		#    0.9 ms
-#LOAD         := MAINDEC-10-DSKAE.SEQ		#    0.7 ms
-#LOAD         := MAINDEC-10-DSKAF.SEQ		#    0.8 ms
-#LOAD         := MAINDEC-10-DSKAG.SEQ		#    0.5 ms
-#LOAD         := MAINDEC-10-DSKAH.SEQ		#   15.0 ms
-#LOAD         := MAINDEC-10-DSKAI.SEQ		#    2.4 ms
-#LOAD         := MAINDEC-10-DSKAJ.SEQ		#    2.8 ms
-#LOAD         := MAINDEC-10-DSKAK.SEQ		#    4.2 ms
-#LOAD         := MAINDEC-10-DSKAL.SEQ		#    4.7 ms
-#LOAD         := MAINDEC-10-DSKAM.SEQ		#    2.3 ms
-#LOAD         := MAINDEC-10-DSKBA-RD00.SEQ  	#  630.0 ms ????
-#LOAD         := MAINDEC-10-DSKCA.SEQ		#    1.9 ms
-#LOAD         := MAINDEC-10-DSKCB.SEQ		#    1.3 ms
-#LOAD         := MAINDEC-10-DSKCC.SEQ		#    2.1 ms
-#LOAD         := MAINDEC-10-DSKCD.SEQ		#    5.2 ms
-#LOAD         := MAINDEC-10-DSKCE-RD00.SEQ	#    5.7 ms
-#LOAD         := MAINDEC-10-DSKCF-RD00.SEQ	#   10.6 ms	
-#LOAD         := MAINDEC-10-DSKCG.SEQ		# 1350.0 ms ???
-#LOAD         := MAINDEC-10-DSKDA-RD00.SEQ	#
-#LOAD         := MAINDEC-10-DSKEA-RD00.SEQ	#
-#LOAD         := MAINDEC-10-DSUBA-RD00.SEQ	#   67.4 ms+
-#LOAD         := MAINDEC-10-DSDZA-RD00.SEQ	# 1212.4 ms
+#DIAG         := DSKAA		#    1.0 ms
+#DIAG         := DSKAB		#    1.1 ms
+#DIAG         := DSKAC		#    0.8 ms
+#DIAG         := DSKAD		#    0.9 ms
+#DIAG         := DSKAE		#    0.7 ms
+#DIAG         := DSKAF		#    0.8 ms
+#DIAG         := DSKAG		#    0.5 ms
+#DIAG         := DSKAH		#   15.0 ms
+#DIAG         := DSKAI		#    2.4 ms
+#DIAG         := DSKAJ		#    2.8 ms
+#DIAG         := DSKAK		#    4.2 ms
+#DIAG         := DSKAL		#    4.7 ms
+#DIAG         := DSKAM		#    2.3 ms
+#DIAG         := DSKBA-RD00  	#  630.0 ms ????
+#DIAG         := DSKCA		#    1.9 ms
+#DIAG         := DSKCB		#    1.3 ms
+#DIAG         := DSKCC		#    2.1 ms
+#DIAG         := DSKCD		#    5.2 ms
+#DIAG         := DSKCE-RD00	#    5.7 ms
+#DIAG         := DSKCF-RD00	#   10.6 ms	
+#DIAG         := DSKCG		# 1350.0 ms ???
+#DIAG         := DSKDA-RD00	#    0.2 ms
+#DIAG         := DSKEA-RD00	#
+#DIAG         := DSUBA-RD00	#   67.4 ms
+#DIAG         := DSDZA-RD00	# 1212.4 ms
 
-DIAGS := \
+DIAGFILES := \
         $(TESTFILES)/MAINDEC-10-DSKAA.SEQ \
         $(TESTFILES)/MAINDEC-10-DSKAB.SEQ \
         $(TESTFILES)/MAINDEC-10-DSKAC.SEQ \
@@ -182,9 +183,12 @@ INC := \
 	$(RTL)/ks10/cpu/alu.vh \
 	$(RTL)/ks10/cpu/apr.vh \
 	$(RTL)/ks10/cpu/bus.vh \
+	$(RTL)/ks10/cpu/debug_dskah.vh \
+	$(RTL)/ks10/cpu/debug_dskba.vh \
+	$(RTL)/ks10/cpu/debug_dskcg.vh \
 	$(RTL)/ks10/cpu/debug_dsuba.vh \
 	$(RTL)/ks10/cpu/debug_dsdza.vh \
-	$(RTL)/ks10/cpu/debug_dskcg.vh \
+	$(RTL)/ks10/cpu/debug_default.vh \
 	$(RTL)/ks10/cpu/pager.vh \
 	$(RTL)/ks10/cpu/pcflags.vh \
 	$(RTL)/ks10/cpu/pxct.vh \
@@ -258,10 +262,14 @@ $(USEQ)/drom.dat: $(USEQ)/ks10.mcr $(USEQ)/drom.awk
 
 #
 # Initialize the SSRAM with MAINDEC (simulation only)
+# Note special rule for force ssram.dat to rebuild
 #
 
-$(TESTFILES)/ssram.dat: $(TESTFILES)/$(LOAD) $(TESTFILES)/ssram.awk makefile
-	awk -f $(TESTFILES)/ssram.awk -vfilename=$(LOAD) $(TESTFILES)/$(LOAD) > $(TESTFILES)/ssram.dat
+$(TESTFILES)/ssram.dat : FORCE
+FORCE:
+
+$(TESTFILES)/ssram.dat : $(TESTFILES)/MAINDEC-10-$(DIAG).SEQ $(TESTFILES)/ssram.awk makefile
+	awk -f $(TESTFILES)/ssram.awk -vfilename=MAINDEC-10-$(DIAG).SEQ $(TESTFILES)/MAINDEC-10-$(DIAG).SEQ > $(TESTFILES)/ssram.dat
 
 $(ISE)/$(PROJECT).filter: makefile
 	@echo "Creating "$@ > /dev/stderr
@@ -321,8 +329,8 @@ $(ISE)/$(PROJECT)_impact.cmd: makefile
 #
 
 FUSE_ARGS := \
-        -d DEBUG_$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
-	-d DEBUG=$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
+        -d DEBUG_$(subst -RD00,,$(DIAG)) \
+	-d DEBUG=$(subst -RD00,,$(DIAG)) \
         -d SMALL_MEM \
         -d XILINX \
 	-intstyle $(INTSTYLE) \
@@ -662,11 +670,11 @@ load: $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT)_impact.cmd
 # iverilog
 #
 
-$(PROJECT).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT) makefile
-	$(IVERILOG) -v -s testbench -o $(PROJECT).vvp $(SIM_SRC) $(RTL_SRC) \
-        -D DEBUG_$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
-        -D DEBUG=$(subst MAINDEC-10-,,$(subst -RD00,,$(subst .SEQ,,$(LOAD)))) \
-        -D SMALL_MEM \
+$(TESTSUITE)/$(DIAG).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT) makefile
+	$(IVERILOG) -s testbench -o $@ $(SIM_SRC) $(RTL_SRC)   \
+	-D DEBUG_$(subst -RD00,,$(DIAG)) \
+	-D DEBUG=$(subst -RD00,,$(DIAG)) \
+	-D SMALL_MEM \
 	-I rtl/ks10 \
 	-I rtl/ks10/uba \
 	-I rtl/ks10/uba/rh11 \
@@ -806,7 +814,7 @@ rcsclean_rtl: clean_rtl
 # Fetch design from RCS
 #
 
-rcsfetch: $(INC) $(RTL_SRC) $(SIM_SRC) $(BLD) $(DAT) $(DOC) $(DIAGS) $(RTL)/esm/$(PROJECT).ucf 
+rcsfetch: $(INC) $(RTL_SRC) $(SIM_SRC) $(BLD) $(DAT) $(DOC) $(DIAGFILES) $(RTL)/esm/$(PROJECT).ucf 
 
 #
 # Archive files
