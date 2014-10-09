@@ -1,0 +1,186 @@
+[*]
+[*] GTKWave Analyzer v3.3.58 (w)1999-2014 BSI
+[*] Thu Oct 09 05:32:56 2014
+[*]
+[dumpfile] "J:\PDPx\pdp10\KS10\fpga\dump.vcd"
+[dumpfile_mtime] "Thu Oct 09 05:29:58 2014"
+[dumpfile_size] 225460928
+[savefile] "J:\PDPx\pdp10\KS10\fpga\asdf.gtkw"
+[timestart] 2025960000
+[size] 1396 743
+[pos] -1 -1
+*-23.000000 2037580000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] testbench.
+[treeopen] testbench.uKS10.
+[treeopen] testbench.uKS10.uKS10.
+[treeopen] testbench.uKS10.uKS10.uCPU.
+[treeopen] testbench.uKS10.uKS10.uCPU.uRAMFILE.
+[treeopen] testbench.uKS10.uKS10.uCPU.uUSEQ.
+[treeopen] testbench.uKS10.uKS10.uDZ11.
+[treeopen] testbench.uKS10.uKS10.uDZ11.RBUF.
+[treeopen] testbench.uKS10.uKS10.uDZ11.UART[0].
+[treeopen] testbench.uKS10.uKS10.uDZ11.UART[0].UART.
+[sst_width] 276
+[signals_width] 255
+[sst_expanded] 1
+[sst_vpaned_height] 347
+@30
+testbench.uKS10.uKS10.uDZ11.devADDRI[0:35]
+testbench.uKS10.uKS10.uDZ11.devADDRO[0:35]
+testbench.uKS10.uKS10.uDZ11.devADDR[18:34]
+testbench.uKS10.uKS10.uDZ11.devDATAI[0:35]
+testbench.uKS10.uKS10.uDZ11.devDATAO[0:35]
+testbench.uKS10.uKS10.uDZ11.devREQI
+testbench.uKS10.uKS10.uDZ11.devACKO
+testbench.uKS10.uKS10.uCPU.uDEBUG.PC[18:35]
+@c00030
+testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+@28
+(0)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+(1)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+(2)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+(3)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+(4)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+(5)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+(6)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+(7)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+(8)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+(9)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+(10)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+(11)testbench.uKS10.uKS10.uCPU.uUSEQ.uSTACK.currADDR[0:11]
+@1401200
+-group_end
+@30
+testbench.uKS10.uKS10.uCPU.uUSEQ.addr[0:11]
++{R0} testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[0][0:35]
++{R1} testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[1][0:35]
++{R2} testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[2][0:35]
++{R3} testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[3][0:35]
+@c00030
++{R4} testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+@28
+(0)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(1)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(2)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(3)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(4)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(5)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(6)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(7)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(8)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(9)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(10)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(11)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(12)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(13)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(14)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(15)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(16)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(17)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(18)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(19)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(20)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(21)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(22)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(23)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(24)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(25)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(26)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(27)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(28)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(29)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(30)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(31)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(32)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(33)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(34)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+(35)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[4][0:35]
+@1401200
+-group_end
+@30
++{R5} testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[5][0:35]
+@c00030
++{R6} testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+@28
+(0)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(1)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(2)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(3)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(4)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(5)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(6)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(7)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(8)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(9)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(10)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(11)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(12)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(13)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(14)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(15)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(16)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(17)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(18)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(19)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(20)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(21)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(22)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(23)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(24)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(25)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(26)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(27)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(28)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(29)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(30)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(31)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(32)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(33)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(34)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+(35)testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[6][0:35]
+@1401200
+-group_end
+@30
++{R7} testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.\ram[7][0:35]
+@28
+testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyTX.clk
+@29
+testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyBRG.carry
+@28
+testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyTX.brgCLKEN
+@c00030
+testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+@28
+(0)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(1)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(2)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(3)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(4)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(5)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(6)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(7)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(8)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(9)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(10)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(11)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(12)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(13)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(14)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+(15)testbench.uKS10.uKS10.uDZ11.RBUF.regRBUF[15:0]
+@1401200
+-group_end
+@30
+testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyRX.rxREG[7:0]
+@24
++{testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyTX.rxBrdiv[3:0]} testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyTX.brdiv[3:0]
++{testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyTX.rxState[3:0]} testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyTX.state[3:0]
+@28
+testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyRX.rxd
+testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyTX.txd
+@30
+testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyTX.txREG[7:0]
+@24
++{testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyTX.txBrdiv[3:0]} testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyTX.brdiv[3:0]
++{testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyRX.txState[3:0]} testbench.uKS10.uKS10.uDZ11.UART[0].UART.ttyRX.state[3:0]
+[pattern_trace] 1
+[pattern_trace] 0
