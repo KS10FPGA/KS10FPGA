@@ -135,9 +135,9 @@
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          {carry, accum} = 33'b0;
+          {carry, accum} <= 33'b0;
         else
-          {carry, accum} = {1'b0, accum} + {1'b0, incr};
+          {carry, accum} <= {1'b0, accum} + {1'b0, incr};
      end
 
    //
