@@ -168,7 +168,7 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
  `ifndef SYNTHESIS
 
    always @(posedge locked)
-     $display("[%10.3f] CLK: PLL locked", $time/1.0e3);
+     $display("[%11.3f] CLK: PLL locked", $time/1.0e3);
 
  `endif
 

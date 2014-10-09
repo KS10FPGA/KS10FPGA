@@ -51,5 +51,18 @@ begin
      18'o033761: test = "DSUBA TEST54";
      18'o034014: test = "DSUBA TEST55";
      18'o034110: test = "DSUBA TEST56";
+
+     //
+     // FIXME:
+     // The maintenance loopback is not implemented.  The
+     // following failure is expected.
+     //
+
+     18'o031423:	
+       begin
+          $display("Test Completed.  Expected failure.");
+          $stop;
+       end
+     
    endcase
 end

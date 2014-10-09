@@ -254,10 +254,10 @@ module UBA(rst, clkT, clkR,
              if (devREQI)
                addr <= devADDRI;
              if (setNXD)
-               $display("[%10.3f] UBA%d: Nonexistent device (NXD).  Addr = %012o.",
+               $display("[%11.3f] UBA%d: Nonexistent device (NXD).  Addr = %012o.",
                         $time/1.0e3, ubaNUM, addr);
              if (setTMO)
-               $display("[%10.3f] UBA%d: Unacknowledged bus cycle.  Addr = %012o.",
+               $display("[%11.3f] UBA%d: Unacknowledged bus cycle.  Addr = %012o.",
                         $time/1.0e3, ubaNUM, addr);
           end
      end

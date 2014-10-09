@@ -78,6 +78,8 @@ VVP          := vvp
 
 PREFIX       := MAINDEC-10-
 
+DIAGBASE     := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the suffix
+
 DIAGFILES := \
         $(TESTFILES)/${PREFIX}DSKAA.SEQ \
         $(TESTFILES)/${PREFIX}DSKAB.SEQ \
@@ -330,8 +332,8 @@ $(ISE)/$(PROJECT)_impact.cmd: makefile
 #
 
 FUSE_ARGS := \
-        -d DEBUG_$(subst -RD00,,$(DIAG)) \
-	-d DEBUG=$(subst -RD00,,$(DIAG)) \
+        -d DEBUG_$(DIAGBASE) \
+	-d DEBUG=$(DIAGBASE) \
         -d SMALL_MEM \
         -d XILINX \
 	-intstyle $(INTSTYLE) \
@@ -346,7 +348,7 @@ FUSE_ARGS := \
 	work.glbl
 
 $(ISE)/$(PROJECT)_isim.exe: $(ISE)/$(PROJECT)_isim.prj $(RTL_SRC) $(SIM_SRC) $(INC) $(DAT) makefile
-	cd ise; \
+	cd $(ISE); \
 	$(FUSE) $(FUSE_ARGS)
 
 #
@@ -365,7 +367,7 @@ ISIM_ARGS := \
 	-wdb c:/temp/$(PROJECT).wdb
 
 isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg makefile
-	@cd ise; \
+	@cd $(ISE); \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe $(ISIM_ARGS) &
 
@@ -673,9 +675,8 @@ load: $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT)_impact.cmd
 
 $(TESTSUITE)/$(DIAG).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT) makefile
 	$(IVERILOG) -s testbench -o $@ $(SIM_SRC) $(RTL_SRC)   \
-	-D DEBUG_$(subst -RD00,,$(DIAG)) \
-	-D DEBUG=$(subst -RD00,,$(DIAG)) \
-	-D SMALL_MEM \
+	-D DEBUG_$(DIAGBASE) \
+	-D DEBUG=$(DIAGBASE) \
 	-I rtl/ks10 \
 	-I rtl/ks10/uba \
 	-I rtl/ks10/uba/rh11 \
@@ -699,8 +700,8 @@ clean: clean_rtl clean_ise
 #
 
 clean_rtl: 
-	rm -f    $(RTL)/ks10/cpu/useq/*.dat
-	rm -f    $(RTL)/testbench/*.dat
+	rm -f $(RTL)/ks10/cpu/useq/*.dat
+	rm -f $(RTL)/testbench/*.dat
 	find . -type f -name "*~" | xargs rm -fv
 
 #
@@ -708,72 +709,72 @@ clean_rtl:
 #
 
 clean_ise:
-	rm -rf   $(ISE)/xst \
-                 $(ISE)/_ngo \
-                 $(ISE)/_xmsgs \
-                 $(ISE)/isim \
-                 $(ISE)/iseconfig \
-                 $(ISE)/xlnx_auto_0_xdb      
-	rm -f    $(ISE)/$(PROJECT).bgn \
-	         $(ISE)/$(PROJECT).bit \
-	         $(ISE)/$(PROJECT).bld \
-	         $(ISE)/$(PROJECT).cfi \
-                 $(ISE)/$(PROJECT).cmd_log \
-                 $(ISE)/$(PROJECT).drc \
-                 $(ISE)/$(PROJECT).filter \
-                 $(ISE)/$(PROJECT).lso \
-                 $(ISE)/$(PROJECT).mcs \
-                 $(ISE)/$(PROJECT).ncd \
-                 $(ISE)/$(PROJECT).ngc \
-                 $(ISE)/$(PROJECT).ngc_xst.xrpt \
-                 $(ISE)/$(PROJECT).ngd \
-                 $(ISE)/$(PROJECT).ngr \
-                 $(ISE)/$(PROJECT).pad \
-                 $(ISE)/$(PROJECT).par \
-                 $(ISE)/$(PROJECT).pcf\
-                 $(ISE)/$(PROJECT).prj\
-                 $(ISE)/$(PROJECT).prm\
-                 $(ISE)/$(PROJECT).ptwx \
-                 $(ISE)/$(PROJECT).stx \
-                 $(ISE)/$(PROJECT).twr \
-                 $(ISE)/$(PROJECT).twx \
-                 $(ISE)/$(PROJECT).unroutes \
-                 $(ISE)/$(PROJECT).wdb \
-                 $(ISE)/$(PROJECT).xpi \
-                 $(ISE)/$(PROJECT).xst \
-                 $(ISE)/$(PROJECT)_bitgen.xwbt \
-                 $(ISE)/$(PROJECT)_envsettings.html \
-                 $(ISE)/$(PROJECT)_guide.ncd \
-                 $(ISE)/$(PROJECT)_impact.cmd \
-                 $(ISE)/$(PROJECT)_isim.cmd \
-                 $(ISE)/$(PROJECT)_isim.exe \
-                 $(ISE)/$(PROJECT)_isim.prj \
-                 $(ISE)/$(PROJECT)_map.map \
-                 $(ISE)/$(PROJECT)_map.mrp \
-                 $(ISE)/$(PROJECT)_map.ncd \
-                 $(ISE)/$(PROJECT)_map.ngm \
-                 $(ISE)/$(PROJECT)_map.xrpt \
-                 $(ISE)/$(PROJECT)_ngdbuild.xrpt \
-                 $(ISE)/$(PROJECT)_pad.csv \
-                 $(ISE)/$(PROJECT)_pad.txt \
-                 $(ISE)/$(PROJECT)_par.xrpt \
-                 $(ISE)/$(PROJECT)_summary.html \
-                 $(ISE)/$(PROJECT)_summary.xml \
-                 $(ISE)/$(PROJECT)_usage.xml \
-                 $(ISE)/$(PROJECT)_xst.log \
-                 $(ISE)/$(PROJECT)_xst.xrpt \
-                 $(ISE)/fuse.log \
-                 $(ISE)/fuse.xmsgs \
-                 $(ISE)/fuseRelaunch.cmd \
-                 $(ISE)/_impactbatch.log \
-                 $(ISE)/isim.cmd \
-                 $(ISE)/isim.log \
-                 $(ISE)/par_usage_statistics.html \
-                 $(ISE)/usage_statistics_webtalk.html \
-                 $(ISE)/webtalk.log \
-                 $(ISE)/webtalk_pn.xml \
-                 $(ISE)/xilinx_device_details.xml \
-                 $(ISE)/xilinxsim.ini
+	rm -rf $(ISE)/xst \
+               $(ISE)/_ngo \
+               $(ISE)/_xmsgs \
+               $(ISE)/isim \
+               $(ISE)/iseconfig \
+               $(ISE)/xlnx_auto_0_xdb      
+	rm -f  $(ISE)/$(PROJECT).bgn \
+	       $(ISE)/$(PROJECT).bit \
+	       $(ISE)/$(PROJECT).bld \
+	       $(ISE)/$(PROJECT).cfi \
+               $(ISE)/$(PROJECT).cmd_log \
+               $(ISE)/$(PROJECT).drc \
+               $(ISE)/$(PROJECT).filter \
+               $(ISE)/$(PROJECT).lso \
+               $(ISE)/$(PROJECT).mcs \
+               $(ISE)/$(PROJECT).ncd \
+               $(ISE)/$(PROJECT).ngc \
+               $(ISE)/$(PROJECT).ngc_xst.xrpt \
+               $(ISE)/$(PROJECT).ngd \
+               $(ISE)/$(PROJECT).ngr \
+               $(ISE)/$(PROJECT).pad \
+               $(ISE)/$(PROJECT).par \
+               $(ISE)/$(PROJECT).pcf\
+               $(ISE)/$(PROJECT).prj\
+               $(ISE)/$(PROJECT).prm\
+               $(ISE)/$(PROJECT).ptwx \
+               $(ISE)/$(PROJECT).stx \
+               $(ISE)/$(PROJECT).twr \
+               $(ISE)/$(PROJECT).twx \
+               $(ISE)/$(PROJECT).unroutes \
+               $(ISE)/$(PROJECT).wdb \
+               $(ISE)/$(PROJECT).xpi \
+               $(ISE)/$(PROJECT).xst \
+               $(ISE)/$(PROJECT)_bitgen.xwbt \
+               $(ISE)/$(PROJECT)_envsettings.html \
+               $(ISE)/$(PROJECT)_guide.ncd \
+               $(ISE)/$(PROJECT)_impact.cmd \
+               $(ISE)/$(PROJECT)_isim.cmd \
+               $(ISE)/$(PROJECT)_isim.exe \
+               $(ISE)/$(PROJECT)_isim.prj \
+               $(ISE)/$(PROJECT)_map.map \
+               $(ISE)/$(PROJECT)_map.mrp \
+               $(ISE)/$(PROJECT)_map.ncd \
+               $(ISE)/$(PROJECT)_map.ngm \
+               $(ISE)/$(PROJECT)_map.xrpt \
+               $(ISE)/$(PROJECT)_ngdbuild.xrpt \
+               $(ISE)/$(PROJECT)_pad.csv \
+               $(ISE)/$(PROJECT)_pad.txt \
+               $(ISE)/$(PROJECT)_par.xrpt \
+               $(ISE)/$(PROJECT)_summary.html \
+               $(ISE)/$(PROJECT)_summary.xml \
+               $(ISE)/$(PROJECT)_usage.xml \
+               $(ISE)/$(PROJECT)_xst.log \
+               $(ISE)/$(PROJECT)_xst.xrpt \
+               $(ISE)/fuse.log \
+               $(ISE)/fuse.xmsgs \
+               $(ISE)/fuseRelaunch.cmd \
+               $(ISE)/_impactbatch.log \
+               $(ISE)/isim.cmd \
+               $(ISE)/isim.log \
+               $(ISE)/par_usage_statistics.html \
+               $(ISE)/usage_statistics_webtalk.html \
+               $(ISE)/webtalk.log \
+               $(ISE)/webtalk_pn.xml \
+               $(ISE)/xilinx_device_details.xml \
+               $(ISE)/xilinxsim.ini
 
 #
 # rcsclean everything

@@ -1,5 +1,8 @@
 **** IN WORK ****
 
+rtl/ks10/arb/arb.v
+   Fix output multiplexer to not have priority.
+
 rtl/ks10/cpu/dbus.v:
    Special hacks for certain addresses.  Why?
    Kill off cache_hit
@@ -18,10 +21,17 @@ rtl/ks10/cpu/pf_disp.v
 rtl/ks10/uba/uba.v
    dev1ACKO is stubbed.
    dev2ACK0 is stubbed.
-   Add maintenance mode so hardware will pass DSUBA?
+   Add maintenance mode so hardware will pass DSUBA
+   Remove fixme from debug_dsuba.vh
+   Fix interrupts.   DZ11 should decode WRU cycles and INTA
+   from the bus directly.
 
 rtl/ks10/uba/dz11/dzintr
    Fix conditional compile.  Why doesn't this work?
+
+rtl/ks10/ram1kx36:
+   Fix stack initialization?
+
 
 **** COMPLETED ****
 

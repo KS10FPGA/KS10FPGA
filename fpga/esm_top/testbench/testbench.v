@@ -69,7 +69,7 @@ module testbench;
    //
 
    wire [1:2]  TXD = 2'b11;     // DZ11 RS-232 Received Data
-   wire [1:2]  RXD;     	// DZ11 RS-232 Transmitted Data
+   wire [1:2]  RXD;             // DZ11 RS-232 Transmitted Data
 
    //
    // RH11 Secure Digital Interface
@@ -234,7 +234,7 @@ module testbench;
          conREADw(addrREGSTATUS, status);
          if (status & statNXMNXD)
            $display("[%11.3f] KS10: NXM/NXD at address %06o", $time/1.0e3,
-		    address);
+                    address);
 
          conWRITEw(addrREGSTATUS, status & ~statNXMNXD);
 
@@ -438,7 +438,7 @@ module testbench;
    // Handle Startup.
    //
    // Details
-   //  The Microcode will always halt at startup.  Catch the halt at startup 
+   //  The Microcode will always halt at startup.  Catch the halt at startup
    //  (only).  When this occurs momentarily push the RUN, EXEC, and CONT button
    //  to continue execution.  Otherwise let the KS10 halt.
    //
@@ -451,8 +451,8 @@ module testbench;
         $display("[%11.3f] KS10: CPU Halted", $time/1.0e3);
         printHaltStatus;
         if (haltTIME < 40000 || haltTIME > 60000)
-	  $stop;
-	else
+          $stop;
+        else
           begin
 
              //
@@ -480,6 +480,25 @@ module testbench;
              conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN));
           end
      end
+
+`ifdef __ICARUS__
+   `ifdef DUMPVARS
+   initial
+     begin
+        $dumpfile("c:\test.vcd");
+        $dumpvars(0, testbench,
+                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[0],
+                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[1],
+                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[2],
+                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[3],
+                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[4],
+                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[5],
+                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[6],
+                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[7]);
+     end
+   `endif
+`endif
+
 
 `ifdef SIMCTY
 
@@ -561,12 +580,12 @@ module testbench;
    //
    // Periodically flush the output
    //
-   
+
    always
      begin
-	#1000000 $fflush;
+        #1000000 $fflush;
      end
-   
+
    //
    // Bidirectional Data Bus
    //

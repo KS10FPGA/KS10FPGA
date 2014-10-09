@@ -127,6 +127,7 @@ module DZ11(clk,      rst,
    wire         devREAD   = `devREAD(devADDRI);         // Read Cycle
    wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle
    wire         devIO     = `devIO(devADDRI);           // IO Cycle
+   wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
    wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
    wire         devIOBYTE = `devIOBYTE(devADDRI);       // Byte IO Operation
    wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
@@ -362,7 +363,7 @@ module DZ11(clk,      rst,
       .clk        (clk),
       .rst        (rst),
       .clr        (csrCLR | devRESET),
-      .iack       (devINTA == dzINTR),
+      .iack       (devWRU & (devINTA == dzINTR)),
       .vectREAD   (vectREAD),
       .rxVECTOR   (rxVECTOR),
       .csrRIE     (csrRIE),

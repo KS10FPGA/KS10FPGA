@@ -161,7 +161,7 @@ module MEM(rst, clkT, clkR, clkPHS,
                   statPF <=  busDATAI[12] & statPF;
                   statEE <= !busDATAI[35];
 `ifndef SYNTHESIS
-                  $display("[%10.3f] MEM: Memory Status Register Written", $time/1.0e3);
+                  $display("[%11.3f] MEM: Memory Status Register Written", $time/1.0e3);
 `endif
                end
           end
@@ -198,7 +198,7 @@ module MEM(rst, clkT, clkR, clkPHS,
              busACKO  <= 1;
              busDATAO <= statREG;
 `ifndef SYNTHESIS
-             $display("[%10.3f] MEM: Memory Status Register Read", $time/1.0e3);
+             $display("[%11.3f] MEM: Memory Status Register Read", $time/1.0e3);
 `endif
           end
 

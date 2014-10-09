@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -7,48 +7,42 @@
 //
 // Details
 //
-// Note
-//
-// Todo
-//
 // File
 //   ram1kx36.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 
 module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
 
    input         clk;           // Clock
-   input         rst;		// Reset
+   input         rst;           // Reset
    input         clken;         // Clock enable
    input         wr;            // Write
    input  [0: 9] addr;          // Address
@@ -58,16 +52,11 @@ module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
    //
    // RAM 1kx36
    //
-   // FIXME:
-   //  The fall edge clock on the RAM is a hack but it is good enough
-   //  for simulation and until I figure out what to do here.
-   //  It will create synthesis issues.
-   //
    // Note:
-   //  There are places when the KS10 microcode reads uninitialized
-   //  RAMFILE contents (TTG, for one).  This halts the simulation.
-   //  Therefore this implementation includes code to initialized
-   //  the RAMFILE contents for simulation purposes.
+   //  There are places when the KS10 microcode reads uninitialized RAMFILE
+   //  contents (TTG, for one).  This halts the simulation.  Therefore this
+   //  implementation includes code to initialized the RAMFILE contents for
+   //  simulation purposes.
    //
    // Trace
    //  DPE7/E906, DPE7/E907, DPE7/E908, DPE7/E909, DPE7/E910, DPE7/E911
@@ -81,7 +70,7 @@ module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
 `ifndef SYNTHESIS
    integer i;
 `endif
-   
+
    reg [0:35] ram [0:1023];
    reg [0: 9] rd_addr;
 
@@ -91,11 +80,12 @@ module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
           begin
 `ifdef SYNTHESIS
              ;
-`else             
+`else
              for (i = 0; i < 1024; i = i + 1)
              begin
                 ram[i] <= 0;
              end
+             // FIXME
              // Initialize Stack Pointer
              ram[15] <= 36'o777577_030303;
 `endif

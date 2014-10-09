@@ -18,7 +18,6 @@ FILES="\
     DSKAK
     DSKAL
     DSKAM
-    DSKBA-RD00
     DSKCA
     DSKCB
     DSKCC
@@ -27,6 +26,7 @@ FILES="\
     DSKCF-RD00
     DSKDA-RD00
     DSKEA-RD00
+    DSKBA-RD00
     DSUBA-RD00
     DSDZA-RD00
     DSKCG
@@ -40,19 +40,18 @@ RED='\e[0;31m'
 GRN='\e[0;32m'
 END='\e[0m'
 
-echo -n "Testing performed on " | tee ${RESFILE}
-date "+%a, %b %d %Y" | tee -a ${RESFILE}
+date "+Testing performed on %a, %b %d %Y." | tee ${RESFILE}
 if [ ! -f rtl/testbench/ssram.awk ]; then
     co -q "rtl/testbench/ssram.awk"
 fi
 
+date "+[%r] Testing started." | tee -a ${RESFILE}
 for FILE in ${FILES}
 do
-    date "+[%r] " | tr -d '\n' | tee -a ${RESFILE}
     if [ ! -f rtl/testbench/${PREFIX}${FILE}.SEQ ]; then
         co -q "rtl/testbench/${PREFIX}${FILE}.SEQ"
     fi
-    echo -n -e "Testing $FILE\t" | expand -t 20 | tee -a ${RESFILE}
+    date "+[%r] Testing ${FILE}$" | tr $ \\t | tr -d \\n | expand -t 20 | tee -a ${RESFILE}
     make -B -s DIAG=${FILE} ${DIR}/${FILE}.vvp 2> /dev/null > /dev/null
     RETVAL=$?
     if [ ${RETVAL} -eq 0 ]; then
@@ -67,3 +66,4 @@ do
         echo -e "${RED}Build Fail${END}" | tee -a ${RESFILE}
     fi
 done
+date "+[%r] Testing completed." | tee -a ${RESFILE}

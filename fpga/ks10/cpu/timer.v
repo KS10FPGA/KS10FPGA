@@ -114,9 +114,9 @@ module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          {carry, accum} = 33'b0;
+          {carry, accum} <= 33'b0;
         else
-          {carry, accum} = {1'b0, accum} + {1'b0, incr};
+          {carry, accum} <= {1'b0, accum} + {1'b0, incr};
      end
 
    wire timerINC = carry;
@@ -192,7 +192,7 @@ module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
           begin
              if (timerRST)
                timerINTR <= 0;
-             else if (timerEN & ~currMSB & lastMSB)
+             else if (timerEN & !currMSB & lastMSB)
                timerINTR <= 1;
           end
      end

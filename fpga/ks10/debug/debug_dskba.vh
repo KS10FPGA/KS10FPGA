@@ -7,6 +7,8 @@ begin
      18'o000000: test = "DSKBA INIT";
      18'o030606: test = "DSKBA START";
      18'o055323: test = "DSKBA JFOT0";
+     18'o055370: test = "DSKBA MEMFD1";
+     18'o055435: test = "DSKBA MST1";
      18'o055457: test = "DSKBA MSADT";
      18'o055512: test = "DSKBA TST1";
      18'o055543: test = "DSKBA TST2";
@@ -34,8 +36,8 @@ begin
      18'o056767: test = "DSKBA TST30";
      18'o057026: test = "DSKBA TST31";
      18'o056767: test = "DSKBA TST30";
-     18'o057065: test = "DSKBA JRST1";
-     18'o057120: test = "DSKBA JSP1";
+     18'o057065: test = "DSKBA JRSTA";
+     18'o057120: test = "DSKBA JSPA";
      18'o057154: test = "DSKBA JSRA";
      18'o057210: test = "DSKBA JSR1";
      18'o057252: test = "DSKBA JSAA";
