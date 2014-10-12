@@ -276,9 +276,9 @@ module UART_RX(clk, rst, clr, length, stop, parity, rxd,  brgCLKEN, rfull,
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
-                       rxREG <= {din, rxREG[7:1]};
                        if (length == `UARTLEN_5)
                          begin
+                            rxREG <= {3'b000, din, rxREG[7:4]};
                             if ((parity == `UARTPAR_EVEN) ||
                                 (parity == `UARTPAR_ODD ))
                               state <= statePARITY;
@@ -286,7 +286,10 @@ module UART_RX(clk, rst, clr, length, stop, parity, rxd,  brgCLKEN, rfull,
                               state <= stateSTOP1;
                          end
                        else
-                         state <= stateBIT5;
+                         begin
+                            rxREG <= {din, rxREG[7:1]};
+                            state <= stateBIT5;
+                         end
                     end
                   else
                     brdiv <= brdiv - 1'b1;
@@ -300,9 +303,9 @@ module UART_RX(clk, rst, clr, length, stop, parity, rxd,  brgCLKEN, rfull,
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
-                       rxREG <= {din, rxREG[7:1]};
                        if (length == `UARTLEN_6)
                          begin
+                            rxREG <= {2'b00, din, rxREG[7:3]};
                             if ((parity == `UARTPAR_EVEN) ||
                                 (parity == `UARTPAR_ODD ))
                               state <= statePARITY;
@@ -310,7 +313,10 @@ module UART_RX(clk, rst, clr, length, stop, parity, rxd,  brgCLKEN, rfull,
                               state <= stateSTOP1;
                          end
                        else
-                         state <= stateBIT6;
+                         begin
+                            rxREG <= {din, rxREG[7:1]};
+                            state <= stateBIT6;
+                         end
                     end
                   else
                     brdiv <= brdiv - 1'b1;
@@ -324,9 +330,9 @@ module UART_RX(clk, rst, clr, length, stop, parity, rxd,  brgCLKEN, rfull,
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
-                       rxREG <= {din, rxREG[7:1]};
                        if (length == `UARTLEN_7)
                          begin
+                            rxREG <= {1'b0, din, rxREG[7:2]};
                             if ((parity == `UARTPAR_EVEN) ||
                                 (parity == `UARTPAR_ODD ))
                               state <= statePARITY;
@@ -334,7 +340,10 @@ module UART_RX(clk, rst, clr, length, stop, parity, rxd,  brgCLKEN, rfull,
                               state <= stateSTOP1;
                          end
                        else
-                         state <= stateBIT7;
+                         begin
+                            rxREG <= {din, rxREG[7:1]};
+                            state <= stateBIT7;
+                         end
                     end
                   else
                     brdiv <= brdiv - 1'b1;

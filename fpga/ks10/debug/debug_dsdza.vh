@@ -31,6 +31,21 @@ begin
      18'o033044: test = "DSDZA TEST30";
      18'o033151: test = "DSDZA TEST31";
      18'o033260: test = "DSDZA TEST32";
+     18'o033357: test = "DSDZA TEST32";
+     18'o033360: test = "DSDZA TEST32";
+     18'o033361: test = "DSDZA TEST32";
+     18'o033362: test = "DSDZA TEST32";
+     18'o033363: test = "DSDZA TEST32";
+     18'o033364: test = "DSDZA TEST32";
+     18'o033365: test = "DSDZA TEST32";
+     18'o033366: test = "DSDZA TEST32";
+     18'o033367: test = "DSDZA TEST32";
+     18'o033370: test = "DSDZA TEST32";
+     18'o033371: test = "DSDZA TEST32";
+     18'o033372: test = "DSDZA TEST32";
+     18'o033373: test = "DSDZA TEST32";
+     18'o033374: test = "DSDZA TEST32";
+     18'o033375: test = "DSDZA TEST32";
      18'o033437: test = "DSDZA TEST33";
 
      //

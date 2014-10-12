@@ -130,7 +130,7 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS, vmaREG);
         else if (clken & vmaEN)
           begin
              `vmaEXTD(vmaREG) <= `cromMEM_EXTADDR;
-             `vmaADDR(vmaREG) <= dp[14:35];
+             `vmaADDR(vmaREG) <= `vmaADDR(dp);
              if (`cromMEM_DPFUNC)
                begin
                   `vmaUSER(vmaREG)   <= `vmaUSER(dp);
