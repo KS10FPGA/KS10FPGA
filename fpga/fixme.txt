@@ -29,9 +29,14 @@ rtl/ks10/uba/uba.v
 rtl/ks10/uba/dz11/dzintr
    Fix conditional compile.  Why doesn't this work?
 
-rtl/ks10/ram1kx36:
+rtl/ks10/cpu/ram1kx36:
    Fix stack initialization?
 
+rtl/ks10/cpu/disp_ni.v
+   Add localparam for dispatches
+
+rtl/ks10/cpu/disp_byte.v
+   Add localparam for dispatches
 
 **** COMPLETED ****
 
