@@ -78,7 +78,7 @@ VVP          := vvp
 
 PREFIX       := MAINDEC-10-
 
-DIAGBASE     := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the suffix
+DIAGBASE     := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX suffix
 
 DIAGFILES := \
         $(TESTFILES)/${PREFIX}DSKAA.SEQ \
