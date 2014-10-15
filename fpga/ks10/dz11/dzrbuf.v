@@ -6,7 +6,8 @@
 //   DZ-11 Receiver Buffer (RBUF)
 //
 // Details
-//   This is an implements the DZ11 RBUF Register
+//   This is an implements the DZ11 RBUF Register.  The RBUF contains the
+//   receiver FIFO (aka SILO).
 //
 // File
 //   dzrbuf.v
@@ -42,8 +43,8 @@
 `define SIZE 64
 
 module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXOVRE, uartRXFRME,
-              uartRXPARE, uartRXDATA, uartRXFULL, uartRXCLR, rbufREAD, rbufRDONE,
-              rbufSA, regRBUF);
+              uartRXPARE, uartRXDATA, uartRXFULL, uartRXCLR, rbufREAD,
+              rbufRDONE, rbufSA, regRBUF);
 
    input         clk;                           // Clock
    input         rst;                           // Reset
@@ -71,7 +72,7 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXOVRE, uartRXFRME,
    //
 
    reg [7:0] uartRXCLR;
-   
+
    always @*
      begin
         if (uartRXFULL & csrMSE)
@@ -150,21 +151,30 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXOVRE, uartRXFRME,
              rd_ptr <= 0;
              wr_ptr <= 0;
           end
-        else if (rd & ~wr & !empty)
+        else
           begin
-             depth <= depth - 1'b1;
-             if (rd_ptr == `SIZE)
-               rd_ptr <= 0;
-             else
-               rd_ptr <= rd_ptr + 1'b1;
-          end
-        else if (wr & !rd & !full)
-          begin
-             depth <= depth + 1'b1;
-             if (wr_ptr == `SIZE)
-               wr_ptr <= 0;
-             else
-               wr_ptr <= wr_ptr + 1'b1;
+             if (clr)
+               begin
+                  depth  <= 0;
+                  rd_ptr <= 0;
+                  wr_ptr <= 0;
+               end
+             else if (rd & ~wr & !empty)
+               begin
+                  depth <= depth - 1'b1;
+                  if (rd_ptr == `SIZE)
+                    rd_ptr <= 0;
+                  else
+                    rd_ptr <= rd_ptr + 1'b1;
+               end
+             else if (wr & !rd & !full)
+               begin
+                  depth <= depth + 1'b1;
+                  if (wr_ptr == `SIZE)
+                    wr_ptr <= 0;
+                  else
+                    wr_ptr <= wr_ptr + 1'b1;
+               end
           end
      end
 
