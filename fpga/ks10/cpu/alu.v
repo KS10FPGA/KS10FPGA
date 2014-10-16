@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -8,22 +8,19 @@
 // Details
 //
 // Note
-//   The KS10 ALU implementation uses ten cascaded am2901 4-bit
-//   slices.  Some quick study showed that this did not work
-//   well with an FPGA implemenation.  Most FPGAs have optimized
-//   (very fast) carry logic to support counters and adders.  It
-//   turns out that the synthesis tools can't infer from the
-//   description of the 4-bit slices that a single 40-bit carry
-//   chain exists from the LSB to the MSB.  Therefore this ALU
-//   is implemented as two 20-bit ALUs.   The two 20-bit ALUs
-//   are required because the two ALU halves must operate
-//   together forming a single 40-bit ALU and must operate
-//   separately to form two independant registers.
+//   The KS10 ALU implementation uses ten cascaded am2901 4-bit slices.  Some
+//   quick study showed that this did not work well with an FPGA implemenation.
+//   Most FPGAs have optimized (very fast) carry logic to support counters and
+//   adders.  It turns out that the synthesis tools can't infer from the
+//   description of the 4-bit slices that a single 40-bit carry chain exists
+//   from the LSB to the MSB.  Therefore this ALU is implemented as two 20-bit
+//   ALUs.  The two 20-bit ALUs are required because the two ALU halves must
+//   operate together forming a single 40-bit ALU and must operate separately
+//   to form two independant registers.
 //
 // Note
-//   The ALU bit numbering on the schematic is [-2,-1,0:37].
-//   This doesn't work at all for verilog.   Therefore the
-//   bit numbering is [0:39].
+//   The ALU bit numbering on the schematic is [-2,-1,0:37].  This doesn't work
+//   at all for verilog.   Therefore the bit numbering is [0:39].
 //
 // File
 //   alu.v
@@ -31,37 +28,34 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "useq/crom.vh"
 
-module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
-           debugADDR, debugDATA);
+module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -79,8 +73,8 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // Microcode fields
    //
    // Note
-   //  These temporaries are created so I can see the microcode fields
-   //  in the simulator.  The synthesis optimizer deletes them.
+   //  These temporaries are created so I can see the microcode fields in the
+   //  simulator.  The synthesis optimizer deletes them.
    //
 
    reg  [0:39] f;                               // ALU Output
@@ -99,8 +93,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // Carry Inhibit
    //
    // Details
-   //  Inhibit the carry from right half of the ALU to left half of
-   //  the ALU
+   //  Inhibit the carry from right half of the ALU to left half of the ALU
    //
 
    wire specCRY18INH = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_CRY18INH);
@@ -109,8 +102,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // ALU Register Write
    //
    // Note
-   //  The following ALU destinations write data into the ALU
-   //  registers.
+   //  The following ALU destinations write data into the ALU registers.
    //
 
    wire write = ((dest ==`cromDST_RAMA)  ||
@@ -126,14 +118,13 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // Note
    //  DST[1] is inverted.
    //
-   //  When the ALU is configured for shift operations, the dst[1]
-   //  signal selects between right shifts and left shifts.
+   //  When the ALU is configured for shift operations, the dst[1] signal
+   //  selects between right shifts and left shifts.
    //
-   //  In the KS10, the dst[1] selects tri-state muxes that
-   //  implement the right-shift and left-shift operations.
-   //  This isn't necessary on the FPGA implementation because
-   //  there aren't any tristate pins on the ALU.  I just don't
-   //  want to change the microcode.   So it stays.
+   //  In the KS10, the dst[1] selects tri-state muxes that implement the
+   //  right-shift and left-shift operations.   This isn't necessary on the
+   //  FPGA implementation because there aren't any tristate pins on the ALU.
+   //  I just don't want to change the microcode.   So it stays.
    //
    // Trace
    //  DPE5/E62
@@ -147,10 +138,9 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // Note
    //  FUN[2] is munged on DPE5
    //
-   //  When fun[0] and fun[1] are both zero, fun[2] selects
-   //  between add and subract operations. This is used in
-   //  the divide implementation and the multiprecision
-   //  operations.
+   //  When fun[0] and fun[1] are both zero, fun[2] selects between add and
+   //  subract operations. This is used in the divide implementation and the
+   //  multiprecision operations.
    //
    // Trace
    //  DPE5/E62
@@ -163,9 +153,8 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // Input Sign Extension
    //
    // Details
-   //  The ALU is 40-bits wide.  The input is sign extended from
-   //  36 bits to 38 bits and two bits of zero padding are added to
-   //  the right.
+   //  The ALU is 40-bits wide.  The input is sign extended from 36 bits to 38
+   //  bits on the left and two bits of zero padding are added to the right.
    //
    // Trace
    //  DPE1/E29  (MSB/Sign Extension)
@@ -178,10 +167,9 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // Shifter Operations:
    //
    // Details
-   //  The am2901s are wired together to perform specific shift
-   //  operation controlled by the cromSPEC_SHSTYLE microcode
-   //  field.  The ASCII art pictures below detail the various
-   //  shifter modes.
+   //  The am2901s are wired together to perform specific shift operation
+   //  controlled by the cromSPEC_SHSTYLE microcode field.  The ASCII art
+   //  pictures below detail the various shifter modes.
    //
    // Note
    //  All of the F shifter logic is external to the am2901s.
@@ -360,8 +348,8 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // ALU RAM Write Port
    //
    // Note
-   //  The left side and right side of the ALU can be independantly
-   //  clocked and updated.
+   //  The left side and right side of the ALU can be independantly clocked and
+   //  updated.
    //
 
    reg [0:39] aluRAM [0:15];
@@ -471,9 +459,8 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // Q Register
    //
    // Details
-   //  The left side and right side of the Q Register can be
-   //  independantly clocked and updated.  I'm not sure
-   //  if the microcode does that, or not.
+   //  The left side and right side of the Q Register can be independantly
+   //  clocked and updated.  I'm not sure if the microcode does that, or not.
    //
 
    always @(posedge clk or posedge rst)
@@ -493,8 +480,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // ALU Left R Source Selector
    //
    // Details
-   //  This selects source for the "R" input to the left-half of
-   //  the ALU.
+   //  This selects source for the "R" input to the left-half of the ALU.
    //
 
    reg [0:39] r;
@@ -519,8 +505,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // ALU Right R Source Selector
    //
    // Details
-   //  This selects source for the "R" input to the right-half of
-   //  the ALU.
+   //  This selects source for the "R" input to the right-half of the ALU.
    //
 
    always @(ad or dd or rsrc)
@@ -544,8 +529,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // ALU Left S Source Selector
    //
    // Details
-   //  This selects source for the "S" input to the left-half of
-   //  the ALU.
+   //  This selects source for the "S" input to the left-half of the ALU.
    //
 
    reg [0:39] s;
@@ -571,8 +555,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // ALU Right S Source Selector
    //
    // Details
-   //  This selects source for the "S" input to the right-half of
-   //  the ALU.
+   //  This selects source for the "S" input to the right-half of the ALU.
    //
 
    always @(ad or bd or q or rsrc)
@@ -597,11 +580,10 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // ALU Proper
    //
    // Details
-   //  The ALU is somewhat optimized so that the carry chain can
-   //  be optimized.  Instead of adding logic into the middle of
-   //  of the carry to separate the left half and the right half
-   //  of the ALU, the left half, the right half, and the whole
-   //  ALU are calculated in parallel.
+   //  The ALU is somewhat optimized so that the carry chain can be optimized.
+   //  Instead of adding logic into the middle of of the carry to separate the
+   //  left half and the right half of the ALU, the left half, the right half,
+   //  and the whole ALU are calculated in parallel.
    //
 
    reg [0:3] g;                         // ALU Partial Sum
@@ -686,8 +668,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // Arithmetic Overflow (aluAOV)
    //
    // Details
-   //  Arithmetic overflow occurs when the sign is different than
-   //  the MSB
+   //  Arithmetic overflow occurs when the sign is different than the MSB
    //
    // Trace
    //  DPE9/E26
@@ -699,16 +680,14 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // aluCRY0
    //
    // Details
-   //  This is the carry form ALU bit -2 (Verilog bit 0).
-   //  In the KS10, this signal comes from the carry skippers. In
-   //  the FPGA implementation, the 'co' signal comes directly from
-   //  the ALU serial carry from the MSB.
+   //  This is the carry form ALU bit -2 (Verilog bit 0).  In the KS10, this
+   //  signal comes from the carry skippers. In the FPGA implementation, the
+   //  'co' signal comes directly from the ALU serial carry from the MSB.
    //
-   //  Note that the CRY0 doesn't actually come from bit 0: it comes
-   //  from bit (-2) using KS10 numbering.  Because the top two bits
-   //  are sign extensions, they are equivalent.  A carry from bit 0
-   //  will cause a carry into bit (-1) and a carry from bit (-1)
-   //  will cause a carry into bit (-2).
+   //  Note that the CRY0 doesn't actually come from bit 0: it comes from bit
+   //  (-2) using KS10 numbering.  Because the top two bits are sign extensions,
+   //  they are equivalent.  A carry from bit 0 will cause a carry into bit (-1)
+   //  and a carry from bit (-1) will cause a carry into bit (-2).
    //
 
    wire aluCRY0 = co;
@@ -717,8 +696,8 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // aluCRY1
    //
    // Details
-   //  A carry from bit 1 must have occured if the Arithmetic
-   //  Overflow bit is different than the carry from bit 0.
+   //  A carry from bit 1 must have occured if the Arithmetic Overflow bit is
+   //  different than the carry from bit 0.
    //
    // Trace:
    //  DPE9/E26
@@ -729,13 +708,12 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // aluCRY2:
    //
    // Details
-   //  This is the carry from ALU bit 2 into ALU bit 1.  In Verilog
-   //  numbering (see notes at top of file), this is a carry from
-   //  ALU bit 4 into ALU bit 3.   We don't really have access to
-   //  the carry from ALU bit 4, but we infer it by recalculating
-   //  the 4 MSBs with the carry cleared, and checking to see if it
-   //  yields the same results as the full calculation.  If either
-   //  the carry or the top four bits are different, there must have
+   //  This is the carry from ALU bit 2 into ALU bit 1.  In Verilog numbering
+   //  (see notes at top of file), this is a carry from ALU bit 4 into ALU bit
+   //  3.  We don't really have access to the carry from ALU bit 4, but we
+   //  infer it by recalculating the 4 MSBs with the carry cleared, and
+   //  checking to see if it yields the same results as the full calculation.
+   //  If either the carry or the top four bits are different, there must have
    //  been a carry from ALU bit 2.
    //
 
@@ -745,10 +723,9 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // QR37
    //
    // Details
-   //  This is what is shifted out of the LSB of the Q Register and
-   //  is used by the multiplication implementation.  I.e., it goes
-   //  to the multiplication dispatch logic to control whether to
-   //  add (or not) the partial product.
+   //  This is what is shifted out of the LSB of the Q Register and is used by
+   //  the multiplication implementation.  I.e., it goes to the multiplication
+   //  dispatch logic to control whether to add (or not) the partial product.
    //
    // Note
    //  This is actually QR39 using Verilog numbering.
@@ -760,9 +737,9 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // ALU Flag State Register
    //
    // Details
-   //  These registers store ALU state from one microinstruction to
-   //  the next.  This state facilates the implementation of multi-
-   //  word shifts as well as mutiplication and divide operations.
+   //  These registers store ALU state from one microinstruction to the next.
+   //  This state facilates the implementation of multi-word shifts as well as
+   //  mutiplication and divide operations.
    //
    // Trace
    //  DPE5/E28
@@ -797,11 +774,11 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    // Shifter Configuration
    //
    // Details
-   //  This logic contains special connections to the shifter that
-   //  support multishift and divide operations.
+   //  This logic contains special connections to the shifter that support
+   //  multishift and divide operations.
    //
-   //  The special operations are controlled by the `cromMULTIPREC
-   //  and `cromDIVIDE microcode fields.
+   //  The special operations are controlled by the `cromMULTIPREC and
+   //  `cromDIVIDE microcode fields.
    //
    // Trace
    //  DPE5/E4
@@ -816,53 +793,52 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT,
    reg carry_in;
    reg funct_02;
 
-   always @(crom or flagFL02 or flagCARRY02 or flagFUNCT02 or flagCARRYOUT or fun[2])
-   begin
+   always @*
+     begin
 
-     //
-     // Multiprecision operations
-     //
+        //
+        // Multiprecision operations
+        //
 
-     if (`cromMULTIPREC)
-       begin
-         multi_shift  <= flagFL02;
-         divide_shift <= 1'b0;
-         carry_in     <= flagCARRY02 | `cromCRY38;
-         funct_02     <= flagFUNCT02 | fun[2];
-       end
+        if (`cromMULTIPREC)
+          begin
+             multi_shift  <= flagFL02;
+             divide_shift <= 1'b0;
+             carry_in     <= flagCARRY02 | `cromCRY38;
+             funct_02     <= flagFUNCT02 | fun[2];
+          end
 
-     //
-     // Divide operations
-     //
+        //
+        // Divide operations
+        //
 
-     else if (`cromDIVIDE)
-       begin
-         multi_shift  <= 1'b0;
-         divide_shift <= flagCARRYOUT;
-         carry_in     <= flagCARRYOUT | `cromCRY38;
-         funct_02     <= flagCARRYOUT | fun[2];
-       end
+        else if (`cromDIVIDE)
+          begin
+             multi_shift  <= 1'b0;
+             divide_shift <= flagCARRYOUT;
+             carry_in     <= flagCARRYOUT | `cromCRY38;
+             funct_02     <= flagCARRYOUT | fun[2];
+          end
 
-     //
-     // Nothing special.  Carry in is controlled by microcode.
-     // Everything else special is disabled.
-     //
+        //
+        // Nothing special.  Carry in is controlled by microcode.  Everything
+        // else special is disabled.
+        //
 
-     else
-       begin
-         multi_shift  <= 1'b0;
-         divide_shift <= 1'b0;
-         carry_in     <= `cromCRY38;
-         funct_02     <= fun[2];
-       end
-   end
+        else
+          begin
+             multi_shift  <= 1'b0;
+             divide_shift <= 1'b0;
+             carry_in     <= `cromCRY38;
+             funct_02     <= fun[2];
+          end
+     end
 
    //
    // ALU Destination Selector
    //
    // Details
-   //  Select ALU output and truncate output bus from 40 bits to 36
-   //  bits.
+   //  Select ALU output and truncate output bus from 40 bits to 36 bits.
    //
 
    assign aluOUT = (dest ==`cromDST_RAMA) ? ad[2:37] : f[2:37];

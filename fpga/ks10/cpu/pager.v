@@ -82,7 +82,7 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    input  [ 0:cromWidth-1] crom;                // Control ROM Data
    input  [ 0:dromWidth-1] drom;                // Dispatch ROM Data
    input  [ 0:35]          dp;                  // Data path
-   input  [0 :35]          vmaREG;              // VMA Register
+   input  [ 0:35]          vmaREG;              // VMA Register
    output [ 0: 3]          pageFLAGS;           // Page Flags
    output [16:26]          pageADDR;            // Page Address
 
@@ -110,12 +110,12 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    //
    //
    //
-   
+
    wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) |
                  (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA) |
                  (specPAGESWEEP));
-   
-   
+
+
    //
    // Sweep and Page Write
    //
@@ -137,19 +137,37 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
              pageSWEEP <= 0;
              pageWRITE <= 0;
           end
-        else if (clken)
-          begin
-             pageSWEEP <= specPAGESWEEP;
-             pageWRITE <= specPAGEWRITE;
-          end
-      end
+        else
+          if (clken)
+            begin
+               pageSWEEP <= specPAGESWEEP;
+               pageWRITE <= specPAGEWRITE;
+            end
+     end
 
    //
    // Table Address
    //
 
    wire [0:7] tableAddr = dp[19:26];
-   
+   wire       tableSelect = dp[18];
+
+   //
+   // Table Select
+   //
+
+/*
+   reg tableSelect;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          tableSelect <= 0;
+        else
+          if (clken & vmaEN)
+            tableSelect <= dp[18];
+     end
+*/
+
    //
    // Page Table Write
    //
@@ -169,11 +187,11 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    //  address.
    //
    // Notes
-   //  This has been converted to synchronous memory.
-   //  The page table address is set when the vma address is set
+   //  This has been converted to synchronous memory.  The page table address
+   //  is set when the vma address is set
    //
-   //  The page table is interleaved with odd and even memories
-   //  so that the memory can be swept two entries at a time.
+   //  The page table is interleaved with odd and even memories so that the
+   //  memory can be swept two entries at a time.
    //
    //  Page parity is not implemented.
    //
@@ -190,58 +208,55 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    //   DPM6/E192
    //
 
-   reg [ 0:14] pageTABLE1[0:255];
-   reg [ 0:14] pageTABLE2[0:255];
-   
+   reg [0:14] pageTABLE1[0:255];
+   reg [0:14] pageTABLE2[0:255];
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           ;
-        else if (clken & vmaEN)
-          begin
-             if (pageWRITE)
-               begin
-                  if (~dp[18] | pageSWEEP)
-                    pageTABLE1[tableAddr] <= {pageinFLAGS, pageinADDR};
-                  if ( dp[18] | pageSWEEP)
-                    pageTABLE2[tableAddr] <= {pageinFLAGS, pageinADDR};
-               end
-          end
+        else
+          if (clken & vmaEN)
+            begin
+               if (pageWRITE)
+                 begin
+                    if (!tableSelect | pageSWEEP)
+                      pageTABLE1[tableAddr] <= pageSWEEP ? {6'b111000, pageinADDR[19:26]} : {pageinFLAGS, pageinADDR};
+                    if ( tableSelect | pageSWEEP)
+                      pageTABLE2[tableAddr] <= pageSWEEP ? {6'b111001, pageinADDR[19:26]} : {pageinFLAGS, pageinADDR};
+                 end
+            end
      end
 
    //
    // Page Table Read
    //
 
-   reg pageVALID;
-   reg pageWRITEABLE;
-   reg pageCACHEABLE;
-   reg pageUSER;
    reg [16:26] pageADDR;
+   reg [ 0: 3] pageFLAGS;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             pageVALID     <= 0;
-             pageWRITEABLE <= 0;
-             pageCACHEABLE <= 0;
-             pageUSER      <= 0;
-             pageADDR      <= 0;
+             pageFLAGS <= 0;
+             pageADDR  <= 0;
           end
-        else if (clken & vmaEN)
-          begin
-             if(dp[18])
-               {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER, pageADDR} <= pageTABLE2[tableAddr];
-             else
-               {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER, pageADDR} <= pageTABLE1[tableAddr];
-          end
+        else
+          if (clken & vmaEN)
+            begin
+               if (!tableSelect)
+                 {pageFLAGS, pageADDR} <= pageTABLE1[tableAddr];
+               if ( tableSelect)
+                 {pageFLAGS, pageADDR} <= pageTABLE2[tableAddr];
+            end
      end
 
    //
-   // Page Flags
+   // Test only
    //
 
-   assign pageFLAGS = {pageVALID, pageWRITEABLE, pageCACHEABLE, pageUSER};
-   
+   wire [16:35] addr = {pageADDR[16:26], vmaREG[27:35]};
+
+
 endmodule

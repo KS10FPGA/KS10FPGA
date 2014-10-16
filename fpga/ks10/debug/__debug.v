@@ -109,6 +109,8 @@
                     `include "debug_dskba.vh"
                `elsif DEBUG_DSKCG
                     `include "debug_dskcg.vh"
+               `elsif DEBUG_DSKEA
+                    `include "debug_dskea.vh"
                `elsif DEBUG_DSDZA
                     `include "debug_dsdza.vh"
                `elsif DEBUG_DSUBA

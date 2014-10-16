@@ -127,13 +127,20 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
    //  DPE5/E1
    //
 
-   wire specMEMCLR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
+   wire specMEMCLR    = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
 
-   wire pfEN       = ((`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE) |
-                      (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE) |
-                      (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE));
+   wire pfEN = 0;
+   wire pfEN1         = ((`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE) |
+                         (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE) |
+                         (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE));
 
-   wire fetchCYCLE = `cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE;
+   wire fetchCYCLE    = `cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE;
+
+   //
+   // APR flags interface
+   //
+
+   wire pageENABLE    = `flagPAGEEN(aprFLAGS);
 
    //
    // VMA Interface
@@ -145,13 +152,12 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
    wire vmaWRTEST     = 0;
 
    //
-   // Pager/PC Flags Interface
+   // Pager Interface
    //
 
-   wire pageUSER      = 0;
-   wire pageENABLE    = 0;
-   wire pagePRESENT   = 0;
-   wire pageWRITEABLE = 0;
+   wire pageUSER      = `pageUSER(pageFLAGS);
+   wire pageVALID     = `pageVALID(pageFLAGS);
+   wire pageWRITEABLE = `pageWRITEABLE(pageFLAGS);
 
    //
    // Dispatch values
@@ -202,7 +208,7 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
              pageFAIL <= 1;
              dispatch <= dispINTR;
           end
-        else if (pfEN & pageENABLE & !vmaPHYS & !vmaACREF & !pagePRESENT)
+        else if (pfEN & pageENABLE & !vmaPHYS & !vmaACREF & !pageVALID)
           begin
              pageFAIL <= 1;
              dispatch <= dispNOTPRESENT;

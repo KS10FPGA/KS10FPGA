@@ -1,48 +1,44 @@
-////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Step Count Adder
-//!
-//! \details
-//!
-//! \todo
-//!
-//! \file
-//!      scad.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// KS-10 Processor
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// Brief
+//   Step Count Adder
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// Details
+//   This module implements the SCAD.  The SCAD is used by the microcode as a
+//   counter, by multiply and divide instructions, and by the floating-point
+//   exponentiator.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// File
+//   scad.v
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-// Comments are formatted for doxygen
+//  Copyright (C) 2012-2014 Rob Doyle
 //
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
+//
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
+//
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
+//
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "useq/crom.vh"
@@ -51,16 +47,16 @@ module SCAD(clk, rst, clken, crom, dp, feSIGN, scSIGN, scad, dispSCAD);
 
    parameter  cromWidth = `CROM_WIDTH;
 
-   input                  clk;      	// Clock
-   input                  rst;      	// Reset
-   input                  clken;    	// Clock Enable
-   input  [0:cromWidth-1] crom;     	// Control ROM Data
-   input  [0:35]          dp;       	// Data path
-   output 		  feSIGN;	// FE Sign
-   output 		  scSIGN;	// SC Sign
-   output [0: 9]          scad;     	// SCAD
-   output [8:11]          dispSCAD; 	// SCAD Dispatch
-   
+   input                  clk;          // Clock
+   input                  rst;          // Reset
+   input                  clken;        // Clock Enable
+   input  [0:cromWidth-1] crom;         // Control ROM Data
+   input  [0:35]          dp;           // Data path
+   output                 feSIGN;       // FE Sign
+   output                 scSIGN;       // SC Sign
+   output [0: 9]          scad;         // SCAD
+   output [8:11]          dispSCAD;     // SCAD Dispatch
+
    //
    // CROM interface
    //
@@ -149,23 +145,21 @@ module SCAD(clk, rst, clken, crom, dp, feSIGN, scSIGN, scad, dispSCAD);
    // SCAD ALU:
    //
    // Details:
-   //  The 74LS181 ALUs implment 16 functions.  Only 8 functions
-   //  are used.  Therefore this is a bunch of logic to map the
-   //  microcode into the ALU function.
+   //  The 74LS181 ALUs implment 16 functions.  Only 8 functions are used.
+   //  Therefore this is a bunch of logic to map the microcode into the ALU
+   //  function.
    //
    // Notes:
-   //  This is positive logic.  Be sure to use the right table in
-   //  the 74ls181 data sheet.
+   //  This is positive logic.  Be sure to use the right table in the 74ls181
+   //  data sheet.
    //
-   //  Be sure to notice that the CY# input to the ALU is tied to
-   //  FUN2
+   //  Be sure to notice that the CY# input to the ALU is tied to FUN2.
    //
-   //  The SCAD Carry Skipper DPM4/E704 does not need to be
-   //  implemented.  The FPGA carry logic does not require
-   //  parallel carries for this level of performance.
+   //  The SCAD Carry Skipper DPM4/E704 does not need to be implemented.  The
+   //  FPGA carry logic does not require parallel carries for this level of
+   //  performance.
    //
-   //  The following truth table is derived from the circuit
-   //  diagram.
+   //  The following truth table is derived from the circuit diagram.
    //
    //   +-------------+-+-------------------------+---------------+
    //   | FUN FUN FUN | | ALU ALU ALU ALU ALU ALU |               |
@@ -244,7 +238,7 @@ module SCAD(clk, rst, clken, crom, dp, feSIGN, scSIGN, scad, dispSCAD);
    //  DPM4/E35
    //  DPM4/E43
    //
- 
+
    reg [0:9] sc;
    always @(posedge clk or posedge rst)
     begin
@@ -257,7 +251,7 @@ module SCAD(clk, rst, clken, crom, dp, feSIGN, scSIGN, scad, dispSCAD);
    //
    // FE Sign and SC Sign
    //
-   
+
    assign feSIGN = fe[0];
    assign scSIGN = sc[0];
 
@@ -266,5 +260,5 @@ module SCAD(clk, rst, clken, crom, dp, feSIGN, scSIGN, scad, dispSCAD);
    //
 
    assign dispSCAD = (scad[0]) ? 4'b0010 : 4'b0000;
-   
+
 endmodule

@@ -410,10 +410,8 @@ module testbench;
         //
         // Write to Control/Status Register
         // Release RESET and set RUN.
-        // (Run is only required for the simulator).
         //
 
-//      conWRITE(addrREGSTATUS, statCACHEEN | statTIMEREN | statTRAPEN | statRUN);
         conWRITE(addrREGSTATUS, statRUN);
         $display("[%11.3f] KS10: Starting KS10", $time/1.0e3);
 
@@ -477,7 +475,7 @@ module testbench;
              // Start executing code
              //
 
-             conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN));
+             conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN));
           end
      end
 
