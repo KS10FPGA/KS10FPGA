@@ -129,13 +129,11 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
 
    wire specMEMCLR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
 
-   wire pfEN = 0;
+   wire pfEN       = ((`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE) |
+                      (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE) |
+                      (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE));
 
-//   wire pfEN       = ((`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE) |
-//                    (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE) |
-//                    (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE));
-
-//   wire intrEN     = `cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE ;
+   wire fetchCYCLE = `cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE;
 
    //
    // VMA Interface
@@ -169,26 +167,25 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
                     dispNOTPRESENT = 4'o12,     // Page not present
                     dispMISMATCH   = 4'o13;     // EXEC/USER Mismatch
 
-
    //
    //
    //
 
-   reg  intrEN;
+   reg intrEN;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           intrEN <= 0;
         else
-          intrEN <= `cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE ;
+          intrEN <= fetchCYCLE;
      end
 
    //
    //
    //
 
-   reg  pageFAIL;
+   reg pageFAIL;
    reg [0:3] dispatch;
 
    always @*
