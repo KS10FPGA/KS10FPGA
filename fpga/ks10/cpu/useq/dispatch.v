@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -6,6 +6,7 @@
 //   Microcontroller Dispatch Logic
 //
 // Details
+//   This module allows the microsequencer to peform an N-way branch.
 //
 // File
 //   disp.v
@@ -13,31 +14,29 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2014 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "crom.vh"
@@ -50,7 +49,7 @@ module DISPATCH(crom, dp, dispDIAG, dispRET, dispJ, dispAREAD,
    parameter  cromWidth = `CROM_WIDTH;
 
    input      [0:cromWidth-1] crom;             // Control ROM Data
-   input      [0:35]          dp; 		// Datapath Dispatch
+   input      [0:35]          dp;               // Datapath Dispatch
    input      [0:11]          dispDIAG;         // Diagnostic dispatch
    input      [0:11]          dispRET;          // Microcode return dispatch
    input      [0:11]          dispJ;            // Jump dispatch
@@ -69,7 +68,7 @@ module DISPATCH(crom, dp, dispDIAG, dispRET, dispJ, dispAREAD,
    //
    // Microcode aliases
    //
-   
+
    wire       dispEN10 = `cromDISP_EN_10;
    wire       dispEN20 = `cromDISP_EN_20;
    wire       dispEN40 = `cromDISP_EN_40;
@@ -80,37 +79,34 @@ module DISPATCH(crom, dp, dispDIAG, dispRET, dispJ, dispAREAD,
    // Control ROM Dispatch Address
    //
    // Details
-   //  The micro-machine provides many mechanisms to perform an
-   //  N-way dispatch based on conditions.
+   //  The micro-machine provides many mechanisms to perform an N-way dispatch
+   //  based on conditions.
    //
-   //  This supplies the dispatch address when a dispatch is
-   //  required.
+   //  This supplies the dispatch address when a dispatch is required.
    //
    // Note:
-   //  Like the skip function, the dispatch function can only
-   //  set bits in the microcode address.  It cannot clear
-   //  bits.
+   //  Like the skip function, the dispatch function can only set bits in the
+   //  microcode address.  It cannot clear bits.
    //
 
    always @(dispDIAG or dispRET or dispJ or dispAREAD or
             dispMUL  or dispPF or dispNI or dispBYTE or dispEA or
             dispSCAD or  dispNORM or dispDROM_A or dispDROM_B or
-	    dispEN40 or dispEN20 or dispEN10 or
-	    dispSEL  or dispSELH or dp)
+            dispEN40 or dispEN20 or dispEN10 or
+            dispSEL  or dispSELH or dp)
      begin
 
         //
-        // Default dispatch if none of the data selectors
-        // are activated.
+        // Default dispatch if none of the data selectors are activated.
         //
-        
+
         dispADDR[0:11] = 12'b000_000_000_000;
 
         //
         // Dispatch Address Select MSBs
         //  CRA1/E69
         //  CRA1/E68
-        //  CRA1/E151 
+        //  CRA1/E151
         //  CRA1/E138
         //
 
@@ -165,7 +161,7 @@ module DISPATCH(crom, dp, dispDIAG, dispRET, dispJ, dispAREAD,
         //  DPEA/E146
         //  DPEA/E160
         //
-        
+
         if (dispEN40)
           begin
              case (dispSEL)

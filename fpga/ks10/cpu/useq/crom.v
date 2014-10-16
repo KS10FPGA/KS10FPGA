@@ -1,63 +1,56 @@
-////////////////////////////////////////////////////////////////////
-//!
-//! KS-10 Processor
-//!
-//! \brief
-//!      Microcontroller Control ROM (CROM)
-//!
-//! \details
-//!      The Control ROM contains the executable microcode of the
-//!      the microcontroller.
-//!
-//! \note
-//!      Although all of the microcontroller addressing supports
-//!      12-bit addresses (4096 words of ROM) the Control ROM only
-//!      implements 2048 words of ROM.
-//!
-//!      The current microcode uses all of the ROM except for
-//!      about 25 words.
-//!
-//!      Implementing 4096 words of ROM would all double the amount
-//!      of microcode and allow for feature growth.
-//!
-//! \note
-//!      The contents of this file was extracted from the microcode
-//!      listing file by a simple AWK script.  Go see the makefile.
-//!
-//! \file
-//!      crom.v
-//!
-//! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
-//!
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// KS-10 Processor
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// Brief
+//   Microcontroller Control ROM (CROM)
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// Details
+//   The Control ROM contains the executable microcode of the the
+//   microcontroller.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// Note
+//   Although all of the microcontroller addressing supports 12-bit addresses
+//   (4096 words of ROM) the Control ROM only implements 2048 words of ROM.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+//   The current microcode uses all of the ROM except for about 25 words.
 //
-////////////////////////////////////////////////////////////////////
+//   Implementing 4096 words of ROM would all double the amount of microcode
+//   and allow for feature growth.
 //
-// Comments are formatted for doxygen
+// Note
+//   The contents of this file was extracted from the microcode listing file by
+//   a simple AWK script.  Go see the makefile.
 //
+// File
+//   crom.v
+//
+// Author
+//   Rob Doyle - doyle (at) cox (dot) net
+//
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (C) 2012-2014 Rob Doyle
+//
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
+//
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
+//
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
+//
+////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "crom.vh"
@@ -76,8 +69,8 @@ module CROM(clk, rst, clken, addr, crom);
    // Control ROM initialization
    //
    // Note:
-   //  The KS10 microcode is extracted from the listing file by
-   //  a 'simple' AWK script and is included below.
+   //  The KS10 microcode is extracted from the listing file by a 'simple' AWK
+   //  script and is included below.
    //
 
    reg [0:cromWidth-1] CROM[0:2047];
@@ -94,14 +87,12 @@ module CROM(clk, rst, clken, addr, crom);
    //  The Control ROM stores the microcode.
    //
    // Note:
-   //  The KS10 only implemented half of the microcode.  Therefore
-   //  the MSB of the address is ignored.  If you need more than
-   //  2048 words of microcode, you can simply add more ROM.  See
-   //  notes at top-of-file.
+   //  The KS10 only implemented half of the microcode.  Therefore the MSB of
+   //  the address is ignored.  If you need more than 2048 words of microcode,
+   //  you can simply add more ROM.  See notes at top-of-file.
    //
-   //  The KS10 used asynchronous ROM followed by a 108-bit wide
-   //  register.   This register has been absorbed into this
-   //  synchronous ROM implementation.
+   //  The KS10 used asynchronous ROM followed by a 108-bit wide register.
+   //  This register has been absorbed into this synchronous ROM implementation.
    //
    // Trace:
    //  Registers
@@ -144,7 +135,7 @@ module CROM(clk, rst, clken, addr, crom);
    //   CRM7/E98,  CRM7/E102, CRM7/E110, CRM7/E114, CRM7/E137, CRM7/E144,
    //   CRM7/E156, CRM7/E163, CRM7/E176, CRM7/E181, CRM7/E188, CRM7/E195,
    //
-   
+
    always @(posedge clk)
      begin
         if (clken)
