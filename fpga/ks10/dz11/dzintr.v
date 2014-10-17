@@ -130,7 +130,7 @@
    //    (csrTIE) will block the interrupt but not clear the flip-flop.
    //
 
-   reg [2:0] txstate;
+   reg [3:0] txstate;
 
    always @(posedge clk or posedge rst)
      begin
@@ -148,18 +148,12 @@
                  stateACT:
                    if (txclr)
                      txstate <= stateWAIT;
-`ifdef BROKEN
                  stateWAIT:
                    if (tdrWRITE)
                      txstate <= stateDONE;
                  stateDONE:
                    if (!tdrWRITE)
                      txstate <= stateIDLE;
-`else
-                 stateWAIT:
-                   if (!csrTRDY)
-                     txstate <= stateIDLE;
-`endif
                endcase
           end
      end
@@ -194,7 +188,7 @@
    //   will be processed first.
    //
 
-   reg [2:0] arbstate;
+   reg [3:0] arbstate;
    reg       rxVECTOR;
 
    always @(posedge clk or posedge rst)
