@@ -207,7 +207,7 @@ module UBA(rst, clkT, clkR,
       .wruREQ     (busREAD & busIO & busPHYS & busWRU),
       .ubaACK     (ubaREAD  | ubaWRITE),
       .devACK     (dev1ACKI | dev2ACKI),
-      .wruACK     (busREAD & busIO & busPHYS & wruREAD & ((busPI == statPIH) |(busPI == statPIL))),
+      .wruACK     (busREAD & busIO & busPHYS & busWRU & ((busPI == statPIH) | (busPI == statPIL))),
       .setNXD     (setNXD)
    );
 
@@ -357,7 +357,7 @@ module UBA(rst, clkT, clkR,
    // IO Bus Paging
    //
 
-   wire        pageNXM;
+   wire        pageNXM;		// FIXME: Not connected
    wire [0:35] pageDATAO;
 
    UBAPAG uUBAPAG (
