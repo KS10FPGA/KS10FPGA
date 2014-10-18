@@ -480,10 +480,16 @@ module testbench;
      end
 
 `ifdef __ICARUS__
-   `ifdef DUMPVARS
+ `ifdef DUMPVARS
+
    initial
      begin
         $dumpfile("c:\test.vcd");
+
+	//
+	// Dump R0 through R7
+	//
+	
         $dumpvars(0, testbench,
                   testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[0],
                   testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[1],
@@ -494,6 +500,7 @@ module testbench;
                   testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[6],
                   testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[7]);
      end
+
    `endif
 `endif
 

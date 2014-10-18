@@ -681,7 +681,7 @@ module RH11(clk,      rst,
       .dmaREQ    (/*devREQO*/),  // fixme
       .dmaACK    (devACKI),
       .sdINCWD   (sdINCWD),
-      .sdINCSECT (sdINCSECT != 8'b0),
+      //.sdINCSECT (sdINCSECT != 8'b0),
 
       .sdSTAT    (sdSTAT),
       .sdDEBUG   (rh11DEBUG)
