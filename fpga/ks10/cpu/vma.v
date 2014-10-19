@@ -43,7 +43,7 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS, vmaREG);
+module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS, pageFAIL, vmaREG);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -57,6 +57,7 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS, vmaREG);
    input                   cpuEXEC;     // Execute
    input                   prevEN;      // Previous Enable
    input  [ 0:17]          pcFLAGS;     // PC Flags
+   input  pageFAIL;
    output [ 0:35]          vmaREG;      // VMA Register
 
    //
@@ -187,7 +188,7 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS, vmaREG);
              `vmaWRITE(vmaREG)    <= 0;
              `vmaCACHEINH(vmaREG) <= 0;
           end
-        else if (clken & memEN)
+        else if (clken & memEN & !pageFAIL)
           begin
              if (`cromMEM_AREAD)
                begin

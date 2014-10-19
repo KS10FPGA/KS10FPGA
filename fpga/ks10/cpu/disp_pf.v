@@ -174,7 +174,7 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
                     dispMISMATCH   = 4'o13;     // EXEC/USER Mismatch
 
    //
-   //
+   // Page Fail
    //
 
    reg intrEN;
@@ -188,7 +188,7 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
      end
 
    //
-   //
+   // Page Fail Dispatch
    //
 
    reg pageFAIL;

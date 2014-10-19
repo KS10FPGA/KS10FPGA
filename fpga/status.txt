@@ -26,7 +26,7 @@ DSKEAA0 DECSYSTEM 2020 PAGING HARDWARE DIAGNOSTIC                   TEST FAIL (-
 DSKEBA0 KS10 - CACHE DIAGNOSTIC                                     TEST FAIL (-- --- --)
 DSKECB0 KS10 - KL-PAGING DIAGNOSTIC                                 TEST FAIL (04 Oct 14)
 DSUBA   DECSYSTEM 2020 UNIBUS ADAPTER DIAGNOSTIC                    TEST FAIL (04 Oct 14) Note 5 <- Expected
-DSDZAB0 DECSYSTEM 2020 DZ11 ASYNC L MUX                             TEST FAIL (03 Oct 14) Note 6
+DSDZAB0 DECSYSTEM 2020 DZ11 ASYNC L MUX                             Test Pass (15 Oct 14)
 DSKFAA0 DECSYSTEM 2020 INSTRUCTION TIMING DIAGNOSTIC
 DSQDCC0 DECSYSTEM 2020 DIAGNOSTIC MONITOR
 
@@ -54,43 +54,35 @@ Note 2: Fails test "EDMODM" at address 034152 (1350 ms).
 Note 3: Fails at address 31016.
 
    FAILURE INFO:
-   [   146.430]                : PC is 031012
-   [   146.990]                : PC is 031013
-   [   147.550]                : PC is 031014
-   [   148.110]                : PC is 031015
-   [   148.910]                : PC is 031016
+   [    146.430]                : PC is 031012
+   [    146.990]                : PC is 031013
+   [    147.550]                : PC is 031014
+   [    148.110]                : PC is 031015
+   [    148.910]                : PC is 031016
 
 Note 4: Test Fail at PC=30702
+
+   FAILURE INFO:
+   [    220.510]   DSKEA UNKNOWN: PC is 030674
+   [    220.910]   DSKEA UNKNOWN: PC is 030675
+   [    221.470]   DSKEA UNKNOWN: PC is 030676
+   [    221.870]   DSKEA UNKNOWN: PC is 030677
+   Test Failed.  PC got stuck.
 
 Note 5: Fails "TEST11" at address 031423 (66 ms).  The maintenance
 loopback is not implemented.
    
    EXPECTED FAILURE
-   [ 66317.230]    DSUBA TEST11: PC is 035246
-   [ 66317.710]    DSUBA TEST11: PC is 035247
-   [ 66318.270]    DSUBA TEST11: PC is 035251
-   [ 66319.070]    DSUBA TEST11: PC is 035252
-   [ 66319.550]    DSUBA TEST11: PC is 031422
-   [ 66320.190]    DSUBA TEST11: PC is 031423
+   [  66317.230]    DSUBA TEST11: PC is 035246
+   [  66317.710]    DSUBA TEST11: PC is 035247
+   [  66318.270]    DSUBA TEST11: PC is 035251
+   [  66319.070]    DSUBA TEST11: PC is 035252
+   [  66319.550]    DSUBA TEST11: PC is 031422
+   [  66320.190]    DSUBA TEST11: PC is 031423 
 
    REGARDING MAINTENANCE LOOPBACK:
-   [ 66223.550]    DSUBA TEST11: PC is 031404
-   [ 66223.950]    DSUBA TEST11: PC is 031405
-   [ 66224.510]    DSUBA TEST11: PC is 031406
-   [ 66225.070]    DSUBA TEST11: PC is 031407
-   [ 66227.950] UBA 3: Nonexistent device (NXD).  Addr = 015203000000.
-
-Note 6: 04 Oct 14
-DSDZA Fails "TEST31" at address 033254 at 1,212.381790 ms. 
-The failure is at 033222.
-
-   [1268209.550]    DSDZA TEST31: PC is 033216
-   [1268210.190]    DSDZA TEST31: PC is 033220
-   [1268210.910]    DSDZA TEST31: PC is 033221
-   [1268211.630]    DSDZA TXERR2: PC is 033246
-   ** VVP Stop(0) **
-   ** Flushing output streams.
-   ** Current simulation time is 126821163000 ticks.
-
-   This is a broken TX Interrupt state machine.  Kludged fix.
-
+   [  66223.550]    DSUBA TEST11: PC is 031404
+   [  66223.950]    DSUBA TEST11: PC is 031405
+   [  66224.510]    DSUBA TEST11: PC is 031406
+   [  66225.070]    DSUBA TEST11: PC is 031407
+   [  66227.950] UBA 3: Nonexistent device (NXD).  Addr = 015203000000.

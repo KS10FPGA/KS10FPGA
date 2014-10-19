@@ -23,8 +23,7 @@ rtl/ks10/uba/uba.v
    dev2ACK0 is stubbed.
    Add maintenance mode so hardware will pass DSUBA
    Remove fixme from debug_dsuba.vh
-   Fix interrupts.   DZ11 should decode WRU cycles and INTA
-   from the bus directly.
+   UBA registers should ACK in single clock cycle like everything else.
 
 rtl/ks10/uba/dz11/dzintr
    Fix conditional compile.  Why doesn't this work?
@@ -37,6 +36,10 @@ rtl/ks10/cpu/disp_ni.v
 
 rtl/ks10/cpu/disp_byte.v
    Add localparam for dispatches
+
+rtl/esm/esm_testbench.v
+   Timer isn't enabled.
+
 
 **** COMPLETED ****
 
@@ -69,3 +72,9 @@ rtl/ks10/uba/dz11/uart:
    (done) uart_buftx : simplify buffering
    (done) uart_bufrx : simplfiy buffering
    (done) rename intr pin.
+
+
+Hacks to make the timer work:
+1.  vma.v: Don't reload mem cycle on Page Fail
+2.  timing.v: Done re-execute the instruction after the PAGE-FAIL return
+3.  cpu.v: per above.

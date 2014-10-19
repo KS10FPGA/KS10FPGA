@@ -475,7 +475,7 @@ module testbench;
              // Start executing code
              //
 
-             conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN));
+             conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN | statTIMEREN));
           end
      end
 

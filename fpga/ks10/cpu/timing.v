@@ -41,18 +41,47 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module TIMING(clk, rst, crom, feSIGN, clkenDP, clkenCR, memWAIT);
+module TIMING(clk, rst, crom, feSIGN, busWAIT, clkenDP, clkenCR);
 
    parameter cromWidth = `CROM_WIDTH;
-   parameter dromWidth = `DROM_WIDTH;
 
    input                  clk;          // Clock
    input                  rst;          // Reset
    input  [0:cromWidth-1] crom;         // Control ROM Data
    input                  feSIGN;       // FE Sign
+   input                  busWAIT;      // Memory Wait
    output                 clkenDP;      // Clock Enable
    output                 clkenCR;      // Clock Enable Microsequencer
-   input                  memWAIT;      // Memory Wait
+
+   //
+   // This is asserted during the PAGE-FAIL return micro-instruction.
+   //
+
+   reg pf_ret;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          pf_ret <= 0;
+        else
+          pf_ret <= (crom[0:11] == 12'o3766);
+     end
+
+   //
+   // This is asserted during the instruction following the PAGE-FAIL return
+   // micro-instruction.   This instruction should not be executed again.  It
+   // was executed before the PAGE-FAIL.
+   //
+
+   reg pf_next;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          pf_next <= 0;
+        else
+          pf_next <= pf_ret;
+     end
 
    //
    // Fast Shift
@@ -82,10 +111,11 @@ module TIMING(clk, rst, crom, feSIGN, clkenDP, clkenCR, memWAIT);
    //
 
    reg done;
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          done = 1'b0;
+          done = 0;
         else
           done = feSIGN & `cromMULTISHIFT;
      end
@@ -102,7 +132,7 @@ module TIMING(clk, rst, crom, feSIGN, clkenDP, clkenCR, memWAIT);
    //  CSL5/E54
    //
 
-   assign clkenCR = ~((`cromMULTISHIFT &  feSIGN)                    | memWAIT);
-   assign clkenDP = ~((`cromMULTISHIFT & ~feSIGN) | (done & clkenCR) | memWAIT);
+   assign clkenCR = !((`cromMULTISHIFT &  feSIGN)                    | busWAIT);
+   assign clkenDP = !((`cromMULTISHIFT & !feSIGN) | (done & clkenCR) | busWAIT | pf_next);
 
 endmodule

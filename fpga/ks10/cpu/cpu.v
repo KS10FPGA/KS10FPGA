@@ -215,9 +215,9 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .rst              (rst),
       .crom             (crom),
       .feSIGN           (feSIGN),
+      .busWAIT          (memWAIT | ioWAIT),
       .clkenDP          (clkenDP),
-      .clkenCR          (clkenCR),
-      .memWAIT          (memWAIT | ioWAIT) // FIXME
+      .clkenCR          (clkenCR)
    );
 
    //
@@ -598,6 +598,7 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .cpuEXEC          (cpuEXEC),
       .prevEN           (prevEN),
       .pcFLAGS          (pcFLAGS),
+      .pageFAIL         (pageFAIL),
       .vmaREG           (vmaREG)
    );
 
