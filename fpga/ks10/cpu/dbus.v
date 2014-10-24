@@ -59,43 +59,26 @@ module DBUS(crom, cacheHIT, piREQPRI, vmaREG, pcFLAGS, dp, ramfile, dbm, dbus);
    // VMA Flags
    //
 
-   wire vmaREAD = `vmaREAD(vmaREG);
-   wire vmaPHYS = `vmaPHYS(vmaREG);
-
-   //
-   // AC Reference
-   //
-   // Details:
-   //  True when addressing lowest 16 addresses using and not
-   //  physical addressing.  References to the ACs are never
-   //  physical.
-   //
-   // Trace
-   //  DPM4/E160
-   //  DPM4/E168
-   //  DPM4/E191
-   //
-
+   wire vmaREAD  = `vmaREAD(vmaREG);
    wire vmaACREF = `vmaACREF(vmaREG);
 
    //
    // Force RAMFILE
    //
    // Details
-   //  This signal is asserted on an AC reference or a cache hit.
-   //  When asserted during a read cycle, the DBM mux causes the
-   //  RAMFILE to be read instead of main memory.
+   //  This signal is asserted on an AC reference or a cache hit.  When asserted
+   //  during a read cycle, the DBM mux causes the RAMFILE to be read instead of
+   //  main memory.
    //
    // Fixme
-   //  I'm not sure why I had to hack this to exclude address
-   //  1146.
+   //  I'm not sure why I had to hack this to exclude these specific addresses.
    //
    // Trace
    //  DPM5/E14
    //  DPM5/E38
    //
 
-   wire forceRAMFILE = ((vmaACREF & vmaREAD & (crom[0:11] != 12'o1146) & (crom[0:11] != 12'o3666)) |
+   wire forceRAMFILE = ((vmaACREF & vmaREAD & (crom[0:11] != 12'o1146) & (crom[0:11] != 12'o3666) & (crom[0:11] != 12'o1060) & (crom[0:11] != 12'o3722)) |
                         (cacheHIT & vmaREAD));
 
    //
@@ -115,6 +98,15 @@ module DBUS(crom, cacheHIT, piREQPRI, vmaREG, pcFLAGS, dp, ramfile, dbm, dbus);
    //  DPE3/E73
    //  DPE3/E87
    //  DPE3/E100
+   //  DPE4/E112
+   //  DPE4/E127
+   //  DPE4/E128
+   //  DPE4/E141
+   //  DPE4/E149
+   //  DPE4/E162
+   //  DPE4/E163
+   //  DPE4/E177
+   //  DPE4/E178
    //
 
    always @*

@@ -134,7 +134,9 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
                          (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE) |
                          (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE));
 
-   wire fetchCYCLE    = `cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE;
+   wire asdf    = `cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE;
+
+   wire fetchCYCLE = (crom[0:11] == 12'o0110);
 
    //
    // APR flags interface

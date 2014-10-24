@@ -66,6 +66,11 @@
 //
 //  The ACs are addresses 0 to 15.  The ACs are never physically addressed.
 //
+//  Trace
+//   DPM4/E160
+//   DPM4/E168
+//   DPM4/E191
+//
 
 `define vmaACREF(reg)    (!`vmaPHYS(reg) & (reg[18:31] == 14'b0))
 
