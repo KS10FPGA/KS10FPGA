@@ -160,12 +160,6 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
    wire         xrPREV;         // XR is previous
 
    //
-   // Cache
-   //
-
-   wire         cacheHIT = 0;   // FIXME: Cache not implemented.
-
-   //
    // Busses
    //
 
@@ -353,7 +347,6 @@ module CPU(rst, clkT, clkR, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
 
    DBUS uDBUS (
       .crom             (crom),
-      .cacheHIT         (cacheHIT),
       .piREQPRI         (piREQPRI),
       .vmaREG           (vmaREG),
       .pcFLAGS          (pcFLAGS),

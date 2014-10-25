@@ -41,12 +41,11 @@
 `include "vma.vh"
 `include "useq/crom.vh"
 
-module DBUS(crom, cacheHIT, piREQPRI, vmaREG, pcFLAGS, dp, ramfile, dbm, dbus);
+module DBUS(crom, piREQPRI, vmaREG, pcFLAGS, dp, ramfile, dbm, dbus);
 
    parameter  cromWidth = `CROM_WIDTH;
 
    input      [0:cromWidth-1] crom;             // Control ROM Data
-   input                      cacheHIT;         // Cache Hit
    input      [ 0: 2]         piREQPRI;         // Requested Interrupt Priority
    input      [ 0:35]         vmaREG;           // VMA Register
    input      [ 0:17]         pcFLAGS;          // PC Flags in Left Half
@@ -78,8 +77,7 @@ module DBUS(crom, cacheHIT, piREQPRI, vmaREG, pcFLAGS, dp, ramfile, dbm, dbus);
    //  DPM5/E38
    //
 
-   wire forceRAMFILE = ((vmaACREF & vmaREAD & (crom[0:11] != 12'o1146) & (crom[0:11] != 12'o3666) & (crom[0:11] != 12'o1060) & (crom[0:11] != 12'o3722)) |
-                        (cacheHIT & vmaREAD));
+   wire forceRAMFILE = vmaACREF & vmaREAD & (`cromDBM_SEL == `cromDBM_SEL_MEM);
 
    //
    // DBM
@@ -113,7 +111,7 @@ module DBUS(crom, cacheHIT, piREQPRI, vmaREG, pcFLAGS, dp, ramfile, dbm, dbus);
      begin
         case (`cromDBUS_SEL)
           `cromDBUS_SEL_FLAGS:
-            dbus = {pcFLAGS, 1'b0, piREQPRI, 4'b1111, vmaREG[26:35]};
+            dbus = {pcFLAGS[0:17], 1'b0, piREQPRI[0:2], 4'b1111, vmaREG[26:35]};
           `cromDBUS_SEL_DP:
             dbus = dp;
           `cromDBUS_SEL_RAMFILE:

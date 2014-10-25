@@ -131,14 +131,14 @@ module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaREG, cpuDATAI, dbm);
 //              dbm = {dp[ 0: 6], dp[ 7:13], dp[14:20], dp[21:27], scad[1:7], dp[35]};
                 dbm = {28'b0, scad[1:7], 1'b0};
               default:
-                dbm = dp[0:35];
+                dbm = dp;
             endcase
           `cromDBM_SEL_DPSWAP :
             dbm = {dp[18:35], dp[0:17]};
           `cromDBM_SEL_VMA :
             dbm = vmaREG;
           `cromDBM_SEL_MEM :
-            dbm = cpuDATAI[0:35];
+            dbm = cpuDATAI;
           `cromDBM_SEL_NUM :
             dbm = {`cromNUM, `cromNUM};
         endcase
