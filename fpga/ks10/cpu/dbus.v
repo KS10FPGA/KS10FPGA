@@ -65,12 +65,9 @@ module DBUS(crom, piREQPRI, vmaREG, pcFLAGS, dp, ramfile, dbm, dbus);
    // Force RAMFILE
    //
    // Details
-   //  This signal is asserted on an AC reference or a cache hit.  When asserted
+   //  This signal is asserted on an memory reference to an AC.  When asserted
    //  during a read cycle, the DBM mux causes the RAMFILE to be read instead of
    //  main memory.
-   //
-   // Fixme
-   //  I'm not sure why I had to hack this to exclude these specific addresses.
    //
    // Trace
    //  DPM5/E14

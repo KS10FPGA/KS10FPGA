@@ -221,9 +221,9 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
                if (pageWRITE)
                  begin
                     if (!tableSelect | pageSWEEP)
-                      pageTABLE1[tableAddr] <= pageSWEEP ? {6'b111000, pageinADDR[19:26]} : {pageinFLAGS, pageinADDR};
+                      pageTABLE1[tableAddr] <= pageSWEEP ? {7'b0110_000, pageinADDR[19:26]} : {pageinFLAGS, pageinADDR};
                     if ( tableSelect | pageSWEEP)
-                      pageTABLE2[tableAddr] <= pageSWEEP ? {6'b111001, pageinADDR[19:26]} : {pageinFLAGS, pageinADDR};
+                      pageTABLE2[tableAddr] <= pageSWEEP ? {7'b0110_001, pageinADDR[19:26]} : {pageinFLAGS, pageinADDR};
                  end
             end
      end
