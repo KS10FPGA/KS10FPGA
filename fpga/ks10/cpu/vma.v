@@ -128,7 +128,7 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS, pageFAIL, 
              `vmaVECT(vmaREG)   <= 0;
              `vmaIOBYTE(vmaREG) <= 0;
           end
-        else if (clken & vmaEN)
+        else if (clken & vmaEN & !pageFAIL)
           begin
              `vmaEXTD(vmaREG) <= `cromMEM_EXTADDR;
              `vmaADDR(vmaREG) <= `vmaADDR(dp);
@@ -165,9 +165,9 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS, pageFAIL, 
    // Memory Cycle Control
    //
    // Details
-   //  The type of memory cycle can controlled by the microcode or
-   //  can be controlled by the Dispatch ROM.  The Cycle Control is
-   //  loaded when cromMEM_CYCLE is active.
+   //  The type of memory cycle can controlled by the microcode or can be
+   //  controlled by the Dispatch ROM.  The Cycle Control is loaded when
+   //  cromMEM_CYCLE is active.
    //
    // Trace
    //  DPM5/E48

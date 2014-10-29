@@ -108,7 +108,7 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    wire specPAGEWRITE = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_PAGEWRITE);
 
    //
-   //
+   // vmaEN
    //
 
    wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) |
@@ -149,24 +149,8 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    // Table Address
    //
 
-   wire [0:7] tableAddr = dp[19:26];
+   wire [0:7] tableAddr   = dp[19:26];
    wire       tableSelect = dp[18];
-
-   //
-   // Table Select
-   //
-
-/*
-   reg tableSelect;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          tableSelect <= 0;
-        else
-          if (clken & vmaEN)
-            tableSelect <= dp[18];
-     end
-*/
 
    //
    // Page Table Write
@@ -211,19 +195,27 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    reg [0:14] pageTABLE1[0:255];
    reg [0:14] pageTABLE2[0:255];
 
+   wire [18:26] asdf = vmaREG[19:26];
+   wire [ 0:14] qwer = {pageinFLAGS, pageinADDR};
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           ;
         else
-          if (clken & vmaEN)
+          if (clken)
             begin
-               if (pageWRITE)
+               if (pageSWEEP & vmaEN & pageWRITE)
                  begin
-                    if (!tableSelect | pageSWEEP)
-                      pageTABLE1[tableAddr] <= pageSWEEP ? {7'b0110_000, pageinADDR[19:26]} : {pageinFLAGS, pageinADDR};
-                    if ( tableSelect | pageSWEEP)
-                      pageTABLE2[tableAddr] <= pageSWEEP ? {7'b0110_001, pageinADDR[19:26]} : {pageinFLAGS, pageinADDR};
+                    pageTABLE1[tableAddr] <= {7'b0110_000, pageinADDR[19:26]};
+                    pageTABLE2[tableAddr] <= {7'b0110_001, pageinADDR[19:26]};
+                 end
+               else if (pageWRITE)
+                 begin
+                    if (!asdf[18])
+                      pageTABLE1[asdf[19:26]] <= {pageinFLAGS, pageinADDR};
+                    else
+                      pageTABLE2[asdf[19:26]] <= {pageinFLAGS, pageinADDR};
                  end
             end
      end
@@ -247,7 +239,7 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
             begin
                if (!tableSelect)
                  {pageFLAGS, pageADDR} <= pageTABLE1[tableAddr];
-               if ( tableSelect)
+               else
                  {pageFLAGS, pageADDR} <= pageTABLE2[tableAddr];
             end
      end
@@ -257,6 +249,5 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    //
 
    wire [16:35] addr = {pageADDR[16:26], vmaREG[27:35]};
-
 
 endmodule

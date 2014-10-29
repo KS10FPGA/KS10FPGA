@@ -119,7 +119,22 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
    output [ 0: 3]          dispPF;              // Page Fail Dispatch
 
    //
-   // Microcode decode
+   // Dispatch values
+   //
+
+   localparam [0:3] dispNONE       = 4'o00,     // Nothing active
+                    dispINTR       = 4'o01,     // PI/Timer interrupt
+                    dispBADDATA    = 4'o03,     // Bad data (not implemented)
+                    dispNXM        = 4'o05,     // NXM
+                    dispNXMBADDATA = 4'o07,     // NXM and bad data (not implemented)
+                    dispWRITEFAIL  = 4'o10,     // Page not writeable
+                    dispTIMPAGFAIL = 4'o11,     // Timer and movsrj
+                    dispINVALID    = 4'o12,     // Page not present
+                    dispMISMATCH   = 4'o13;     // EXEC/USER Mismatch
+
+   //
+   // specMEMCLR microcode decode
+   //   This clears the PAGE-FAIL dispatch.
    //
    // Trace
    //  DPMA/E2
@@ -129,14 +144,46 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
 
    wire specMEMCLR    = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
 
-   wire pfEN = 0;
-   wire pfEN1         = ((`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE) |
-                         (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE) |
-                         (`cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE));
+   //
+   // pfCYCLE
+   //  This is adapted from the code in vma.v except we really don't care what kind
+   //  of bus cycle is being created.   pfCYCLE is asserted on the micro-instruction
+   //  before the bus cycle.
+   //
+   // Trace
+   //  DPM5/E48
+   //  DPM5/E66
+   //  DPM5/E33
+   //  DPM5/E110
+   //
 
-   wire asdf    = `cromMEM_CYCLE & `cromMEM_FETCHCYCLE & `cromMEM_WAIT & `cromMEM_READCYCLE;
+   reg  pfCYCLE;
+   wire memEN = ((`cromMEM_CYCLE  & `cromMEM_WAIT                   ) |
+                 (`cromMEM_CYCLE  & `cromMEM_BWRITE & `dromCOND_FUNC));
 
-   wire fetchCYCLE = (crom[0:11] == 12'o0110);
+   always @*
+     begin
+        if (memEN)
+          begin
+             if (`cromMEM_AREAD)
+               pfCYCLE = `dromREADCYCLE | `dromWRTESTCYCLE | `dromWRITECYCLE;
+             else
+               begin
+                  if (`cromMEM_DPFUNC)
+                    pfCYCLE = `vmaREAD(dp) | `vmaWRTEST(dp) | `vmaWRITE(dp);
+                  else
+                    pfCYCLE = `cromMEM_READCYCLE | `cromMEM_WRTESTCYCLE | `cromMEM_WRITECYCLE;
+               end
+          end
+        else
+          pfCYCLE = 0;
+     end
+
+   //
+   // Micro-instruction 0110 is the instruction fetch.
+   //
+
+   wire fetchCYCLE    = (crom[0:11] == 12'o0110);
 
    //
    // APR flags interface
@@ -148,10 +195,10 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
    // VMA Interface
    //
 
-   wire vmaACREF      = 0;
-   wire vmaPHYS       = 0;
-   wire vmaUSER       = 0;
-   wire vmaWRTEST     = 0;
+   wire vmaACREF      = `vmaACREF(vmaREG);
+   wire vmaPHYS       = `vmaPHYS(vmaREG);
+   wire vmaUSER       = `vmaUSER(vmaREG);
+   wire vmaWRTEST     = `vmaWRTEST(vmaREG);
 
    //
    // Pager Interface
@@ -162,21 +209,26 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
    wire pageWRITEABLE = `pageWRITEABLE(pageFLAGS);
 
    //
-   // Dispatch values
+   // Page fail enable
    //
 
-   localparam [0:3] dispNONE       = 4'o00,     // Nothing active
-                    dispINTR       = 4'o01,     // PI/Timer interrupt
-                    dispBADDATA    = 4'o03,     // Bad data (not implemented)
-                    dispNXM        = 4'o05,     // NXM
-                    dispNXMBADDATA = 4'o07,     // NXM and bad data (not implemented)
-                    dispWRITEFAIL  = 4'o10,     // Page not writeable
-                    dispASDF       = 4'o11,     // Timer and movsrj
-                    dispNOTPRESENT = 4'o12,     // Page not present
-                    dispMISMATCH   = 4'o13;     // EXEC/USER Mismatch
+   reg pfEN;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          pfEN <= 0;
+        else
+          begin
+             if (!pfEN)
+               pfEN <= pfCYCLE;
+             else
+               pfEN <= 0;
+          end
+     end
 
    //
-   // Page Fail
+   // Interrupt enable
    //
 
    reg intrEN;
@@ -188,6 +240,14 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
         else
           intrEN <= fetchCYCLE;
      end
+
+   //
+   // Page failure types
+   //
+
+   wire pageINVALID   = pageENABLE & !vmaPHYS & !vmaACREF & !pageVALID;
+   wire pageMISMATCH  = pageENABLE & !vmaPHYS & !vmaACREF & (vmaUSER != pageUSER);
+   wire pageWRITEFAIL = pageENABLE & !vmaPHYS & !vmaACREF & vmaWRTEST & !pageWRITEABLE;
 
    //
    // Page Fail Dispatch
@@ -205,22 +265,32 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
              pageFAIL <= 1;
              dispatch <= dispNXM;
           end
-        else if (intrEN & (piINTR | timerINTR))
+        else if (intrEN & piINTR)
           begin
              pageFAIL <= 1;
              dispatch <= dispINTR;
           end
-        else if (pfEN & pageENABLE & !vmaPHYS & !vmaACREF & !pageVALID)
+        else if (intrEN & timerINTR & pageINVALID)
           begin
              pageFAIL <= 1;
-             dispatch <= dispNOTPRESENT;
+             dispatch <= dispTIMPAGFAIL;
           end
-        else if (pfEN & pageENABLE & !vmaPHYS & !vmaACREF & (vmaUSER != pageUSER))
+        else if (intrEN & timerINTR)
+          begin
+             pageFAIL <= 1;
+             dispatch <= dispINTR;
+          end
+        else if (pfEN & pageINVALID)
+          begin
+             pageFAIL <= 1;
+             dispatch <= dispINVALID;
+          end
+        else if (pfEN & pageMISMATCH)
           begin
              pageFAIL <= 1;
              dispatch <= dispMISMATCH;
           end
-        else if (pfEN & pageENABLE & !vmaPHYS & !vmaACREF & vmaWRTEST & !pageWRITEABLE)
+        else if (pfEN & pageWRITEFAIL)
           begin
              pageFAIL <= 1;
              dispatch <= dispWRITEFAIL;
