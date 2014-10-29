@@ -33,7 +33,7 @@ FILES="\
 "
 
 DIR=testsuite
-RESFILE=results_`date '+%y%m%d'`.txt
+RESFILE=results_`date '+%y%m%d_%H%M'`.txt
 PREFIX=MAINDEC-10-
 
 RED='\e[0;31m'
