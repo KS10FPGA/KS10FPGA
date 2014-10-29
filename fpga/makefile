@@ -63,18 +63,18 @@ VVP          := vvp
 #DIAG         := DSKAK		#    4.2 ms
 #DIAG         := DSKAL		#    4.7 ms
 #DIAG         := DSKAM		#    2.3 ms
-#DIAG         := DSKBA-RD00  	#  630.0 ms ????
+#DIAG         := DSKBA-RD00  	#    1.0 ms FAIL
 #DIAG         := DSKCA		#    1.9 ms
 #DIAG         := DSKCB		#    1.3 ms
 #DIAG         := DSKCC		#    2.1 ms
 #DIAG         := DSKCD		#    5.2 ms
 #DIAG         := DSKCE-RD00	#    5.7 ms
 #DIAG         := DSKCF-RD00	#   10.6 ms	
-#DIAG         := DSKCG		# 1350.0 ms ???
-#DIAG         := DSKDA-RD00	#    0.2 ms
-#DIAG         := DSKEA-RD00	#
-#DIAG         := DSUBA-RD00	#   67.4 ms
-#DIAG         := DSDZA-RD00	# 1212.4 ms
+#DIAG         := DSKCG		# 1350.0 ms FAIL
+#DIAG         := DSKDA-RD00	#    5.3 ms FAIL
+#DIAG         := DSKEA-RD00	#  133.3 ms FAIL
+#DIAG         := DSUBA-RD00	#  108.0 ms
+#DIAG         := DSDZA-RD00	# 2411.8 ms
 
 PREFIX       := MAINDEC-10-
 
@@ -189,6 +189,7 @@ INC := \
 	$(RTL)/ks10/cpu/debug_dskah.vh \
 	$(RTL)/ks10/cpu/debug_dskba.vh \
 	$(RTL)/ks10/cpu/debug_dskcg.vh \
+	$(RTL)/ks10/cpu/debug_dskea.vh \
 	$(RTL)/ks10/cpu/debug_dsuba.vh \
 	$(RTL)/ks10/cpu/debug_dsdza.vh \
 	$(RTL)/ks10/cpu/debug_default.vh \
@@ -823,7 +824,7 @@ rcsfetch: $(INC) $(RTL_SRC) $(SIM_SRC) $(BLD) $(DAT) $(DOC) $(DIAGFILES) $(RTL)/
 #
 
 archive_all:
-	tar -czvf ks10_fpga_all_`date '+%y%m%d'`.tgz *
+	tar --exclude=testsuite_*/* -czvf ks10_fpga_all_`date '+%y%m%d'`.tgz *
 
 archive_dist: $(SRC)
 	make rcsfetch
