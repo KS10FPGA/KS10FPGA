@@ -71,5 +71,35 @@ begin
      18'o033016: test = "DSKEA PAGRD0";
      18'o033122: test = "DSKEA PGWRTA";
      18'o033134: test = "DSKEA PGWTBB";
+     18'o033152: test = "DSKEA PGWRTC";
+     18'o033172: test = "DSKEA PGWRT0";
+     18'o033200: test = "DSKEA PGWRT1";
+     18'o033220: test = "DSKEA PGWRT2";
+     18'o033227: test = "DSKEA PGWRT3";
+     18'o033252: test = "DSKEA PGWRT4";
+     18'o033266: test = "DSKEA PGWRT5";
+     18'o033273: test = "DSKEA PGWRT6";
+     18'o033321: test = "DSKEA PGWRT7";
+     18'o033356: test = "DSKEA PFT0";
+     18'o033421: test = "DSKEA WRTP0";
+     18'o033522: test = "DSKEA BLT0";
+     18'o033530: test = "DSKEA BLT1";
+     18'o033537: test = "DSKEA BLT2";
+     18'o033544: test = "DSKEA BLT3";
+     18'o033553: test = "DSKEA BLT4";
+     18'o033560: test = "DSKEA BLT5";
+     18'o033567: test = "DSKEA BLT6";
+     18'o033575: test = "DSKEA BLT7";
+     18'o033604: test = "DSKEA BLT8";
+     18'o033612: test = "DSKEA BLT9";
+     18'o033622: test = "DSKEA RLBAS0";
+     18'o033670: test = "DSKEA RLBAS1";
+     18'o033715: test = "DSKEA RLBAS3";
+     18'o033741: test = "DSKEA RLBAS4";
+     18'o033772: test = "DSKEA RLBAS6";
+     18'o034066: test = "DSKEA EPPT0";
+     18'o034126: test = "DSKEA RLPFT0";
+     18'o034166: test = "DSKEA RLTRP0";
+     18'o034253: test = "DSKEA RLINT0";
    endcase
 end

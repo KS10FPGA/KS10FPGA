@@ -195,7 +195,7 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    reg [0:14] pageTABLE1[0:255];
    reg [0:14] pageTABLE2[0:255];
 
-   wire [18:26] asdf = vmaREG[19:26];
+   wire [18:26] asdf = vmaREG[18:26];
    wire [ 0:14] qwer = {pageinFLAGS, pageinADDR};
 
    always @(posedge clk or posedge rst)
@@ -212,10 +212,10 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
                  end
                else if (pageWRITE)
                  begin
-                    if (!asdf[18])
-                      pageTABLE1[asdf[19:26]] <= {pageinFLAGS, pageinADDR};
+                    if (!vmaREG[18])
+                      pageTABLE1[vmaREG[19:26]] <= {pageinFLAGS, pageinADDR};
                     else
-                      pageTABLE2[asdf[19:26]] <= {pageinFLAGS, pageinADDR};
+                      pageTABLE2[vmaREG[19:26]] <= {pageinFLAGS, pageinADDR};
                  end
             end
      end
