@@ -18,6 +18,7 @@ FILES="\
     DSKAK
     DSKAL
     DSKAM
+    DSKBA-RD00
     DSKCA
     DSKCB
     DSKCC
@@ -26,7 +27,6 @@ FILES="\
     DSKCF-RD00
     DSKDA-RD00
     DSKEA-RD00
-    DSKBA-RD00
     DSUBA-RD00
     DSDZA-RD00
     DSKCG
