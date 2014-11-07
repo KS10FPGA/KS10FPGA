@@ -60,7 +60,7 @@
 module RPXX(clk, rst,
             unitSEL, incSECTOR, rhCLR, ataCLR,
             devRESET, devADDRI, rhDATAI, rpCD, rpWP,
-            rpDA, rpDS, rpER1, rpLA, rpMR, rpOF, rpDC, rpCC,
+            rpDA, rpDS, rpER1, rpLA, rpMR, rpDT, rpOF, rpDC, rpCC,
             rpFUN, rpGO, rpSDOP, rpSDREQ, rpSDACK, rpSDADDR);
 
    input          clk;                          // Clock
@@ -79,6 +79,7 @@ module RPXX(clk, rst,
    output [15: 0] rpER1;                        // ER1 Register
    output [15: 0] rpLA;                         // LA  Register
    output [15: 0] rpMR;                         // MR  Register
+   output [15: 0] rpDT;                         // DT  Register
    output [15: 0] rpOF;                         // OF  Register
    output [15: 0] rpDC;                         // DC  Register
    output [15: 0] rpCC;                         // CC  Register
@@ -1069,6 +1070,7 @@ module RPXX(clk, rst,
      end
 
    assign rpCC    = {6'b0, rpCCA};
+   assign rpDT    = drvTYPE;
    assign rpSDREQ = (state == stateWAITSD);
 
 endmodule
