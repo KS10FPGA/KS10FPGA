@@ -3,38 +3,20 @@
 // KS-10 Processor
 //
 // Brief
-//   RH11 CS1 Register
+//   RH11 Control and Status Register 1 (RHCS1)
 //
 // Details
-//
-//
-// Note
-//   Please read the white pager entited "PDP-11 Interrupts: Variations On A
-//   Theme", Bob Supnik, 03-Feb-2002 [revised 20-Feb-2004]
-//
-//   As state in that paper, the correct interrupt controller is as follows:
-//
-//
-//                   +-------+         +-------+
-//   IE ------------>|D     Q|-------->|  >=1  |
-//                   |       |         |       |------- Interrupt Request
-//   RDY------------>|C  R   |    +--->|OR Gate|
-//                   +---^---+    |    +-------+
-//                       |        |
-//   INIT + IAK----------+        |
-//                                |
-//   ATA + RDY + IE --------------+
-//
+//   The module implements the RH11 CSR 1 Register.
 //
 // File
-//   rhCS1.v
+//   rhcs1.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2014 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -57,224 +39,209 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
-`include "bus.vh"
-`include "rhcs1.vh"
-`include "rhcs2.vh"
-`include "rpds.vh"
-`include "rpxx.vh"
 
-module RHCS1(clk, rst,
-             devRESET, devADDRI, rhDATAI,
-             rhINTA, rhDEV, rhCLR, rhCS2, rhBA, rhFUN, rhGO,
-             rpDS0, rpDS1, rpDS2, rpDS3, rpDS4, rpDS5, rpDS6, rpDS7,
-             rhCS1);
+`include "rhcs1.vh"
+`include "../../ks10.vh"
+
+  module RHCS1(clk, rst,
+               devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE, rpATA,
+               cs1FUN, cs1GO, goCLR, intrDONE, rhBA, rhCS2, rhCS1);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          devRESET;                     // Device Reset
-   input  [ 0:35] devADDRI;                     // Device Address In
-   input  [35: 0] rhDATAI;                      // Data Input
-   input          rhINTA;                       // Interrupt acknowledge
-   input  [14:17] rhDEV;                        // Device number
-   input          rhCLR;                        // Controller Clear
-   input  [15: 0] rhCS2;                        // RHCS2 Register
-   input  [17: 0] rhBA;                         // RHBA Register
-   input  [ 5: 1] rhFUN;                        // Function from RPxx
-   input          rhGO;                         // Go from RPxx
-   input  [15: 0] rpDS0;                        // Disk 0 RPDS Register
-   input  [15: 0] rpDS1;                        // Disk 1 RPDS Register
-   input  [15: 0] rpDS2;                        // Disk 2 RPDS Register
-   input  [15: 0] rpDS3;                        // Disk 3 RPDS Register
-   input  [15: 0] rpDS4;                        // Disk 4 RPDS Register
-   input  [15: 0] rpDS5;                        // Disk 5 RPDS Register
-   input  [15: 0] rpDS6;                        // Disk 6 RPDS Register
-   input  [15: 0] rpDS7;                        // Disk 7 RPDS Register
-   output [15: 0] rhCS1;                        // RHCS1 Register
-   output         rhINTR;                       // RH Interrupt Request
+   input          devRESET;                     // Device Reset from UBA
+   input          devLOBYTE;                    // Device Low Byte
+   input          devHIBYTE;                    // Device High Byte
+   input  [ 0:35] devDATAI;                     // Device Data In
+   input          rhcs1WRITE;                   // CS1 Write
+   input          rpATA;                        // Attention
+   input  [ 5: 1] cs1FUN;                       // Function from selected drive
+   input          cs1GO;                        // Go from selected drive
+   input          goCLR;                        // Go clear
+   input          intrDONE;                     // Interrupt done
+   input  [17: 0] rhBA;                         // rhBA Input
+   input  [15: 0] rhCS2;                        // rhCS2 Input
+   output [15: 0] rhCS1;                        // rhCS1 Output
 
    //
-   // Register Addresses
+   // Big-endian to little-endian data bus swap
    //
 
-
-
-
-   //
-   // Address decoder
-   //
-
-   wire         devREAD   = `devREAD(devADDRI);   // Read cycle (IO or Memory)
-   wire         devWRITE  = `devWRITE(devADDRI);  // Write cycle (IO or Memory)
-   wire         devIO     = `devIO(devADDRI);     // IO cycle
-   wire         devIOBYTE = `devIOBYTE(devADDRI); // IO byte cycle
-   wire [14:17] devDEV    = `devDEV(devADDRI);    // Device Number
-   wire [18:34] devADDR   = `devADDR(devADDRI);   // Device Address
-   wire         devHIBYTE = `devHIBYTE(devADDRI); // High byte
-   wire         devLOBYTE = `devLOBYTE(devADDRI); // Low byte
+   wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
-   // Write decoder
+   // Clear Transfer Error
    //
 
-   wire rhcs1WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
-   wire rhcs2WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs2ADDR[18:34]);
+   wire treCLR = rhcs1WRITE & devHIBYTE & `rhCS1_TRE(rhDATAI);
 
    //
-   // Constant register bits
+   // Status history.  See Transfer Error (TRE).
    //
 
-   wire rhMCPE = 0;                             // Massbus Control Parity Error
-   wire rhDVA  = 1;                             // Drive available
-   wire rhPSEL = 0;                             // Port select
-
-   //
-   // History
-   //
-
+   reg lastDLT;
    reg lastWCE;
-   reg lastPE;
+   reg lastUPE;
+   reg lastNED;
    reg lastNEM;
    reg lastPGE;
    reg lastMXF;
-   reg lastRDY;
+   reg lastDPE;
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
+             lastDLT <= 0;
              lastWCE <= 0;
-             lastPE  <= 0;
+             lastUPE <= 0;
+             lastNED <= 0;
              lastNEM <= 0;
              lastPGE <= 0;
              lastMXF <= 0;
-             lastRDY <= 0;
-          end
-        else if (rhCLR | devRESET)
-          begin
-             lastWCE <= 0;
-             lastPE  <= 0;
-             lastNEM <= 0;
-             lastPGE <= 0;
-             lastMXF <= 0;
-             lastRDY <= 0;
+             lastDPE <= 0;
           end
         else
           begin
-             lastWCE <= rhCS2[`rhCS2_WCE];
-             lastPE  <= rhCS2[`rhCS2_PE ];
-             lastNEM <= rhCS2[`rhCS2_NEM];
-             lastPGE <= rhCS2[`rhCS2_PGE];
-             lastMXF <= rhCS2[`rhCS2_MXF];
-             lastRDY <= rhRDY;
+             lastDLT <= `rhCS2_DLT(rhCS2);
+             lastWCE <= `rhCS2_WCE(rhCS2);
+             lastUPE <= `rhCS2_UPE(rhCS2);
+             lastNED <= `rhCS2_NED(rhCS2);
+             lastNEM <= `rhCS2_NEM(rhCS2);
+             lastPGE <= `rhCS2_PGE(rhCS2);
+             lastMXF <= `rhCS2_MXF(rhCS2);
+             lastDPE <= `rhCS2_DPE(rhCS2);
           end
      end
 
    //
-   // Transfer Error
+   // CS1 Special Conditions (SC)
+   //
+   // Trace
+   //  M7296/CSRB/E2
+   //  M7296/CSRB/E20
    //
 
-   reg  rhTRE;
-   wire clrFUN = rhcs1WRITE & devLOBYTE & rhDATAI[`rhCS1_GO ] & (rhDATAI[`rhCS1_FUN] == `funCLEAR) & rhRDY;
-   wire clrTRE = rhcs1WRITE & devHIBYTE & rhDATAI[`rhCS1_TRE];
-   wire setTRE = ((rhCS2[`rhCS2_WCE] & ~lastWCE) |
-                  (rhCS2[`rhCS2_PE ] & ~lastPE ) |
-                  (rhCS2[`rhCS2_NEM] & ~lastNEM) |
-                  (rhCS2[`rhCS2_PGE] & ~lastNEM) |
-                  (rhCS2[`rhCS2_MXF] & ~lastMXF));
+   wire cs1SC = cs1TRE | rpATA;
+
+   //
+   // CS1 Transfer Error (TRE)
+   //
+   // Note:
+   //  Transfer error is asserted on the *transition* of the status signals.
+   //
+   // Trace
+   //  M7296/CSRB/E2
+   //  M7296/CSRB/E3
+   //  M7296/CSRB/E5
+   //  M7296/CSRB/E20
+   //  M7296/CSRB/E22
+   //
+
+   reg cs1TRE;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          rhTRE <= 0;
-        else if (rhCLR | devRESET | clrTRE | clrFUN)
-          rhTRE <= 0;
-        else if (setTRE)
-          rhTRE <= 1;
-     end
-
-   //
-   // Ready
-   //
-
-   reg  rhRDY;
-   wire clrRDY = rhcs1WRITE & devLOBYTE & ~rhDATAI[`rhCS1_RDY];
-   wire setRDY = rhcs1WRITE & devLOBYTE &  rhDATAI[`rhCS1_RDY];
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          rhRDY <= 0;
-        else if (rhCLR | devRESET | clrRDY)
-          rhRDY <= 0;
-        else if (setRDY)
-          rhRDY <= 1;
-     end
-
-   //
-   // Interrupt Enable
-   //
-
-   reg  rhIE;
-   wire clrIE = rhcs1WRITE & devLOBYTE & ~rhDATAI[`rhCS1_IE];
-   wire setIE = rhcs1WRITE & devLOBYTE &  rhDATAI[`rhCS1_IE];
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          rhIE <= 0;
-        else if (rhCLR | devRESET | clrIE)
-          rhIE <= 0;
-        else if (setIE)
-          rhIE <= 1;
-     end
-
-   //
-   // Interrupt Flip-flop
-   //
-   //  The interrupt flip-flop is asserted under the following conditions:
-   //  1.  Writing IE and RDY simultaneously
-   //  2.  RDY transitions from 0 to 1 when IE is asserted
-   //
-   //  The interrupt is cleared under the following conditions:
-   //  1.  Interrupt acknowledge
-   //  2.  rhCLR
-   //
-
-   reg rhIFF;
-   wire setIFF = ((rhRDY & ~lastRDY & rhIE) |
-                  (rhcs1WRITE & devLOBYTE & rhDATAI[`rhCS1_RDY] & rhDATAI[`rhCS1_IE]));
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-           rhIFF <= 0;
+          cs1TRE  <= 0;
         else
-           begin
-             if (rhCLR | devRESET | rhINTA)
-               rhIFF <= 0;
-             else if (setIFF)
-               rhIFF <= 1;
-           end
+          begin
+             if (devRESET | `rhCS2_CLR(rhCS2) | goCLR | treCLR)
+               cs1TRE <= 0;
+             else if ((`rhCS2_DLT(rhCS2) & !lastDLT) |
+                      (`rhCS2_WCE(rhCS2) & !lastWCE) |
+                      (`rhCS2_UPE(rhCS2) & !lastUPE) |
+                      (`rhCS2_NED(rhCS2) & !lastNED) |
+                      (`rhCS2_NEM(rhCS2) & !lastNEM) |
+                      (`rhCS2_PGE(rhCS2) & !lastPGE) |
+                      (`rhCS2_MXF(rhCS2) & !lastMXF) |
+                      (`rhCS2_DPE(rhCS2) & !lastDPE))
+               cs1TRE <= 1;
+          end
      end
 
    //
-   // Special Conditions
+   // CS1 Massbus Control Parity Error (CPE aka CNTL PE)
+   //
+   // Trace
+   //  M7296/PACA/E5
+   //  M7296/PACA/E7
+   //  M7296/PACA/E10
    //
 
-   wire rhSC = rpDS0[`rpDS_ATA] | rpDS1[`rpDS_ATA] | rpDS2[`rpDS_ATA] | rpDS3[`rpDS_ATA] |
-               rpDS4[`rpDS_ATA] | rpDS5[`rpDS_ATA] | rpDS6[`rpDS_ATA] | rpDS7[`rpDS_ATA] |
-               rhTRE;
+   wire cs1CPE = 0;
 
    //
-   // Create Interrupt
+   // CS1 Drive Available (DVA)
+   //
+   // Trace
+   //  Supplied via massbus
    //
 
-   assign rhINTR = rhIFF | (rhSC & rhIE & rhRDY);
+   wire cs1DVA = 1;
+
+   //
+   // CS1 Port Select (PSEL)
+   //
+   // Trace
+   //  M7296/CSRA/E11
+   //  M7296/CSRA/E12
+   //
+
+   reg cs1PSEL;
+   always @(posedge clk)
+     begin
+        if (rst)
+          cs1PSEL <= 0;
+        else
+          if (devRESET | `rhCS2_CLR(rhCS2))
+            cs1PSEL <= 0;
+          else if (rhcs1WRITE & devHIBYTE & cs1RDY)
+            cs1PSEL <= `rhCS1_PSEL(rhDATAI);
+     end
+
+   //
+   // CS1 Ready (RDY)
+   //
+   // Trace
+   //  M7296/CSRA/E3
+   //
+
+   reg cs1RDY;
 
 
    //
-   // Create RHCS1 register
+   // CS1 Interrupt Enable (IE)
+   //
+   // Trace
+   //  M7296/CSRA/E10
+   //  M7296/CSRA/E18
+   //  M7296/CSRA/E20
    //
 
-   assign rhCS1 = {rhSC, rhTRE, rhMCPE, 1'b0, rhDVA, rhPSEL, rhBA[17:16], rhRDY, rhIE, rhFUN, rhGO};
+   reg cs1IE;
+   always @(posedge clk)
+     begin
+        if (rst)
+          cs1IE <= 0;
+        else
+          if (devRESET | `rhCS2_CLR(rhCS2) | intrDONE)
+            cs1IE <= 0;
+          else if (rhcs1WRITE & devLOBYTE)
+            cs1IE <= `rhCS1_IE(rhDATAI);
+     end
+
+   //
+   // Build CS1 Register
+   //
+   // Trace
+   //  M7294/DBCJ/E30 (00:03)
+   //  M7294/DBCJ/E32 (04:07)
+   //  M7295/BCTJ/E60 (08:11)
+   //  M7295/BCTJ/E59 (12:15)
+   //
+
+   wire [15:0] rhCS1 = {cs1SC, cs1TRE, cs1CPE, 1'b1, cs1DVA, cs1PSEL,
+                        rhBA[17:16], cs1RDY, cs1IE, cs1FUN, cs1GO};
 
 endmodule
