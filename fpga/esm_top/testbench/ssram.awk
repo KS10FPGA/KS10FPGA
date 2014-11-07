@@ -206,7 +206,7 @@ BEGIN {
 #
 
 END {
-   for (i = 0; i < 077777; i++) { 
+   for (i = 0; i < 0177777; i++) { 
        if (map[i] != "") {
            printf "         mem[%05d] = 36'o%s;	// %06o\n", i, map[i], i
        } else {

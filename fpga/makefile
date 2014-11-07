@@ -72,9 +72,10 @@ VVP          := vvp
 #DIAG         := DSKCF-RD00	#   10.6 ms	
 #DIAG         := DSKCG		# 1350.0 ms FAIL
 #DIAG         := DSKDA-RD00	#    5.3 ms FAIL
-#DIAG         := DSKEA-RD00	#  133.3 ms FAIL
+#DIAG         := DSKEA-RD00	#  452.5 ms FAIL
 #DIAG         := DSUBA-RD00	#  108.0 ms
 #DIAG         := DSDZA-RD00	# 2411.8 ms
+#DIAG         := DSRPA-RD00	#  ???.? ms FAIL
 
 PREFIX       := MAINDEC-10-
 
@@ -162,6 +163,10 @@ RTL_SRC := \
 	$(RTL)/ks10/uba/rh11/rpxx.v \
 	$(RTL)/ks10/uba/rh11/sdaddr.v \
 	$(RTL)/ks10/uba/rh11/rh11.v \
+	$(RTL)/ks10/uba/rh11/rhba.v \
+	$(RTL)/ks10/uba/rh11/rhwc.v \
+	$(RTL)/ks10/uba/rh11/rhcs1.v \
+	$(RTL)/ks10/uba/rh11/rhcs2.v \
 	$(RTL)/ks10/uba/rh11/sd/sd.v \
 	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
 	$(RTL)/ks10/uba/uba.v \
@@ -207,6 +212,8 @@ INC := \
 	$(RTL)/ks10/uba/dz11/dzuart.vh \
 	$(RTL)/ks10/uba/rh11/sd/sdspi.vh \
 	$(RTL)/ks10/uba/rh11/sd/sd.vh \
+	$(RTL)/ks10/uba/rh11/rhba.vh \
+	$(RTL)/ks10/uba/rh11/rhwc.vh \
 	$(RTL)/ks10/uba/rh11/rhcs1.vh \
 	$(RTL)/ks10/uba/rh11/rhcs2.vh \
 	$(RTL)/ks10/uba/rh11/rpcs1.vh \
