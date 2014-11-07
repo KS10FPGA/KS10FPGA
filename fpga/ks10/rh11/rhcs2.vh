@@ -42,19 +42,19 @@
 // RHCS2 Register Bits
 //
 
-`define rhCS2_DLT(bus)  (bus[15])       // Device late
-`define rhCS2_WCE(bus)  (bus[14])       // Write check error
-`define rhCS2_PE(bus)   (bus[13])       // Parity error
-`define rhCS2_NED(bus)  (bus[12])       // Non-existent drive
-`define rhCS2_NEM(bus)  (bus[11])       // Non-existent memory
-`define rhCS2_PGE(bus)  (bus[10])       // Program error
-`define rhCS2_MXF(bus)  (bus[ 9])       // Missed xfer
-`define rhCS2_MDPE(bus) (bus[ 8])       // Massbus data parity error
-`define rhCS2_OR(bus)   (bus[ 7])       // Output ready
-`define rhCS2_IR(bus)   (bus[ 6])       // Input ready
-`define rhCS2_CLR(bus)  (bus[ 5])       // Controller clear
-`define rhCS2_PAT(bus)  (bus[ 4])       // Parity test
-`define rhCS2_BAI(bus)  (bus[ 3])       // Bus address increment inhibit
-`define rhCS2_UNIT(bus) (bus[2:0])      // Unit select
+`define rhCS2_DLT(reg)  (reg[15])       // Device late
+`define rhCS2_WCE(reg)  (reg[14])       // Write check error
+`define rhCS2_UPE(reg)  (reg[13])       // Unireg Parity error
+`define rhCS2_NED(reg)  (reg[12])       // Non-existent drive
+`define rhCS2_NEM(reg)  (reg[11])       // Non-existent memory
+`define rhCS2_PGE(reg)  (reg[10])       // Program error
+`define rhCS2_MXF(reg)  (reg[ 9])       // Missed xfer
+`define rhCS2_DPE(reg)  (reg[ 8])       // Data parity error
+`define rhCS2_OR(reg)   (reg[ 7])       // Output ready
+`define rhCS2_IR(reg)   (reg[ 6])       // Input ready
+`define rhCS2_CLR(reg)  (reg[ 5])       // Controller clear
+`define rhCS2_PAT(reg)  (reg[ 4])       // Parity test
+`define rhCS2_BAI(reg)  (reg[ 3])       // Bus address increment inhibit
+`define rhCS2_UNIT(reg) (reg[2:0])      // Unit select
 
 `endif

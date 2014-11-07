@@ -42,13 +42,15 @@
 // RHCS1 Register Bits
 //
 
-`define rhCS1_SC(bus)   (bus[15])       // Special conditions
-`define rhCS1_TRE(bus)  (bus[14])       // Transfer error
-`define rhCS1_MCPE(bus) (bus[13])       // Massbus control bus parity error
-`define rhCS1_PSEL(bus) (bus[10])       // Port select
-`define rhCS1_A17(bus)  (bus[ 9])       // A17 address extension
-`define rhCS1_A16(bus)  (bus[ 8])       // A16 address extension
-`define rhCS1_RDY(bus)  (bus[ 7])       // Ready
-`define rhCS1_IE(bus)   (bus[ 6])       // Interrupt enable
+`define rhCS1_SC(reg)   (reg[15])       // Special conditions
+`define rhCS1_TRE(reg)  (reg[14])       // Transfer error
+`define rhCS1_CPE(reg)  (reg[13])       // Control parity error
+`define rhCS1_DVA(reg)  (reg[11])       // Drive available
+`define rhCS1_PSEL(reg) (reg[10])       // Port select
+`define rhCS1_BAE(reg)  (reg[9:8])      // Bus address extension (A17/A16)
+`define rhCS1_RDY(reg)  (reg[ 7])       // Ready
+`define rhCS1_IE(reg)   (reg[ 6])       // Interrupt enable
+`define rhCS1_FUN(reg)  (reg[5:1])      // Function
+`define rhCS1_GO(reg)   (reg[ 0])       // Go
 
 `endif
