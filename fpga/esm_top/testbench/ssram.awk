@@ -149,6 +149,20 @@ BEGIN {
 }
 
 #
+# Byte 2
+#" 4800	006727	005 033 00000000 	INIMSG:	BYTE (7)	5,33		;^E, ALTMODE
+#
+# See DSQDA
+#
+
+/^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] [0-7][0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7][0-7][0-7].*/ {
+    data1 = lshift(strtonum("0" substr($3,  1, 3)), 29);
+    data2 = lshift(strtonum("0" substr($3,  5, 3)), 22);
+    data  = sprintf("%012o", data1 + data2);
+    i = strtonum("0" $2)
+    map[i] = data
+}
+
 # Bytes
 #" 2791	023352	0 117 124 0 123 120 	"
 #
