@@ -3,7 +3,7 @@
 // KS-10 Processor
 //
 // Brief
-//   RHCS1 definitions
+//   RHCS1 Register Definitions
 //
 // File
 //   rhcs1.vh

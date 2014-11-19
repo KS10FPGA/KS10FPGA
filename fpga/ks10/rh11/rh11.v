@@ -51,12 +51,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
-`include "rpxx.vh"
 `include "rh11.vh"
 `include "rhcs1.vh"
 `include "rhcs2.vh"
-`include "rpcs1.vh"
-`include "sd/sd.vh"
+`include "rpxx/rpcs1.vh"
+`include "rpxx/rpxx.vh"
+`include "rpxx/sd/sd.vh"
 `include "../ubabus.vh"
 
 module RH11(clk,      rst,
@@ -108,7 +108,7 @@ module RH11(clk,      rst,
    // RH Register Addresses
    //
 
-   localparam [18:35] cs1ADDR = rhADDR + `cs1OFFSET;     // Massbus Addr 00
+   localparam [18:35] cs1ADDR = rhADDR + `cs1OFFSET;     // RH/Massbus Addr 00
    localparam [18:35] wcADDR  = rhADDR + `wcOFFSET;      // RH Register
    localparam [18:35] baADDR  = rhADDR + `baOFFSET;      // RH Register
    localparam [18:35] daADDR  = rhADDR + `daOFFSET;      // Massbus Addr 05
@@ -148,27 +148,55 @@ module RH11(clk,      rst,
    wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
    wire         devLOBYTE = `devLOBYTE(devADDRI);       // Device Low Byte
 
-
    //
    // Address Decoding
    //
 
    wire rhcs1WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
    wire rhcs1READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
-   wire rhcs2WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs2ADDR[18:34]);
-   wire rhcs2READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == cs2ADDR[18:34]);
    wire rhwcWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  wcADDR[18:34]);
    wire rhwcREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  wcADDR[18:34]);
    wire rhbaWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  baADDR[18:34]);
    wire rhbaREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  baADDR[18:34]);
-   wire rhdbWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dbADDR[18:34]);
-   wire rhdbREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  dbADDR[18:34]);
+   wire rpdaWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]);
+   wire rpdaREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]);
+   
+   wire rhcs2WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs2ADDR[18:34]);
+   wire rhcs2READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == cs2ADDR[18:34]);
+   wire rpdsWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dsADDR[18:34]);
+   wire rpdsREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  dsADDR[18:34]);
+   wire rper1WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
+   wire rper1READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
    wire rhasWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
    wire rhasREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
 
-   wire rhdtWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dtADDR[18:34]);
-   wire rhdtREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  dtADDR[18:34]);
+   wire rplaWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
+   wire rplaREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
+   wire rhdbWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dbADDR[18:34]);
+   wire rhdbREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  dbADDR[18:34]);
+   wire rpmrWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]);
+   wire rpmrREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]);
+   wire rpdtWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dtADDR[18:34]);
+   wire rpdtREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  dtADDR[18:34]);
 
+   wire rpsnWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  snADDR[18:34]);
+   wire rpsnREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  snADDR[18:34]);
+   wire rpofWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]);
+   wire rpofREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]);
+   wire rpdcWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]);
+   wire rpdcREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]);
+   wire rpccWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  ccADDR[18:34]);
+   wire rpccREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  ccADDR[18:34]);
+
+   wire rper2WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]);
+   wire rper2READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]);
+   wire rper3WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]);
+   wire rper3READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]);
+   wire rpec1WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == ec1ADDR[18:34]);
+   wire rpec1READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == ec1ADDR[18:34]);
+   wire rpec2WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == ec2ADDR[18:34]);
+   wire rpec2READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == ec2ADDR[18:34]);
+  
    wire vectREAD   = devVECT  & devIO & (devDEV == rhDEV);
 
    //
@@ -216,13 +244,12 @@ module RH11(clk,      rst,
       .devDATAI   (devDATAI),
       .rhcs1WRITE (rhcs1WRITE),
       .rpATA      (rpATA),
-      .cs1FUN     (rpFUN[rhUNITSEL]),
-      .cs1GO      (rpGO[rhUNITSEL]),
       .goCLR      (goCLR),
       .intrDONE   (1'b0),       // FIXME
       .rhBA       (rhBA),
-      .rhCS1      (rhCS1),
-      .rhCS2      (rhCS2)
+      .rhCS2      (rhCS2),
+      .rpCS1      (rpCS1[rhUNITSEL]),
+      .rhCS1      (rhCS1)
    );
 
    //
@@ -293,27 +320,19 @@ module RH11(clk,      rst,
    // RH11 Data Buffer (RHDB) Register
    //
 
-   reg  [15:0] rhDB;
+   wire [15:0] rhDB;
 
-   always @(posedge clk)
-     begin
-        if (rst | rhCLR | devRESET)
-          begin
-             rhDB <= 0;
-          end
-        else if (rhdbWRITE)
-          begin
-             if (devHIBYTE)
-               begin
-                 rhDB[15:8] <= rhDATAI[15:8];
-               end
-             if (devLOBYTE)
-               begin
-                 rhDB[7:0] <= rhDATAI[7:0];
-               end
-          end
-     end
-
+   RHDB DB (
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (rhCLR | devRESET),
+      .devLOBYTE  (devLOBYTE),
+      .devHIBYTE  (devHIBYTE),
+      .devDATAI   (devDATAI),
+      .rhdbWRITE  (rhdbWRITE),
+      .rhDB       (rhDB)
+   );
+               
    //
    // Attention Summary Pseudo Register
    //
@@ -405,7 +424,7 @@ module RH11(clk,      rst,
    //
 
    reg [7:0] rhUNITSEL;
-   always @(rhUNIT)
+   always @*
      begin
         case (rhUNIT)
           0: rhUNITSEL <= 8'b0000_0001;
@@ -424,7 +443,7 @@ module RH11(clk,      rst,
    //
 
    reg [7:0] sdUNITSEL;
-   always @(scan)
+   always @*
      begin
         case (scan)
           0: sdUNITSEL <= 8'b0000_0001;
@@ -455,23 +474,21 @@ module RH11(clk,      rst,
    // Build Array 8 RP Register Sets
    //
 
-   wire [15: 0] rpSN    [7:0];          // SN  Register
-   wire [15: 0] rpDA    [7:0];          // DA  Register
-   wire [15: 0] rpDS    [7:0];          // DS  Register
-   wire [15: 0] rpER1   [7:0];          // ER1 Register
-   wire [15: 0] rpLA    [7:0];          // LA  Register
-   wire [15: 0] rpMR    [7:0];          // MR  Register
-   wire [15: 0] rpDT    [7:0];          // DT  Register
-   wire [15: 0] rpOF    [7:0];          // OF  Register
-   wire [15: 0] rpDC    [7:0];          // DC  Register
-   wire [15: 0] rpCC    [7:0];          // CC  Register
-   wire [ 5: 1] rpFUN   [7:0];          // CS1[FUN] Register
-   wire         rpGO    [7:0];          // CS1[GO]  Register
-   wire [ 1: 0] rpSDOP  [7:0];          // SD Operation
-   wire [31: 0] rpSDADDR[7:0];          // SD Sector Address
-   wire [ 7: 0] rpSDREQ;                // RP is ready for SD
-   wire [ 7: 0] rpSDACK;                // SD is done with RP
-
+   wire [15:0] rpSN    [7:0];           // SN  Register
+   wire [15:0] rpDA    [7:0];           // DA  Register
+   wire [15:0] rpDS    [7:0];           // DS  Register
+   wire [15:0] rpER1   [7:0];           // ER1 Register
+   wire [15:0] rpLA    [7:0];           // LA  Register
+   wire [15:0] rpMR    [7:0];           // MR  Register
+   wire [15:0] rpDT    [7:0];           // DT  Register
+   wire [15:0] rpOF    [7:0];           // OF  Register
+   wire [15:0] rpDC    [7:0];           // DC  Register
+   wire [15:0] rpCC    [7:0];           // CC  Register
+   wire [15:0] rpCS1   [7:0];           // CS1 Register
+   wire [ 1:0] rpSDOP  [7:0];           // SD Operation
+   wire [31:0] rpSDADDR[7:0];           // SD Sector Address
+   wire [ 7:0] rpSDREQ;                 // RP is ready for SD
+   wire [ 7:0] rpSDACK;                 // SD is done with RP
 
    wire rpATA = (rpDS[0][15] | rpDS[1][15] | rpDS[2][15] | rpDS[3][15] |
                  rpDS[4][15] | rpDS[5][15] | rpDS[6][15] | rpDS[7][15]);
@@ -502,7 +519,8 @@ module RH11(clk,      rst,
            )
            uRPXX (
               .clk      (clk),
-              .rst      (rst | rhCLR | devRESET),
+              .rst      (rst),
+              .clr      (rhCLR | devRESET),
               .unitSEL  (rhUNITSEL[i]),
               .incSECTOR(sdINCSECT[i]),
               .rhCLR    (rhCLR),
@@ -512,6 +530,7 @@ module RH11(clk,      rst,
               .rhDATAI  (rhDATAI),
               .rpCD     (rh11CD),
               .rpWP     (rh11WP),
+              .rpCS1    (rpCS1[i]),
               .rpDA     (rpDA[i]),
               .rpDS     (rpDS[i]),
               .rpER1    (rpER1[i]),
@@ -521,8 +540,6 @@ module RH11(clk,      rst,
               .rpOF     (rpOF[i]),
               .rpDC     (rpDC[i]),
               .rpCC     (rpCC[i]),
-              .rpFUN    (rpFUN[i]),
-              .rpGO     (rpGO[i]),
               .rpSDOP   (rpSDOP[i]),
               .rpSDREQ  (rpSDREQ[i]),
               .rpSDACK  (rpSDACK[i]),
@@ -580,21 +597,6 @@ module RH11(clk,      rst,
 `endif
 
    //
-   // Demux Disk Array Registers
-   //
-
-   wire [15:0] muxRPDA  =  rpDA[rhUNITSEL];
-   wire [15:0] muxRPDS  =  rpDS[rhUNITSEL];
-   wire [15:0] muxRPER1 = rpER1[rhUNITSEL];
-   wire [15:0] muxRPLA  =  rpLA[rhUNITSEL];
-   wire [15:0] muxRPMR  =  rpMR[rhUNITSEL];
-   wire [15:0] muxRPDT  =  rpDT[rhUNITSEL];
-   wire [15:0] muxRPSN  =  rpSN[rhUNITSEL];
-   wire [15:0] muxRPOF  =  rpOF[rhUNITSEL];
-   wire [15:0] muxRPDC  =  rpDC[rhUNITSEL];
-   wire [15:0] muxRPCC  =  rpCC[rhUNITSEL];
-
-   //
    // Bus Mux and little-endian to big-endian bus swap.
    //
 
@@ -610,11 +612,6 @@ module RH11(clk,      rst,
              devACKO  = 1;
              devDATAO = {20'b0, rhCS1};
           end
-        if (rhcs2WRITE | rhcs2READ)
-          begin
-             devACKO  = 1;
-             devDATAO = {20'b0, rhCS2};
-          end
         if (rhwcWRITE | rhwcREAD)
           begin
              devACKO  = 1;
@@ -625,87 +622,79 @@ module RH11(clk,      rst,
              devACKO  = 1;
              devDATAO = {20'b0, rhBA[15:0]};
           end
+        if (rpdaWRITE | rpdaREAD)
+          begin
+             devACKO  = 1;
+             devDATAO = {20'b0, rpDA[rhUNITSEL]};
+          end        
+        if (rhcs2WRITE | rhcs2READ)
+          begin
+             devACKO  = 1;
+             devDATAO = {20'b0, rhCS2};
+          end
+        if (rpdsWRITE | rpdsREAD)
+          begin
+             devACKO  = 1;
+             devDATAO = {20'b0, rpDS[rhUNITSEL]};
+          end        
+        if (rper1WRITE | rper1READ)
+          begin
+             devACKO  = 1;
+             devDATAO = {20'b0, rpER1[rhUNITSEL]};
+          end        
+        if (rhasWRITE | rhasREAD)
+          begin
+             devACKO  = 1;
+             devDATAO = {20'b0, rhAS};
+          end        
+        if (rplaWRITE | rplaREAD)
+          begin
+             devACKO  = 1;
+             devDATAO = {20'b0, rpLA[rhUNITSEL]};
+          end        
         if (rhdbWRITE | rhdbREAD)
           begin
              devACKO  = 1;
              devDATAO = {20'b0, rhDB};
           end
-        if (rhasWRITE | rhasREAD)
+        if (rpmrWRITE | rpmrREAD)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rhAS};
-          end
-        if (rhdtWRITE | rhdtREAD)
+             devDATAO = {20'b0, rpMR[rhUNITSEL]};
+          end        
+        if (rpdtWRITE | rpdtREAD)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rhAS};
+             devDATAO = {20'b0, rpDT[rhUNITSEL]};
           end
-
-
-
-     end
-
-
-
-/*
-   reg devACKO;
-   reg [0:35] devDATAO;
-
-   always @*
-     begin
-        if (devREAD & devIO & (devDEV == rhDEV))
+        if (rpsnWRITE | rpsnREAD)
           begin
-             case (devADDR)
-               cs1ADDR[18:34]:
-                 devDATAO = {20'b0, rhCS1};
-               wcADDR[18:34] :
-                 devDATAO = {20'b0, rhWC};
-               baADDR[18:34]:
-                 devDATAO = {18'b0, rhBA};
-               daADDR[18:34]:
-                 devDATAO = {20'b0, muxRPDA};
-               cs2ADDR[18:34]:
-                 devDATAO = {20'b0, rhCS2};
-               dsADDR[18:34]:
-                 devDATAO = {20'b0, muxRPDS};
-               er1ADDR[18:34]:
-                 devDATAO = {20'b0, muxRPER1};
-               asADDR[18:34]:
-                 devDATAO = {20'b0, rhAS};
-               laADDR[18:34]:
-                 devDATAO = {20'b0, muxRPLA};
-               dbADDR[18:34]:
-                 devDATAO = {20'b0, rhDB};
-               mrADDR[18:34]:
-                 devDATAO = {20'b0, muxRPMR};
-               dtADDR[18:34]:
-                 devDATAO = {20'b0, `rpRP06};
-               snADDR[18:34]:
-                 devDATAO = {20'b0, muxRPSN};
-               ofADDR[18:34]:
-                 devDATAO = {20'b0, muxRPOF};
-               dcADDR[18:34]:
-                 devDATAO = {20'b0, muxRPDC};
-               ccADDR[18:34]:
-                 devDATAO = {20'b0, muxRPCC};
-               er2ADDR[18:34],
-               er3ADDR[18:34],
-               ec1ADDR[18:34],
-               ec2ADDR[18:34]:
-                 devDATAO = 36'b0;
-               default:
-                 devDATAO = 36'b0;
-             endcase
-             devACKO = 1;
+             devACKO  = 1;
+             devDATAO = {20'b0, rpSN[rhUNITSEL]};
           end
-        else
+        if (rpofWRITE | rpofREAD)
           begin
+             devACKO  = 1;
+             devDATAO = {20'b0, rpOF[rhUNITSEL]};
+          end
+        if (rpdcWRITE | rpdcREAD)
+          begin
+             devACKO  = 1;
+             devDATAO = {20'b0, rpDC[rhUNITSEL]};
+          end
+        if (rpccWRITE | rpccREAD)
+          begin
+             devACKO  = 1;
+             devDATAO = {20'b0, rpCC[rhUNITSEL]};
+          end
+        if ((rper2WRITE | rper2READ | rper3WRITE | rper3READ) |
+            (rpec1WRITE | rpec1READ | rpec2WRITE | rpec2READ))
+          begin
+             devACKO  = 1;
              devDATAO = 36'b0;
-             devACKO  = 0;
           end
      end
-*/
-
+   
    //
    // Interrupt Request
    //

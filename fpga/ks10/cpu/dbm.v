@@ -128,8 +128,15 @@ module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaREG, cpuDATAI, dbm);
               `cromSPEC_SELBYTE_4 :
                 dbm = {dp[ 0: 6], dp[ 7:13], dp[14:20], scad[1:7], dp[28:34], dp[35]};
               `cromSPEC_SELBYTE_5 :
-//              dbm = {dp[ 0: 6], dp[ 7:13], dp[14:20], dp[21:27], scad[1:7], dp[35]};
+`define NOT_SURE_WHY_DELAY
+`ifdef NOT_SURE_WHY_DELAY
+		begin
+                #10;
+		dbm = {dp[ 0: 6], dp[ 7:13], dp[14:20], dp[21:27], scad[1:7], dp[35]};
+		end
+`else
                 dbm = {28'b0, scad[1:7], 1'b0};
+`endif
               default:
                 dbm = dp;
             endcase

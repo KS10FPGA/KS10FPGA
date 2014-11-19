@@ -5,9 +5,6 @@
 // Brief
 //   RH11 Control and Status Register 2 (RHCS2)
 //
-// Details
-//   The module implements the RH11 CSR 2 Register.
-//
 // File
 //   rhcs2.v
 //
@@ -39,9 +36,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
-`include "rhcs2.vh"
 
-`include "../../ks10.vh"
+`include "rhcs1.vh"  
+`include "rhcs2.vh"
 
   module RHCS2(clk, rst,
                devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs2WRITE,

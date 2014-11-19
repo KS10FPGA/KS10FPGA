@@ -5,9 +5,6 @@
 // Brief
 //   RH11 Word Count Register (RHWC)
 //
-// Details
-//   The module implements the RH11 Word Count Register (RHWC)
-//
 // File
 //   rhwc.v
 //

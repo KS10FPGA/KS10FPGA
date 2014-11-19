@@ -42,9 +42,9 @@
 // RPCS1 Register Bits
 //
 
-`define rpCS1_DVA(bus)  (bus[11])       // Drive available
-`define rpCS1_FUN(bus)  (bus[5:1])      // Function
-`define rpCS1_GO(bus)   (bus[ 0])       // Go
+`define rpCS1_DVA(reg)  (reg[11])       // Drive available
+`define rpCS1_FUN(reg)  (reg[5:1])      // Function
+`define rpCS1_GO(reg)   (reg[ 0])       // Go
 
 //
 // RP/RM Functions

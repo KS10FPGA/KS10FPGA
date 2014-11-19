@@ -5,7 +5,23 @@
 begin
    case (PC[18:35])
      18'o000000: test = "DSKEA INIT";
+     18'o000440: test = "DSKEA STD";
+     18'o030000: test = "DSKEA BEGIN";
+     18'o030001: test = "DSKEA $START";
+     18'o030002: test = "DSKEA DIAGMN";
+     18'o030003: test = "DSKEA SYSEXR";
+     18'o030004: test = "DSKEA SFSTRT";
+     18'o030005: test = "DSKEA PFSTRT";
+     18'o030006: test = "DSKEA REENTR";
+     18'o030007: test = "DSKEA DDTSRT";
      18'o030010: test = "DSKEA BEGIN1";
+     18'o030011: test = "DSKEA SBINIT";
+     18'o030012: test = "DSKEA RETURN";
+     18'o030013: test = "DSKEA START1";
+     18'o030014: test = "DSKEA START2";
+     18'o030015: test = "DSKEA START3";
+     18'o030016: test = "DSKEA START4";
+     18'o030017: test = "DSKEA START5";
      18'o030637: test = "DSKEA STARTA";
      18'o030652: test = "DSKEA EBRCK0";
      18'o030663: test = "DSKEA EBRCK1";

@@ -5,9 +5,6 @@
 // Brief
 //   RH11 Control and Status Register 1 (RHCS1)
 //
-// Details
-//   The module implements the RH11 CSR 1 Register.
-//
 // File
 //   rhcs1.v
 //
@@ -41,11 +38,12 @@
 `default_nettype none
 
 `include "rhcs1.vh"
-`include "../../ks10.vh"
+`include "rhcs2.vh"
+`include "rpxx/rpcs1.vh"
 
   module RHCS1(clk, rst,
                devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE, rpATA,
-               cs1FUN, cs1GO, goCLR, intrDONE, rhBA, rhCS2, rhCS1);
+               goCLR, intrDONE, rhBA, rhCS2, rpCS1, rhCS1);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
@@ -55,12 +53,11 @@
    input  [ 0:35] devDATAI;                     // Device Data In
    input          rhcs1WRITE;                   // CS1 Write
    input          rpATA;                        // Attention
-   input  [ 5: 1] cs1FUN;                       // Function from selected drive
-   input          cs1GO;                        // Go from selected drive
    input          goCLR;                        // Go clear
    input          intrDONE;                     // Interrupt done
    input  [17: 0] rhBA;                         // rhBA Input
    input  [15: 0] rhCS2;                        // rhCS2 Input
+   input  [15: 0] rpCS1;                        // rpCS1 Input
    output [15: 0] rhCS1;                        // rhCS1 Output
 
    //
@@ -178,7 +175,7 @@
    //  Supplied via massbus
    //
 
-   wire cs1DVA = 1;
+   wire cs1DVA = `rpCS1_DVA(rpCS1);
 
    //
    // CS1 Port Select (PSEL)
@@ -208,7 +205,7 @@
    //
 
    reg cs1RDY;
-
+   //FIXME:
 
    //
    // CS1 Interrupt Enable (IE)
@@ -232,6 +229,24 @@
      end
 
    //
+   // CS1 Function (from RPxx)
+   //
+   // Trace
+   //  Supplied via massbus
+   //
+
+   wire [5:1] cs1FUN = `rpCS1_GO(rpCS1);
+   
+   //
+   // CS1 GO (from RPxx)
+   //
+   // Trace
+   //  Supplied via massbus
+   //
+
+   wire cs1GO = `rpCS1_GO(rpCS1);
+   
+   //
    // Build CS1 Register
    //
    // Trace
@@ -245,3 +260,4 @@
                         rhBA[17:16], cs1RDY, cs1IE, cs1FUN, cs1GO};
 
 endmodule
+ 

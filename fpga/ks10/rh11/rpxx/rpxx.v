@@ -47,24 +47,26 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+
 `include "rpxx.vh"
-`include "rh11.vh"
 `include "sd/sd.vh"
 `include "rpda.vh"
 `include "rpds.vh"
 `include "rpof.vh"
 `include "rpcs1.vh"
 `include "rper1.vh"
-`include "../ubabus.vh"
+`include "../rh11.vh"
+`include "../../ubabus.vh"
 
-module RPXX(clk, rst,
+module RPXX(clk, rst, clr,
             unitSEL, incSECTOR, rhCLR, ataCLR,
             devRESET, devADDRI, rhDATAI, rpCD, rpWP,
-            rpDA, rpDS, rpER1, rpLA, rpMR, rpDT, rpOF, rpDC, rpCC,
+            rpCS1, rpDA, rpDS, rpER1, rpLA, rpMR, rpDT, rpOF, rpDC, rpCC,
             rpFUN, rpGO, rpSDOP, rpSDREQ, rpSDACK, rpSDADDR);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
+   input          clr;                          // Clear
    input          unitSEL;                      // Unit Select
    input          incSECTOR;                    // Increment Sector
    input          rhCLR;                        // Clear
@@ -74,6 +76,7 @@ module RPXX(clk, rst,
    input  [35: 0] rhDATAI;                      // Data In
    input          rpCD;                         // Card Detect from SD Card
    input          rpWP;                         // Write Protect from SD Card
+   output [15: 0] rpCS1;                        // CS1 Register
    output [15: 0] rpDA;                         // DA  Register
    output [15: 0] rpDS;                         // DS  Register
    output [15: 0] rpER1;                        // ER1 Register
@@ -162,7 +165,7 @@ module RPXX(clk, rst,
    // Register Decode
    //
 
-   wire rpcsWRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
+   wire rpcs1WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
    wire rpdaWRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]);
    wire rperWRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
    wire rpofWRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]);
@@ -240,33 +243,19 @@ module RPXX(clk, rst,
    // RPxx Control/Status (RPCS1) Register
    //
 
-   reg       rpGO;
-   reg [5:1] rpFUN;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          begin
-             rpGO  <= 0;
-             rpFUN <= 0;
-          end
-        else
-          begin
-             if (rhCLR | devRESET)
-               begin
-                  rpGO  <= 0;
-                  rpFUN <= 0;
-               end
-             else if (rpcsWRITE & unitSEL & rpDRY & devLOBYTE)
-               begin
-                  rpFUN <= `rpCS1_FUN(rhDATAI);
-                  rpGO  <= `rpCS1_GO (rhDATAI);
-               end
-             else if (state == stateDONE)
-               rpGO <= 0;
-          end
-     end
-
+   wire [15:0] rpCS1;
+   RPCS1 CS1 (
+      .clk        (clk),
+      .rst        (rst),
+      .clrFUN     (clr),
+      .clrGO      (clr | state == stateDONE),
+      .devLOBYTE  (devLOBYTE),
+      .devHIBYTE  (devHIBYTE),
+      .devDATAI   (rhDATAI),
+      .rpcs1WRITE (rpcs1WRITE & unitSEL & rpDRY),
+      .rpCS1      (rpCS1)
+   );
+   
    //
    // RPxx Disk Address (RPDA) Register
    //
@@ -291,7 +280,7 @@ module RPXX(clk, rst,
           end
         else
           begin
-             if (rhCLR | devRESET | (state == statePRESET))
+             if (clr | (state == statePRESET))
                begin
                   rpTAS <= 0;
                   rpTA  <= 0;
@@ -351,7 +340,7 @@ module RPXX(clk, rst,
           end
         else
           begin
-             if (rhCLR | devRESET)
+             if (clr)
                begin
                   rpATA <= 0;
                   rpLST <= 0;
@@ -440,7 +429,7 @@ module RPXX(clk, rst,
              rpILF  <= 0;
           end
         else
-          if (rhCLR | devRESET | (state == statePRESET))
+          if (clr | (state == statePRESET))
             begin
                rpDCK  <= 0;
                rpUNS  <= 0;
@@ -485,7 +474,7 @@ module RPXX(clk, rst,
                  rpAOE <= 1;
 
                if (~rpDRY & unitSEL)
-                 if (rpcsWRITE | rperWRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)
+                 if (rpcs1WRITE | rperWRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)
                    rpRMR <= 1;
 
                if (devWRITE & unitSEL & devIO & (devDEV == rhDEV) & (devADDR >= undADDR[18:34]))
@@ -539,7 +528,7 @@ module RPXX(clk, rst,
           end
         else
           begin
-             if (rhCLR | devRESET | (state == statePRESET))
+             if (clr | (state == statePRESET))
                begin
                   rpF16 <= 0;
                   rpECI <= 0;
@@ -578,7 +567,7 @@ module RPXX(clk, rst,
           rpDCA <= 0;
         else
           begin
-             if (rhCLR | devRESET | (state == statePRESET))
+             if (clr | (state == statePRESET))
                rpDCA <= 0;
              else if (rpdcWRITE & unitSEL & rpDRY)
                begin
@@ -623,6 +612,9 @@ module RPXX(clk, rst,
 
    always @(posedge clk or posedge rst)
      begin
+
+        // FIXME - use synchronous clear
+        //
         if (rst | rhCLR | devRESET)
           begin
              state    <= stateIDLE;

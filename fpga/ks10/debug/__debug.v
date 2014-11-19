@@ -100,7 +100,9 @@
                if (PC == 18'o030057)
                  begin
                     $display("Test Completed.");
+`ifdef STOP_ON_COMPLETE		    
                     $stop;
+`endif		    
                  end
 
                `ifdef DEBUG_DSKAH
@@ -118,7 +120,8 @@
                `else
                     `include "debug_default.vh"
                `endif
-
+	       `include "debug_smmon.vh"
+		 
                $display("[%11.3f] %15s: PC is %06o", $time/1.0e3, test, PC);
 
             end

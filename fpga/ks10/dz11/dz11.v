@@ -139,15 +139,15 @@ module DZ11(clk,      rst,
    // Address Decoding
    //
 
-   wire csrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
-   wire csrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
-   wire rbufREAD  = devIO & devREAD  & (devDEV == dzDEV) & (devADDR == rbfADDR[18:34]);
-   wire lprWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR == lprADDR[18:34]);
-   wire tcrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
-   wire tcrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
-   wire msrREAD   = devIO & devREAD  & (devDEV == dzDEV) & (devADDR == msrADDR[18:34]);
-   wire tdrWRITE  = devIO & devWRITE & (devDEV == dzDEV) & (devADDR == tdrADDR[18:34]);
-   wire vectREAD  = devIO & devVECT  & (devDEV == dzDEV);
+   wire csrREAD   = devREAD  & devIO & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
+   wire csrWRITE  = devWRITE & devIO & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
+   wire rbufREAD  = devREAD  & devIO & (devDEV == dzDEV) & (devADDR == rbfADDR[18:34]);
+   wire lprWRITE  = devWRITE & devIO & (devDEV == dzDEV) & (devADDR == lprADDR[18:34]);
+   wire tcrREAD   = devREAD  & devIO & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
+   wire tcrWRITE  = devWRITE & devIO & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
+   wire msrREAD   = devREAD  & devIO & (devDEV == dzDEV) & (devADDR == msrADDR[18:34]);
+   wire tdrWRITE  = devWRITE & devIO & (devDEV == dzDEV) & (devADDR == tdrADDR[18:34]);
+   wire vectREAD  = devVECT  & devIO & (devDEV == dzDEV);
 
    //
    // Big-endian to little-endian data bus swap
@@ -182,7 +182,7 @@ module DZ11(clk,      rst,
    wire        rbufRDONE;
    wire        rbufSA;
    wire [ 2:0] scan;
-   wire [ 7:0] tcrLIN = `dzTCR_LIN(regTCR);
+   wire [ 7:0] tcrLIN   = `dzTCR_LIN(regTCR);
    wire [ 7:0] uartTXEMPTY;
    wire [ 7:0] uartTXLOAD;
    wire [ 7:0] uartRXFULL;

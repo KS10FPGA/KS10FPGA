@@ -45,7 +45,7 @@
 `include "uba/uba.vh"
 `include "uba/dz11/dz11.vh"
 `include "uba/rh11/rh11.vh"
-`include "uba/rh11/rpxx.vh"
+`include "uba/rh11/rpxx/rpxx.vh"
 
 module KS10(RESET_N, CLK50MHZ,
             // DZ11 Interfaces

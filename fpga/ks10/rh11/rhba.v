@@ -5,9 +5,6 @@
 // Brief
 //   RH11 Bus Address Register (RHBA)
 //
-// Details
-//   The module implements the RH11 Bus Address Register.
-//
 // File
 //   rhba.v
 //
@@ -41,6 +38,7 @@
 `default_nettype none
 
 `include "rhba.vh"
+`include "rhcs1.vh"
 
   module RHBA(clk, rst, clr,
               devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE,
@@ -80,11 +78,11 @@
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          rhBA[17:0] <= 0;
+          rhBA <= 0;
         else
           begin
              if (clr)
-               rhBA[17:0] <= 0;
+               rhBA <= 0;
              else
                begin
                   if (rhcs1WRITE & devHIBYTE & rhRDY)
