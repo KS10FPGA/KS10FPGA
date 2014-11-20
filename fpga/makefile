@@ -77,9 +77,33 @@ VVP          := vvp
 #DIAG         := DSDZA-RD00	# 2411.8 ms
 #DIAG         := DSRPA-RD00	#  ???.? ms FAIL
 
-PREFIX       := MAINDEC-10-
+DIAGBASE   := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX suffix
 
-DIAGBASE     := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX suffix
+#
+# Macro Definitions
+#
+#   -D ENABLE_TIMER	Enable 1 ms timer.  Slows simulation.  (See testbench)
+#   -D SIM_SMMON	Boot to SMMON instead of app (See testbench)
+#   -D SIM_CTY		Simulate the CTY (See testbench)
+#   -D STOP_ON_COMPLETE Stop simulation when test is complete (See debug.v)
+#   -D DEBUG_DSKAA	Diagnostic information (See debug.v)
+#   -D DEBUG=DSKAA	Diagnostic information (See debug.v)
+#
+
+# -D SIM_SMMON \
+
+DEBUG_ARGS := \
+	-D SIM_CTY \
+	-D STOP_ON_COMPLETE \
+	-D ENABLE_TIMER \
+	-D DEBUG_$(DIAGBASE) \
+	-D DEBUG=$(DIAGBASE)
+
+#
+#
+#
+
+PREFIX       := MAINDEC-10-
 
 DIAGFILES := \
         $(TESTFILES)/${PREFIX}DSKAA.SEQ \
@@ -160,15 +184,17 @@ RTL_SRC := \
 	$(RTL)/ks10/uba/dz11/dzscan.v \
 	$(RTL)/ks10/uba/dz11/dzuart.v \
 	$(RTL)/ks10/uba/dz11/dz11.v \
-	$(RTL)/ks10/uba/rh11/rpxx.v \
-	$(RTL)/ks10/uba/rh11/sdaddr.v \
 	$(RTL)/ks10/uba/rh11/rh11.v \
 	$(RTL)/ks10/uba/rh11/rhba.v \
+	$(RTL)/ks10/uba/rh11/rhdb.v \
 	$(RTL)/ks10/uba/rh11/rhwc.v \
 	$(RTL)/ks10/uba/rh11/rhcs1.v \
 	$(RTL)/ks10/uba/rh11/rhcs2.v \
-	$(RTL)/ks10/uba/rh11/sd/sd.v \
-	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
+	$(RTL)/ks10/uba/rh11/rpxx/sdaddr.v \
+	$(RTL)/ks10/uba/rh11/rpxx/sd/sd.v \
+	$(RTL)/ks10/uba/rh11/rpxx/sd/sdspi.v \
+	$(RTL)/ks10/uba/rh11/rpxx/rpcs1.v \
+	$(RTL)/ks10/uba/rh11/rpxx/rpxx.v \
 	$(RTL)/ks10/uba/uba.v \
 	$(RTL)/ks10/uba/ubasr.v \
 	$(RTL)/ks10/uba/ubapag.v \
@@ -180,6 +206,12 @@ RTL_SRC := \
 SIM_SRC := \
 	$(RTL)/esm/cy7c1460av33.v \
 	$(RTL)/esm/esm_testbench.v
+
+
+#MON_SRC := \
+#	$(TESTFILES)/MAINDEC-10-DSQDA-RD00.SEQ \
+#	$(TESTFILES)/MAINDEC-10-DSQDB-RD00.SEQ \
+#	$(TESTFILES)/MAINDEC-10-DSQDC-RD00.SEQ 
 
 #
 # Verilog inlcude files
@@ -197,6 +229,7 @@ INC := \
 	$(RTL)/ks10/cpu/debug_dskea.vh \
 	$(RTL)/ks10/cpu/debug_dsuba.vh \
 	$(RTL)/ks10/cpu/debug_dsdza.vh \
+	$(RTL)/ks10/cpu/debug_smmon.vh \
 	$(RTL)/ks10/cpu/debug_default.vh \
 	$(RTL)/ks10/cpu/pager.vh \
 	$(RTL)/ks10/cpu/pcflags.vh \
@@ -210,18 +243,19 @@ INC := \
 	$(RTL)/ks10/uba/dz11/dztcr.vh \
 	$(RTL)/ks10/uba/dz11/dztdr.vh \
 	$(RTL)/ks10/uba/dz11/dzuart.vh \
-	$(RTL)/ks10/uba/rh11/sd/sdspi.vh \
-	$(RTL)/ks10/uba/rh11/sd/sd.vh \
 	$(RTL)/ks10/uba/rh11/rhba.vh \
+	$(RTL)/ks10/uba/rh11/rhdb.vh \
 	$(RTL)/ks10/uba/rh11/rhwc.vh \
 	$(RTL)/ks10/uba/rh11/rhcs1.vh \
 	$(RTL)/ks10/uba/rh11/rhcs2.vh \
-	$(RTL)/ks10/uba/rh11/rpcs1.vh \
-	$(RTL)/ks10/uba/rh11/rpda.vh \
-	$(RTL)/ks10/uba/rh11/rpds.vh \
-	$(RTL)/ks10/uba/rh11/rper1.vh \
-	$(RTL)/ks10/uba/rh11/rpof.vh \
-	$(RTL)/ks10/uba/rh11/rpxx.vh \
+	$(RTL)/ks10/uba/rh11/rpxx/rpcs1.vh \
+	$(RTL)/ks10/uba/rh11/rpxx/rpda.vh \
+	$(RTL)/ks10/uba/rh11/rpxx/rpds.vh \
+	$(RTL)/ks10/uba/rh11/rpxx/rper1.vh \
+	$(RTL)/ks10/uba/rh11/rpxx/rpof.vh \
+	$(RTL)/ks10/uba/rh11/rpxx/rpxx.vh \
+	$(RTL)/ks10/uba/rh11/rpxx/sd/sdspi.vh \
+	$(RTL)/ks10/uba/rh11/rpxx/sd/sd.vh \
 	$(RTL)/ks10/uba/rh11/rh11.vh \
 	$(RTL)/ks10/uba/uba.vh \
 	$(RTL)/ks10/uba/ubasr.vh \
@@ -276,11 +310,14 @@ $(USEQ)/drom.dat: $(USEQ)/ks10.mcr $(USEQ)/drom.awk
 # Note special rule for force ssram.dat to rebuild
 #
 
+
+
 $(TESTFILES)/ssram.dat : FORCE
 FORCE:
 
-$(TESTFILES)/ssram.dat : $(TESTFILES)/${PREFIX}$(DIAG).SEQ $(TESTFILES)/ssram.awk makefile
-	awk -f $(TESTFILES)/ssram.awk -vfilename=${PREFIX}$(DIAG).SEQ $(TESTFILES)/${PREFIX}$(DIAG).SEQ > $(TESTFILES)/ssram.dat
+$(TESTFILES)/ssram.dat : $(MON_SRC) $(TESTFILES)/${PREFIX}$(DIAG).SEQ $(TESTFILES)/ssram.awk makefile
+	cat $(MON_SRC) $(TESTFILES)/${PREFIX}$(DIAG).SEQ | \
+	awk -f $(TESTFILES)/ssram.awk -vfilename=${PREFIX}$(DIAG).SEQ > $(TESTFILES)/ssram.dat
 
 $(ISE)/$(PROJECT).filter: makefile
 	@echo "Creating "$@ > /dev/stderr
@@ -337,11 +374,12 @@ $(ISE)/$(PROJECT)_impact.cmd: makefile
 
 #
 # FUSE
+#  The Xilinx simulator has a different switch for defining macros.  
+#  Pipe DEBUG_ARGS though sed
 #
 
 FUSE_ARGS := \
-        -d DEBUG_$(DIAGBASE) \
-	-d DEBUG=$(DIAGBASE) \
+        $(shell echo "$(DEBUG_ARGS)" | sed -e 's/-D/-d/g') \
         -d SMALL_MEM \
         -d XILINX \
 	-intstyle $(INTSTYLE) \
@@ -683,12 +721,12 @@ load: $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT)_impact.cmd
 
 $(TESTSUITE)/$(DIAG).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT) makefile
 	$(IVERILOG) -s testbench -o $@ $(SIM_SRC) $(RTL_SRC)   \
-	-D DEBUG_$(DIAGBASE) \
-	-D DEBUG=$(DIAGBASE) \
+	$(DEBUG_ARGS) \
 	-I rtl/ks10 \
 	-I rtl/ks10/uba \
 	-I rtl/ks10/uba/rh11 \
-	-I rtl/ks10/uba/rh11/sd \
+	-I rtl/ks10/uba/rh11/rpxx \
+	-I rtl/ks10/uba/rh11/rpxx/sd \
 	-I rtl/ks10/uba/dz11 \
 	-I rtl/ks10/uba/dz11/uart \
 	-I rtl/ks10/cpu \
@@ -814,7 +852,8 @@ rcsclean_rtl: clean_rtl
 	-rcsclean $(RTL)/ks10/utils/*
 	-rcsclean $(RTL)/ks10/uba/dz11/uart/*
 	-rcsclean $(RTL)/ks10/uba/dz11/*
-	-rcsclean $(RTL)/ks10/uba/rh11/sd/*
+	-rcsclean $(RTL)/ks10/uba/rh11/rpxx/*
+	-rcsclean $(RTL)/ks10/uba/rh11/rpxx/sd/*
 	-rcsclean $(RTL)/ks10/uba/rh11/*
 	-rcsclean $(RTL)/ks10/uba/*
 	-rcsclean $(RTL)/ks10/cpu/useq/*
