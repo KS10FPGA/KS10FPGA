@@ -42,9 +42,7 @@
 // RPDA Register Bits
 //
 
-`define rpDA_TAS(bus)   (bus[15:13])    // Track Address (spare)
-`define rpDA_TA(bus)    (bus[12: 8])    // Track Address
-`define rpDA_SAS(bus)   (bus[ 7: 5])    // Sector Address (spare)
-`define rpDA_SA(bus)    (bus[ 4: 0])    // Sector Address
+`define rpDA_TA(bus)    (bus[13: 8])    // Track Address
+`define rpDA_SA(bus)    (bus[ 5: 0])    // Sector Address
 
 `endif

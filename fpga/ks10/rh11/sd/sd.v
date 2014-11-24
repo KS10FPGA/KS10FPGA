@@ -49,10 +49,10 @@ module SD(clk, rst,
           sdMISO, sdMOSI, sdSCLK, sdCS,
           // Control
           sdOP, sdSECTADDR, sdWDCNT, sdBUSADDR,
-          // DMA Interface
-          dmaDATAI, dmaDATAO, dmaADDR, dmaREQ, dmaACK,
-          //
-          sdINCWD, sdINCSECT, sdSTAT,
+          // Data Interface
+          sdDATAI, sdDATAO, dmaREQ, dmaACK,
+          // 
+          sdINCWORD, sdINCSECT, sdSTAT,
           // Debug
           sdDEBUG);
 
@@ -70,40 +70,25 @@ module SD(clk, rst,
    input  [15:0] sdBUSADDR;             // SD Bus Address
 
    // DMA Interface
-   input  [0:35] dmaDATAI;              // DMA Data Input
-   output [0:35] dmaDATAO;              // DMA Data Output
-   output [0:35] dmaADDR;               // DMA Address
+   input  [0:35] sdDATAI;               // Data Input (Writes)
+   output [0:35] sdDATAO;               // Data Output (Reads)
    output        dmaREQ;                // DMA Request
    input         dmaACK;                // DMA Acknowledge
 
    // Outputs
-   output        sdINCWD;               // Increment Word Count
+   output        sdINCWORD;             // Increment Word Count
    output        sdINCSECT;             // Increment Sector
    output        sdSTAT;                // Status
    // Diagnostics
    output [0:63] sdDEBUG;               // Debug Output
 
-`ifdef broken
-   
-   //
-   // SD Commands:
-   // Sending leading 0xff just sends clocks with data parked.
-   //
-
-   wire [7:0] sdCMD0   [0:5] = {8'h40, 8'h00, 8'h00, 8'h00, 8'h00, 8'h95};
-   wire [7:0] sdCMD8   [0:5] = {8'h48, 8'h00, 8'h00, 8'h01, 8'haa, 8'h87};
-   wire [7:0] sdCMD13  [0:5] = {8'h4d, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
-   wire [7:0] sdACMD41 [0:5] = {8'h69, 8'h40, 8'h00, 8'h00, 8'h00, 8'hff};
-   wire [7:0] sdCMD55  [0:5] = {8'h77, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
-   wire [7:0] sdCMD58  [0:5] = {8'h7a, 8'h00, 8'h00, 8'h00, 8'h00, 8'hff};
-
    //
    // Timing wires
    //
 
-   wire [15:0] nCR  =    8;        // NCR from SD Spec
-   wire [15:0] nAC  = 1023;        // NAC from SD Spec
-   wire [15:0] nWR  =   20;        // NWR from SD Spec
+   localparam [15:0] nCR  =    8;        // NCR from SD Spec
+   localparam [15:0] nAC  = 1023;        // NAC from SD Spec
+   localparam [15:0] nWR  =   20;        // NWR from SD Spec
 
    //
    // States
@@ -175,11 +160,22 @@ module SD(clk, rst,
                     stateINFAIL  = 55,
                     stateRWFAIL  = 56;
 
+   //
+   // SD Commands:
+   //
+
+   reg [ 7:0] sdCMD0  [0:5];
+   reg [ 7:0] sdCMD8  [0:5];
+   reg [ 7:0] sdCMD13 [0:5];
+   reg [ 7:0] sdCMD17 [0:5];
+   reg [ 7:0] sdCMD24 [0:5];
+   reg [ 7:0] sdACMD41[0:5];
+   reg [ 7:0] sdCMD55 [0:5];
+   reg [ 7:0] sdCMD58 [0:5];
+   
    reg [ 2:0] spiOP;                    // SPI Op
    reg [ 7:0] spiTXD;                   // SPI Transmit Data
    reg [15:0] loopCNT;                  // Byte Counter
-   reg [ 7:0] sdCMD17[0:5];             // CMD17
-   reg [ 7:0] sdCMD24[0:5];             // CMD24
 
    reg [20:0] busFLAGS;                 // Bus Flags
 
@@ -193,17 +189,69 @@ module SD(clk, rst,
    reg [ 7:0] sdVAL;                    // Error Value
    reg [ 7:0] sdERR;                    // Error State
    reg        sdINCSECT;                // Increment Sector
-   reg        sdINCWD;                  // Increment Word
+   reg        sdINCWORD;                // Increment Word
    reg        rwDONE;                   // Read/Write Completed
    reg        readOP;                   // Read/Write Operation
    reg        dmaREQ;                   // DMA Request
-   reg [0:35] dmaDATAO;                 // DMA Data Out
 
+   reg [0:35] sdDATAO;                  // DMA Data Out
    reg [ 7:0] state;                    // Current State
 
    wire       spiDONE;                  // Asserted by SPI when done
    wire[ 7:0] spiRXD;                   // SPI Received Data
 
+   initial
+     begin
+	sdCMD0[0]   <= 8'h40 + 8'd00;
+	sdCMD0[1]   <= 8'h00;
+	sdCMD0[2]   <= 8'h00;
+	sdCMD0[3]   <= 8'h00;
+	sdCMD0[4]   <= 8'h00;
+	sdCMD0[5]   <= 8'h95;
+
+	sdCMD8[0]   <= 8'h40 + 8'd08;
+	sdCMD8[1]   <= 8'h00;
+	sdCMD8[2]   <= 8'h00;
+	sdCMD8[3]   <= 8'h01;
+	sdCMD8[4]   <= 8'haa;
+	sdCMD8[5]   <= 8'h87;
+	
+	sdCMD13[0]  <= 8'h40 + 8'd13;
+	sdCMD13[1]  <= 8'h00;
+	sdCMD13[2]  <= 8'h00;
+	sdCMD13[3]  <= 8'h00;
+	sdCMD13[4]  <= 8'h00;
+	sdCMD13[5]  <= 8'hff;
+	
+	sdCMD17[0]  <= 8'h40 + 8'd17;
+	sdCMD17[5]  <= 8'hff;
+	
+	sdCMD24[0]  <= 8'h40 + 8'd24;
+	sdCMD24[5]  <= 8'h00;
+	
+	sdACMD41[0] <= 8'h40 + 8'd41;
+	sdACMD41[1] <= 8'h40;
+	sdACMD41[2] <= 8'h00;
+	sdACMD41[3] <= 8'h00;
+	sdACMD41[4] <= 8'h00;
+	sdACMD41[5] <= 8'hff;
+	
+	sdCMD55[0]  <= 8'h40 + 8'd55;
+	sdCMD55[1]  <= 8'h00;
+	sdCMD55[2]  <= 8'h00;
+	sdCMD55[3]  <= 8'h00;
+	sdCMD55[4]  <= 8'h00;
+	sdCMD55[5]  <= 8'hff;
+	
+	sdCMD58[0] <= 8'h40 + 8'd58;
+	sdCMD58[1] <= 8'h00;
+	sdCMD58[2] <= 8'h00;
+	sdCMD58[3] <= 8'h00;
+	sdCMD58[4] <= 8'h00;
+	sdCMD58[5] <= 8'hff;
+
+     end
+   
    //
    // SD_STATE:
    // This process assumes a 50 MHz clock
@@ -220,30 +268,27 @@ module SD(clk, rst,
              wdCNT      <= 0;
              sectADDR   <= 0;
              sdINCSECT  <= 0;
-             sdINCWD    <= 0;
+             sdINCWORD  <= 0;
              loopCNT    <= 0;
 
-             dmaDATAO   <= 0;
+             sdDATAO    <= 0;
 
 
+	     sdCMD17[1] <= 8'h00;
+	     sdCMD17[2] <= 8'h00;
+	     sdCMD17[3] <= 8'h00;
+	     sdCMD17[4] <= 8'h00;
+	     
+	     sdCMD24[1] <= 8'h00;
+	     sdCMD24[2] <= 8'h00;
+	     sdCMD24[3] <= 8'h00;
+	     sdCMD24[4] <= 8'h00;
+	     
              readOP     <= 0;
 
              spiTXD     <= 0;
              abort      <= 0;
              rwDONE     <= 0;
-
-             sdCMD17[0] <= 0;
-             sdCMD17[1] <= 0;
-             sdCMD17[2] <= 0;
-             sdCMD17[3] <= 0;
-             sdCMD17[4] <= 0;
-             sdCMD17[5] <= 0;
-             sdCMD24[0] <= 0;
-             sdCMD24[1] <= 0;
-             sdCMD24[2] <= 0;
-             sdCMD24[3] <= 0;
-             sdCMD24[4] <= 0;
-             sdCMD24[5] <= 0;
              spiOP      <= `spiNOP;
              timeout    <= 499999;
              state      <= stateRESET;
@@ -988,12 +1033,10 @@ module SD(clk, rst,
 
                stateREAD00:
                  begin
-                    sdCMD17[0] <= 8'h51;
                     sdCMD17[1] <= sectADDR[31:24];
                     sdCMD17[2] <= sectADDR[23:16];
                     sdCMD17[3] <= sectADDR[15: 8];
                     sdCMD17[4] <= sectADDR[ 7: 0];
-                    sdCMD17[5] <= 8'hff;
                     loopCNT    <= 0;
                     spiOP      <= `spiCSL;
                     state      <= stateREAD01;
@@ -1140,10 +1183,10 @@ module SD(clk, rst,
                  begin
                     if (spiDONE)
                       begin
-                         spiOP           <= `spiTR;
-                         spiTXD          <= 8'hff;
-                         dmaDATAO[28:35] <= spiRXD;
-                         state           <= stateREAD05;
+                         spiOP          <= `spiTR;
+                         spiTXD         <= 8'hff;
+                         sdDATAO[28:35] <= spiRXD;
+                         state          <= stateREAD05;
                       end
                  end
 
@@ -1156,10 +1199,10 @@ module SD(clk, rst,
                  begin
                     if (spiDONE)
                       begin
-                         spiOP           <= `spiTR;
-                         spiTXD          <= 8'hff;
-                         dmaDATAO[20:27] <= spiRXD;
-                         state           <= stateREAD06;
+                         spiOP          <= `spiTR;
+                         spiTXD         <= 8'hff;
+                         sdDATAO[20:27] <= spiRXD;
+                         state          <= stateREAD06;
                       end
                  end
 
@@ -1172,10 +1215,10 @@ module SD(clk, rst,
                  begin
                     if (spiDONE)
                       begin
-                         spiOP           <= `spiTR;
-                         spiTXD          <= 8'hff;
-                         dmaDATAO[12:19] <= spiRXD;
-                         state           <= stateREAD07;
+                         spiOP          <= `spiTR;
+                         spiTXD         <= 8'hff;
+                         sdDATAO[12:19] <= spiRXD;
+                         state          <= stateREAD07;
                       end
                  end
 
@@ -1188,10 +1231,10 @@ module SD(clk, rst,
                  begin
                     if (spiDONE)
                       begin
-                         spiOP           <= `spiTR;
-                         spiTXD          <= 8'hff;
-                         dmaDATAO[ 4:11] <= spiRXD;
-                         state           <= stateREAD08;
+                         spiOP          <= `spiTR;
+                         spiTXD         <= 8'hff;
+                         sdDATAO[ 4:11] <= spiRXD;
+                         state          <= stateREAD08;
                       end
                  end
 
@@ -1204,10 +1247,10 @@ module SD(clk, rst,
                  begin
                     if (spiDONE)
                       begin
-                         spiOP           <= `spiTR;
-                         spiTXD          <= 8'hff;
-                         dmaDATAO[ 0: 3] <= spiRXD[7:4];
-                         state           <= stateREAD09;
+                         spiOP          <= `spiTR;
+                         spiTXD         <= 8'hff;
+                         sdDATAO[ 0: 3] <= spiRXD[7:4];
+                         state          <= stateREAD09;
                       end
                  end
 
@@ -1396,12 +1439,10 @@ module SD(clk, rst,
 
                stateWRITE00:
                  begin
-                    sdCMD24[0] <= 8'h58;
                     sdCMD24[1] <= sectADDR[31: 24];
                     sdCMD24[2] <= sectADDR[23: 16];
                     sdCMD24[3] <= sectADDR[15:  8];
                     sdCMD24[4] <= sectADDR[ 7:  0];
-                    sdCMD24[5] <= 8'hff;
                     loopCNT    <= 0;
                     spiOP      <= `spiCSL;
                     state      <= stateWRITE01;
@@ -1565,7 +1606,7 @@ module SD(clk, rst,
                     spiOP  <= `spiTR;
                     if (dmaREQ)
                       begin
-                         spiTXD <= dmaDATAI[4:11];
+                         spiTXD <= sdDATAI[4:11];
                       end
                     else
                       begin
@@ -1855,19 +1896,15 @@ module SD(clk, rst,
 
                stateWRCHK00:
                  begin
-                    sdCMD17[0] <= 8'h51;
                     sdCMD17[1] <= sectADDR[31:24];
                     sdCMD17[2] <= sectADDR[23:16];
                     sdCMD17[3] <= sectADDR[15: 8];
                     sdCMD17[4] <= sectADDR[ 7: 0];
-                    sdCMD17[5] <= 8'hff;
                     loopCNT    <= 0;
                     spiOP      <= `spiCSL;
                     state      <= stateWRCHK00;
                  end
-
-
-
+	       
                //
                // stateFINI:
                //  Send 8 clock cycles
@@ -1949,16 +1986,5 @@ module SD(clk, rst,
    //
 
    assign sdDEBUG = {sdERR, state, sdVAL, sdWRCNT, sdRDCNT, 24'b0};
-
-   //
-   // Create address
-   //
-
-   localparam [0:19] rdFLAGS = 20'b0001_0000_0000_0000_0000;
-   localparam [0:19] wrFLAGS = 20'b0000_0100_0000_0000_0000;
-
-   assign dmaADDR = (readOP) ? {rdFLAGS, sdBUSADDR} :  {wrFLAGS, sdBUSADDR};
-
-`endif
    
 endmodule

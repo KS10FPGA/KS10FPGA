@@ -5,10 +5,6 @@
 // Brief
 //   Secure Digital Card (SD) SPI Inteface Definitions
 //
-// Details
-//
-// Todo
-//
 // File
 //   sdspi.vh
 //

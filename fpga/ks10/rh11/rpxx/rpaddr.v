@@ -38,24 +38,24 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-module SDADDR(clk, rst, start, lastSURF, lastSECT,
-              rpDCA, rpTA, rpSA, sdADDR);
+module SDADDR(clk, rst, lastTRACK, lastSECTOR, start, rpDCA, rpTA, rpSA, sdADDR, done);
 
    input          clk;          // Clock
    input          rst;          // Reset
-   input          start;        //
-   input  [ 4: 0] lastSURF;     // Number of Surfaces
-   input  [ 4: 0] lastSECT;     // Number of Sectors
+   input  [ 5: 0] lastTRACK;    // Number of tracks
+   input  [ 5: 0] lastSECTOR;   // Number of sectors
+   input          start;        // Start calculation
    input  [ 9: 0] rpDCA;        // Cylinder
-   input  [ 4: 0] rpTA;         // Track
-   input  [ 4: 0] rpSA;         // Sector
+   input  [ 5: 0] rpTA;         // Track
+   input  [ 5: 0] rpSA;         // Sector
    output [31: 0] sdADDR;       // SD Sector Address
+   output         done;		// Calculation completed
 
    //
    // States
    //
 
-   parameter [2:0] stateIDLE  = 0,
+   parameter [1:0] stateIDLE  = 0,
                    stateTRACK = 1,
                    stateSECT  = 2,
                    stateWORD  = 3;
@@ -66,8 +66,8 @@ module SDADDR(clk, rst, start, lastSURF, lastSECT,
 
    reg [31:0] sum;
    reg [31:0] temp;
-   reg [ 2:0] state;
-   reg [ 4:0] loop;
+   reg [ 1:0] state;
+   reg [ 5:0] loop;
 
    always @(posedge clk or posedge rst)
      begin
@@ -87,7 +87,7 @@ module SDADDR(clk, rst, start, lastSURF, lastSECT,
                       begin
                          sum   <= 0;
                          temp  <= rpDCA;
-                         loop  <= lastSURF;
+                         loop  <= lastTRACK;
                          state <= stateTRACK;
                       end
                  end
@@ -97,7 +97,7 @@ module SDADDR(clk, rst, start, lastSURF, lastSECT,
                       begin
                          sum   <= 0;
                          temp  <= sum + rpTA;
-                         loop  <= lastSECT;
+                         loop  <= lastSECTOR;
                          state <= stateSECT;
                       end
                     else
@@ -129,5 +129,6 @@ module SDADDR(clk, rst, start, lastSURF, lastSECT,
      end
 
    assign sdADDR = sum;
-
+   assign done   = (state == stateIDLE);
+   
 endmodule

@@ -39,24 +39,15 @@
 
 `include "rpcs1.vh"
 
-  module RPCS1(clk, rst, clrFUN, clrGO,
-               devLOBYTE, devHIBYTE, devDATAI, rpcs1WRITE, rpCS1);
+  module RPCS1(clk, rst, clrFUN, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clrFUN;                       // Clear function
    input          clrGO;                        // Clear Go bit
-   input          devLOBYTE;                    // Device Low Byte
-   input          devHIBYTE;                    // Device High Byte
-   input  [ 0:35] devDATAI;                     // Device Data In
+   input  [35: 0] rpDATAI;                      // RH Data In
    input          rpcs1WRITE;                   // Write to CS1
-   output [15: 0] rpCS1;                        // rpCS1 Output
-
-   //
-   // Big-endian to little-endian data bus swap
-   //
-
-   wire [35:0] rhDATAI = devDATAI[0:35];
+   output [15: 0] rpCS1;                     	// rpCS1 Output
 
    //
    // RPCS1 Data Valid (DVA)
@@ -81,8 +72,8 @@
         else
           if (clrFUN)
             rpFUN <= 0;
-          else if (rpcs1WRITE & devLOBYTE)
-            rpFUN <= `rpCS1_FUN(rhDATAI);
+          else if (rpcs1WRITE)
+            rpFUN <= `rpCS1_FUN(rpDATAI);
      end
    
    //
@@ -90,18 +81,17 @@
    //
    // Trace
    //
-  
-   reg rpGO;
    
-    always @(posedge clk or posedge rst)
+   reg rpGO;
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           rpGO <= 0;
         else
           if (clrGO)
             rpGO <= 0;
-          else if (rpcs1WRITE & devLOBYTE)
-            rpGO <= `rpCS1_GO(rhDATAI);
+          else if (rpcs1WRITE)
+            rpGO <= `rpCS1_GO(rpDATAI);
      end
 
    //
