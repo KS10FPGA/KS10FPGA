@@ -52,7 +52,6 @@
 `define rpDS_DPR(bus)  (bus[ 8])        // Drive present
 `define rpDS_DRY(bus)  (bus[ 7])        // Drive ready
 `define rpDS_VV(bus)   (bus[ 6])        // Volume Valid
-//`define rpDS_SPARE 5:1                // Spare
 `define rpDS_OM(bus)   (bus[ 0])        // Offset mode
 
 `endif
