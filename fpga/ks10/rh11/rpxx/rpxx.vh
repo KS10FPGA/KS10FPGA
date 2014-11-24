@@ -70,94 +70,94 @@
 // RP04 Disk Parameters
 //
 
-`define rp04LASTSECT    6'd19           // 20 sectors per track numbered 0 to 19
-`define rp04LASTSURF    5'd18           // 19 tracks per cylinder numbered 0 to 18
-`define rp04LASTCYL     10'd410         // 411 Cylinders
+`define rp04LAST_SECTOR 6'd19           // Sector[0:19]
+`define rp04LAST_TRACK  6'd18           // Track[0:18]
+`define rp04LAST_CYL    10'd410         // Cylinder[0:410]
 
 //
 // RP05 Disk Parameters
 //
 
-`define rp05LASTSECT    6'd19           // 20 sectors per track numbered 0 to 19
-`define rp05LASTSURF    5'd18           // 19 tracks per cylinder numbered 0 to 18
-`define rp05LASTCYL     10'd410         // 411 Cylinders
+`define rp05LAST_SECTOR 6'd19           // Sector[0:19]
+`define rp05LAST_TRACK  6'd18           // Track[0:18]
+`define rp05LAST_CYL    10'd410         // Cylinder[0:410]
 
 //
 // RP06 Disk Parameters
 //
 
-`define rp06LASTSECT    6'd19           // 20 sectors per track numbered 0 to 19
-`define rp06LASTSURF    5'd18           // 19 tracks per cylinder numbered 0 to 18
-`define rp06LASTCYL     10'd814         // 815 Cylinders
+`define rp06LAST_SECTOR 6'd19           // Sector[0:19]
+`define rp06LAST_TRACK  6'd18           // Track[0:18]
+`define rp06LAST_CYL    10'd814         // Cylinder[0:814]
 
 //
 // RP07 Disk Parameters
 //
 
-`define rp07LASTSECT    6'd42           // 43 sectors per track numbered 0 to 42
-`define rp07LASTSURF    5'd31           // 31 tracks per cylinder numbered 0 to 18
-`define rp07LASTCYL     10'd629         // 630 Cylinders
+`define rp07LAST_SECTOR 6'd42           // Sector[0:42]
+`define rp07LAST_TRACK  6'd31           // Track[0:31]
+`define rp07LAST_CYL    10'd629         // Cylinder[0:629]
 
 //
 // RM03 Disk Parameters
 //
 
-`define rm03LASTSECT    6'd29           // 30 sectors per track numbered 0 to 29
-`define rm03LASTSURF    5'd4            // 5 tracks per cylinder numbered 0 to 4
-`define rm03LASTCYL     10'd822         // 823 Cylinders
+`define rm03LAST_SECTOR 6'd29           // Sector[0:29]
+`define rm03LAST_TRACK  6'd4            // Track[0:4]
+`define rm03LAST_CYL    10'd822         // Cylinder[0:822]
 
 //
 // RM05 Disk Parameters
 //
 
-`define rm05LASTSECT    6'd29           // 30 sectors per track numbered 0 to 29
-`define rm05LASTSURF    5'd18           // 19 tracks per cylinder numbered 0 to 18
-`define rm05LASTCYL     10'd822         // 823 Cylinders
+`define rm05LAST_SECTOR 6'd29           // Sector[0:29]
+`define rm05LAST_TRACK  6'd18           // Track[0:18]
+`define rm05LAST_CYL    10'd822         // Cylinder[0:822]
 
 //
 // RM80 Disk Parameters
 //
 
-`define rm80LASTSECT    6'd29           // 30 sectors per track numbered 0 to 29
-`define rm80LASTSURF    5'd13           // 14 tracks per cylinder numbered 0 to 13
-`define rm80LASTCYL     10'd558         // 559 Cylinders
+`define rm80LAST_SECTOR 6'd29           // Sector[0:29]
+`define rm80LAST_TRACK  6'd13           // Track[0:13]
+`define rm80LAST_CYL    10'd558         // Cylinder[0:558]
 
 //
-// getLASTSECT(type)
+// getLAST_SECTOR(type)
 //
 
-`define getLASTSECT(type) (((type) == `rpRP04) ? `rp04LASTSECT : \
-                           (((type) == `rpRP05) ? `rp05LASTSECT : \
-                            (((type) == `rpRP06) ? `rp06LASTSECT : \
-                             (((type) == `rpRP07) ? `rp07LASTSECT : \
-                              (((type) == `rpRM03) ? `rm03LASTSECT : \
-                               (((type) == `rpRM05) ? `rm05LASTSECT : \
-                                (((type) == `rpRM80) ? `rm80LASTSECT : \
-                                 `rp06LASTSECT)))))))
+`define getLAST_SECTOR(type) (((type) == `rpRP04) ? `rp04LAST_SECTOR : \
+                              (((type) == `rpRP05) ? `rp05LAST_SECTOR : \
+                               (((type) == `rpRP06) ? `rp06LAST_SECTOR : \
+                                (((type) == `rpRP07) ? `rp07LAST_SECTOR : \
+                                 (((type) == `rpRM03) ? `rm03LAST_SECTOR : \
+                                  (((type) == `rpRM05) ? `rm05LAST_SECTOR : \
+                                   (((type) == `rpRM80) ? `rm80LAST_SECTOR : \
+                                    `rp06LAST_SECTOR)))))))
 //
-// getLASTSURF(type)
-//
-
-`define getLASTSURF(type) (((type) == `rpRP04) ? `rp04LASTSURF : \
-                           (((type) == `rpRP05) ? `rp05LASTSURF : \
-                            (((type) == `rpRP06) ? `rp06LASTSURF : \
-                             (((type) == `rpRP07) ? `rp07LASTSURF : \
-                              (((type) == `rpRM03) ? `rm03LASTSURF : \
-                               (((type) == `rpRM05) ? `rm05LASTSURF : \
-                                (((type) == `rpRM80) ? `rm80LASTSURF : \
-                                 `rp06LASTSURF)))))))
-
-//
-// getLASTCYL(type)
+// getLAST_TRACK(type)
 //
 
-`define getLASTCYL(type) (((type) == `rpRP04) ? `rp04LASTCYL : \
-                          (((type) == `rpRP05) ? `rp05LASTCYL : \
-                           (((type) == `rpRP06) ? `rp06LASTCYL : \
-                            (((type) == `rpRP07) ? `rp07LASTCYL : \
-                             (((type) == `rpRM03) ? `rm03LASTCYL : \
-                              (((type) == `rpRM05) ? `rm05LASTCYL : \
-                               (((type) == `rpRM80) ? `rm80LASTCYL : \
-                                `rp06LASTCYL)))))))
+`define getLAST_TRACK(type) (((type) == `rpRP04) ? `rp04LAST_TRACK : \
+                             (((type) == `rpRP05) ? `rp05LAST_TRACK : \
+                              (((type) == `rpRP06) ? `rp06LAST_TRACK : \
+                               (((type) == `rpRP07) ? `rp07LAST_TRACK : \
+                                (((type) == `rpRM03) ? `rm03LAST_TRACK : \
+                                 (((type) == `rpRM05) ? `rm05LAST_TRACK : \
+                                  (((type) == `rpRM80) ? `rm80LAST_TRACK : \
+                                   `rp06LAST_TRACK)))))))
+
+//
+// getLAST_CYL(type)
+//
+
+`define getLAST_CYL(type) (((type) == `rpRP04) ? `rp04LAST_CYL : \
+                           (((type) == `rpRP05) ? `rp05LAST_CYL : \
+                            (((type) == `rpRP06) ? `rp06LAST_CYL : \
+                             (((type) == `rpRP07) ? `rp07LAST_CYL : \
+                              (((type) == `rpRM03) ? `rm03LAST_CYL : \
+                               (((type) == `rpRM05) ? `rm05LAST_CYL : \
+                                (((type) == `rpRM80) ? `rm80LAST_CYL : \
+                                 `rp06LAST_CYL)))))))
 
 `endif

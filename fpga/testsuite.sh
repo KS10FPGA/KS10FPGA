@@ -27,8 +27,16 @@ FILES="\
     DSKCF-RD00
     DSKDA-RD00
     DSKEA-RD00
+    DSKEB
+    DSKEC
+    DSKFA
     DSUBA-RD00
     DSDZA-RD00
+    DSRPA-RD00
+    DSMMA
+    DSMMB
+    DSMMC
+    DSMMD
     DSKCG
 "
 

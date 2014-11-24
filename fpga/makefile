@@ -83,19 +83,19 @@ DIAGBASE   := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XX
 # Macro Definitions
 #
 #   -D ENABLE_TIMER	Enable 1 ms timer.  Slows simulation.  (See testbench)
-#   -D SIM_SMMON	Boot to SMMON instead of app (See testbench)
+#   -D SIM_SMMON	Boot to SMMON instead of diagnostic app (See testbench)
 #   -D SIM_CTY		Simulate the CTY (See testbench)
 #   -D STOP_ON_COMPLETE Stop simulation when test is complete (See debug.v)
 #   -D DEBUG_DSKAA	Diagnostic information (See debug.v)
 #   -D DEBUG=DSKAA	Diagnostic information (See debug.v)
 #
 
-# -D SIM_SMMON \
+#	-D SIM_SMMON \
+#	-D SIM_CTY \
 
 DEBUG_ARGS := \
-	-D SIM_CTY \
-	-D STOP_ON_COMPLETE \
 	-D ENABLE_TIMER \
+	-D STOP_ON_COMPLETE \
 	-D DEBUG_$(DIAGBASE) \
 	-D DEBUG=$(DIAGBASE)
 
@@ -129,7 +129,15 @@ DIAGFILES := \
         $(TESTFILES)/${PREFIX}DSKCG.SEQ \
         $(TESTFILES)/${PREFIX}DSKDA-RD00.SEQ \
         $(TESTFILES)/${PREFIX}DSKEA-RD00.SEQ \
-        $(TESTFILES)/${PREFIX}DSDZA-RD00.SEQ
+        $(TESTFILES)/${PREFIX}DSKEB.SEQ \
+        $(TESTFILES)/${PREFIX}DSKEC.SEQ \
+        $(TESTFILES)/${PREFIX}DSMMA.SEQ \
+        $(TESTFILES)/${PREFIX}DSMMB.SEQ \
+        $(TESTFILES)/${PREFIX}DSMMC.SEQ \
+        $(TESTFILES)/${PREFIX}DSMMD.SEQ \
+        $(TESTFILES)/${PREFIX}DSDZA-RD00.SEQ \
+        $(TESTFILES)/${PREFIX}DSUBA-RD00.SEQ \
+        $(TESTFILES)/${PREFIX}DSRPA-RD00.SEQ
 
 #
 # Verilog source files
@@ -191,10 +199,15 @@ RTL_SRC := \
 	$(RTL)/ks10/uba/rh11/rhcs1.v \
 	$(RTL)/ks10/uba/rh11/rhcs2.v \
 	$(RTL)/ks10/uba/rh11/rpxx/sdaddr.v \
-	$(RTL)/ks10/uba/rh11/rpxx/sd/sd.v \
-	$(RTL)/ks10/uba/rh11/rpxx/sd/sdspi.v \
 	$(RTL)/ks10/uba/rh11/rpxx/rpcs1.v \
+	$(RTL)/ks10/uba/rh11/rpxx/rpda.v \
+	$(RTL)/ks10/uba/rh11/rpxx/rpdc.v \
+	$(RTL)/ks10/uba/rh11/rpxx/rpds.v \
+	$(RTL)/ks10/uba/rh11/rpxx/rper1.v \
+	$(RTL)/ks10/uba/rh11/rpxx/rpof.v \
 	$(RTL)/ks10/uba/rh11/rpxx/rpxx.v \
+	$(RTL)/ks10/uba/rh11/sd/sd.v \
+	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
 	$(RTL)/ks10/uba/uba.v \
 	$(RTL)/ks10/uba/ubasr.v \
 	$(RTL)/ks10/uba/ubapag.v \
@@ -207,11 +220,18 @@ SIM_SRC := \
 	$(RTL)/esm/cy7c1460av33.v \
 	$(RTL)/esm/esm_testbench.v
 
+#
+# If were simulating SMMON, add the SMMON files.  Otherwise don't.
+#
 
-#MON_SRC := \
-#	$(TESTFILES)/MAINDEC-10-DSQDA-RD00.SEQ \
-#	$(TESTFILES)/MAINDEC-10-DSQDB-RD00.SEQ \
-#	$(TESTFILES)/MAINDEC-10-DSQDC-RD00.SEQ 
+ifneq (, $(findstring SIM_SMMON, $(DEBUG_ARGS)))
+MON_SRC := \
+	$(TESTFILES)/MAINDEC-10-DSQDA-RD00.SEQ \
+	$(TESTFILES)/MAINDEC-10-DSQDB-RD00.SEQ \
+	$(TESTFILES)/MAINDEC-10-DSQDC-RD00.SEQ 
+else
+MON_SRC := 
+endif
 
 #
 # Verilog inlcude files
@@ -250,12 +270,13 @@ INC := \
 	$(RTL)/ks10/uba/rh11/rhcs2.vh \
 	$(RTL)/ks10/uba/rh11/rpxx/rpcs1.vh \
 	$(RTL)/ks10/uba/rh11/rpxx/rpda.vh \
+	$(RTL)/ks10/uba/rh11/rpxx/rpdc.vh \
 	$(RTL)/ks10/uba/rh11/rpxx/rpds.vh \
 	$(RTL)/ks10/uba/rh11/rpxx/rper1.vh \
 	$(RTL)/ks10/uba/rh11/rpxx/rpof.vh \
 	$(RTL)/ks10/uba/rh11/rpxx/rpxx.vh \
-	$(RTL)/ks10/uba/rh11/rpxx/sd/sdspi.vh \
-	$(RTL)/ks10/uba/rh11/rpxx/sd/sd.vh \
+	$(RTL)/ks10/uba/rh11/sd/sdspi.vh \
+	$(RTL)/ks10/uba/rh11/sd/sd.vh \
 	$(RTL)/ks10/uba/rh11/rh11.vh \
 	$(RTL)/ks10/uba/uba.vh \
 	$(RTL)/ks10/uba/ubasr.vh \
@@ -309,8 +330,6 @@ $(USEQ)/drom.dat: $(USEQ)/ks10.mcr $(USEQ)/drom.awk
 # Initialize the SSRAM with MAINDEC (simulation only)
 # Note special rule for force ssram.dat to rebuild
 #
-
-
 
 $(TESTFILES)/ssram.dat : FORCE
 FORCE:
@@ -726,7 +745,7 @@ $(TESTSUITE)/$(DIAG).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT) makefile
 	-I rtl/ks10/uba \
 	-I rtl/ks10/uba/rh11 \
 	-I rtl/ks10/uba/rh11/rpxx \
-	-I rtl/ks10/uba/rh11/rpxx/sd \
+	-I rtl/ks10/uba/rh11/sd \
 	-I rtl/ks10/uba/dz11 \
 	-I rtl/ks10/uba/dz11/uart \
 	-I rtl/ks10/cpu \
@@ -853,7 +872,7 @@ rcsclean_rtl: clean_rtl
 	-rcsclean $(RTL)/ks10/uba/dz11/uart/*
 	-rcsclean $(RTL)/ks10/uba/dz11/*
 	-rcsclean $(RTL)/ks10/uba/rh11/rpxx/*
-	-rcsclean $(RTL)/ks10/uba/rh11/rpxx/sd/*
+	-rcsclean $(RTL)/ks10/uba/rh11/sd/*
 	-rcsclean $(RTL)/ks10/uba/rh11/*
 	-rcsclean $(RTL)/ks10/uba/*
 	-rcsclean $(RTL)/ks10/cpu/useq/*
