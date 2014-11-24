@@ -56,7 +56,7 @@
 `include "rhcs2.vh"
 `include "rpxx/rpcs1.vh"
 `include "rpxx/rpxx.vh"
-`include "rpxx/sd/sd.vh"
+`include "sd/sd.vh"
 `include "../ubabus.vh"
 
 module RH11(clk,      rst,
@@ -134,6 +134,24 @@ module RH11(clk,      rst,
    localparam [18:35] ec2ADDR = rhADDR + `ec2OFFSET;     // Massbus Addr 17
 
    //
+   // Address Flags
+   //
+   
+   localparam [0:19] rdFLAGS = 20'b0001_0000_0000_0000_0000;
+   localparam [0:19] wrFLAGS = 20'b0000_0100_0000_0000_0000;
+
+   //
+   // Selector
+   //
+
+   function [7:0] select;
+      input [0:2] sel;
+      begin
+	 select = 1 << sel;
+      end
+   endfunction
+   
+   //
    // Device Address and Flags
    //
 
@@ -206,14 +224,20 @@ module RH11(clk,      rst,
    wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
+   // Signals
+   //
+   
+   wire sdINCWORD;				// Increment word
+   wire sdINCSECT;				// Increment Sector
+   
+   //
    // FIXME
    //
 
    wire setWCE = 0;     // FIXME
    wire setNEM = 0;     // FIXME
    wire setPGE = 0;     // FIXME
-   wire sdINCWD;
-
+   
    //
    // Transfer Error Clear
    //
@@ -266,7 +290,7 @@ module RH11(clk,      rst,
       .devHIBYTE  (devHIBYTE),
       .devDATAI   (devDATAI),
       .rhwcWRITE  (rhwcWRITE),
-      .rhINCWC    (sdINCWD),
+      .rhINCWC    (sdINCWORD),
       .rhWC       (rhWC)
    );
 
@@ -286,7 +310,7 @@ module RH11(clk,      rst,
       .rhcs1WRITE (rhcs1WRITE),
       .rhbaWRITE  (rhbaWRITE),
       .rhRDY      (rhRDY),
-      .rhINCBA    (sdINCWD & !rhBAI),
+      .rhINCBA    (sdINCWORD & !rhBAI),
       .rhBA       (rhBA)
    );
 
@@ -423,53 +447,29 @@ module RH11(clk,      rst,
    // Unit Select Decoder for Registers
    //
 
-   reg [7:0] rhUNITSEL;
-   always @*
-     begin
-        case (rhUNIT)
-          0: rhUNITSEL <= 8'b0000_0001;
-          1: rhUNITSEL <= 8'b0000_0010;
-          2: rhUNITSEL <= 8'b0000_0100;
-          3: rhUNITSEL <= 8'b0000_1000;
-          4: rhUNITSEL <= 8'b0001_0000;
-          5: rhUNITSEL <= 8'b0010_0000;
-          6: rhUNITSEL <= 8'b0100_0000;
-          7: rhUNITSEL <= 8'b1000_0000;
-        endcase
-     end
+   wire [7:0] rhUNITSEL = select(rhUNIT);
 
    //
    // Unit Select Decoder for Completion Monitor
    //
-
-   reg [7:0] sdUNITSEL;
-   always @*
-     begin
-        case (scan)
-          0: sdUNITSEL <= 8'b0000_0001;
-          1: sdUNITSEL <= 8'b0000_0010;
-          2: sdUNITSEL <= 8'b0000_0100;
-          3: sdUNITSEL <= 8'b0000_1000;
-          4: sdUNITSEL <= 8'b0001_0000;
-          5: sdUNITSEL <= 8'b0010_0000;
-          6: sdUNITSEL <= 8'b0100_0000;
-          7: sdUNITSEL <= 8'b1000_0000;
-        endcase
-     end
-
+   
+   wire [7:0] sdUNITSEL = select(scan);
+   
    //
    // Generate ACK for the correct disk drive
    //
-
-   assign rpSDACK[0] = ((scan == 0) & (state == stateACK));
-   assign rpSDACK[1] = ((scan == 1) & (state == stateACK));
-   assign rpSDACK[2] = ((scan == 2) & (state == stateACK));
-   assign rpSDACK[3] = ((scan == 3) & (state == stateACK));
-   assign rpSDACK[4] = ((scan == 4) & (state == stateACK));
-   assign rpSDACK[5] = ((scan == 5) & (state == stateACK));
-   assign rpSDACK[6] = ((scan == 6) & (state == stateACK));
-   assign rpSDACK[7] = ((scan == 7) & (state == stateACK));
-
+   
+   wire [ 7:0] rpSDACK = {
+      ((scan == 0) & (state == stateACK)),
+      ((scan == 1) & (state == stateACK)),
+      ((scan == 2) & (state == stateACK)),
+      ((scan == 3) & (state == stateACK)),
+      ((scan == 4) & (state == stateACK)),
+      ((scan == 5) & (state == stateACK)),
+      ((scan == 6) & (state == stateACK)),
+      ((scan == 7) & (state == stateACK))
+   };
+   
    //
    // Build Array 8 RP Register Sets
    //
@@ -488,12 +488,14 @@ module RH11(clk,      rst,
    wire [ 1:0] rpSDOP  [7:0];           // SD Operation
    wire [31:0] rpSDADDR[7:0];           // SD Sector Address
    wire [ 7:0] rpSDREQ;                 // RP is ready for SD
-   wire [ 7:0] rpSDACK;                 // SD is done with RP
 
    wire rpATA = (rpDS[0][15] | rpDS[1][15] | rpDS[2][15] | rpDS[3][15] |
                  rpDS[4][15] | rpDS[5][15] | rpDS[6][15] | rpDS[7][15]);
 
-
+   //
+   // Build rpSN Register Set
+   //
+   
    assign rpSN[0] = `rpSN0;
    assign rpSN[1] = `rpSN1;
    assign rpSN[2] = `rpSN2;
@@ -502,8 +504,6 @@ module RH11(clk,      rst,
    assign rpSN[5] = `rpSN5;
    assign rpSN[6] = `rpSN6;
    assign rpSN[7] = `rpSN7;
-
-   wire [7:0] sdINCSECT;
 
    //
    // Build Array 8 RPxx (RP06 in this case) disk drives
@@ -522,12 +522,10 @@ module RH11(clk,      rst,
               .rst      (rst),
               .clr      (rhCLR | devRESET),
               .unitSEL  (rhUNITSEL[i]),
-              .incSECTOR(sdINCSECT[i]),
-              .rhCLR    (rhCLR),
+              .incSECTOR(sdINCSECT),
               .ataCLR   (ataCLR[i]),
-              .devRESET (devRESET),
               .devADDRI (devADDRI),
-              .rhDATAI  (rhDATAI),
+              .devDATAI (devDATAI),
               .rpCD     (rh11CD),
               .rpWP     (rh11WP),
               .rpCS1    (rpCS1[i]),
@@ -553,9 +551,6 @@ module RH11(clk,      rst,
    //
 
 
-`ifdef BROKEN
-
-
    wire sdSTAT;
 
    SD uSD (
@@ -565,36 +560,23 @@ module RH11(clk,      rst,
       .sdMOSI    (rh11MOSI),
       .sdSCLK    (rh11SCLK),
       .sdCS      (rh11CS),
-      //.sdREQ     (rpSDREQ[sdUNITSEL]), // here
       .sdOP      (rpSDOP[sdUNITSEL]),
       .sdSECTADDR(rpSDADDR[sdUNITSEL]),
       .sdWDCNT   (rhWC),
+	   
       //here
       //.sdBUSADDR (sdBUSADDR),
-      .dmaDATAI  (devDATAI),
-      //.dmaDATAO  (devDATAO),   // here
-      //.dmaADDR   (devADDR),
-      .dmaREQ    (/*devREQO*/),  // fixme
-      .dmaACK    (devACKI),
-      .sdINCWD   (sdINCWD),
-      //.sdINCSECT (sdINCSECT != 8'b0),
-
+ 
+//      .sdDATAI   (sdDATAI),
+//      .sdDATAO   (sdDATAO),
+//      .dmaREQ    (devREQO),  // fixme
+//      .dmaACK    (devACKI),
+	   
+      .sdINCWORD (sdINCWORD),
+      .sdINCSECT (sdINCSECT),
       .sdSTAT    (sdSTAT),
       .sdDEBUG   (rh11DEBUG)
    );
-
-
-`else
-
-   // fixme
-   assign sdINCWD = 0;
-   assign devREQO = 0;
-   assign rh11MOSI = 0;
-   assign rh11SCLK = 0;
-   assign rh11CS = 0;
-   assign rh11DEBUG = 0;
-
-`endif
 
    //
    // Bus Mux and little-endian to big-endian bus swap.
@@ -701,6 +683,12 @@ module RH11(clk,      rst,
 
    assign devINTR = (rhIFF | (rhSC & rhRDY & rhIE)) ? rhINTR : 4'b0;
 
+   //
+   // Create address
+   // FIXME:
+
+   //wire devADDRO = (readOP) ? {rdFLAGS, sdBUSADDR} : {wrFLAGS, sdBUSADDR};
+   
 `ifndef SYNTHESIS
 
    //
@@ -737,7 +725,8 @@ module RH11(clk,      rst,
      begin
         if (nxmCount == 1)
           begin
-             $display("[%11.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o",  $time/1.0e3, devADDRO);
+             $display("[%11.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o",
+		      $time/1.0e3, devADDRO);
              $stop;
           end
      end
