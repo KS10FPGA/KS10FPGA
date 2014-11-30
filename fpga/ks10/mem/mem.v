@@ -155,7 +155,7 @@ module MEM(rst, clkT, clkR, clkPHS,
           end
         else
           begin
-             if (busIO & busPHYS & busWRITE & (busDEV == memDEV) & (busIOADDR == addrMSR))
+             if (busWRITE & busIO & busPHYS & (busDEV == memDEV) & (busIOADDR == addrMSR))
                begin
                   statPE <=  busDATAI[ 3];
                   statPF <=  busDATAI[12] & statPF;
@@ -193,7 +193,7 @@ module MEM(rst, clkT, clkR, clkPHS,
         // Memory Status Register
         //
 
-        if (busIO & busPHYS & busREAD & (busDEV == memDEV) & (busIOADDR == addrMSR))
+        if (busREAD & busIO & busPHYS & (busDEV == memDEV) & (busIOADDR == addrMSR))
           begin
              busACKO  <= 1;
              busDATAO <= statREG;

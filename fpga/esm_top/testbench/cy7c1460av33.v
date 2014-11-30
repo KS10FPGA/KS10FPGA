@@ -39,9 +39,9 @@
 //
 
 `ifdef SMALL_MEM
-`define no_words (32768  -1)            // 32k x 36 RAM
+`define no_words (  32*1024 -1)         // 32k x 36 RAM
 `else
-`define no_words (1048576  -1)          // 1M x 36 RAM
+`define no_words (1024*1024 -1)         // 1M x 36 RAM
 `endif
 
 module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
@@ -215,9 +215,12 @@ initial
      noti1_5    = 0;
      noti1_6    = 0;
      noti2      = 0;
-
-`include "../testbench/ssram.dat"
-
+`ifdef XILINX     
+     $readmemh("../rtl/testbench/ssram.dat", mem);
+`else 
+     $readmemh("rtl/testbench/ssram.dat", mem);
+`endif
+     
 end
 
    //

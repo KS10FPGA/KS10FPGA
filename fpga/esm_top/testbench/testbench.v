@@ -35,10 +35,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`undef SIMCTY
-`undef SIMSSMON
 `default_nettype none
 
+`define STRDEF 0:20*8-1
+  
 module testbench;
 
    //
@@ -111,20 +111,14 @@ module testbench;
    localparam [0:15] statNXMNXD   = 16'h0200;
    localparam [0:15] statGO       = 16'h0001;
 
-`ifdef SIMSSMON
-   localparam [0:35] valREGCIR    = 36'o254000_020000;
+`ifdef SIM_SMMON
+   localparam [0:35] valREGCIR    = 36'o254000_020000;	// SMMON
 `else
-// localparam [0:35] valREGCIR    = 36'o254000_030601;   // DSKAA-DSKAH
-   localparam [0:35] valREGCIR    = 36'o254000_030010;   // DSKAI-DSKAM,DSKCF, DSKEA
-// localparam [0:35] valREGCIR    = 36'o254000_030660;
-// localparam [0:35] valREGCIR    = 36'o254000_030620;   // DSKCG
-// localparam [0:35] valREGCIR    = 36'o254000_030622;
-// localparam [0:35] valREGCIR    = 36'o254000_020000;   // DSQDC
-
+   localparam [0:35] valREGCIR    = 36'o254000_030010;	// Basic diagnostics
 `endif
 
    //
-   // Register Addresses
+   // Register Addresses from Console Interface
    //
 
    localparam [7:0] addrREGADDR   = 8'h00;
@@ -133,6 +127,19 @@ module testbench;
    localparam [7:0] addrREGCIR    = 8'h18;
    localparam [7:0] addrRH11DEB   = 8'h30;
    localparam [7:0] addrVersion   = 8'h38;
+   
+   //
+   // KS10 Addresses
+   //
+
+   localparam [18:35] addrSTAT    = 18'o000031;
+   localparam [18:35] addrCIN     = 18'o000032;
+   localparam [18:35] addrCOUT    = 18'o000033;
+   localparam [18:35] addrKIN     = 18'o000034;
+   localparam [18:35] addrKOUT    = 18'o000035;
+   localparam [18:35] addrRHBASE  = 18'o000036;
+   localparam [18:35] addrBOOTDSK = 18'o000037;
+   localparam [18:35] addrBOOTMAG = 18'o000040;
 
    //
    // Task to write to KS10 memory
@@ -366,7 +373,73 @@ module testbench;
            end
       end
    endtask
+   
+   //
+   // This task polls the console output register.  When the VALID bit is
+   // asserted, a character is present.  When the character has been read, the
+   // valid bit is cleared.
+   //
 
+   task getchar;
+      input  integer fd;
+      input  [18:35] addr;
+      reg    [ 0:35] temp;
+      begin
+         conREADMEM(addr, temp);
+	 if (temp[27])
+	   begin
+	      if ((temp[28:35] >= 8'h20) && (temp[28:35] < 8'h7f))
+		begin
+		   $display("[%11.3f] KS10: CTY Output: \"%s\"", $time/1.0e3, temp[28:35]);
+		   $fwrite(fd, "%s", temp[28:35]);
+		end
+	      else if ((temp[28:35] == 8'h0a) || (temp[28:35] == 8'h0d))
+		begin
+		   $display("[%11.3f] KS10: CTY Output: \"<%02x>\"", $time/1.0e3, temp[28:35]);
+		   $fwrite(fd, "%s", temp[28:35]);
+		end
+	      else
+		begin
+		   $display("[%11.3f] KS10: CTY Output: \"<%02x>\"", $time/1.0e3, temp[28:35]);
+//		   $fwrite(fd, "<%02x>", temp[28:35]);
+		end
+	      $fflush(fd);
+	      conWRITEMEM(addr, 36'b0);
+	   end
+      end
+   endtask
+
+   //
+   // This task writes a string to the CTY input at a specific time
+   //
+   
+   task puts;
+      input [18:35]   addr;
+      input [ 0:35]   ch;
+      inout [`STRDEF] msg;
+      input time trigger;
+      begin
+	 if (($time > trigger) && (msg[0:7] != 0) && !ch[27])
+	   begin
+	      conWRITEMEM(addrCIN, {23'b0, 1'b1, msg[0:7]});
+	      $display("[%11.3f] KS10: CTY Input: \"%s\"", $time/1.0e3, msg[0:7]);
+	      msg = msg << 8;
+	   end
+      end
+   endtask
+
+   //
+   // This task left justifies a string
+   //
+   
+   task ljstr;
+      inout [`STRDEF] str;
+      begin
+	 while (str[0:7] == 0)
+	   str = str << 8;
+      end
+   endtask
+   
    //
    // Initialization
    //
@@ -431,6 +504,15 @@ module testbench;
    always @(negedge haltLED)
      if ($time != 0)
        $display("[%11.3f] KS10: CPU Unhalted", $time/1.0e3);
+   
+   //
+   // Notify about console interrupts
+   //
+   
+   always @(posedge conINTR)
+     begin
+        $display("[%11.3f] KS10: Console Interrupted", $time/1.0e3);
+     end
 
    //
    // Handle Startup.
@@ -454,28 +536,32 @@ module testbench;
           begin
 
              //
-             // Initialize Console Status
+             // Initialize Console Interface
              //
 
-             conWRITEMEM(18'o000031, 36'b0);
+             conWRITEMEM(addrSTAT,   36'o000000_000000);	// Maintenance Mode
+             conWRITEMEM(addrRHBASE, 36'o000000_000000);	// RH Base Address
 
              //
              // Initialize Other stuff
              //
 
-             conWRITEMEM(18'o000036, 36'b0);
-             conWRITEMEM(18'o025741, 36'b0);
-             conWRITEMEM(18'o026040, 36'b0);
-             conWRITEMEM(18'o030024, 36'b0);
-             conWRITEMEM(18'o030037, 36'b0);
-             conWRITEMEM(18'o061121, 36'b0);
-             conWRITEMEM(18'o061125, 36'b0);
+             conWRITEMEM(18'o025741, 36'o000000_000000);
+             conWRITEMEM(18'o026040, 36'o000000_000000);
+             conWRITEMEM(18'o030024, 36'o000000_000000);
+             conWRITEMEM(18'o030037, 36'o000000_000000);
+             conWRITEMEM(18'o061121, 36'o000000_000000);
+             conWRITEMEM(18'o061125, 36'o000000_000000);
 
              //
              // Start executing code
              //
 
+`ifdef ENABLE_TIMER	    
              conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN | statTIMEREN));
+`else
+             conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN));
+`endif
           end
      end
 
@@ -484,6 +570,7 @@ module testbench;
 
    initial
      begin
+	
         $dumpfile("c:\test.vcd");
 
 	//
@@ -504,70 +591,61 @@ module testbench;
    `endif
 `endif
 
-
-`ifdef SIMCTY
-
+`ifdef SIM_CTY
+  
    //
-   // File IO
+   // This task outputs a character to the console input register and then
+   // polls the VALID bit to know when the KS10 has picked up the character.
    //
 
+   task sendchar;
+      input [18:35] addr;
+      input [ 0: 7] data;
+      reg   [ 0:35] temp;
+      begin
+         conWRITEMEM(addr, {23'b0, 1'b1, data});
+         $display("[%11.3f] KS10: CTY Input: \"%s\"", $time/1.0e3, data);
+         conREADMEM(addr, temp);
+         while (temp[27])
+	   #100 conREADMEM(addr, temp);
+      end
+   endtask
+
+   reg [0:35] ch;
    integer cty_ofile;
-   integer cty_ifile;
+   integer kty_ofile;
 
+   reg [`STRDEF] msgSTD = "STD\n";
+   reg [`STRDEF] msgSWT = 16'h59_0d;			// Y<CR>      : response to "TTY SWITCH CONTROL ? - 0,S OR Y <CR> - "
+   reg [`STRDEF] msgSLH = 56'h30_30_30_31_30_30_0d;	// 000100<CR> : response to LH SWITCHES <# OR ?> -
+   reg [`STRDEF] msgSRH = 56'h30_30_30_30_30_30_0d;	// 000000<CR> : response to RH SWITCHES <# OR ?> -
+   
    initial
      begin
-        cty_ofile = $fopen("cty_out.txt", "w");
-        cty_ifile = $fopen("cty_in.txt",  "r");
-        #1500000;
-        $fclose(cty_ofile);
-        $fclose(cty_ifile);
-        $finish;
+	ch = 0;
+	cty_ofile = $fopen("cty_out.txt", "w");
+	kty_ofile = $fopen("kty_out.txt", "w");
+
+	ljstr(msgSTD);
+	ljstr(msgSWT);
+	ljstr(msgSLH);
+	ljstr(msgSRH);
+	
+	#200000;
+	forever
+	  begin
+	     getchar(cty_ofile, addrCOUT);
+	     getchar(kty_ofile, addrKOUT);
+	      
+             conREADMEM(addrCIN, ch);
+	     puts(addrCIN, ch, msgSTD,  6000000);
+	     puts(addrCIN, ch, msgSWT, 23000000);
+	     puts(addrCIN, ch, msgSLH, 26000000);
+	     puts(addrCIN, ch, msgSRH, 29000000);
+	     
+	  end
      end
-
-   //
-   //  CTY Output Processing
-   //
-   //  Note:
-   //   A Console Interrupt (conINTR asserted) may indicate that a
-   //   character is available to print or that a character can be
-   //   accepted by the KS10, or both, or neither.
-   //
-
-   reg [0:35] dataCOUT;
-   localparam [18:35] addrCOUT = 18'o000033;
-
-   always @(posedge clk or posedge reset)
-     begin
-        if (reset)
-          dataCOUT <= 36'b0;
-        else if (conINTR)
-          begin
-
-             //$display("[%11.3f] KS10: CPU has interrupted the console", $time/1.0e3);
-
-             //
-             // Read CTYOUT Memory Location
-             //
-
-             conREADMEM(addrCOUT, dataCOUT);
-
-             //
-             // Print character if character is available.
-             // Zero the flag when done printing.
-             //
-
-             if (dataCOUT[27])
-               begin
-                  if ((dataCOUT[28:35] >= 8'h20) && (dataCOUT[28:35] < 8'h7f))
-                    $display("[%11.3f] KS10: CTY Output: \"%s\"", $time/1.0e3, dataCOUT[28:35]);
-                  else
-                    $display("[%11.3f] KS10: CTY Output: \"%02x\"", $time/1.0e3, dataCOUT[28:35]);
-                  $fwrite(cty_ofile, "%s", dataCOUT[28:35]);
-                  conWRITEMEM(addrCOUT, 36'b0);
-               end
-          end
-     end
-
+   
 `endif
 
    //

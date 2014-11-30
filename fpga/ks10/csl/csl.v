@@ -272,19 +272,20 @@ module CSL(clk, rst,
    // Console Instruction Register Read
    //
 
-   wire cirREAD = busIO & busPHYS & busREAD & (busDEV == cslDEV) & (busADDR == addrCIR);
+   wire cirREAD = busREAD & busIO & busPHYS & (busDEV == cslDEV) & (busADDR == addrCIR);
 
    //
    // State Machine States
    //
 
-   localparam [0:2] stateIDLE      = 0,
-                    stateREADWAIT  = 1,
-                    stateREAD      = 2,
-                    stateWRITEWAIT = 3,
-                    stateWRITE     = 4,
-                    stateFAIL      = 5,
-                    stateDONE      = 6;
+   localparam [0:2] stateIDLE        = 0,
+                    stateREADWAITGO  = 1,
+                    stateREADWAITIO  = 2,
+                    stateREAD        = 3,
+                    stateWRITEWAITGO = 4,
+                    stateWRITEWAITIO = 5,
+                    stateWRITE       = 6,
+                    stateFAIL        = 7;
 
    //
    // Synchronize bus interface to KS10 clock
@@ -462,8 +463,8 @@ module CSL(clk, rst,
    // Read Decoder
    //
    // Details:
-   //  This device decodes reads from the Console Microcontroller and multiplexes
-   //  the registers.
+   //  This device decodes reads from the Console Microcontroller and
+   //  multiplexes the registers.
    //
    // Note:
    //  The console processor read operation is asynchronous.
@@ -474,7 +475,7 @@ module CSL(clk, rst,
 
    reg [15:0] dout;
 
-   always @(cslADDR or regADDR or regDATA or regSTAT or regCIR or regTEST or rh11DEBUG)
+   always @*
      begin
         case (cslADDR)
 
@@ -560,64 +561,67 @@ module CSL(clk, rst,
    // Read/Write State Machine
    //
    // Details
-   //  This creates 'backplane' bus cycles for the console to
-   //  read or write to KS10 IO or or KS10 memory.
+   //  This creates 'backplane' bus cycles for the console to read or write to
+   //  KS10 IO or or KS10 memory.
    //
-   //  Like the KS10, the upper bits of the address bus are
-   //  used to control read/write and IO/memory.
+   //  Like the KS10, the upper bits of the address bus are used to control
+   //  read/write and IO/memory.
    //
 
    reg [0:2] state;
-   reg [0:9] timeout;
+   reg [0:9] timer;
    wire cslGO = cslWR & (cslADDR == 6'h12) & cslBLE & conDATA[0];
+
+   localparam [0:9] timeout = 511;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             timeout <= 0;
-             state   <= stateIDLE;
+             timer <= 0;
+             state <= stateIDLE;
           end
         else
           case (state)
             stateIDLE:
-              begin
-                 if (cslGO & regADDR[3])
-                   state <= stateREADWAIT;
-                 else if (cslGO & regADDR[5])
-                   state <= stateWRITEWAIT;
-              end
-            stateREADWAIT:
+              if (cslGO & regADDR[3])
+                state <= stateREADWAITGO;
+              else if (cslGO & regADDR[5])
+                state <= stateWRITEWAITGO;
+            stateREADWAITGO:
               if (!cslGO)
                 begin
-                   timeout <= 0;
-                   state   <= stateREAD;
+                   timer <= 0;
+                   state <= stateREADWAITIO;
                 end
+            stateREADWAITIO:
+              if (!busIO)
+                state <= stateREAD;
             stateREAD:
-              if (timeout == 31)
+              if (timer == timeout)
                 state <= stateFAIL;
               else if (busACKI)
-                state <= stateDONE;
+                state <= stateIDLE;
               else
-                timeout <= timeout + 1'b1;
-            stateWRITEWAIT:
+                timer <= timer + 1'b1;
+            stateWRITEWAITGO:
               if (!cslGO)
                 begin
-                   timeout <= 0;
-                   state   <= stateWRITE;
+                   timer <= 0;
+                   state <= stateWRITEWAITIO;
                 end
+            stateWRITEWAITIO:
+              if (!busIO)
+                state <= stateWRITE;
             stateWRITE:
-              if (timeout == 31)
+              if (timer == timeout)
                 state <= stateFAIL;
               else if (busACKI)
-                state <= stateDONE;
-              else
-                timeout <= timeout + 1'b1;
-            stateFAIL:
-              state <= stateDONE;
-            stateDONE:
-              if (!cslGO)
                 state <= stateIDLE;
+              else
+                timer <= timer + 1'b1;
+            stateFAIL:
+              state <= stateIDLE;
           endcase
      end
 
@@ -626,7 +630,7 @@ module CSL(clk, rst,
    //
 
    reg [0:35] busDATAO;
-   always @(cirREAD or state or regCIR or regDATA)
+   always @*
      begin
         if (cirREAD)
           busDATAO = regCIR;
@@ -685,7 +689,7 @@ module CSL(clk, rst,
      begin
         if (state == stateFAIL)
           begin
-             $display("[%10.0f] CSL: Unacknowledged bus cycle.  Addr was %012o",
+             $display("[%11.3f] CSL: Unacknowledged bus cycle.  Addr was %012o",
                       $time/1.0e3, busADDRO);
              $stop;
           end

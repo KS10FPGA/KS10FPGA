@@ -87,7 +87,7 @@
 //      PPN : Physical Page Number.
 //
 // File
-//      ubapag.v
+//      ubapage.v
 //
 // Author
 //      Rob Doyle - doyle (at) cox (dot) net
@@ -120,34 +120,26 @@
 `include "uba.vh"
 `include "../ks10.vh"
 
-module UBAPAG(clk, rst,
-              // KS10 Bus Interface
-              busADDRI, busDATAI, busADDRO,
-	      pageWRITE, pageDATAO,
-              // Device Interface
-              devREQI, devADDRI,
-	      // Status
-	      pageNXM);
+module UBAPAGE(clk, rst, busREQO, busADDRI, busDATAI, busADDRO,
+	       pageWRITE, pageDATAO, pageADDRI, pageFLAGS, pageNXM);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   // KS10 Bus Interface
+   input          busREQO;                    	// IO Device Request In
    input  [ 0:35] busADDRI;                     // KS10 Bus Address In
    input  [ 0:35] busDATAI;                     // KS10 Bus Data In
    output [ 0:35] busADDRO;			// KS10 Bus Address Out (paged)
    input          pageWRITE;			// Page RAM write
    output [ 0:35] pageDATAO;			// Paging RAM Data Out
-   // Device Interface
-   input          devREQI;                    	// IO Device Request In
-   input  [ 0:35] devADDRI;                    	// IO Device Address In
-   // Status
-   output	  pageNXM;			// Page failure
+   input  [ 0:35] pageADDRI;                    // IO Device Address In
+   output [ 0: 3] pageFLAGS;			// Page flags
+   output	  pageNXM;			// Page NXM
 
    //
    // Paging addresses
    //
    
-   wire [0:5] virtPAGE = devADDRI[19:24];	// Address from device
+   wire [0:5] virtPAGE = pageADDRI[19:24];	// Address from device
    wire [0:5] pageADDR = busADDRI[30:35];	// Address from KS10
 
    //
@@ -168,8 +160,9 @@ module UBAPAG(clk, rst,
    //  ADDR Flags were already added by the device
    //
 
-   assign busADDRO = {devADDRI[0:15], pageRAM[virtPAGE][4:14], devADDRI[25:33]};
-
+   assign busADDRO  = {pageADDRI[0:15], pageRAM[virtPAGE][4:14], pageADDRI[25:33]};
+   assign pageFLAGS = pageRAM[virtPAGE][0:3];
+   
    //
    // NXM generated when:
    //   - UBA A17 not zero
@@ -177,9 +170,7 @@ module UBAPAG(clk, rst,
    //   - FIXME is NXM and NXD only set on NPR accesses???
    //
    
-   assign pageNXM = ((devREQI & devADDRI[18]) |
-		     (devREQI & !pageRAM[virtPAGE][3]));
+   assign pageNXM = ((busREQO & pageADDRI[18]) |
+		     (busREQO & !pageRAM[virtPAGE][3]));
 
-   
-		   
 endmodule
