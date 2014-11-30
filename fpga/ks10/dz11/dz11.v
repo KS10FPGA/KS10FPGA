@@ -126,6 +126,7 @@ module DZ11(clk,      rst,
 
    wire         devREAD   = `devREAD(devADDRI);         // Read Cycle
    wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle
+   wire         devPHYS   = `devPHYS(devADDRI);         // Physical reference
    wire         devIO     = `devIO(devADDRI);           // IO Cycle
    wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
    wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
@@ -139,15 +140,15 @@ module DZ11(clk,      rst,
    // Address Decoding
    //
 
-   wire csrREAD   = devREAD  & devIO & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
-   wire csrWRITE  = devWRITE & devIO & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
-   wire rbufREAD  = devREAD  & devIO & (devDEV == dzDEV) & (devADDR == rbfADDR[18:34]);
-   wire lprWRITE  = devWRITE & devIO & (devDEV == dzDEV) & (devADDR == lprADDR[18:34]);
-   wire tcrREAD   = devREAD  & devIO & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
-   wire tcrWRITE  = devWRITE & devIO & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
-   wire msrREAD   = devREAD  & devIO & (devDEV == dzDEV) & (devADDR == msrADDR[18:34]);
-   wire tdrWRITE  = devWRITE & devIO & (devDEV == dzDEV) & (devADDR == tdrADDR[18:34]);
-   wire vectREAD  = devVECT  & devIO & (devDEV == dzDEV);
+   wire vectREAD = devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == dzDEV);
+   wire csrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
+   wire csrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
+   wire rbufREAD = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == rbfADDR[18:34]);
+   wire lprWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == lprADDR[18:34]);
+   wire tcrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
+   wire tcrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
+   wire msrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == msrADDR[18:34]);
+   wire tdrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == tdrADDR[18:34]);
 
    //
    // Big-endian to little-endian data bus swap

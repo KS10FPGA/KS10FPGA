@@ -209,9 +209,12 @@ RTL_SRC := \
 	$(RTL)/ks10/uba/rh11/sd/sd.v \
 	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
 	$(RTL)/ks10/uba/uba.v \
+	$(RTL)/ks10/uba/ubamr.v \
 	$(RTL)/ks10/uba/ubasr.v \
-	$(RTL)/ks10/uba/ubapag.v \
+	$(RTL)/ks10/uba/ubaloop.v \
+	$(RTL)/ks10/uba/ubapage.v \
 	$(RTL)/ks10/uba/ubanxd.v \
+	$(RTL)/ks10/uba/ubatmo.v \
 	$(RTL)/ks10/uba/ubaintr.v \
 	$(RTL)/ks10/ks10.v \
 	$(RTL)/esm/esm_ks10.v
@@ -279,6 +282,7 @@ INC := \
 	$(RTL)/ks10/uba/rh11/sd/sd.vh \
 	$(RTL)/ks10/uba/rh11/rh11.vh \
 	$(RTL)/ks10/uba/uba.vh \
+	$(RTL)/ks10/uba/ubamr.vh \
 	$(RTL)/ks10/uba/ubasr.vh \
 	$(RTL)/ks10/uba/ubabus.vh \
 	$(RTL)/ks10/ks10.vh
@@ -876,7 +880,7 @@ rcsclean_rtl: clean_rtl
 	-rcsclean $(RTL)/ks10/uba/rh11/*
 	-rcsclean $(RTL)/ks10/uba/*
 	-rcsclean $(RTL)/ks10/cpu/useq/*
-	-find . -type f | grep -v RCS | grep -v archive | grep \\.v$$
+	-find rtl -type f | grep -v RCS | grep -v archive | grep \\.v$$
 
 #
 # Fetch design from RCS

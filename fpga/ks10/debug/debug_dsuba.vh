@@ -58,7 +58,7 @@ begin
      // following failure is expected.
      //
 
-     18'o031423:	
+     18'o031743:	
        begin
           $display("Test Completed.  Expected failure.");
           $stop;

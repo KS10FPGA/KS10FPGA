@@ -133,43 +133,44 @@ module RPXX(clk, rst, clr,
    // Timing Parameters
    //
 
-   localparam [24:0] fiveMS = 100000;           		// 5 milliseconds
-   localparam [24:0] oneUS  = 50;               		// 1 microsecond
+   localparam [24:0] fiveMS = 100000;                           // 5 milliseconds
+   localparam [24:0] oneUS  = 50;                               // 1 microsecond
 
    //
    // Lookup Drive Geometries
    //
 
-   localparam [5:0] lastSECTOR = `getLAST_SECTOR(drvTYPE);	// Sectors
-   localparam [5:0] lastTRACK  = `getLAST_TRACK(drvTYPE);	// Tracks (or surfaces or heads)
-   localparam [9:0] lastCYL    = `getLAST_CYL (drvTYPE);	// Cylinder
+   localparam [5:0] lastSECTOR = `getLAST_SECTOR(drvTYPE);      // Sectors
+   localparam [5:0] lastTRACK  = `getLAST_TRACK(drvTYPE);       // Tracks (or surfaces or heads)
+   localparam [9:0] lastCYL    = `getLAST_CYL (drvTYPE);        // Cylinder
 
    //
    // Device Address and Flags
    //
 
-   wire 	devREAD  = `devREAD(devADDRI);         		// Read Cycle
-   wire         devWRITE = `devWRITE(devADDRI);        		// Write Cycle
-   wire         devIO    = `devIO(devADDRI);           		// IO Cycle
-   wire [14:17] devDEV   = `devDEV(devADDRI);          		// Device Number
-   wire [18:34] devADDR  = `devADDR(devADDRI);         		// Device Address
+   wire         devREAD  = `devREAD(devADDRI);                  // Read Cycle
+   wire         devWRITE = `devWRITE(devADDRI);                 // Write Cycle
+   wire         devIO    = `devIO(devADDRI);                    // IO Cycle
+   wire         devPHYS  = `devPHYS(devADDRI);                  // Physical reference
+   wire [14:17] devDEV   = `devDEV(devADDRI);                   // Device Number
+   wire [18:34] devADDR  = `devADDR(devADDRI);                  // Device Address
 
    //
    // Register Decode
    //
 
-   wire rpcs1WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & unitSEL;
-   wire rpdaWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]) & unitSEL;
-   wire rper1WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]) & unitSEL;
-   wire rpofWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]) & unitSEL;
-   wire rpdcWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]) & unitSEL;
-   
+   wire rpcs1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & unitSEL;
+   wire rpdaWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]) & unitSEL;
+   wire rper1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]) & unitSEL;
+   wire rpofWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]) & unitSEL;
+   wire rpdcWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]) & unitSEL;
+
    //
    // Big-endian to little-endian data bus swap
    //
 
    wire [35:0] rpDATAI = devDATAI[0:35];
-  
+
    //
    // Function to calculate disk seek delay.  This is psudeo exponential.
    // The RP06 has 815 cyclinders
@@ -181,27 +182,27 @@ module RPXX(clk, rst, clr,
       reg   [9:0] diffCYL;              // Distance between Cylinders
       begin
          diffCYL = (newCYL > oldCYL) ? newCYL - oldCYL : oldCYL - newCYL;
-	 if (diffCYL[9])
-	   seekDELAY = fiveMS * 10;     // 50 ms (more than 512 cylinders away)
-	 else if (diffCYL[8])
+         if (diffCYL[9])
+           seekDELAY = fiveMS * 10;     // 50 ms (more than 512 cylinders away)
+         else if (diffCYL[8])
            seekDELAY = fiveMS *  9;     // 45 ms (more than 256 cylinders away)
-	 else if (diffCYL[7])
+         else if (diffCYL[7])
            seekDELAY = fiveMS *  8;     // 40 ms (more than 128 cylinders away)
-	 else if (diffCYL[6])
+         else if (diffCYL[6])
            seekDELAY = fiveMS *  7;     // 35 ms (more than  64 cylinders away)
-	 else if (diffCYL[5])
+         else if (diffCYL[5])
            seekDELAY = fiveMS *  6;     // 30 ms (more than  32 cylinders away)
-	 else if (diffCYL[4])
+         else if (diffCYL[4])
            seekDELAY = fiveMS *  5;     // 25 ms (more than  16 cylinders away)
-	 else if (diffCYL[3])
+         else if (diffCYL[3])
            seekDELAY = fiveMS *  4;     // 20 ms (more than   8 cylinders away)
-	 else if (diffCYL[2])
+         else if (diffCYL[2])
            seekDELAY = fiveMS *  3;     // 15 ms (more than   4 cylinders away)
-	 else if (diffCYL[1])
+         else if (diffCYL[1])
            seekDELAY = fiveMS *  2;     // 10 ms (more than   2 cylinders away)
-	 else if (diffCYL[0])
+         else if (diffCYL[0])
            seekDELAY = fiveMS *  1;     //  5 ms (more than   1 cylinders away)
-	 else
+         else
            seekDELAY = fiveMS *  0;     //  0 ms (same cylinder)
       end
    endfunction
@@ -249,13 +250,13 @@ module RPXX(clk, rst, clr,
    );
 
    //
-   // RPxx Disk Address Register (RPDA) 
+   // RPxx Disk Address Register (RPDA)
    //
 
    wire [15:0] rpDA;
    wire [ 5:0] rpSA = `rpDA_SA(rpDA);
    wire [ 5:0] rpTA = `rpDA_TA(rpDA);
-   
+
    RPDA DA (
       .clk         (clk),
       .rst         (rst),
@@ -269,24 +270,24 @@ module RPXX(clk, rst, clr,
    );
 
    //
-   // RPxx Disk Status Register (RPDS) 
+   // RPxx Disk Status Register (RPDS)
    //
 
    wire [15:0] rpDS;
    wire rpERR = `rpDS_ERR(rpDS);
    wire rpDRY = `rpDS_DRY(rpDS);
-   
+
    RPDS DS (
       .clk         (clk),
       .rst         (rst),
       .clr         (clr),
-      .ataCLR	   (ataCLR),
+      .ataCLR      (ataCLR),
       .lastSECTOR  (lastSECTOR),
       .lastTRACK   (lastTRACK),
       .lastCYL     (lastCYL),
       .rpCD        (rpCD),
       .rpWP        (rpWP),
-      .state	   (state),
+      .state       (state),
       .stateATA    (stateATA),
       .stateCLEAR  (stateCLEAR),
       .stateIDLE   (stateIDLE),
@@ -295,7 +296,7 @@ module RPXX(clk, rst, clr,
       .statePAKACK (statePAKACK),
       .stateRETURN (stateRETURN),
       .stateSEEKDLY(stateSEEKDLY),
-      .rpDA	   (rpDA),
+      .rpDA        (rpDA),
       .rpDC        (rpDC),
       .rpER1       (rpER1),
       .rpDS        (rpDS)
@@ -327,12 +328,12 @@ module RPXX(clk, rst, clr,
       .rpdcWRITE   (rpdcWRITE),
       .rper1WRITE  (rper1WRITE),
       .incSECTOR   (incSECTOR),
-      .rpDS  	   (rpDS),
-      .rpDA  	   (rpDA),
-      .rpDC  	   (rpDC),
-      .rpER1  	   (rpER1)
+      .rpDS        (rpDS),
+      .rpDA        (rpDA),
+      .rpDC        (rpDC),
+      .rpER1       (rpER1)
    );
- 
+
    //
    // RPxx Look Ahead (RPLA) Register
    //
@@ -366,7 +367,7 @@ module RPXX(clk, rst, clr,
 
    wire [15:0] rpDC;
    wire [ 9:0] rpDCA = `rpDC_DCA(rpDC);
-   
+
    RPDC DC (
       .clk        (clk),
       .rst        (rst),
@@ -386,7 +387,7 @@ module RPXX(clk, rst, clr,
    //
 
    wire [31:0] rpSDADDR;
-   
+
    SDADDR uSDADDR (
       .clk        (clk),
       .rst        (rst),
@@ -420,229 +421,229 @@ module RPXX(clk, rst, clr,
           end
         else
           begin
-	     if (clr)
-	       begin
-		  delay  <= 0;
-		  rpCCA  <= 0;
-		  rpSDOP <= `sdopNOP;
-		  state  <= stateIDLE;
-	       end
-	     else
+             if (clr)
+               begin
+                  delay  <= 0;
+                  rpCCA  <= 0;
+                  rpSDOP <= `sdopNOP;
+                  state  <= stateIDLE;
+               end
+             else
                case (state)
 
-		 //
-		 // stateIDLE
-		 //  Look for a function (command) to go process
-		 //
+                 //
+                 // stateIDLE
+                 //  Look for a function (command) to go process
+                 //
 
-		 stateIDLE:
+                 stateIDLE:
                    begin
                       if (cmdGO)
-			
-			//
-			// Decode Command (Function)
-			//
-			
-			case (rpDATAI[6:0])
-			  
-			  //
-			  // NOP Command
-			  //  Does nothing
-			  //
-			  
-			  `funNOP:
+
+                        //
+                        // Decode Command (Function)
+                        //
+
+                        case (rpDATAI[6:0])
+
+                          //
+                          // NOP Command
+                          //  Does nothing
+                          //
+
+                          `funNOP:
                             begin
                                if (rpERR)
-				 state <= stateILLFUN;
+                                 state <= stateILLFUN;
                                else
-				 state <= stateDONE;
+                                 state <= stateDONE;
                             end
-			  
-			  //
-			  // Unload Head Command
-			  //  On an RPxx disk, the seek command would cause the
-			  //  heads to retract. This command simulates head
-			  //  motion to cylinder 0.
-			  //
-			  
-			  `funUNLOAD:
+
+                          //
+                          // Unload Head Command
+                          //  On an RPxx disk, the seek command would cause the
+                          //  heads to retract. This command simulates head
+                          //  motion to cylinder 0.
+                          //
+
+                          `funUNLOAD:
                             begin
                                if (rpERR)
-				 state <= stateILLFUN;
+                                 state <= stateILLFUN;
                                else
-				 begin
+                                 begin
                                     tempCYL <= 0;
                                     delay   <= seekDELAY(0, rpCCA);
                                     state   <= stateSEEK;
-				 end
+                                 end
                             end
-			  
-			  //
-			  // Seek Command
-			  //  On an RPxx disk, the seek command causes the heads
-			  //  to move to the cylinder specified by the RPDC
-			  //  register.
-			  //
-			  //  This command simulates head motion to the new
-			  //  cylinder specified by the RPDC register
-			  //
-			  
-			  `funSEEK:
+
+                          //
+                          // Seek Command
+                          //  On an RPxx disk, the seek command causes the heads
+                          //  to move to the cylinder specified by the RPDC
+                          //  register.
+                          //
+                          //  This command simulates head motion to the new
+                          //  cylinder specified by the RPDC register
+                          //
+
+                          `funSEEK:
                             begin
                                if (rpERR)
-				 state <= stateILLFUN;
+                                 state <= stateILLFUN;
                                else if ((rpDCA <= lastCYL)  |
-					(rpTA <= lastTRACK) |
-					(rpSA <= lastSECTOR))
-				 begin
+                                        (rpTA <= lastTRACK) |
+                                        (rpSA <= lastSECTOR))
+                                 begin
                                     tempCYL <= rpDCA;
                                     delay   <= seekDELAY(rpDCA, rpCCA);
                                     state   <= stateSEEK;
-				 end
+                                 end
                                else
-				 state <= stateINVADDR;
+                                 state <= stateINVADDR;
                             end
-			  
-			  //
-			  // Recalibrate Command
-			  //  The seek command causes the heads to move to
-			  //  cylinder 0.
-			  //
-			  
-			  `funRECAL:
+
+                          //
+                          // Recalibrate Command
+                          //  The seek command causes the heads to move to
+                          //  cylinder 0.
+                          //
+
+                          `funRECAL:
                             begin
                                if (rpERR)
-				 state <= stateILLFUN;
+                                 state <= stateILLFUN;
                                else
-				 begin
+                                 begin
                                     tempCYL <= 0;
                                     delay   <= seekDELAY(0, rpCCA);
                                     state   <= stateSEEK;
-				 end
+                                 end
                             end
-			  
-			  //
-			  // Device Clear Command
-			  //
 
-			  `funCLEAR:
+                          //
+                          // Device Clear Command
+                          //
+
+                          `funCLEAR:
                             begin
                                state <= stateCLEAR;
                             end
-			  
-			  //
-			  // Port Release Command
-			  //  This command does nothing.
-			  //
-			  
-			  `funRELEASE:
+
+                          //
+                          // Port Release Command
+                          //  This command does nothing.
+                          //
+
+                          `funRELEASE:
                             begin
                                if (rpERR)
-				 state <= stateILLFUN;
+                                 state <= stateILLFUN;
                                else
-				 state <= stateDONE;
+                                 state <= stateDONE;
                             end
-			  
-			  //
-			  // Offset Comand
-			  //  On an RPxx disk, the offset command moves the
-			  //  heads off the track centerline as specfied by the
-			  //  RPOF register either toward the spindle or away
-			  //  from the spindle.
-			  //
-			  //  This command does nothing.
-			  //
-			  
-			  `funOFFSET:
+
+                          //
+                          // Offset Comand
+                          //  On an RPxx disk, the offset command moves the
+                          //  heads off the track centerline as specfied by the
+                          //  RPOF register either toward the spindle or away
+                          //  from the spindle.
+                          //
+                          //  This command does nothing.
+                          //
+
+                          `funOFFSET:
                             begin
                                state <= stateATA;
                             end
-			  
-			  //
-			  // Return to Centerline Command.
-			  //
-			  // On an RPxx disk, this command would return the
-			  // heads back to the centerline of the track.
-			  //
-			  // This command does nothing.
-			  //
-			  
-			  `funRETURN:
+
+                          //
+                          // Return to Centerline Command.
+                          //
+                          // On an RPxx disk, this command would return the
+                          // heads back to the centerline of the track.
+                          //
+                          // This command does nothing.
+                          //
+
+                          `funRETURN:
                             begin
                                if (rpERR)
-				 state <= stateILLFUN;
+                                 state <= stateILLFUN;
                                else
-				 state <= stateATA;
+                                 state <= stateATA;
                             end
-			  
-			  //
-			  // Read-in Preset Command
-			  //
-			  
-			  `funPRESET:
+
+                          //
+                          // Read-in Preset Command
+                          //
+
+                          `funPRESET:
                             begin
                                if (rpERR)
-				 state <= stateILLFUN;
+                                 state <= stateILLFUN;
                                else
-				 state <= statePRESET;
+                                 state <= statePRESET;
                             end
-			  
-			  //
-			  // Pack Acknowldege Command
-			  //
-			  
-			  `funPAKACK:
+
+                          //
+                          // Pack Acknowldege Command
+                          //
+
+                          `funPAKACK:
                             begin
                                if (rpERR)
-				 state <= stateILLFUN;
+                                 state <= stateILLFUN;
                                else
-				 state <= statePAKACK;
+                                 state <= statePAKACK;
                             end
-			  
-			  //
-			  // Search Command
-			  //
-			  //  On an RPxx disk, The search command compares the
-			  //  actual sector address with the requested sector
-			  //  address.  When they match, the adapter asserts
-			  //  the attention line.
-			  //
-			  //  This command behaves exactly the same as a seek
-			  //  command.
-			  //
-			  
-			  `funSEARCH:
+
+                          //
+                          // Search Command
+                          //
+                          //  On an RPxx disk, The search command compares the
+                          //  actual sector address with the requested sector
+                          //  address.  When they match, the adapter asserts
+                          //  the attention line.
+                          //
+                          //  This command behaves exactly the same as a seek
+                          //  command.
+                          //
+
+                          `funSEARCH:
                             begin
                                if (rpERR)
-				 state <= stateILLFUN;
+                                 state <= stateILLFUN;
                                else if ((rpDCA <= lastCYL)   |
-					(rpTA  <= lastTRACK) |
-					(rpSA  <= lastSECTOR))
-				 begin
+                                        (rpTA  <= lastTRACK) |
+                                        (rpSA  <= lastSECTOR))
+                                 begin
                                     tempCYL <= rpDCA;
                                     delay   <= seekDELAY(rpDCA, rpCCA);
                                     state   <= stateSEEK;
-				 end
+                                 end
                                else
-				 state <= stateINVADDR;
+                                 state <= stateINVADDR;
                             end
-			  
+
 ////////////////////////////////////////////////////////////////////////////////
 
-			  //
-			  // Write Check Commands
-			  //
-			  
-			  `funWRCHK,
-   		          `funWRCHKH:
+                          //
+                          // Write Check Commands
+                          //
+
+                          `funWRCHK,
+                          `funWRCHKH:
                             begin
-			       if (rpERR)
-				 state <= stateILLFUN;
-			       else
-				 begin
+                               if (rpERR)
+                                 state <= stateILLFUN;
+                               else
+                                 begin
                                     if (simTIME)
                                       begin
-					 delay <= fiveMS;
+                                         delay <= fiveMS;
                                       end
                                     else
                                   begin
@@ -650,230 +651,230 @@ module RPXX(clk, rst, clr,
                                   end
                                     rpSDOP <= `sdopWRCHK;
                                     state  <= stateROTDLY;
-				 end
+                                 end
                             end
-			  
-			  //
-			  // Write Commands
-			  //
-			  
-			  `funWRITE,
-			  `funWRITEH:
+
+                          //
+                          // Write Commands
+                          //
+
+                          `funWRITE,
+                          `funWRITEH:
                             begin
                                if (rpERR)
-				 state <= stateILLFUN;
+                                 state <= stateILLFUN;
                                else if (rpWP)
-				 state <= stateWRLOCK;
+                                 state <= stateWRLOCK;
                                else
-				 begin
+                                 begin
                                     if (simTIME)
                                       begin
-					 delay <= fiveMS;
+                                         delay <= fiveMS;
                                       end
                                     else
                                       begin
-					 delay <= oneUS;
+                                         delay <= oneUS;
                                       end
                                     rpSDOP <= `sdopWR;
                                     state  <= stateROTDLY;
-				 end
+                                 end
                             end
-			  
-			  //
-			  // Read Commands
-			  //
 
-			  `funREAD,
-   		          `funREADH:
+                          //
+                          // Read Commands
+                          //
+
+                          `funREAD,
+                          `funREADH:
                             begin
                                if (rpERR)
-				 state <= stateILLFUN;
+                                 state <= stateILLFUN;
                                else
-				 begin
+                                 begin
                                     if (simTIME)
                                       begin
-					 delay <= fiveMS;
+                                         delay <= fiveMS;
                                       end
                                     else
                                       begin
-					 delay <= oneUS;
+                                         delay <= oneUS;
                                       end
                                     rpSDOP <= `sdopRD;
                                     state  <= stateROTDLY;
-				 end
+                                 end
                             end
-			  
-			  //
-			  // Functions that don't exist
-			  //
-			  
-			  default:
+
+                          //
+                          // Functions that don't exist
+                          //
+
+                          default:
                             begin
                                state <= stateILLFUN;
                             end
-			endcase
+                        endcase
                    end
 
-		 //
-		 // stateSEEK
-		 //  This state starts the SD Address Calculation
-		 //
+                 //
+                 // stateSEEK
+                 //  This state starts the SD Address Calculation
+                 //
 
-		 stateSEEK:
+                 stateSEEK:
                    begin
                       state <= stateSEEKDLY;
                    end
 
-		 //
-		 // stateSEEKDLY
-		 //
-		 //  Simulate Seek Timing on Seek Commands.  Update Current
-		 //  Cylinder Address after delay.
-		 //
-		 
-		 stateSEEKDLY:
+                 //
+                 // stateSEEKDLY
+                 //
+                 //  Simulate Seek Timing on Seek Commands.  Update Current
+                 //  Cylinder Address after delay.
+                 //
+
+                 stateSEEKDLY:
                    begin
                       if (delay == 0)
-			begin
+                        begin
                            rpCCA <= tempCYL;
                            state <= stateATA;
-			end
+                        end
                       else
-			delay <= delay - 1'b1;
+                        delay <= delay - 1'b1;
                    end
-		 
-		 //
-		 // stateROTDLY:
-		 //
-		 //  Simulate Rotation Latency on Reads/Writes
-		 //
-		 
-		 stateROTDLY:
+
+                 //
+                 // stateROTDLY:
+                 //
+                 //  Simulate Rotation Latency on Reads/Writes
+                 //
+
+                 stateROTDLY:
                    begin
                       if (delay == 0)
-			state <= stateWAITSD;
+                        state <= stateWAITSD;
                       else
-			delay <= delay - 1'b1;
+                        delay <= delay - 1'b1;
                    end
-		 
-		 //
-		 // stateWAITSD:
-		 //
-		 //  Wait for SD to handle Read/Write operaton
-		 //
-		 
-		 stateWAITSD:
+
+                 //
+                 // stateWAITSD:
+                 //
+                 //  Wait for SD to handle Read/Write operaton
+                 //
+
+                 stateWAITSD:
                    begin
                       if (rpSDACK)
-			begin
+                        begin
                            state <= stateDONE;
-			end
+                        end
                    end
-		 
-		 //
-		 // stateCLEAR
-		 //
-		 //  This state modifies the bits that occur when Clear Command
-		 //  function is executed.
-		 //
 
-		 stateCLEAR:
-                   state <= stateDONE;
-		 
-		 //
-		 // statePRESET
-		 //
-		 //  This state modifies the bits that occur when Preset Command
-		 //  function is executed.
-		 //
-		 
-		 statePRESET:
-                   state <= stateDONE;
-		 
-		 //
-		 // stateOFFSET
-		 //
-		 //  This state modifies the bits that occur when Offset Command
-		 //  function is executed.
-		 //
+                 //
+                 // stateCLEAR
+                 //
+                 //  This state modifies the bits that occur when Clear Command
+                 //  function is executed.
+                 //
 
-		 stateOFFSET:
+                 stateCLEAR:
                    state <= stateDONE;
-		 
-		 //
-		 // stateRETURN
-		 // This state modifies the bits that occur
-		 // when Return Command function is executed.
-		 //
-		 
-		 stateRETURN:
-                   state <= stateDONE;
-		 
-		 //
-		 // statePAKACK
-		 // This state modifies the bits that occur
-		 // when Pack Acknowledge Command function
-		 // is executed.
-		 //
-		 
-		 statePAKACK:
-                   state <= stateDONE;
-		 
-		 //
-		 // stateILLFUN
-		 // This state modifies the bits that occur
-		 // when an illegal function is executed.
-		 //
-		 
-		 stateILLFUN:
-                   state <= stateDONE;
-		 
-		 //
-		 // stateINVADDR
-		 // This state modifies the bits that occur
-		 // when an invalid seek error is provided.
-		 //
 
-		 stateINVADDR:
-                   state <= stateDONE;
-		 
-		 //
-		 // stateWRLOCK
-		 // This state modifies the bits that occur
-		 // when a write-locked disk is written to
-		 //
+                 //
+                 // statePRESET
+                 //
+                 //  This state modifies the bits that occur when Preset Command
+                 //  function is executed.
+                 //
 
-		 stateWRLOCK:
+                 statePRESET:
                    state <= stateDONE;
-		 
-		 //
-		 // stateATA
-		 // This state sets the RPDS[ATA] bit.
-		 //
-		 
-		 stateATA:
+
+                 //
+                 // stateOFFSET
+                 //
+                 //  This state modifies the bits that occur when Offset Command
+                 //  function is executed.
+                 //
+
+                 stateOFFSET:
                    state <= stateDONE;
-		 
-		 //
-		 // stateDONE:
-		 //  Update the disk state
-		 //
-		 
-		 stateDONE:
+
+                 //
+                 // stateRETURN
+                 // This state modifies the bits that occur
+                 // when Return Command function is executed.
+                 //
+
+                 stateRETURN:
+                   state <= stateDONE;
+
+                 //
+                 // statePAKACK
+                 // This state modifies the bits that occur
+                 // when Pack Acknowledge Command function
+                 // is executed.
+                 //
+
+                 statePAKACK:
+                   state <= stateDONE;
+
+                 //
+                 // stateILLFUN
+                 // This state modifies the bits that occur
+                 // when an illegal function is executed.
+                 //
+
+                 stateILLFUN:
+                   state <= stateDONE;
+
+                 //
+                 // stateINVADDR
+                 // This state modifies the bits that occur
+                 // when an invalid seek error is provided.
+                 //
+
+                 stateINVADDR:
+                   state <= stateDONE;
+
+                 //
+                 // stateWRLOCK
+                 // This state modifies the bits that occur
+                 // when a write-locked disk is written to
+                 //
+
+                 stateWRLOCK:
+                   state <= stateDONE;
+
+                 //
+                 // stateATA
+                 // This state sets the RPDS[ATA] bit.
+                 //
+
+                 stateATA:
+                   state <= stateDONE;
+
+                 //
+                 // stateDONE:
+                 //  Update the disk state
+                 //
+
+                 stateDONE:
                    begin
                       rpSDOP <= `sdopNOP;
                       state  <= stateIDLE;
                    end
-		 
-		 //
-		 // Everything else
-		 //
-		 
-		 default:
+
+                 //
+                 // Everything else
+                 //
+
+                 default:
                    state <= stateIDLE;
-		 
+
                endcase
-	  end
+          end
      end
 
    assign rpCC    = {6'b0, rpCCA};

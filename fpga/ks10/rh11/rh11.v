@@ -136,7 +136,7 @@ module RH11(clk,      rst,
    //
    // Address Flags
    //
-   
+
    localparam [0:19] rdFLAGS = 20'b0001_0000_0000_0000_0000;
    localparam [0:19] wrFLAGS = 20'b0000_0100_0000_0000_0000;
 
@@ -147,16 +147,17 @@ module RH11(clk,      rst,
    function [7:0] select;
       input [0:2] sel;
       begin
-	 select = 1 << sel;
+         select = 1 << sel;
       end
    endfunction
-   
+
    //
    // Device Address and Flags
    //
 
    wire         devREAD   = `devREAD(devADDRI);         // Read Cycle
    wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle
+   wire         devPHYS   = `devPHYS(devADDRI);         // Physical reference
    wire         devIO     = `devIO(devADDRI);           // IO Cycle
    wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
    wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
@@ -170,52 +171,52 @@ module RH11(clk,      rst,
    // Address Decoding
    //
 
-   wire rhcs1WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
-   wire rhcs1READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
-   wire rhwcWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  wcADDR[18:34]);
-   wire rhwcREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  wcADDR[18:34]);
-   wire rhbaWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  baADDR[18:34]);
-   wire rhbaREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  baADDR[18:34]);
-   wire rpdaWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]);
-   wire rpdaREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]);
-   
-   wire rhcs2WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs2ADDR[18:34]);
-   wire rhcs2READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == cs2ADDR[18:34]);
-   wire rpdsWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dsADDR[18:34]);
-   wire rpdsREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  dsADDR[18:34]);
-   wire rper1WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
-   wire rper1READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
-   wire rhasWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
-   wire rhasREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
+   wire vectREAD   = devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == rhDEV);
 
-   wire rplaWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
-   wire rplaREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
-   wire rhdbWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dbADDR[18:34]);
-   wire rhdbREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  dbADDR[18:34]);
-   wire rpmrWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]);
-   wire rpmrREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]);
-   wire rpdtWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dtADDR[18:34]);
-   wire rpdtREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  dtADDR[18:34]);
+   wire rhcs1READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
+   wire rhcs1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
+   wire rhwcREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  wcADDR[18:34]);
+   wire rhwcWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  wcADDR[18:34]);
+   wire rhbaREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  baADDR[18:34]);
+   wire rhbaWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  baADDR[18:34]);
+   wire rpdaREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]);
+   wire rpdaWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]);
 
-   wire rpsnWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  snADDR[18:34]);
-   wire rpsnREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  snADDR[18:34]);
-   wire rpofWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]);
-   wire rpofREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]);
-   wire rpdcWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]);
-   wire rpdcREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]);
-   wire rpccWRITE  = devWRITE & devIO & (devDEV == rhDEV) & (devADDR ==  ccADDR[18:34]);
-   wire rpccREAD   = devREAD  & devIO & (devDEV == rhDEV) & (devADDR ==  ccADDR[18:34]);
+   wire rhcs2READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs2ADDR[18:34]);
+   wire rhcs2WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs2ADDR[18:34]);
+   wire rpdsREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dsADDR[18:34]);
+   wire rpdsWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dsADDR[18:34]);
+   wire rper1READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
+   wire rper1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
+   wire rhasREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
+   wire rhasWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
 
-   wire rper2WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]);
-   wire rper2READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]);
-   wire rper3WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]);
-   wire rper3READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]);
-   wire rpec1WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == ec1ADDR[18:34]);
-   wire rpec1READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == ec1ADDR[18:34]);
-   wire rpec2WRITE = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == ec2ADDR[18:34]);
-   wire rpec2READ  = devREAD  & devIO & (devDEV == rhDEV) & (devADDR == ec2ADDR[18:34]);
-  
-   wire vectREAD   = devVECT  & devIO & (devDEV == rhDEV);
+   wire rplaREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
+   wire rplaWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
+   wire rhdbREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dbADDR[18:34]);
+   wire rhdbWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dbADDR[18:34]);
+   wire rpmrREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]);
+   wire rpmrWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]);
+   wire rpdtREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dtADDR[18:34]);
+   wire rpdtWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dtADDR[18:34]);
+
+   wire rpsnREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  snADDR[18:34]);
+   wire rpsnWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  snADDR[18:34]);
+   wire rpofREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]);
+   wire rpofWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]);
+   wire rpdcREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]);
+   wire rpdcWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]);
+   wire rpccREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  ccADDR[18:34]);
+   wire rpccWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  ccADDR[18:34]);
+
+   wire rper2READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]);
+   wire rper2WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]);
+   wire rper3READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]);
+   wire rper3WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]);
+   wire rpec1READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == ec1ADDR[18:34]);
+   wire rpec1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == ec1ADDR[18:34]);
+   wire rpec2READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == ec2ADDR[18:34]);
+   wire rpec2WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == ec2ADDR[18:34]);
 
    //
    // Big-endian to little-endian data bus swap
@@ -226,10 +227,10 @@ module RH11(clk,      rst,
    //
    // Signals
    //
-   
-   wire sdINCWORD;				// Increment word
-   wire sdINCSECT;				// Increment Sector
-   
+
+   wire sdINCWORD;                              // Increment word
+   wire sdINCSECT;                              // Increment Sector
+
    //
    // FIXME
    //
@@ -237,7 +238,7 @@ module RH11(clk,      rst,
    wire setWCE = 0;     // FIXME
    wire setNEM = 0;     // FIXME
    wire setPGE = 0;     // FIXME
-   
+
    //
    // Transfer Error Clear
    //
@@ -356,7 +357,7 @@ module RH11(clk,      rst,
       .rhdbWRITE  (rhdbWRITE),
       .rhDB       (rhDB)
    );
-               
+
    //
    // Attention Summary Pseudo Register
    //
@@ -452,13 +453,13 @@ module RH11(clk,      rst,
    //
    // Unit Select Decoder for Completion Monitor
    //
-   
+
    wire [7:0] sdUNITSEL = select(scan);
-   
+
    //
    // Generate ACK for the correct disk drive
    //
-   
+
    wire [ 7:0] rpSDACK = {
       ((scan == 0) & (state == stateACK)),
       ((scan == 1) & (state == stateACK)),
@@ -469,7 +470,7 @@ module RH11(clk,      rst,
       ((scan == 6) & (state == stateACK)),
       ((scan == 7) & (state == stateACK))
    };
-   
+
    //
    // Build Array 8 RP Register Sets
    //
@@ -495,7 +496,7 @@ module RH11(clk,      rst,
    //
    // Build rpSN Register Set
    //
-   
+
    assign rpSN[0] = `rpSN0;
    assign rpSN[1] = `rpSN1;
    assign rpSN[2] = `rpSN2;
@@ -563,15 +564,15 @@ module RH11(clk,      rst,
       .sdOP      (rpSDOP[sdUNITSEL]),
       .sdSECTADDR(rpSDADDR[sdUNITSEL]),
       .sdWDCNT   (rhWC),
-	   
+
       //here
       //.sdBUSADDR (sdBUSADDR),
- 
+
 //      .sdDATAI   (sdDATAI),
 //      .sdDATAO   (sdDATAO),
 //      .dmaREQ    (devREQO),  // fixme
 //      .dmaACK    (devACKI),
-	   
+
       .sdINCWORD (sdINCWORD),
       .sdINCSECT (sdINCSECT),
       .sdSTAT    (sdSTAT),
@@ -608,7 +609,7 @@ module RH11(clk,      rst,
           begin
              devACKO  = 1;
              devDATAO = {20'b0, rpDA[rhUNITSEL]};
-          end        
+          end
         if (rhcs2WRITE | rhcs2READ)
           begin
              devACKO  = 1;
@@ -618,22 +619,22 @@ module RH11(clk,      rst,
           begin
              devACKO  = 1;
              devDATAO = {20'b0, rpDS[rhUNITSEL]};
-          end        
+          end
         if (rper1WRITE | rper1READ)
           begin
              devACKO  = 1;
              devDATAO = {20'b0, rpER1[rhUNITSEL]};
-          end        
+          end
         if (rhasWRITE | rhasREAD)
           begin
              devACKO  = 1;
              devDATAO = {20'b0, rhAS};
-          end        
+          end
         if (rplaWRITE | rplaREAD)
           begin
              devACKO  = 1;
              devDATAO = {20'b0, rpLA[rhUNITSEL]};
-          end        
+          end
         if (rhdbWRITE | rhdbREAD)
           begin
              devACKO  = 1;
@@ -643,7 +644,7 @@ module RH11(clk,      rst,
           begin
              devACKO  = 1;
              devDATAO = {20'b0, rpMR[rhUNITSEL]};
-          end        
+          end
         if (rpdtWRITE | rpdtREAD)
           begin
              devACKO  = 1;
@@ -676,7 +677,7 @@ module RH11(clk,      rst,
              devDATAO = 36'b0;
           end
      end
-   
+
    //
    // Interrupt Request
    //
@@ -688,7 +689,7 @@ module RH11(clk,      rst,
    // FIXME:
 
    //wire devADDRO = (readOP) ? {rdFLAGS, sdBUSADDR} : {wrFLAGS, sdBUSADDR};
-   
+
 `ifndef SYNTHESIS
 
    //
@@ -726,7 +727,7 @@ module RH11(clk,      rst,
         if (nxmCount == 1)
           begin
              $display("[%11.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o",
-		      $time/1.0e3, devADDRO);
+                      $time/1.0e3, devADDRO);
              $stop;
           end
      end
