@@ -285,6 +285,7 @@ INC := \
 	$(RTL)/ks10/uba/ubamr.vh \
 	$(RTL)/ks10/uba/ubasr.vh \
 	$(RTL)/ks10/uba/ubabus.vh \
+	$(RTL)/ks10/uba/ubapage.vh \
 	$(RTL)/ks10/ks10.vh
 
 DAT := \
