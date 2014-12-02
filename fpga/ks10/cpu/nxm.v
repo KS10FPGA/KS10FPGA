@@ -5,8 +5,6 @@
 // Brief
 //   Non-existent Memory
 //
-// Details
-//
 // File
 //   nxm.v
 //
@@ -64,6 +62,12 @@ module NXM(clk, rst, cpuADDRO, cpuREQO, cpuACKI, memWAIT, nxmINTR);
    //  cycles that are never acknowledged.
    //
 
+   /*
+    *
+    *  FIXME:  Just delete this.  NXM can't happen.
+    * 
+    */
+   
    localparam [0:3] tDONE = 15;
    reg        [0:3] timeout;
 
@@ -86,7 +90,8 @@ module NXM(clk, rst, cpuADDRO, cpuREQO, cpuACKI, memWAIT, nxmINTR);
    // Wait for memory cycle ACK.  Timeout if no ACK occurs.
    //
 
-   assign memWAIT = (cpuREQO & !cpuACKI & (timeout != 0));
+   assign memWAIT = ((!busIO & cpuREQO & !cpuACKI) |
+		     (timeout != 0)    & !cpuACKI);
 
    //
    // Generate an NXM trap

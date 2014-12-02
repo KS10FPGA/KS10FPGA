@@ -317,19 +317,19 @@ module NXD(clk, rst, crom, cpuADDRO, cpuREQO, cpuACKI, ioWAIT, ioBUSY);
    // Outputs
    //
 
-   assign ioBUSY = ((cpuREQO & !cpuACKI & (state == stateIDLE)) |
+   assign ioBUSY = ((busIO & cpuREQO & !cpuACKI & (state == stateIDLE)) |
                     busy);
 
-   assign ioWAIT = ((cpuREQO & !cpuACKI & (state == stateIDLE)) |
-                    (cpuREQO & !cpuACKI & (state == stateCNT0)) |
-                    (cpuREQO & !cpuACKI & (state == stateCNT1)) |
-                    (cpuREQO & !cpuACKI & (state == stateCNT2)) |
-                    (cpuREQO & !cpuACKI & (state == stateCNT3)) |
-                    (cpuREQO & !cpuACKI & (state == stateCNT4)) |
-                    (cpuREQO & !cpuACKI & (state == stateCNT5)) |
-                    (cpuREQO & !cpuACKI & (state == stateCNT6)) |
-                    (cpuREQO & !cpuACKI & (state == stateCNT7)) |
-                    (cpuREQO & !cpuACKI & (state == stateCNT8)) |
-                    (cpuREQO & !cpuACKI & (state == stateCNT9)));
+   assign ioWAIT = ((busIO & cpuREQO & !cpuACKI & (state == stateIDLE)) |
+                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT0)) |
+                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT1)) |
+                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT2)) |
+                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT3)) |
+                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT4)) |
+                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT5)) |
+                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT6)) |
+                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT7)) |
+                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT8)) |
+                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT9)));
 
 endmodule
