@@ -3,11 +3,9 @@
 // KS-10 Processor
 //
 // Brief
-//   AM2901 ALU
+//   Arithmetic Logic Unit (ALU)
 //
 // Details
-//
-// Note
 //   The KS10 ALU implementation uses ten cascaded am2901 4-bit slices.  Some
 //   quick study showed that this did not work well with an FPGA implemenation.
 //   Most FPGAs have optimized (very fast) carry logic to support counters and
@@ -139,8 +137,8 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //  FUN[2] is munged on DPE5
    //
    //  When fun[0] and fun[1] are both zero, fun[2] selects between add and
-   //  subract operations. This is used in the divide implementation and the
-   //  multiprecision operations.
+   //  subtract operations. This is used in the divide implementation and the
+   //  other multiprecision operations.
    //
    // Trace
    //  DPE5/E62
@@ -300,7 +298,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //
 
    reg [0:39] bdi;
-   always @(f or q or dest or shstyle or multi_shift)
+   always @*
      begin
         if (dest == `cromDST_RAMQU || dest == `cromDST_RAMU)
           case (shstyle)
@@ -358,13 +356,14 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
      begin
         if (rst)
           ;
-        else if (clken)
-          begin
-             if (lclken & write)
-               aluRAM[ba][ 0:19] <= bdi[ 0:19];
-             if (rclken & write)
-               aluRAM[ba][20:39] <= bdi[20:39];
-          end
+        else
+          if (clken)
+            begin
+               if (lclken & write)
+                 aluRAM[ba][ 0:19] <= bdi[ 0:19];
+               if (rclken & write)
+                 aluRAM[ba][20:39] <= bdi[20:39];
+            end
      end
 
    //
@@ -403,7 +402,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //
 
    reg [0:39] qi;
-   always @(f or q or dest or shstyle or divide_shift)
+   always @*
      begin
         case (dest)
           `cromDST_RAMQU:
@@ -467,13 +466,14 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
      begin
         if (rst)
           q[ 0:39] <= 40'b0;
-        else if (clken)
-          begin
-             if (lclken)
-               q[ 0:19] <= qi[ 0:19];
-             if (rclken)
-               q[20:39] <= qi[20:39];
-          end
+        else
+          if (clken)
+            begin
+               if (lclken)
+                 q[ 0:19] <= qi[ 0:19];
+               if (rclken)
+                 q[20:39] <= qi[20:39];
+            end
      end
 
    //
@@ -484,7 +484,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //
 
    reg [0:39] r;
-   always @(ad or dd or lsrc)
+   always @*
      begin
         case (lsrc)
           `cromSRC_AQ,
@@ -508,7 +508,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //  This selects source for the "R" input to the right-half of the ALU.
    //
 
-   always @(ad or dd or rsrc)
+   always @*
      begin
         case (rsrc)
           `cromSRC_AQ,
@@ -533,7 +533,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //
 
    reg [0:39] s;
-   always @(ad or bd or q or lsrc)
+   always @*
      begin
         case (lsrc)
           `cromSRC_AQ,
@@ -558,7 +558,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //  This selects source for the "S" input to the right-half of the ALU.
    //
 
-   always @(ad or bd or q or rsrc)
+   always @*
      begin
         case (rsrc)
           `cromSRC_AQ,
@@ -581,7 +581,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //
    // Details
    //  The ALU is somewhat optimized so that the carry chain can be optimized.
-   //  Instead of adding logic into the middle of of the carry to separate the
+   //  Instead of adding logic into the middle of the carry to separate the
    //  left half and the right half of the ALU, the left half, the right half,
    //  and the whole ALU are calculated in parallel.
    //
@@ -592,7 +592,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    wire      ci = carry_in;             // Carry into right half
    reg       bb;                        // Bit Bucket
 
-   always @(r or s or ci or specCRY18INH or func)
+   always @*
      begin
         co  = 1'b0;
         go  = 1'b0;
@@ -761,13 +761,14 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
              flagCARRYOUT <= 1'b0;
           end
         else
-          begin
-             flagFL02     <= bdi[3];
-             flagQR37     <= q[39];
-             flagCARRY02  <= aluCRY2;
-             flagFUNCT02  <= funct_02;
-             flagCARRYOUT <= aluCRY0;
-         end
+          if (clken)
+            begin
+               flagFL02     <= bdi[3];
+               flagQR37     <= q[39];
+               flagCARRY02  <= aluCRY2;
+               flagFUNCT02  <= funct_02;
+               flagCARRYOUT <= aluCRY0;
+            end
      end
 
    //
