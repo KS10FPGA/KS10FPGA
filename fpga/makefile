@@ -40,11 +40,12 @@ INTSTYLE     := ise
 XILPATH      := $(XILDIR)/ISE_DS/ISE/bin/nt64:$(XILDIR)/ISE_DS/ISE/lib/nt64:$(XILDIR)/ISE_DS/common/bin/nt64:$(XILDIR)/ISE_DS/common/lib/nt64
 
 #
-# iverilog
+# Other tools
 #
 
 IVERILOG     := iverilog
 VVP          := vvp
+CLOC         := ./cloc-1.62.exe
 
 #
 # Initialized Memory Contents (Simulation only)
@@ -91,9 +92,9 @@ DIAGBASE   := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XX
 #
 
 #	-D SIM_SMMON \
-#	-D SIM_CTY \
 
 DEBUG_ARGS := \
+	-D SIM_CTY \
 	-D ENABLE_TIMER \
 	-D STOP_ON_COMPLETE \
 	-D DEBUG_$(DIAGBASE) \
@@ -907,3 +908,10 @@ archive_dist: $(SRC)
 #	-lib xilinxcorelib_ver \
 #	-lib secureip \
 #	echo 'verilog work "C:/Xilinx/13.1/ISE_DS/ISE//verilog/src/glbl.v"' >> $@
+
+#
+# Count Lines of Code
+#
+
+cloc :
+	$(CLOC) --by-file --force-lang=Verilog-SystemVerilog,vh rtl

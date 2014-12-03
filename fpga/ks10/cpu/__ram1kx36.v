@@ -55,7 +55,7 @@ module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
    // Note:
    //  There are places when the KS10 microcode reads uninitialized RAMFILE
    //  contents (TTG, for one).  This halts the simulation.  Therefore this
-   //  implementation includes code to initialized the RAMFILE contents for
+   //  implementation includes code to initialize the RAMFILE contents for
    //  simulation purposes.
    //
    // Trace

@@ -219,12 +219,11 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
         if (rst)
           pfEN <= 0;
         else
-          begin
-             if (!pfEN)
-               pfEN <= pfCYCLE;
-             else
-               pfEN <= 0;
-          end
+          if (clken)
+            if (!pfEN)
+              pfEN <= pfCYCLE;
+            else
+              pfEN <= 0;
      end
 
    //
@@ -238,7 +237,8 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
         if (rst)
           intrEN <= 0;
         else
-          intrEN <= fetchCYCLE;
+          if (clken)
+            intrEN <= fetchCYCLE;
      end
 
    //
@@ -307,13 +307,12 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
      begin
         if (rst)
           dispPF <= 0;
-        else if (clken)
-          begin
-             if (pageFAIL)
-               dispPF <= dispatch;
-             else if (specMEMCLR)
-               dispPF <= 0;
-          end
+        else
+          if (clken)
+            if (pageFAIL)
+              dispPF <= dispatch;
+            else if (specMEMCLR)
+              dispPF <= 0;
      end
 
 endmodule
