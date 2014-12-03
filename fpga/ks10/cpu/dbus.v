@@ -6,6 +6,11 @@
 //   DBUS Multiplexer
 //
 // Details
+//   The DBUS module is essentially a 36-bit wide 4-to-1 multiplexer. This
+//   multiplexer selects between the FLAGS, the ALU Output (DP), the DBM
+//   Multiplexer and the RAMFILE.  On a read operation, the DBUS Multiplexer
+//   also selects between the RAMFILE (where the ACs are stored) if an AC is
+//   being read and memory if an AC is not being read.
 //
 // File
 //   dbus.v
