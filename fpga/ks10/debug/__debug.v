@@ -100,9 +100,9 @@
                if (PC == 18'o030057)
                  begin
                     $display("Test Completed.");
-`ifdef STOP_ON_COMPLETE		    
+`ifdef STOP_ON_COMPLETE
                     $stop;
-`endif		    
+`endif
                  end
 
                `ifdef DEBUG_DSKAH
@@ -120,8 +120,8 @@
                `else
                     `include "debug_default.vh"
                `endif
-	       `include "debug_smmon.vh"
-		 
+               `include "debug_smmon.vh"
+
                $display("[%11.3f] %15s: PC is %06o", $time/1.0e3, test, PC);
 
             end
@@ -129,13 +129,16 @@
           else
 
             //
-            // Whine if the PC gets stuck for 10 ms
+            // Whine if the PC gets stuck for 1 ms
             //
 
             if (($time - last) >  1000000)
               begin
-                 $display("Test Failed.  PC got stuck.");
+		 last = $time;
+                 $display("[%11.3f] %15s: PC is %06o (stuck).", $time/1.0e3, test, PC);
+`ifdef STOP_ON_STUCK_PC
                  $stop;
+`endif
               end
      end
 

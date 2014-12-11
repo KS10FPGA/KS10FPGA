@@ -56,9 +56,6 @@
 //   The the Page Fail dispatch is actually a combination of a Dispatch and a
 //   Skip operating simulataneously.
 //
-// FIXME
-//   This needs a lot of work.
-//
 // File
 //   disp_pf.v
 //
