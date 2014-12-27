@@ -38,6 +38,7 @@
 #include "sd.h"
 #include "stdio.h"
 #include "ks10.hpp"
+#include "commands.hpp"
 #include "fatfs/dir.h"
 #include "fatfs/ff.h"
 #include "driverlib/rom.h"
@@ -67,12 +68,30 @@ static char *strupper(char *buf) {
     return buf;
 }
 
-int strncmp(const char *s1, const char *s2, unsigned n) {
+//
+//! String comparison
+//!
+//! \param [in] s1
+//!     string 1.
+//!
+//! \param [in] s2
+//!     string 2.
+//!
+//! \param [in] n
+//!     Number of characters to compare at most.
+//!
+//! \returns
+//!     > 0: if s1 is less than s2
+//!       0: if s1 is equal to s2
+//!     < 0: if s1 is greater than s2
+//
+
+int strncmp(const char *s1, const char *s2, unsigned int n) {
     for ( ; n > 0; --n) {
-	if (*s1 != *s2) {
-	    return ((*(unsigned char *)s1 < *(unsigned char *)s2) ? -1 : +1);
-	} else if (*s1 == '\0') {
-	    return 0;
+        if (*s1 != *s2) {
+            return (*(const unsigned char *)s1 - *(const unsigned char *)s2);
+        } else if (*s1 == '\0') {
+            return 0;
         }
         s1++;
         s2++;
@@ -187,9 +206,7 @@ static bool loadCode(const char * filename) {
     FIL fp;
     FRESULT status = f_open(&fp, filename, FA_READ);
     if (status != FR_OK) {
-#if 0
-        printf("f_open() returned %d\n", status);
-#endif
+        debug("f_open() returned %d\n", status);
         return false;
     }
 
@@ -214,16 +231,12 @@ static bool loadCode(const char * filename) {
                 // Create JRST to starting address.
                 //
 
-#ifdef CONFIG_KS10
-                ks10_t::writeCIR(data36);
-#else
-                printf("Starting Address: %06lo,,%06lo\n",
-                       ks10_t::lh(data36), ks10_t::rh(data36));
-#endif
+                debug("Starting Address: %06lo,,%06lo\n", ks10_t::lh(data36), ks10_t::rh(data36));
+                ks10_t::writeRegCIR(data36);
             }
             FRESULT status = f_close(&fp);
             if (status != FR_OK) {
-                printf("f_close() returned %d\n", status);
+                debug("f_close() returned %d\n", status);
             }
             return true;
         }
@@ -234,16 +247,163 @@ static bool loadCode(const char * filename) {
 
         while ((words & 0400000) != 0) {
             ks10_t::data_t data36 = getdata(&fp);
-#ifdef CONFIG_KS10
             ks10_t::writeMem(addr, data36);
-#else
-            printf("%06o: %06lo%06lo\n", addr, ks10_t::lh(data36),
-                   ks10_t::rh(data36));
-#endif
+            debug("%06o: %06lo%06lo\n", addr, ks10_t::lh(data36), ks10_t::rh(data36));
             addr  = (addr  + 1) & 0777777;
             words = (words + 1) & 0777777;
         }
     }
+}
+
+//
+//! Print RH11 Debug Word
+//
+
+void printRH11Debug(void) {
+    volatile ks10_t::rh11debug_t * debug = ks10_t::getRH11debug();
+    printf("Summary: 0x%016llx\n"
+           "State:   0x%02x\n"
+           "Err:     0x%02x\n"
+           "Val:     0x%02x\n"
+           "Wrcnt:  %3d\n"
+           "Rdcnt:  %3d\n"
+           "Status:  0x%02x\n",
+           *reinterpret_cast<volatile uint64_t*>(debug),
+           debug->state,
+           debug->err,
+           debug->val,
+           debug->status);
+}
+
+//
+//! Print Halt Status
+//!
+//! This function prints the Halt Status Word and the Halt Status Block.
+//!
+//! \todo
+//!     The microcode doesn't seem to store the FE/SC registers like the
+//!     documents describe.   Delete it?
+//!
+//! \todo
+//!     This has the Halt Status Block address hard coded.  It should execute
+//!     a RDHSB instruction using the Console Instruction Register to get the
+//!     address of the Halt Status Block.   The 0376000 address is only valid
+//!     until TOPS10 or TOPS20 changes it.
+//
+
+void printHaltStatus(void) {
+
+    //
+    // Retreive the Halt Status Word
+    //
+
+    const ks10_t::haltStatusWord_t haltStatusWord = ks10_t::getHaltStatusWord();
+
+    //
+    // Halt Status Block address.  Assume default location.
+    //
+
+    ks10_t::addr_t hsbAddr = 0376000;
+
+#warning FIXME: Stubbed code
+#if 0
+
+    //
+    // We need a temporary memory location to stash the address of the Halt
+    // Status Block by executing a RDHSB instruction.
+    //
+
+    const ks10_t::addr_t tempAddr = 0100;
+
+    //
+    // Save the data at that location so that it may be restored later.
+    //
+
+    const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
+
+    //
+    // Load an RDHSB instruction into the CIR.
+    //
+
+    ks10_t::writeRegCIR((ks10_t::opRDHSB << 18) | tempAddr);
+
+    //
+    // Execute the RDHSB instruction
+    //
+
+    ks10_t::cont(true);
+    ks10_t::exec(true);
+    ks10_t::run(false);
+
+    //
+    // Wait for the processor to HALT again.
+    //
+
+    while (!ks10_t::halt()) {
+        ;
+    }
+
+    //
+    // Read the address of the Halt Status Block from location 0
+    //
+
+    hsbAddr = ks10_t::readMem(tempAddr);
+
+    //
+    // Restore the data at the temporary location.
+    //
+
+    ks10_t::writeMem(tempAddr, tempData);
+
+#endif
+
+    //
+    // Retreive and print the Halt Status Block
+    //
+
+    const ks10_t::haltStatusBlock_t haltStatusBlock = ks10_t::getHaltStatusBlock(hsbAddr);
+
+    printf("Halt Cause: %s (%012llo, %06llo)\n"
+           "PC  is %012llo     MAG is %012llo\n"
+           "PC  is %012llo     HR  is %012llo\n"
+           "AR  is %012llo     ARX is %012llo\n"
+           "BR  is %012llo     BRX is %012llo\n"
+           "ONE is %012llo     EBR is %012llo\n"
+           "UBR is %012llo     MSK is %012llo\n"
+           "FLG is %012llo     PI  is %012llo\n"
+           "X1  is %012llo     TO  is %012llo\n"
+           "T1  is %012llo     VMA is %012llo\n"
+           "FE  is %012llo                   \n",
+           (haltStatusWord.status == 00000 ? "Microcode Startup."                     :
+            (haltStatusWord.status == 00001 ? "Halt Instruction."                     :
+             (haltStatusWord.status == 00002 ? "Console Halt."                        :
+              (haltStatusWord.status == 00100 ? "IO Page Failure."                    :
+               (haltStatusWord.status == 00101 ? "Illegal Interrupt Instruction."     :
+                (haltStatusWord.status == 00102 ? "Pointer to Unibus Vector is zero." :
+                 (haltStatusWord.status == 01000 ? "Illegal Microcode Dispatch."      :
+                  (haltStatusWord.status == 01005 ? "Microcode Startup Check Failed." :
+                   "Unknown.")))))))),
+           haltStatusWord.status,
+           hsbAddr,
+           haltStatusWord.pc,
+           haltStatusBlock.mag,
+           haltStatusBlock.pc,
+           haltStatusBlock.hr,
+           haltStatusBlock.ar,
+           haltStatusBlock.arx,
+           haltStatusBlock.br,
+           haltStatusBlock.brx,
+           haltStatusBlock.one,
+           haltStatusBlock.ebr,
+           haltStatusBlock.ubr,
+           haltStatusBlock.mask,
+           haltStatusBlock.flg,
+           haltStatusBlock.pi,
+           haltStatusBlock.x1,
+           haltStatusBlock.t0,
+           haltStatusBlock.t1,
+           haltStatusBlock.vma,
+           haltStatusBlock.fe);
 }
 
 //
@@ -267,15 +427,14 @@ static void cmdBT(int argc, char *argv[]) {
         "Usage: BT [filename]\n"
         "Load boot software into the KS10 processor.\n";
 
-    if (argc == 1) {
-        printf("Not implemented.\n");
-    } else if (argc == 2) {
+    if (argc == 2) {
+        ks10_t::cacheEnable(true);
+        ks10_t::trapEnable(true);
+        ks10_t::timerEnable(true);
         if (!loadCode(argv[1])) {
             printf("Unable to open file \"%s\".\n", argv[1]);
         }
-#ifdef BOOT_RUN
         ks10_t::run(true);
-#endif
     } else {
         printf(usage);
     }
@@ -506,10 +665,11 @@ static void cmdEM(int argc, char *[]) {
         "Examine data from the last memory address.\n";
 
     if (argc == 1) {
+        ks10_t::data_t data = ks10_t::readMem(address);
         if (ks10_t::nxmnxd()) {
             printf("Memory read failed. (NXM)\n");
         } else {
-            printf("%012llo\n", ks10_t::readMem(address));
+            printf("%012llo\n", data);
         }
     } else {
         printf(usage);
@@ -536,6 +696,8 @@ static void cmdEN(int argc, char *[]) {
         "Examine data from the next memory or IO address.\n";
 
     if (argc == 1) {
+        address += 1;
+        printf("incremented address to %06llo\n", address);
         if (access == accessMEM) {
             if (ks10_t::nxmnxd()) {
                 printf("Memory read failed. (NXM)\n");
@@ -638,24 +800,28 @@ static void cmdLA(int argc, char *argv[]) {
         "Set the memory address for the next commands.\n"
         "Valid addresses are %08llo-%08llo\n";
 
-    if (argc == 2) {
+#warning fIXME
+    if (argc == 1) {
+        printf("address is %08llo\n", ks10_t::readRegAddr());
+    } else if (argc == 2) {
         ks10_t::addr_t addr = parseOctal(argv[1]);
         if (addr <= ks10_t::maxMemAddr) {
             address = addr;
             printf("Memory address set to %08llo\n", address);
+            ks10_t::writeRegAddr(addr);
         } else {
             printf("Invalid memory address.\n");
-            printf(usage, 0, ks10_t::maxMemAddr);
+            printf(usage, ks10_t::memStart, ks10_t::maxMemAddr);
         }
     } else {
-        printf(usage, 0, ks10_t::maxMemAddr);
+        printf(usage, ks10_t::memStart, ks10_t::maxMemAddr);
     }
 }
 
 //
 //! Load Diagnostic Monitor SMMON
 //!
-//! The <b>LB</b> (Load Diagnostic_) command loads the diagnostic Monitor.
+//! The <b>LB</b> (Load Diagnostic) command loads the diagnostic Monitor.
 //!
 //! \param [in] argc
 //!    Number of arguments.
@@ -697,10 +863,10 @@ static void cmdLI(int argc, char *argv[]) {
             printf("IO address set to %08llo\n", address);
         } else {
             printf("Invalid IO address.\n");
-            printf(usage, 0, ks10_t::maxIOAddr);
+            printf(usage, ks10_t::memStart, ks10_t::maxIOAddr);
         }
     } else {
-        printf(usage, 0, ks10_t::maxIOAddr);
+        printf(usage, ks10_t::memStart, ks10_t::maxIOAddr);
     }
 }
 
@@ -727,9 +893,6 @@ static void cmdMR(int argc, char *[]) {
 
     if (argc == 1) {
         ks10_t::cpuReset(true);
-        ks10_t::trapEnable(true);
-        ks10_t::timerEnable(true);
-        ks10_t::cacheEnable(true);
         ROM_SysCtlDelay(10);
         ks10_t::cpuReset(false);
         while (!ks10_t::halt()) {
@@ -761,11 +924,11 @@ static void cmdSD(int argc, char *argv[]) {
     if (buf[0] == 'D' && buf[1] == 'I' && buf[2] == 'R') {
         FRESULT status = directory("");
         if (status != FR_OK) {
-            printf("directory status was %d\n", status);
+            debug("directory status was %d\n", status);
         }
     } else if (buf[0] == 'M' && buf[1] == 'O') {
         FRESULT status = f_mount(0, &fatFS);
-        printf("open status was %d\n", status);
+        debug("open status was %d\n", status);
     } else if (buf[0] == 'I' && buf[1] == 'N') {
         sdInitializeCard();
     } else if (buf[0] == 'O' && buf[1] == 'P') {
@@ -773,7 +936,7 @@ static void cmdSD(int argc, char *argv[]) {
         uint8_t buffer[256];
         unsigned int numbytes;
         FRESULT status = f_open(&fp, "asdf.txt", FA_READ);
-        printf("open status was %d\n", status);
+        debug("open status was %d\n", status);
         status = f_read(&fp, &buffer, sizeof(buffer), &numbytes);
         for (unsigned int i = 0; i < numbytes; i++) {
             printf("%02x ", buffer[i]);
@@ -846,7 +1009,7 @@ static void cmdSH(int argc, char *[]) {
         "Shutdown.  Shutdown TOPS20.\n";
 
     if (argc == 1) {
-        ks10_t::writeMem(030, 1);
+        ks10_t::writeMem(030ULL, 1ULL);
     } else {
         printf(usage);
     }
@@ -874,17 +1037,17 @@ static void cmdST(int argc, char *argv[]) {
         "Usage: ST address\n"
         "Start the KS10 at supplied address.\n";
 
-    if (argc == 1) {
+    if (argc == 2) {
         ks10_t::addr_t addr = parseOctal(argv[1]);
         if (addr <= ks10_t::maxVirtAddr) {
-            ks10_t::writeCIR((ks10_t::opJRST << 18) | (addr & 0777777));
+            ks10_t::writeRegCIR((ks10_t::opJRST << 18) | (addr & 0777777));
             ks10_t::exec(true);
             ks10_t::run(true);
             ks10_t::cont(true);
         } else {
             printf("Invalid Address\n"
                    "Valid addresses are %08o-%08llo\n",
-                   0, ks10_t::maxVirtAddr);
+                   ks10_t::memStart, ks10_t::maxVirtAddr);
         }
     } else {
         printf(usage);
@@ -1020,14 +1183,32 @@ static void cmdZZ(int argc, char *argv[]) {
         printf("This is a test (long long hex    ) 0x%llx\n", 0x0123456789abcdefULL);
         printf("This is a test (long long hex    ) 0x%llx\n", 0x95232633579bfe34ull);
 
+        {
+            address = 2;
+            access  = accessMEM;
+            ks10_t::data_t data = 1;
+            ks10_t::writeMem(address, data);
+            if (ks10_t::nxmnxd()) {
+                printf("Write failed. (NXM)\n");
+            }
+            ks10_t::data_t data1 = ks10_t::readMem(address);
+            if (ks10_t::nxmnxd()) {
+                printf("Memory read failed. (NXM)\n");
+            } else {
+                printf("%012llo\n", data1);
+            }
+        }
+
     } else if (argc == 3) {
         if (*argv[1] == 'R') {
             if (strncmp(argv[2], "REGADDR", 4) == 0) {
-                printf("  Address Register: %012llo.\n", ks10_t::readReg(ks10_t::regAddr));
+                printf("  Address Register: %012llo.\n", ks10_t::readRegAddr());
             } else if (strncmp(argv[2], "REGDATA", 4) == 0) {
-                printf("  Data Register: %012llo.\n", ks10_t::readReg(ks10_t::regData));
+                printf("  Data Register: %012llo.\n", ks10_t::readRegData());
             } else if (strncmp(argv[2], "REGSTAT", 4) == 0) {
-                printf("  Status Register: %012llo.\n", ks10_t::readReg(ks10_t::regStat));
+                printf("  Status Register: %012llo.\n", ks10_t::readRegStat());
+            } else if (strncmp(argv[2], "RH11DEBUG", 4) == 0) {
+                printRH11Debug();
             }
         } else if (*argv[1] == 'w') {
             ;
@@ -1143,13 +1324,6 @@ void parseCMD(char * buf) {
         }
         p++;
     }
-
-#if 0
-    printf(":: argc = %d\n", argc);
-    for (int i = 0; i < argc; i++) {
-        printf("::   argv[%d] = #%s#\n", i, argv[i]);
-    }
-#endif
 
     //
     // Execute commands

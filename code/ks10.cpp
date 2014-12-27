@@ -121,10 +121,10 @@ extern "C" void gpiobIntHandler(void) {
 //
 
 void ks10_t::go(void) {
-    writeReg(regStat, statGO);
-    for (int i = 0; i < 1000; i++) {
-        if (!(readReg(regStat) & statGO)) {
-            return;
+    writeRegStat(readRegStat() | statGO);
+    for (int i = 0; i < 100000; i++) {
+        if ((readRegStat() & statGO) == 0) {
+           return;
         }
         ROM_SysCtlDelay(1);
     }
@@ -137,7 +137,7 @@ void ks10_t::go(void) {
 //!     Contents of the <b>Console Status Register</b>.
 //
 
-ks10_t::data_t ks10_t::readStatus(void) {
+ks10_t::data_t ks10_t::readRegStat(void) {
     return readReg(regStat);
 }
 
@@ -148,8 +148,52 @@ ks10_t::data_t ks10_t::readStatus(void) {
 //!     data to be written to the <b>Console Status Register</b>.
 //
 
-void ks10_t::writeStatus(data_t data) {
+void ks10_t::writeRegStat(data_t data) {
     writeReg(regStat, data);
+}
+
+//
+//! This function reads from <b>Console Address Register</b>
+//!
+//! \returns
+//!     Contents of the <b>Console Address Register</b>.
+//
+
+ks10_t::data_t ks10_t::readRegAddr(void) {
+    return readReg(regAddr);
+}
+
+//
+//! This function writes to <b>Console Address Register</b>
+//!
+//! \param data
+//!     data to be written to the <b>Console Address Register</b>.
+//
+
+void ks10_t::writeRegAddr(data_t data) {
+    writeReg(regAddr, data);
+}
+
+//
+//! This function reads from <b>Console Data Register</b>
+//!
+//! \returns
+//!     Contents of the <b>Console Data Register</b>.
+//
+
+ks10_t::data_t ks10_t::readRegData(void) {
+    return readReg(regData);
+}
+
+//
+//! This function writes to <b>Console Data Register</b>
+//!
+//! \param data
+//!     data to be written to the <b>Console Data Register</b>.
+//
+
+void ks10_t::writeRegData(data_t data) {
+    writeReg(regData, data);
 }
 
 //
@@ -159,7 +203,7 @@ void ks10_t::writeStatus(data_t data) {
 //!     Contents of the <b>Console Instruction Register</b>
 //
 
-ks10_t::data_t ks10_t::readCIR(void) {
+ks10_t::data_t ks10_t::readRegCIR(void) {
     return readReg(regCIR);
 }
 
@@ -171,7 +215,7 @@ ks10_t::data_t ks10_t::readCIR(void) {
 //!     Register.</b>
 //
 
-void ks10_t::writeCIR(data_t data) {
+void ks10_t::writeRegCIR(data_t data) {
     writeReg(regCIR, data);
 }
 
@@ -189,7 +233,7 @@ void ks10_t::writeCIR(data_t data) {
 //
 
 ks10_t::data_t ks10_t::readMem(addr_t addr) {
-    writeReg(regAddr, (addr & addrMask) | read);
+    writeReg(regAddr, (addr & memAddrMask) | flagRead);
     go();
     return dataMask & readReg(regData);
 }
@@ -208,7 +252,7 @@ ks10_t::data_t ks10_t::readMem(addr_t addr) {
 //
 
 void ks10_t::writeMem(addr_t addr, data_t data) {
-    writeReg(regAddr, (addr & addrMask) | write);
+    writeReg(regAddr, (addr & memAddrMask) | flagWrite);
     writeReg(regData, data);
     go();
 }
@@ -227,7 +271,7 @@ void ks10_t::writeMem(addr_t addr, data_t data) {
 //
 
 ks10_t::data_t ks10_t::readIO(addr_t addr) {
-    writeReg(regAddr, (addr & addrMask) | read | io);
+    writeReg(regAddr, (addr & ioAddrMask) | flagRead | flagPhys | flagIO);
     go();
     return dataMask & readReg(regData);
 }
@@ -249,7 +293,7 @@ ks10_t::data_t ks10_t::readIO(addr_t addr) {
 //
 
 void ks10_t::writeIO(addr_t addr, data_t data) {
-    writeReg(regAddr, (addr & addrMask) | write | io);
+    writeReg(regAddr, (addr & ioAddrMask) | flagWrite | flagPhys | flagIO);
     writeReg(regData, data);
     go();
 }
@@ -269,7 +313,7 @@ void ks10_t::writeIO(addr_t addr, data_t data) {
 //
 
 uint16_t ks10_t::readIObyte(addr_t addr) {
-    writeReg(regAddr, (addr & addrMask) | read | io | byte);
+    writeReg(regAddr, (addr & ioAddrMask) | flagRead | flagPhys | flagIO | flagByte);
     go();
     return 0xffff & readReg(regData);
 }
@@ -285,7 +329,7 @@ uint16_t ks10_t::readIObyte(addr_t addr) {
 //
 
 void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
-    writeReg(regAddr, (addr & addrMask) | write | io | byte);
+    writeReg(regAddr, (addr & ioAddrMask) | flagWrite | flagPhys | flagIO | flagByte);
     writeReg(regData, data);
     go();
 }
@@ -617,6 +661,7 @@ ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
 bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
     printf("KS10>   %s: Checking 64-bit accesses.\n", name);
 
+    bool ret = true;
     volatile uint64_t * reg64 = (uint64_t*)addr;
     uint64_t write64 = 0;
 
@@ -624,14 +669,13 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
         *reg64 = write64;
         uint64_t read64 = *reg64;
         if (read64 != (write64 & mask)) {
-            printf("KS10>   %s, Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
-            *reg64 = 0;
-            return false;
+            printf("KS10>   %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
+            ret = false;
         }
         write64 = (write64 << 8) | 0xff;
     }
     *reg64 = 0;
-    return true;
+    return ret;
 }
 
 //
@@ -645,6 +689,8 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
 
 bool ks10_t::testReg08(volatile void * addr, const char *name, uint64_t mask) {
     printf("KS10>   %s: Checking 8-bit accesses.\n", name);
+
+    bool ret = true;
     volatile uint64_t * addr64 = (uint64_t *)addr;
     volatile uint8_t  * addr08 = (uint8_t  *)addr;
 
@@ -653,15 +699,14 @@ bool ks10_t::testReg08(volatile void * addr, const char *name, uint64_t mask) {
         *addr08 = 0xff;
         uint64_t read64 = *addr64;
         if (read64 != (test64 & mask)) {
-            printf("KS10>   %s, Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, test64);
-            *addr64 = 0;
-            return false;
+            printf("KS10>   %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, test64);
+            ret = false;
         }
         addr08++;
         test64 = (test64 << 8) | 0xff;
     }
     *addr64 = 0;
-    return true;
+    return ret;
 }
 
 //
@@ -707,7 +752,7 @@ bool ks10_t::testRegs(void) {
     bool success = true;
     printf("KS10> Testing KS10 Interface Registers.\n");
     success &= testRegister(regAddr, "regADDR", 0xfffffffff);
-    success &= testRegister(regData, "regDATA", 0xfffffffff);
+//  success &= testRegister(regData, "regDATA", 0xfffffffff);
     success &= testRegister(regCIR,  "regCIR ", 0xfffffffff);
     success &= testRegister(regTest, "regTEST");
     if (success) {
@@ -745,9 +790,31 @@ ks10_t::haltStatusBlock_t &ks10_t::getHaltStatusBlock(addr_t addr) {
     haltStatusBlock.t0   = readMem(addr + 14);
     haltStatusBlock.t1   = readMem(addr + 15);
     haltStatusBlock.vma  = readMem(addr + 16);
-    haltStatusBlock.fe   = readMem(addr + 17);
+
+    //
+    // FIXME: The microcode doesn't seem to implement what the
+    // KS10 documents describe.   Namely the FE or SC
+    // registers.
+
+#warning FIMXME: Stubbed code.
+#if 1
+    haltStatusBlock.fe   = readMem(addr + 17); // Doesn't appear to be implemented
+#endif
 
     return haltStatusBlock;
+}
+
+//
+//! Get Contents of RH11 Debug Register
+//!
+//! This function return the contents of the RH11 Debug Register
+//!
+//! \returns
+//!     Contents of the RH11 Debug Register
+//
+
+volatile ks10_t::rh11debug_t * ks10_t::getRH11debug(void) {
+    return regRH11Debug;
 }
 
 //
