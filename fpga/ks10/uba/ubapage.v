@@ -111,41 +111,42 @@
 // for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with this source; if not, download it from 
+// along with this source; if not, download it from
 // http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
 `include "uba.vh"
+`include "ubapage.vh"
 `include "../ks10.vh"
 
 module UBAPAGE(clk, rst, busREQO, busADDRI, busDATAI, busADDRO,
-	       pageWRITE, pageDATAO, pageADDRI, pageFLAGS, pageNXM);
+               pageWRITE, pageDATAO, pageADDRI, pageFLAGS, pageFAIL);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          busREQO;                    	// IO Device Request In
+   input          busREQO;                      // IO Device Request In
    input  [ 0:35] busADDRI;                     // KS10 Bus Address In
    input  [ 0:35] busDATAI;                     // KS10 Bus Data In
-   output [ 0:35] busADDRO;			// KS10 Bus Address Out (paged)
-   input          pageWRITE;			// Page RAM write
-   output [ 0:35] pageDATAO;			// Paging RAM Data Out
+   output [ 0:35] busADDRO;                     // KS10 Bus Address Out (paged)
+   input          pageWRITE;                    // Page RAM write
+   output [ 0:35] pageDATAO;                    // Paging RAM Data Out
    input  [ 0:35] pageADDRI;                    // IO Device Address In
-   output [ 0: 3] pageFLAGS;			// Page flags
-   output	  pageNXM;			// Page NXM
+   output [ 0: 3] pageFLAGS;                    // Page flags
+   output         pageFAIL;                     // Page NXM
 
    //
    // Paging addresses
    //
-   
-   wire [0:5] virtPAGE = pageADDRI[19:24];	// Address from device
-   wire [0:5] pageADDR = busADDRI[30:35];	// Address from KS10
+
+   wire [0:5] virtPAGE = pageADDRI[19:24];      // Address from device
+   wire [0:5] pageADDR = busADDRI[30:35];       // Address from KS10
 
    //
    // UBA Paging RAM
    //
-   
+
    reg [0:14] pageRAM[0:63];
    always @(posedge clk)
      begin
@@ -162,15 +163,14 @@ module UBAPAGE(clk, rst, busREQO, busADDRI, busDATAI, busADDRO,
 
    assign busADDRO  = {pageADDRI[0:15], pageRAM[virtPAGE][4:14], pageADDRI[25:33]};
    assign pageFLAGS = pageRAM[virtPAGE][0:3];
-   
+
    //
    // NXM generated when:
    //   - UBA A17 not zero
    //   - Page not valid
-   //   - FIXME is NXM and NXD only set on NPR accesses???
    //
-   
-   assign pageNXM = ((busREQO & pageADDRI[18]) |
-		     (busREQO & !pageRAM[virtPAGE][3]));
+
+   assign pageFAIL = ((busREQO & pageADDRI[18]) |
+                      (busREQO & !`flagsVLD(pageFLAGS)));
 
 endmodule

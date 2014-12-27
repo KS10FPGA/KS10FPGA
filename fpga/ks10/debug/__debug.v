@@ -7,7 +7,19 @@
 //
 // Details
 //   This file is used by the simulator to print the program counter on the
-//   console display as the code executes
+//   console display as the code executes.   A modified PC does not mean that
+//   the instruction was actually executed.  For example, the PC is always
+//   incremented after the instruction is fetched but the PC may be modified
+//   (again) later by a branch instruction.   This code prints the program
+//   counter when the instruction register is loaded.  This occurs once during
+//   the instruction execution.
+//
+//   This module also has some code that attempts to halt the simulation if
+//   the CPU gets stuck.  It does this by watching for VMA changes and PC
+//   changes.
+//
+//   The PC will appear to be stuck for long period of time when doing BLT
+//   operations therefore watching for just PC changes is not sufficient.
 //
 // File
 //   debug.v
@@ -59,87 +71,103 @@
 
 `ifndef SYNTHESIS
 
-   wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
+   wire loadIR  = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
+
+   wire loadVMA = (`cromMEM_CYCLE & `cromMEM_LOADVMA);
 
    //
    // Print the Program Counter
    //
-   // Details:
-   //  The program counter is modified by instructions in various stages of the
-   //  microcode.  A modified PC does not mean that the instruction was
-   //  actually executed.  For example, the PC is always incremented after the
-   //  instruction is fetched but the PC may be modified (again) later by a
-   //  branch instruction.
-   //
-   //  This code prints the program counter when the instruction register is
-   //  loaded.  This occurs once during the instruction execution.
-   //
 
    reg [18:35] PC;
    reg [14*8:1] test;
-   integer last;
+   integer lastIR;
+   integer lastVMA;
 
    always @(posedge clk or posedge rst)
      begin
 
         if (rst)
           begin
-             PC   = 0;
-             test = "";
-             last = 0;
+             PC      = 0;
+             test    = "";
+             lastIR  = 0;
+             lastVMA = 0;
           end
 
-        else
+        //
+        // Capture time when VMA last changed.
+        //
 
-          if (loadIR)
-            begin
+        else if (loadVMA)
+          begin
+             lastVMA = $time;
+          end
 
-               PC   = debugDATA[18:35];
-               last = $time;
+        //
+        // Capture time when IR last changed
+        //
 
-               if (PC == 18'o030057)
-                 begin
-                    $display("Test Completed.");
+        else if (loadIR)
+          begin
+
+             PC     = debugDATA[18:35];
+             lastIR = $time;
+
+             if (PC == 18'o030057)
+               begin
+                  $display("Test Completed.");
 `ifdef STOP_ON_COMPLETE
-                    $stop;
+                  $stop;
 `endif
-                 end
+               end
 
-               `ifdef DEBUG_DSKAH
-                    `include "debug_dskah.vh"
-               `elsif DEBUG_DSKBA
-                    `include "debug_dskba.vh"
-               `elsif DEBUG_DSKCG
-                    `include "debug_dskcg.vh"
-               `elsif DEBUG_DSKEA
-                    `include "debug_dskea.vh"
-               `elsif DEBUG_DSDZA
-                    `include "debug_dsdza.vh"
-               `elsif DEBUG_DSUBA
-                    `include "debug_dsuba.vh"
-               `else
-                    `include "debug_default.vh"
-               `endif
-               `include "debug_smmon.vh"
+             `ifdef DEBUG_DSKAH
+                  `include "debug_dskah.vh"
+             `elsif DEBUG_DSKBA
+                  `include "debug_dskba.vh"
+             `elsif DEBUG_DSKCG
+                  `include "debug_dskcg.vh"
+             `elsif DEBUG_DSKEA
+                  `include "debug_dskea.vh"
+             `elsif DEBUG_DSKEC
+                  `include "debug_dskec.vh"
+             `elsif DEBUG_DSDZA
+                  `include "debug_dsdza.vh"
+             `elsif DEBUG_DSUBA
+                  `include "debug_dsuba.vh"
+             `else
+                  `include "debug_default.vh"
+             `endif
+             `include "debug_smmon.vh"
 
-               $display("[%11.3f] %15s: PC is %06o", $time/1.0e3, test, PC);
+             $display("[%11.3f] %15s: PC is %06o", $time/1.0e3, test, PC);
 
-            end
+          end
 
-          else
+        //
+        // Whine if the PC but not the VMA gets stuck for 1 ms
+        //
 
-            //
-            // Whine if the PC gets stuck for 1 ms
-            //
+        else if ((($time - lastIR) > 1000000) && (($time - lastVMA) < 1000000))
+          begin
+             lastIR = $time;
+             $display("[%11.3f] %15s: PC is %06o (not stuck).", $time/1.0e3, test, PC);
+          end
 
-            if (($time - last) >  1000000)
-              begin
-		 last = $time;
-                 $display("[%11.3f] %15s: PC is %06o (stuck).", $time/1.0e3, test, PC);
+        //
+        // Whine if both the PC and the VMA gets stuck for 1 ms
+        //
+
+        else if ((($time - lastIR) > 1000000) && (($time - lastVMA) > 1000000))
+          begin
+             lastIR = $time;
+             $display("[%11.3f] %15s: PC is %06o (stuck).", $time/1.0e3, test, PC);
 `ifdef STOP_ON_STUCK_PC
-                 $stop;
+             $stop;
 `endif
-              end
+          end
+
      end
 
 `endif

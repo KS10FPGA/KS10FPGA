@@ -36,8 +36,8 @@ begin
      18'o056767: test = "DSKBA TST30";
      18'o057026: test = "DSKBA TST31";
      18'o056767: test = "DSKBA TST30";
-     18'o057065: test = "DSKBA JRSTA";
-     18'o057120: test = "DSKBA JSPA";
+     18'o057065: test = "DSKBA JRST1";
+     18'o057120: test = "DSKBA JSP1";
      18'o057154: test = "DSKBA JSRA";
      18'o057210: test = "DSKBA JSR1";
      18'o057252: test = "DSKBA JSAA";

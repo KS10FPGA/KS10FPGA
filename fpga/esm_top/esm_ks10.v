@@ -55,18 +55,18 @@ module ESM_KS10(RESET_N, CLK50MHZ, MR_N,
                 haltLED, test);
 
    // Clock/Reset
-   input         RESET_N;       // Reset
-   input         CLK50MHZ;      // Clock
-   output        MR_N;          // Master Reset push button
+   input          RESET_N;      // Reset
+   input          CLK50MHZ;     // Clock
+   input          MR_N;         // Master Reset push button
    // DZ11 Interfaces
-   input  [1: 2] TXD;           // DZ11 RS-232 Transmitted Data
-   output [1: 2] RXD;           // DZ11 RS-232 Received Data
+   input  [1: 2]  TXD;          // DZ11 RS-232 Transmitted Data
+   output [1: 2]  RXD;          // DZ11 RS-232 Received Data
    // RH11 Interfaces
-   input         rh11CD;        // RH11 Card Detect
-   input         rh11MISO;      // RH11 Data In
-   output        rh11MOSI;      // RH11 Data Out
-   output        rh11SCLK;      // RH11 Clock
-   output        rh11CS;        // RH11 Chip Select
+   input          rh11CD;       // RH11 Card Detect
+   input          rh11MISO;     // RH11 Data In
+   output         rh11MOSI;     // RH11 Data Out
+   output         rh11SCLK;     // RH11 Clock
+   output         rh11CS;       // RH11 Chip Select
    // Console Microcontroller Interfaces
    inout  [15: 0] conDATA;      // Console Data Bus
    input  [ 5: 1] conADDR;      // Console Address Bus
@@ -163,10 +163,4 @@ module ESM_KS10(RESET_N, CLK50MHZ, MR_N,
 
    assign dz11RXD[7:2] = dz11TXD[7:2];
 
-   //
-   // Master Reset Push Button
-   //
-
-   assign MR_N = 1'bz;
-     
 endmodule

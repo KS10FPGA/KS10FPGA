@@ -38,7 +38,7 @@
 `default_nettype none
 
 `define STRDEF 0:20*8-1
-  
+
 module testbench;
 
    //
@@ -112,9 +112,9 @@ module testbench;
    localparam [0:15] statGO       = 16'h0001;
 
 `ifdef SIM_SMMON
-   localparam [0:35] valREGCIR    = 36'o254000_020000;	// SMMON
+   localparam [0:35] valREGCIR    = 36'o254000_020000;  // SMMON
 `else
-   localparam [0:35] valREGCIR    = 36'o254000_030010;	// Basic diagnostics
+   localparam [0:35] valREGCIR    = 36'o254000_030010;  // Basic diagnostics
 `endif
 
    //
@@ -127,7 +127,7 @@ module testbench;
    localparam [7:0] addrREGCIR    = 8'h18;
    localparam [7:0] addrRH11DEB   = 8'h30;
    localparam [7:0] addrVersion   = 8'h38;
-   
+
    //
    // KS10 Addresses
    //
@@ -373,7 +373,7 @@ module testbench;
            end
       end
    endtask
-   
+
    //
    // This task polls the console output register.  When the VALID bit is
    // asserted, a character is present.  When the character has been read, the
@@ -386,60 +386,60 @@ module testbench;
       reg    [ 0:35] temp;
       begin
          conREADMEM(addr, temp);
-	 if (temp[27])
-	   begin
-	      if ((temp[28:35] >= 8'h20) && (temp[28:35] < 8'h7f))
-		begin
-		   $display("[%11.3f] KS10: CTY Output: \"%s\"", $time/1.0e3, temp[28:35]);
-		   $fwrite(fd, "%s", temp[28:35]);
-		end
-	      else if ((temp[28:35] == 8'h0a) || (temp[28:35] == 8'h0d))
-		begin
-		   $display("[%11.3f] KS10: CTY Output: \"<%02x>\"", $time/1.0e3, temp[28:35]);
-		   $fwrite(fd, "%s", temp[28:35]);
-		end
-	      else
-		begin
-		   $display("[%11.3f] KS10: CTY Output: \"<%02x>\"", $time/1.0e3, temp[28:35]);
-//		   $fwrite(fd, "<%02x>", temp[28:35]);
-		end
-	      $fflush(fd);
-	      conWRITEMEM(addr, 36'b0);
-	   end
+         if (temp[27])
+           begin
+              if ((temp[28:35] >= 8'h20) && (temp[28:35] < 8'h7f))
+                begin
+                   $display("[%11.3f] KS10: CTY Output: \"%s\"", $time/1.0e3, temp[28:35]);
+                   $fwrite(fd, "%s", temp[28:35]);
+                end
+              else if ((temp[28:35] == 8'h0a) || (temp[28:35] == 8'h0d))
+                begin
+                   $display("[%11.3f] KS10: CTY Output: \"<%02x>\"", $time/1.0e3, temp[28:35]);
+                   $fwrite(fd, "%s", temp[28:35]);
+                end
+              else
+                begin
+                   $display("[%11.3f] KS10: CTY Output: \"<%02x>\"", $time/1.0e3, temp[28:35]);
+//                 $fwrite(fd, "<%02x>", temp[28:35]);
+                end
+              $fflush(fd);
+              conWRITEMEM(addr, 36'b0);
+           end
       end
    endtask
 
    //
    // This task writes a string to the CTY input at a specific time
    //
-   
+
    task puts;
       input [18:35]   addr;
       input [ 0:35]   ch;
       inout [`STRDEF] msg;
       input time trigger;
       begin
-	 if (($time > trigger) && (msg[0:7] != 0) && !ch[27])
-	   begin
-	      conWRITEMEM(addrCIN, {23'b0, 1'b1, msg[0:7]});
-	      $display("[%11.3f] KS10: CTY Input: \"%s\"", $time/1.0e3, msg[0:7]);
-	      msg = msg << 8;
-	   end
+         if (($time > trigger) && (msg[0:7] != 0) && !ch[27])
+           begin
+              conWRITEMEM(addrCIN, {23'b0, 1'b1, msg[0:7]});
+              $display("[%11.3f] KS10: CTY Input: \"%s\"", $time/1.0e3, msg[0:7]);
+              msg = msg << 8;
+           end
       end
    endtask
 
    //
    // This task left justifies a string
    //
-   
+
    task ljstr;
       inout [`STRDEF] str;
       begin
-	 while (str[0:7] == 0)
-	   str = str << 8;
+         while (str[0:7] == 0)
+           str = str << 8;
       end
    endtask
-   
+
    //
    // Initialization
    //
@@ -504,11 +504,11 @@ module testbench;
    always @(negedge haltLED)
      if ($time != 0)
        $display("[%11.3f] KS10: CPU Unhalted", $time/1.0e3);
-   
+
    //
    // Notify about console interrupts
    //
-   
+
    always @(posedge conINTR)
      begin
         $display("[%11.3f] KS10: Console Interrupted", $time/1.0e3);
@@ -539,8 +539,8 @@ module testbench;
              // Initialize Console Interface
              //
 
-             conWRITEMEM(addrSTAT,   36'o000000_000000);	// Maintenance Mode
-             conWRITEMEM(addrRHBASE, 36'o000000_000000);	// RH Base Address
+             conWRITEMEM(addrSTAT,   36'o000000_000000);        // Maintenance Mode
+             conWRITEMEM(addrRHBASE, 36'o000000_000000);        // RH Base Address
 
              //
              // Initialize Other stuff
@@ -557,7 +557,7 @@ module testbench;
              // Start executing code
              //
 
-`ifdef ENABLE_TIMER	    
+`ifdef ENABLE_TIMER
              conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN | statTIMEREN));
 `else
              conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN));
@@ -570,13 +570,13 @@ module testbench;
 
    initial
      begin
-	
+
         $dumpfile("c:\test.vcd");
 
-	//
-	// Dump R0 through R7
-	//
-	
+        //
+        // Dump R0 through R7
+        //
+
         $dumpvars(0, testbench,
                   testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[0],
                   testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[1],
@@ -592,7 +592,7 @@ module testbench;
 `endif
 
 `ifdef SIM_CTY
-  
+
    //
    // This task outputs a character to the console input register and then
    // polls the VALID bit to know when the KS10 has picked up the character.
@@ -607,7 +607,7 @@ module testbench;
          $display("[%11.3f] KS10: CTY Input: \"%s\"", $time/1.0e3, data);
          conREADMEM(addr, temp);
          while (temp[27])
-	   #100 conREADMEM(addr, temp);
+           #100 conREADMEM(addr, temp);
       end
    endtask
 
@@ -616,36 +616,36 @@ module testbench;
    integer kty_ofile;
 
    reg [`STRDEF] msgSTD = "STD\n";
-   reg [`STRDEF] msgSWT = 16'h59_0d;			// Y<CR>      : response to "TTY SWITCH CONTROL ? - 0,S OR Y <CR> - "
-   reg [`STRDEF] msgSLH = 56'h30_30_30_31_30_30_0d;	// 000100<CR> : response to LH SWITCHES <# OR ?> -
-   reg [`STRDEF] msgSRH = 56'h30_30_30_30_30_30_0d;	// 000000<CR> : response to RH SWITCHES <# OR ?> -
-   
+   reg [`STRDEF] msgSWT = 16'h59_0d;                    // Y<CR>      : response to "TTY SWITCH CONTROL ? - 0,S OR Y <CR> - "
+   reg [`STRDEF] msgSLH = 56'h30_30_30_31_30_30_0d;     // 000100<CR> : response to LH SWITCHES <# OR ?> -
+   reg [`STRDEF] msgSRH = 56'h30_30_30_30_30_30_0d;     // 000000<CR> : response to RH SWITCHES <# OR ?> -
+
    initial
      begin
-	ch = 0;
-	cty_ofile = $fopen("cty_out.txt", "w");
-	kty_ofile = $fopen("kty_out.txt", "w");
+        ch = 0;
+        cty_ofile = $fopen("cty_out.txt", "w");
+        kty_ofile = $fopen("kty_out.txt", "w");
 
-	ljstr(msgSTD);
-	ljstr(msgSWT);
-	ljstr(msgSLH);
-	ljstr(msgSRH);
-	
-	#200000;
-	forever
-	  begin
-	     getchar(cty_ofile, addrCOUT);
-	     getchar(kty_ofile, addrKOUT);
-	      
+        ljstr(msgSTD);
+        ljstr(msgSWT);
+        ljstr(msgSLH);
+        ljstr(msgSRH);
+
+        #200000;
+        forever
+          begin
+             getchar(cty_ofile, addrCOUT);
+             getchar(kty_ofile, addrKOUT);
+
              conREADMEM(addrCIN, ch);
-	     puts(addrCIN, ch, msgSTD,  6000000);
-	     puts(addrCIN, ch, msgSWT, 23000000);
-	     puts(addrCIN, ch, msgSLH, 26000000);
-	     puts(addrCIN, ch, msgSRH, 29000000);
-	     
-	  end
+             puts(addrCIN, ch, msgSTD,  6000000);
+             puts(addrCIN, ch, msgSWT, 23000000);
+             puts(addrCIN, ch, msgSLH, 26000000);
+             puts(addrCIN, ch, msgSRH, 29000000);
+
+          end
      end
-   
+
 `endif
 
    //
@@ -710,6 +710,7 @@ module testbench;
       .ssramCE          (ssramCE),
       .ssramADDR        (ssramADDR),
       .ssramDATA        (ssramDATA),
+      // Misc
       .haltLED          (haltLED),
       .test             (test)
    );

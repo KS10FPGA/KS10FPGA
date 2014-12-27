@@ -204,7 +204,7 @@
    //  M7296/CSRA/E3
    //
 
-   reg cs1RDY;
+   wire cs1RDY = 0;
    //FIXME:
 
    //

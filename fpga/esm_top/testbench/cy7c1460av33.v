@@ -218,7 +218,7 @@ initial
 `ifdef XILINX     
      $readmemh("../rtl/testbench/ssram.dat", mem);
 `else 
-     $readmemh("rtl/testbench/ssram.dat", mem);
+     $readmemh({"rtl/testbench/", ``DIAG, ".dat"}, mem);
 `endif
      
 end

@@ -151,19 +151,19 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
    );
 
    //
-   // Synchronize reset
+   // Synchronize locked (and reset)
    //
 
-   reg [1:0] d;
-   always @(posedge clkT or negedge locked)
+   reg [2:0] d;
+   always @(posedge clkT or posedge RESET)
      begin
-        if (!locked)
-          d[1:0] <= 2'b11;
+	if (RESET)
+          d <= 3'b111;
         else
-          d[1:0] <= {d[0], 1'b0};
+          d <= {d[1:0], !locked};
      end
 
-   assign rst = d[1];
+   assign rst = d[2];
 
  `ifndef SYNTHESIS
 

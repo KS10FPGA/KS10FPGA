@@ -45,7 +45,7 @@
    input  clk;                                  // Clock
    input  rst;                                  // Reset
    input  busREQO;                              // Bus Request
-   output busACKI;                              // Bus Acknowledge
+   input  busACKI;                              // Bus Acknowledge
    output setTMO;                               // Set TMO
 
    //

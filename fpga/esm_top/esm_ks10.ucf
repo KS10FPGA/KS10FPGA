@@ -167,6 +167,15 @@ NET "test<6>"           LOC = "E4"   | IOSTANDARD = LVCMOS33;   // VB25
 NET "test<7>"           LOC = "F3"   | IOSTANDARD = LVCMOS33;   // VB24
 
 #
+# PLL Test Outputs
+#
+
+PIN "uKS10/uCLK/bufgCLKR.O"                 CLOCK_DEDICATED_ROUTE = FALSE;
+PIN "uKS10/uCLK/bufgCLKT.O"                 CLOCK_DEDICATED_ROUTE = FALSE;
+PIN "uKS10/uCLK/iPLL_BASE/PLL_ADV.CLKOUT2"  CLOCK_DEDICATED_ROUTE = FALSE;
+NET "test<4>"                               CLOCK_DEDICATED_ROUTE = FALSE;
+
+#
 #
 #
 
@@ -182,4 +191,3 @@ NET "test<7>"           LOC = "F3"   | IOSTANDARD = LVCMOS33;   // VB24
 
 #NET "uKS10/uCPU/uALU/r*" TIG;
 #PIN "uCLK/clkout_buf.O" CLOCK_DEDICATED_ROUTE = FALSE;
-

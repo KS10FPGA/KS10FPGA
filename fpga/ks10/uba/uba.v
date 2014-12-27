@@ -154,6 +154,7 @@ module UBA(rst, clkT, clkR,
 
    wire        setNXD;
    wire        setTMO;
+   wire        pageFAIL;
    wire        statINTHI;
    wire        statINTLO;
    wire [0:35] regUBASR;
@@ -169,7 +170,7 @@ module UBA(rst, clkT, clkR,
       .statINTHI  (statINTHI),
       .statINTLO  (statINTLO),
       .setNXD     (setNXD),
-      .setTMO     (setTMO),
+      .setTMO     (setTMO | pageFAIL),
       .regUBASR   (regUBASR)
    );
 
@@ -345,7 +346,6 @@ module UBA(rst, clkT, clkR,
    // IO Bus Paging
    //
 
-   wire        pageNXM;         // FIXME: Not connected
    wire [0:35] pageDATAO;
 
    UBAPAGE PAGE (
@@ -359,7 +359,7 @@ module UBA(rst, clkT, clkR,
       .pageDATAO    (pageDATAO),
       .pageADDRI    (pageADDRI),
       .pageFLAGS    (pageFLAGS),
-      .pageNXM      (pageNXM)
+      .pageFAIL     (pageFAIL)
    );
 
    //
@@ -420,6 +420,9 @@ module UBA(rst, clkT, clkR,
                         $time/1.0e3, ubaNUM, addr);
              if (setTMO)
                $display("[%11.3f] UBA%d: Nonexistent memory (TMO).  Addr = %012o.",
+                        $time/1.0e3, ubaNUM, addr);
+             if (pageFAIL)
+               $display("[%11.3f] UBA%d: Page Failure (TMO).  Addr = %012o.",
                         $time/1.0e3, ubaNUM, addr);
           end
      end

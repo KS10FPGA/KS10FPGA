@@ -147,7 +147,7 @@ module RH11(clk,      rst,
    function [7:0] select;
       input [0:2] sel;
       begin
-         select = 1 << sel;
+         select = 1'b1 << sel;
       end
    endfunction
 

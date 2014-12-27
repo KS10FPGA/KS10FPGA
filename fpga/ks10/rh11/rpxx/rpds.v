@@ -53,8 +53,8 @@
    input  [ 5: 0] lastSECTOR;                   // Last sector number
    input  [ 5: 0] lastTRACK;                    // Last track number
    input  [ 9: 0] lastCYL;                      // Last cylinder number
-   input          rpCD;				// RP Card Detected
-   input          rpWP;				// RP Card Write Protected
+   input          rpCD;                         // RP Card Detected
+   input          rpWP;                         // RP Card Write Protected
    input  [ 4: 0] state;                        // State
    input  [ 4: 0] stateATA;                     // StateATA
    input  [ 4: 0] stateCLEAR;                   // StateCLEAR
@@ -75,7 +75,7 @@
    // Trace
    //
 
-   reg [5:0] rpATA;
+   reg rpATA;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -157,7 +157,7 @@
    // Trace
    //
 
-   reg [5:0] rpVV;
+   reg rpVV;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -182,7 +182,7 @@
    // Trace
    //
 
-   reg [5:0] rpOM;
+   reg rpOM;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
