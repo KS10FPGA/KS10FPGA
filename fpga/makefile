@@ -73,8 +73,15 @@ CLOC         := ./cloc-1.62.exe
 #DIAG         := DSKCF-RD00	#   10.6 ms	
 #DIAG         := DSKCG		# 1350.0 ms FAIL
 #DIAG         := DSKDA-RD00	#    5.3 ms FAIL
-#DIAG         := DSKEA-RD00	#  452.5 ms FAIL
-#DIAG         := DSUBA-RD00	#  108.0 ms
+#DIAG         := DSKEA-RD00	# 1046.0 ms
+#DIAG         := DSKEB-RD00	#  ???.? ms FAIL
+#DIAG         := DSKEC-RD00	#  ???.? ms FAIL
+#DIAG         := DSKFA   	#  ???.? ms FAIL
+#DIAG         := DSMMA   	#  ???.? ms FAIL
+#DIAG         := DSMMB   	#  ???.? ms FAIL
+#DIAG         := DSMMC   	#  ???.? ms FAIL
+#DIAG         := DSMMD   	#  ???.? ms FAIL
+#DIAG         := DSUBA-RD00	#  138.0 ms
 #DIAG         := DSDZA-RD00	# 2411.8 ms
 #DIAG         := DSRPA-RD00	#  ???.? ms FAIL
 
@@ -87,18 +94,21 @@ DIAGBASE   := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XX
 #   -D SIM_SMMON	Boot to SMMON instead of diagnostic app (See testbench)
 #   -D SIM_CTY		Simulate the CTY (See testbench)
 #   -D STOP_ON_COMPLETE Stop simulation when test is complete (See debug.v)
+#   -D STOP_ON_STUCK_PC Stop simulating when PC gets stuck.
 #   -D DEBUG_DSKAA	Diagnostic information (See debug.v)
 #   -D DEBUG=DSKAA	Diagnostic information (See debug.v)
 #
 
 #	-D SIM_SMMON \
+#	-D ENABLE_TIMER \
 
 DEBUG_ARGS := \
 	-D SIM_CTY \
-	-D ENABLE_TIMER \
+        -D STOP_ON_STUCK_PC \
 	-D STOP_ON_COMPLETE \
 	-D DEBUG_$(DIAGBASE) \
-	-D DEBUG=$(DIAGBASE)
+	-D DEBUG=$(DIAGBASE) \
+	-D DIAG=$(DIAG)
 
 #
 #
@@ -291,8 +301,7 @@ INC := \
 
 DAT := \
 	$(RTL)/ks10/cpu/useq/crom.dat \
-	$(RTL)/ks10/cpu/useq/drom.dat \
-	$(RTL)/testbench/ssram.dat
+	$(RTL)/ks10/cpu/useq/drom.dat
 
 DOC := \
 	$(RTL)/status.txt \
@@ -309,11 +318,16 @@ BLD := \
 
 FILTER_ARGS := \
 	'<filters xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="filter.xsd">' \
-	'    <filter task="map" file="Map" num="284"  type="warning"></filter>'  \
-	'    <filter task="xst" file="Xst" num="647"  type="warning"></filter>'  \
-	'    <filter task="xst" file="Xst" num="1710" type="warning"></filter>'  \
-	'    <filter task="xst" file="Xst" num="1895" type="warning"></filter>'  \
-	'    <filter task="xst" file="Xst" num="2677" type="warning"></filter>'  \
+	'    <filter task="map"   file="Map"   num="284"  type="warning"></filter>' \
+	'    <filter task="xst"   file="Xst"   num="647"  type="warning"></filter>' \
+	'    <filter task="xst"   file="Xst"   num="1710" type="warning"></filter>' \
+	'    <filter task="xst"   file="Xst"   num="1895" type="warning"></filter>' \
+	'    <filter task="xst"   file="Xst"   num="2261" type="info"   ></filter>' \
+	'    <filter task="xst"   file="Xst"   num="2677" type="warning"></filter>' \
+	'    <filter task="place" file="Place" num="1109" type="warning"></filter>' \
+	'    <filter task="place" file="Place" num="1137" type="warning"></filter>' \
+	'    <filter task="place" file="Place" num="1197" type="warning"></filter>' \
+	'    <filter task="place" file="Place" num="1206" type="warning"></filter>' \
 	'</filters>'
 
 build: $(ISE)/$(PROJECT).mcs
@@ -334,15 +348,15 @@ $(USEQ)/drom.dat: $(USEQ)/ks10.mcr $(USEQ)/drom.awk
 
 #
 # Initialize the SSRAM with MAINDEC (simulation only)
-# Note special rule for force ssram.dat to rebuild
+# Note special rule for force $(DIAG).dat to rebuild
 #
 
-$(TESTFILES)/ssram.dat : FORCE
+$(TESTFILES)/$(DIAG).dat : FORCE
 FORCE:
 
-$(TESTFILES)/ssram.dat : $(MON_SRC) $(TESTFILES)/${PREFIX}$(DIAG).SEQ $(TESTFILES)/ssram.awk makefile
+$(TESTFILES)/$(DIAG).dat : $(MON_SRC) $(TESTFILES)/${PREFIX}$(DIAG).SEQ $(TESTFILES)/ssram.awk makefile
 	cat $(MON_SRC) $(TESTFILES)/${PREFIX}$(DIAG).SEQ | \
-	awk -f $(TESTFILES)/ssram.awk -vfilename=${PREFIX}$(DIAG).SEQ > $(TESTFILES)/ssram.dat
+	awk -f $(TESTFILES)/ssram.awk -vfilename=${PREFIX}$(DIAG).SEQ > $(TESTFILES)/$(DIAG).dat
 
 $(ISE)/$(PROJECT).filter: makefile
 	@echo "Creating "$@ > /dev/stderr
@@ -437,7 +451,8 @@ ISIM_ARGS := \
 	-view $(PROJECT).wcfg \
 	-wdb c:/temp/$(PROJECT).wdb
 
-isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg makefile
+isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg $(TESTFILES)/$(DIAG).dat makefile
+	cp $(TESTFILES)/$(DIAG).dat $(TESTFILES)/ssram.dat 
 	@cd $(ISE); \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe $(ISIM_ARGS) &
@@ -459,6 +474,7 @@ XST_OPTS := \
 XST_CMDS := \
 	'set -xsthdpdir "xst"' \
 	'run' \
+	'-define {XILINX}' \
 	'-ifn $(PROJECT).prj' \
 	'-iuc NO' \
 	'-ofn $(PROJECT).ngc' \
@@ -518,7 +534,7 @@ $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr: $(ISE)/$(PROJECT).xst $(ISE)/$(PROJ
 #
 # ngdbuild
 #
-# "NGDBuild reads in a netlist file in EDIF or NGC format and creates a Xilinx® Native
+# "NGDBuild reads in a netlist file in EDIF or NGC format and creates a Xilinx Native
 # Generic Database (NGD) file that contains a logical description of the design in terms of
 # logic elements, such as AND gates, OR gates, LUTs, flip-flops, and RAMs"
 #
@@ -550,7 +566,7 @@ $(ISE)/$(PROJECT).ngd: $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(ISE)/$(
 #
 # MAP
 #
-# The MAP program maps a logical design to a Xilinx® FPGA. The
+# The MAP program maps a logical design to a Xilinx FPGA. The
 # input to MAP is an NGD file, which is generated using the
 # NGDBuild program.
 #
@@ -725,10 +741,20 @@ $(ISE)/$(PROJECT).mcs: $(ISE)/$(PROJECT).bit makefile
 # usage:
 #   impact [options]
 #
+# Note:
+#   This is keyed to my Digilent JTAG HS2 programmer. If you want to
+#   auto probe for a JTAG device:
+#
+#   Replace
+#	'setCable -target "digilent_plugin DEVICE=JtagHs2 FREQUENCY="' \
+#
+#   With
+#	'setcable -p auto' \
+#
 
 IMPACT_CMDS := \
 	'setmode -bscan' \
-	'setcable -p auto' \
+	'setCable -target "digilent_plugin DEVICE=JtagHs2 FREQUENCY="' \
 	'identify -inferir' \
 	'identifyMPM' \
 	'attachflash -position 1 -spi S25FL032P' \
@@ -737,6 +763,10 @@ IMPACT_CMDS := \
 	'quit'
 
 load: $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT)_impact.cmd
+	cd ise; \ 
+	$(IMPACT) -batch $(PROJECT)_impact.cmd
+
+load1: $(ISE)/$(PROJECT)_impact.cmd
 	cd ise; \
 	$(IMPACT) -batch $(PROJECT)_impact.cmd
 
@@ -744,8 +774,8 @@ load: $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT)_impact.cmd
 # iverilog
 #
 
-$(TESTSUITE)/$(DIAG).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT) makefile
-	$(IVERILOG) -s testbench -o $@ $(SIM_SRC) $(RTL_SRC)   \
+$(TESTSUITE)/$(DIAG).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT)	$(TESTFILES)/$(DIAG).dat  makefile
+	$(IVERILOG) -s testbench -o $@ $(SIM_SRC) $(RTL_SRC) \
 	$(DEBUG_ARGS) \
 	-I rtl/ks10 \
 	-I rtl/ks10/uba \
@@ -915,3 +945,5 @@ archive_dist: $(SRC)
 
 cloc :
 	$(CLOC) --by-file --force-lang=Verilog-SystemVerilog,vh rtl
+	$(CLOC) --by-file --exclude-dir=driverlib ../code
+
