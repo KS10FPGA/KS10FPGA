@@ -261,6 +261,7 @@ INC := \
 	$(RTL)/ks10/cpu/debug_dskba.vh \
 	$(RTL)/ks10/cpu/debug_dskcg.vh \
 	$(RTL)/ks10/cpu/debug_dskea.vh \
+	$(RTL)/ks10/cpu/debug_dskec.vh \
 	$(RTL)/ks10/cpu/debug_dsuba.vh \
 	$(RTL)/ks10/cpu/debug_dsdza.vh \
 	$(RTL)/ks10/cpu/debug_smmon.vh \
