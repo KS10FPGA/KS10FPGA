@@ -352,20 +352,17 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
 
    reg [0:39] aluRAM [0:15];
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
-          ;
-        else
-          if (clken)
-            begin
-               if (lclken & write)
-                 aluRAM[ba][ 0:19] <= bdi[ 0:19];
-               if (rclken & write)
-                 aluRAM[ba][20:39] <= bdi[20:39];
-            end
+        if (clken)
+          begin
+             if (lclken & write)
+               aluRAM[ba][ 0:19] <= bdi[ 0:19];
+             if (rclken & write)
+               aluRAM[ba][20:39] <= bdi[20:39];
+          end
      end
-
+   
    //
    // ALU RAM Read Port(s)
    //

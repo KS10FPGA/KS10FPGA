@@ -166,27 +166,16 @@ module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
    //  CRA3/E160
    //
 
-`ifndef SYNTHESIS
-   integer i;
-`endif
-
    reg [0:11] stack[0:15];
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
-`ifdef SYNTHESIS
-          ;
-`else
-          for (i = 0; i < 16; i = i + 1)
-            stack[i] <= 0;
-`endif
-        else if (clken & call)
+        if (clken & call)
           stack[wp] <= currADDR;
      end
 
    //
-   // The stack read is asynchronous
+   // The stack read is synchronous from SP
    //
 
    assign addrOUT = stack[sp];

@@ -225,11 +225,103 @@ module RH11(clk,      rst,
    wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
+   // RH11 Control/Status #1 (CS1) Register
+   //
+   
+   wire [15:0] rhCS1;
+   wire        rhSC  = `rhCS1_SC(rhCS1);
+   wire        rhRDY = `rhCS1_RDY(rhCS1);
+   wire        rhIE  = `rhCS1_IE(rhCS1);
+
+   //
+   // RH11 Bus Address (BA) Register
+   //
+   
+   wire [17:0] rhBA;
+
+   //
+   // RH11 Word Count (WC) Register
+   //
+   
+   wire [15:0] rhWC;
+
+   //
+   // RH11 Control/Status #2 (CS2) Register
+   //
+   
+   wire [15:0] rhCS2;
+   wire        rhCLR  = `rhCS2_CLR(rhCS2);
+   wire        rhBAI  = `rhCS2_BAI(rhCS2);
+   wire [ 2:0] rhUNIT = `rhCS2_UNIT(rhCS2);
+
+   //
+   // RH11 Attention Summary (AS) Register
+   //
+   
+   wire [15:0] rhAS   = {8'b0,
+                         rpDS[7][15], rpDS[6][15], rpDS[5][15], rpDS[4][15],
+                         rpDS[3][15], rpDS[2][15], rpDS[1][15], rpDS[0][15]};
+
+   
+   //
+   //
+   //
+   
+   wire [15:0] rhDB;
+
+   //
+   // RPxx Registers
+   //
+   
+   wire [15:0] rpSN    [7:0];           // SN  Register
+
+   assign rpSN[0] = `rpSN0;
+   assign rpSN[1] = `rpSN1;
+   assign rpSN[2] = `rpSN2;
+   assign rpSN[3] = `rpSN3;
+   assign rpSN[4] = `rpSN4;
+   assign rpSN[5] = `rpSN5;
+   assign rpSN[6] = `rpSN6;
+   assign rpSN[7] = `rpSN7;
+
+   //
+   //
+   //
+		    
+   wire [15:0] rpDA    [7:0];
+
+   //
+   // RPXX Drive Status (DS) Register
+   //
+     
+   wire [15:0] rpDS    [7:0];
+   wire        rpATA = (rpDS[0][15] | rpDS[1][15] | rpDS[2][15] | rpDS[3][15] |
+			rpDS[4][15] | rpDS[5][15] | rpDS[6][15] | rpDS[7][15]);
+
+
+   wire [15:0] rpER1   [7:0];           // ER1 Register
+   wire [15:0] rpLA    [7:0];           // LA  Register
+   wire [15:0] rpMR    [7:0];           // MR  Register
+   wire [15:0] rpDT    [7:0];           // DT  Register
+   wire [15:0] rpOF    [7:0];           // OF  Register
+   wire [15:0] rpDC    [7:0];           // DC  Register
+   wire [15:0] rpCC    [7:0];           // CC  Register
+   wire [15:0] rpCS1   [7:0];           // CS1 Register
+
+
+   
+   wire [ 1:0] rpSDOP  [7:0];           // SD Operation
+   wire [31:0] rpSDADDR[7:0];           // SD Sector Address
+   wire [ 7:0] rpSDREQ;                 // RP is ready for SD
+   
+   wire [ 2:0] rpUNITSEL;		// 
+   
+   //
    // Signals
    //
 
-   wire sdINCWORD;                              // Increment word
-   wire sdINCSECT;                              // Increment Sector
+   wire sdINCWORD;                   	// Increment word
+   wire sdINCSECT;                      // Increment Sector
 
    //
    // FIXME
@@ -255,11 +347,6 @@ module RH11(clk,      rst,
    // RH11 Control/Status #1 (RHCS1) Register
    //
 
-   wire [15:0] rhCS1;
-   wire rhSC  = `rhCS1_SC(rhCS1);
-   wire rhRDY = `rhCS1_RDY(rhCS1);
-   wire rhIE  = `rhCS1_IE(rhCS1);
-
    RHCS1 CS1 (
       .clk        (clk),
       .rst        (rst),
@@ -273,15 +360,13 @@ module RH11(clk,      rst,
       .intrDONE   (1'b0),       // FIXME
       .rhBA       (rhBA),
       .rhCS2      (rhCS2),
-      .rpCS1      (rpCS1[rhUNITSEL]),
+      .rpCS1      (rpCS1[rpUNITSEL]),
       .rhCS1      (rhCS1)
    );
 
    //
    // RH11 Word Count (RHWC) Register
    //
-
-   wire [15:0] rhWC;
 
    RHWC WC (
       .clk        (clk),
@@ -298,8 +383,6 @@ module RH11(clk,      rst,
    //
    // RH11 Bus Address (RHBA) Register
    //
-
-   wire [17:0] rhBA;
 
    RHBA BA (
       .clk        (clk),
@@ -318,11 +401,6 @@ module RH11(clk,      rst,
    //
    // RH11 Control/Status #2 (RHCS2) Register
    //
-
-   wire [15:0] rhCS2;
-   wire        rhCLR  = `rhCS2_CLR(rhCS2);
-   wire        rhBAI  = `rhCS2_BAI(rhCS2);
-   wire [ 2:0] rhUNIT = `rhCS2_UNIT(rhCS2);
 
    RHCS2 CS2 (
       .clk        (clk),
@@ -345,8 +423,6 @@ module RH11(clk,      rst,
    // RH11 Data Buffer (RHDB) Register
    //
 
-   wire [15:0] rhDB;
-
    RHDB DB (
       .clk        (clk),
       .rst        (rst),
@@ -363,9 +439,6 @@ module RH11(clk,      rst,
    //
 
    wire [ 7:0] ataCLR = (rhasWRITE) ? rhDATAI[7:0] : 8'b0;
-   wire [15:0] rhAS   = {8'b0,
-                         rpDS[7][15], rpDS[6][15], rpDS[5][15], rpDS[4][15],
-                         rpDS[3][15], rpDS[2][15], rpDS[1][15], rpDS[0][15]};
 
    //
    // Completion Monitor
@@ -448,7 +521,7 @@ module RH11(clk,      rst,
    // Unit Select Decoder for Registers
    //
 
-   wire [7:0] rhUNITSEL = select(rhUNIT);
+   assign rpUNITSEL = select(rhUNIT);
 
    //
    // Unit Select Decoder for Completion Monitor
@@ -475,36 +548,9 @@ module RH11(clk,      rst,
    // Build Array 8 RP Register Sets
    //
 
-   wire [15:0] rpSN    [7:0];           // SN  Register
-   wire [15:0] rpDA    [7:0];           // DA  Register
-   wire [15:0] rpDS    [7:0];           // DS  Register
-   wire [15:0] rpER1   [7:0];           // ER1 Register
-   wire [15:0] rpLA    [7:0];           // LA  Register
-   wire [15:0] rpMR    [7:0];           // MR  Register
-   wire [15:0] rpDT    [7:0];           // DT  Register
-   wire [15:0] rpOF    [7:0];           // OF  Register
-   wire [15:0] rpDC    [7:0];           // DC  Register
-   wire [15:0] rpCC    [7:0];           // CC  Register
-   wire [15:0] rpCS1   [7:0];           // CS1 Register
-   wire [ 1:0] rpSDOP  [7:0];           // SD Operation
-   wire [31:0] rpSDADDR[7:0];           // SD Sector Address
-   wire [ 7:0] rpSDREQ;                 // RP is ready for SD
-
-   wire rpATA = (rpDS[0][15] | rpDS[1][15] | rpDS[2][15] | rpDS[3][15] |
-                 rpDS[4][15] | rpDS[5][15] | rpDS[6][15] | rpDS[7][15]);
-
    //
    // Build rpSN Register Set
    //
-
-   assign rpSN[0] = `rpSN0;
-   assign rpSN[1] = `rpSN1;
-   assign rpSN[2] = `rpSN2;
-   assign rpSN[3] = `rpSN3;
-   assign rpSN[4] = `rpSN4;
-   assign rpSN[5] = `rpSN5;
-   assign rpSN[6] = `rpSN6;
-   assign rpSN[7] = `rpSN7;
 
    //
    // Build Array 8 RPxx (RP06 in this case) disk drives
@@ -522,7 +568,7 @@ module RH11(clk,      rst,
               .clk      (clk),
               .rst      (rst),
               .clr      (rhCLR | devRESET),
-              .unitSEL  (rhUNITSEL[i]),
+              .unitSEL  (rpUNITSEL[i]),
               .incSECTOR(sdINCSECT),
               .ataCLR   (ataCLR[i]),
               .devADDRI (devADDRI),
@@ -608,7 +654,7 @@ module RH11(clk,      rst,
         if (rpdaWRITE | rpdaREAD)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rpDA[rhUNITSEL]};
+             devDATAO = {20'b0, rpDA[rpUNITSEL]};
           end
         if (rhcs2WRITE | rhcs2READ)
           begin
@@ -618,12 +664,12 @@ module RH11(clk,      rst,
         if (rpdsWRITE | rpdsREAD)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rpDS[rhUNITSEL]};
+             devDATAO = {20'b0, rpDS[rpUNITSEL]};
           end
         if (rper1WRITE | rper1READ)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rpER1[rhUNITSEL]};
+             devDATAO = {20'b0, rpER1[rpUNITSEL]};
           end
         if (rhasWRITE | rhasREAD)
           begin
@@ -633,7 +679,7 @@ module RH11(clk,      rst,
         if (rplaWRITE | rplaREAD)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rpLA[rhUNITSEL]};
+             devDATAO = {20'b0, rpLA[rpUNITSEL]};
           end
         if (rhdbWRITE | rhdbREAD)
           begin
@@ -643,32 +689,32 @@ module RH11(clk,      rst,
         if (rpmrWRITE | rpmrREAD)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rpMR[rhUNITSEL]};
+             devDATAO = {20'b0, rpMR[rpUNITSEL]};
           end
         if (rpdtWRITE | rpdtREAD)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rpDT[rhUNITSEL]};
+             devDATAO = {20'b0, rpDT[rpUNITSEL]};
           end
         if (rpsnWRITE | rpsnREAD)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rpSN[rhUNITSEL]};
+             devDATAO = {20'b0, rpSN[rpUNITSEL]};
           end
         if (rpofWRITE | rpofREAD)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rpOF[rhUNITSEL]};
+             devDATAO = {20'b0, rpOF[rpUNITSEL]};
           end
         if (rpdcWRITE | rpdcREAD)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rpDC[rhUNITSEL]};
+             devDATAO = {20'b0, rpDC[rpUNITSEL]};
           end
         if (rpccWRITE | rpccREAD)
           begin
              devACKO  = 1;
-             devDATAO = {20'b0, rpCC[rhUNITSEL]};
+             devDATAO = {20'b0, rpCC[rpUNITSEL]};
           end
         if ((rper2WRITE | rper2READ | rper3WRITE | rper3READ) |
             (rpec1WRITE | rpec1READ | rpec2WRITE | rpec2READ))

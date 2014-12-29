@@ -172,6 +172,53 @@ module RPXX(clk, rst, clr,
    wire [35:0] rpDATAI = devDATAI[0:35];
 
    //
+   // RPxx Control/Status Register (RPCS1)
+   //
+
+   wire [15:0] rpCS1;
+
+   //
+   // RPxx Disk Status Register (RPDS)
+   //
+
+   wire [15:0] rpDS;
+   wire        rpERR = `rpDS_ERR(rpDS);
+   wire        rpDRY = `rpDS_DRY(rpDS);
+
+   //
+   // RPxx Disk Address Register (RPDA)
+   //
+
+   wire [15:0] rpDA;
+   wire [ 5:0] rpSA = `rpDA_SA(rpDA);
+   wire [ 5:0] rpTA = `rpDA_TA(rpDA);
+
+   //
+   // RPxx Error #1 (RPER1) Register
+   //
+
+   wire [15:0] rpER1;
+
+   //
+   // RPxx Offset (RPOF) Register
+   //
+
+   wire [15:0] rpOF;
+
+   //
+   // RPxx Desired Cylinder (RPDC) Register
+   //
+
+   wire [15:0] rpDC;
+   wire [ 9:0] rpDCA = `rpDC_DCA(rpDC);
+   
+   //
+   // SD Sector Address
+   //
+
+   wire [31:0] rpSDADDR;
+   
+   //
    // Function to calculate disk seek delay.  This is psudeo exponential.
    // The RP06 has 815 cyclinders
    //
@@ -238,7 +285,6 @@ module RPXX(clk, rst, clr,
    // RPxx Control/Status Register (RPCS1)
    //
 
-   wire [15:0] rpCS1;
    RPCS1 CS1 (
       .clk         (clk),
       .rst         (rst),
@@ -252,10 +298,6 @@ module RPXX(clk, rst, clr,
    //
    // RPxx Disk Address Register (RPDA)
    //
-
-   wire [15:0] rpDA;
-   wire [ 5:0] rpSA = `rpDA_SA(rpDA);
-   wire [ 5:0] rpTA = `rpDA_TA(rpDA);
 
    RPDA DA (
       .clk         (clk),
@@ -272,10 +314,6 @@ module RPXX(clk, rst, clr,
    //
    // RPxx Disk Status Register (RPDS)
    //
-
-   wire [15:0] rpDS;
-   wire rpERR = `rpDS_ERR(rpDS);
-   wire rpDRY = `rpDS_DRY(rpDS);
 
    RPDS DS (
       .clk         (clk),
@@ -304,10 +342,7 @@ module RPXX(clk, rst, clr,
 
    //
    // RPxx Error #1 (RPER1) Register
-   //  This register is not byte addressable.
    //
-
-   wire [15:0] rpER1;
 
    RPER1 ER1 (
       .clk         (clk),
@@ -350,8 +385,6 @@ module RPXX(clk, rst, clr,
    // RPxx Offset (RPOF) Register
    //
 
-   wire [15:0] rpOF;
-
    RPOF OF (
       .clk        (clk),
       .rst        (rst),
@@ -364,9 +397,6 @@ module RPXX(clk, rst, clr,
    //
    // RPxx Desired Cylinder (RPDC) Register
    //
-
-   wire [15:0] rpDC;
-   wire [ 9:0] rpDCA = `rpDC_DCA(rpDC);
 
    RPDC DC (
       .clk        (clk),
@@ -385,8 +415,6 @@ module RPXX(clk, rst, clr,
    //
    // SD Sector Address Calculation
    //
-
-   wire [31:0] rpSDADDR;
 
    SDADDR uSDADDR (
       .clk        (clk),
