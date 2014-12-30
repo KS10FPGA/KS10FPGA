@@ -12,27 +12,18 @@ BEGIN {
 
 /D [0-7][0-7][0-7][0-7], / {
      #print $2 " " $4 " " $5 " " $6 
-     i = strtonum("0" $2)
-     MAP2[i]  = $2;
-     MAP[4,i] = $4;
-     MAP[5,i] = $5;
-     MAP[6,i] = $6;
+     i        = strtonum("0" $2);
+     MAP2[i]  = strtonum("0" $2);
+     MAP[4,i] = strtonum("0" $4);
+     MAP[5,i] = strtonum("0" $5);
+     MAP[6,i] = strtonum("0" $6);
 }
 
  END {
      for (i = 0; i < 512; i++) {
- 	if (strtonum("0" MAP2[i]) == i) {
-	    printf "        DROM[%3d] = 36'o%s_%s_%s;\n", 
-		i,
-		MAP[ 4,i],
-		MAP[ 5,i],
-		MAP[ 6,i]
- 	} else {
-	    printf "        DROM[%3d] <= 36'o%s_%s_%s;	// Unused\n", 
-		i,
-		"0000",
-		"0000",
-		"0000"
- 	}
+	 if (MAP2[i] == i) {
+	     printf "%03x%03x%03x	// DROM[%3d] = 36'o%04o_%04o_%04o;\n", 
+		 MAP[4,i], MAP[5,i], MAP[6,i], i, MAP[4,i], MAP[5,i], MAP[6,i]
+	 }
      }
 }

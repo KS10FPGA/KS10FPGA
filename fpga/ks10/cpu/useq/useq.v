@@ -308,7 +308,6 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    CROM uCROM (
       .clk      (clk),
       .clken    (clken),
-      .rst      (rst),
       .addr     (addr),
       .crom     (crom)
    );

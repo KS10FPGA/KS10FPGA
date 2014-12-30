@@ -215,11 +215,7 @@ initial
      noti1_5    = 0;
      noti1_6    = 0;
      noti2      = 0;
-`ifdef XILINX     
-     $readmemh("../rtl/testbench/ssram.dat", mem);
-`else 
-     $readmemh({"rtl/testbench/", ``DIAG, ".dat"}, mem);
-`endif
+     $readmemh(`SSRAM_DAT, mem);
      
 end
 

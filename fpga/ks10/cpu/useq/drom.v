@@ -9,6 +9,8 @@
 //   The Dispatch ROM maps the instruction (from the Instruction Register) to
 //   the address of code that executes that instruction in the Control ROM.
 //
+//   The Dispatch ROM has 512 entries.  One for each of the opcodes.
+//
 // Note
 //   The contents of this file was extracted from the microcode listing file by
 //   a simple AWK script.  Go see the makefile.
@@ -47,13 +49,12 @@
 `include "crom.vh"
 `include "drom.vh"
 
-module DROM(clk, rst, clken, dbus, crom, drom);
+module DROM(clk, clken, dbus, crom, drom);
 
    parameter  cromWidth = `CROM_WIDTH;
    parameter  dromWidth = `DROM_WIDTH;
 
    input                      clk;      // Clock
-   input                      rst;      // Reset
    input                      clken;    // Clock Enable
    input      [0:35]          dbus;     // DBUS
    input      [0:cromWidth-1] crom;     // Control ROM
@@ -64,22 +65,6 @@ module DROM(clk, rst, clken, dbus, crom, drom);
    //
 
    wire loadIR = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
-   wire [0:8] addr = dbus[0:8];
-
-   //
-   // Dispatch ROM initialization
-   //
-   // Note:
-   //  The KS10 microcode is extracted from the listing file by
-   //  a 'simple' AWK script and is included below.
-   //
-
-   reg [0:dromWidth-1] DROM[0:511];
-
-   initial
-     begin
-        `include "drom.dat"
-     end
 
    //
    // Dispatch ROM
@@ -100,10 +85,17 @@ module DROM(clk, rst, clken, dbus, crom, drom);
    //  DPEA/E110
    //
 
+   reg [0:dromWidth-1] DROM[0:511];
+
+   initial
+     begin
+        $readmemh(`DROM_DAT, DROM);
+     end
+
    always @(posedge clk)
      begin
         if (clken & loadIR)
-          drom <= DROM[addr];
+          drom <= DROM[dbus[0:8]];
      end
 
 endmodule

@@ -94,20 +94,15 @@
 `include "pxct.vh"
 `include "regir.vh"
 `include "useq/crom.vh"
-`include "useq/drom.vh"
 
-
-module RAMFILE(clk, rst, clken, crom, drom, dbus, regIR, xrPREV, vmaREG,
-               acBLOCK, ramfile);
+module RAMFILE(clk, rst, clken, crom, dbus, regIR, xrPREV, vmaREG, acBLOCK, ramfile);
 
    parameter cromWidth = `CROM_WIDTH;
-   parameter dromWidth = `DROM_WIDTH;
 
    input                   clk;                 // Clock
    input                   rst;                 // Reset
    input                   clken;               // Clock enable
    input  [ 0:cromWidth-1] crom;                // Control ROM Data
-   input  [ 0:dromWidth-1] drom;                // Dispatch ROM Data
    input  [ 0:35]          dbus;                // DBUS Input
    input  [ 0:17]          regIR;               // Instruction Register
    input                   xrPREV;              // XR Previous

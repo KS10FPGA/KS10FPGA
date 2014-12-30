@@ -55,30 +55,14 @@
 `default_nettype none
 `include "crom.vh"
 
-module CROM(clk, rst, clken, addr, crom);
+module CROM(clk, clken, addr, crom);
 
    parameter  cromWidth = `CROM_WIDTH;
 
    input                      clk;      // Clock
-   input                      rst;      // Reset
    input                      clken;    // Clock Enable
    input      [0:11]          addr;     // Address
    output reg [0:cromWidth-1] crom;     // Output Data
-
-   //
-   // Control ROM initialization
-   //
-   // Note:
-   //  The KS10 microcode is extracted from the listing file by a 'simple' AWK
-   //  script and is included below.
-   //
-
-   reg [0:cromWidth-1] CROM[0:2047];
-
-   initial
-     begin
-        `include "crom.dat"
-     end
 
    //
    // Control ROM
@@ -97,10 +81,12 @@ module CROM(clk, rst, clken, addr, crom);
    // Trace:
    //  Registers
    //   CRA6/E2,   CRA6/E46,  CRA6/E67,  CRA6/E86,  CRA6/E87,  CRA6/E104
+   //
    //  Address buffers:
    //   CRA7/E5,   CRA7/E6,   CRA7/E10,  CRA7/E11,  CRA7/E19,  CRA7/E20
    //   CRA7/E68,  CRA7/E80,  CRA7/E93,  CRA7/E94,  CRA7/E100, CRA7/E106
-   //  ROMS:
+   //
+   //  RAMS:
    //   CRA8/E8,   CRA8/E13,  CRA8/E14,  CRA8/E22,  CRA8/E23,  CRA8/E28,
    //   CRA8/E29,  CRA8/E37,  CRA8/E38,  CRA8/E40,  CRA8/E41,  CRA8/E49,
    //   CRA8/E50,  CRA8/E52,  CRA8/E53,  CRA8/E60,  CRA8/E61,  CRA8/E63,
@@ -135,6 +121,13 @@ module CROM(clk, rst, clken, addr, crom);
    //   CRM7/E98,  CRM7/E102, CRM7/E110, CRM7/E114, CRM7/E137, CRM7/E144,
    //   CRM7/E156, CRM7/E163, CRM7/E176, CRM7/E181, CRM7/E188, CRM7/E195,
    //
+
+   reg [0:cromWidth-1] CROM[0:2047];
+
+   initial
+     begin
+        $readmemh(`CROM_DAT, CROM);
+     end
 
    always @(posedge clk)
      begin
