@@ -115,7 +115,6 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
                  (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA) |
                  (specPAGESWEEP));
 
-
    //
    // Sweep and Page Write
    //
@@ -146,21 +145,23 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
      end
 
    //
-   // Table Address
+   // Table Addressing
    //
 
-   wire [0:7] tableAddr   = dp[19:26];
-   wire       tableSelect = dp[18];
+   wire  [0: 7] readAddr  = dp[19:26];
+   wire         readSel   = dp[18];
+   wire  [0: 7] writeAddr = vmaREG[19:26];
+   wire         writeSel  = vmaREG[18];
 
    //
    // Page Table Write
    //
 
-   wire         pageinVALID     = dp[18];
-   wire         pageinWRITEABLE = dp[21];
-   wire         pageinCACHEABLE = dp[22];
-   wire [16:26] pageinADDR      = dp[25:35];
-   wire [ 0: 3] pageinFLAGS     = {pageinVALID, pageinWRITEABLE, pageinCACHEABLE, vmaUSER};
+   wire         pageVALID     = dp[18];
+   wire         pageWRITEABLE = dp[21];
+   wire         pageCACHEABLE = dp[22];
+   wire [16:26] pageADDRI     = dp[25:35];
+   wire [ 0:14] pageDATAI     = {pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI};
 
    //
    // Page Table Write
@@ -195,29 +196,23 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    reg [0:14] pageTABLE1[0:255];
    reg [0:14] pageTABLE2[0:255];
 
-   wire [18:26] asdf = vmaREG[18:26];
-   wire [ 0:14] qwer = {pageinFLAGS, pageinADDR};
-
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
-          ;
-        else
-          if (clken)
-            begin
-               if (pageSWEEP & vmaEN & pageWRITE)
-                 begin
-                    pageTABLE1[tableAddr] <= {7'b0110_000, pageinADDR[19:26]};
-                    pageTABLE2[tableAddr] <= {7'b0110_001, pageinADDR[19:26]};
-                 end
-               else if (pageWRITE)
-                 begin
-                    if (!vmaREG[18])
-                      pageTABLE1[vmaREG[19:26]] <= {pageinFLAGS, pageinADDR};
-                    else
-                      pageTABLE2[vmaREG[19:26]] <= {pageinFLAGS, pageinADDR};
-                 end
-            end
+        if (clken & pageWRITE)
+          begin
+             if (pageSWEEP & vmaEN)
+               begin
+                  pageTABLE1[readAddr] <= {7'b0110_000, pageADDRI[19:26]};
+                  pageTABLE2[readAddr] <= {7'b0110_001, pageADDRI[19:26]};
+               end
+             else
+               begin
+                  if (!writeSel)
+                    pageTABLE1[writeAddr] <= pageDATAI;
+                  else
+                    pageTABLE2[writeAddr] <= pageDATAI;
+               end
+          end
      end
 
    //
@@ -237,10 +232,10 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
         else
           if (clken & vmaEN)
             begin
-               if (!tableSelect)
-                 {pageFLAGS, pageADDR} <= pageTABLE1[tableAddr];
+               if (!readSel)
+                 {pageFLAGS, pageADDR} <= pageTABLE1[readAddr];
                else
-                 {pageFLAGS, pageADDR} <= pageTABLE2[tableAddr];
+                 {pageFLAGS, pageADDR} <= pageTABLE2[readAddr];
             end
      end
 
@@ -248,6 +243,10 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    // Test only
    //
 
-   wire [16:35] addr = {pageADDR[16:26], vmaREG[27:35]};
+`ifndef SYNTHESIS
+
+   wire [16:35] physAddr = {pageADDR[16:26], vmaREG[27:35]};
+
+`endif
 
 endmodule
