@@ -419,9 +419,12 @@ $(ISE)/$(PROJECT)_impact.cmd: makefile
 #
 
 FUSE_ARGS := \
-        $(shell echo "$(DEBUG_ARGS)" | sed -e 's/-D/-d/g') \
-        -d SMALL_MEM \
-        -d XILINX \
+	$(shell echo "$(DEBUG_ARGS)" | sed -e 's/-D/-d/g') \
+	-d SMALL_MEM \
+	-d XILINX \
+	-d SSRAM_DAT=\"\"../rtl/testbench/$(DIAG).dat\"\" \
+	-d CROM_DAT=\"\"../rtl/ks10/cpu/useq/crom.dat\"\" \
+	-d DROM_DAT=\"\"../rtl/ks10/cpu/useq/drom.dat\"\" \
 	-intstyle $(INTSTYLE) \
 	-incremental \
 	-o   $(PROJECT)_isim.exe \
@@ -434,7 +437,7 @@ FUSE_ARGS := \
 	work.glbl
 
 $(ISE)/$(PROJECT)_isim.exe: $(ISE)/$(PROJECT)_isim.prj $(RTL_SRC) $(SIM_SRC) $(INC) $(DAT) makefile
-	cd $(ISE); \
+	@cd $(ISE); \
 	$(FUSE) $(FUSE_ARGS)
 
 #
@@ -453,7 +456,6 @@ ISIM_ARGS := \
 	-wdb c:/temp/$(PROJECT).wdb
 
 isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg $(TESTFILES)/$(DIAG).dat makefile
-	cp $(TESTFILES)/$(DIAG).dat $(TESTFILES)/ssram.dat 
 	@cd $(ISE); \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe $(ISIM_ARGS) &
@@ -475,7 +477,7 @@ XST_OPTS := \
 XST_CMDS := \
 	'set -xsthdpdir "xst"' \
 	'run' \
-	'-define {XILINX}' \
+	'-define {XILINX CROM_DAT="../rtl/ks10/cpu/useq/crom.dat" DROM_DAT="../rtl/ks10/cpu/useq/drom.dat"}' \
 	'-ifn $(PROJECT).prj' \
 	'-iuc NO' \
 	'-ofn $(PROJECT).ngc' \
@@ -778,6 +780,9 @@ load1: $(ISE)/$(PROJECT)_impact.cmd
 $(TESTSUITE)/$(DIAG).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT)	$(TESTFILES)/$(DIAG).dat  makefile
 	$(IVERILOG) -s testbench -o $@ $(SIM_SRC) $(RTL_SRC) \
 	$(DEBUG_ARGS) \
+	-D SSRAM_DAT=\"rtl/testbench/$(DIAG).dat\" \
+	-D CROM_DAT=\"rtl/ks10/cpu/useq/crom.dat\" \
+	-D DROM_DAT=\"rtl/ks10/cpu/useq/drom.dat\" \
 	-I rtl/ks10 \
 	-I rtl/ks10/uba \
 	-I rtl/ks10/uba/rh11 \
@@ -896,6 +901,7 @@ rcsclean_ise: clean_ise
 #
 
 rcsclean_rtl: clean_rtl
+	-rcsclean *
 	-rcsclean $(RTL)/*
 	-rcsclean $(RTL)/esm/*
 	-rcsclean $(RTL)/testbench/*
