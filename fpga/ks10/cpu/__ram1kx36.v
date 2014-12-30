@@ -82,9 +82,9 @@ module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
              ;
 `else
              for (i = 0; i < 1024; i = i + 1)
-             begin
-                ram[i] <= 0;
-             end
+               begin
+                  ram[i] <= 0;
+               end
              // FIXME
              // Initialize Stack Pointer
              ram[15] <= 36'o777577_030303;
