@@ -314,7 +314,7 @@ module RH11(clk,      rst,
    wire [31:0] rpSDADDR[7:0];           // SD Sector Address
    wire [ 7:0] rpSDREQ;                 // RP is ready for SD
    
-   wire [ 2:0] rpUNITSEL;		// 
+   wire [ 7:0] rpUNITSEL;		// 
    
    //
    // Signals
