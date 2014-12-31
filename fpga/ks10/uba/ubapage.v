@@ -148,7 +148,7 @@ module UBAPAGE(clk, rst, busREQO, busADDRI, busDATAI, busADDRO,
    //
 
    reg [0:14] pageRAM[0:63];
-   always @(posedge clk)
+   always @(negedge clk)
      begin
         if (pageWRITE)
           pageRAM[pageADDR] <= {busDATAI[18:21], busDATAI[25:35]};

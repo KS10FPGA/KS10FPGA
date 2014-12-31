@@ -53,7 +53,7 @@
 `include "../ks10.vh"
 `include "../cpu/bus.vh"
 
-module UBA(rst, clkT, clkR,
+module UBA(rst, clk,
            // KS10 Bus Interface
            busREQI, busREQO, busACKI, busACKO, busADDRI, busADDRO, busDATAI, busDATAO, busINTR,
            // Device Interface
@@ -64,8 +64,7 @@ module UBA(rst, clkT, clkR,
            dev2REQI, dev2ACKI, dev2ADDRI, dev2DATAI, dev2INTR, dev2ACKO);
 
    input          rst;                          // Reset
-   input          clkT;                         // Clock
-   input          clkR;                         // Clock
+   input          clk;                          // Clock
    // KS10 Backplane Bus Interface
    input          busREQI;                      // Backplane Bus Request In
    output         busREQO;                      // Backplane Bus Request Out
@@ -164,7 +163,7 @@ module UBA(rst, clkT, clkR,
 
    UBASR SR (
       .rst        (rst),
-      .clk        (clkT),
+      .clk        (clk),
       .busDATAI   (busDATAI),
       .statWRITE  (statWRITE),
       .statINTHI  (statINTHI),
@@ -186,7 +185,7 @@ module UBA(rst, clkT, clkR,
 
    UBAMR MR (
       .rst        (rst),
-      .clk        (clkT),
+      .clk        (clk),
       .busDATAI   (busDATAI),
       .maintWRITE (maintWRITE),
       .regUBAMR   (regUBAMR)
@@ -203,7 +202,7 @@ module UBA(rst, clkT, clkR,
 
    UBALOOP LOOP (
       .rst        (rst),
-      .clk        (clkT),
+      .clk        (clk),
       .busADDRI   (busADDRI),
       .busADDRO   (busADDRO),
       .busDATAI   (busDATAI),
@@ -225,7 +224,7 @@ module UBA(rst, clkT, clkR,
 
    UBANXD NXD (
       .rst        (rst),
-      .clk        (clkT),
+      .clk        (clk),
       .busREQI    (busREQI),
       .busACKO    (busACKO),
       .ubaREQ     (ubaREAD  | ubaWRITE | loopREAD | loopWRITE),
@@ -245,7 +244,7 @@ module UBA(rst, clkT, clkR,
 
    UBATMO TMO (
       .rst        (rst),
-      .clk        (clkT),
+      .clk        (clk),
       .busREQO    (busREQO),
       .busACKI    (busACKI),
       .setTMO     (setTMO)
@@ -257,7 +256,7 @@ module UBA(rst, clkT, clkR,
 
    UBAINTR INTR (
       .rst        (rst),
-      .clk        (clkT),
+      .clk        (clk),
       .busPI      (busPI),
       .busINTR    (busINTR),
       .wruREAD    (wruREAD),
@@ -278,7 +277,7 @@ module UBA(rst, clkT, clkR,
    reg [0:35] devDATAO;
    reg [0:35] devADDRO;
 
-   always @(posedge clkT or posedge rst)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
@@ -304,7 +303,7 @@ module UBA(rst, clkT, clkR,
 
    reg [0:1] arbState;
 
-   always @(posedge clkT or posedge rst)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           arbState <= arbIDLE;
@@ -350,7 +349,7 @@ module UBA(rst, clkT, clkR,
 
    UBAPAGE PAGE (
       .rst          (rst),
-      .clk          (clkR),
+      .clk          (clk),
       .busREQO      (busREQO),
       .busADDRI     (busADDRI),
       .busDATAI     (busDATAI),
@@ -405,7 +404,7 @@ module UBA(rst, clkT, clkR,
 
    reg [0:35] addr;
 
-   always @(posedge clkT or posedge rst)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           addr <= 0;

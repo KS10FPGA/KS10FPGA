@@ -43,12 +43,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
+module CLK(RESET_N, CLK50MHZ, clk, clkPHS, ssramCLK, rst);
 
    input        RESET_N;
    input        CLK50MHZ;
-   output       clkT;
-   output       clkR;
+   output       clk;
    output [1:4] clkPHS;
    output       ssramCLK;
    output       rst;
@@ -63,8 +62,11 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
 
    wire clkfbo;
    wire clkfbi;
-   wire uclkR;
-   wire uclkT;
+   wire uclk;
+   wire clk1;
+   wire clk2;
+   wire clk3;
+   wire clk4;
    wire locked;
 
    PLL_BASE #(
@@ -99,12 +101,12 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
        .RST                (RESET),
        .CLKIN              (CLK50MHZ),
        .CLKFBIN            (clkfbi),
-       .CLKOUT0            (uclkT),
-       .CLKOUT1            (uclkR),
-       .CLKOUT2            (clkPHS[1]),
-       .CLKOUT3            (clkPHS[2]),
-       .CLKOUT4            (clkPHS[3]),
-       .CLKOUT5            (clkPHS[4]),
+       .CLKOUT0            (uclk),
+       .CLKOUT1            (),
+       .CLKOUT2            (clk1),
+       .CLKOUT3            (clk2),
+       .CLKOUT4            (clk3),
+       .CLKOUT5            (clk4),
        .CLKFBOUT           (clkfbo),
        .LOCKED             (locked)
    );
@@ -118,16 +120,31 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
        .O                  (clkfbi)
    );
 
-   BUFG bufgCLKT (
-       .I                  (uclkT),
-       .O                  (clkT)
+   BUFG bufgCLK (
+       .I                  (uclk),
+       .O                  (clk)
    );
 
-   BUFG bufgCLKR (
-       .I                  (uclkR),
-       .O                  (clkR)
+   BUFG bufgCLK1 (
+       .I                  (clk1),
+       .O                  (clkPHS[1])
    );
 
+   BUFG bufgCLK2 (
+       .I                  (clk2),
+       .O                  (clkPHS[2])
+   );
+   
+   BUFG bufgCLK3 (
+       .I                  (clk3),
+       .O                  (clkPHS[3])
+   );
+
+   BUFG bufgCLK4 (
+       .I                  (clk4),
+       .O                  (clkPHS[4])
+   );
+  
    //
    // Xilinx calls this 'clock forwarding'.  The synthesis tools will give
    // errors/warning if you attempt to drive a clock output off-chip without
@@ -155,7 +172,7 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
    //
 
    reg [2:0] d;
-   always @(posedge clkT or posedge RESET)
+   always @(posedge clk or posedge RESET)
      begin
 	if (RESET)
           d <= 3'b111;
@@ -185,8 +202,7 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
 
    reg [0:1] clkState;
    reg [1:4] clkPHS;
-   reg       clkT;
-   reg       clkR;
+   reg       clk;
 
    always @(posedge CLK50MHZ or posedge RESET)
      begin
@@ -196,8 +212,7 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
              clkPHS[2] <= 0;
              clkPHS[3] <= 0;
              clkPHS[4] <= 0;
-             clkR      <= 0;
-             clkT      <= 1;
+             clk       <= 1;
              clkState  <= stateT1;
           end
         else
@@ -209,8 +224,7 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
                     clkPHS[2] <= 0;
                     clkPHS[3] <= 0;
                     clkPHS[4] <= 0;
-                    clkR      <= 0;
-                    clkT      <= 1;
+                    clk       <= 1;
                     clkState  <= stateT2;
               end
                stateT2:
@@ -219,8 +233,7 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
                     clkPHS[2] <= 1;
                     clkPHS[3] <= 0;
                     clkPHS[4] <= 0;
-                    clkR      <= 0;
-                    clkT      <= 1;
+                    clk       <= 1;
                     clkState  <= stateT3;
                  end
                stateT3:
@@ -229,8 +242,7 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
                     clkPHS[2] <= 0;
                     clkPHS[3] <= 1;
                     clkPHS[4] <= 0;
-                    clkR      <= 1;
-                    clkT      <= 0;
+                    clk       <= 0;
                     clkState  <= stateT4;
                  end
                stateT4:
@@ -239,8 +251,7 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
                     clkPHS[2] <= 0;
                     clkPHS[3] <= 0;
                     clkPHS[4] <= 1;
-                    clkR      <= 1;
-                    clkT      <= 0;
+                    clk       <= 0;
                     clkState  <= stateT1;
                  end
              endcase
@@ -257,16 +268,16 @@ module CLK(RESET_N, CLK50MHZ, clkT, clkR, clkPHS, ssramCLK, rst);
    // Synchronize reset
    //
 
-   reg [1:0] d;
+   reg [2:0] d;
    always @(posedge CLK50MHZ or posedge RESET)
      begin
         if (RESET)
-          d[1:0] <= 2'b11;
+          d <= 3'b111;
         else
-          d[1:0] <= {d[0], 1'b0};
+          d <= {d[1:0], 1'b0};
      end
 
-   assign rst = d[1];
+   assign rst = d[2];
 
 `endif
 

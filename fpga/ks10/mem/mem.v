@@ -80,14 +80,13 @@
 `include "../cpu/bus.vh"
 `include "../ks10.vh"
 
-module MEM(rst, clkT, clkR, clkPHS, 
+module MEM(rst, clk, clkPHS, 
            busREQI, busACKO, busADDRI, busDATAI, busDATAO,
            ssramCLK, ssramCLKEN_N, ssramADV, ssramBW_N, ssramOE_N, ssramWE_N,
            ssramCE, ssramADDR, ssramDATA);
 
    input         rst;           // Reset
-   input         clkT;          // Clock T
-   input         clkR;          // Clock R
+   input         clk;           // Clock
    input  [1: 4] clkPHS;        // Clock Phase
    input         busREQI;       // Memory Request In
    output        busACKO;       // Memory Acknowledge Out
@@ -145,7 +144,7 @@ module MEM(rst, clkT, clkR, clkPHS,
    reg statEE;          // ECC Enabled
    reg statPF;          // Power Failure
 
-   always @(posedge clkR or posedge rst)
+   always @(negedge clk or posedge rst)
      begin
         if (rst)
           begin

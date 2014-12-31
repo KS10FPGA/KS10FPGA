@@ -173,15 +173,13 @@ module KS10(RESET_N, CLK50MHZ,
    //
 
    wire rst;
-   wire clkT;
-   wire clkR;
+   wire clk;
    wire [1:4] clkPHS;
 
    CLK uCLK (
       .RESET_N          (RESET_N),
       .CLK50MHZ         (CLK50MHZ),
-      .clkT          	(clkT),
-      .clkR          	(clkR),
+      .clk          	(clk),
       .clkPHS           (clkPHS),
       .ssramCLK         (ssramCLK),
       .rst           	(rst)
@@ -235,8 +233,7 @@ module KS10(RESET_N, CLK50MHZ,
 
    CPU uCPU (
       .rst              (rst),
-      .clkT             (clkT),
-      .clkR             (clkR),
+      .clk              (clk),
       // Console
       .cslRESET         (cslRESET),
       .cslSET           (cslSET),
@@ -268,7 +265,7 @@ module KS10(RESET_N, CLK50MHZ,
 
    CSL uCSL (
       .rst              (rst),
-      .clk              (clkT),
+      .clk              (clk),
       // Console Microcontroller Interfaces
       .conADDR          (conADDR),
       .conDATA          (conDATA),
@@ -310,8 +307,7 @@ module KS10(RESET_N, CLK50MHZ,
 
    MEM uMEM (
       .rst              (rst),
-      .clkT             (clkT),
-      .clkR             (clkR),
+      .clk              (clk),
       .clkPHS           (clkPHS),
       .busREQI          (memREQ),
       .busACKO          (memACK),
@@ -361,8 +357,7 @@ module KS10(RESET_N, CLK50MHZ,
    )
    UBA1 (
       .rst              (rst),
-      .clkT             (clkT),
-      .clkR             (clkR),
+      .clk              (clk),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO[1]),
       .busACKI          (ubaACKI[1]),
@@ -405,7 +400,7 @@ module KS10(RESET_N, CLK50MHZ,
    )
    uRH11 (
       .rst              (rst),
-      .clk              (clkT),
+      .clk              (clk),
       // RH11 IO
       .rh11CD           (rh11CD),
       .rh11WP           (rh11WP),
@@ -464,8 +459,7 @@ module KS10(RESET_N, CLK50MHZ,
    )
    UBA3 (
       .rst              (rst),
-      .clkT             (clkT),
-      .clkR             (clkR),
+      .clk              (clk),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO[3]),
       .busACKI          (ubaACKI[3]),
@@ -506,7 +500,7 @@ module KS10(RESET_N, CLK50MHZ,
    )
    uDZ11 (
       .rst              (rst),
-      .clk              (clkT),
+      .clk              (clk),
       // DZ11 IO
       .dz11TXD          (dz11TXD),
       .dz11RXD          (dz11RXD),
@@ -564,8 +558,8 @@ module KS10(RESET_N, CLK50MHZ,
    
    assign test[0] = RESET_N;
    assign test[1] = rst;
-   assign test[2] = clkT;
-   assign test[3] = clkR;
+   assign test[2] = clk;
+   assign test[3] = !clk;
    assign test[4] = clkPHS[1];
    assign test[5] = clkPHS[2];
    assign test[6] = clkPHS[3];

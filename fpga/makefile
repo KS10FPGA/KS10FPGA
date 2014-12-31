@@ -13,16 +13,6 @@ SIMTOP       := testbench
 PART         := xc6slx45-2-fgg676
 
 #
-# Directory structure
-#
-
-RTL          := rtl
-ISE          := ise
-TESTFILES    := $(RTL)/testbench
-USEQ         := $(RTL)/ks10/cpu/useq
-TESTSUITE    := testsuite
-
-#
 # Xilinx tools
 #
 
@@ -104,7 +94,7 @@ DIAGBASE   := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XX
 
 DEBUG_ARGS := \
 	-D SIM_CTY \
-        -D STOP_ON_STUCK_PC \
+	-D STOP_ON_STUCK_PC \
 	-D STOP_ON_COMPLETE \
 	-D DEBUG_$(DIAGBASE) \
 	-D DEBUG=$(DIAGBASE) \
@@ -116,202 +106,222 @@ DEBUG_ARGS := \
 
 PREFIX       := MAINDEC-10-
 
-DIAGFILES := \
-        $(TESTFILES)/${PREFIX}DSKAA.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAB.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAC.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAD.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAE.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAF.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAG.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAH.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAI.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAJ.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAK.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAL.SEQ \
-        $(TESTFILES)/${PREFIX}DSKAM.SEQ \
-        $(TESTFILES)/${PREFIX}DSKBA.SEQ \
-        $(TESTFILES)/${PREFIX}DSKCA.SEQ \
-        $(TESTFILES)/${PREFIX}DSKCB.SEQ \
-        $(TESTFILES)/${PREFIX}DSKCC.SEQ \
-        $(TESTFILES)/${PREFIX}DSKCD.SEQ \
-        $(TESTFILES)/${PREFIX}DSKCE-RD00.SEQ \
-        $(TESTFILES)/${PREFIX}DSKCF-RD00.SEQ \
-        $(TESTFILES)/${PREFIX}DSKCG.SEQ \
-        $(TESTFILES)/${PREFIX}DSKDA-RD00.SEQ \
-        $(TESTFILES)/${PREFIX}DSKEA-RD00.SEQ \
-        $(TESTFILES)/${PREFIX}DSKEB.SEQ \
-        $(TESTFILES)/${PREFIX}DSKEC.SEQ \
-        $(TESTFILES)/${PREFIX}DSMMA.SEQ \
-        $(TESTFILES)/${PREFIX}DSMMB.SEQ \
-        $(TESTFILES)/${PREFIX}DSMMC.SEQ \
-        $(TESTFILES)/${PREFIX}DSMMD.SEQ \
-        $(TESTFILES)/${PREFIX}DSDZA-RD00.SEQ \
-        $(TESTFILES)/${PREFIX}DSUBA-RD00.SEQ \
-        $(TESTFILES)/${PREFIX}DSRPA-RD00.SEQ
+#
+# Diagnostic Files
+#
+
+DIAG_FILES := \
+        rtl/testbench/${PREFIX}DSKAA.SEQ \
+        rtl/testbench/${PREFIX}DSKAB.SEQ \
+        rtl/testbench/${PREFIX}DSKAC.SEQ \
+        rtl/testbench/${PREFIX}DSKAD.SEQ \
+        rtl/testbench/${PREFIX}DSKAE.SEQ \
+        rtl/testbench/${PREFIX}DSKAF.SEQ \
+        rtl/testbench/${PREFIX}DSKAG.SEQ \
+        rtl/testbench/${PREFIX}DSKAH.SEQ \
+        rtl/testbench/${PREFIX}DSKAI.SEQ \
+        rtl/testbench/${PREFIX}DSKAJ.SEQ \
+        rtl/testbench/${PREFIX}DSKAK.SEQ \
+        rtl/testbench/${PREFIX}DSKAL.SEQ \
+        rtl/testbench/${PREFIX}DSKAM.SEQ \
+        rtl/testbench/${PREFIX}DSKBA.SEQ \
+        rtl/testbench/${PREFIX}DSKCA.SEQ \
+        rtl/testbench/${PREFIX}DSKCB.SEQ \
+        rtl/testbench/${PREFIX}DSKCC.SEQ \
+        rtl/testbench/${PREFIX}DSKCD.SEQ \
+        rtl/testbench/${PREFIX}DSKCE-RD00.SEQ \
+        rtl/testbench/${PREFIX}DSKCF-RD00.SEQ \
+        rtl/testbench/${PREFIX}DSKCG.SEQ \
+        rtl/testbench/${PREFIX}DSKDA-RD00.SEQ \
+        rtl/testbench/${PREFIX}DSKEA-RD00.SEQ \
+        rtl/testbench/${PREFIX}DSKEB.SEQ \
+        rtl/testbench/${PREFIX}DSKEC.SEQ \
+        rtl/testbench/${PREFIX}DSMMA.SEQ \
+        rtl/testbench/${PREFIX}DSMMB.SEQ \
+        rtl/testbench/${PREFIX}DSMMC.SEQ \
+        rtl/testbench/${PREFIX}DSMMD.SEQ \
+        rtl/testbench/${PREFIX}DSDZA-RD00.SEQ \
+        rtl/testbench/${PREFIX}DSUBA-RD00.SEQ \
+        rtl/testbench/${PREFIX}DSRPA-RD00.SEQ
 
 #
 # Verilog source files
 #
 
-RTL_SRC := \
-	$(RTL)/ks10/utils/edgetrig.v \
-	$(RTL)/ks10/utils/sync.v \
-	$(RTL)/ks10/clk/clk.v \
-	$(RTL)/ks10/csl/csl.v \
-	$(RTL)/ks10/mem/mem.v \
-	$(RTL)/ks10/arb/arb.v \
-	$(RTL)/ks10/cpu/useq/crom.v \
-	$(RTL)/ks10/cpu/useq/drom.v \
-	$(RTL)/ks10/cpu/useq/skip.v \
-	$(RTL)/ks10/cpu/useq/stack.v \
-	$(RTL)/ks10/cpu/useq/dispatch.v \
-	$(RTL)/ks10/cpu/useq/useq.v \
-	$(RTL)/ks10/cpu/alu.v \
-	$(RTL)/ks10/cpu/apr.v \
-	$(RTL)/ks10/cpu/bus.v \
-	$(RTL)/ks10/cpu/disp_byte.v \
-	$(RTL)/ks10/cpu/disp_ni.v \
-	$(RTL)/ks10/cpu/disp_pf.v \
-	$(RTL)/ks10/cpu/dbm.v \
-	$(RTL)/ks10/cpu/dbus.v \
-	$(RTL)/ks10/cpu/debug.v \
-	$(RTL)/ks10/cpu/intf.v \
-	$(RTL)/ks10/cpu/nxd.v \
-	$(RTL)/ks10/cpu/nxm.v \
-	$(RTL)/ks10/cpu/pager.v \
-	$(RTL)/ks10/cpu/pcflags.v \
-	$(RTL)/ks10/cpu/pi.v \
-	$(RTL)/ks10/cpu/pxct.v \
-	$(RTL)/ks10/cpu/ram1kx36.v \
-	$(RTL)/ks10/cpu/ramfile.v \
-	$(RTL)/ks10/cpu/regir.v \
-	$(RTL)/ks10/cpu/scad.v \
-	$(RTL)/ks10/cpu/timer.v \
-	$(RTL)/ks10/cpu/timing.v \
-	$(RTL)/ks10/cpu/vma.v \
-	$(RTL)/ks10/cpu/cpu.v \
-	$(RTL)/ks10/uba/dz11/uart/uart_brg.v \
-	$(RTL)/ks10/uba/dz11/uart/uart_rx.v \
-	$(RTL)/ks10/uba/dz11/uart/uart_tx.v \
-	$(RTL)/ks10/uba/dz11/dzcsr.v \
-	$(RTL)/ks10/uba/dz11/dzmsr.v \
-	$(RTL)/ks10/uba/dz11/dztcr.v \
-	$(RTL)/ks10/uba/dz11/dztdr.v \
-	$(RTL)/ks10/uba/dz11/dzintr.v \
-	$(RTL)/ks10/uba/dz11/dzrbuf.v \
-	$(RTL)/ks10/uba/dz11/dzscan.v \
-	$(RTL)/ks10/uba/dz11/dzuart.v \
-	$(RTL)/ks10/uba/dz11/dz11.v \
-	$(RTL)/ks10/uba/rh11/rh11.v \
-	$(RTL)/ks10/uba/rh11/rhba.v \
-	$(RTL)/ks10/uba/rh11/rhdb.v \
-	$(RTL)/ks10/uba/rh11/rhwc.v \
-	$(RTL)/ks10/uba/rh11/rhcs1.v \
-	$(RTL)/ks10/uba/rh11/rhcs2.v \
-	$(RTL)/ks10/uba/rh11/rpxx/sdaddr.v \
-	$(RTL)/ks10/uba/rh11/rpxx/rpcs1.v \
-	$(RTL)/ks10/uba/rh11/rpxx/rpda.v \
-	$(RTL)/ks10/uba/rh11/rpxx/rpdc.v \
-	$(RTL)/ks10/uba/rh11/rpxx/rpds.v \
-	$(RTL)/ks10/uba/rh11/rpxx/rper1.v \
-	$(RTL)/ks10/uba/rh11/rpxx/rpof.v \
-	$(RTL)/ks10/uba/rh11/rpxx/rpxx.v \
-	$(RTL)/ks10/uba/rh11/sd/sd.v \
-	$(RTL)/ks10/uba/rh11/sd/sdspi.v \
-	$(RTL)/ks10/uba/uba.v \
-	$(RTL)/ks10/uba/ubamr.v \
-	$(RTL)/ks10/uba/ubasr.v \
-	$(RTL)/ks10/uba/ubaloop.v \
-	$(RTL)/ks10/uba/ubapage.v \
-	$(RTL)/ks10/uba/ubanxd.v \
-	$(RTL)/ks10/uba/ubatmo.v \
-	$(RTL)/ks10/uba/ubaintr.v \
-	$(RTL)/ks10/ks10.v \
-	$(RTL)/esm/esm_ks10.v
+RTL_FILES := \
+	rtl/ks10/utils/edgetrig.v \
+	rtl/ks10/utils/sync.v \
+	rtl/ks10/clk/clk.v \
+	rtl/ks10/csl/csl.v \
+	rtl/ks10/mem/mem.v \
+	rtl/ks10/arb/arb.v \
+	rtl/ks10/cpu/useq/crom.v \
+	rtl/ks10/cpu/useq/drom.v \
+	rtl/ks10/cpu/useq/skip.v \
+	rtl/ks10/cpu/useq/stack.v \
+	rtl/ks10/cpu/useq/dispatch.v \
+	rtl/ks10/cpu/useq/useq.v \
+	rtl/ks10/cpu/alu.v \
+	rtl/ks10/cpu/apr.v \
+	rtl/ks10/cpu/bus.v \
+	rtl/ks10/cpu/disp_byte.v \
+	rtl/ks10/cpu/disp_ni.v \
+	rtl/ks10/cpu/disp_pf.v \
+	rtl/ks10/cpu/dbm.v \
+	rtl/ks10/cpu/dbus.v \
+	rtl/ks10/cpu/debug.v \
+	rtl/ks10/cpu/intf.v \
+	rtl/ks10/cpu/nxd.v \
+	rtl/ks10/cpu/nxm.v \
+	rtl/ks10/cpu/pager.v \
+	rtl/ks10/cpu/pcflags.v \
+	rtl/ks10/cpu/pi.v \
+	rtl/ks10/cpu/pxct.v \
+	rtl/ks10/cpu/ram1kx36.v \
+	rtl/ks10/cpu/ramfile.v \
+	rtl/ks10/cpu/regir.v \
+	rtl/ks10/cpu/scad.v \
+	rtl/ks10/cpu/timer.v \
+	rtl/ks10/cpu/timing.v \
+	rtl/ks10/cpu/vma.v \
+	rtl/ks10/cpu/cpu.v \
+	rtl/ks10/uba/dz11/uart/uart_brg.v \
+	rtl/ks10/uba/dz11/uart/uart_rx.v \
+	rtl/ks10/uba/dz11/uart/uart_tx.v \
+	rtl/ks10/uba/dz11/dzcsr.v \
+	rtl/ks10/uba/dz11/dzmsr.v \
+	rtl/ks10/uba/dz11/dztcr.v \
+	rtl/ks10/uba/dz11/dztdr.v \
+	rtl/ks10/uba/dz11/dzintr.v \
+	rtl/ks10/uba/dz11/dzrbuf.v \
+	rtl/ks10/uba/dz11/dzscan.v \
+	rtl/ks10/uba/dz11/dzuart.v \
+	rtl/ks10/uba/dz11/dz11.v \
+	rtl/ks10/uba/rh11/rh11.v \
+	rtl/ks10/uba/rh11/rhba.v \
+	rtl/ks10/uba/rh11/rhdb.v \
+	rtl/ks10/uba/rh11/rhwc.v \
+	rtl/ks10/uba/rh11/rhcs1.v \
+	rtl/ks10/uba/rh11/rhcs2.v \
+	rtl/ks10/uba/rh11/rpxx/sdaddr.v \
+	rtl/ks10/uba/rh11/rpxx/rpcs1.v \
+	rtl/ks10/uba/rh11/rpxx/rpda.v \
+	rtl/ks10/uba/rh11/rpxx/rpdc.v \
+	rtl/ks10/uba/rh11/rpxx/rpds.v \
+	rtl/ks10/uba/rh11/rpxx/rper1.v \
+	rtl/ks10/uba/rh11/rpxx/rpof.v \
+	rtl/ks10/uba/rh11/rpxx/rpxx.v \
+	rtl/ks10/uba/rh11/sd/sd.v \
+	rtl/ks10/uba/rh11/sd/sdspi.v \
+	rtl/ks10/uba/uba.v \
+	rtl/ks10/uba/ubamr.v \
+	rtl/ks10/uba/ubasr.v \
+	rtl/ks10/uba/ubaloop.v \
+	rtl/ks10/uba/ubapage.v \
+	rtl/ks10/uba/ubanxd.v \
+	rtl/ks10/uba/ubatmo.v \
+	rtl/ks10/uba/ubaintr.v \
+	rtl/ks10/ks10.v \
+	rtl/esm/esm_ks10.v
 
-SIM_SRC := \
-	$(RTL)/esm/cy7c1460av33.v \
-	$(RTL)/esm/esm_testbench.v
+#
+# Simulation testbench files
+#
+
+SIM_FILES := \
+	rtl/esm/cy7c1460av33.v \
+	rtl/esm/esm_testbench.v
 
 #
 # If were simulating SMMON, add the SMMON files.  Otherwise don't.
 #
 
 ifneq (, $(findstring SIM_SMMON, $(DEBUG_ARGS)))
-MON_SRC := \
-	$(TESTFILES)/MAINDEC-10-DSQDA-RD00.SEQ \
-	$(TESTFILES)/MAINDEC-10-DSQDB-RD00.SEQ \
-	$(TESTFILES)/MAINDEC-10-DSQDC-RD00.SEQ 
+MON_FILES := \
+	rtl/testbench/MAINDEC-10-DSQDA-RD00.SEQ \
+	rtl/testbench/MAINDEC-10-DSQDB-RD00.SEQ \
+	rtl/testbench/MAINDEC-10-DSQDC-RD00.SEQ 
 else
-MON_SRC := 
+MON_FILES := 
 endif
 
 #
-# Verilog inlcude files
+# Verilog include files
 #
 
-INC := \
-	$(RTL)/ks10/cpu/useq/crom.vh  \
-	$(RTL)/ks10/cpu/useq/drom.vh  \
-	$(RTL)/ks10/cpu/alu.vh \
-	$(RTL)/ks10/cpu/apr.vh \
-	$(RTL)/ks10/cpu/bus.vh \
-	$(RTL)/ks10/cpu/debug_dskah.vh \
-	$(RTL)/ks10/cpu/debug_dskba.vh \
-	$(RTL)/ks10/cpu/debug_dskcg.vh \
-	$(RTL)/ks10/cpu/debug_dskea.vh \
-	$(RTL)/ks10/cpu/debug_dskec.vh \
-	$(RTL)/ks10/cpu/debug_dsuba.vh \
-	$(RTL)/ks10/cpu/debug_dsdza.vh \
-	$(RTL)/ks10/cpu/debug_smmon.vh \
-	$(RTL)/ks10/cpu/debug_default.vh \
-	$(RTL)/ks10/cpu/pager.vh \
-	$(RTL)/ks10/cpu/pcflags.vh \
-	$(RTL)/ks10/cpu/pxct.vh \
-	$(RTL)/ks10/cpu/regir.vh \
-	$(RTL)/ks10/cpu/vma.vh \
-	$(RTL)/ks10/uba/dz11/dz11.vh \
-	$(RTL)/ks10/uba/dz11/dzcsr.vh \
-	$(RTL)/ks10/uba/dz11/dzlpr.vh \
-	$(RTL)/ks10/uba/dz11/dzrbuf.vh \
-	$(RTL)/ks10/uba/dz11/dztcr.vh \
-	$(RTL)/ks10/uba/dz11/dztdr.vh \
-	$(RTL)/ks10/uba/dz11/dzuart.vh \
-	$(RTL)/ks10/uba/rh11/rhba.vh \
-	$(RTL)/ks10/uba/rh11/rhdb.vh \
-	$(RTL)/ks10/uba/rh11/rhwc.vh \
-	$(RTL)/ks10/uba/rh11/rhcs1.vh \
-	$(RTL)/ks10/uba/rh11/rhcs2.vh \
-	$(RTL)/ks10/uba/rh11/rpxx/rpcs1.vh \
-	$(RTL)/ks10/uba/rh11/rpxx/rpda.vh \
-	$(RTL)/ks10/uba/rh11/rpxx/rpdc.vh \
-	$(RTL)/ks10/uba/rh11/rpxx/rpds.vh \
-	$(RTL)/ks10/uba/rh11/rpxx/rper1.vh \
-	$(RTL)/ks10/uba/rh11/rpxx/rpof.vh \
-	$(RTL)/ks10/uba/rh11/rpxx/rpxx.vh \
-	$(RTL)/ks10/uba/rh11/sd/sdspi.vh \
-	$(RTL)/ks10/uba/rh11/sd/sd.vh \
-	$(RTL)/ks10/uba/rh11/rh11.vh \
-	$(RTL)/ks10/uba/uba.vh \
-	$(RTL)/ks10/uba/ubamr.vh \
-	$(RTL)/ks10/uba/ubasr.vh \
-	$(RTL)/ks10/uba/ubabus.vh \
-	$(RTL)/ks10/uba/ubapage.vh \
-	$(RTL)/ks10/ks10.vh
+INC_FILES := \
+	rtl/ks10/cpu/useq/crom.vh  \
+	rtl/ks10/cpu/useq/drom.vh  \
+	rtl/ks10/cpu/alu.vh \
+	rtl/ks10/cpu/apr.vh \
+	rtl/ks10/cpu/bus.vh \
+	rtl/ks10/cpu/debug_dskah.vh \
+	rtl/ks10/cpu/debug_dskba.vh \
+	rtl/ks10/cpu/debug_dskcg.vh \
+	rtl/ks10/cpu/debug_dskea.vh \
+	rtl/ks10/cpu/debug_dskec.vh \
+	rtl/ks10/cpu/debug_dsuba.vh \
+	rtl/ks10/cpu/debug_dsdza.vh \
+	rtl/ks10/cpu/debug_smmon.vh \
+	rtl/ks10/cpu/debug_default.vh \
+	rtl/ks10/cpu/pager.vh \
+	rtl/ks10/cpu/pcflags.vh \
+	rtl/ks10/cpu/pxct.vh \
+	rtl/ks10/cpu/regir.vh \
+	rtl/ks10/cpu/vma.vh \
+	rtl/ks10/uba/dz11/dz11.vh \
+	rtl/ks10/uba/dz11/dzcsr.vh \
+	rtl/ks10/uba/dz11/dzlpr.vh \
+	rtl/ks10/uba/dz11/dzrbuf.vh \
+	rtl/ks10/uba/dz11/dztcr.vh \
+	rtl/ks10/uba/dz11/dztdr.vh \
+	rtl/ks10/uba/dz11/dzuart.vh \
+	rtl/ks10/uba/rh11/rhba.vh \
+	rtl/ks10/uba/rh11/rhdb.vh \
+	rtl/ks10/uba/rh11/rhwc.vh \
+	rtl/ks10/uba/rh11/rhcs1.vh \
+	rtl/ks10/uba/rh11/rhcs2.vh \
+	rtl/ks10/uba/rh11/rpxx/rpcs1.vh \
+	rtl/ks10/uba/rh11/rpxx/rpda.vh \
+	rtl/ks10/uba/rh11/rpxx/rpdc.vh \
+	rtl/ks10/uba/rh11/rpxx/rpds.vh \
+	rtl/ks10/uba/rh11/rpxx/rper1.vh \
+	rtl/ks10/uba/rh11/rpxx/rpof.vh \
+	rtl/ks10/uba/rh11/rpxx/rpxx.vh \
+	rtl/ks10/uba/rh11/sd/sdspi.vh \
+	rtl/ks10/uba/rh11/sd/sd.vh \
+	rtl/ks10/uba/rh11/rh11.vh \
+	rtl/ks10/uba/uba.vh \
+	rtl/ks10/uba/ubamr.vh \
+	rtl/ks10/uba/ubasr.vh \
+	rtl/ks10/uba/ubabus.vh \
+	rtl/ks10/uba/ubapage.vh \
+	rtl/ks10/ks10.vh
 
-DAT := \
-	$(RTL)/ks10/cpu/useq/crom.dat \
-	$(RTL)/ks10/cpu/useq/drom.dat
+#
+# Microcode data files
+#
 
-DOC := \
-	$(RTL)/status.txt \
-	$(RTL)/fixme.txt
+DAT_FILES := \
+	rtl/ks10/cpu/useq/crom.dat \
+	rtl/ks10/cpu/useq/drom.dat
 
-BLD := \
-	$(ISE)/esm_ks10.xise \
-	$(ISE)/esm_ks10.gise \
-	$(ISE)/esm_ks10.wcfg
+#
+# Documentation files
+#
+
+DOC_FILES := \
+	rtl/status.txt \
+	rtl/fixme.txt
+
+#
+# Build files
+#
+
+BLD_FILES := \
+	ise/esm_ks10.xise \
+	ise/esm_ks10.gise \
+	ise/esm_ks10.wcfg
 
 #
 # Filter file arguments
@@ -331,35 +341,35 @@ FILTER_ARGS := \
 	'    <filter task="place" file="Place" num="1206" type="warning"></filter>' \
 	'</filters>'
 
-build: $(ISE)/$(PROJECT).mcs
+build: ise/$(PROJECT).mcs
 
 #
 # Create the "Control ROM" microcode for microsequencer
 #
 
-$(USEQ)/crom.dat: $(USEQ)/ks10.mcr $(USEQ)/crom.awk
-	awk -f $(USEQ)/crom.awk $(USEQ)/ks10.mcr > $(USEQ)/crom.dat
+rtl/ks10/cpu/useq/crom.dat: rtl/ks10/cpu/useq/ks10.mcr rtl/ks10/cpu/useq/crom.awk
+	awk -f rtl/ks10/cpu/useq/crom.awk rtl/ks10/cpu/useq/ks10.mcr > rtl/ks10/cpu/useq/crom.dat
 
 #
 # Create the "Dispatch ROM" microcode for microsequencer
 #
 
-$(USEQ)/drom.dat: $(USEQ)/ks10.mcr $(USEQ)/drom.awk
-	awk -f $(USEQ)/drom.awk $(USEQ)/ks10.mcr > $(USEQ)/drom.dat
+rtl/ks10/cpu/useq/drom.dat: rtl/ks10/cpu/useq/ks10.mcr rtl/ks10/cpu/useq/drom.awk
+	awk -f rtl/ks10/cpu/useq/drom.awk rtl/ks10/cpu/useq/ks10.mcr > rtl/ks10/cpu/useq/drom.dat
 
 #
 # Initialize the SSRAM with MAINDEC (simulation only)
 # Note special rule for force $(DIAG).dat to rebuild
 #
 
-$(TESTFILES)/$(DIAG).dat : FORCE
+rtl/testbench/$(DIAG).dat : FORCE
 FORCE:
 
-$(TESTFILES)/$(DIAG).dat : $(MON_SRC) $(TESTFILES)/${PREFIX}$(DIAG).SEQ $(TESTFILES)/ssram.awk makefile
-	cat $(MON_SRC) $(TESTFILES)/${PREFIX}$(DIAG).SEQ | \
-	awk -f $(TESTFILES)/ssram.awk -vfilename=${PREFIX}$(DIAG).SEQ > $(TESTFILES)/$(DIAG).dat
+rtl/testbench/$(DIAG).dat : $(MON_FILES) rtl/testbench/${PREFIX}$(DIAG).SEQ rtl/testbench/ssram.awk makefile
+	cat $(MON_FILES) rtl/testbench/${PREFIX}$(DIAG).SEQ | \
+	awk -f rtl/testbench/ssram.awk -vfilename=${PREFIX}$(DIAG).SEQ > rtl/testbench/$(DIAG).dat
 
-$(ISE)/$(PROJECT).filter: makefile
+ise/$(PROJECT).filter: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
 	@for FIL in $(FILTER_ARGS); \
@@ -367,7 +377,7 @@ $(ISE)/$(PROJECT).filter: makefile
 	    echo $$FIL >> $@; \
 	done
 
-$(ISE)/$(PROJECT).xst: makefile
+ise/$(PROJECT).xst: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
 	@for CMD in $(XST_CMDS); \
@@ -375,28 +385,28 @@ $(ISE)/$(PROJECT).xst: makefile
 	    echo $$CMD >> $@; \
 	done
 
-$(ISE)/$(PROJECT).prj: makefile
+ise/$(PROJECT).prj: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
-	@for FILE in $(RTL_SRC); \
+	@for FILE in $(RTL_FILES); \
 	do \
 	    echo 'verilog work "../'$$FILE'"' >> $@; \
 	done
 
-$(ISE)/$(PROJECT)_isim.prj: makefile
+ise/$(PROJECT)_isim.prj: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
-	@for FILE in $(RTL_SRC); \
+	@for FILE in $(RTL_FILES); \
 	do \
 	    echo 'verilog work "../'$$FILE'"' >> $@; \
 	done
-	@for FILE in $(SIM_SRC); \
+	@for FILE in $(SIM_FILES); \
 	do \
 	    echo 'verilog work "../'$$FILE'"' >> $@; \
 	done
 	echo 'verilog work "$(XILINX)/ISE_DS/ISE/verilog/src/glbl.v"' >> $@;
 
-$(ISE)/$(PROJECT)_isim.cmd: makefile
+ise/$(PROJECT)_isim.cmd: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
 	@for CMD in $(ISIM_CMDS); \
@@ -404,7 +414,7 @@ $(ISE)/$(PROJECT)_isim.cmd: makefile
 	    echo $$CMD >> $@; \
 	done
 
-$(ISE)/$(PROJECT)_impact.cmd: makefile
+ise/$(PROJECT)_impact.cmd: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
 	@for CMD in $(IMPACT_CMDS); \
@@ -436,8 +446,8 @@ FUSE_ARGS := \
 	work.$(SIMTOP) \
 	work.glbl
 
-$(ISE)/$(PROJECT)_isim.exe: $(ISE)/$(PROJECT)_isim.prj $(RTL_SRC) $(SIM_SRC) $(INC) $(DAT) makefile
-	@cd $(ISE); \
+ise/$(PROJECT)_isim.exe: ise/$(PROJECT)_isim.prj $(RTL_FILES) $(SIM_FILES) $(INC_FILES) $(DAT_FILES) makefile
+	@cd ise; \
 	$(FUSE) $(FUSE_ARGS)
 
 #
@@ -455,8 +465,8 @@ ISIM_ARGS := \
 	-view $(PROJECT).wcfg \
 	-wdb c:/temp/$(PROJECT).wdb
 
-isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg $(TESTFILES)/$(DIAG).dat makefile
-	@cd $(ISE); \
+isim: ise/$(PROJECT)_isim.exe ise/$(PROJECT)_isim.cmd ise/$(PROJECT).wcfg rtl/testbench/$(DIAG).dat makefile
+	@cd ise; \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe $(ISIM_ARGS) &
 
@@ -530,8 +540,8 @@ XST_CMDS := \
 	'-equivalent_register_removal YES' \
 	'-slice_utilization_ratio_maxmargin 5'
 
-$(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr: $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(ISE)/$(PROJECT).filter $(RTL)/esm/$(PROJECT).ucf $(RTL_SRC) $(INC) $(DAT) makefile
-	cd $(ISE); \
+ise/$(PROJECT).ngc ise/$(PROJECT).ngr: ise/$(PROJECT).xst ise/$(PROJECT).prj ise/$(PROJECT).filter rtl/esm/$(PROJECT).ucf $(RTL_FILES) $(INC_FILES) $(DAT_FILES) makefile
+	cd ise; \
 	$(XST) $(XST_OPTS) -ifn $(PROJECT).xst -ofn $(PROJECT)_xst.log
 
 #
@@ -560,10 +570,10 @@ NGD_OPTS := \
 	-intstyle $(INTSTYLE) \
 	-nt timestamp \
 	-p $(PART) \
-	-uc ../$(RTL)/esm/$(PROJECT).ucf
+	-uc ../rtl/esm/$(PROJECT).ucf
 
-$(ISE)/$(PROJECT).ngd: $(ISE)/$(PROJECT).ngc $(RTL)/esm/$(PROJECT).ucf $(ISE)/$(PROJECT).filter makefile
-	cd $(ISE); \
+ise/$(PROJECT).ngd: ise/$(PROJECT).ngc rtl/esm/$(PROJECT).ucf ise/$(PROJECT).filter makefile
+	cd ise; \
 	$(NGD) $(NGD_OPTS) $(PROJECT).ngc $(PROJECT).ngd
 
 #
@@ -617,7 +627,7 @@ MAP_OPTS:= \
 	-xe n \
 	-xt 0
 
-$(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf: $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).filter makefile
+ise/$(PROJECT)_map.ncd ise/$(PROJECT).pcf: ise/$(PROJECT).ngd ise/$(PROJECT).filter makefile
 	cd ise; \
 	$(MAP) $(MAP_OPTS) -o $(PROJECT)_map.ncd $(PROJECT).ngd $(PROJECT).pcf
 
@@ -648,7 +658,7 @@ PAR_OPTS := \
 	-w \
 	-xe n
 
-$(ISE)/$(PROJECT).ncd: $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(ISE)/$(PROJECT).filter makefile
+ise/$(PROJECT).ncd: ise/$(PROJECT)_map.ncd ise/$(PROJECT).pcf ise/$(PROJECT).filter makefile
 	cd ise; \
 	$(PAR) $(PAR_OPTS) $(PROJECT)_map.ncd $(PROJECT).ncd $(PROJECT).pcf
 
@@ -700,7 +710,7 @@ BITGEN_OPTS := \
 	-g sw_gwe_cycle:5 \
 	-g sw_gts_cycle:4
 
-$(ISE)/$(PROJECT).bit: $(ISE)/$(PROJECT).ncd
+ise/$(PROJECT).bit: ise/$(PROJECT).ncd
 	cd ise; \
 	$(BITGEN) $(BITGEN_OPTS) $(PROJECT).ncd $(PROJECT).bit
 
@@ -732,7 +742,7 @@ PROMGEN_OPTS := \
 	-u 0000 $(PROJECT).bit \
 	-w
 
-$(ISE)/$(PROJECT).mcs: $(ISE)/$(PROJECT).bit makefile
+ise/$(PROJECT).mcs: ise/$(PROJECT).bit makefile
 	cd ise; \
 	$(PROMGEN) $(PROMGEN_OPTS) 
 
@@ -765,11 +775,11 @@ IMPACT_CMDS := \
 	'program -p 1 -dataWidth 1 -spionly -e -v -loadfpga' \
 	'quit'
 
-load: $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT)_impact.cmd
-	cd ise; \ 
+load: ise/$(PROJECT).mcs ise/$(PROJECT)_impact.cmd
+	cd ise; \
 	$(IMPACT) -batch $(PROJECT)_impact.cmd
 
-load1: $(ISE)/$(PROJECT)_impact.cmd
+reload: ise/$(PROJECT)_impact.cmd
 	cd ise; \
 	$(IMPACT) -batch $(PROJECT)_impact.cmd
 
@@ -777,8 +787,8 @@ load1: $(ISE)/$(PROJECT)_impact.cmd
 # iverilog
 #
 
-$(TESTSUITE)/$(DIAG).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT)	$(TESTFILES)/$(DIAG).dat  makefile
-	$(IVERILOG) -s testbench -o $@ $(SIM_SRC) $(RTL_SRC) \
+testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) rtl/testbench/$(DIAG).dat  makefile
+	$(IVERILOG) -s testbench -o $@ $(SIM_FILES) $(RTL_FILES) \
 	$(DEBUG_ARGS) \
 	-D SSRAM_DAT=\"rtl/testbench/$(DIAG).dat\" \
 	-D CROM_DAT=\"rtl/ks10/cpu/useq/crom.dat\" \
@@ -793,8 +803,8 @@ $(TESTSUITE)/$(DIAG).vvp : $(SIM_SRC) $(RTL_SRC) $(INC) $(DAT)	$(TESTFILES)/$(DI
 	-I rtl/ks10/cpu \
 	-I rtl/ks10/cpu/useq 
 
-$(TESTSUITE)/$(DIAG).txt : $(TESTSUITE)/$(DIAG).vvp 
-	$(VVP) -n $< > $(TESTSUITE)/$(DIAG).txt
+testsuite/$(DIAG).txt : testsuite/$(DIAG).vvp 
+	$(VVP) -n $< > testsuite/$(DIAG).txt
 
 #
 # Clean everything
@@ -807,8 +817,8 @@ clean: clean_rtl clean_ise
 #
 
 clean_rtl: 
-	rm -f $(RTL)/ks10/cpu/useq/*.dat
-	rm -f $(RTL)/testbench/*.dat
+	rm -f rtl/ks10/cpu/useq/*.dat
+	rm -f rtl/testbench/*.dat
 	find . -type f -name "*~" | xargs rm -fv
 
 #
@@ -816,72 +826,72 @@ clean_rtl:
 #
 
 clean_ise:
-	rm -rf $(ISE)/xst \
-               $(ISE)/_ngo \
-               $(ISE)/_xmsgs \
-               $(ISE)/isim \
-               $(ISE)/iseconfig \
-               $(ISE)/xlnx_auto_0_xdb      
-	rm -f  $(ISE)/$(PROJECT).bgn \
-	       $(ISE)/$(PROJECT).bit \
-	       $(ISE)/$(PROJECT).bld \
-	       $(ISE)/$(PROJECT).cfi \
-               $(ISE)/$(PROJECT).cmd_log \
-               $(ISE)/$(PROJECT).drc \
-               $(ISE)/$(PROJECT).filter \
-               $(ISE)/$(PROJECT).lso \
-               $(ISE)/$(PROJECT).mcs \
-               $(ISE)/$(PROJECT).ncd \
-               $(ISE)/$(PROJECT).ngc \
-               $(ISE)/$(PROJECT).ngc_xst.xrpt \
-               $(ISE)/$(PROJECT).ngd \
-               $(ISE)/$(PROJECT).ngr \
-               $(ISE)/$(PROJECT).pad \
-               $(ISE)/$(PROJECT).par \
-               $(ISE)/$(PROJECT).pcf\
-               $(ISE)/$(PROJECT).prj\
-               $(ISE)/$(PROJECT).prm\
-               $(ISE)/$(PROJECT).ptwx \
-               $(ISE)/$(PROJECT).stx \
-               $(ISE)/$(PROJECT).twr \
-               $(ISE)/$(PROJECT).twx \
-               $(ISE)/$(PROJECT).unroutes \
-               $(ISE)/$(PROJECT).wdb \
-               $(ISE)/$(PROJECT).xpi \
-               $(ISE)/$(PROJECT).xst \
-               $(ISE)/$(PROJECT)_bitgen.xwbt \
-               $(ISE)/$(PROJECT)_envsettings.html \
-               $(ISE)/$(PROJECT)_guide.ncd \
-               $(ISE)/$(PROJECT)_impact.cmd \
-               $(ISE)/$(PROJECT)_isim.cmd \
-               $(ISE)/$(PROJECT)_isim.exe \
-               $(ISE)/$(PROJECT)_isim.prj \
-               $(ISE)/$(PROJECT)_map.map \
-               $(ISE)/$(PROJECT)_map.mrp \
-               $(ISE)/$(PROJECT)_map.ncd \
-               $(ISE)/$(PROJECT)_map.ngm \
-               $(ISE)/$(PROJECT)_map.xrpt \
-               $(ISE)/$(PROJECT)_ngdbuild.xrpt \
-               $(ISE)/$(PROJECT)_pad.csv \
-               $(ISE)/$(PROJECT)_pad.txt \
-               $(ISE)/$(PROJECT)_par.xrpt \
-               $(ISE)/$(PROJECT)_summary.html \
-               $(ISE)/$(PROJECT)_summary.xml \
-               $(ISE)/$(PROJECT)_usage.xml \
-               $(ISE)/$(PROJECT)_xst.log \
-               $(ISE)/$(PROJECT)_xst.xrpt \
-               $(ISE)/fuse.log \
-               $(ISE)/fuse.xmsgs \
-               $(ISE)/fuseRelaunch.cmd \
-               $(ISE)/_impactbatch.log \
-               $(ISE)/isim.cmd \
-               $(ISE)/isim.log \
-               $(ISE)/par_usage_statistics.html \
-               $(ISE)/usage_statistics_webtalk.html \
-               $(ISE)/webtalk.log \
-               $(ISE)/webtalk_pn.xml \
-               $(ISE)/xilinx_device_details.xml \
-               $(ISE)/xilinxsim.ini
+	rm -rf ise/xst \
+               ise/_ngo \
+               ise/_xmsgs \
+               ise/isim \
+               ise/iseconfig \
+               ise/xlnx_auto_0_xdb      
+	rm -f  ise/$(PROJECT).bgn \
+	       ise/$(PROJECT).bit \
+	       ise/$(PROJECT).bld \
+	       ise/$(PROJECT).cfi \
+               ise/$(PROJECT).cmd_log \
+               ise/$(PROJECT).drc \
+               ise/$(PROJECT).filter \
+               ise/$(PROJECT).lso \
+               ise/$(PROJECT).mcs \
+               ise/$(PROJECT).ncd \
+               ise/$(PROJECT).ngc \
+               ise/$(PROJECT).ngc_xst.xrpt \
+               ise/$(PROJECT).ngd \
+               ise/$(PROJECT).ngr \
+               ise/$(PROJECT).pad \
+               ise/$(PROJECT).par \
+               ise/$(PROJECT).pcf\
+               ise/$(PROJECT).prj\
+               ise/$(PROJECT).prm\
+               ise/$(PROJECT).ptwx \
+               ise/$(PROJECT).stx \
+               ise/$(PROJECT).twr \
+               ise/$(PROJECT).twx \
+               ise/$(PROJECT).unroutes \
+               ise/$(PROJECT).wdb \
+               ise/$(PROJECT).xpi \
+               ise/$(PROJECT).xst \
+               ise/$(PROJECT)_bitgen.xwbt \
+               ise/$(PROJECT)_envsettings.html \
+               ise/$(PROJECT)_guide.ncd \
+               ise/$(PROJECT)_impact.cmd \
+               ise/$(PROJECT)_isim.cmd \
+               ise/$(PROJECT)_isim.exe \
+               ise/$(PROJECT)_isim.prj \
+               ise/$(PROJECT)_map.map \
+               ise/$(PROJECT)_map.mrp \
+               ise/$(PROJECT)_map.ncd \
+               ise/$(PROJECT)_map.ngm \
+               ise/$(PROJECT)_map.xrpt \
+               ise/$(PROJECT)_ngdbuild.xrpt \
+               ise/$(PROJECT)_pad.csv \
+               ise/$(PROJECT)_pad.txt \
+               ise/$(PROJECT)_par.xrpt \
+               ise/$(PROJECT)_summary.html \
+               ise/$(PROJECT)_summary.xml \
+               ise/$(PROJECT)_usage.xml \
+               ise/$(PROJECT)_xst.log \
+               ise/$(PROJECT)_xst.xrpt \
+               ise/fuse.log \
+               ise/fuse.xmsgs \
+               ise/fuseRelaunch.cmd \
+               ise/_impactbatch.log \
+               ise/isim.cmd \
+               ise/isim.log \
+               ise/par_usage_statistics.html \
+               ise/usage_statistics_webtalk.html \
+               ise/webtalk.log \
+               ise/webtalk_pn.xml \
+               ise/xilinx_device_details.xml \
+               ise/xilinxsim.ini
 
 #
 # rcsclean everything
@@ -894,7 +904,7 @@ rcsclean: rcsclean_rtl rcsclean_ise
 #
 
 rcsclean_ise: clean_ise
-	rcsclean $(ISE)/*
+	rcsclean ise/*
 
 #
 # rcsclean RTL
@@ -902,30 +912,30 @@ rcsclean_ise: clean_ise
 
 rcsclean_rtl: clean_rtl
 	-rcsclean *
-	-rcsclean $(RTL)/*
-	-rcsclean $(RTL)/esm/*
-	-rcsclean $(RTL)/testbench/*
-	-rcsclean $(RTL)/ks10/*
-	-rcsclean $(RTL)/ks10/arb/*
-	-rcsclean $(RTL)/ks10/clk/*
-	-rcsclean $(RTL)/ks10/csl/*
-	-rcsclean $(RTL)/ks10/cpu/*
-	-rcsclean $(RTL)/ks10/mem/*
-	-rcsclean $(RTL)/ks10/utils/*
-	-rcsclean $(RTL)/ks10/uba/dz11/uart/*
-	-rcsclean $(RTL)/ks10/uba/dz11/*
-	-rcsclean $(RTL)/ks10/uba/rh11/rpxx/*
-	-rcsclean $(RTL)/ks10/uba/rh11/sd/*
-	-rcsclean $(RTL)/ks10/uba/rh11/*
-	-rcsclean $(RTL)/ks10/uba/*
-	-rcsclean $(RTL)/ks10/cpu/useq/*
+	-rcsclean rtl/*
+	-rcsclean rtl/esm/*
+	-rcsclean rtl/testbench/*
+	-rcsclean rtl/ks10/*
+	-rcsclean rtl/ks10/arb/*
+	-rcsclean rtl/ks10/clk/*
+	-rcsclean rtl/ks10/csl/*
+	-rcsclean rtl/ks10/cpu/*
+	-rcsclean rtl/ks10/mem/*
+	-rcsclean rtl/ks10/utils/*
+	-rcsclean rtl/ks10/uba/dz11/uart/*
+	-rcsclean rtl/ks10/uba/dz11/*
+	-rcsclean rtl/ks10/uba/rh11/rpxx/*
+	-rcsclean rtl/ks10/uba/rh11/sd/*
+	-rcsclean rtl/ks10/uba/rh11/*
+	-rcsclean rtl/ks10/uba/*
+	-rcsclean rtl/ks10/cpu/useq/*
 	-find rtl -type f | grep -v RCS | grep -v archive | grep \\.v$$
 
 #
 # Fetch design from RCS
 #
 
-rcsfetch: $(INC) $(RTL_SRC) $(SIM_SRC) $(BLD) $(DAT) $(DOC) $(DIAGFILES) $(RTL)/esm/$(PROJECT).ucf 
+rcsfetch: $(INC_FILES) $(RTL_FILES) $(SIM_FILES) $(BLD_FILES) $(DAT_FILES) $(DOC_FILES) $(DIAG_FILES) rtl/esm/$(PROJECT).ucf 
 
 #
 # Archive files
