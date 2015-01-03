@@ -38,11 +38,9 @@ extern "C"
 {
 #endif
 
-bool rxEmpty(void);
-bool txFull(void);
-void putUART(char ch);
-char getUART(void);
-bool getLine(char **buf);
+    bool txFull(void);
+    void putUART(char ch);
+    void enableUARTIntr(void);
 
 #ifdef __cplusplus
 }

@@ -43,11 +43,9 @@ extern "C"
 {
 #endif
 
-    void sdInitialize(void);
-    void sdEnable(bool enable);
+    void sdTask(void * param);
     bool sdStatus(void);
-    void sdCardDetect(bool init);
-    bool sdInitializeCard(void);
+    bool sdInitialize(void);
     bool sdReadSector(uint8_t *buf, uint32_t sector);
     bool sdWriteSector(const uint8_t *buf, uint32_t sector);
 

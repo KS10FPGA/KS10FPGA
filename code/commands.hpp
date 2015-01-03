@@ -35,15 +35,7 @@
 #ifndef __COMMANDS_HPP
 #define __COMMANDS_HPP
 
-void parseCMD(char * buf);
+void parseCommand(char * buf);
 void printHaltStatus(void);
-
-#define DEBUG
-
-#ifdef DEBUG
-#define debug(...) printf(__VA_ARGS__)
-#else
-#define debug(...)
-#endif
 
 #endif

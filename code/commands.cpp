@@ -34,6 +34,7 @@
 
 #include <ctype.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "sd.h"
 #include "stdio.h"
@@ -44,60 +45,32 @@
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 
+//
+// Debug macro
+//
+
+#define DEBUG
+
+#ifdef DEBUG
+#define debug(...) printf(__VA_ARGS__)
+#else
+#define debug(...)
+#endif
+
+//
+// Current address set by cmdLI or cmdLA
+//
+
 static ks10_t::addr_t address;
+
+//
+// Memory or IO address
+//
 
 static enum access_t {
     accessMEM = 0,              //!< KS10 Memory Access
     accessIO,                   //!< KS10 IO Access
 } access;
-
-//
-//! Convert a string to upper case.
-//!
-//! \param [in] buf
-//!     Pointer to line buffer.
-//!
-//! \returns
-//!     Pointer to line buffer.
-//
-
-static char *strupper(char *buf) {
-    for (int i = 0; buf[i] != 0; i++) {
-        buf[i] -= (buf[i] >= 'a' && buf[i] <= 'z') ? 0x20 : 0x00;
-    }
-    return buf;
-}
-
-//
-//! String comparison
-//!
-//! \param [in] s1
-//!     string 1.
-//!
-//! \param [in] s2
-//!     string 2.
-//!
-//! \param [in] n
-//!     Number of characters to compare at most.
-//!
-//! \returns
-//!     > 0: if s1 is less than s2
-//!       0: if s1 is equal to s2
-//!     < 0: if s1 is greater than s2
-//
-
-int strncmp(const char *s1, const char *s2, unsigned int n) {
-    for ( ; n > 0; --n) {
-        if (*s1 != *s2) {
-            return (*(const unsigned char *)s1 - *(const unsigned char *)s2);
-        } else if (*s1 == '\0') {
-            return 0;
-        }
-        s1++;
-        s2++;
-    }
-    return 0;
-}
 
 //
 //! Parses an octal number from the command line
@@ -363,17 +336,17 @@ void printHaltStatus(void) {
 
     const ks10_t::haltStatusBlock_t haltStatusBlock = ks10_t::getHaltStatusBlock(hsbAddr);
 
-    printf("Halt Cause: %s (%012llo, %06llo)\n"
-           "PC  is %012llo     MAG is %012llo\n"
-           "PC  is %012llo     HR  is %012llo\n"
-           "AR  is %012llo     ARX is %012llo\n"
-           "BR  is %012llo     BRX is %012llo\n"
-           "ONE is %012llo     EBR is %012llo\n"
-           "UBR is %012llo     MSK is %012llo\n"
-           "FLG is %012llo     PI  is %012llo\n"
-           "X1  is %012llo     TO  is %012llo\n"
-           "T1  is %012llo     VMA is %012llo\n"
-           "FE  is %012llo                   \n",
+    printf("KS10> Halt Cause: %s (PC=%012llo, A=%06llo)\n"
+           "KS10>   PC  is %012llo     MAG is %012llo\n"
+           "KS10>   PC  is %012llo     HR  is %012llo\n"
+           "KS10>   AR  is %012llo     ARX is %012llo\n"
+           "KS10>   BR  is %012llo     BRX is %012llo\n"
+           "KS10>   ONE is %012llo     EBR is %012llo\n"
+           "KS10>   UBR is %012llo     MSK is %012llo\n"
+           "KS10>   FLG is %012llo     PI  is %012llo\n"
+           "KS10>   X1  is %012llo     TO  is %012llo\n"
+           "KS10>   T1  is %012llo     VMA is %012llo\n"
+           "KS10>   FE  is %012llo                   \n",
            (haltStatusWord.status == 00000 ? "Microcode Startup."                     :
             (haltStatusWord.status == 00001 ? "Halt Instruction."                     :
              (haltStatusWord.status == 00002 ? "Console Halt."                        :
@@ -930,7 +903,7 @@ static void cmdSD(int argc, char *argv[]) {
         FRESULT status = f_mount(0, &fatFS);
         debug("open status was %d\n", status);
     } else if (buf[0] == 'I' && buf[1] == 'N') {
-        sdInitializeCard();
+        sdInitialize();
     } else if (buf[0] == 'O' && buf[1] == 'P') {
         FIL fp;
         uint8_t buffer[256];
@@ -1226,7 +1199,7 @@ static void cmdZZ(int argc, char *argv[]) {
 //!    command line
 //
 
-void parseCMD(char * buf) {
+void parseCommand(char * buf) {
 
     //
     // List of Commands
@@ -1301,8 +1274,6 @@ void parseCMD(char * buf) {
     };
 
     const int numCMD = sizeof(cmdList)/sizeof(cmdList_t);
-
-    strupper(buf);
 
     int argc = 0;
     char *p = buf;

@@ -24,6 +24,9 @@
 //! C++ static destructors are also not implemented because main() should
 //! never exit.
 //!
+//! Some of the interrupts have independant handlers so that theycan be caught
+//! independantly by the debugger.
+//!
 //! \file
 //!    startup.cpp
 //!
@@ -50,21 +53,24 @@
 //
 //******************************************************************************
 
-#include <stdint.h>
+#include "SafeRTOS/SafeRTOS_API.h"
 
 //
 // Attributes
 //
 
-#define __naked __attribute__((naked))
-#define __weak  __attribute__((weak))
-#define __alias __attribute__((alias("nullIntHandler")))
+#define __naked   __attribute__((naked))
+#define __weak    __attribute__((weak))
+#define __alias   __attribute__((alias("nullIntHandler")))
+#define __vectors __attribute__((section(".vectors")))
 
 //
 // Function Prototypes
 //
 
 extern "C" int main(void);
+extern "C" void nmiIntHandler(void);
+extern "C" void faultIntHandler(void);
 extern "C" void nullIntHandler(void);
 extern "C" void __naked reset(void);
 
@@ -86,8 +92,6 @@ extern void __weak (*__init_array_end[])(void);         //!< Address of end of i
 // they will override these default handlers.
 //
 
-void __weak __alias nmiIntHandler(void);                //!< NMI vector
-void __weak __alias hardIntHandler(void);               //!< Hard fault vector
 void __weak __alias mpuIntHandler(void);                //!< MPU fault vector
 void __weak __alias busIntHandler(void);                //!< Bus Fault vector
 void __weak __alias usageIntHandler(void);              //!< Usage Fault vector
@@ -129,17 +133,25 @@ void __weak __alias epiIntHandler(void);                //!< EPI interrupt vecto
 void __weak __alias gpiojIntHandler(void);              //!< GPIO Port J interrupt vector
 
 //
+// Macros to cast entry point addresses to pointers-to-functions.
+//
+
+#define svcallIntHandler   (void (*)(void))vSafeRTOS_SVC_Handler_Address
+#define pendIntHandler     (void (*)(void))vSafeRTOS_PendSV_Handler_Address
+#define tickIntHandler     (void (*)(void))vSafeRTOS_SysTick_Handler_Address
+
+//
 //! Vectors and Stack
 //
 
 struct vectStruct_t {
-    uint32_t *stackEnd;         // Top of stack
+    unsigned long *stackEnd;    // Top of stack
     void (*vectorList[70])();   // Array of vectors
-} vectStruct __attribute__ ((section(".vectors"))) = {
+} vectStruct __vectors = {
     &_stackend, {               //  0 : Top of stack
         reset,                  //  1 : Reset vector
         nmiIntHandler,          //  2 : NMI vector
-        hardIntHandler,         //  3 : Hard fault vector
+        faultIntHandler,        //  3 : Hard fault vector
         mpuIntHandler,          //  4 : MPU fault vector
         busIntHandler,          //  5 : Bus Fault vector
         usageIntHandler,        //  6 : Usage Fault vector
@@ -222,13 +234,13 @@ struct vectStruct_t {
 //! -# Calls main()
 //!
 
-extern "C" void reset(void) {
+void reset(void) {
 
     //
     // Disable Interrupts
     //
 
-    asm volatile ("cpsid i");
+    __asm volatile ("cpsid i");
 
     //
     // Initialize '.data'
@@ -272,13 +284,37 @@ extern "C" void reset(void) {
 }
 
 //
-//! Default Vector
+//! NMI Interrupt Handler
 //!
-//! This code is the default operation for all of the unused interrupt vectors.
-//! It does asolutely noting.
-//!
+//! This code halts the processor.
 //
 
-extern "C" void nullIntHandler(void) {
-    ;
+void nmiIntHandler(void) {
+    for (;;) {
+        ;
+    }
+}
+
+//
+//! Fault Interrupt Handler
+//!
+//! This code halts the processor.
+//
+
+void faultIntHandler(void) {
+    for (;;) {
+        ;
+    }
+}
+
+//
+//! Null Interrupt Handler
+//!
+//!  Otherwise unhandled interrupts come here.
+//
+
+void nullIntHandler(void) {
+    for (;;) {
+        ;
+    }
 }

@@ -37,9 +37,8 @@
 //! @{
 //
 
-#include "epi.h"
+#include "epi.hpp"
 #include "ks10.hpp"
-#include "timer.hpp"
 #include "driverlib/rom.h"
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
@@ -47,6 +46,7 @@
 #include "driverlib/inc/hw_ints.h"
 #include "driverlib/inc/hw_types.h"
 #include "driverlib/inc/hw_memmap.h"
+#include "SafeRTOS/SafeRTOS_API.h"
 
 #include "stdio.h"
 #define GPIO_HALT_LED  GPIO_PIN_7
@@ -122,12 +122,13 @@ extern "C" void gpiobIntHandler(void) {
 
 void ks10_t::go(void) {
     writeRegStat(readRegStat() | statGO);
-    for (int i = 0; i < 100000; i++) {
+    for (int i = 0; i < 100; i++) {
         if ((readRegStat() & statGO) == 0) {
            return;
         }
-        ROM_SysCtlDelay(1);
+        taskYIELD();
     }
+    printf("GO-bit timeout\n");
 }
 
 //
@@ -457,11 +458,11 @@ bool ks10_t::halt(void) {
 //
 
 bool ks10_t::waitHalt(void) {
-    timer_t timeout(timer_t::HZ);
-    while (!timeout) {
+    for (int i = 0; i < 1000; i++) {
         if (ks10_t::halt()) {
             return true;
         }
+        taskYIELD();
     }
     return false;
 }

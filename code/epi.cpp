@@ -33,7 +33,7 @@
 //
 //******************************************************************************
 
-#include "epi.h"
+#include "epi.hpp"
 #include "driverlib/rom.h"
 #include "driverlib/epi.h"
 #include "driverlib/gpio.h"
@@ -171,6 +171,6 @@ void EPIInitialize(void) {
 //! Return EPI Address
 //
 
-unsigned long EPIAddressMapGet(void) {
+unsigned long EPIGetAddressMap(void) {
     return 0x60000000;
 }

@@ -42,16 +42,15 @@
 
 #include <stdint.h>
 
-#include "fpga.h"
 #include "stdio.h"
-#include "timer.hpp"
+#include "fpga.hpp"
 #include "driverlib/rom.h"
 #include "driverlib/inc/hw_types.h"
 #include "driverlib/inc/hw_memmap.h"
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
+#include "SafeRTOS/SafeRTOS_API.h"
 
-#define GPIO_PORT_BASE GPIO_PORTB_BASE
 #define GPIO_PIN_PROG  GPIO_PIN_0
 #define GPIO_PIN_INIT  GPIO_PIN_1
 #define GPIO_PIN_DONE  GPIO_PIN_3
@@ -69,32 +68,39 @@
 //!     True if the FPGA was programmed successfully. False otherwise.
 //!
 
-bool programFPGA(void) {
+bool fpgaProg(void) {
 
     printf("KS10> Programming FPGA with firmware.");
 
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-    ROM_GPIOPinTypeGPIOOutput(GPIO_PORT_BASE, GPIO_PIN_PROG);
-    ROM_GPIOPinTypeGPIOInput(GPIO_PORT_BASE, GPIO_PIN_INIT);
-    ROM_GPIOPinTypeGPIOInput(GPIO_PORT_BASE, GPIO_PIN_DONE);
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_PROG);
+    ROM_GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_INIT);
+    ROM_GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_DONE);
 
     //
     // Assert PROG# momentarily
     //
 
-    ROM_GPIOPinWrite(GPIO_PORT_BASE, GPIO_PIN_PROG, 0);
+    ROM_GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_PROG, 0);
     ROM_SysCtlDelay(10);
-    ROM_GPIOPinWrite(GPIO_PORT_BASE, GPIO_PIN_PROG, GPIO_PIN_PROG);
+    ROM_GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_PROG, GPIO_PIN_PROG);
     ROM_SysCtlDelay(10);
 
     //
     // Verify DONE is negated.
     //
 
-    if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_DONE) != 0) {
+    if (ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_DONE) != 0) {
         printf("\nKS10> FPGA Programming Error.  FPGA Done should be negated.\n");
-        return false;
+        return;
     }
+
+    //
+    // Check card status every second
+    //
+
+    const unsigned long delay = 1000;
+    portTickType lastTick = xTaskGetTickCount();
 
     //
     // Wait for DONE to be asserted.  Error after 10 seconds.
@@ -102,21 +108,22 @@ bool programFPGA(void) {
     //
 
     for (int i = 0; i < 10; i++) {
-        timer_t timeout(timer_t::HZ);
-        while (!timeout) {
-            if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_DONE) == GPIO_PIN_DONE) {
-                printf("\nKS10> FPGA programmed successfully.\n");
-                return true;
-            }
+	if (ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_DONE) == GPIO_PIN_DONE) {
+	    printf("\nKS10> FPGA programmed successfully.\n");
+	    return true;
+	}
+
 #if 0
-            if (ROM_GPIOPinRead(GPIO_PORT_BASE, GPIO_PIN_INIT) == 0) {
-                printf("\nKS10> FPGA Programming Error.  CRC Failure.\n");
-                return false;
-            }
+	if (ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_INIT) == 0) {
+	    printf("\nKS10> FPGA Programming Error.  CRC Failure.\n");
+	    return false;
+	}
 #endif
-        }
-        printf(" .");
-   }
+
+	printf(" .");
+	xTaskDelayUntil(&lastTick, delay);
+    }
     printf("\nKS10> FPGA Programming Error.  Programming timed out.\n");
     return false;
+
 }

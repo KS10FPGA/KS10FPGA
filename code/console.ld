@@ -32,10 +32,14 @@
 ********************************************************************************
 */
 
+/*
+ * The first 0x20C bytes must be reserved for the kernel
+ */
+
 MEMORY
 {
     FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x00040000
-    SRAM (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00018000
+    SRAM (rwx) : ORIGIN = 0x20000240, LENGTH = 0x00018000
 }
 
 SECTIONS
@@ -96,7 +100,7 @@ SECTIONS
 
     /*
      * Really weird things happen when the stack is not aligned to a
-     * double-word.
+     * double-word.  Especially printf() with a long long argument.
      */
 
     .stack (NOLOAD) :
@@ -104,6 +108,8 @@ SECTIONS
         . = ALIGN(8);
         _stackstart = .;
         . = . + 0x3000;
-        _stackend = .;
     } > SRAM
+
+    _stackend = .;
+    
 }

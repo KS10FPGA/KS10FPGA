@@ -33,34 +33,23 @@
 //******************************************************************************
 
 #include <stdint.h>
+
 #include "uart.h"
 #include "stdio.h"
+#include "console.hpp"
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
 #include "driverlib/uart.h"
 #include "driverlib/inc/hw_memmap.h"
 #include "driverlib/inc/hw_ints.h"
+#include "SafeRTOS/SafeRTOS_API.h"
 
-#ifdef CONFIG_ESM
-#define SYSCTL_XTAL        SYSCTL_XTAL_8MHZ
-#define GPIO_PORT_BASE     GPIO_PORTD_BASE
-#define SYSCTL_PERIPH_UART SYSCTL_PERIPH_UART1
-#define UART_BASE          UART1_BASE
-#define uartIntHandler     uart1IntHandler
-#define INT_UART           INT_UART1
-#else
-#define SYSCTL_XTAL        SYSCTL_XTAL_16MHZ
-#define GPIO_PORT_BASE     GPIO_PORTA_BASE
-#define SYSCTL_PERIPH_UART SYSCTL_PERIPH_UART0
-#define UART_BASE          UART0_BASE
-#define uartIntHandler     uart0IntHandler
-#define INT_UART           INT_UART0
-#endif
+//
+// Static variables
+//
 
 static const uint32_t baudrate = 9600;
-static char rxbuf[128];
-static volatile unsigned int index = 0;
 
 void initializeUART(void) __attribute__((constructor(101)));
 
@@ -76,33 +65,25 @@ void initializeUART(void) __attribute__((constructor(101)));
 void initializeUART(void) {
 
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
-                       SYSCTL_XTAL);
-
+                       SYSCTL_XTAL_8MHZ);
 
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOJ);
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART);
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART1);
 
-    ROM_GPIOPinTypeUART(GPIO_PORT_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-
-#ifdef CONFIG_ESM
+    ROM_GPIOPinTypeUART(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_1);
     ROM_GPIOPinConfigure(GPIO_PD0_U1RX);
     ROM_GPIOPinConfigure(GPIO_PD1_U1TX);
-#endif
-
-    ROM_UARTConfigSetExpClk(UART_BASE, ROM_SysCtlClockGet(), 9600,
+    ROM_UARTConfigSetExpClk(UART1_BASE, ROM_SysCtlClockGet(), 9600,
                             UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE |
                             UART_CONFIG_WLEN_8);
+}
 
-    ROM_IntEnable(INT_UART);
-    ROM_UARTIntEnable(UART_BASE, UART_INT_RX | UART_INT_RT);
-    ROM_UARTEnable(UART_BASE);
-    putUART('\r');
-    putUART('\n');
-    putUART('0');
-    putUART(',');
-    putUART(' ');
+void enableUARTIntr(void) {
+    ROM_IntEnable(INT_UART1);
+    ROM_UARTIntEnable(UART1_BASE, UART_INT_RX | UART_INT_RT);
+    ROM_UARTEnable(UART1_BASE);
 }
 
 //
@@ -113,7 +94,7 @@ void initializeUART(void) {
 //
 
 bool txFull(void) {
-    return ROM_UARTBusy(UART_BASE);
+    return ROM_UARTBusy(UART1_BASE);
 }
 
 //
@@ -124,118 +105,24 @@ bool txFull(void) {
 //
 
 void putUART(char ch) {
-    ROM_UARTCharPut(UART_BASE, ch);
+    ROM_UARTCharPut(UART1_BASE, ch);
 }
 
 //
-//! Check the state of the RX Buffer
-//!
-//! \returns
-//!     True if the buffer is empty, false otherwise.
+//! This function queues a character to a handler task.
 //
 
-bool rxEmpty(void) {
-    return index == 0;
-}
+void uart1IntHandler(void) {
 
-//
-//! This function gets a character from the UART receiver.
-//!
-//! \returns
-//!     Character read from UART receiver.
-//
+    char ch = ROM_UARTCharGet(UART1_BASE) & 0x7f;
 
-char getUART(void) {
-    while (index == 0) {
-        ;
+    portBASE_TYPE taskWoken;
+    portBASE_TYPE status = xQueueSendFromISR(serialQueueHandle, &ch, &taskWoken);
+    if (status != pdPASS) {
+        printf("queue(): Failed to send from ISR.  Status was %ld\n", status);
     }
-    index = 0;
-    return rxbuf[0];
-}
 
-//
-//! Get the command line from the line buffer
-//!
-//! \param [out]
-//!    buf address of a pointer to the line buffer.
-//!
-//! \returns
-//!    true if a newline has been received, false otherwise.
-//!
+    ROM_UARTIntClear(UART1_BASE, 0xffffffff);
 
-bool getLine(char **buf) {
-    if (rxbuf[index] == '\n') {
-        *buf = rxbuf;
-        rxbuf[index] = 0;
-        index = 0;
-        return true;
-    }
-    return false;
-}
-
-//
-//! UART Interrupt
-//!
-//! This function is an interrupt that buffers character that
-//! have been received by the UART
-//
-
-void uartIntHandler(void) {
-
-    static const char cntl_c  = 0x03;
-    static const char cntl_q  = 0x11;
-    static const char cntl_s  = 0x13;
-    static const char cntl_u  = 0x15;
-    static const char cntl_fs = 0x1c;
-    static const char backspace = 0x7f;
-
-    ROM_UARTIntClear(UART_BASE, 0xffffffff);
-    uint8_t ch = ROM_UARTCharGet(UART_BASE) & 0x7f;
-
-    switch(ch) {
-        case cntl_c:
-            putUART('^');
-            putUART('C');
-            break;
-        case cntl_q:
-            putUART('^');
-            putUART('Q');
-            break;
-        case cntl_s:
-            putUART('^');
-            putUART('S');
-            break;
-        case cntl_u:
-            for (unsigned  int i = 0; i < index; i++) {
-                putUART(0x7f);
-            }
-            index = 0;
-            break;
-        case cntl_fs:
-            putUART('^');
-            putUART('\\');
-            break;
-        case backspace:
-            if (index > 0) {
-                index -= 1;
-                putUART(ch);
-            }
-            break;
-        case '\r':
-            rxbuf[index] = '\n';
-            putUART('\r');
-            putUART('\n');
-            break;
-        case '\n':
-            break;
-        default:
-            if (index < sizeof(rxbuf)-1) {
-                rxbuf[index++] = ch;
-                putUART(ch);
-            } else {
-                rxbuf[index] = '\n';
-                putUART('\n');
-            }
-            break;
-    }
+    taskYIELD_FROM_ISR(taskWoken);
 }

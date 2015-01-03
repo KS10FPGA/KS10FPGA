@@ -43,15 +43,6 @@
 #ifndef __FPGA_H
 #define __FPGA_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-bool programFPGA(void);
-
-#ifdef __cplusplus
-}
-#endif
+bool fpgaProg(void);
 
 #endif

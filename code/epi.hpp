@@ -8,7 +8,7 @@
 //! interfaces to the KS10 FPGA over the EPI interface.
 //!
 //! \file
-//!    epi.h
+//!    epi.hpp
 //!
 //! \author
 //!    Rob Doyle - doyle (at) cox (dot) net
@@ -36,16 +36,7 @@
 #ifndef __EPI_H
 #define __EPI_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-void EPIInitialize(void);
-unsigned long EPIAddressMapGet(void);
-
-#ifdef __cplusplus
-}
-#endif
+void          EPIInitialize(void);
+unsigned long EPIGetAddressMap(void);
 
 #endif
