@@ -80,6 +80,13 @@ void initializeUART(void) {
                             UART_CONFIG_WLEN_8);
 }
 
+//
+//! Enable UART Interrupts
+//!
+//! This function enables the UART interrupts.  Interrupts should be enabled
+//! after the serial interface queue has been created.
+//
+
 void enableUARTIntr(void) {
     ROM_IntEnable(INT_UART1);
     ROM_UARTIntEnable(UART1_BASE, UART_INT_RX | UART_INT_RT);
@@ -106,6 +113,29 @@ bool txFull(void) {
 
 void putUART(char ch) {
     ROM_UARTCharPut(UART1_BASE, ch);
+}
+
+//
+//! This function gets a character from the UART receiver queue.
+//!
+//! \returns
+//!     Character read from UART receiver.
+//
+
+char getUART(void) {
+    for (;;) {
+        char ch;
+        portBASE_TYPE status = xQueueReceive(serialQueueHandle, &ch, 0);
+        switch (status) {
+            case pdPASS:
+                return ch;
+            case errQUEUE_EMPTY:
+                xTaskDelay(1);
+                break;
+            default:
+                return 0;
+        }
+    }
 }
 
 //

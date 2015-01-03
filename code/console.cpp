@@ -184,101 +184,96 @@ const char *prerror(portBASE_TYPE error) {
 }
 
 //
-//
+//! Read characters from the input and create a command line
+//!
+//! \param buf
+//!    command line buffer
+//!
+//! \param len
+//!    maximum lenght of command line
+//!
+//! \param taskHandle
+//!    reference to the command processing task
+//!
 //! \note
 //!    Strings are converted to upper case for processing.
-//!
+//
 
-bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle,
-                 xQueueHandle &queueHandle) {
+bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
 
-    static const char cntl_c  = 0x03;
-    static const char cntl_q  = 0x11;
-    static const char cntl_s  = 0x13;
-    static const char cntl_u  = 0x15;
-    static const char cntl_fs = 0x1c;
+    static const char cntl_c    = 0x03;
+    static const char cntl_q    = 0x11;
+    static const char cntl_s    = 0x13;
+    static const char cntl_u    = 0x15;
+    static const char cntl_fs   = 0x1c;
     static const char backspace = 0x08;
 
     unsigned int count = 0;
 
     for (;;) {
-        char ch;
-        portBASE_TYPE status = xQueueReceive(queueHandle, &ch, 0);
-        if (status == pdPASS) {
-            switch (ch) {
-                case cntl_c:
-                    status = xTaskDelete(taskHandle);
-                    if (status != pdPASS) {
-                        /*
-                          debug("xTaskDelete() failed.   Status was %s\n",
-                          prerror(status));
-                        */
-                    }
-                    printf("^C\r\n%s ", prompt);
-                    return false;
-                case cntl_q:
-                    status = xTaskResume(taskHandle);
-                    if (status != pdPASS) {
-                        /*
-                          debug("xTaskResume() failed.  Status was %s\n",
-                          prerror(status));
-                        */
-                    }
-                    putUART('^');
-                    putUART('Q');
-                    break;
-                case cntl_s:
-                    status = xTaskSuspend(taskHandle);
-                    if (status != pdPASS) {
-                        /*
-                          debug("xTaskSuspend() failed.  Status was %s\n",
-                          prerror(status));
-                        */
-                    }
-                    putUART('^');
-                    putUART('S');
-                    break;
-                case cntl_u:
-                    do {
-                        putUART(backspace);
-                        putUART(' ');
-                        putUART(backspace);
-                    } while (--count != 0);
-                    break;
-                case cntl_fs:
-                    putUART('^');
-                    putUART('\\');
-                    break;
-                case backspace:
-                    if (count > 0) {
-                        putUART(backspace);
-                        putUART(' ');
-                        putUART(backspace);
-                        count -= 1;
-                    }
-                    break;
-                case '\r':
+        portBASE_TYPE status;
+        char ch = getchar();
+        switch (ch) {
+            case cntl_c:
+                status = xTaskDelete(taskHandle);
+                if (status != pdPASS) {
+                    //debug("xTaskDelete() failed.  Status was %s\n", prerror(status));
+                }
+                printf("^C\r\n%s ", prompt);
+                return false;
+            case cntl_q:
+                status = xTaskResume(taskHandle);
+                if (status != pdPASS) {
+                    //debug("xTaskResume() failed.  Status was %s\n", prerror(status));
+                }
+                putchar('^');
+                putchar('Q');
+                break;
+            case cntl_s:
+                status = xTaskSuspend(taskHandle);
+                if (status != pdPASS) {
+                    //debug("xTaskSuspend() failed.  Status was %s\n", prerror(status));
+                }
+                putchar('^');
+                putchar('S');
+                break;
+            case cntl_u:
+                do {
+                    putchar(backspace);
+                    putchar(' ');
+                    putchar(backspace);
+                } while (--count != 0);
+                break;
+            case cntl_fs:
+                putchar('^');
+                putchar('\\');
+                break;
+            case backspace:
+                if (count > 0) {
+                    putchar(backspace);
+                    putchar(' ');
+                    putchar(backspace);
+                    count -= 1;
+                }
+                break;
+            case '\r':
+                buf[count++] = 0;
+                putchar('\r');
+                putchar('\n');
+                return true;
+            case '\n':
+                break;
+            default:
+                if (count < len - 1) {
+                    buf[count++] = toupper(ch);
+                    putchar(ch);
+                } else {
                     buf[count++] = 0;
-                    putUART('\r');
-                    putUART('\n');
+                    putchar('\r');
+                    putchar('\n');
                     return true;
-                case '\n':
-                    break;
-                default:
-                    if (count < len - 1) {
-                        buf[count++] = toupper(ch);
-                        putUART(ch);
-                    } else {
-                        buf[count++] = '\n';
-                        putUART('\n');
-                        return true;
-                    }
-                    break;
-            }
-        } else if (status == errQUEUE_EMPTY) {
-            xTaskDelay(1);
-        } else {
-            debug("xQueueReceive() failed.  Status was %s.\n", prerror(status));
+                }
+                break;
         }
     }
 }
@@ -512,7 +507,7 @@ void taskConsole(void * /*param*/) {
         // Note: commandLine() blocks until an newline character is received
         //
 
-        if (commandLine(linBuf, linBufLen, taskCommandHandle, serialQueueHandle)) {
+        if (commandLine(linBuf, linBufLen, taskCommandHandle)) {
 
             //
             // Create command processing task

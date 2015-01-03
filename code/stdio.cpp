@@ -46,6 +46,17 @@ static const char *upper_digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static const char *lower_digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 //
+//! This function gets a character from the UART receiver.
+//!
+//! \returns
+//!     Character read from UART receiver.
+//!
+
+char getchar(void) {
+    return getUART();
+}
+
+//
 //! This function outputs a character to the UART transmitter.
 //!
 //! This function expands newlines to CR, LF sequences.
