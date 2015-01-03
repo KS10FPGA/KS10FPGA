@@ -2,6 +2,8 @@ TARGET  := console
 
 OPENOCD_CFG := ks10.cfg
 
+OPENOCD_EXE := /usr/local/openocd-0.8.0/bin/openocd-0.8.0.exe
+
 LDFLAGS := \
 	--script=$(TARGET).ld \
 	--entry reset \
@@ -9,26 +11,25 @@ LDFLAGS := \
 	-Map $(TARGET).map
 
 FILES := \
-	console.o\
+	console.o \
 	commands.o \
 	epi.o \
 	fpga.o \
 	ks10.o \
+	main.o\
 	sd.o \
 	startup.o \
 	stdio.o \
-	sysclk.o \
-	uart.o \
+	uart.o 
 
 HEADERS := \
 	commands.hpp \
-	epi.h \
-	fpga.h \
+	console.hpp \
+	epi.hpp \
+	fpga.hpp \
 	ks10.hpp\
 	sd.h \
 	stdio.h \
-	sysclk.hpp \
-	timer.hpp \
 	uart.h \
 	fatfs/dir.h \
 	fatfs/diskio.h \
@@ -46,7 +47,7 @@ HEADERS := \
 	driverlib/sysctl.h \
 	driverlib/systick.h \
 	driverlib/timer.h \
-	driverlib/uart.h \
+	driverlib/uart.h
 
 DRIVERLIB := \
 	driverlib/driverlib.a
@@ -58,10 +59,10 @@ include makedefs
 
 $(TARGET).bin : $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
-
-$(TARGET).elf :$(TARGET).ld $(FILES) $(DRIVERLIB) $(LIBFATFS)
 	make -C driverlib
 	make -C fatfs
+
+$(TARGET).elf : $(TARGET).ld $(FILES) $(DRIVERLIB) $(LIBFATFS)
 	$(LD) $(LDFLAGS) $(FILES) $(DRIVERLIB) $(LIBFATFS) $(LIBGCC) $(LIBC) -o $(TARGET).elf
 
 $(TARGET).o : $(TARGET).cpp $(HEADERS)
@@ -77,14 +78,14 @@ $(LIBFATFS) :
 #
 
 load: $(TARGET).bin $(OPENOCD_CFG)
-	-openocd -f $(OPENOCD_CFG) -c "program_device ()"
+	-$(OPENOCD_EXE) -f $(OPENOCD_CFG) -c "program_device ()"
 
 #
 # Reset the target from the JTAG port
 #
 
 reset: $(OPENOCD_CFG)
-	-openocd -f $(OPENOCD_CFG) -c "reset" -c "shutdown"
+	-$(OPENOCD_EXE) -f $(OPENOCD_CFG) -c "reset" -c "shutdown"
 
 clean:
 	rm -f *.elf

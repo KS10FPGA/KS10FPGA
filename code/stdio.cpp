@@ -46,17 +46,6 @@ static const char *upper_digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static const char *lower_digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 //
-//! This function gets a character from the UART receiver.
-//!
-//! \returns
-//!     Character read from UART receiver.
-//!
-
-char getchar(void) {
-    return getUART();
-}
-
-//
 //! This function outputs a character to the UART transmitter.
 //!
 //! This function expands newlines to CR, LF sequences.
@@ -94,46 +83,6 @@ int puts(const char *s) {
     }
     putchar('\n');
     return 1;
-}
-
-//
-//! This function gets a string from the UART receiver.
-//!
-//! This function buffers a line of characters.  The Backspace is handled.
-//!
-//! \param [in] buf
-//!     buffer to place input characters
-//!
-//! \param [in] len
-//!     buffer length
-//!
-//! \returns
-//!     pointer to buffer.
-//
-
-char *fgets(char *buf, unsigned int len) {
-    unsigned int i;
-    for (i = 0; i < len - 1; ) {
-        char ch = getchar();
-        switch (ch) {
-            case '\r':
-                buf[i] = '\0';
-                return buf;
-            case '\n':
-                break;
-            case 0x7f:
-                if (i > 0) {
-                    i -= 1;
-                    putchar(ch);
-                }
-                break;
-            default:
-                buf[i++] = ch;
-                putchar(ch);
-        }
-    }
-    buf[i] = '\0';
-    return buf;
 }
 
 //

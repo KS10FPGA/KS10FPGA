@@ -41,11 +41,9 @@ extern "C"
 {
 #endif
 
-int putchar(int ch);
-int puts(const char *s);
-char getchar(void);
-char *fgets(char *buf, unsigned int len);
-int printf(const char *fmt, ...);
+    int putchar(int ch);
+    int puts(const char *s);
+    int printf(const char *fmt, ...);
 
 #ifdef __cplusplus
 }
