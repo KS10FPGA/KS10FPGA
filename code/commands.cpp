@@ -14,7 +14,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013 Rob Doyle
+// Copyright (C) 2013-2015 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -121,10 +121,10 @@ ks10_t::data_t rdword(const uint8_t *b) {
 }
 
 //
-//! Buffer the PDP10 .SAV file
+//! Read the PDP10 .SAV file
 //!
-//! This function reads buffers from the FAT filesytems and supplies the data
-//! 5 bytes at a time to the .SAV file parser.
+//! This function reads 5-byte buffers from the FAT filesytems and converts the
+//! data into PDP10 words.
 //!
 //! \param [in] fp
 //!     file pointer
@@ -132,33 +132,24 @@ ks10_t::data_t rdword(const uint8_t *b) {
 //! \pre
 //!     The filesystem must be mounted and the file must be opened.
 //!
-//! \note
-//!     Buffer size should be a multiple of 5 bytes.  Each PDP-10 word requires
-//!     5 bytes in of storage the .SAV file.
-//!
 //! \returns
 //!     a 36-bit PDP10 word
+//!
+//! \note
+//!     The .SAV file should be a multiple of 5 bytes in size.
 //
 
 ks10_t::data_t getdata(FIL *fp) {
 
-    static uint8_t buffer[255];
-    static unsigned int index = sizeof(buffer);
+    uint8_t buffer[5];
+    unsigned int numbytes;
 
-    static_assert((sizeof(buffer) % 5) == 0,
-                  "Buffer size must be a multiple of five bytes.");
-
-    if (index == sizeof(buffer)) {
-        unsigned int numbytes;
-        FRESULT status = f_read(fp, &buffer, sizeof(buffer), &numbytes);
-        if (status == FR_OK) {
-            index = 0;
-        }
+    FRESULT status = f_read(fp, buffer, sizeof(buffer), &numbytes);
+    if (status != FR_OK) {
+        debug("f_read() returned %d\n", status);
     }
-    ks10_t::data_t data = rdword(&buffer[index]);
-    index += 5;
 
-    return data;
+    return rdword(buffer);
 }
 
 //
