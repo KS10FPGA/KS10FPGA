@@ -131,7 +131,7 @@ extern unsigned long SSIClockSourceGet(unsigned long ulBase);
 // deprecated.  These defines provide backward compatibility.
 //
 //*****************************************************************************
-#if 0 // ndef DEPRECATED
+#ifndef DEPRECATED
 #include "driverlib/sysctl.h"
 #define SSIConfig(a, b, c, d, e)                            \
         SSIConfigSetExpClk(a, SysCtlClockGet(), b, c, d, e)

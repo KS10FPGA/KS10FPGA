@@ -253,7 +253,7 @@ extern void UART9BitAddrSend(unsigned long ulBase, unsigned char ucAddr);
 // deprecated.  These defines provide backward compatibility.
 //
 //*****************************************************************************
-#if 0 // #ifndef DEPRECATED
+#ifndef DEPRECATED
 #include "driverlib/sysctl.h"
 #define UARTConfigSet(a, b, c)                         \
         UARTConfigSetExpClk(a, SysCtlClockGet(), b, c)
