@@ -40,8 +40,8 @@
 #include "stdio.h"
 #include "ks10.hpp"
 #include "commands.hpp"
-#include "fatfs/dir.h"
-#include "fatfs/ff.h"
+#include "fatfslib/dir.h"
+#include "fatfslib/ff.h"
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 

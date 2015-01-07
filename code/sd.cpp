@@ -36,7 +36,7 @@
 #include <stdint.h>
 #include "sd.h"
 #include "stdio.h"
-#include "fatfs/ff.h"
+#include "fatfslib/ff.h"
 #include "driverlib/inc/hw_types.h"
 #include "driverlib/rom.h"
 #include "driverlib/ssi.h"
