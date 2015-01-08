@@ -53,7 +53,7 @@
 //!
 
 DSTATUS disk_initialize(BYTE pdrv) {
-    return ((pdrv == 0) && sdInitializeCard()) ? 0 : STA_NOINIT;
+    return ((pdrv == 0) && sdInitialize()) ? 0 : STA_NOINIT;
 }
 
 //!

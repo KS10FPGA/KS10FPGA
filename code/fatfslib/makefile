@@ -1,7 +1,7 @@
 include ../makedefs
 
 TARGET := \
-	libfatfs
+	fatfslib
 
 FILES := \
 	dir.o \
@@ -15,7 +15,9 @@ HEADERS := \
 	ffconf.h \
 	integer.h
 
-$(TARGET).a: $(FILES) $(HEADERS)
+$(TARGET).a : $(FILES) 
+
+$(FILES) : $(HEADERS)
 
 clean:
 	rm -f *.o

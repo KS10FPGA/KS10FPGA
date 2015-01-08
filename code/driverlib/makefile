@@ -1,3 +1,4 @@
+
 include ../makedefs
 
 TARGET := \
@@ -5,6 +6,7 @@ TARGET := \
 
 FILES := \
 	epi.o \
+	ethernet.o \
 	gpio.o \
 	interrupt.o \
 	ssi.o \
@@ -13,8 +15,10 @@ FILES := \
 	uart.o 
 
 HEADERS := \
+	cpu.h \
 	debug.h \
 	epi.h \
+	ethernet.h \
 	gpio.h \
 	interrupt.h \
 	pin_map.h \
@@ -24,7 +28,9 @@ HEADERS := \
 	systick.h \
 	uart.h
 
-$(TARGET).a: $(FILES) $(HEADERS)
+$(TARGET).a : $(FILES) 
+
+$(FILES) : $(HEADERS)
 
 clean:
 	rm -f *.o
