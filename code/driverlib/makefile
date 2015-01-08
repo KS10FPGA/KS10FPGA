@@ -11,7 +11,6 @@ FILES := \
 	interrupt.o \
 	ssi.o \
 	sysctl.o \
-	systick.o \
 	uart.o 
 
 HEADERS := \
@@ -25,7 +24,6 @@ HEADERS := \
 	rom.h \
 	ssi.h \
 	sysctl.h \
-	systick.h \
 	uart.h
 
 $(TARGET).a : $(FILES) 

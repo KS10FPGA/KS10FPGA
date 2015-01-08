@@ -19,6 +19,10 @@ $(TARGET).a : $(FILES)
 
 $(FILES) : $(HEADERS)
 
+dir.o : ../stdio.h
+
+diskio.o : ../sd.h
+
 clean:
 	rm -f *.o
 	rm -f *.a
