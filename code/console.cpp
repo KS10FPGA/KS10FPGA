@@ -54,6 +54,7 @@
 #include "commands.hpp"
 #include "console.hpp"
 #include "driverlib/rom.h"
+#include "telnetlib/lwip_task.h"
 #include "SafeRTOS/SafeRTOS_API.h"
 
 //
@@ -98,10 +99,6 @@ const char * prompt = "KS10>";
 // Serial Queue information
 //
 
-static const unsigned long queueLen    = 128;
-static const unsigned long queueSize   = sizeof(char);
-static const unsigned long queueBufLen = (queueLen * queueSize) + portQUEUE_OVERHEAD_BYTES;
-static char serialBuffer[queueBufLen];
 xQueueHandle serialQueueHandle;
 
 //
@@ -397,7 +394,11 @@ void taskConsole(void * /*param*/) {
     }
 
     //
-    // Create SD task
+    // Create the SD task
+    //  This task watches for SD Card insertions and removals.   When an
+    //  SD Card is inserted, the this task attempts to initialize the SD
+    //  Card.   If the card is successfully initialized, this taks also
+    //  attempts to mount the FAT filesystem on top of the SD Card.
     //
 
     static char __aligned taskSDStack[5120-4];
@@ -477,6 +478,10 @@ void taskConsole(void * /*param*/) {
     // Create serial input queue
     //
 
+    const unsigned long queueLen    = 128;
+    const unsigned long queueSize   = sizeof(char);
+    const unsigned long queueBufLen = (queueLen * queueSize) + portQUEUE_OVERHEAD_BYTES;
+    static char serialBuffer[queueBufLen];
     status = xQueueCreate(serialBuffer, queueBufLen, queueLen, queueSize,
                           &serialQueueHandle);
     if (status != pdPASS) {
@@ -486,7 +491,7 @@ void taskConsole(void * /*param*/) {
 
     //
     // The serial input queue has been created.  Now enable the UART receiver
-    // interrupts.  This will begin queuing characters to this task.
+    // interrupts.  The interrupt will begin queuing characters to this task.
     //
 
     enableUARTIntr();
@@ -555,8 +560,19 @@ void startConsole(void) {
     vTaskInitializeScheduler(idleTaskStack, sizeof(idleTaskStack), 0,
                              &initParams);
 
+#if 1
+    if (lwIPTaskInit() != 0) {
+        printf("LWIP Task Init Failed\n");
+        while (1) {
+            ;
+        }
+    } else {
+        printf("lwIP Task Init Succeeded\n");
+    }
+#endif
+
     //
-    // Start the init task
+    // Start the console task
     //
 
     portBASE_TYPE status;

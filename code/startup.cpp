@@ -69,6 +69,7 @@
 //
 
 extern "C" int main(void);
+extern "C" void lwIPEthernetIntHandler(void);
 extern "C" void nmiIntHandler(void);
 extern "C" void faultIntHandler(void);
 extern "C" void nullIntHandler(void);
@@ -139,6 +140,7 @@ void __weak __alias gpiojIntHandler(void);              //!< GPIO Port J interru
 #define svcallIntHandler   (void (*)(void))vSafeRTOS_SVC_Handler_Address
 #define pendIntHandler     (void (*)(void))vSafeRTOS_PendSV_Handler_Address
 #define tickIntHandler     (void (*)(void))vSafeRTOS_SysTick_Handler_Address
+#define enetIntHandler     lwIPEthernetIntHandler
 
 //
 //! Vectors and Stack
