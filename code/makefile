@@ -1,3 +1,5 @@
+include makedefs
+
 TARGET  := console
 
 OPENOCD_CFG := ks10.cfg
@@ -8,6 +10,7 @@ LDFLAGS := \
 	--script=$(TARGET).ld \
 	--entry reset \
         --gc-sections \
+	-rpath asdf \
 	-Map $(TARGET).map
 
 FILES := \
@@ -30,48 +33,47 @@ HEADERS := \
 	ks10.hpp\
 	sd.h \
 	stdio.h \
-	uart.h \
-	fatfs/dir.h \
-	fatfs/diskio.h \
-	fatfs/ff.h \
-	fatfs/ffconf.h \
-	fatfs/integer.h \
-	driverlib/cpu.h \
-	driverlib/epi.h \
-	driverlib/debug.h \
-	driverlib/gpio.h \
-	driverlib/interrupt.h \
-	driverlib/pin_map.h \
-	driverlib/rom.h \
-	driverlib/ssi.h \
-	driverlib/sysctl.h \
-	driverlib/systick.h \
-	driverlib/timer.h \
-	driverlib/uart.h
+	uart.h
 
 DRIVERLIB := \
 	driverlib/driverlib.a
 
-LIBFATFS := \
-	fatfs/libfatfs.a
+FATFSLIB := \
+	fatfslib/fatfslib.a
 
-include makedefs
+LWIPLIB := \
+	lwiplib/lwiplib.a
+
+TELNETLIB := \
+	telnetlib/telnetlib.a
+
+USTDLIB := \
+	ustdlib/ustdlib.a
 
 $(TARGET).bin : $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
-	make -C driverlib
-	make -C fatfs
 
-$(TARGET).elf : $(TARGET).ld $(FILES) $(DRIVERLIB) $(LIBFATFS)
-	$(LD) $(LDFLAGS) $(FILES) $(DRIVERLIB) $(LIBFATFS) $(LIBGCC) $(LIBC) -o $(TARGET).elf
+$(TARGET).elf : $(TARGET).ld $(DRIVERLIB) $(USTDLIB) $(FATFSLIB) $(LWIPLIB) $(TELNETLIB) $(FILES)
+	$(LD) $(LDFLAGS) $(FILES) --start-group $(DRIVERLIB) $(FATFSLIB) $(LWIPLIB) $(TELNETLIB) $(USTDLIB) --end-group $(LIBGCC) $(LIBC) -o $(TARGET).elf
 
 $(TARGET).o : $(TARGET).cpp $(HEADERS)
 
-$(DRIVERLIB) : 
+$(DRIVERLIB) : FORCE
 	make -C driverlib
 
-$(LIBFATFS) :
-	make -C fatfs
+$(FATFSLIB) : FORCE
+	make -C fatfslib
+
+$(LWIPLIB) : FORCE
+	make -C lwiplib
+
+$(TELNETLIB) : FORCE
+	make -C telnetlib
+
+$(USTDLIB) : FORCE
+	make -C ustdlib
+
+FORCE:
 
 #
 # Program the flash in the target
@@ -95,16 +97,25 @@ clean:
 	rm -f *.d
 	rm -rf ../doc/Doxygen/*
 	make -C driverlib clean
-	make -C fatfs clean
+	make -C fatfslib clean
+	make -C lwiplib clean
+	make -C telnetlib clean
+	make -C ustdlib clean
 
 rcsclean: clean
 	rcsclean *
 	make -C driverlib rcsclean
-	make -C fatfs rcsclean
+	make -C fatfslib rcsclean
+	make -C lwiplib rcsclean
+	make -C telnetlib rcsclean
+	make -C ustdlib rcsclean
 
 rcsfetch: $(HEADERS) $(FILES:.o=.cpp) $(OPENOCD_CFG) $(TARGET).ld makefile makedefs
 	make -C driverlib rcsfetch
-	make -C fatfs rcsfetch
+	make -C fatfslib rcsfetch
+	make -C lwiplib rcsfetch
+	make -C telnetlib rcsfetch
+	make -C ustdlib rcsfetch
 
 archive_all:
 	tar -czvf ks10_code_all_`date '+%y%m%d'`.tgz *

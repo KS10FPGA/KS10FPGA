@@ -30,6 +30,7 @@
 #
 #******************************************************************************
 
+AR      := arm-none-eabi-ar
 G++     := arm-none-eabi-g++.exe
 GCC     := arm-none-eabi-gcc.exe
 LD      := arm-none-eabi-ld.exe
@@ -38,39 +39,72 @@ OBJCOPY := arm-none-eabi-objcopy
 PART    := LM3S9B96
 
 CFLAGS := \
-	-Dgcc \
+	-std=c99 \
+	-Wall \
 	-DPART_${PART} \
 	-DTARGET_IS_TEMPEST_RC3 \
-	-DCONFIG_ESM \
-	-W -Wall \
-        -ffreestanding \
-	-mcpu=cortex-m3 \
+        -Wall \
 	-mthumb \
+	-mcpu=cortex-m3 \
 	-Os \
-	-g \
-	-MD \
-	-std=gnu++11 \
 	-ffunction-sections \
 	-fdata-sections \
+        -ffreestanding \
+	-MD \
+        -g \
+	-I. \
+	-I.. \
+	-I../driverlib \
+	-I../fatfslib \
+        -I../lwiplib \
+        -I../telnetlib \
+        -I../ustdlib \
+        -I../lwiplib/lwip-1.3.2/src/include/ \
+        -I../lwiplib/lwip-1.3.2/src/include/ipv4 \
+        -I../lwiplib/lwip-1.3.2/ports/Stellaris/include
+
+CPPFLAGS := \
+	-std=gnu++11 \
+	-DPART_${PART} \
+	-DTARGET_IS_TEMPEST_RC3 \
+	-W \
+        -Wall \
+	-mthumb \
+	-mcpu=cortex-m3 \
+	-Os \
 	-fno-exceptions \
+	-ffunction-sections \
+	-fdata-sections \
+	-fpermissive \
+        -ffreestanding \
+	-MD \
+	-g \
         -Wno-ctor-dtor-privacy \
 	-Wno-non-virtual-dtor \
-	-fpermissive \
-	-I.. -I.
+	-I. \
+	-I.. \
+	-I../driverlib \
+	-I../fatfslib \
+        -I../lwiplib \
+        -I../telnetlib \
+        -I../ustdlib/ \
+        -I../lwiplib/lwip-1.3.2/src/include/ \
+        -I../lwiplib/lwip-1.3.2/src/include/ipv4 \
+        -I../lwiplib/lwip-1.3.2/ports/Stellaris/include
 
 #
 # Rule to compile C programs
 #
 
 %.o: %.c
-	$(G++) $(CFLAGS) -c $< -o $@
+	$(GCC) $(CFLAGS) -c $< -o $@
 
 #
 # Rule to compile C++ programs
 #
 
 %.o: %.cpp
-	$(G++) $(CFLAGS) -c $< -o $@
+	$(G++) $(CPPFLAGS) -c $< -o $@
 
 #
 # Rule to build archive file
@@ -86,10 +120,10 @@ CFLAGS := \
 LIBGCC := \
 	${shell ${GCC} ${CFLAGS} -print-libgcc-file-name}
 
-
 #
 # Location of libc.a
 #
 
 LIBC := \
 	${shell ${GCC} ${CFLAGS} -print-file-name=libc.a}
+

@@ -41,7 +41,6 @@
 #include "driverlib/rom.h"
 #include "driverlib/ssi.h"
 #include "driverlib/gpio.h"
-#include "driverlib/timer.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/inc/hw_ints.h"
 #include "driverlib/inc/hw_memmap.h"
@@ -704,7 +703,6 @@ void sdTask(void * /* param */) {
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTCS_BASE, GPIO_PIN_CS);
     ROM_GPIOPinTypeGPIOInput(GPIO_PORTCD_BASE, GPIO_PIN_CD);
     ROM_GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5);
