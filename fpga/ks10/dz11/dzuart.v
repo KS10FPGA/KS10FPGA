@@ -19,7 +19,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -44,13 +44,14 @@
 `default_nettype none
 `include "dzlpr.vh"
 
-module DZUART(clk, rst, clr, lprWRITE, dzDATAI,
+module DZUART(clk, rst, clr, num, lprWRITE, dzDATAI,
               rxd, rxclr, rxfull, rxdata, rxpare, rxfrme, rxovre,
               txd, txdata, txload, txempty);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
+   input  [ 2: 0] num;                          // UART Number
    input          lprWRITE;                     // Write to LPR
    input  [35: 0] dzDATAI;                      // Device Data In
    input          rxd;                          // Receiver serial data
@@ -82,7 +83,7 @@ module DZUART(clk, rst, clr, lprWRITE, dzDATAI,
           begin
              if (clr)
                lprREG <= 0;
-             else if (lprWRITE)
+             else if (lprWRITE & (`dzLPR_LINE(dzDATAI) == num))
                lprREG <= `dzLPR_DATA(dzDATAI);
           end
      end
@@ -92,7 +93,7 @@ module DZUART(clk, rst, clr, lprWRITE, dzDATAI,
    //
 
    wire brgCLKEN;
-   
+
    UART_BRG ttyBRG (
       .clk        (clk),
       .rst        (rst),

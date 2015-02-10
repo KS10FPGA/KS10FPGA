@@ -59,7 +59,6 @@
 `include "dztdr.vh"
 `include "../ubabus.vh"
 `include "../../ks10.vh"
-//`include "uart/uart_brg.vh"
 
 module DZ11(clk,      rst,
             dz11TXD,  dz11RXD,  dz11CO,  dz11RI,  dz11DTR,
@@ -299,6 +298,7 @@ module DZ11(clk,      rst,
               .clk      (clk),
               .rst      (rst),
               .clr      (csrCLR | devRESET),
+              .num      (i[2:0]),
               .lprWRITE (lprWRITE),
               .dzDATAI  (dzDATAI),
               .rxd      (uartRXD[i]),
