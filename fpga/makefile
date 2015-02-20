@@ -38,6 +38,19 @@ VVP          := vvp
 CLOC         := ./cloc-1.62.exe
 
 #
+# Fix pipelining (the tee command)
+#
+# Quoting the bash manual -
+# Each command in a pipeline is executed in its own subshell.  The exit status
+# of a pipeline is the exit status of the last command in the pipeline, unless
+# the pipefail option is enabled. If pipefail is enabled, the pipeline’s return
+# status is the value of the last (rightmost) command to exit with a non-zero
+# status, or zero if all commands exit successfully.
+#
+
+.SHELLFLAGS = -o pipefail -c
+
+#
 # Initialized Memory Contents (Simulation only)
 #
 
@@ -87,6 +100,8 @@ DIAGBASE   := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XX
 #   -D STOP_ON_STUCK_PC Stop simulating when PC gets stuck.
 #   -D DEBUG_DSKAA	Diagnostic information (See debug.v)
 #   -D DEBUG=DSKAA	Diagnostic information (See debug.v)
+#   -D CHIPSCOPE_CPU
+#   -D CHIPSCOPE_SD
 #
 
 #	-D SIM_SMMON \
@@ -94,6 +109,7 @@ DIAGBASE   := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XX
 
 DEBUG_ARGS := \
 	-D SIM_CTY \
+	-D CHIPSCOPE_CPU \
 	-D STOP_ON_STUCK_PC \
 	-D STOP_ON_COMPLETE \
 	-D DEBUG_$(DIAGBASE) \
@@ -236,13 +252,15 @@ SIM_FILES := \
 # If were simulating SMMON, add the SMMON files.  Otherwise don't.
 #
 
+MON_FILES := 
+
 ifneq (, $(findstring SIM_SMMON, $(DEBUG_ARGS)))
-MON_FILES := \
+
+MON_FILES += \
 	rtl/testbench/MAINDEC-10-DSQDA-RD00.SEQ \
 	rtl/testbench/MAINDEC-10-DSQDB-RD00.SEQ \
-	rtl/testbench/MAINDEC-10-DSQDC-RD00.SEQ 
-else
-MON_FILES := 
+	rtl/testbench/MAINDEC-10-DSQDC-RD00.SEQ
+
 endif
 
 #
@@ -302,9 +320,15 @@ INC_FILES := \
 # Microcode data files
 #
 
-DAT_FILES := \
-	rtl/ks10/cpu/useq/crom.dat \
+CROM_DAT := \
+	rtl/ks10/cpu/useq/crom.dat
+
+DROM_DAT := \
 	rtl/ks10/cpu/useq/drom.dat
+
+DAT_FILES := \
+	$(CROM_DAT) \
+	$(DROM_DAT)
 
 #
 # Documentation files
@@ -392,6 +416,15 @@ ise/$(PROJECT).prj: makefile
 	do \
 	    echo 'verilog work "../'$$FILE'"' >> $@; \
 	done
+ifneq (, $(findstring CHIPSCOPE_SD, $(DEBUG_ARGS)))
+	@echo verilog work \"../rtl/xilinx/chipscope_sd_ila/chipscope_sd_ila.v\" >> $@
+	@echo verilog work \"../rtl/xilinx/chipscope_sd_icon/chipscope_sd_icon.v\" >> $@
+endif
+ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
+	@echo verilog work \"../rtl/xilinx/chipscope_cpu_ila/chipscope_cpu_ila.v\" >> $@
+	@echo verilog work \"../rtl/xilinx/chipscope_cpu_icon/chipscope_cpu_icon.v\" >> $@
+	@echo verilog work \"../rtl/xilinx/chipscope_cpu_vio/chipscope_cpu_vio.v\"  >> $@
+endif
 
 ise/$(PROJECT)_isim.prj: makefile
 	@echo "Creating "$@ > /dev/stderr
@@ -424,7 +457,7 @@ ise/$(PROJECT)_impact.cmd: makefile
 
 #
 # FUSE
-#  The Xilinx simulator has a different switch for defining macros.  
+#  The Xilinx simulator has a different switch for defining macros.
 #  Pipe DEBUG_ARGS though sed
 #
 
@@ -433,8 +466,8 @@ FUSE_ARGS := \
 	-d SMALL_MEM \
 	-d XILINX \
 	-d SSRAM_DAT=\"\"../rtl/testbench/$(DIAG).dat\"\" \
-	-d CROM_DAT=\"\"../rtl/ks10/cpu/useq/crom.dat\"\" \
-	-d DROM_DAT=\"\"../rtl/ks10/cpu/useq/drom.dat\"\" \
+	-d CROM_DAT=\"\"../$(CROM_DAT)\"\" \
+	-d DROM_DAT=\"\"../$(DROM_DAT)\"\" \
 	-intstyle $(INTSTYLE) \
 	-incremental \
 	-o   $(PROJECT)_isim.exe \
@@ -465,7 +498,7 @@ ISIM_ARGS := \
 	-view $(PROJECT).wcfg \
 	-wdb c:/temp/$(PROJECT).wdb
 
-isim: ise/$(PROJECT)_isim.exe ise/$(PROJECT)_isim.cmd ise/$(PROJECT).wcfg rtl/testbench/$(DIAG).dat makefile
+isim: ise/$(PROJECT)_isim.exe ise/$(PROJECT)_isim.cmd ise/$(PROJECT).wcfg ../rtl/testbench/$(DIAG).dat makefile
 	@cd ise; \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe $(ISIM_ARGS) &
@@ -477,17 +510,19 @@ isim: ise/$(PROJECT)_isim.exe ise/$(PROJECT)_isim.cmd ise/$(PROJECT).wcfg rtl/te
 #
 #   -filter                    : Filter File
 #   -intstyle                  : Integration Style
+#   -sd                        : Core Search Directory
 #   -write_timing_constraints  : Write timing constraints
 #
 
+
 XST_OPTS := \
 	-filter $(PROJECT).filter \
-	-intstyle $(INTSTYLE) 
+	-intstyle $(INTSTYLE)
 
 XST_CMDS := \
 	'set -xsthdpdir "xst"' \
 	'run' \
-	'-define {XILINX CROM_DAT="../rtl/ks10/cpu/useq/crom.dat" DROM_DAT="../rtl/ks10/cpu/useq/drom.dat"}' \
+	'-define {XILINX CROM_DAT="../$(CROM_DAT)" DROM_DAT="../$(DROM_DAT)"}' \
 	'-ifn $(PROJECT).prj' \
 	'-iuc NO' \
 	'-ofn $(PROJECT).ngc' \
@@ -497,7 +532,7 @@ XST_CMDS := \
 	'-opt_mode Speed' \
 	'-opt_level 2' \
 	'-power NO' \
-	'-keep_hierarchy No' \
+	'-keep_hierarchy Soft' \
 	'-netlist_hierarchy As_Optimized' \
 	'-rtlview Yes' \
 	'-glob_opt AllClockNets' \
@@ -540,9 +575,25 @@ XST_CMDS := \
 	'-equivalent_register_removal YES' \
 	'-slice_utilization_ratio_maxmargin 5'
 
+ifneq (, $(findstring CHIPSCOPE_SD, $(DEBUG_ARGS)))
+XST_CMDS += \
+	'-define {CHIPSCOPE_SD}' \
+	'-sd {"../rtl/xilinx/chipscope_sd_ila" "../rtl/xilinx/chipscope_sd_icon"}'
+endif
+
+ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
+XST_CMDS += \
+	'-define {CHIPSCOPE_CPU}' \
+	'-sd {"../rtl/xilinx/chipscope_cpu_ila" "../rtl/xilinx/chipscope_cpu_icon" "../rtl/xilinx/chipscope_cpu_vio"}'
+endif
+
 ise/$(PROJECT).ngc ise/$(PROJECT).ngr: ise/$(PROJECT).xst ise/$(PROJECT).prj ise/$(PROJECT).filter rtl/esm/$(PROJECT).ucf $(RTL_FILES) $(INC_FILES) $(DAT_FILES) makefile
-	cd ise; \
-	$(XST) $(XST_OPTS) -ifn $(PROJECT).xst -ofn $(PROJECT)_xst.log
+	@cd ise; \
+	echo "################################################################################" | tee    $(PROJECT).log; \
+	echo Running XST | tee -a $(PROJECT).log; \
+	echo $(XST) $(XST_OPTS) -ifn $(PROJECT).xst | tee -a $(PROJECT).log; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	$(XST) $(XST_OPTS) -ifn $(PROJECT).xst | tee -a $(PROJECT).log
 
 #
 # ngdbuild
@@ -557,6 +608,7 @@ ise/$(PROJECT).ngc ise/$(PROJECT).ngr: ise/$(PROJECT).xst ise/$(PROJECT).prj ise
 # Ngdbuild options:
 #
 #   -dd                   : Destination Directory
+#   -sd                   : Core Search Directory
 #   -filter               : Filter File
 #   -intstyle             : Integration Style {ise|xflow|silent}
 #   -nt                   : Netlist Translation Type {timestamp|on|off}
@@ -572,9 +624,27 @@ NGD_OPTS := \
 	-p $(PART) \
 	-uc ../rtl/esm/$(PROJECT).ucf
 
+ifneq (, $(findstring CHIPSCOPE_SD, $(DEBUG_ARGS)))
+NGD_OPTS += \
+	-sd ../rtl/xilinx/chipscope_sd_ila \
+	-sd ../rtl/xilinx/chipscope_sd_icon
+endif
+
+ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
+NGD_OPTS += \
+	-sd ../rtl/xilinx/chipscope_cpu_ila \
+	-sd ../rtl/xilinx/chipscope_cpu_icon \
+	-sd ../rtl/xilinx/chipscope_cpu_vio
+endif
+
+
 ise/$(PROJECT).ngd: ise/$(PROJECT).ngc rtl/esm/$(PROJECT).ucf ise/$(PROJECT).filter makefile
-	cd ise; \
-	$(NGD) $(NGD_OPTS) $(PROJECT).ngc $(PROJECT).ngd
+	@cd ise; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	echo Running NGDBUILD | tee -a $(PROJECT).log; \
+	echo $(NGD) $(NGD_OPTS) $(PROJECT).ngc $(PROJECT).ngd | tee -a $(PROJECT).log; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	$(NGD) $(NGD_OPTS) $(PROJECT).ngc $(PROJECT).ngd | tee -a $(PROJECT).log
 
 #
 # MAP
@@ -628,8 +698,12 @@ MAP_OPTS:= \
 	-xt 0
 
 ise/$(PROJECT)_map.ncd ise/$(PROJECT).pcf: ise/$(PROJECT).ngd ise/$(PROJECT).filter makefile
-	cd ise; \
-	$(MAP) $(MAP_OPTS) -o $(PROJECT)_map.ncd $(PROJECT).ngd $(PROJECT).pcf
+	@cd ise; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	echo Running MAP | tee -a $(PROJECT).log; \
+	echo $(MAP) $(MAP_OPTS) -o $(PROJECT)_map.ncd $(PROJECT).ngd $(PROJECT).pcf | tee -a $(PROJECT).log; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	$(MAP) $(MAP_OPTS) -o $(PROJECT)_map.ncd $(PROJECT).ngd $(PROJECT).pcf | tee -a $(PROJECT).log
 
 #
 # Place and Route
@@ -659,8 +733,12 @@ PAR_OPTS := \
 	-xe n
 
 ise/$(PROJECT).ncd: ise/$(PROJECT)_map.ncd ise/$(PROJECT).pcf ise/$(PROJECT).filter makefile
-	cd ise; \
-	$(PAR) $(PAR_OPTS) $(PROJECT)_map.ncd $(PROJECT).ncd $(PROJECT).pcf
+	@cd ise; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	echo Running PAR | tee -a $(PROJECT).log; \
+	echo $(PAR) $(PAR_OPTS) $(PROJECT)_map.ncd $(PROJECT).ncd $(PROJECT).pcf | tee -a $(PROJECT).log; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	$(PAR) $(PAR_OPTS) $(PROJECT)_map.ncd $(PROJECT).ncd $(PROJECT).pcf | tee -a $(PROJECT).log
 
 #
 # bitgen
@@ -711,8 +789,12 @@ BITGEN_OPTS := \
 	-g sw_gts_cycle:4
 
 ise/$(PROJECT).bit: ise/$(PROJECT).ncd
-	cd ise; \
-	$(BITGEN) $(BITGEN_OPTS) $(PROJECT).ncd $(PROJECT).bit
+	@cd ise; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	echo Running BITGEN | tee -a $(PROJECT).log; \
+	echo $(BITGEN) $(BITGEN_OPTS) $(PROJECT).ncd $(PROJECT).bit | tee -a $(PROJECT).log; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	$(BITGEN) $(BITGEN_OPTS) $(PROJECT).ncd $(PROJECT).bit | tee -a $(PROJECT).log
 
 #
 # promgen
@@ -743,8 +825,12 @@ PROMGEN_OPTS := \
 	-w
 
 ise/$(PROJECT).mcs: ise/$(PROJECT).bit makefile
-	cd ise; \
-	$(PROMGEN) $(PROMGEN_OPTS) 
+	@cd ise; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	echo Running PROMGEN | tee -a $(PROJECT).log; \
+	echo $(PROMGEN) $(PROMGEN_OPTS) | tee -a $(PROJECT).log; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	$(PROMGEN) $(PROMGEN_OPTS) | tee -a $(PROJECT).log
 
 #
 # Run 'impact' to program the KS10 flash
@@ -791,8 +877,8 @@ testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) rtl/
 	$(IVERILOG) -s testbench -o $@ $(SIM_FILES) $(RTL_FILES) \
 	$(DEBUG_ARGS) \
 	-D SSRAM_DAT=\"rtl/testbench/$(DIAG).dat\" \
-	-D CROM_DAT=\"rtl/ks10/cpu/useq/crom.dat\" \
-	-D DROM_DAT=\"rtl/ks10/cpu/useq/drom.dat\" \
+	-D CROM_DAT=\"../$(CROM_DAT)\" \
+	-D DROM_DAT=\"../$(DROM_DAT)\" \
 	-I rtl/ks10 \
 	-I rtl/ks10/uba \
 	-I rtl/ks10/uba/rh11 \
@@ -801,9 +887,9 @@ testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) rtl/
 	-I rtl/ks10/uba/dz11 \
 	-I rtl/ks10/uba/dz11/uart \
 	-I rtl/ks10/cpu \
-	-I rtl/ks10/cpu/useq 
+	-I rtl/ks10/cpu/useq
 
-testsuite/$(DIAG).txt : testsuite/$(DIAG).vvp 
+testsuite/$(DIAG).txt : testsuite/$(DIAG).vvp
 	$(VVP) -n $< > testsuite/$(DIAG).txt
 
 #
@@ -816,7 +902,7 @@ clean: clean_rtl clean_ise
 # Clean RTL
 #
 
-clean_rtl: 
+clean_rtl:
 	rm -f rtl/ks10/cpu/useq/*.dat
 	rm -f rtl/testbench/*.dat
 	find . -type f -name "*~" | xargs rm -fv
@@ -831,7 +917,7 @@ clean_ise:
                ise/_xmsgs \
                ise/isim \
                ise/iseconfig \
-               ise/xlnx_auto_0_xdb      
+               ise/xlnx_auto_0_xdb
 	rm -f  ise/$(PROJECT).bgn \
 	       ise/$(PROJECT).bit \
 	       ise/$(PROJECT).bld \
@@ -839,6 +925,7 @@ clean_ise:
                ise/$(PROJECT).cmd_log \
                ise/$(PROJECT).drc \
                ise/$(PROJECT).filter \
+               ise/$(PROJECT).log \
                ise/$(PROJECT).lso \
                ise/$(PROJECT).mcs \
                ise/$(PROJECT).ncd \
@@ -852,6 +939,8 @@ clean_ise:
                ise/$(PROJECT).prj\
                ise/$(PROJECT).prm\
                ise/$(PROJECT).ptwx \
+               ise/$(PROJECT).srp \
+               ise/$(PROJECT).syr \
                ise/$(PROJECT).stx \
                ise/$(PROJECT).twr \
                ise/$(PROJECT).twx \
@@ -878,7 +967,6 @@ clean_ise:
                ise/$(PROJECT)_summary.html \
                ise/$(PROJECT)_summary.xml \
                ise/$(PROJECT)_usage.xml \
-               ise/$(PROJECT)_xst.log \
                ise/$(PROJECT)_xst.xrpt \
                ise/fuse.log \
                ise/fuse.xmsgs \
@@ -935,7 +1023,7 @@ rcsclean_rtl: clean_rtl
 # Fetch design from RCS
 #
 
-rcsfetch: $(INC_FILES) $(RTL_FILES) $(SIM_FILES) $(BLD_FILES) $(DAT_FILES) $(DOC_FILES) $(DIAG_FILES) rtl/esm/$(PROJECT).ucf 
+rcsfetch: $(INC_FILES) $(RTL_FILES) $(SIM_FILES) $(BLD_FILES) $(DAT_FILES) $(DOC_FILES) $(DIAG_FILES) rtl/esm/$(PROJECT).ucf
 
 #
 # Archive files
