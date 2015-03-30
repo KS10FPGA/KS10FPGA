@@ -336,6 +336,9 @@ module CPU(rst, clk, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
+      .dp               (dp),
+      .dbm              (dbm),
+      .dbus             (dbus),
       .debugDATA        (debugDATA),
       .debugADDR        (debugADDR)
    );

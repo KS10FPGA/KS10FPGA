@@ -29,7 +29,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -54,7 +54,7 @@
 `default_nettype none
 `include "useq/crom.vh"
 
-  module DEBUG(clk, rst, clken, crom, debugDATA, debugADDR);
+  module DEBUG(clk, rst, clken, crom, dp, dbm, dbus, debugDATA, debugADDR);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -62,17 +62,78 @@
    input                  rst;          // Reset
    input                  clken;        // Clock Enable
    input  [0:cromWidth-1] crom;         // Control ROM Data
+   input  [0:35]          dp;           // dp bus
+   input  [0:35]          dbm;          // dbm bus
+   input  [0:35]          dbus;         // dbus bus
    input  [0:35]          debugDATA;    // DEBUG Data
    output [0: 3]          debugADDR;    // DEBUG Address
 
+`ifdef SYNTHESIS
+
+`ifdef CHIPSCOPE_CPU
+
+   //
+   // Microcode address.
+   //
+   
+   wire [0:11] addr = crom[0:11];
+   
+   //
+   // ChipScope Pro Integrated Controller (ICON)
+   //
+
+   wire [35:0] control0;
+   wire [35:0] control1;
+
+   chipscope_cpu_icon uICON (
+      .CONTROL0 (control0),
+      .CONTROL1 (control1)
+   );
+
+   //
+   // ChipScope Pro Virtual Input/Output (VIO)
+   //
+
+   chipscope_cpu_vio uVIO (
+      .CLK      (clk),
+      .CONTROL  (control0),
+      .SYNC_OUT (debugADDR)
+   );
+   
+   //
+   // ChipScope Pro Integrated Logic Analyzer (ILA)
+   //
+
+   //wire [48:0] TRIG0 = {rst, addr, dp};
+   // Addr = dataport[36:47];
+   // DP   = dataport[ 0:35]; 
+   // RST  = dataport[   48];
+   
+   wire [120:0] TRIG0 = {rst, addr, dp, dbus, debugDATA};
+   
+   chipscope_cpu_ila uILA (
+      .CLK      (clk),
+      .CONTROL  (control1),
+      .TRIG0    (TRIG0)
+   );
+   
+`else
+   
+   //
+   // PC is Register #1 in the ALU
+   //
+
+   assign debugADDR = 4'b0001;
+   
+`endif
+   
+`else
+   
    //
    // Microcode Decode
    //
 
-`ifndef SYNTHESIS
-
    wire loadIR  = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
-
    wire loadVMA = (`cromMEM_CYCLE & `cromMEM_LOADVMA);
 
    //
@@ -170,12 +231,12 @@
 
      end
 
-`endif
-
    //
    // PC is Register #1 in the ALU
    //
 
    assign debugADDR = 4'b0001;
 
+`endif
+   
 endmodule

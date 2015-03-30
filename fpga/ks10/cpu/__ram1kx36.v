@@ -15,7 +15,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -54,9 +54,8 @@ module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
    //
    // Note:
    //  There are places when the KS10 microcode reads uninitialized RAMFILE
-   //  contents (TTG, for one).  This halts the simulation.  Therefore this
-   //  implementation includes code to initialize the RAMFILE contents for
-   //  simulation purposes.
+   //  contents (TTG, for one).  Therefore this includes code to initialize
+   //  the RAMFILE contents.
    //
    // Trace
    //  DPE7/E906, DPE7/E907, DPE7/E908, DPE7/E909, DPE7/E910, DPE7/E911
@@ -67,30 +66,17 @@ module RAM1Kx36(clk, rst, clken, wr, addr, din, dout);
    //  DPE7/E818, DPE7/E819, DPE7/E820, DPE7/E821, DPE7/E822, DPE7/E823
    //
 
-`ifndef SYNTHESIS
-   integer i;
-`endif
-
    reg [0:35] ram [0:1023];
    reg [0: 9] rd_addr;
 
-   always @(negedge clk or posedge rst)
+   initial
      begin
-        if (rst)
-          begin
-`ifdef SYNTHESIS
-             ;
-`else
-             for (i = 0; i < 1024; i = i + 1)
-               begin
-                  ram[i] <= 0;
-               end
-             // FIXME
-             // Initialize Stack Pointer
-             ram[15] <= 36'o777577_030303;
-`endif
-          end
-        else if (clken)
+        $readmemh(`RAMFILE_DAT, ram);
+     end
+
+   always @(negedge clk)
+     begin
+        if (clken)
           begin
              if (wr)
                ram[addr] <= din;

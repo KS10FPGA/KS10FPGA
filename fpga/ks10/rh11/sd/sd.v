@@ -1990,4 +1990,35 @@ module SD(clk, rst,
 
    assign sdDEBUG = {sdERR, state, sdVAL, sdWRCNT, sdRDCNT, 24'b0};
 
+   //
+   // Chipscode debugging
+   //
+
+`ifdef SYNTHESIS
+
+`ifdef CHIPSCOPE_SD
+   
+   //
+   // ChipScope Pro Integrated Controller (ICON)
+   //
+   
+   wire [35:0] control0;
+
+   chipscope_sd_icon uICON (
+      .CONTROL0 (control0)
+   );
+
+   //
+   // ChipScope Pro Integrated Logic Analyzer (ILA)
+   //
+
+   chipscope_sd_ila uILA (
+      .CLK      (clk),
+      .CONTROL  (control0),
+      .TRIG0    (sdDEBUG)
+   );
+
+`endif
+`endif
+   
 endmodule

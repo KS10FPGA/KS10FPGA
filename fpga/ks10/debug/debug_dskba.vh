@@ -49,7 +49,6 @@ begin
      18'o057600: test = "DSKBA DFT";
      18'o057677: test = "DSKBA TPOP";
      18'o057747: test = "DSKBA TPUSH";
-     18'o057771: test = "DSKBA TPUSH3";
      18'o060022: test = "DSKBA POPT";
      18'o060124: test = "DSKBA PUSHT";
      18'o060200: test = "DSKBA POPJ1";

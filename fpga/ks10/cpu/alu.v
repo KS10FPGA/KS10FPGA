@@ -481,6 +481,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //
 
    reg [0:39] r;
+   
    always @*
      begin
         case (lsrc)
@@ -530,6 +531,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //
 
    reg [0:39] s;
+   
    always @*
      begin
         case (lsrc)

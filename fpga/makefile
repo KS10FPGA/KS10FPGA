@@ -2,42 +2,41 @@
 # Project name.   Also top-level entity name (upper case)
 #
 
-PROJECT      := esm_ks10
-RTLTOP       := ESM_KS10
-SIMTOP       := testbench
+PROJECT  := esm_ks10
+RTLTOP   := ESM_KS10
+SIMTOP   := testbench
 
 #
 # FPGA partnumber
 #
 
-PART         := xc6slx45-2-fgg676
+PART     := xc6slx45-2-fgg676
 
 #
 # Xilinx tools
 #
 
-XILDIR       := $(shell cygpath -u '$(XILINX)')
-XILEXE       := $(XILDIR)/ISE_DS/ISE/bin/nt64
-BITGEN       := $(XILEXE)/bitgen.exe
-FUSE         := $(XILEXE)/fuse.exe
-MAP          := $(XILEXE)/map.exe
-NGD          := $(XILEXE)/ngdbuild.exe
-PAR          := $(XILEXE)/par.exe
-PROMGEN      := $(XILEXE)/promgen.exe
-IMPACT       := $(XILEXE)/impact.exe
-XST          := $(XILEXE)/xst.exe
-INTSTYLE     := ise
-XILPATH      := $(XILDIR)/ISE_DS/ISE/bin/nt64:$(XILDIR)/ISE_DS/ISE/lib/nt64:$(XILDIR)/ISE_DS/common/bin/nt64:$(XILDIR)/ISE_DS/common/lib/nt64
+XILDIR   := $(shell cygpath -u '$(XILINX)')
+XILEXE   := $(XILDIR)/ISE_DS/ISE/bin/nt64
+BITGEN   := $(XILEXE)/bitgen.exe
+FUSE     := $(XILEXE)/fuse.exe
+MAP      := $(XILEXE)/map.exe
+NGD      := $(XILEXE)/ngdbuild.exe
+PAR      := $(XILEXE)/par.exe
+PROMGEN  := $(XILEXE)/promgen.exe
+IMPACT   := $(XILEXE)/impact.exe
+XST      := $(XILEXE)/xst.exe
+INTSTYLE := ise
+XILPATH  := $(XILDIR)/ISE_DS/ISE/bin/nt64:$(XILDIR)/ISE_DS/ISE/lib/nt64:$(XILDIR)/ISE_DS/common/bin/nt64:$(XILDIR)/ISE_DS/common/lib/nt64
 
 #
 # Other tools
 #
 
-IVERILOG     := iverilog
-VVP          := vvp
-CLOC         := ./cloc-1.62.exe
+IVERILOG := iverilog
+VVP      := vvp
+CLOC     := ./cloc-1.62.exe
 
-#
 # Fix pipelining (the tee command)
 #
 # Quoting the bash manual -
@@ -54,41 +53,41 @@ CLOC         := ./cloc-1.62.exe
 # Initialized Memory Contents (Simulation only)
 #
 
-#DIAG         := DSKAA		#    1.0 ms
-#DIAG         := DSKAB		#    1.1 ms
-#DIAG         := DSKAC		#    0.8 ms
-#DIAG         := DSKAD		#    0.9 ms
-#DIAG         := DSKAE		#    0.7 ms
-#DIAG         := DSKAF		#    0.8 ms
-#DIAG         := DSKAG		#    0.5 ms
-#DIAG         := DSKAH		#   15.0 ms
-#DIAG         := DSKAI		#    2.4 ms
-#DIAG         := DSKAJ		#    2.8 ms
-#DIAG         := DSKAK		#    4.2 ms
-#DIAG         := DSKAL		#    4.7 ms
-#DIAG         := DSKAM		#    2.3 ms
-#DIAG         := DSKBA-RD00  	#    1.0 ms FAIL
-#DIAG         := DSKCA		#    1.9 ms
-#DIAG         := DSKCB		#    1.3 ms
-#DIAG         := DSKCC		#    2.1 ms
-#DIAG         := DSKCD		#    5.2 ms
-#DIAG         := DSKCE-RD00	#    5.7 ms
-#DIAG         := DSKCF-RD00	#   10.6 ms	
-#DIAG         := DSKCG		# 1350.0 ms FAIL
-#DIAG         := DSKDA-RD00	#    5.3 ms FAIL
-#DIAG         := DSKEA-RD00	# 1046.0 ms
-#DIAG         := DSKEB-RD00	#  ???.? ms FAIL
-#DIAG         := DSKEC-RD00	#  ???.? ms FAIL
-#DIAG         := DSKFA   	#  ???.? ms FAIL
-#DIAG         := DSMMA   	#  ???.? ms FAIL
-#DIAG         := DSMMB   	#  ???.? ms FAIL
-#DIAG         := DSMMC   	#  ???.? ms FAIL
-#DIAG         := DSMMD   	#  ???.? ms FAIL
-#DIAG         := DSUBA-RD00	#  138.0 ms
-#DIAG         := DSDZA-RD00	# 2411.8 ms
-#DIAG         := DSRPA-RD00	#  ???.? ms FAIL
+#DIAG     := DSKAA		#    1.0 ms
+#DIAG     := DSKAB		#    1.1 ms
+#DIAG     := DSKAC		#    0.8 ms
+#DIAG     := DSKAD		#    0.9 ms
+#DIAG     := DSKAE		#    0.7 ms
+#DIAG     := DSKAF		#    0.8 ms
+#DIAG     := DSKAG		#    0.5 ms
+#DIAG     := DSKAH		#   15.0 ms
+#DIAG     := DSKAI		#    2.4 ms
+#DIAG     := DSKAJ		#    2.8 ms
+#DIAG     := DSKAK		#    4.2 ms
+#DIAG     := DSKAL		#    4.7 ms
+#DIAG     := DSKAM		#    2.3 ms
+#DIAG     := DSKBA-RD00  	#    1.0 ms FAIL
+#DIAG     := DSKCA		#    1.9 ms
+#DIAG     := DSKCB		#    1.3 ms
+#DIAG     := DSKCC		#    2.1 ms
+#DIAG     := DSKCD		#    5.2 ms
+#DIAG     := DSKCE-RD00	#    5.7 ms
+#DIAG     := DSKCF-RD00	#   10.6 ms	
+#DIAG     := DSKCG		# 1350.0 ms FAIL
+#DIAG     := DSKDA-RD00	#    5.3 ms FAIL
+#DIAG     := DSKEA-RD00	# 1046.0 ms
+#DIAG     := DSKEB-RD00	#  ???.? ms FAIL
+#DIAG     := DSKEC-RD00	#  ???.? ms FAIL
+#DIAG     := DSKFA   	#  ???.? ms FAIL
+#DIAG     := DSMMA   	#  ???.? ms FAIL
+#DIAG     := DSMMB   	#  ???.? ms FAIL
+#DIAG     := DSMMC   	#  ???.? ms FAIL
+#DIAG     := DSMMD   	#  ???.? ms FAIL
+#DIAG     := DSUBA-RD00	#  138.0 ms
+#DIAG     := DSDZA-RD00	# 2411.8 ms
+#DIAG     := DSRPA-RD00	#  ???.? ms FAIL
 
-DIAGBASE   := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX suffix
+DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX suffix
 
 #
 # Macro Definitions
@@ -105,11 +104,11 @@ DIAGBASE   := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XX
 #
 
 #	-D SIM_SMMON \
-#	-D ENABLE_TIMER \
+#	-D CHIPSCOPE_CPU \
 
 DEBUG_ARGS := \
 	-D SIM_CTY \
-	-D CHIPSCOPE_CPU \
+	-D ENABLE_TIMER \
 	-D STOP_ON_STUCK_PC \
 	-D STOP_ON_COMPLETE \
 	-D DEBUG_$(DIAGBASE) \
@@ -120,7 +119,7 @@ DEBUG_ARGS := \
 #
 #
 
-PREFIX       := MAINDEC-10-
+PREFIX := MAINDEC-10-
 
 #
 # Diagnostic Files
@@ -317,7 +316,7 @@ INC_FILES := \
 	rtl/ks10/ks10.vh
 
 #
-# Microcode data files
+# Microcode and memory initialization
 #
 
 CROM_DAT := \
@@ -326,9 +325,13 @@ CROM_DAT := \
 DROM_DAT := \
 	rtl/ks10/cpu/useq/drom.dat
 
+RAMFILE_DAT := \
+	rtl/ks10/cpu/ramfile.dat
+
 DAT_FILES := \
 	$(CROM_DAT) \
-	$(DROM_DAT)
+	$(DROM_DAT) \
+	$(RAMFILE_DAT)
 
 #
 # Documentation files
@@ -380,6 +383,13 @@ rtl/ks10/cpu/useq/crom.dat: rtl/ks10/cpu/useq/ks10.mcr rtl/ks10/cpu/useq/crom.aw
 
 rtl/ks10/cpu/useq/drom.dat: rtl/ks10/cpu/useq/ks10.mcr rtl/ks10/cpu/useq/drom.awk
 	awk -f rtl/ks10/cpu/useq/drom.awk rtl/ks10/cpu/useq/ks10.mcr > rtl/ks10/cpu/useq/drom.dat
+
+#
+# Create the "RAMFILE" initialization
+#
+
+rtl/ks10/cpu/ramfile.dat: rtl/ks10/cpu/ramfile.awk
+	awk -f rtl/ks10/cpu/ramfile .awk > rtl/ks10/cpu/ramfile.dat
 
 #
 # Initialize the SSRAM with MAINDEC (simulation only)
@@ -466,6 +476,7 @@ FUSE_ARGS := \
 	-d SMALL_MEM \
 	-d XILINX \
 	-d SSRAM_DAT=\"\"../rtl/testbench/$(DIAG).dat\"\" \
+	-d RAMFILE_DAT=\"\"../$(RAMFILE_DAT)\"\" \
 	-d CROM_DAT=\"\"../$(CROM_DAT)\"\" \
 	-d DROM_DAT=\"\"../$(DROM_DAT)\"\" \
 	-intstyle $(INTSTYLE) \
@@ -498,7 +509,7 @@ ISIM_ARGS := \
 	-view $(PROJECT).wcfg \
 	-wdb c:/temp/$(PROJECT).wdb
 
-isim: ise/$(PROJECT)_isim.exe ise/$(PROJECT)_isim.cmd ise/$(PROJECT).wcfg ../rtl/testbench/$(DIAG).dat makefile
+isim: ise/$(PROJECT)_isim.exe ise/$(PROJECT)_isim.cmd ise/$(PROJECT).wcfg rtl/testbench/$(DIAG).dat makefile
 	@cd ise; \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe $(ISIM_ARGS) &
@@ -522,7 +533,7 @@ XST_OPTS := \
 XST_CMDS := \
 	'set -xsthdpdir "xst"' \
 	'run' \
-	'-define {XILINX CROM_DAT="../$(CROM_DAT)" DROM_DAT="../$(DROM_DAT)"}' \
+	'-define {XILINX RAMFILE_DAT="../$(RAMFILE_DAT)" CROM_DAT="../$(CROM_DAT)" DROM_DAT="../$(DROM_DAT)"}' \
 	'-ifn $(PROJECT).prj' \
 	'-iuc NO' \
 	'-ofn $(PROJECT).ngc' \
@@ -877,8 +888,9 @@ testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) rtl/
 	$(IVERILOG) -s testbench -o $@ $(SIM_FILES) $(RTL_FILES) \
 	$(DEBUG_ARGS) \
 	-D SSRAM_DAT=\"rtl/testbench/$(DIAG).dat\" \
-	-D CROM_DAT=\"../$(CROM_DAT)\" \
-	-D DROM_DAT=\"../$(DROM_DAT)\" \
+	-D RAMFILE_DAT=\"$(RAMFILE_DAT)\" \
+	-D CROM_DAT=\"$(CROM_DAT)\" \
+	-D DROM_DAT=\"$(DROM_DAT)\" \
 	-I rtl/ks10 \
 	-I rtl/ks10/uba \
 	-I rtl/ks10/uba/rh11 \
@@ -903,7 +915,9 @@ clean: clean_rtl clean_ise
 #
 
 clean_rtl:
-	rm -f rtl/ks10/cpu/useq/*.dat
+	rm -f rtl/ks10/cpu/ramfile.dat
+	rm -f rtl/ks10/cpu/useq/crom.dat
+	rm -f rtl/ks10/cpu/useq/drom.dat
 	rm -f rtl/testbench/*.dat
 	find . -type f -name "*~" | xargs rm -fv
 

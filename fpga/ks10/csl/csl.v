@@ -528,10 +528,10 @@ module CSL(clk, rst,
           // RH11 Debug Register
           //
 
-          6'h30 : dout <= 16'h9aab; //rh11DEBUG[48:63];
-          6'h32 : dout <= 16'h6778; //rh11DEBUG[32:47];
-          6'h34 : dout <= 16'h4556; //rh11DEBUG[16:31];
-          6'h36 : dout <= 16'h1223; //rh11DEBUG[ 0:15];
+          6'h30 : dout <= rh11DEBUG[48:63];
+          6'h32 : dout <= rh11DEBUG[32:47];
+          6'h34 : dout <= rh11DEBUG[16:31];
+          6'h36 : dout <= rh11DEBUG[ 0:15];
 
           //
           // Firmware Version Register
