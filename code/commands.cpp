@@ -224,19 +224,26 @@ static bool loadCode(const char * filename) {
 //
 
 void printRH11Debug(void) {
-    volatile ks10_t::rh11debug_t * debug = ks10_t::getRH11debug();
-    printf("Summary: 0x%016llx\n"
-           "State:   0x%02x\n"
-           "Err:     0x%02x\n"
-           "Val:     0x%02x\n"
-           "Wrcnt:  %3d\n"
-           "Rdcnt:  %3d\n"
-           "Status:  0x%02x\n",
-           *reinterpret_cast<volatile uint64_t*>(debug),
-           debug->state,
-           debug->err,
-           debug->val,
-           debug->status);
+    volatile ks10_t::rh11debug_t * rh11debug = ks10_t::getRH11debug();
+    printf("KS10> RH11 Status summary: 0x%016llx\n"
+           "KS10>   State  = %d\n"
+           "KS10>   Err    = %d\n"
+           "KS10>   Val    = %d\n"
+           "KS10>   WrCnt  = %d\n"
+           "KS10>   RdCnt  = %d\n"
+           "KS10>   Res1   = 0x%02x\n"
+           "KS10>   Res2   = 0x%02x\n"
+           "KS10>   Status = 0x%02x\n"
+           "",
+           *reinterpret_cast<volatile uint64_t*>(rh11debug),
+           rh11debug->state,
+           rh11debug->err,
+           rh11debug->val,
+           rh11debug->wrcnt,
+           rh11debug->rdcnt,
+           rh11debug->res1,
+           rh11debug->res2,
+           rh11debug->status);
 }
 
 //
@@ -850,7 +857,7 @@ static void cmdLI(int argc, char *argv[]) {
 //!    Array of pointers to the arguments.
 //
 
-static void cmdMR(int argc, char *[]) {
+static void cmdMR(int argc, char *argv[]) {
     const char *usage =
         "Usage: MR\n"
         "RESET the KS10.\n";
@@ -861,6 +868,14 @@ static void cmdMR(int argc, char *[]) {
         ks10_t::cpuReset(false);
         while (!ks10_t::halt()) {
             ;
+        }
+    } else if (argc == 2) {
+        if (strncmp(argv[1], "ON", 2) == 0) {
+            ks10_t::cpuReset(true);
+            printf("KS10 is reset\n");
+        } else if (strncmp(argv[1], "OFF", 2) == 0) {
+            ks10_t::cpuReset(false);
+            printf("KS10 is unreset\n");
         }
     } else {
         printf(usage);
@@ -1163,6 +1178,14 @@ static void cmdZZ(int argc, char *argv[]) {
             }
         }
 
+    } else if (argc == 2) {
+        if (strncmp(argv[1], "ON", 2) == 0) {
+            ks10_t::cpuReset(true);
+            printf("KS10 held in reset\n");
+        } else if (strncmp(argv[1], "OFF", 2) == 0) {
+            ks10_t::cpuReset(false);
+            printf("KS10 unreset\n");
+        }
     } else if (argc == 3) {
         if (*argv[1] == 'R') {
             if (strncmp(argv[2], "REGADDR", 4) == 0) {
