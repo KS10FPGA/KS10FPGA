@@ -54,7 +54,7 @@
 `default_nettype none
 `include "useq/crom.vh"
 
-  module DEBUG(clk, rst, clken, crom, dp, dbm, dbus, debugDATA, debugADDR);
+  module DEBUG(clk, rst, clken, crom, cromADDR, dp, dbm, dbus, debugDATA, debugADDR);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -62,6 +62,7 @@
    input                  rst;          // Reset
    input                  clken;        // Clock Enable
    input  [0:cromWidth-1] crom;         // Control ROM Data
+   input  [0:11]          cromADDR;     // Control ROM Address
    input  [0:35]          dp;           // dp bus
    input  [0:35]          dbm;          // dbm bus
    input  [0:35]          dbus;         // dbus bus
@@ -73,12 +74,6 @@
 `ifdef CHIPSCOPE_CPU
 
    //
-   // Microcode address.
-   //
-   
-   wire [0:11] addr = crom[0:11];
-   
-   //
    // ChipScope Pro Integrated Controller (ICON)
    //
 
@@ -86,49 +81,71 @@
    wire [35:0] control1;
 
    chipscope_cpu_icon uICON (
-      .CONTROL0 (control0),
-      .CONTROL1 (control1)
+      .CONTROL0  (control0),
+      .CONTROL1  (control1)
    );
 
    //
    // ChipScope Pro Virtual Input/Output (VIO)
    //
+   // ALU Register Mapping
+   //
+   // ADDR  REG
+   // ---- ----
+   //   0: MAG
+   //   1: PC
+   //   2: HR
+   //   3: AR
+   //   4: ARX
+   //   5: BR
+   //   6: BRX
+   //   7: ONE
+   //   8: EBR
+   //   9: UBR
+   //  10: MASK
+   //  11: FLG
+   //  12: PI
+   //  13: XWD1
+   //  14: T0
+   //  15: T1
+   //
 
    chipscope_cpu_vio uVIO (
-      .CLK      (clk),
-      .CONTROL  (control0),
-      .SYNC_OUT (debugADDR)
+      .CONTROL   (control0),
+      .ASYNC_IN  (debugADDR),
+      .ASYNC_OUT (debugADDR)
    );
-   
+
    //
    // ChipScope Pro Integrated Logic Analyzer (ILA)
    //
+   // debugDATA = dataport[  0: 35]
+   // dbus      = dataport[ 36: 71]
+   // dp        = dataport[ 72:107]
+   // addr      = dataport[108:119]
+   // rst       = dataport[    120]
+   //
 
-   //wire [48:0] TRIG0 = {rst, addr, dp};
-   // Addr = dataport[36:47];
-   // DP   = dataport[ 0:35]; 
-   // RST  = dataport[   48];
-   
-   wire [120:0] TRIG0 = {rst, addr, dp, dbus, debugDATA};
-   
+   wire [120:0] TRIG0 = {rst, cromADDR, dp, dbus, debugDATA};
+
    chipscope_cpu_ila uILA (
-      .CLK      (clk),
-      .CONTROL  (control1),
-      .TRIG0    (TRIG0)
+      .CLK       (clk),
+      .CONTROL   (control1),
+      .TRIG0     (TRIG0)
    );
-   
+
 `else
-   
+
    //
    // PC is Register #1 in the ALU
    //
 
    assign debugADDR = 4'b0001;
-   
+
 `endif
-   
+
 `else
-   
+
    //
    // Microcode Decode
    //
@@ -238,5 +255,5 @@
    assign debugADDR = 4'b0001;
 
 `endif
-   
+
 endmodule

@@ -28,7 +28,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -352,17 +352,37 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
 
    reg [0:39] aluRAM [0:15];
 
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
-        if (clken)
+        if (rst)
           begin
-             if (lclken & write)
-               aluRAM[ba][ 0:19] <= bdi[ 0:19];
-             if (rclken & write)
-               aluRAM[ba][20:39] <= bdi[20:39];
+             aluRAM[ 0] <= 40'b0;
+             aluRAM[ 1] <= 40'b0;
+             aluRAM[ 2] <= 40'b0;
+             aluRAM[ 3] <= 40'b0;
+             aluRAM[ 4] <= 40'b0;
+             aluRAM[ 5] <= 40'b0;
+             aluRAM[ 6] <= 40'b0;
+             aluRAM[ 7] <= 40'b0;
+             aluRAM[ 8] <= 40'b0;
+             aluRAM[ 9] <= 40'b0;
+             aluRAM[10] <= 40'b0;
+             aluRAM[11] <= 40'b0;
+             aluRAM[12] <= 40'b0;
+             aluRAM[13] <= 40'b0;
+             aluRAM[14] <= 40'b0;
+             aluRAM[15] <= 40'b0;
           end
+        else
+          if (clken)
+            begin
+               if (lclken & write)
+                 aluRAM[ba][ 0:19] <= bdi[ 0:19];
+               if (rclken & write)
+                 aluRAM[ba][20:39] <= bdi[20:39];
+            end
      end
-   
+
    //
    // ALU RAM Read Port(s)
    //
@@ -481,7 +501,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //
 
    reg [0:39] r;
-   
+
    always @*
      begin
         case (lsrc)
@@ -531,7 +551,7 @@ module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA)
    //
 
    reg [0:39] s;
-   
+
    always @*
      begin
         case (lsrc)

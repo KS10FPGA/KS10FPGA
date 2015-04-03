@@ -23,7 +23,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -48,6 +48,10 @@
 `default_nettype none
 `include "crom.vh"
 `include "drom.vh"
+
+`ifndef DROM_DAT
+`define DROM_DAT "drom.dat"
+`endif  
 
 module DROM(clk, clken, dbus, crom, drom);
 

@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -49,7 +49,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
             piINTR, cpuEXEC, cpuCONT, ioBUSY, timerINTR,
             skipJFCL, opJRST0, trapCYCLE, scSIGN, aluFLAGS,
             dispPF, dispNI, dispBYTE, dispSCAD,
-            regIR, pcFLAGS, drom, crom);
+            regIR, pcFLAGS, drom, crom, cromADDR);
 
    parameter cromWidth = `CROM_WIDTH;
    parameter dromWidth = `DROM_WIDTH;
@@ -78,6 +78,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    input  [0:17]          pcFLAGS;      // PC Flags
    input  [0:dromWidth-1] drom;         // Dispatch ROM Data
    output [0:cromWidth-1] crom;         // Control ROM Data
+   output [0:11]          cromADDR;     // Control ROM Address
 
    //
    // ALU Flags
@@ -114,7 +115,6 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    // Control ROM Address
    //
 
-   wire [0:11] addr;
    wire [0:11] dispRET;
    wire [0:11] skipADDR;
    wire [0:11] dispADDR;
@@ -297,9 +297,9 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //  CRA1/E186
    //
 
-   assign addr = (rst)      ? 12'o0000 :
-                 (pageFAIL) ? 12'o3777 :
-                 (dispADDR  | skipADDR | `cromJ);
+   wire [0:11] addr = (rst)      ? 12'o0000 :
+                      (pageFAIL) ? 12'o3777 :
+                      (dispADDR  | skipADDR | `cromJ);
 
    //
    // Control ROM
@@ -352,4 +352,10 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
       .addrOUT  (dispRET)
    );
 
+   //
+   // Fixup
+   //
+
+   assign cromADDR = addr;
+   
 endmodule

@@ -95,6 +95,10 @@
 `include "regir.vh"
 `include "useq/crom.vh"
 
+`ifndef RAMFILE_DAT
+`define RAMFILE_DAT "ramfile.dat"
+`endif
+
 module RAMFILE(clk, rst, clken, crom, dbus, regIR, xrPREV, vmaREG, acBLOCK, ramfile);
 
    parameter cromWidth = `CROM_WIDTH;
@@ -240,10 +244,7 @@ module RAMFILE(clk, rst, clken, crom, dbus, regIR, xrPREV, vmaREG, acBLOCK, ramf
      end
 
    //
-   // RAMFILE WRITE
-   //
-   // Todo
-   //  FIXME: This is a work-in-progess.
+   // RAMFILE Write
    //
    // Trace
    //  DPE5/E119
@@ -254,18 +255,40 @@ module RAMFILE(clk, rst, clken, crom, dbus, regIR, xrPREV, vmaREG, acBLOCK, ramf
    wire ramfileWRITE = ((vmaACREF & vmaWRITE) | (`cromFMWRITE));
 
    //
-   // RAMFILE MEMORY
+   // RAMFILE Memory
+   //
+   // Note:
+   //  There are places when the KS10 microcode reads uninitialized RAMFILE
+   //  contents (TTG, for one).  Therefore this includes code to initialize
+   //  the RAMFILE contents.
+   //
+   // Trace
+   //  DPE7/E906, DPE7/E907, DPE7/E908, DPE7/E909, DPE7/E910, DPE7/E911
+   //  DPE7/E912, DPE7/E913, DPE7/E914, DPE7/E915, DPE7/E916, DPE7/E917
+   //  DPE7/E918, DPE7/E919, DPE7/E920, DPE7/E921, DPE7/E922, DPE7/E923
+   //  DPE7/E806, DPE7/E807, DPE7/E808, DPE7/E809, DPE7/E810, DPE7/E811
+   //  DPE7/E812, DPE7/E813, DPE7/E814, DPE7/E815, DPE7/E816, DPE7/E817
+   //  DPE7/E818, DPE7/E819, DPE7/E820, DPE7/E821, DPE7/E822, DPE7/E823
    //
 
-   wire [0:35] dout;
-   RAM1Kx36 uRAM1Kx36 (
-      .clk   (clk),
-      .rst   (rst),
-      .clken (clken),
-      .wr    (ramfileWRITE),
-      .addr  (addr),
-      .din   (dbus),
-      .dout  (ramfile)
-  );
+   reg [0:35] ram [0:1023];
+   reg [0: 9] rd_addr;
 
+   initial
+     begin
+        $readmemh(`RAMFILE_DAT, ram);
+     end
+
+   always @(negedge clk)
+     begin
+        if (clken)
+          begin
+             if (ramfileWRITE)
+               ram[addr] <= dbus;
+             rd_addr <= addr;
+          end
+     end
+
+   assign ramfile = ram[rd_addr];
+  
 endmodule

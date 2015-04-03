@@ -30,7 +30,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -55,6 +55,10 @@
 `default_nettype none
 `include "crom.vh"
 
+`ifndef CROM_DAT
+`define CROM_DAT "crom.dat"
+`endif  
+  
 module CROM(clk, clken, addr, crom);
 
    parameter  cromWidth = `CROM_WIDTH;

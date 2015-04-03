@@ -15,7 +15,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -191,6 +191,7 @@ module CPU(rst, clk, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
 
    wire [ 0: 3] debugADDR;      // DEBUG Address
    wire [ 0:35] debugDATA;      // DEBUG Data
+   wire [ 0:11] cromADDR;       // Control ROM Address
 
    //
    // Timing
@@ -336,6 +337,7 @@ module CPU(rst, clk, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
+      .cromADDR         (cromADDR),
       .dp               (dp),
       .dbm              (dbm),
       .dbus             (dbus),
@@ -451,7 +453,8 @@ module CPU(rst, clk, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
       .regIR            (regIR),
       .pcFLAGS          (pcFLAGS),
       .drom             (drom),
-      .crom             (crom)
+      .crom             (crom),
+      .cromADDR         (cromADDR)
    );
 
    //
