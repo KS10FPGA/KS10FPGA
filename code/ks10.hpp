@@ -91,14 +91,14 @@ class ks10_t {
         //
 
         struct rh11debug_t {
-            uint8_t state;                              //!< Controller state
-            uint8_t err;                                //!< Error number
-            uint8_t val;                                //!< Error value
-            uint8_t wrcnt;                              //!< Write count
-            uint8_t rdcnt;                              //!< Read count
+            uint8_t status;                             //!< Status (LSB)
             uint8_t res1;                               //!< Reserved
             uint8_t res2;                               //!< Reserved
-            uint8_t status;                             //!< Status
+            uint8_t wrcnt;                              //!< Write count
+            uint8_t rdcnt;                              //!< Read count
+            uint8_t val;                                //!< Error value
+            uint8_t state;                              //!< Controller state
+            uint8_t err;                                //!< Error number (MSB)
         };
 
         //

@@ -5,11 +5,11 @@ TARGET := \
 
 FILES := \
 	telnet.o \
-	lwip_task.o
+	telnet_task.o
 
 HEADERS := \
 	telnet.h \
-	lwip_task.h \
+	telnet_task.h \
 
 $(TARGET).a : $(FILES) 
 

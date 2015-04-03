@@ -35,7 +35,10 @@
 #ifndef __COMMANDS_HPP
 #define __COMMANDS_HPP
 
+#include "ks10.hpp"
+
 void parseCommand(char * buf);
 void printHaltStatus(void);
+void printRH11Debug(void);
 
 #endif

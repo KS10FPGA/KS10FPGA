@@ -25,7 +25,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2014 Rob Doyle
+// Copyright (C) 2014-2015 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -54,7 +54,8 @@
 #include "commands.hpp"
 #include "console.hpp"
 #include "driverlib/rom.h"
-#include "telnetlib/lwip_task.h"
+#include "telnetlib/telnet.h"
+#include "telnetlib/telnet_task.h"
 #include "SafeRTOS/SafeRTOS_API.h"
 
 //
@@ -264,6 +265,7 @@ bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
                 if (count < len - 1) {
                     buf[count++] = toupper(ch);
                     putchar(ch);
+                    lwip_putchar(handle23, ch);
                 } else {
                     buf[count++] = 0;
                     putchar('\r');
@@ -413,8 +415,7 @@ void taskConsole(void * /*param*/) {
     // Dump the RH11 Debug Register
     //
 
-    printf("%s The RH11 Debug Register is 0x%016llx\n", prompt,
-           *(uint64_t*)ks10_t::getRH11debug());
+    printRH11Debug();
 
     //
     // Test the register interface
@@ -561,13 +562,10 @@ void startConsole(void) {
                              &initParams);
 
 #if 1
-    if (lwIPTaskInit() != 0) {
-        printf("LWIP Task Init Failed\n");
-        while (1) {
-            ;
-        }
+    if (telnetTaskInit() == 0) {
+        printf("%s Successfully started telnet task.\n", prompt);
     } else {
-        printf("lwIP Task Init Succeeded\n");
+        fatal("%s Failed to start telnet task.\n", prompt);
     }
 #endif
 
