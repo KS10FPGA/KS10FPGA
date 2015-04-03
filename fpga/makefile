@@ -99,12 +99,14 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX
 #   -D STOP_ON_STUCK_PC Stop simulating when PC gets stuck.
 #   -D DEBUG_DSKAA	Diagnostic information (See debug.v)
 #   -D DEBUG=DSKAA	Diagnostic information (See debug.v)
-#   -D CHIPSCOPE_CPU
-#   -D CHIPSCOPE_SD
+#   -D CHIPSCOPE_CPU    Instrument the CPU
+#   -D CHIPSCOPE_SD     Instrument the SD Controller
+#   -D CHIPSCOPE_MEM    Instrument the Memory Controller
 #
 
 #	-D SIM_SMMON \
 #	-D CHIPSCOPE_CPU \
+#	-D CHIPSCOPE_MEM \
 
 DEBUG_ARGS := \
 	-D SIM_CTY \
@@ -192,7 +194,6 @@ RTL_FILES := \
 	rtl/ks10/cpu/pcflags.v \
 	rtl/ks10/cpu/pi.v \
 	rtl/ks10/cpu/pxct.v \
-	rtl/ks10/cpu/ram1kx36.v \
 	rtl/ks10/cpu/ramfile.v \
 	rtl/ks10/cpu/regir.v \
 	rtl/ks10/cpu/scad.v \
@@ -435,6 +436,10 @@ ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
 	@echo verilog work \"../rtl/xilinx/chipscope_cpu_icon/chipscope_cpu_icon.v\" >> $@
 	@echo verilog work \"../rtl/xilinx/chipscope_cpu_vio/chipscope_cpu_vio.v\"  >> $@
 endif
+ifneq (, $(findstring CHIPSCOPE_MEM, $(DEBUG_ARGS)))
+	@echo verilog work \"../rtl/xilinx/chipscope_mem_ila/chipscope_mem_ila.v\" >> $@
+	@echo verilog work \"../rtl/xilinx/chipscope_mem_icon/chipscope_mem_icon.v\" >> $@
+endif
 
 ise/$(PROJECT)_isim.prj: makefile
 	@echo "Creating "$@ > /dev/stderr
@@ -525,17 +530,34 @@ isim: ise/$(PROJECT)_isim.exe ise/$(PROJECT)_isim.cmd ise/$(PROJECT).wcfg rtl/te
 #   -write_timing_constraints  : Write timing constraints
 #
 
-
 XST_OPTS := \
 	-filter $(PROJECT).filter \
 	-intstyle $(INTSTYLE)
 
+XST_DEFS := \
+	XILINX \
+	SYNTHESIS
+
+ifneq (, $(findstring CHIPSCOPE_SD, $(DEBUG_ARGS)))
+XST_DEFS += \
+	CHIPSCOPE_SD
+endif
+
+ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
+XST_DEFS += \
+	CHIPSCOPE_CPU
+endif
+
+ifneq (, $(findstring CHIPSCOPE_MEM, $(DEBUG_ARGS)))
+XST_DEFS += \
+	CHIPSCOPE_MEM
+endif
+
 XST_CMDS := \
 	'set -xsthdpdir "xst"' \
 	'run' \
-	'-define {XILINX RAMFILE_DAT="../$(RAMFILE_DAT)" CROM_DAT="../$(CROM_DAT)" DROM_DAT="../$(DROM_DAT)"}' \
 	'-ifn $(PROJECT).prj' \
-	'-iuc NO' \
+	'-use_new_parser yes' \
 	'-ofn $(PROJECT).ngc' \
 	'-ofmt ngc' \
 	'-p $(PART)' \
@@ -543,6 +565,7 @@ XST_CMDS := \
 	'-opt_mode Speed' \
 	'-opt_level 2' \
 	'-power NO' \
+	'-iuc NO' \
 	'-keep_hierarchy Soft' \
 	'-netlist_hierarchy As_Optimized' \
 	'-rtlview Yes' \
@@ -558,6 +581,7 @@ XST_CMDS := \
 	'-dsp_utilization_ratio 100' \
 	'-lc Auto' \
 	'-reduce_control_sets Auto' \
+	'-define {$(XST_DEFS)}' \
 	'-fsm_extract YES -fsm_encoding Auto' \
 	'-safe_implementation No' \
 	'-fsm_style LUT' \
@@ -588,23 +612,26 @@ XST_CMDS := \
 
 ifneq (, $(findstring CHIPSCOPE_SD, $(DEBUG_ARGS)))
 XST_CMDS += \
-	'-define {CHIPSCOPE_SD}' \
 	'-sd {"../rtl/xilinx/chipscope_sd_ila" "../rtl/xilinx/chipscope_sd_icon"}'
 endif
 
 ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
 XST_CMDS += \
-	'-define {CHIPSCOPE_CPU}' \
 	'-sd {"../rtl/xilinx/chipscope_cpu_ila" "../rtl/xilinx/chipscope_cpu_icon" "../rtl/xilinx/chipscope_cpu_vio"}'
 endif
 
-ise/$(PROJECT).ngc ise/$(PROJECT).ngr: ise/$(PROJECT).xst ise/$(PROJECT).prj ise/$(PROJECT).filter rtl/esm/$(PROJECT).ucf $(RTL_FILES) $(INC_FILES) $(DAT_FILES) makefile
+ifneq (, $(findstring CHIPSCOPE_MEM, $(DEBUG_ARGS)))
+XST_CMDS += \
+	'-sd {"../rtl/xilinx/chipscope_mem_ila" "../rtl/xilinx/chipscope_mem_icon"}'
+endif
+
+ise/$(PROJECT).ngc ise/$(PROJECT).ngr: ise/$(PROJECT).xst ise/$(PROJECT).prj ise/$(PROJECT).filter rtl/esm/$(PROJECT).ucf $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_FILES) makefile
 	@cd ise; \
 	echo "################################################################################" | tee    $(PROJECT).log; \
 	echo Running XST | tee -a $(PROJECT).log; \
-	echo $(XST) $(XST_OPTS) -ifn $(PROJECT).xst | tee -a $(PROJECT).log; \
+	echo $(XST) $(XST_OPTS) -ifn $(PROJECT).xst -ofn $(PROJECT).syr | tee -a $(PROJECT).log; \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
-	$(XST) $(XST_OPTS) -ifn $(PROJECT).xst | tee -a $(PROJECT).log
+	$(XST) $(XST_OPTS) -ifn $(PROJECT).xst -ofn $(PROJECT).syr | tee -a $(PROJECT).log
 
 #
 # ngdbuild
@@ -646,6 +673,12 @@ NGD_OPTS += \
 	-sd ../rtl/xilinx/chipscope_cpu_ila \
 	-sd ../rtl/xilinx/chipscope_cpu_icon \
 	-sd ../rtl/xilinx/chipscope_cpu_vio
+endif
+
+ifneq (, $(findstring CHIPSCOPE_MEM, $(DEBUG_ARGS)))
+NGD_OPTS += \
+	-sd ../rtl/xilinx/chipscope_mem_ila \
+	-sd ../rtl/xilinx/chipscope_mem_icon \
 endif
 
 
@@ -959,6 +992,7 @@ clean_ise:
                ise/$(PROJECT).twr \
                ise/$(PROJECT).twx \
                ise/$(PROJECT).unroutes \
+               ise/$(PROJECT).ut \
                ise/$(PROJECT).wdb \
                ise/$(PROJECT).xpi \
                ise/$(PROJECT).xst \
