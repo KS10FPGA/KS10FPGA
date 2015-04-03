@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -46,7 +46,7 @@
 //
 
 `define MAJOR_VER "00"                  // Two ASCII characters
-`define MINOR_VER "05"                  // Two ASCII characters
+`define MINOR_VER "06"                  // Two ASCII characters
 
 //
 // CPU Clock Frequency
