@@ -427,6 +427,7 @@ ise/$(PROJECT).prj: makefile
 	do \
 	    echo 'verilog work "../'$$FILE'"' >> $@; \
 	done
+
 ifneq (, $(findstring CHIPSCOPE_SD, $(DEBUG_ARGS)))
 	@echo verilog work \"../rtl/xilinx/chipscope_sd_ila/chipscope_sd_ila.v\" >> $@
 	@echo verilog work \"../rtl/xilinx/chipscope_sd_icon/chipscope_sd_icon.v\" >> $@
@@ -678,7 +679,7 @@ endif
 ifneq (, $(findstring CHIPSCOPE_MEM, $(DEBUG_ARGS)))
 NGD_OPTS += \
 	-sd ../rtl/xilinx/chipscope_mem_ila \
-	-sd ../rtl/xilinx/chipscope_mem_icon \
+	-sd ../rtl/xilinx/chipscope_mem_icon
 endif
 
 
