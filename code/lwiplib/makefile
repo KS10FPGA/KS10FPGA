@@ -1,4 +1,8 @@
+ifneq (${MAKECMDGOALS}, clean)
+ifneq (${MAKECMDGOALS}, rcsclean)
 include ../makedefs
+endif
+endif
 
 TARGET := \
 	lwiplib
