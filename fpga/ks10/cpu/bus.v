@@ -106,6 +106,7 @@ module BUS(clk, rst, dp, crom, vmaREG, pageADDR, aprFLAGS, piCURPRI,
    wire vmaIO      = `vmaIO(vmaREG);
    wire vmaWRU     = `vmaWRU(vmaREG);
    wire vmaVECT    = `vmaVECT(vmaREG);
+   wire vmaACREF   = `vmaACREF(vmaREG);
 
    //
    // Paged Reference
@@ -131,10 +132,14 @@ module BUS(clk, rst, dp, crom, vmaREG, pageADDR, aprFLAGS, piCURPRI,
 
    //
    // Bus Request Output
+   //  Don't do bus requests in response to AC references.
    //
 
-   assign cpuREQO = vmaREAD | vmaWRITE  | vmaWRTEST | vmaVECT |
-                    (vmaWRU & !addr3666);
+   assign cpuREQO = (vmaREAD   & !vmaACREF) |
+                    (vmaWRITE  & !vmaACREF) |
+                    (vmaWRTEST & !vmaACREF) |
+                    (vmaVECT              ) |
+                    (vmaWRU    & !addr3666);
 
    //
    // Data Output

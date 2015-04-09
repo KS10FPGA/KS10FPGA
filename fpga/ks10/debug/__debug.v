@@ -119,14 +119,14 @@
    //
    // ChipScope Pro Integrated Logic Analyzer (ILA)
    //
-   // debugDATA = dataport[  0: 35]
-   // dbus      = dataport[ 36: 71]
-   // dp        = dataport[ 72:107]
-   // addr      = dataport[108:119]
-   // rst       = dataport[    120]
-   //
 
-   wire [120:0] TRIG0 = {rst, cromADDR, dp, dbus, debugDATA};
+   wire [120:0] TRIG0 = {
+       rst,			// dataport[    120]
+       cromADDR,		// dataport[108:119]
+       dp,			// dataport[ 72:107]
+       dbus,			// dataport[ 36: 71]
+       debugDATA		// dataport[  0: 35]
+   };
 
    chipscope_cpu_ila uILA (
       .CLK       (clk),
