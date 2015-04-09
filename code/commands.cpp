@@ -587,6 +587,99 @@ static void cmdDS(int, char *[]) {
     printf("DS Command is not implemented, yet.\n");
 }
 
+#if 1
+
+//!
+//! Test DZ11
+//!
+//! The <b>DZ</b> (DZ11) tests the DZ11 Terminal Multiplexer
+//
+
+static void cmdDZ(int argc, char *argv[]) {
+    const char *usage =
+        "Usage: DZ port.\n"
+        "Test one of the DZ11 Transmitters.  Valid ports are 0-7.\n";
+
+    const ks10_t::addr_t dzcsr_addr = 03760010;
+    const ks10_t::addr_t dzlpr_addr = 03760012;
+    const ks10_t::addr_t dztcr_addr = 03760014;
+    const ks10_t::addr_t dztdr_addr = 03760016;
+
+    char testmsg[] = "This is a test on line ?\r\n";
+
+    if ((argc == 2) && (*argv[1] >= '0') && (*argv[1] <= '7')) {
+
+        testmsg[23] = *argv[1];
+
+        //
+        // Assert Device Clear
+        //
+
+        const ks10_t::data_t csr_clr = 0x0010;
+        ks10_t::writeIO(dzcsr_addr, csr_clr);
+
+        //
+        // Wait for Device Clear to negate.  This takes about 15 uS.
+        //
+
+        while (ks10_t::readIO(dzcsr_addr) & csr_clr) {
+            ;
+        }
+
+        //
+        // Configure all 8 Line Parameter Registers for 9600,N,8,1
+        //
+
+        ks10_t::writeIO(dzlpr_addr, 0x1e18);
+        ks10_t::writeIO(dzlpr_addr, 0x1e19);
+        ks10_t::writeIO(dzlpr_addr, 0x1e1a);
+        ks10_t::writeIO(dzlpr_addr, 0x1e1b);
+        ks10_t::writeIO(dzlpr_addr, 0x1e1c);
+        ks10_t::writeIO(dzlpr_addr, 0x1e1d);
+        ks10_t::writeIO(dzlpr_addr, 0x1e1e);
+        ks10_t::writeIO(dzlpr_addr, 0x1e1f);
+
+        //
+        // Enable selected line
+        //
+
+        ks10_t::writeIO(dztcr_addr, (1 << (*argv[1] - '0')));
+
+        //
+        // Enable Master Scan Enable
+        //
+
+        ks10_t::writeIO(dzcsr_addr, 0x0020);
+
+        //
+        // Print test message
+        //
+
+        char *s = testmsg;
+        while (*s != 0) {
+
+            //
+            // Wait for Transmitter Ready
+            //
+
+            const ks10_t::data_t csr_trdy = 0x8000;
+            while (!(ks10_t::readIO(dzcsr_addr) & csr_trdy)) {
+                ;
+            }
+
+            //
+            // Output character to Transmitter Data Register
+            //
+
+            ks10_t::writeIO(dztdr_addr, *s++);
+        }
+    } else {
+        printf(usage);
+    }
+}
+
+#endif
+
 //
 //! Examine IO
 //!
@@ -771,10 +864,7 @@ static void cmdLA(int argc, char *argv[]) {
         "Set the memory address for the next commands.\n"
         "Valid addresses are %08llo-%08llo\n";
 
-#warning fIXME
-    if (argc == 1) {
-        printf("address is %08llo\n", ks10_t::readRegAddr());
-    } else if (argc == 2) {
+    if (argc == 2) {
         ks10_t::addr_t addr = parseOctal(argv[1]);
         if (addr <= ks10_t::maxMemAddr) {
             address = addr;
@@ -786,6 +876,7 @@ static void cmdLA(int argc, char *argv[]) {
         }
     } else {
         printf(usage, ks10_t::memStart, ks10_t::maxMemAddr);
+        printf("Address is %08llo\n", ks10_t::readRegAddr());
     }
 }
 
@@ -838,6 +929,7 @@ static void cmdLI(int argc, char *argv[]) {
         }
     } else {
         printf(usage, ks10_t::memStart, ks10_t::maxIOAddr);
+        printf("Address is %08llo\n", ks10_t::readRegAddr());
     }
 }
 
@@ -881,6 +973,36 @@ static void cmdMR(int argc, char *argv[]) {
         printf(usage);
     }
 }
+
+#if 1
+
+//
+//! Memory Read
+//!
+//! This function peforms memory reads.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the argument.
+//
+
+static void cmdRD(int argc, char *argv[]) {
+    if (argc == 2) {
+        ks10_t::addr_t addr = parseOctal(argv[1]);
+        ks10_t::data_t data = ks10_t::readMem(addr);
+        if (ks10_t::nxmnxd()) {
+            printf("Memory read failed. (NXM)\n");
+        } else {
+            printf("%012llo\n", data);
+        }
+    } else {
+        printf("Usage: RD Addr\n");
+    }
+}
+
+#endif
 
 //
 //! SD Card
@@ -1118,6 +1240,35 @@ static void cmdTP(int argc, char *argv[]) {
     }
 }
 
+#if 1
+
+//
+//! Memory Write
+//!
+//! This function peforms writes to memory.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//
+
+static void cmdWR(int argc, char *argv[]) {
+    if (argc == 3) {
+        ks10_t::addr_t addr = parseOctal(argv[1]);
+        ks10_t::data_t data = parseOctal(argv[2]);
+        ks10_t::writeMem(addr, data);
+        if (ks10_t::nxmnxd()) {
+            printf("Memory write failed. (NXM)\n");
+        }
+    } else {
+        printf("Usage: WR Addr Data\n");
+    }
+}
+
+#endif
+
 //
 //! Not implemented
 //!
@@ -1192,13 +1343,21 @@ static void cmdZZ(int argc, char *argv[]) {
                 printf("  Address Register: %012llo.\n", ks10_t::readRegAddr());
             } else if (strncmp(argv[2], "REGDATA", 4) == 0) {
                 printf("  Data Register: %012llo.\n", ks10_t::readRegData());
+            } else if (strncmp(argv[2], "REGCIR", 4) == 0) {
+                printf("  CIR Register: %012llo.\n", ks10_t::readRegCIR());
             } else if (strncmp(argv[2], "REGSTAT", 4) == 0) {
                 printf("  Status Register: %012llo.\n", ks10_t::readRegStat());
             } else if (strncmp(argv[2], "RH11DEBUG", 4) == 0) {
                 printRH11Debug();
             }
-        } else if (*argv[1] == 'w') {
-            ;
+        } else if (*argv[1] == 'W') {
+            if (strncmp(argv[2], "REGCIR", 4) == 0) {
+                ks10_t::writeRegCIR(0377777777776);
+                printf(" CIR Register written.\n");
+            } else if (strncmp(argv[2], "REGDIR", 4) == 0) {
+                ks10_t::writeRegCIR(0);
+                printf(" CIR Register written.\n");
+            }
         }
     }
 }
@@ -1240,6 +1399,9 @@ void parseCommand(char * buf) {
         {"DN", cmdDN},
         {"DR", cmdXX},          // Not implemented.
         {"DS", cmdDS},
+#if 1
+        {"DZ", cmdDZ},          // DZ11 Test
+#endif
         {"EB", cmdXX},          // Not implemented.
         {"EC", cmdXX},          // Not implemented.
         {"EK", cmdXX},          // Not implemented.
@@ -1272,6 +1434,9 @@ void parseCommand(char * buf) {
         {"PW", cmdXX},          // Not implemented.
         {"RC", cmdXX},          // Not implemented.
         {"RP", cmdXX},          // Not implemented.
+#if 1
+        {"RD", cmdRD},          // Simple memory read
+#endif
         {"SC", cmdXX},          // Not implemented.
         {"SD", cmdSD},
         {"SH", cmdSH},
@@ -1284,6 +1449,9 @@ void parseCommand(char * buf) {
         {"VD", cmdXX},          // Not implemented.
         {"VT", cmdXX},          // Not implemented.
         {"VM", cmdXX},          // Not implemented.
+#if 1
+        {"WR", cmdWR},          // Simple memory write
+#endif
         {"ZZ", cmdZZ},          // Testing
     };
 

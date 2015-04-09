@@ -320,6 +320,8 @@ static void taskIdleHook(void) {
 static void taskHalt(void * /*param*/) {
     bool lastHalt = false;
     for (;;) {
+#warning FIXME Stubbed code
+#if 0
         bool halt = ks10_t::halt();
         if (halt && !lastHalt) {
             printf("%s Halted.\n", prompt);
@@ -328,6 +330,7 @@ static void taskHalt(void * /*param*/) {
             printf("Running.\n");
         }
         lastHalt = halt;
+#endif
         yield();
     }
 }
