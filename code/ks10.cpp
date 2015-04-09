@@ -223,6 +223,10 @@ void ks10_t::writeRegCIR(data_t data) {
 //
 //! This function to reads a 36-bit word from KS10 memory.
 //!
+//! \details
+//!     This is a physical address write.  Writes to address 0 to 17 (octal)
+//!     go to memory not to registers.
+//!
 //! \param [in]
 //!     addr is the address in the KS10 memory space which is to be read.
 //!
@@ -234,13 +238,17 @@ void ks10_t::writeRegCIR(data_t data) {
 //
 
 ks10_t::data_t ks10_t::readMem(addr_t addr) {
-    writeReg(regAddr, (addr & memAddrMask) | flagRead);
+    writeReg(regAddr, (addr & memAddrMask) | flagRead | flagPhys);
     go();
     return dataMask & readReg(regData);
 }
 
 //
 //! This function writes a 36-bit word to KS10 memory.
+//!
+//! \details
+//!     This is a physical address write.  Writes to address 0 to 17 (octal)
+//!     go to memory not to registers.
 //!
 //! \param [in]
 //!     addr is the address in the KS10 memory space which is to be written.
@@ -253,7 +261,7 @@ ks10_t::data_t ks10_t::readMem(addr_t addr) {
 //
 
 void ks10_t::writeMem(addr_t addr, data_t data) {
-    writeReg(regAddr, (addr & memAddrMask) | flagWrite);
+    writeReg(regAddr, (addr & memAddrMask) | flagWrite | flagPhys);
     writeReg(regData, data);
     go();
 }
