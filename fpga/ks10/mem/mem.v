@@ -8,43 +8,6 @@
 // Details
 //   This module is interface between the KS10 backplane bus and the SSRAM.
 //
-//   Memory Status Register Write (IO addresses o100000)
-//
-//           0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//    (LH)  |EH|UE|RE|PE|                       |PF|              |
-//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//
-//          18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//    (RH)  |                             |       FCB          |ED|
-//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//
-//   Memory Status Register Read (IO addresses o100000)
-//
-//           0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//    (LH)  |EH|UE|RE|PE|EE|         ECP        |PF| 0|   ERA     |
-//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//
-//           18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//    (RH)  |                     ERA                             |
-//          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//
-//   EH  : Error Hold          - Always read as 0.  Writes ignored.
-//   UE  : Uncorrectable Error - Always read as 0.  Writes ignored.
-//   RE  : Refresh Error       - Always read as 0.  Writes ignored.
-//   PE  : Parity Error        - Read/Writes PE bit.
-//   EE  : ECC Enable          - Reads back inverse value set by write to the
-//                               ED bit.  Writes ignored. See ED bit below.
-//   PF  : Power Failure       - Initialized to 1 at power-up.  Cleared by
-//                               writing 0.
-//   ED  : ECC Disable         - Always read as 0.  Writing zero sets EE bit,
-//                               Writing one clears EE bit.
-//   FCB : Force Check Bits    - Always read as 0.  Writes ignored.
-//   ERA : Error Read Address  - Always read as 0.  Writes ignored.
-//
 // File
 //   mem.v
 //
@@ -53,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -80,7 +43,7 @@
 `include "../cpu/bus.vh"
 `include "../ks10.vh"
 
-module MEM(rst, clk, clkPHS, 
+module MEM(rst, clk, clkPHS,
            busREQI, busACKO, busADDRI, busDATAI, busDATAO,
            ssramCLK, ssramCLKEN_N, ssramADV, ssramBW_N, ssramOE_N, ssramWE_N,
            ssramCE, ssramADDR, ssramDATA);
@@ -131,102 +94,184 @@ module MEM(rst, clk, clkPHS,
    wire [ 0: 3] busDEV     = `busDEV(busADDRI);
    wire [18:35] busIOADDR  = `busIOADDR(busADDRI);
    wire [16:35] busMEMADDR = `busMEMADDR(busADDRI);
-   wire         busACREF   = `busACREF(busADDRI);
 
    //
-   // Memory Status Register (IO Address 100000)
-   //
-   // Details
-   //  Only the PE, EE, and PF change... and they are not really implemented.
+   // Address decoding
    //
 
-   reg statPE;          // Parity Error
-   reg statEE;          // ECC Enabled
-   reg statPF;          // Power Failure
+   wire msrREAD   = busREAD   &  busIO & busPHYS & (busDEV == memDEV) & (busIOADDR == addrMSR);
+   wire msrWRITE  = busWRITE  &  busIO & busPHYS & (busDEV == memDEV) & (busIOADDR == addrMSR);
+   wire memREAD   = busREAD   & !busIO;
+   wire memWRITE  = busWRITE  & !busIO;
+   wire memWRTEST = busWRTEST & !busIO;
 
-   always @(negedge clk or posedge rst)
+   //
+   // Memory Status Register
+   //
+
+   wire [0:35] regSTAT;
+
+   MEMSTAT STAT (
+      .rst       (rst),
+      .clk       (clk),
+      .busDATAI  (busDATAI),
+      .msrWRITE  (msrWRITE),
+      .regSTAT   (regSTAT)
+   );
+
+`ifdef SYNTHESIS
+`ifdef CHIPSCOPE_MEM
+
+   //
+   // ChipScope Pro Integrated Controller (ICON)
+   //
+
+   wire [35:0] control0;
+
+   chipscope_mem_icon uICON (
+      .CONTROL0  (control0)
+   );
+
+   //
+   // ChipScope Pro Integrated Logic Analyzer (ILA)
+   //
+
+   wire [255:0] TRIG0 = {
+       rst,                     // dataport[    255]
+       busDATAI[0:35],          // dataport[219:254]
+       busDATAO[0:35],          // dataport[183:218]
+       busADDRI[0:35],          // dataport[147:182]
+       ssramDATA[0:35],         // dataport[111:146]
+       ssramADDR[0:22],         // dataport[ 88:110]
+       clkPHS[1:4],             // dataport[ 84: 87]
+       ssramOE_N,               // dataport[     83]
+       ssramWE_N,               // dataport[     82]
+       busREQI,                 // dataport[     81]
+       busACKO,                 // dataport[     80]
+       busIO,                   // dataport[     79]
+       busREAD,                 // dataport[     78]
+       busWRITE,                // dataport[     77]
+       41'b0,                   // dataport[ 36: 76]
+       36'b0                    // dataport[  0: 35]
+   };
+
+   chipscope_mem_ila uILA (
+      .CLK       (ssramCLK),
+      .CONTROL   (control0),
+      .TRIG0     (TRIG0)
+   );
+
+`endif
+`endif
+
+/*
+   //
+   // Data is written to the SSRAM on clkPHS[4] which is
+   // two clock cycles after the WE signal is asserted.
+   //
+
+   reg dir;
+   always @(negedge ssramCLK or posedge rst)
      begin
         if (rst)
-          begin
-             statPE <= 1'b0;
-             statEE <= 1'b1;
-             statPF <= 1'b1;
-          end
+          dir <= 0;
         else
-          begin
-             if (busWRITE & busIO & busPHYS & (busDEV == memDEV) & (busIOADDR == addrMSR))
-               begin
-                  statPE <=  busDATAI[ 3];
-                  statPF <=  busDATAI[12] & statPF;
-                  statEE <= !busDATAI[35];
-`ifndef SYNTHESIS
-                  $display("[%11.3f] MEM: Memory Status Register Written", $time/1.0e3);
-`endif
-               end
-          end
+          dir <= memWrite & clkPHS[3];
      end
 
-   wire [0:35] statREG = {3'b0, statPE, statEE, 7'b0, statPF, 23'b0};
-
    //
-   // Bus Multiplexer
-   //
-   // Details
-   //  This selects between SSRAM and the Memory Status Register.
+   // ssramWE is asserted on clkPHS[2] during a write cycle
    //
 
-   reg busACKO;
-   reg [0:35] busDATAO;
-
-   always @*
+   reg ssramWE;
+   always @(negedge ssramCLK or posedge rst)
      begin
-
-        //
-        // Default
-        //
-
-        busACKO  <= 0;
-        busDATAO <= 36'bx;
-
-        //
-        // Memory Status Register
-        //
-
-        if (busREAD & busIO & busPHYS & (busDEV == memDEV) & (busIOADDR == addrMSR))
-          begin
-             busACKO  <= 1;
-             busDATAO <= statREG;
-`ifndef SYNTHESIS
-             $display("[%11.3f] MEM: Memory Status Register Read", $time/1.0e3);
-`endif
-          end
-
-        //
-        // Memory
-        //
-
-        if ((!busIO & busREAD) | (!busIO & busWRITE) | (!busIO & busWRTEST))
-          begin
-             busACKO  <= 1;
-             busDATAO <= ssramDATA;
-          end
-
+        if (rst)
+          ssramWE <= 0;
+        else
+          ssramWE <= memWrite & clkPHS[1];
      end
 
    //
-   // Create the write signal.  Don't write to memory when writing to IO or the
-   // ACs.
+   //
    //
 
-   wire memWrite = busWRITE & !busIO & !busACREF;
+   reg [0:35] readReg;
+   always @(posedge ssramCLK or posedge rst)
+     begin
+        if (rst)
+          readReg <= 0;
+        else
+          if (clkPHS[4])
+            readReg <= ssramDATA;
+     end
+*/
+
+   //
+   // SSRAM Interface
+   //  The OE# pin is tied low.  This is permitted per the CY7C1460AV33 data
+   //  sheet.   Quoting the section entitled "Single Write Accesses" it states
+   //  that "... on the subsequent clock rise the data lines are automatically
+   //  tri-stated regardless of the state of the OE input signal."
+   //
+   //  The the eval board has 23 address lines connected between the FPGA and
+   //  the SSRAM chip.  However the 1MW CY7C1460AV33 SSRAM chip that is on the
+   //  board only has 20-bit addressing.  Therefore the upper 3 address lines
+   //  are not used and are always set to zero.
+   //
 
    assign ssramCLKEN_N = 0;
    assign ssramADV     = 0;
    assign ssramBW_N    = 0;
-   assign ssramOE_N    = !(busREAD  & !busIO & clkPHS[4]);
-   assign ssramWE_N    = !(memWrite & clkPHS[2]);
+   assign ssramWE_N    = !(memWRITE & clkPHS[2]);
+// assign ssramWE_N    = !ssramWE;
+   assign ssramOE_N    = 0;
+// assign ssramOE_N    = !(memRead  & clkPHS[4]);
    assign ssramCE      = 1;
    assign ssramADDR    = {3'b0, busMEMADDR};
-   assign ssramDATA    = (memWrite  & clkPHS[4]) ? busDATAI : 36'bz;
+   assign ssramDATA    = memWRITE & clkPHS[4] ? busDATAI : 36'bz;
+ //assign ssramDATA  = dir ? busDATAI : 36'bz;
+
+   //
+   // Bus Multiplexer
+   //
+   // This selects between SSRAM and the Memory Status Register.
+   // We just use busIO to selected between the two.
+   //
+   // Trace
+   //  MMC7/E75
+   //  MMC7/E86
+   //  MMC7/E90
+   //  MMC7/E103
+   //  MMC7/E107
+   //  MMC7/E136
+   //  MMC7/E142
+   //  MMC7/E150
+   //  MMC7/E157
+   //
+
+   assign busDATAO = busIO ? regSTAT : ssramDATA;
+
+   //
+   // Create the busACKO signal
+   //
+
+   assign busACKO = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
+
+   //
+   // Simulation/Debug
+   //
+
+`ifndef SYNTHESIS
+
+   always @(negedge clk)
+     begin
+        if (msrREAD)
+          $display("[%11.3f] MEM: Memory Status Register Read", $time/1.0e3);
+        if (msrWRITE)
+          $display("[%11.3f] MEM: Memory Status Register Written", $time/1.0e3);
+     end
+
+`endif
 
 endmodule

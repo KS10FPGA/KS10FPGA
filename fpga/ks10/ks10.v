@@ -314,7 +314,7 @@ module KS10(RESET_N, CLK50MHZ,
       .busADDRI         (arbADDRO),
       .busDATAI         (memDATAI),
       .busDATAO         (memDATAO),
-      .ssramCLK         (ssramCLK),
+      .ssramCLK         (!CLK50MHZ),
       .ssramCLKEN_N     (ssramCLKEN_N),
       .ssramADV         (ssramADV),
       .ssramBW_N        (ssramBW_N),
@@ -558,12 +558,12 @@ module KS10(RESET_N, CLK50MHZ,
    
    assign test[0] = RESET_N;
    assign test[1] = rst;
-   assign test[2] = clk;
-   assign test[3] = !clk;
-   assign test[4] = clkPHS[1];
-   assign test[5] = clkPHS[2];
-   assign test[6] = clkPHS[3];
-   assign test[7] = clkPHS[4];
+   assign test[2] = 0;
+   assign test[3] = 0;
+   assign test[4] = 0;
+   assign test[5] = 0;
+   assign test[6] = 0;
+   assign test[7] = 0;
 
    //
    // Halt LED

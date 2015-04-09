@@ -6,8 +6,8 @@
 //   KS10 Wrapper for the ESM Reference Design.
 //
 // Details
-//   This wrapper allows a tiny bit of customization of the KS10.
-//   For now, it just ties off a bunch of DZ11 IO.
+//   This wrapper allows a tiny bit of customization of the KS10.  For now, it
+//   just ties off a bunch of DZ11 IO.
 //
 // File
 //   esm_ks10.v
@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2013 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any

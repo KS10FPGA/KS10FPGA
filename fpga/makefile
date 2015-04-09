@@ -71,21 +71,21 @@ CLOC     := ./cloc-1.62.exe
 #DIAG     := DSKCB		#    1.3 ms
 #DIAG     := DSKCC		#    2.1 ms
 #DIAG     := DSKCD		#    5.2 ms
-#DIAG     := DSKCE-RD00	#    5.7 ms
-#DIAG     := DSKCF-RD00	#   10.6 ms	
+#DIAG     := DSKCE-RD00		#    5.7 ms
+#DIAG     := DSKCF-RD00		#   10.6 ms	
 #DIAG     := DSKCG		# 1350.0 ms FAIL
-#DIAG     := DSKDA-RD00	#    5.3 ms FAIL
-#DIAG     := DSKEA-RD00	# 1046.0 ms
-#DIAG     := DSKEB-RD00	#  ???.? ms FAIL
-#DIAG     := DSKEC-RD00	#  ???.? ms FAIL
-#DIAG     := DSKFA   	#  ???.? ms FAIL
-#DIAG     := DSMMA   	#  ???.? ms FAIL
-#DIAG     := DSMMB   	#  ???.? ms FAIL
-#DIAG     := DSMMC   	#  ???.? ms FAIL
-#DIAG     := DSMMD   	#  ???.? ms FAIL
-#DIAG     := DSUBA-RD00	#  138.0 ms
-#DIAG     := DSDZA-RD00	# 2411.8 ms
-#DIAG     := DSRPA-RD00	#  ???.? ms FAIL
+#DIAG     := DSKDA-RD00		#    5.3 ms FAIL
+#DIAG     := DSKEA-RD00		# 1046.0 ms
+#DIAG     := DSKEB-RD00		#  ???.? ms FAIL
+#DIAG     := DSKEC-RD00		#  ???.? ms FAIL
+#DIAG     := DSKFA   		#  ???.? ms FAIL
+#DIAG     := DSMMA   		#  ???.? ms FAIL
+#DIAG     := DSMMB   		#  ???.? ms FAIL
+#DIAG     := DSMMC   		#  ???.? ms FAIL
+#DIAG     := DSMMD   		#  ???.? ms FAIL
+#DIAG     := DSUBA-RD00		#  138.0 ms
+#DIAG     := DSDZA-RD00		# 2411.8 ms
+#DIAG     := DSRPA-RD00		#  ???.? ms FAIL
 
 DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX suffix
 
@@ -102,6 +102,7 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX
 #   -D CHIPSCOPE_CPU    Instrument the CPU
 #   -D CHIPSCOPE_SD     Instrument the SD Controller
 #   -D CHIPSCOPE_MEM    Instrument the Memory Controller
+#   -D CHIPSCOPE_CSL    Instrument the Console Interface
 #
 
 #	-D SIM_SMMON \
@@ -109,6 +110,7 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX
 #	-D CHIPSCOPE_MEM \
 
 DEBUG_ARGS := \
+	-D CHIPSCOPE_MEM \
 	-D SIM_CTY \
 	-D ENABLE_TIMER \
 	-D STOP_ON_STUCK_PC \
@@ -118,7 +120,7 @@ DEBUG_ARGS := \
 	-D DIAG=$(DIAG)
 
 #
-#
+# Diagnostic Prefix for all DSxxx files
 #
 
 PREFIX := MAINDEC-10-
@@ -170,7 +172,6 @@ RTL_FILES := \
 	rtl/ks10/utils/sync.v \
 	rtl/ks10/clk/clk.v \
 	rtl/ks10/csl/csl.v \
-	rtl/ks10/mem/mem.v \
 	rtl/ks10/arb/arb.v \
 	rtl/ks10/cpu/useq/crom.v \
 	rtl/ks10/cpu/useq/drom.v \
@@ -201,6 +202,8 @@ RTL_FILES := \
 	rtl/ks10/cpu/timing.v \
 	rtl/ks10/cpu/vma.v \
 	rtl/ks10/cpu/cpu.v \
+	rtl/ks10/mem/mem.v \
+	rtl/ks10/mem/memstat.v \
 	rtl/ks10/uba/dz11/uart/uart_brg.v \
 	rtl/ks10/uba/dz11/uart/uart_rx.v \
 	rtl/ks10/uba/dz11/uart/uart_tx.v \
@@ -287,6 +290,7 @@ INC_FILES := \
 	rtl/ks10/cpu/pxct.vh \
 	rtl/ks10/cpu/regir.vh \
 	rtl/ks10/cpu/vma.vh \
+	rtl/ks10/mem/memstat.vh \
 	rtl/ks10/uba/dz11/dz11.vh \
 	rtl/ks10/uba/dz11/dzcsr.vh \
 	rtl/ks10/uba/dz11/dzlpr.vh \
@@ -432,14 +436,21 @@ ifneq (, $(findstring CHIPSCOPE_SD, $(DEBUG_ARGS)))
 	@echo verilog work \"../rtl/xilinx/chipscope_sd_ila/chipscope_sd_ila.v\" >> $@
 	@echo verilog work \"../rtl/xilinx/chipscope_sd_icon/chipscope_sd_icon.v\" >> $@
 endif
+
 ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
 	@echo verilog work \"../rtl/xilinx/chipscope_cpu_ila/chipscope_cpu_ila.v\" >> $@
 	@echo verilog work \"../rtl/xilinx/chipscope_cpu_icon/chipscope_cpu_icon.v\" >> $@
 	@echo verilog work \"../rtl/xilinx/chipscope_cpu_vio/chipscope_cpu_vio.v\"  >> $@
 endif
+
 ifneq (, $(findstring CHIPSCOPE_MEM, $(DEBUG_ARGS)))
 	@echo verilog work \"../rtl/xilinx/chipscope_mem_ila/chipscope_mem_ila.v\" >> $@
 	@echo verilog work \"../rtl/xilinx/chipscope_mem_icon/chipscope_mem_icon.v\" >> $@
+endif
+
+ifneq (, $(findstring CHIPSCOPE_CSL, $(DEBUG_ARGS)))
+	@echo verilog work \"../rtl/xilinx/chipscope_csl_ila/chipscope_csl_ila.v\" >> $@
+	@echo verilog work \"../rtl/xilinx/chipscope_csl_icon/chipscope_csl_icon.v\" >> $@
 endif
 
 ise/$(PROJECT)_isim.prj: makefile
@@ -554,6 +565,11 @@ XST_DEFS += \
 	CHIPSCOPE_MEM
 endif
 
+ifneq (, $(findstring CHIPSCOPE_CSL, $(DEBUG_ARGS)))
+XST_DEFS += \
+	CHIPSCOPE_CSL
+endif
+
 XST_CMDS := \
 	'set -xsthdpdir "xst"' \
 	'run' \
@@ -626,6 +642,11 @@ XST_CMDS += \
 	'-sd {"../rtl/xilinx/chipscope_mem_ila" "../rtl/xilinx/chipscope_mem_icon"}'
 endif
 
+ifneq (, $(findstring CHIPSCOPE_CSL, $(DEBUG_ARGS)))
+XST_CMDS += \
+	'-sd {"../rtl/xilinx/chipscope_csl_ila" "../rtl/xilinx/chipscope_csl_icon"}'
+endif
+
 ise/$(PROJECT).ngc ise/$(PROJECT).ngr: ise/$(PROJECT).xst ise/$(PROJECT).prj ise/$(PROJECT).filter rtl/esm/$(PROJECT).ucf $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_FILES) makefile
 	@cd ise; \
 	echo "################################################################################" | tee    $(PROJECT).log; \
@@ -682,6 +703,12 @@ NGD_OPTS += \
 	-sd ../rtl/xilinx/chipscope_mem_icon
 endif
 
+ifneq (, $(findstring CHIPSCOPE_CSL, $(DEBUG_ARGS)))
+NGD_OPTS += \
+	-sd ../rtl/xilinx/chipscope_csl_ila \
+	-sd ../rtl/xilinx/chipscope_csl_icon
+endif
+
 
 ise/$(PROJECT).ngd: ise/$(PROJECT).ngc rtl/esm/$(PROJECT).ucf ise/$(PROJECT).filter makefile
 	@cd ise; \
@@ -714,7 +741,7 @@ ise/$(PROJECT).ngd: ise/$(PROJECT).ngc rtl/esm/$(PROJECT).ucf ise/$(PROJECT).fil
 #   -ol                   : Overall Effort Level {std|high}
 #   -p                    : Part number
 #   -power                : Power Optimization
-#   -pr                   : Pack Registers in I/O
+#   -pr                   : Pack Registers in I/O {off | i | o | b}
 #   -r                    : Register Ordering
 #   -register_duplication : Duplicate Registers
 #   -t                    : Placer Cost Table
@@ -734,7 +761,7 @@ MAP_OPTS:= \
 	-ol high \
 	-p $(PART) \
 	-power off \
-	-pr off \
+	-pr b \
 	-r 4 \
 	-register_duplication off \
 	-t 1 \
@@ -926,14 +953,15 @@ testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) rtl/
 	-D CROM_DAT=\"$(CROM_DAT)\" \
 	-D DROM_DAT=\"$(DROM_DAT)\" \
 	-I rtl/ks10 \
+	-I rtl/ks10/cpu \
+	-I rtl/ks10/cpu/useq \
+	-I rtl/ks10/mem \
 	-I rtl/ks10/uba \
 	-I rtl/ks10/uba/rh11 \
 	-I rtl/ks10/uba/rh11/rpxx \
 	-I rtl/ks10/uba/rh11/sd \
 	-I rtl/ks10/uba/dz11 \
-	-I rtl/ks10/uba/dz11/uart \
-	-I rtl/ks10/cpu \
-	-I rtl/ks10/cpu/useq
+	-I rtl/ks10/uba/dz11/uart
 
 testsuite/$(DIAG).txt : testsuite/$(DIAG).vvp
 	$(VVP) -n $< > testsuite/$(DIAG).txt

@@ -164,7 +164,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -665,6 +665,52 @@ module CSL(clk, rst,
 
    assign busADDRO = regADDR;
 
+`ifdef SYNTHESIS
+`ifdef CHIPSCOPE_CSL
+
+   //
+   // ChipScope Pro Integrated Controller (ICON)
+   //
+
+   wire [35:0] control0;
+
+   chipscope_csl_icon uICON (
+      .CONTROL0  (control0)
+   );
+
+   //
+   // ChipScope Pro Integrated Logic Analyzer (ILA)
+   //
+
+   wire [255:0] TRIG0 = {
+       rst,                  	// dataport[    255]
+       regDATA[0:35],           // dataport[219:254]
+       regADDR[0:35],           // dataport[183:218]
+       regCIR[0:35],            // dataport[147:182]
+       busDATAO[0:35],          // dataport[111:146]
+       busADDRO[0:35], 	        // dataport[ 75:110]
+       state[0:2],              // dataport[ 72: 74]
+       busREQO,			// dataport[     71]
+       busACKI,                 // dataport[     70]
+       conBLE_N,      		// dataport[     69]
+       conBHE_N,            	// dataport[     68]
+       conRD_N,            	// dataport[     67]
+       conWR_N,             	// dataport[     66]
+       conDATA[15:0],      	// dataport[ 50: 65]
+       conADDR[5:1],      	// dataport[ 45: 49]
+       regSTAT[0:35],		// dataport[  9: 44]
+       9'b0			// dataport[  0:  8]
+   };
+
+   chipscope_csl_ila uILA (
+      .CLK       (clk),
+      .CONTROL   (control0),
+      .TRIG0     (TRIG0)
+   );
+
+`endif
+`endif
+   
    //
    // Fixups
    //

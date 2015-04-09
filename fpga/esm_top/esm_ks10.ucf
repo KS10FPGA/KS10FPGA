@@ -168,6 +168,7 @@ NET "test<7>"           LOC = "F3"   | IOSTANDARD = LVCMOS33;   // VB24
 
 #
 # PLL Test Outputs
+#  Needed when the XILINX_PLL is enabled
 #
 
 PIN "uKS10/uCLK/bufgCLK.O"      CLOCK_DEDICATED_ROUTE = FALSE;
