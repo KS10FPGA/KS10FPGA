@@ -42,7 +42,7 @@
 `include "useq/drom.vh"
 `include "apr.vh"
 
-module CPU(rst, clk, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
+module CPU(rst, clk, cslSET, cslRUN, cslCONT, cslEXEC,
            cslTIMEREN, cslTRAPEN, cslCACHEEN, cslINTRI, cslINTRO, ubaINTR,
            cpuREQO, cpuACKI, cpuADDRO, cpuDATAI, cpuDATAO, cpuHALT, cpuRUN,
            cpuEXEC, cpuCONT);
@@ -53,7 +53,6 @@ module CPU(rst, clk, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
    input          rst;          // Reset
    input          clk;          // Clock
    // Console
-   input          cslRESET;     // CPU Reset
    input          cslSET;       // Set Console RUN, EXEC, CONT
    input          cslRUN;       // Run
    input          cslCONT;      // Continue
@@ -431,7 +430,7 @@ module CPU(rst, clk, cslRESET, cslSET, cslRUN, cslCONT, cslEXEC,
 
    USEQ uUSEQ (
       .clk              (clk),
-      .rst              (cslRESET),
+      .rst              (rst),
       .clken            (clkenCR),
       .dp               (dp),
       .pageFAIL         (pageFAIL),
