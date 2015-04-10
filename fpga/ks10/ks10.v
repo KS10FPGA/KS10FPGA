@@ -232,10 +232,9 @@ module KS10(RESET_N, CLK50MHZ,
    //
 
    CPU uCPU (
-      .rst              (rst),
+      .rst              (cslRESET),
       .clk              (clk),
       // Console
-      .cslRESET         (cslRESET),
       .cslSET           (cslSET),
       .cslRUN           (cslRUN),
       .cslCONT          (cslCONT),
@@ -306,7 +305,7 @@ module KS10(RESET_N, CLK50MHZ,
    //
 
    MEM uMEM (
-      .rst              (rst),
+      .rst              (cslRESET),
       .clk              (clk),
       .clkPHS           (clkPHS),
       .busREQI          (memREQ),
@@ -356,7 +355,7 @@ module KS10(RESET_N, CLK50MHZ,
       .ubaADDR          (`ubaADDR)
    )
    UBA1 (
-      .rst              (rst),
+      .rst              (cslRESET),
       .clk              (clk),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO[1]),
@@ -399,7 +398,7 @@ module KS10(RESET_N, CLK50MHZ,
       .simTIME          (1'b0)
    )
    uRH11 (
-      .rst              (rst),
+      .rst              (cslRESET),
       .clk              (clk),
       // RH11 IO
       .rh11CD           (rh11CD),
@@ -458,7 +457,7 @@ module KS10(RESET_N, CLK50MHZ,
       .ubaADDR          (`ubaADDR)
    )
    UBA3 (
-      .rst              (rst),
+      .rst              (cslRESET),
       .clk              (clk),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO[3]),
@@ -499,7 +498,7 @@ module KS10(RESET_N, CLK50MHZ,
       .dzINTR           (`dz1INTR)
    )
    uDZ11 (
-      .rst              (rst),
+      .rst              (cslRESET),
       .clk              (clk),
       // DZ11 IO
       .dz11TXD          (dz11TXD),
@@ -523,7 +522,7 @@ module KS10(RESET_N, CLK50MHZ,
       // Data
       .devDATAI         (ctl3DATAO),
       .devDATAO         (dz1DATAO)
-      );
+   );
 
    //
    // Console Interrupt fixup
