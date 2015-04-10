@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -889,9 +889,11 @@ module SD(clk, rst,
                                    if (spiRXD == 8'h00)
                                      state <= stateINIT16;
                                    else
-                                     spiOP <= `spiCSH;
-                                   sdERR <= 11;
-                                   state <= stateINFAIL;
+                                     begin
+                                        spiOP <= `spiCSH;
+                                        sdERR <= 11;
+                                        state <= stateINFAIL;
+                                     end
                                 end
                            end
                       end
@@ -1934,7 +1936,7 @@ module SD(clk, rst,
 
                stateDONE:
                  begin
-                    state   <= stateIDLE;
+                    state <= stateIDLE;
                  end
 
                //
@@ -1944,7 +1946,7 @@ module SD(clk, rst,
 
                stateINFAIL:
                  begin
-                    state   <= stateINFAIL;
+                    state <= stateINFAIL;
                  end
 
                //
@@ -1954,16 +1956,20 @@ module SD(clk, rst,
 
                stateRWFAIL:
                  begin
-                    state   <= stateRWFAIL;
+                    state <= stateRWFAIL;
                  end
 
              endcase
-
+             
+`ifdef SD_TIMEOUT
+             
              if (timeout == 0)
                begin
-                  state  <= stateINFAIL;
+                  sdERR <= 255;
+                  state <= stateINFAIL;
                end
-
+`endif
+             
           end
      end
 
@@ -1995,13 +2001,12 @@ module SD(clk, rst,
    //
 
 `ifdef SYNTHESIS
-
 `ifdef CHIPSCOPE_SD
-   
+
    //
    // ChipScope Pro Integrated Controller (ICON)
    //
-   
+
    wire [35:0] control0;
 
    chipscope_sd_icon uICON (
@@ -2012,13 +2017,26 @@ module SD(clk, rst,
    // ChipScope Pro Integrated Logic Analyzer (ILA)
    //
 
+   wire [63:0] TRIG0 = {
+       state[7:0],              // dataport[63:56]
+       sdERR[7:0],              // dataport[55:48]
+       sdVAL[7:0],              // dataport[47:40]
+       sdWRCNT[7:0],            // dataport[39:32]
+       sdRDCNT[7:0],            // dataport[31:24]
+       20'b0,                   // dataport[23: 4]
+       sdMISO,                  // dataport[    3]
+       sdMOSI,                  // dataport[    2]
+       sdSCLK,                  // dataport[    1]
+       sdCS                     // dataport[    0]
+   };
+
    chipscope_sd_ila uILA (
       .CLK      (clk),
       .CONTROL  (control0),
-      .TRIG0    (sdDEBUG)
+      .TRIG0    (TRIG0)
    );
 
 `endif
 `endif
-   
+
 endmodule

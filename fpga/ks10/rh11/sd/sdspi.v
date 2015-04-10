@@ -154,7 +154,7 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
                     if (clkcnt == 0)
                       begin
                          clkcnt <= clkdiv;
-                         rxd    <= {rxd[6:0] & spiMISO};
+                         rxd    <= {rxd[6:0], spiMISO};
                          state  <= stateTXH;
                       end
                     else
@@ -204,7 +204,7 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
                  end
 
                //
-               // Lst bit clock low
+               // Last bit clock low
                //
 
                stateTXN:
@@ -231,7 +231,7 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
 
 
    assign spiSCLK = (state != stateTXL);
-   assign spiMOSI = txd[0];
+   assign spiMOSI = txd[7];
    assign spiRXD  = rxd;
 
 endmodule
