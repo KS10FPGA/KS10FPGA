@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -44,7 +44,6 @@
 `ifndef __SD_VH
 `define __SD_VH
 
-
 //
 // SD Operations
 //
@@ -53,11 +52,5 @@
 `define sdopRD    2'd1
 `define sdopWR    2'd2
 `define sdopWRCHK 2'd3
-
-//
-// SD Status
-//
-
-
 
 `endif

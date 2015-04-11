@@ -39,6 +39,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+  
 `include "sdspi.vh"
 
 module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,

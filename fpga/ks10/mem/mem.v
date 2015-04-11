@@ -39,6 +39,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timespec 1ns/1ps
+
 `include "../uba/uba.vh"
 `include "../cpu/bus.vh"
 `include "../ks10.vh"

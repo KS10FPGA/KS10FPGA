@@ -54,7 +54,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2015 Rob Doyle
+// Copyright (C) 2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -77,7 +77,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
-
+`timespec 1ns/1ps
+  
 `include "memstat.vh"
 
 module MEMSTAT(clk, rst, busDATAI, msrWRITE, regSTAT);
