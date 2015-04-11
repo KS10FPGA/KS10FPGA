@@ -248,6 +248,7 @@ RTL_FILES := \
 #
 
 SIM_FILES := \
+	rtl/esm/sdsim.v \
 	rtl/esm/cy7c1460av33.v \
 	rtl/esm/esm_testbench.v
 
@@ -318,7 +319,8 @@ INC_FILES := \
 	rtl/ks10/uba/ubasr.vh \
 	rtl/ks10/uba/ubabus.vh \
 	rtl/ks10/uba/ubapage.vh \
-	rtl/ks10/ks10.vh
+	rtl/ks10/ks10.vh \
+	rtl/esm/sdsim.dsk
 
 #
 # Microcode and memory initialization
@@ -464,7 +466,7 @@ ise/$(PROJECT)_isim.prj: makefile
 	do \
 	    echo 'verilog work "../'$$FILE'"' >> $@; \
 	done
-	echo 'verilog work "$(XILINX)/ISE_DS/ISE/verilog/src/glbl.v"' >> $@;
+	@echo 'verilog work "$(XILINX)/ISE_DS/ISE/verilog/src/glbl.v"' >> $@;
 
 ise/$(PROJECT)_isim.cmd: makefile
 	@echo "Creating "$@ > /dev/stderr
@@ -952,6 +954,7 @@ testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) rtl/
 	-D RAMFILE_DAT=\"$(RAMFILE_DAT)\" \
 	-D CROM_DAT=\"$(CROM_DAT)\" \
 	-D DROM_DAT=\"$(DROM_DAT)\" \
+	-D SDSIM_DSK=\"rtl/esm/sdsim.dsk\" \
 	-I rtl/ks10 \
 	-I rtl/ks10/cpu \
 	-I rtl/ks10/cpu/useq \
@@ -1127,5 +1130,5 @@ archive_dist: $(SRC)
 
 cloc :
 	$(CLOC) --by-file --force-lang=Verilog-SystemVerilog,vh rtl
-	$(CLOC) --by-file --exclude-dir=driverlib ../code
+	$(CLOC) --by-file --exclude-dir=driverlib,SafeRTOS,lwiplib ../code
 

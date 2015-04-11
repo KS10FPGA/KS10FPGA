@@ -975,6 +975,9 @@ module SD(clk, rst,
                          spiOP   <= spiFAST;
 `endif
                          state   <= stateIDLE;
+`ifndef SYNTHESIS
+                         $display("[%11.3f] RH11: SD Card Initialized Successfully.", $time/1.0e3);
+`endif                         
                       end
                  end
 
