@@ -45,7 +45,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -68,12 +68,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "ubasr.vh"
 `include "../ks10.vh"
 `include "../cpu/bus.vh"
 
-  module UBASR(clk, rst, busDATAI, statINTHI, statINTLO, statWRITE,
-               setNXD, setTMO, regUBASR);
+module UBASR(clk, rst, busDATAI, statINTHI, statINTLO, statWRITE,
+             setNXD, setTMO, regUBASR);
 
    input          clk;                          // Clock
    input          rst;                          // Reset

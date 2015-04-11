@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -36,15 +36,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
 
 `include "rpda.vh"
 `include "rpdc.vh"
 `include "rpds.vh"
 
-  module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
-              state, stateATA, stateCLEAR, stateIDLE, stateOFFSET,
-              statePRESET, statePAKACK, stateRETURN, stateSEEKDLY,
-              rpDA, rpDC, rpER1, rpDS);
+module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
+            state, stateATA, stateCLEAR, stateIDLE, stateOFFSET,
+            statePRESET, statePAKACK, stateRETURN, stateSEEKDLY,
+            rpDA, rpDC, rpER1, rpDS);
 
    input          clk;                          // Clock
    input          rst;                          // Reset

@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -36,16 +36,17 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
 
 `include "rpda.vh"
 `include "rpdc.vh"
 `include "rpds.vh"
 `include "rper1.vh"
 
-  module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
-               state, stateCLEAR, stateINVADDR, stateILLFUN, stateWRLOCK, 
-               rpDATAI, rpcs1WRITE, rpdaWRITE, rpofWRITE, rpdcWRITE,
-               rper1WRITE, incSECTOR, rpDS, rpDA, rpDC, rpER1); 
+module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
+             state, stateCLEAR, stateINVADDR, stateILLFUN, stateWRLOCK,
+             rpDATAI, rpcs1WRITE, rpdaWRITE, rpofWRITE, rpdcWRITE,
+             rper1WRITE, incSECTOR, rpDS, rpDA, rpDC, rpER1);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
@@ -141,7 +142,7 @@
           else if (rper1WRITE)
             rpDTE <= `rpER1_DTE(rpDATAI);
      end
-   
+
    //
    // RPER1 Write Lock Error (rpWLE)
    //
@@ -181,7 +182,7 @@
           else if (state == stateINVADDR)
             rpIAE <= 1;
      end
-   
+
    //
    // RPER1 Address Overflow Error (rpAOE)
    //
@@ -201,7 +202,7 @@
           else if (incSECTOR  & (`rpDA_SA(rpDA) == lastSECTOR) & (`rpDA_TA(rpDA) == lastTRACK) & (`rpDC_DCA(rpDC) == lastCYL))
             rpAOE <= 1;
      end
-   
+
    //
    // RPER1 Header CRC Error (rpHCRC)
    //
@@ -219,7 +220,7 @@
           else if (rper1WRITE)
             rpHCRC <= `rpER1_HCRC(rpDATAI);
      end
-     
+
    //
    // RPER1 Header Compare Error (rpHCE)
    //
@@ -237,7 +238,7 @@
           else if (rper1WRITE)
             rpHCE <= `rpER1_HCE(rpDATAI);
      end
-    
+
    //
    // RPER1 ECC Hard Failure Error (rpECH)
    //
@@ -291,7 +292,7 @@
           else if (rper1WRITE)
             rpFER <= `rpER1_FER(rpDATAI);
      end
-  
+
    //
    // RPER1 Parity Error (rpPAR)
    //
@@ -309,7 +310,7 @@
           else if (rper1WRITE)
             rpPAR <= `rpER1_PAR(rpDATAI);
      end
-  
+
    //
    // RPER1 Register Modification Refused (rpRMR)
    //
@@ -330,7 +331,7 @@
             if (rpcs1WRITE | rper1WRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)
               rpRMR <= 1;
      end
-  
+
    //
    // RPER1 Illegal Register (rpILR)
    //
@@ -368,11 +369,11 @@
           else if (state == stateILLFUN)
             rpILF <= 1;
      end
-   
+
    //
    // Build the RPER1 Register
    //
-   
+
    assign rpER1 = {rpDCK, rpUNS, rpOPI, rpDTE, rpWLE, rpIAE, rpAOE, rpHCRC,
                    rpHCE, rpECH, rpWCF, rpFER, rpPAR, rpRMR, rpILR, rpILF};
 

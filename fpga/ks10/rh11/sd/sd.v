@@ -41,7 +41,7 @@
 
 `default_nettype none
 `timescale 1ns/1ps
-  
+
 `include "sd.vh"
 `include "sdspi.vh"
 
@@ -978,7 +978,7 @@ module SD(clk, rst,
                          state   <= stateIDLE;
 `ifndef SYNTHESIS
                          $display("[%11.3f] RH11: SD Card Initialized Successfully.", $time/1.0e3);
-`endif                         
+`endif
                       end
                  end
 
@@ -1964,16 +1964,16 @@ module SD(clk, rst,
                  end
 
              endcase
-             
+
 `ifdef SD_TIMEOUT
-             
+
              if (timeout == 0)
                begin
                   sdERR <= 255;
                   state <= stateINFAIL;
                end
 `endif
-             
+
           end
      end
 

@@ -24,7 +24,7 @@
 // Modifications by Rob Doyle.  Mistake are mine.
 //
 
-`timescale  1ns /  10ps
+`timescale 1ns/10ps
 
 //
 // NOTE :  Any setup/hold errors will force input signal to x state
@@ -216,7 +216,7 @@ initial
      noti1_6    = 0;
      noti2      = 0;
      $readmemh(`SSRAM_DAT, mem);
-     
+
 end
 
    //
@@ -237,7 +237,7 @@ end
 
    always @(noti2)
      begin
-	if ($time != 0)
+        if ($time != 0)
           $display("[%11.3f] CY7C1460: Data bus corruption", $time/1.0e3);
         force d =36'bx;
         #1;
@@ -246,7 +246,7 @@ end
 
    always @(noti1_0)
      begin
-	if ($time != 0)
+        if ($time != 0)
           $display("[%11.3f] CY7C1460: Byte write corruption", $time/1.0e3);
         force bws = 4'bx;
         #1;
@@ -255,7 +255,7 @@ end
 
    always @(noti1_1)
      begin
-	if ($time != 0)
+        if ($time != 0)
           $display("[%11.3f] CY7C1460: Byte enable corruption", $time/1.0e3);
         force we_b = 1'bx;
         #1;
@@ -264,7 +264,7 @@ end
 
    always @(noti1_2)
      begin
-	if ($time != 0)
+        if ($time != 0)
           $display("[%11.3f] CY7C1460: CE1B corruption", $time/1.0e3);
         force ce1b =1'bx;
         #1;
@@ -273,7 +273,7 @@ end
 
    always @(noti1_3)
      begin
-	if ($time != 0)
+        if ($time != 0)
           $display("[%11.3f] CY7C1460: CE2 corruption", $time/1.0e3);
         force ce2 =1'bx;
         #1;
@@ -282,7 +282,7 @@ end
 
    always @(noti1_4)
      begin
-	if ($time != 0)
+        if ($time != 0)
           $display("[%11.3f] CY7C1460: CE3B corruption", $time/1.0e3);
         force ce3b =1'bx;
         #1;
@@ -291,7 +291,7 @@ end
 
    always @(noti1_5)
      begin
-	if ($time != 0)
+        if ($time != 0)
           $display("[%11.3f] CY7C1460: CENB corruption", $time/1.0e3);
         force cenb =1'bx;
         #1;
@@ -300,7 +300,7 @@ end
 
    always @(noti1_6)
      begin
-	if ($time != 0)
+        if ($time != 0)
           $display("[%11.3f] CY7C1460: ADV_LB corruption", $time/1.0e3);
         force adv_lb = 1'bx;
         #1;

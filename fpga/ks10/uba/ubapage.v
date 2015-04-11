@@ -118,7 +118,7 @@
 
 `default_nettype none
 `timescale 1ns/1ps
-  
+
 `include "uba.vh"
 `include "ubapage.vh"
 `include "../ks10.vh"

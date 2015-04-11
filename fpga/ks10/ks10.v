@@ -18,7 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -41,6 +41,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "ks10.vh"
 `include "uba/uba.vh"
 `include "uba/dz11/dz11.vh"
@@ -179,12 +181,12 @@ module KS10(RESET_N, CLK50MHZ,
    CLK uCLK (
       .RESET_N          (RESET_N),
       .CLK50MHZ         (CLK50MHZ),
-      .clk          	(clk),
+      .clk              (clk),
       .clkPHS           (clkPHS),
       .ssramCLK         (ssramCLK),
-      .rst           	(rst)
+      .rst              (rst)
    );
-   
+
    //
    // Bus Arbiter
    //
@@ -554,7 +556,7 @@ module KS10(RESET_N, CLK50MHZ,
    //
    // Test Signals
    //
-   
+
    assign test[0] = RESET_N;
    assign test[1] = rst;
    assign test[2] = 0;
@@ -567,7 +569,7 @@ module KS10(RESET_N, CLK50MHZ,
    //
    // Halt LED
    //
-   
+
    assign haltLED = cpuHALT;
 
 endmodule

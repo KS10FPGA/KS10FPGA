@@ -40,7 +40,7 @@
 
 `default_nettype none
 `timescale 1ns/1ps
-  
+
 `include "dzcsr.vh"
 `include "dztcr.vh"
 `include "../../ks10.vh"
@@ -219,7 +219,7 @@ module DZCSR(clk, rst,
 
                  //
                  // Hold the TLINE until data is written to the UART
-		 // transmitter.
+                 // transmitter.
                  //
 
                  stateHOLD:

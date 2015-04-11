@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -37,6 +37,9 @@
 // http://www.gnu.org/licenses/lgpl.txt
 //
 ////////////////////////////////////////////////////////////////////////////////
+
+`default_nettype none
+`timescale 1ns/1ps
 
 module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
            cslREQI, cslREQO, cslACKI, cslACKO, cslADDRI, cslDATAI, cslDATAO,

@@ -21,7 +21,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -43,6 +43,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+`default_nettype none
+`timescale 1ns/1ps
+
 module CLK(RESET_N, CLK50MHZ, clk, clkPHS, ssramCLK, rst);
 
    input        RESET_N;
@@ -63,10 +66,6 @@ module CLK(RESET_N, CLK50MHZ, clk, clkPHS, ssramCLK, rst);
    wire clkfbo;
    wire clkfbi;
    wire uclk;
-   wire clk1;
-   wire clk2;
-   wire clk3;
-   wire clk4;
    wire locked;
 
    PLL_BASE #(
@@ -103,10 +102,10 @@ module CLK(RESET_N, CLK50MHZ, clk, clkPHS, ssramCLK, rst);
        .CLKFBIN            (clkfbi),
        .CLKOUT0            (uclk),
        .CLKOUT1            (),
-       .CLKOUT2            (clk1),
-       .CLKOUT3            (clk2),
-       .CLKOUT4            (clk3),
-       .CLKOUT5            (clk4),
+       .CLKOUT2            (clkPHS[1]),
+       .CLKOUT3            (clkPHS[2]),
+       .CLKOUT4            (clkPHS[3]),
+       .CLKOUT5            (clkPHS[4]),
        .CLKFBOUT           (clkfbo),
        .LOCKED             (locked)
    );
@@ -125,26 +124,6 @@ module CLK(RESET_N, CLK50MHZ, clk, clkPHS, ssramCLK, rst);
        .O                  (clk)
    );
 
-   BUFG bufgCLK1 (
-       .I                  (clk1),
-       .O                  (clkPHS[1])
-   );
-
-   BUFG bufgCLK2 (
-       .I                  (clk2),
-       .O                  (clkPHS[2])
-   );
-   
-   BUFG bufgCLK3 (
-       .I                  (clk3),
-       .O                  (clkPHS[3])
-   );
-
-   BUFG bufgCLK4 (
-       .I                  (clk4),
-       .O                  (clkPHS[4])
-   );
-  
    //
    // Xilinx calls this 'clock forwarding'.  The synthesis tools will give
    // errors/warning if you attempt to drive a clock output off-chip without
@@ -174,7 +153,7 @@ module CLK(RESET_N, CLK50MHZ, clk, clkPHS, ssramCLK, rst);
    reg [2:0] d;
    always @(posedge clk or posedge RESET)
      begin
-	if (RESET)
+        if (RESET)
           d <= 3'b111;
         else
           d <= {d[1:0], !locked};

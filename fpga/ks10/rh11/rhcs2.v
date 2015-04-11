@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -36,13 +36,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
 
-`include "rhcs1.vh"  
+`include "rhcs1.vh"
 `include "rhcs2.vh"
 
-  module RHCS2(clk, rst,
-               devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs2WRITE,
-               setWCE, setNEM, setPGE, goCLR, treCLR, rhCS1, rhCS2);
+module RHCS2(clk, rst,
+             devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs2WRITE,
+             setWCE, setNEM, setPGE, goCLR, treCLR, rhCS1, rhCS2);
 
    input          clk;                          // Clock
    input          rst;                          // Reset

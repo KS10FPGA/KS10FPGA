@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -36,14 +36,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
 
 `include "rhcs1.vh"
 `include "rhcs2.vh"
 `include "rpxx/rpcs1.vh"
 
-  module RHCS1(clk, rst,
-               devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE, rpATA,
-               goCLR, intrDONE, rhBA, rhCS2, rpCS1, rhCS1);
+module RHCS1(clk, rst,
+             devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE, rpATA,
+             goCLR, intrDONE, rhBA, rhCS2, rpCS1, rhCS1);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
@@ -236,7 +237,7 @@
    //
 
    wire [5:1] cs1FUN = `rpCS1_GO(rpCS1);
-   
+
    //
    // CS1 GO (from RPxx)
    //
@@ -245,7 +246,7 @@
    //
 
    wire cs1GO = `rpCS1_GO(rpCS1);
-   
+
    //
    // Build CS1 Register
    //
@@ -260,4 +261,4 @@
                         rhBA[17:16], cs1RDY, cs1IE, cs1FUN, cs1GO};
 
 endmodule
- 
+

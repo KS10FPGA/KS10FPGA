@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -35,11 +35,12 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+`timescale 1ns/1ps
 `default_nettype none
 
 `include "rpcs1.vh"
 
-  module RPCS1(clk, rst, clrFUN, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
+module RPCS1(clk, rst, clrFUN, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
@@ -47,16 +48,16 @@
    input          clrGO;                        // Clear Go bit
    input  [35: 0] rpDATAI;                      // RH Data In
    input          rpcs1WRITE;                   // Write to CS1
-   output [15: 0] rpCS1;                     	// rpCS1 Output
+   output [15: 0] rpCS1;                        // rpCS1 Output
 
    //
    // RPCS1 Data Valid (DVA)
    //
    // Trace
    //
-   
+
    wire rpDVA = 1;
-   
+
    //
    // RPCS1 Function (FUN)
    //
@@ -75,13 +76,13 @@
           else if (rpcs1WRITE)
             rpFUN <= `rpCS1_FUN(rpDATAI);
      end
-   
+
    //
    // RPCS1 GO
    //
    // Trace
    //
-   
+
    reg rpGO;
    always @(posedge clk or posedge rst)
      begin
@@ -97,7 +98,7 @@
    //
    // Build CS1 Register
    //
-   
+
    wire [15:0] rpCS1 = {4'b0, rpDVA, 5'b0, rpFUN, rpGO};
 
 endmodule

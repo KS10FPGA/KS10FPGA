@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -38,6 +38,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+`default_nettype none
+`timescale 1ns/1ps
+
 module SDADDR(clk, rst, lastTRACK, lastSECTOR, start, rpDCA, rpTA, rpSA, sdADDR, done);
 
    input          clk;          // Clock
@@ -49,7 +52,7 @@ module SDADDR(clk, rst, lastTRACK, lastSECTOR, start, rpDCA, rpTA, rpSA, sdADDR,
    input  [ 5: 0] rpTA;         // Track
    input  [ 5: 0] rpSA;         // Sector
    output [31: 0] sdADDR;       // SD Sector Address
-   output         done;		// Calculation completed
+   output         done;         // Calculation completed
 
    //
    // States
@@ -130,5 +133,5 @@ module SDADDR(clk, rst, lastTRACK, lastSECTOR, start, rpDCA, rpTA, rpSA, sdADDR,
 
    assign sdADDR = sum;
    assign done   = (state == stateIDLE);
-   
+
 endmodule

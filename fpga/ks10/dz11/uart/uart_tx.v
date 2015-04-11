@@ -47,7 +47,7 @@
 
 `default_nettype none
 `timescale 1ns/1ps
-  
+
 `include "../dzuart.vh"
 
 module UART_TX(clk, rst, clr, length, parity, stop, brgCLKEN, data, load,
@@ -163,7 +163,7 @@ module UART_TX(clk, rst, clr, length, parity, stop, brgCLKEN, data, load,
                     brdiv <= 15;
                     state <= stateSTART;
                  end
-              
+
               //
               // Transmit Start Bit
               //

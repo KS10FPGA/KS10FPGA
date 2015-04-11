@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -47,6 +47,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
 
 `include "rpxx.vh"
 `include "rpda.vh"
@@ -211,13 +212,13 @@ module RPXX(clk, rst, clr,
 
    wire [15:0] rpDC;
    wire [ 9:0] rpDCA = `rpDC_DCA(rpDC);
-   
+
    //
    // SD Sector Address
    //
 
    wire [31:0] rpSDADDR;
-   
+
    //
    // Function to calculate disk seek delay.  This is psudeo exponential.
    // The RP06 has 815 cyclinders

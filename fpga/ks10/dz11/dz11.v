@@ -54,7 +54,7 @@
 
 `default_nettype none
 `timescale 1ns/1ps
-  
+
 `include "dz11.vh"
 `include "dzcsr.vh"
 `include "dztcr.vh"

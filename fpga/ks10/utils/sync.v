@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2013 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -43,7 +43,7 @@
 
 `default_nettype none
 `timescale 1ns/1ps
-  
+
 module SYNC(clk, rst, o, i);
 
    parameter INIT  = 0;

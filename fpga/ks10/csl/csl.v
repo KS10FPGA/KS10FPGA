@@ -187,6 +187,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "../ks10.vh"
 `include "../uba/uba.vh"
 `include "../cpu/bus.vh"

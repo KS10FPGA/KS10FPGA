@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -36,19 +36,21 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "rpda.vh"
 
-  module RPDA(clk, rst, clr,
-              rpDATAI, lastSECTOR, lastTRACK, rpdaWRITE, incSECTOR, rpDA);
+module RPDA(clk, rst, clr,
+            rpDATAI, lastSECTOR, lastTRACK, rpdaWRITE, incSECTOR, rpDA);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
    input  [35: 0] rpDATAI;                      // RP Data In
-   input  [ 5: 0] lastSECTOR;			// Last sector number
-   input  [ 5: 0] lastTRACK;			// Last track number
+   input  [ 5: 0] lastSECTOR;                   // Last sector number
+   input  [ 5: 0] lastTRACK;                    // Last track number
    input          rpdaWRITE;                    // DA Write
-   input          incSECTOR;			// Increment sector/track/cylinder
+   input          incSECTOR;                    // Increment sector/track/cylinder
    output [15: 0] rpDA;                         // rpDA Output
 
    //
@@ -64,20 +66,20 @@
      begin
         if (rst)
           rpSA <= 0;
-	else
-	  if (clr)
+        else
+          if (clr)
             rpSA <= 0;
-	  else if (rpdaWRITE)
-	    rpSA <= `rpDA_SA(rpDATAI);
-	  else if (incSECTOR)
-	    begin
+          else if (rpdaWRITE)
+            rpSA <= `rpDA_SA(rpDATAI);
+          else if (incSECTOR)
+            begin
                if (rpSA == lastSECTOR)
-		 rpSA <= 0;
-	       else
-		 rpSA <= rpSA + 1'b1;
-	    end
-     end     
-   
+                 rpSA <= 0;
+               else
+                 rpSA <= rpSA + 1'b1;
+            end
+     end
+
    //
    // RPDA Track Address (RPTA)
    //
@@ -91,24 +93,24 @@
      begin
         if (rst)
           rpTA <= 0;
-	else
-	  if (clr)
+        else
+          if (clr)
             rpTA <= 0;
-	  else if (rpdaWRITE)
-	    rpTA <= `rpDA_TA(rpDATAI);
-	  else if (incSECTOR & (rpSA == lastSECTOR))
-	    begin
-	       if (rpTA == lastTRACK) 
-		 rpTA <= 0;
-	       else
-		 rpTA <= rpTA + 1'b1;
-	    end
-     end     
+          else if (rpdaWRITE)
+            rpTA <= `rpDA_TA(rpDATAI);
+          else if (incSECTOR & (rpSA == lastSECTOR))
+            begin
+               if (rpTA == lastTRACK)
+                 rpTA <= 0;
+               else
+                 rpTA <= rpTA + 1'b1;
+            end
+     end
 
    //
    // Build the RPDA Register
    //
-   
+
    assign rpDA = {2'b0, rpTA, 2'b0, rpSA};
 
 endmodule
