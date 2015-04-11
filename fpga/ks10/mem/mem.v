@@ -39,7 +39,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
-`timespec 1ns/1ps
+`timescale 1ns/1ps
 
 `include "../uba/uba.vh"
 `include "../cpu/bus.vh"
