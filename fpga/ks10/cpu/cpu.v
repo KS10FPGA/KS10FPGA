@@ -38,6 +38,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 `include "apr.vh"

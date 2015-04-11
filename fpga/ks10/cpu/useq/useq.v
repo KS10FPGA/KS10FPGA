@@ -39,6 +39,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "crom.vh"
 `include "drom.vh"
 `include "../alu.vh"
@@ -357,5 +359,5 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
 
    assign cromADDR = addr;
-   
+
 endmodule

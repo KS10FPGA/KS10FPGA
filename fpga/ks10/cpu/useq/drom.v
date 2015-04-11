@@ -46,12 +46,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "crom.vh"
 `include "drom.vh"
 
 `ifndef DROM_DAT
 `define DROM_DAT "drom.dat"
-`endif  
+`endif
 
 module DROM(clk, clken, dbus, crom, drom);
 

@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -36,6 +36,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "bus.vh"
 
 module NXM(clk, rst, cpuADDRO, cpuREQO, cpuACKI, memWAIT, nxmINTR);
@@ -61,13 +63,10 @@ module NXM(clk, rst, cpuADDRO, cpuREQO, cpuACKI, memWAIT, nxmINTR);
    //  Wait for Bus ACK on memory accesses.  Generate a NXM Interrupt on memory
    //  cycles that are never acknowledged.
    //
+   // FIXME
+   //  Just delete this.  NXM can't happen.
+   //
 
-   /*
-    *
-    *  FIXME:  Just delete this.  NXM can't happen.
-    * 
-    */
-   
    localparam [0:3] tDONE = 15;
    reg        [0:3] timeout;
 
@@ -91,7 +90,7 @@ module NXM(clk, rst, cpuADDRO, cpuREQO, cpuACKI, memWAIT, nxmINTR);
    //
 
    assign memWAIT = ((!busIO & cpuREQO & !cpuACKI) |
-		     (timeout != 0)    & !cpuACKI);
+                     (timeout != 0)    & !cpuACKI);
 
    //
    // Generate an NXM trap

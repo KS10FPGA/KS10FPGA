@@ -15,7 +15,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -38,6 +38,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "useq/crom.vh"
 
 module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
@@ -233,10 +235,10 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //  DPEB/E173
    //
 
-   reg         aprTRAPEN;   	// Trap Enable
-   reg         aprPAGEEN;      	// Paging Enable
+   reg         aprTRAPEN;       // Trap Enable
+   reg         aprPAGEEN;       // Paging Enable
    reg [24:31] aprENABLE;       // APR Enable
-   reg         aprSWINT;       	// Software Interrupt
+   reg         aprSWINT;        // Software Interrupt
    reg [ 0: 2] aprPRI;          // APR Interrupt Request
 
    always @(posedge clk or posedge rst)
@@ -258,7 +260,7 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
              aprPRI    <= dp[33:35];
           end
     end
-   
+
    //
    // APR Interrupt Mask
    //
@@ -306,7 +308,7 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
             3'b110 : aprINTR <= 7'b0000010;
             3'b111 : aprINTR <= 7'b0000001;
           endcase
-	else
+        else
           aprINTR <= 7'b0000000;
      end
 

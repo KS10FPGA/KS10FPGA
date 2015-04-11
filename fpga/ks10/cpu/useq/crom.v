@@ -53,12 +53,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "crom.vh"
 
 `ifndef CROM_DAT
 `define CROM_DAT "crom.dat"
-`endif  
-  
+`endif
+
 module CROM(clk, clken, addr, crom);
 
    parameter  cromWidth = `CROM_WIDTH;

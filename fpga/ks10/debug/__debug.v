@@ -52,9 +52,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "useq/crom.vh"
 
-  module DEBUG(clk, rst, clken, crom, cromADDR, dp, dbm, dbus, debugDATA, debugADDR);
+module DEBUG(clk, rst, clken, crom, cromADDR, dp, dbm, dbus, debugDATA, debugADDR);
 
    parameter cromWidth = `CROM_WIDTH;
 
@@ -121,11 +123,11 @@
    //
 
    wire [120:0] TRIG0 = {
-       rst,			// dataport[    120]
-       cromADDR,		// dataport[108:119]
-       dp,			// dataport[ 72:107]
-       dbus,			// dataport[ 36: 71]
-       debugDATA		// dataport[  0: 35]
+       rst,                     // dataport[    120]
+       cromADDR,                // dataport[108:119]
+       dp,                      // dataport[ 72:107]
+       dbus,                    // dataport[ 36: 71]
+       debugDATA                // dataport[  0: 35]
    };
 
    chipscope_cpu_ila uILA (
