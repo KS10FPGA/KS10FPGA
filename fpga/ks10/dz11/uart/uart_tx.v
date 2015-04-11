@@ -23,7 +23,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2009-2014 Rob Doyle
+// Copyright (C) 2009-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -46,6 +46,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+  
 `include "../dzuart.vh"
 
 module UART_TX(clk, rst, clr, length, parity, stop, brgCLKEN, data, load,

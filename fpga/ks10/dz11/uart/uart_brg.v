@@ -19,7 +19,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2014 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -42,10 +42,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "../dzuart.vh"
 `include "../../../ks10.vh"
 
-  module UART_BRG(clk, rst, speed, brgCLKEN);
+module UART_BRG(clk, rst, speed, brgCLKEN);
 
    input       clk;                             // Clock
    input       rst;                             // Reset

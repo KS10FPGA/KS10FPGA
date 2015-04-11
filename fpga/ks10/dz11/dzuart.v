@@ -42,6 +42,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
+
 `include "dzlpr.vh"
 
 module DZUART(clk, rst, clr, num, lprWRITE, dzDATAI,
