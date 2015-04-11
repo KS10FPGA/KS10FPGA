@@ -40,6 +40,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
 
 module ESM_KS10(RESET_N, CLK50MHZ, MR_N,
                 // DZ11 Interfaces

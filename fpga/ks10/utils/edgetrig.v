@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 //
-//  Copyright (C) 2012-2013 Rob Doyle
+// Copyright (C) 2012-2015 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -42,16 +42,17 @@
 ////////////////////////////////////////////////////////////////////
 
 `default_nettype none
+`timescale 1ns/1ps
 
 module EDGETRIG(clk, rst, clken, pol, i, o);
 
-   input  clk;      	// Clock
+   input  clk;          // Clock
    input  rst;          // Reset
    input  clken;        // Clock Enable
    input  pol;          // Polarity
    input  i;            // Input
    output o;            // Output
-   
+
    reg last;
    always @(posedge clk or posedge rst)
      begin
@@ -60,7 +61,7 @@ module EDGETRIG(clk, rst, clken, pol, i, o);
         else if (clken)
           last <= i;
      end
-   
+
    assign o = (pol) ? (i & ~last) : (~i & last);
-   
+
 endmodule
