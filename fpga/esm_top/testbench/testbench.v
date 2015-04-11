@@ -734,4 +734,17 @@ module testbench;
       .d                (ssramDATA[0:35])
    );
 
+   //
+   // SD Card Simulation
+   //
+
+   SDSIM SD (
+      .clk              (clk),
+      .rst              (reset),
+      .sdMISO           (rh11MISO),
+      .sdMOSI           (rh11MOSI),
+      .sdSCLK           (rh11SCLK),
+      .sdCS             (rh11CS)
+   );
+
 endmodule
