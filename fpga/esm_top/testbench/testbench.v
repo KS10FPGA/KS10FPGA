@@ -735,6 +735,8 @@ module testbench;
       .d                (ssramDATA[0:35])
    );
 
+`ifdef SIM_SDHC
+
    //
    // SD Card Simulation
    //
@@ -747,5 +749,15 @@ module testbench;
       .sdSCLK           (rh11SCLK),
       .sdCS             (rh11CS)
    );
+
+`else
+
+   //
+   // Terminate input
+   //
+
+   assign rh11MISO = 0;
+
+`endif
 
 endmodule

@@ -42,7 +42,7 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module ESM_KS10(RESET_N, CLK50MHZ, MR_N,
+module ESM_KS10(RESET_N, CLK50MHZ, MR_N, MR,
                 // DZ11 Interfaces
                 TXD, RXD,
                 // RH11 Interfaces
@@ -59,6 +59,7 @@ module ESM_KS10(RESET_N, CLK50MHZ, MR_N,
    input          RESET_N;      // Reset
    input          CLK50MHZ;     // Clock
    input          MR_N;         // Master Reset push button
+   output         MR;           // Master Reset out
    // DZ11 Interfaces
    input  [1: 2]  TXD;          // DZ11 RS-232 Transmitted Data
    output [1: 2]  RXD;          // DZ11 RS-232 Received Data
@@ -164,4 +165,10 @@ module ESM_KS10(RESET_N, CLK50MHZ, MR_N,
 
    assign dz11RXD[7:2] = dz11TXD[7:2];
 
+   //
+   // MR out.  This is done to quiet the tool.
+   //
+
+   assign MR = !MR_N;
+   
 endmodule

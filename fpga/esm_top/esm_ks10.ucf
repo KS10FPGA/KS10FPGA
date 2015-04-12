@@ -17,6 +17,7 @@ TIMESPEC                TS_clk = PERIOD "CLK50MHZ" 20 ns HIGH 50%;
 
 NET "RESET_N"           LOC = "M24"  | IOSTANDARD = LVCMOS33;
 NET "MR_N"              LOC = "N23"  | IOSTANDARD = LVCMOS33;
+NET "MR"                LOC = "AE1"  | IOSTANDARD = LVCMOS33;   // VB2
 
 #
 # SSRAM Interface
@@ -171,7 +172,7 @@ NET "test<7>"           LOC = "F3"   | IOSTANDARD = LVCMOS33;   // VB24
 #  Needed when the XILINX_PLL is enabled
 #
 
-PIN "uKS10/uCLK/bufgCLK.O"      CLOCK_DEDICATED_ROUTE = FALSE;
+PIN "uKS10/uCLK/bufgCLK.O"     CLOCK_DEDICATED_ROUTE = FALSE;
 
 #
 #
