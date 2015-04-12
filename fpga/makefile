@@ -28,6 +28,7 @@ IMPACT   := $(XILEXE)/impact.exe
 XST      := $(XILEXE)/xst.exe
 INTSTYLE := ise
 XILPATH  := $(XILDIR)/ISE_DS/ISE/bin/nt64:$(XILDIR)/ISE_DS/ISE/lib/nt64:$(XILDIR)/ISE_DS/common/bin/nt64:$(XILDIR)/ISE_DS/common/lib/nt64
+UNISIMS  := $(XILDIR)/ISE_DS/PlanAhead/verilog/src/unisims
 
 #
 # Other tools
@@ -95,6 +96,7 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX
 #   -D ENABLE_TIMER	Enable 1 ms timer.  Slows simulation.  (See testbench)
 #   -D SIM_SMMON	Boot to SMMON instead of diagnostic app (See testbench)
 #   -D SIM_CTY		Simulate the CTY (See testbench)
+#   -D SIM_SDHC		Simulate the SDHC Card
 #   -D STOP_ON_COMPLETE Stop simulation when test is complete (See debug.v)
 #   -D STOP_ON_STUCK_PC Stop simulating when PC gets stuck.
 #   -D DEBUG_DSKAA	Diagnostic information (See debug.v)
@@ -112,6 +114,7 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX
 DEBUG_ARGS := \
 	-D CHIPSCOPE_MEM \
 	-D SIM_CTY \
+	-D SIM_SDHC \
 	-D ENABLE_TIMER \
 	-D STOP_ON_STUCK_PC \
 	-D STOP_ON_COMPLETE \
@@ -948,7 +951,7 @@ reload: ise/$(PROJECT)_impact.cmd
 #
 
 testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) rtl/testbench/$(DIAG).dat  makefile
-	$(IVERILOG) -s testbench -o $@ $(SIM_FILES) $(RTL_FILES) \
+	$(IVERILOG) -W all -s testbench -o $@ $(SIM_FILES) $(RTL_FILES) \
 	$(DEBUG_ARGS) \
 	-D SSRAM_DAT=\"rtl/testbench/$(DIAG).dat\" \
 	-D RAMFILE_DAT=\"$(RAMFILE_DAT)\" \
@@ -1132,3 +1135,12 @@ cloc :
 	$(CLOC) --by-file --force-lang=Verilog-SystemVerilog,vh rtl
 	$(CLOC) --by-file --exclude-dir=driverlib,SafeRTOS,lwiplib ../code
 
+#
+#
+#
+
+check :
+	@echo "Tabs in:"
+	@-find rtl -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '\t'
+	@echo "Trailing white space in:"
+	@-find rtl -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '[ ]+$$'
