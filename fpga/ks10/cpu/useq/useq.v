@@ -277,12 +277,9 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //  The synchronous 'rst' negation is handled earlier in the design
    //  heirarchy.
    //
-   //  The Page Fail address is hard coded to address o3777 in the microcode.
-   //
-   // Notes:
-   //  The microcode address space is 12-bits but only 11-bits (2048 microcode
-   //  words) are actually implemented.  Therefore the amount of microcode can
-   //  be easily doubled without changing the micro-architecture.
+   //  The Page Fail address is hardwired to address o3777 on machines with 2K
+   //  words of microcode and hardwired to address o7777 on machines with 4K 
+   //  words of microcode.
    //
    // Trace:
    //  CRA1/E9
@@ -300,7 +297,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //
 
    wire [0:11] addr = (rst)      ? 12'o0000 :
-                      (pageFAIL) ? 12'o3777 :
+                      (pageFAIL) ? 12'o7777 :
                       (dispADDR  | skipADDR | `cromJ);
 
    //

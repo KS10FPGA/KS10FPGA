@@ -10,13 +10,9 @@
 //   microcontroller.
 //
 // Note
-//   Although all of the microcontroller addressing supports 12-bit addresses
-//   (4096 words of ROM) the Control ROM only implements 2048 words of ROM.
-//
-//   The current microcode uses all of the ROM except for about 25 words.
-//
-//   Implementing 4096 words of ROM would all double the amount of microcode
-//   and allow for feature growth.
+//   Although all the DEC KS10 12-bit (4096 words of ROM) microcode addressing,
+//   DEC only implemented 2048 words of ROM.   This implementation supports all
+//   4096 words of ROM.
 //
 // Note
 //   The contents of this file was extracted from the microcode listing file by
@@ -76,11 +72,6 @@ module CROM(clk, clken, addr, crom);
    // Details:
    //  The Control ROM stores the microcode.
    //
-   // Note:
-   //  The KS10 only implemented half of the microcode.  Therefore the MSB of
-   //  the address is ignored.  If you need more than 2048 words of microcode,
-   //  you can simply add more ROM.  See notes at top-of-file.
-   //
    //  The KS10 used asynchronous ROM followed by a 108-bit wide register.
    //  This register has been absorbed into this synchronous ROM implementation.
    //
@@ -128,7 +119,7 @@ module CROM(clk, clken, addr, crom);
    //   CRM7/E156, CRM7/E163, CRM7/E176, CRM7/E181, CRM7/E188, CRM7/E195,
    //
 
-   reg [0:cromWidth-1] CROM[0:2047];
+   reg [0:cromWidth-1] CROM[0:4095];
 
    initial
      begin
@@ -138,7 +129,7 @@ module CROM(clk, clken, addr, crom);
    always @(posedge clk)
      begin
         if (clken)
-          crom <= CROM[addr[1:11]];
+          crom <= CROM[addr];
      end
 
 endmodule
