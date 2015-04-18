@@ -76,7 +76,7 @@ module testbench;
    // RH11 Secure Digital Interface
    //
 
-   wire        rh11CD;          // RH11 Card Detect
+   wire        rh11CD = 0;      // RH11 Card Detect
    wire        rh11MISO;        // RH11 Data In
    wire        rh11MOSI;        // RH11 Data Out
    wire        rh11SCLK;        // RH11 Clock
@@ -133,6 +133,7 @@ module testbench;
    // KS10 Addresses
    //
 
+   localparam [18:35] addrSWITCH  = 18'o000030;
    localparam [18:35] addrSTAT    = 18'o000031;
    localparam [18:35] addrCIN     = 18'o000032;
    localparam [18:35] addrCOUT    = 18'o000033;
@@ -448,6 +449,7 @@ module testbench;
    reg [0:35] temp;
    reg [0:35] haltStatus;
    reg [0:35] haltAddr;
+   reg        initHalt;
 
    initial
      begin
@@ -465,6 +467,8 @@ module testbench;
         conBHE_N = 1;
         conADDR <= 0;
         conDATO <= 0;
+
+        initHalt <= 1;
 
         //
         // Release reset at 95 nS
@@ -524,22 +528,21 @@ module testbench;
    //  to continue execution.  Otherwise let the KS10 halt.
    //
 
-   time haltTIME;
-
    always @(posedge haltLED)
      begin
-        haltTIME <= $time;
         $display("[%11.3f] KS10: CPU Halted", $time/1.0e3);
         printHaltStatus;
-        if (haltTIME < 40000 || haltTIME > 60000)
+        if (!initHalt)
           $stop;
         else
           begin
+             initHalt = 0;
 
              //
              // Initialize Console Interface
              //
 
+             conWRITEMEM(addrSWITCH, 36'o000000_000000);        // Initialize Switch Register
              conWRITEMEM(addrSTAT,   36'o000000_000000);        // Maintenance Mode
              conWRITEMEM(addrRHBASE, 36'o000000_000000);        // RH Base Address
 
@@ -683,7 +686,8 @@ module testbench;
    ESM_KS10 uKS10 (
       .CLK50MHZ         (clk),
       .RESET_N          (~reset),
-      .MR_N             (),
+      .MR_N             (1'b0),
+      .MR               (),
       // DZ11 Interfaces
       .TXD              (TXD),
       .RXD              (RXD),

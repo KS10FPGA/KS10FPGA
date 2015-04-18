@@ -124,8 +124,8 @@ module KS10(RESET_N, CLK50MHZ,
    wire        cslTIMEREN;      // Console Timer Enable
    wire        cslCACHEEN;      // Console Cache Enable
    wire        cslINTR;         // Console Interrupt to KS10
-   wire        cslRESET;        // KS10 Reset
    wire        cslINTRO;        // KS10 Interrupt to Console
+   wire        cpuRST;          // KS10 Reset
 
    //
    // CPU Interfaces
@@ -175,16 +175,17 @@ module KS10(RESET_N, CLK50MHZ,
    //
 
    wire rst;
-   wire clk;
+   wire cpuCLK;
+   wire memCLK;
    wire [1:4] clkPHS;
 
    CLK uCLK (
       .RESET_N          (RESET_N),
       .CLK50MHZ         (CLK50MHZ),
-      .clk              (clk),
-      .clkPHS           (clkPHS),
-      .ssramCLK         (ssramCLK),
-      .rst              (rst)
+      .cpuCLK           (cpuCLK),
+      .memCLK           (memCLK),
+      .rst              (rst),
+      .clkPHS           (clkPHS)
    );
 
    //
@@ -234,8 +235,8 @@ module KS10(RESET_N, CLK50MHZ,
    //
 
    CPU uCPU (
-      .rst              (cslRESET),
-      .clk              (clk),
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
       // Console
       .cslSET           (cslSET),
       .cslRUN           (cslRUN),
@@ -266,7 +267,7 @@ module KS10(RESET_N, CLK50MHZ,
 
    CSL uCSL (
       .rst              (rst),
-      .clk              (clk),
+      .clk              (cpuCLK),
       // Console Microcontroller Interfaces
       .conADDR          (conADDR),
       .conDATA          (conDATA),
@@ -297,7 +298,7 @@ module KS10(RESET_N, CLK50MHZ,
       .cslTRAPEN        (cslTRAPEN),
       .cslCACHEEN       (cslCACHEEN),
       .cslINTR          (cslINTR),
-      .cslRESET         (cslRESET),
+      .cslRESET         (cpuRST),
       // RH11 Interfaces
       .rh11DEBUG        (rh11DEBUG)
    );
@@ -307,15 +308,16 @@ module KS10(RESET_N, CLK50MHZ,
    //
 
    MEM uMEM (
-      .rst              (cslRESET),
-      .clk              (clk),
+      .rst              (cpuRST),
+      .cpuCLK           (cpuCLK),
+      .memCLK           (memCLK),
       .clkPHS           (clkPHS),
       .busREQI          (memREQ),
       .busACKO          (memACK),
       .busADDRI         (arbADDRO),
       .busDATAI         (memDATAI),
       .busDATAO         (memDATAO),
-      .ssramCLK         (!CLK50MHZ),
+      .ssramCLK         (ssramCLK),
       .ssramCLKEN_N     (ssramCLKEN_N),
       .ssramADV         (ssramADV),
       .ssramBW_N        (ssramBW_N),
@@ -357,8 +359,8 @@ module KS10(RESET_N, CLK50MHZ,
       .ubaADDR          (`ubaADDR)
    )
    UBA1 (
-      .rst              (cslRESET),
-      .clk              (clk),
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO[1]),
       .busACKI          (ubaACKI[1]),
@@ -400,8 +402,8 @@ module KS10(RESET_N, CLK50MHZ,
       .simTIME          (1'b0)
    )
    uRH11 (
-      .rst              (cslRESET),
-      .clk              (clk),
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
       // RH11 IO
       .rh11CD           (rh11CD),
       .rh11WP           (rh11WP),
@@ -459,8 +461,8 @@ module KS10(RESET_N, CLK50MHZ,
       .ubaADDR          (`ubaADDR)
    )
    UBA3 (
-      .rst              (cslRESET),
-      .clk              (clk),
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
       .busREQI          (ubaREQI),
       .busREQO          (ubaREQO[3]),
       .busACKI          (ubaACKI[3]),
@@ -500,8 +502,8 @@ module KS10(RESET_N, CLK50MHZ,
       .dzINTR           (`dz1INTR)
    )
    uDZ11 (
-      .rst              (cslRESET),
-      .clk              (clk),
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
       // DZ11 IO
       .dz11TXD          (dz11TXD),
       .dz11RXD          (dz11RXD),

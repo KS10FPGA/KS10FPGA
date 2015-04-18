@@ -108,7 +108,7 @@ module NXD(clk, rst, crom, cpuADDRO, cpuREQO, cpuACKI, ioWAIT, ioBUSY);
         if (rst)
           addr3666  <= 0;
         else
-          addr3666 <= (crom[0:11] == 12'o3666);
+          addr3666 <= (crom[0:11] == 12'o3726);
      end
 
    //

@@ -170,5 +170,5 @@ module ESM_KS10(RESET_N, CLK50MHZ, MR_N, MR,
    //
 
    assign MR = !MR_N;
-   
+
 endmodule
