@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -252,8 +252,8 @@ module RH11(clk,      rst,
    wire [15:0] rpOF [7:0];              // OF  Register
    wire [15:0] rpDC [7:0];              // DC  Register
    wire [15:0] rpCC [7:0];              // CC  Register
-   wire [15:0] rpER2 = {15'b0};         // ER2 Register (always 0)
-   wire [15:0] rpER3 = {15'b0};         // ER3 Register (always 0)
+   wire [15:0] rpER2[7:0];              // ER2 Register
+   wire [15:0] rpER3[7:0];              // ER3 Register
    wire [15:0] rpEC1 = {15'b0};         // EC1 Register (always 0)
    wire [15:0] rpEC2 = {15'b0};         // EC2 Register (always 0)
 
@@ -490,23 +490,19 @@ module RH11(clk,      rst,
           end
      end
 
-
    //
-   // Interrupt Request
+   // RH11 Interrupts
    //
 
-   wire rhIFF = 0;      // FIXME
+   wire rhIFF;
 
-/*
+   RHINTR INTR (
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (rhCLR | devRESET),
+      .rhIFF      (rhIFF)
+   );
 
-   reg rhIFF;
-             if (devINTA == rhINTR)
-               rhIFF <= 0;
-             else if (rhRDY & ~lastRDY)
-               rhIFF <= rhIE;
-*/
-
-   
    //
    // Build an array 8 RPxx disk drives
    //
@@ -540,6 +536,8 @@ module RH11(clk,      rst,
               .rpOF     (rpOF[i]),
               .rpDC     (rpDC[i]),
               .rpCC     (rpCC[i]),
+              .rpER2    (rpER2[i]),
+              .rpER3    (rpER3[i]),
               .rpSDOP   (rpSDOP[i]),
               .rpSDREQ  (rpSDREQ[i]),
               .rpSDACK  ((scan == i[2:0]) && (state == stateACK)),
@@ -650,9 +648,9 @@ module RH11(clk,      rst,
         if (rpccWRITE | rpccREAD)
           devDATAO = {20'b0, rpCC[rhUNIT]};
         if (rper2WRITE | rper2READ)
-          devDATAO = {20'b0, rpER2};
+          devDATAO = {20'b0, rpER2[rhUNIT]};
         if (rper3WRITE | rper3READ)
-          devDATAO = {20'b0, rpER3};
+          devDATAO = {20'b0, rpER3[rhUNIT]};
         if (rpec1WRITE | rpec1READ)
           devDATAO = {20'b0, rpEC1};
         if (rpec2WRITE | rpec2READ)

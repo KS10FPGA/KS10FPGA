@@ -75,6 +75,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Data Check (rpDCK)
    //
    // Trace
+   //  M7774/RG0/E18
    //
 
    reg rpDCK;
@@ -93,6 +94,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Unsafe (rpUNS)
    //
    // Trace
+   //  M7774/RG0/E15
    //
 
    reg rpUNS;
@@ -108,27 +110,29 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
      end
 
    //
-   // RPER1 Operation Incomplete (rpOPI)
+   // RPER1 Incomplete Operation (rpIOP)
    //
    // Trace
+   //  M7774/RG0/E5
    //
 
-   reg rpOPI;
+   reg rpIOP;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          rpOPI <= 0;
+          rpIOP <= 0;
         else
           if (clr | (state == stateCLEAR))
-            rpOPI <= 0;
+            rpIOP <= 0;
           else if (rper1WRITE)
-            rpOPI <= `rpER1_OPI(rpDATAI);
+            rpIOP <= `rpER1_IOP(rpDATAI);
      end
 
    //
    // RPER1 Drive Timing Error (rpDTE)
    //
    // Trace
+   //  M7774/RG0/E5
    //
 
    reg rpDTE;
@@ -147,6 +151,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Write Lock Error (rpWLE)
    //
    // Trace
+   //  M7774/RG0/E3
    //
 
    reg rpWLE;
@@ -167,6 +172,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Invalid Address Error (rpIAE)
    //
    // Trace
+   //  M7774/RG0/E3
    //
 
    reg rpIAE;
@@ -187,6 +193,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Address Overflow Error (rpAOE)
    //
    // Trace
+   //  M7774/RG0/E9
    //
 
    reg rpAOE;
@@ -207,6 +214,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Header CRC Error (rpHCRC)
    //
    // Trace
+   //  M7774/RG0/E9
    //
 
    reg rpHCRC;
@@ -225,6 +233,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Header Compare Error (rpHCE)
    //
    // Trace
+   //  M7774/RG0/E13
    //
 
    reg rpHCE;
@@ -243,6 +252,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 ECC Hard Failure Error (rpECH)
    //
    // Trace
+   //  M7774/RG0/E10
    //
 
    reg rpECH;
@@ -261,6 +271,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Write Clock Fail Error (rpWCF)
    //
    // Trace
+   //  M7774/RG0/E10
    //
 
    reg rpWCF;
@@ -279,6 +290,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Format Error (rpFER)
    //
    // Trace
+   //  M7774/RG0/E14
    //
 
    reg rpFER;
@@ -297,6 +309,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Parity Error (rpPAR)
    //
    // Trace
+   //  M7774/RG0/E15
    //
 
    reg rpPAR;
@@ -315,6 +328,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Register Modification Refused (rpRMR)
    //
    // Trace
+   //  M7774/RG0/E14
    //
 
    reg rpRMR;
@@ -336,6 +350,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Illegal Register (rpILR)
    //
    // Trace
+   //  M7774/RG0/E24
    //
 
    reg rpILR;
@@ -354,6 +369,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // RPER1 Illegal Function (rpILF)
    //
    // Trace
+   //  M7774/RG0/E24
    //
 
    reg rpILF;
@@ -374,7 +390,7 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
    // Build the RPER1 Register
    //
 
-   assign rpER1 = {rpDCK, rpUNS, rpOPI, rpDTE, rpWLE, rpIAE, rpAOE, rpHCRC,
+   assign rpER1 = {rpDCK, rpUNS, rpIOP, rpDTE, rpWLE, rpIAE, rpAOE, rpHCRC,
                    rpHCE, rpECH, rpWCF, rpFER, rpPAR, rpRMR, rpILR, rpILF};
 
 endmodule

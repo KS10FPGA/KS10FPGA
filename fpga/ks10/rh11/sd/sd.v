@@ -80,7 +80,6 @@ module SD(clk, rst,
    output        sdINCWORD;             // Increment Word Count
    output        sdINCSECT;             // Increment Sector
    output        sdSTAT;                // Status
-   // Diagnostics
    output [0:63] sdDEBUG;               // Debug Output
 
    //
@@ -258,8 +257,8 @@ module SD(clk, rst,
           begin
              sdERR      <= 0;
              sdVAL      <= 0;
-             sdRDCNT    <= 0;
              sdWRCNT    <= 0;
+             sdRDCNT    <= 0;
              wdCNT      <= 0;
              sectADDR   <= 0;
              sdINCSECT  <= 0;
@@ -1998,7 +1997,7 @@ module SD(clk, rst,
    // Debug Output
    //
 
-   assign sdDEBUG = {sdERR, state, sdVAL, sdWRCNT, sdRDCNT, 24'b0};
+   assign sdDEBUG = {state, sdERR, sdVAL, sdWRCNT, sdRDCNT, 8'h66, 8'h99, 8'h43};
 
    //
    // Chipscode debugging

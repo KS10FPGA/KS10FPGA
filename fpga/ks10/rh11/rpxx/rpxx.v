@@ -62,7 +62,7 @@
 
 module RPXX(clk, rst, clr,
             unitSEL, incSECTOR, ataCLR, devADDRI, devDATAI, rpCD, rpWP,
-            rpCS1, rpDA, rpDS, rpER1, rpLA, rpMR, rpDT, rpOF, rpDC, rpCC,
+            rpCS1, rpDA, rpDS, rpER1, rpLA, rpMR, rpDT, rpOF, rpDC, rpCC, rpER2, rpER3,
             rpSDOP, rpSDREQ, rpSDACK, rpSDADDR);
 
    input          clk;                          // Clock
@@ -85,6 +85,8 @@ module RPXX(clk, rst, clr,
    output [15: 0] rpOF;                         // OF  Register
    output [15: 0] rpDC;                         // DC  Register
    output [15: 0] rpCC;                         // CC  Register
+   output [15: 0] rpER2;                        // ER2 Register
+   output [15: 0] rpER3;                        // ER3 Register
    output [ 1: 0] rpSDOP;                       // SD Operation
    output         rpSDREQ;                      // SD Request
    input          rpSDACK;                      // SD Complete Acknowledge
@@ -159,12 +161,18 @@ module RPXX(clk, rst, clr,
    //
    // Register Decode
    //
+   // Trace
+   //   M7774/RG5/E75
+   //
 
-   wire rpcs1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & unitSEL;
-   wire rpdaWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]) & unitSEL;
-   wire rper1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]) & unitSEL;
-   wire rpofWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]) & unitSEL;
-   wire rpdcWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]) & unitSEL;
+   wire rpcs1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & unitSEL;    //  0
+   wire rper1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]) & unitSEL;    //  2
+   wire rpmrWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]) & unitSEL;    //  3
+   wire rpofWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]) & unitSEL;    //  9
+   wire rpdaWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]) & unitSEL;    //  5
+   wire rpdcWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]) & unitSEL;    // 10
+   wire rper2WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]) & unitSEL;    // 12
+   wire rper3WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]) & unitSEL;    // 13
 
    //
    // Big-endian to little-endian data bus swap
@@ -177,6 +185,7 @@ module RPXX(clk, rst, clr,
    //
 
    wire [15:0] rpCS1;
+   wire        rpGO = `rpCS1_GO(rpCS1);
 
    //
    // RPxx Disk Status Register (RPDS)
@@ -377,12 +386,6 @@ module RPXX(clk, rst, clr,
    assign rpLA = {4'b0, rpSA, 6'b0};
 
    //
-   // RPxx Maintenance Register
-   //
-
-   assign rpMR = 16'b0;
-
-   //
    // RPxx Offset (RPOF) Register
    //
 
@@ -411,6 +414,46 @@ module RPXX(clk, rst, clr,
       .rpdcWRITE  (rpdcWRITE & rpDRY),
       .incSECTOR  (incSECTOR & unitSEL),
       .rpDC       (rpDC)
+   );
+
+   //
+   // RPxx Maintenaince (RPMR) Register
+   //
+
+   RPMR MR (
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (clr),
+      .rpDATAI    (rpDATAI),
+      .rpmrWRITE  (rpmrWRITE),
+      .rpGO       (rpGO),
+      .rpMR       (rpMR)
+   );
+
+   //
+   // RPxx Error Status #2 (RPER2) Register
+   //
+
+   RPER2 ER2 (
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (clr),
+      .rpDATAI    (rpDATAI),
+      .rper2WRITE (rper2WRITE),
+      .rpER2      (rpER2)
+   );
+
+   //
+   // RPxx Error Status #3 (RPER3) Register
+   //
+
+   RPER3 ER3 (
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (clr),
+      .rpDATAI    (rpDATAI),
+      .rper3WRITE (rper3WRITE),
+      .rpER3      (rpER3)
    );
 
    //
