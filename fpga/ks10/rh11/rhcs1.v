@@ -236,7 +236,7 @@ module RHCS1(clk, rst,
    //  Supplied via massbus
    //
 
-   wire [5:1] cs1FUN = `rpCS1_GO(rpCS1);
+   wire [5:1] cs1FUN = `rpCS1_FUN(rpCS1);
 
    //
    // CS1 GO (from RPxx)

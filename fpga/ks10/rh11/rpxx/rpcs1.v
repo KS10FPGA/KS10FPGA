@@ -40,11 +40,10 @@
 
 `include "rpcs1.vh"
 
-module RPCS1(clk, rst, clrFUN, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
+module RPCS1(clk, rst, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          clrFUN;                       // Clear function
    input          clrGO;                        // Clear Go bit
    input  [35: 0] rpDATAI;                      // RH Data In
    input          rpcs1WRITE;                   // Write to CS1
@@ -54,6 +53,7 @@ module RPCS1(clk, rst, clrFUN, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
    // RPCS1 Data Valid (DVA)
    //
    // Trace
+   //  M7774/RG6/E16
    //
 
    wire rpDVA = 1;
@@ -62,6 +62,7 @@ module RPCS1(clk, rst, clrFUN, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
    // RPCS1 Function (FUN)
    //
    // Trace
+   //  M7774/RG3/E25
    //
 
    reg [5:1] rpFUN;
@@ -71,9 +72,7 @@ module RPCS1(clk, rst, clrFUN, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
         if (rst)
           rpFUN <= 0;
         else
-          if (clrFUN)
-            rpFUN <= 0;
-          else if (rpcs1WRITE)
+          if (rpcs1WRITE)
             rpFUN <= `rpCS1_FUN(rpDATAI);
      end
 
@@ -81,6 +80,7 @@ module RPCS1(clk, rst, clrFUN, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
    // RPCS1 GO
    //
    // Trace
+   //  M7774/RG3/E44
    //
 
    reg rpGO;

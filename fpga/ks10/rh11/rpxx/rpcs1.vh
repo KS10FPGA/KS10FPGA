@@ -54,22 +54,22 @@
 //  It includes the GO bit, apparently.  The LSB is always set.
 //
 
-`define funNOP     6'o00        // 01
-`define funUNLOAD  6'o01        // 03
-`define funSEEK    6'o02        // 05
-`define funRECAL   6'o03        // 07
-`define funCLEAR   6'o04        // 11
-`define funRELEASE 6'o05        // 13
-`define funOFFSET  6'o06        // 15
-`define funRETURN  6'o07        // 17
-`define funPRESET  6'o10        // 21
-`define funPAKACK  6'o11        // 23
-`define funSEARCH  6'o14        // 31
-`define funWRCHK   6'o24        // 51
-`define funWRCHKH  6'o25        // 53
-`define funWRITE   6'o30        // 61
-`define funWRITEH  6'o31        // 63
-`define funREAD    6'o34        // 71
-`define funREADH   6'o35        // 73
+`define funNOP     5'o00        // 01
+`define funUNLOAD  5'o01        // 03
+`define funSEEK    5'o02        // 05
+`define funRECAL   5'o03        // 07
+`define funCLEAR   5'o04        // 11
+`define funRELEASE 5'o05        // 13
+`define funOFFSET  5'o06        // 15
+`define funRETURN  5'o07        // 17
+`define funPRESET  5'o10        // 21
+`define funPAKACK  5'o11        // 23
+`define funSEARCH  5'o14        // 31
+`define funWRCHK   5'o24        // 51
+`define funWRCHKH  5'o25        // 53
+`define funWRITE   5'o30        // 61
+`define funWRITEH  5'o31        // 63
+`define funREAD    5'o34        // 71
+`define funREADH   5'o35        // 73
 
 `endif
