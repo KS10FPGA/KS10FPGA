@@ -43,32 +43,32 @@
 `include "rpds.vh"
 `include "rper1.vh"
 
-module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
-             state, stateCLEAR, stateINVADDR, stateILLFUN, stateWRLOCK,
-             rpDATAI, rpcs1WRITE, rpdaWRITE, rpofWRITE, rpdcWRITE,
-             rper1WRITE, incSECTOR, rpDS, rpDA, rpDC, rpER1);
+module RPER1(clk, rst, clr,
+             setDCK, setUNS, setIOP, setDTE, setWLE, setIAE, setAOE, setHCRC,
+             setHCE, setECH, setWCF, setFER, setPAR, setRMR, setILR, setILF,
+             data, write, rpER1);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
-   input  [ 5: 0] lastSECTOR;                   // Last sector number
-   input  [ 5: 0] lastTRACK;                    // Last track number
-   input  [ 9: 0] lastCYL;                      // Last cylinder number
-   input  [ 4: 0] state;                        // State
-   input  [ 4: 0] stateCLEAR;                   // StateCLEAR
-   input  [ 4: 0] stateINVADDR;                 // stateINVADDR
-   input  [ 4: 0] stateILLFUN;                  // stateILLFUN
-   input  [ 4: 0] stateWRLOCK;                  // StateWRLOCK
-   input  [35: 0] rpDATAI;                      // RP Data In
-   input          rpcs1WRITE;                   // Write CS1 register
-   input          rpdaWRITE;                    // Write DA register
-   input          rpofWRITE;                    // Write OF register
-   input          rpdcWRITE;                    // Write DC register
-   input          rper1WRITE;                   // Write ER1 register
-   input          incSECTOR;                    // Increment sector
-   input  [15: 0] rpDS;                         // rpDS register
-   input  [15: 0] rpDA;                         // rpDA register
-   input  [15: 0] rpDC;                         // rpDC register
+   input          setDCK;                       // Set DCK
+   input          setUNS;                       // Set UNS
+   input          setIOP;                       // Set IOP
+   input          setDTE;                       // Set DTE
+   input          setWLE;                       // Set WLE
+   input          setIAE;                       // Set IAE
+   input          setAOE;                       // Set AOE
+   input          setHCRC;                      // Set HCRC
+   input          setHCE;                       // Set HCE
+   input          setECH;                       // Set ECH
+   input          setWCF;                       // Set WCF
+   input          setFER;                       // Set FER
+   input          setPAR;                       // Set PAR
+   input          setRMR;                       // Set RMR
+   input          setILR;                       // Set ILR
+   input          setILF;                       // Set ILF
+   input  [35: 0] data;                         // Data in
+   input          write;                        // Write
    output [15: 0] rpER1;                        // rpER1 register
 
    //
@@ -84,10 +84,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpDCK <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpDCK <= 0;
-          else if (rper1WRITE)
-            rpDCK <= `rpER1_DCK(rpDATAI);
+          else if (setDCK)
+            rpDCK <= 1;
+          else if (write)
+            rpDCK <= `rpER1_DCK(data);
      end
 
    //
@@ -103,10 +105,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpUNS <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpUNS <= 0;
-          else if (rper1WRITE)
-            rpUNS <= `rpER1_UNS(rpDATAI);
+          else if (setUNS)
+            rpUNS <= 1;
+          else if (write)
+            rpUNS <= `rpER1_UNS(data);
      end
 
    //
@@ -122,10 +126,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpIOP <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpIOP <= 0;
-          else if (rper1WRITE)
-            rpIOP <= `rpER1_IOP(rpDATAI);
+          else if (setIOP)
+            rpIOP <= 1;
+          else if (write)
+            rpIOP <= `rpER1_IOP(data);
      end
 
    //
@@ -141,10 +147,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpDTE <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpDTE <= 0;
-          else if (rper1WRITE)
-            rpDTE <= `rpER1_DTE(rpDATAI);
+          else if (setDTE)
+            rpDTE <= 1;
+          else if (write)
+            rpDTE <= `rpER1_DTE(data);
      end
 
    //
@@ -160,12 +168,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpWLE <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpWLE <= 0;
-          else if (rper1WRITE)
-            rpWLE <= `rpER1_WLE(rpDATAI);
-          else if (state == stateWRLOCK)
+          else if (setWLE)
             rpWLE <= 1;
+          else if (write)
+            rpWLE <= `rpER1_WLE(data);
      end
 
    //
@@ -181,12 +189,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpIAE <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpIAE <= 0;
-          else if (rper1WRITE)
-            rpIAE <= `rpER1_IAE(rpDATAI);
-          else if (state == stateINVADDR)
+          else if (setIAE)
             rpIAE <= 1;
+          else if (write)
+            rpIAE <= `rpER1_IAE(data);
      end
 
    //
@@ -202,12 +210,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpAOE <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpAOE <= 0;
-          else if (rper1WRITE)
-            rpAOE <= `rpER1_AOE(rpDATAI);
-          else if (incSECTOR  & (`rpDA_SA(rpDA) == lastSECTOR) & (`rpDA_TA(rpDA) == lastTRACK) & (`rpDC_DCA(rpDC) == lastCYL))
+          else if (setAOE)
             rpAOE <= 1;
+          else if (write)
+            rpAOE <= `rpER1_AOE(data);
      end
 
    //
@@ -223,10 +231,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpHCRC <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpHCRC <= 0;
-          else if (rper1WRITE)
-            rpHCRC <= `rpER1_HCRC(rpDATAI);
+          else if (setHCRC)
+            rpHCRC <= 1;
+          else if (write)
+            rpHCRC <= `rpER1_HCRC(data);
      end
 
    //
@@ -242,10 +252,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpHCE <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpHCE <= 0;
-          else if (rper1WRITE)
-            rpHCE <= `rpER1_HCE(rpDATAI);
+          else if (setHCE)
+            rpHCE <= 1;
+          else if (write)
+            rpHCE <= `rpER1_HCE(data);
      end
 
    //
@@ -261,10 +273,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpECH <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpECH <= 0;
-          else if (rper1WRITE)
-            rpECH <= `rpER1_ECH(rpDATAI);
+          else if (setECH)
+            rpECH <= 1;
+          else if (write)
+            rpECH <= `rpER1_ECH(data);
      end
 
    //
@@ -280,10 +294,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpWCF <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpWCF <= 0;
-          else if (rper1WRITE)
-            rpWCF <= `rpER1_WCF(rpDATAI);
+          else if (setWCF)
+            rpWCF <= 1;
+          else if (write)
+            rpWCF <= `rpER1_WCF(data);
      end
 
    //
@@ -299,10 +315,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpFER <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpFER <= 0;
-          else if (rper1WRITE)
-            rpFER <= `rpER1_FER(rpDATAI);
+          else if (setFER)
+            rpFER <= 1;
+          else if (write)
+            rpFER <= `rpER1_FER(data);
      end
 
    //
@@ -318,10 +336,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpPAR <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpPAR <= 0;
-          else if (rper1WRITE)
-            rpPAR <= `rpER1_PAR(rpDATAI);
+          else if (setPAR)
+            rpPAR <= 1;
+          else if (write)
+            rpPAR <= `rpER1_PAR(data);
      end
 
    //
@@ -337,13 +357,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpRMR <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpRMR <= 0;
-          else if (rper1WRITE)
-            rpRMR <= `rpER1_RMR(rpDATAI);
-          else if (!`rpDS_DRY(rpDS))
-            if (rpcs1WRITE | rper1WRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)
-              rpRMR <= 1;
+          else if (setRMR)
+            rpRMR <= 1;
+          else if (write)
+            rpRMR <= `rpER1_RMR(data);
      end
 
    //
@@ -359,10 +378,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpILR <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpILR <= 0;
-          else if (rper1WRITE)
-            rpILR <= `rpER1_ILR(rpDATAI);
+          else if (setILR)
+            rpILR <= 1;
+          else if (write)
+            rpILR <= `rpER1_ILR(data);
      end
 
    //
@@ -378,12 +399,12 @@ module RPER1(clk, rst, clr, lastSECTOR, lastTRACK, lastCYL,
         if (rst)
           rpILF <= 0;
         else
-          if (clr | (state == stateCLEAR))
+          if (clr)
             rpILF <= 0;
-          else if (rper1WRITE)
-            rpILF <= `rpER1_ILF(rpDATAI);
-          else if (state == stateILLFUN)
+          else if (setILF)
             rpILF <= 1;
+          else if (write)
+            rpILF <= `rpER1_ILF(data);
      end
 
    //

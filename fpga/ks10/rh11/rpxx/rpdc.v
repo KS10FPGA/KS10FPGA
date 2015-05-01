@@ -40,21 +40,23 @@
 
 `include "rpdc.vh"
 
-module RPDC(clk, rst, clr, cmdPRESET, rpDATAI, rpdcWRITE, rpINCCYL, rpDC);
+module RPDC(clk, rst, clr, data, write, incr, rpDC);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
-   input          cmdPRESET;                    // Preset command
-   input  [35: 0] rpDATAI;                      // RP Data In
-   input          rpdcWRITE;                    // DC Write
-   input          rpINCCYL;                     // Increment cylinder
+   input  [35: 0] data;                         // Data in
+   input          write;                        // Write
+   input          incr;                         // Increment cylinder
    output [15: 0] rpDC;                         // rpDC Output
 
    //
    // RPDC Desired Cylinder Address (DCA)
    //
    // Trace
+   //  M7786/SS1/E9
+   //  M7786/SS1/E11
+   //  M7786/SS1/E12
    //
 
    reg [9:0] rpDCA;
@@ -63,11 +65,11 @@ module RPDC(clk, rst, clr, cmdPRESET, rpDATAI, rpdcWRITE, rpINCCYL, rpDC);
         if (rst)
           rpDCA <= 0;
         else
-          if (clr | cmdPRESET)
+          if (clr)
             rpDCA <= 0;
-          else if (rpdcWRITE)
-            rpDCA <= `rpDC_DCA(rpDATAI);
-          else if (rpINCCYL)
+          else if (write)
+            rpDCA <= `rpDC_DCA(data);
+          else if (incr)
             rpDCA <= rpDCA + 1'b1;
      end
 

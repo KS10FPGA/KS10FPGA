@@ -42,34 +42,27 @@
 `include "rpdc.vh"
 `include "rpds.vh"
 
-module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
-            state, stateATA, stateCLEAR, stateIDLE, stateOFFSET,
-            statePRESET, statePAKACK, stateCENTER, stateSEEKDLY,
-            rpDA, rpDC, rpER1, rpER2, rpER3, rpDS);
+module RPDS(clk, rst,
+            clrATA, setATA, setERR, setPIP, setMOL, setWRL, setLST,
+            setPGM, setDPR, setDRY, clrVV,  setVV,  clrOM,  setOM,
+            rpDS);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          clr;                          // Clear
-   input          ataCLR;                       // Clear attention
-   input  [ 5: 0] lastSECTOR;                   // Last sector number
-   input  [ 5: 0] lastTRACK;                    // Last track number
-   input  [ 9: 0] lastCYL;                      // Last cylinder number
-   input          rpCD;                         // RP Card Detected
-   input          rpWP;                         // RP Card Write Protected
-   input  [ 4: 0] state;                        // State
-   input  [ 4: 0] stateATA;                     // StateATA
-   input  [ 4: 0] stateCLEAR;                   // StateCLEAR
-   input  [ 4: 0] stateIDLE;                    // StateIDLE
-   input  [ 4: 0] stateOFFSET;                  // StateOFFSET
-   input  [ 4: 0] statePRESET;                  // StatePRESET
-   input  [ 4: 0] statePAKACK;                  // StatePAKACK
-   input  [ 4: 0] stateCENTER;                  // StateCENTER
-   input  [ 4: 0] stateSEEKDLY;                 // StateSEELDLY
-   input  [15: 0] rpDA;                         // rpDA register
-   input  [15: 0] rpDC;                         // rpDC register
-   input  [15: 0] rpER1;                        // rpER1 register
-   input  [15: 0] rpER2;                        // rpER2 register
-   input  [15: 0] rpER3;                        // rpER3 register
+   input          setATA;                       // Set ATA
+   input          clrATA;                       // Clr ATA
+   input          setERR;                       // Set ERR
+   input          setPIP;                       // Set PIP
+   input          setMOL;                       // Set MOL
+   input          setWRL;                       // Set WRL
+   input          setLST;                       // Set LST
+   input          setPGM;                       // Set PGM
+   input          setDPR;                       // Set DPR
+   input          setDRY;                       // Set DRY
+   input          clrVV;                        // Clr VV
+   input          setVV;                        // Set VV
+   input          clrOM;                        // Clr OM
+   input          setOM;                        // Set OM
    output [15: 0] rpDS;                         // rpDS register
 
    //
@@ -86,9 +79,9 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
         if (rst)
           rpATA <= 0;
         else
-          if (clr | ataCLR | (state == stateCLEAR))
+          if (clrATA)
             rpATA <= 0;
-          else if (state == stateATA)
+          else if (setATA)
             rpATA <= 1;
      end
 
@@ -111,9 +104,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    //  M7776/EC7/E95
    //
 
-   wire rpERR = ((rpER1 != 0) |
-                 (rpER2 != 0) |
-                 (rpER3 != 0));
+   wire rpERR = setERR;
 
    //
    // RPDS Positioning In Progress (rpPIP)
@@ -124,7 +115,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    //  M7774/RG6/E23
    //
 
-   wire rpPIP = (state == stateSEEKDLY);
+   wire rpPIP = setPIP;
 
    //
    // RPDS Medium On-Line (rpMOL)
@@ -133,7 +124,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    //  M7774/RG6/E23
    //
 
-   wire rpMOL = rpCD;
+   wire rpMOL = setMOL;
 
    //
    // RPDS Write Lock (rpWRL)
@@ -142,7 +133,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    //  M7774/RG6/E16
    //
 
-   wire rpWRL = rpWP;
+   wire rpWRL = setWRL;
 
    //
    // RPDS Last Sector Transferred (rpLST)
@@ -152,7 +143,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    //  M7774/RG6/E40
    //
 
-   wire rpLST = (`rpDA_SA(rpDA) == lastSECTOR) & (`rpDA_TA(rpDA) == lastTRACK) & (`rpDC_DCA(rpDC) == lastCYL);
+   wire rpLST = setLST;
 
    //
    // RPDS Programmable (rpPGM)
@@ -162,7 +153,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    //  M7774/RG6/E16
    //
 
-   wire rpPGM = 1'b0;
+   wire rpPGM = setPGM;
 
    //
    // RPDS Drive Present (rpDPR)
@@ -171,7 +162,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    //  M7774/RG6/E16
    //
 
-   wire rpDPR = 1'b1;
+   wire rpDPR = setDPR;
 
    //
    // RPDS Drive Ready (rpDRY)
@@ -180,7 +171,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    //  M7774/RG6/E16
    //
 
-   wire rpDRY = (state == stateIDLE);
+   wire rpDRY = setDRY;
 
    //
    // RPDS Volume Valid (rpVV)
@@ -201,41 +192,10 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
         if (rst)
           rpVV <= 0;
         else
-          if (clr)
+          if (clrVV)
             rpVV <= 0;
-          else
-            case (state)
-              stateIDLE:
-                rpVV <= rpVV & rpCD;
-              statePRESET:
-                rpVV <= rpCD;
-              statePAKACK:
-                rpVV <= rpCD;
-            endcase
-     end
-
-   //
-   // RPDS Offset Mode (rpOM)
-   //
-   // Trace
-   //  FIXME
-   //
-
-   reg rpOM;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          rpOM <= 0;
-        else
-          if (clr)
-            rpOM <= 0;
-          else
-            case (state)
-              stateOFFSET:
-                rpOM <= 1;
-              stateCENTER:
-                rpOM <= 0;
-            endcase
+          else if (setVV)
+            rpVV <= 1;
      end
 
    //
@@ -243,6 +203,6 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    //
 
    assign rpDS = {rpATA, rpERR, rpPIP, rpMOL, rpWRL, rpLST,
-                  rpPGM, rpDPR, rpDRY, rpVV,  5'b0,  rpOM};
+                  rpPGM, rpDPR, rpDRY, rpVV,  6'b0};
 
 endmodule

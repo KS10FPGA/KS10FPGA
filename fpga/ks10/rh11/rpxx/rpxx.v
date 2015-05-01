@@ -51,6 +51,7 @@
 
 `include "rpxx.vh"
 `include "rpda.vh"
+`include "rpcc.vh"
 `include "rpdc.vh"
 `include "rpds.vh"
 `include "rpof.vh"
@@ -223,6 +224,13 @@ module RPXX(clk, rst, clr,
    wire [ 9:0] rpDCA = `rpDC_DCA(rpDC);
 
    //
+   // RPxx Current Cylinder (RPCC) Register
+   //
+
+   wire [15:0] rpCC;
+   wire [ 9:0] rpCCA = `rpCC_CCA(rpCC);
+
+   //
    // SD Sector Address
    //
 
@@ -280,9 +288,7 @@ module RPXX(clk, rst, clr,
    // Master Clear
    //
 
-   // wire masterCLR = (( )
-   //                    );
-
+   wire masterCLR = clr | cmdDRVCLR;
 
    //
    // State Definition
@@ -291,17 +297,18 @@ module RPXX(clk, rst, clr,
    localparam [4:0] stateIDLE    =  0,
                     stateSEEK    =  1,
                     stateSEEKDLY =  2,
-                    stateROTDLY  =  3,
-                    stateWAITSD  =  4,
-                    stateCLEAR   =  5,
-                    stateOFFSET  =  6,
-                    stateCENTER  =  7,
-                    statePRESET  =  8,
-                    statePAKACK  =  9,
-                    stateILLFUN  = 10,
-                    stateINVADDR = 11,
-                    stateWRLOCK  = 12,
-                    stateATA     = 13,
+                    stateSEEKEND =  3,
+                    stateROTDLY  =  4,
+                    stateWAITSD  =  5,
+                    stateCLEAR   =  6,
+                    stateOFFSET  =  7,
+                    stateCENTER  =  8,
+                    statePRESET  =  9,
+                    statePAKACK  = 10,
+                    stateILLFUN  = 11,
+                    stateINVADDR = 12,
+                    stateWRLOCK  = 13,
+                    stateATA     = 14,
                     stateDONE    = 31;
    reg [ 4: 0] state;                   // RPxx State
 
@@ -341,27 +348,20 @@ module RPXX(clk, rst, clr,
    RPDS DS (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr),
-      .ataCLR      (ataCLR),
-      .lastSECTOR  (lastSECTOR),
-      .lastTRACK   (lastTRACK),
-      .lastCYL     (lastCYL),
-      .rpCD        (rpCD),
-      .rpWP        (rpWP),
-      .state       (state),
-      .stateATA    (stateATA),
-      .stateCLEAR  (stateCLEAR),
-      .stateIDLE   (stateIDLE),
-      .stateOFFSET (stateOFFSET),
-      .statePRESET (statePRESET),
-      .statePAKACK (statePAKACK),
-      .stateCENTER (stateCENTER),
-      .stateSEEKDLY(stateSEEKDLY),
-      .rpDA        (rpDA),
-      .rpDC        (rpDC),
-      .rpER1       (rpER1),
-      .rpER2       (rpER2),
-      .rpER3       (rpER3),
+      .clrATA      (masterCLR),
+      .setATA      (state == stateATA),
+      .setERR      ((rpER1 != 0) | (rpER2 != 0) | (rpER3 != 0)),
+      .setPIP      (state == stateSEEKDLY),
+      .setMOL      (rpCD),
+      .setWRL      (rpWP),
+      .setLST      ((`rpDA_SA(rpDA) == lastSECTOR) & (`rpDA_TA(rpDA) == lastTRACK) & (`rpDC_DCA(rpDC) == lastCYL)),
+      .setPGM      (1'b0),
+      .setDPR      (1'b1),
+      .setDRY      (state == stateIDLE),
+      .clrVV       (clr | !rpCD),
+      .setVV       ((rpCD & (state == statePRESET)) | (rpCD & (state == statePAKACK))),
+      .clrOM       (clr | (state == stateCENTER)),
+      .setOM       (state == stateOFFSET),
       .rpDS        (rpDS)
    );
 
@@ -372,25 +372,25 @@ module RPXX(clk, rst, clr,
    RPER1 ER1 (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr),
-      .lastSECTOR  (lastSECTOR),
-      .lastTRACK   (lastTRACK),
-      .lastCYL     (lastCYL),
-      .state       (state),
-      .stateCLEAR  (stateCLEAR),
-      .stateINVADDR(stateINVADDR),
-      .stateILLFUN (stateILLFUN),
-      .stateWRLOCK (stateWRLOCK),
-      .rpDATAI     (rpDATAI),
-      .rpcs1WRITE  (rpcs1WRITE),
-      .rpdaWRITE   (rpdaWRITE),
-      .rpofWRITE   (rpofWRITE),
-      .rpdcWRITE   (rpdcWRITE),
-      .rper1WRITE  (rper1WRITE),
-      .incSECTOR   (incSECTOR),
-      .rpDS        (rpDS),
-      .rpDA        (rpDA),
-      .rpDC        (rpDC),
+      .clr         (masterCLR),
+      .setDCK      (1'b0),
+      .setUNS      (1'b0),
+      .setIOP      (1'b0),
+      .setDTE      (1'b0),
+      .setWLE      (state == stateWRLOCK),
+      .setIAE      (state == stateINVADDR),
+      .setAOE      (incSECTOR  & (`rpDA_SA(rpDA) == lastSECTOR) & (`rpDA_TA(rpDA) == lastTRACK) & (`rpDC_DCA(rpDC) == lastCYL)),
+      .setHCRC     (1'b0),
+      .setHCE      (1'b0),
+      .setECH      (1'b0),
+      .setWCF      (1'b0),
+      .setFER      (1'b0),
+      .setPAR      (1'b0),
+      .setRMR      (!`rpDS_DRY(rpDS) & (rpcs1WRITE | rper1WRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)),
+      .setILR      (1'b0),
+      .setILF      (state == stateILLFUN),
+      .data        (rpDATAI),
+      .write       (rper1WRITE),
       .rpER1       (rpER1)
    );
 
@@ -422,12 +422,24 @@ module RPXX(clk, rst, clr,
    RPDC DC (
       .clk        (clk),
       .rst        (rst),
-      .clr        (clr),
-      .cmdPRESET  (state == statePRESET),
-      .rpDATAI    (rpDATAI),
-      .rpdcWRITE  (rpdcWRITE & rpDRY),
-      .rpINCCYL   (incSECTOR & (rpTA == lastTRACK) & (rpSA == lastSECTOR)),
+      .clr        (state == statePRESET),
+      .data       (rpDATAI),
+      .write      (rpdcWRITE & rpDRY),
+      .incr       (incSECTOR & (rpTA == lastTRACK) & (rpSA == lastSECTOR)),
       .rpDC       (rpDC)
+   );
+
+   //
+   // RPxx Current Cylinder (RPCC) Register
+   //
+
+   RPCC CC (
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (state == statePRESET),
+      .data       (rpDC),
+      .write      (state == stateSEEKEND),
+      .rpCC       (rpCC)
    );
 
    //
@@ -437,10 +449,10 @@ module RPXX(clk, rst, clr,
    RPMR MR (
       .clk        (clk),
       .rst        (rst),
-      .clr        (clr | (state == stateCLEAR)),
-      .rpDATAI    (rpDATAI),
-      .rpmrWRITE  (rpmrWRITE),
-      .rpGO       (rpGO),
+      .clr        (masterCLR),
+      .data       (rpDATAI),
+      .write      (rpmrWRITE),
+      .go         (rpGO),
       .rpMR       (rpMR)
    );
 
@@ -451,9 +463,9 @@ module RPXX(clk, rst, clr,
    RPER2 ER2 (
       .clk        (clk),
       .rst        (rst),
-      .clr        (clr),
-      .rpDATAI    (rpDATAI),
-      .rper2WRITE (rper2WRITE),
+      .clr        (masterCLR),
+      .data       (rpDATAI),
+      .write      (rper2WRITE),
       .rpER2      (rpER2)
    );
 
@@ -464,9 +476,9 @@ module RPXX(clk, rst, clr,
    RPER3 ER3 (
       .clk        (clk),
       .rst        (rst),
-      .clr        (clr),
-      .rpDATAI    (rpDATAI),
-      .rper3WRITE (rper3WRITE),
+      .clr        (masterCLR),
+      .data       (rpDATAI),
+      .write      (rper3WRITE),
       .rpER3      (rpER3)
    );
 
@@ -493,15 +505,12 @@ module RPXX(clk, rst, clr,
 
    reg [ 1: 0] rpSDOP;                  // SD Operation
    reg [24: 0] delay;                   // RPxx Delay Simulation
-   reg [ 9: 0] rpCCA;                   // Current Cylinder Address
-   reg [ 9: 0] tempCYL;                 // Temporary Cylinder
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
              delay  <= 0;
-             rpCCA  <= 0;
              rpSDOP <= `sdopNOP;
              state  <= stateIDLE;
           end
@@ -510,7 +519,6 @@ module RPXX(clk, rst, clr,
              if (clr)
                begin
                   delay  <= 0;
-                  rpCCA  <= 0;
                   rpSDOP <= `sdopNOP;
                   state  <= stateIDLE;
                end
@@ -558,9 +566,9 @@ module RPXX(clk, rst, clr,
                                  state <= stateILLFUN;
                                else
                                  begin
-                                    tempCYL <= 0;
-                                    delay   <= seekDELAY(0, rpCCA);
-                                    state   <= stateSEEK;
+                                    rpSDOP <= `sdopNOP;
+                                    delay  <= seekDELAY(0, rpCCA);
+                                    state  <= stateSEEK;
                                  end
                             end
 
@@ -578,16 +586,16 @@ module RPXX(clk, rst, clr,
                             begin
                                if (rpERR)
                                  state <= stateILLFUN;
-                               else if ((rpDCA <= lastCYL)  |
-                                        (rpTA <= lastTRACK) |
-                                        (rpSA <= lastSECTOR))
-                                 begin
-                                    tempCYL <= rpDCA;
-                                    delay   <= seekDELAY(rpDCA, rpCCA);
-                                    state   <= stateSEEK;
-                                 end
-                               else
+                               else if ((rpDCA > lastCYL) |
+                                        (rpTA  > lastTRACK) |
+                                        (rpSA  > lastSECTOR))
                                  state <= stateINVADDR;
+                               else
+                                 begin
+                                    rpSDOP <= `sdopNOP;
+                                    delay  <= seekDELAY(rpDCA, rpCCA);
+                                    state  <= stateSEEK;
+                                 end
                             end
 
                           //
@@ -602,9 +610,9 @@ module RPXX(clk, rst, clr,
                                  state <= stateILLFUN;
                                else
                                  begin
-                                    tempCYL <= 0;
-                                    delay   <= seekDELAY(0, rpCCA);
-                                    state   <= stateSEEK;
+                                    rpSDOP <= `sdopNOP;
+                                    delay  <= seekDELAY(0, rpCCA);
+                                    state  <= stateSEEK;
                                  end
                             end
 
@@ -642,7 +650,10 @@ module RPXX(clk, rst, clr,
 
                           `funOFFSET:
                             begin
-                               state <= stateATA;
+                               if (rpERR)
+                                 state <= stateILLFUN;
+                               else
+                                 state <= stateATA;
                             end
 
                           //
@@ -702,16 +713,16 @@ module RPXX(clk, rst, clr,
                             begin
                                if (rpERR)
                                  state <= stateILLFUN;
-                               else if ((rpDCA <= lastCYL)   |
-                                        (rpTA  <= lastTRACK) |
-                                        (rpSA  <= lastSECTOR))
-                                 begin
-                                    tempCYL <= rpDCA;
-                                    delay   <= seekDELAY(rpDCA, rpCCA);
-                                    state   <= stateSEEK;
-                                 end
-                               else
+                               else if ((rpDCA > lastCYL) |
+                                        (rpTA  > lastTRACK) |
+                                        (rpSA  > lastSECTOR))
                                  state <= stateINVADDR;
+                               else
+                                 begin
+                                    rpSDOP <= `sdopNOP;
+                                    delay  <= seekDELAY(rpDCA, rpCCA);
+                                    state  <= stateSEEK;
+                                 end
                             end
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -725,18 +736,14 @@ module RPXX(clk, rst, clr,
                             begin
                                if (rpERR)
                                  state <= stateILLFUN;
+                               else if ((rpDCA > lastCYL) |
+                                        (rpTA  > lastTRACK) |
+                                        (rpSA  > lastSECTOR))
+                                 state <= stateINVADDR;
                                else
                                  begin
-                                    if (simTIME)
-                                      begin
-                                         delay <= fiveMS;
-                                      end
-                                    else
-                                  begin
-                                     delay <= oneUS;
-                                  end
                                     rpSDOP <= `sdopWRCHK;
-                                    state  <= stateROTDLY;
+                                    state  <= stateSEEK;
                                  end
                             end
 
@@ -751,18 +758,14 @@ module RPXX(clk, rst, clr,
                                  state <= stateILLFUN;
                                else if (rpWP)
                                  state <= stateWRLOCK;
+                               else if ((rpDCA > lastCYL) |
+                                        (rpTA  > lastTRACK) |
+                                        (rpSA  > lastSECTOR))
+                                 state <= stateINVADDR;
                                else
                                  begin
-                                    if (simTIME)
-                                      begin
-                                         delay <= fiveMS;
-                                      end
-                                    else
-                                      begin
-                                         delay <= oneUS;
-                                      end
                                     rpSDOP <= `sdopWR;
-                                    state  <= stateROTDLY;
+                                    state  <= stateSEEK;
                                  end
                             end
 
@@ -775,18 +778,14 @@ module RPXX(clk, rst, clr,
                             begin
                                if (rpERR)
                                  state <= stateILLFUN;
+                               else if ((rpDCA > lastCYL) |
+                                        (rpTA  > lastTRACK) |
+                                        (rpSA  > lastSECTOR))
+                                 state <= stateINVADDR;
                                else
                                  begin
-                                    if (simTIME)
-                                      begin
-                                         delay <= fiveMS;
-                                      end
-                                    else
-                                      begin
-                                         delay <= oneUS;
-                                      end
                                     rpSDOP <= `sdopRD;
-                                    state  <= stateROTDLY;
+                                    state  <= stateSEEK;
                                  end
                             end
 
@@ -795,9 +794,8 @@ module RPXX(clk, rst, clr,
                           //
 
                           default:
-                            begin
-                               state <= stateILLFUN;
-                            end
+                            state <= stateILLFUN;
+
                         endcase
                    end
 
@@ -814,19 +812,36 @@ module RPXX(clk, rst, clr,
                  //
                  // stateSEEKDLY
                  //
-                 //  Simulate Seek Timing on Seek Commands.  Update Current
-                 //  Cylinder Address after delay.
+                 //  Simulate Seek Timing on Seek Commands.
+                 //
                  //
 
                  stateSEEKDLY:
                    begin
                       if (delay == 0)
-                        begin
-                           rpCCA <= tempCYL;
-                           state <= stateATA;
-                        end
+                        state <= stateSEEKEND;
                       else
                         delay <= delay - 1'b1;
+                   end
+
+                 //
+                 // stateSEEKEND
+                 //
+                 //  Update Current Cylinder Address after delay.
+                 //
+
+                 stateSEEKEND:
+                   begin
+                      if (rpSDOP == `sdopNOP)
+                        state <= stateATA;
+                      else
+                        begin
+                           if (simTIME)
+                             delay <= fiveMS;
+                           else
+                             delay <= oneUS;
+                           state <= stateROTDLY;
+                        end
                    end
 
                  //
@@ -852,9 +867,7 @@ module RPXX(clk, rst, clr,
                  stateWAITSD:
                    begin
                       if (rpSDACK)
-                        begin
-                           state <= stateDONE;
-                        end
+                        state <= stateDONE;
                    end
 
                  //
@@ -963,7 +976,6 @@ module RPXX(clk, rst, clr,
           end
      end
 
-   assign rpCC    = {6'b0, rpCCA};
    assign rpDT    = drvTYPE;
    assign rpSDREQ = (state == stateWAITSD);
 

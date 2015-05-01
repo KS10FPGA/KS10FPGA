@@ -40,14 +40,14 @@
 
 `include "rpmr.vh"
 
-module RPMR(clk, rst, clr, rpDATAI, rpmrWRITE, rpGO, rpMR);
+module RPMR(clk, rst, clr, data, write, go, rpMR);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
-   input  [35: 0] rpDATAI;                      // RP Data In
-   input          rpmrWRITE;                    // MR Write
-   input          rpGO;                         // RPCS1[GO]
+   input  [35: 0] data;                         // Data In
+   input          write;                        // Write
+   input          go;                           // Go
    output [15: 0] rpMR;                         // MR Output
 
    //
@@ -65,8 +65,8 @@ module RPMR(clk, rst, clr, rpDATAI, rpmrWRITE, rpGO, rpMR);
         else
           if (!rpDMD)
             rpDDAT <= 0;
-          else if (rpmrWRITE)
-            rpDDAT <= `rpMR_DDAT(rpDATAI);
+          else if (write)
+            rpDDAT <= `rpMR_DDAT(data);
      end
 
    //
@@ -84,8 +84,8 @@ module RPMR(clk, rst, clr, rpDATAI, rpmrWRITE, rpGO, rpMR);
         else
           if (!rpDMD)
             rpDSCK <= 0;
-          else if (rpmrWRITE)
-            rpDSCK <= `rpMR_DSCK(rpDATAI);
+          else if (write)
+            rpDSCK <= `rpMR_DSCK(data);
      end
 
    //
@@ -103,8 +103,8 @@ module RPMR(clk, rst, clr, rpDATAI, rpmrWRITE, rpGO, rpMR);
         else
           if (!rpDMD)
             rpDIND <= 0;
-          else if (rpmrWRITE)
-            rpDIND <= `rpMR_DIND(rpDATAI);
+          else if (write)
+            rpDIND <= `rpMR_DIND(data);
      end
 
    //
@@ -122,8 +122,8 @@ module RPMR(clk, rst, clr, rpDATAI, rpmrWRITE, rpGO, rpMR);
         else
           if (!rpDMD)
             rpDCLK <= 0;
-          else if (rpmrWRITE)
-            rpDCLK <= `rpMR_DCLK(rpDATAI);
+          else if (write)
+            rpDCLK <= `rpMR_DCLK(data);
      end
 
    //
@@ -142,8 +142,8 @@ module RPMR(clk, rst, clr, rpDATAI, rpmrWRITE, rpGO, rpMR);
         else
           if (clr)
             rpDMD <= 0;
-          else if (rpmrWRITE & !rpGO)
-            rpDMD <= rpDATAI;
+          else if (write & !go)
+            rpDMD <= `rpMR_DMD(data);
      end
 
    //
