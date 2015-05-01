@@ -110,14 +110,15 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX
 #	-D SIM_SMMON \
 #	-D CHIPSCOPE_CPU \
 #	-D CHIPSCOPE_MEM \
+#	-D SIM_SDHC \
+#	-D STOP_ON_COMPLETE \
+
 
 DEBUG_ARGS := \
-	-D CHIPSCOPE_MEM \
 	-D SIM_CTY \
-	-D SIM_SDHC \
+	-D SIM_SMMON \
 	-D ENABLE_TIMER \
 	-D STOP_ON_STUCK_PC \
-	-D STOP_ON_COMPLETE \
 	-D DEBUG_$(DIAGBASE) \
 	-D DEBUG=$(DIAGBASE) \
 	-D DIAG=$(DIAG)
@@ -220,6 +221,7 @@ RTL_FILES := \
 	rtl/ks10/uba/dz11/dzuart.v \
 	rtl/ks10/uba/dz11/dz11.v \
 	rtl/ks10/uba/rh11/rh11.v \
+	rtl/ks10/uba/rh11/rhintr.v \
 	rtl/ks10/uba/rh11/rhba.v \
 	rtl/ks10/uba/rh11/rhdb.v \
 	rtl/ks10/uba/rh11/rhwc.v \
@@ -228,9 +230,13 @@ RTL_FILES := \
 	rtl/ks10/uba/rh11/rpxx/sdaddr.v \
 	rtl/ks10/uba/rh11/rpxx/rpcs1.v \
 	rtl/ks10/uba/rh11/rpxx/rpda.v \
+	rtl/ks10/uba/rh11/rpxx/rpcc.v \
 	rtl/ks10/uba/rh11/rpxx/rpdc.v \
 	rtl/ks10/uba/rh11/rpxx/rpds.v \
 	rtl/ks10/uba/rh11/rpxx/rper1.v \
+	rtl/ks10/uba/rh11/rpxx/rper2.v \
+	rtl/ks10/uba/rh11/rpxx/rper3.v \
+	rtl/ks10/uba/rh11/rpxx/rpmr.v \
 	rtl/ks10/uba/rh11/rpxx/rpof.v \
 	rtl/ks10/uba/rh11/rpxx/rpxx.v \
 	rtl/ks10/uba/rh11/sd/sd.v \
@@ -309,10 +315,12 @@ INC_FILES := \
 	rtl/ks10/uba/rh11/rhcs2.vh \
 	rtl/ks10/uba/rh11/rpxx/rpcs1.vh \
 	rtl/ks10/uba/rh11/rpxx/rpda.vh \
+	rtl/ks10/uba/rh11/rpxx/rpcc.vh \
 	rtl/ks10/uba/rh11/rpxx/rpdc.vh \
 	rtl/ks10/uba/rh11/rpxx/rpds.vh \
 	rtl/ks10/uba/rh11/rpxx/rper1.vh \
 	rtl/ks10/uba/rh11/rpxx/rpof.vh \
+	rtl/ks10/uba/rh11/rpxx/rpmr.vh \
 	rtl/ks10/uba/rh11/rpxx/rpxx.vh \
 	rtl/ks10/uba/rh11/sd/sdspi.vh \
 	rtl/ks10/uba/rh11/sd/sd.vh \
@@ -1144,3 +1152,5 @@ check :
 	@-find rtl -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '\t'
 	@echo "Trailing white space in:"
 	@-find rtl -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '[ ]+$$'
+	@echo "Trailing FIXMEs in:"
+	@-find rtl -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -i 'fixme'
