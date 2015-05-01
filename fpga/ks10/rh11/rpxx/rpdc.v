@@ -40,19 +40,15 @@
 
 `include "rpdc.vh"
 
-module RPDC(clk, rst, clr, lastSECTOR, lastTRACK, rpSA, rpTA, rpDATAI,
-            rpdcWRITE, incSECTOR, rpDC);
+module RPDC(clk, rst, clr, cmdPRESET, rpDATAI, rpdcWRITE, rpINCCYL, rpDC);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
-   input  [ 5: 0] lastSECTOR;                   // Last sector number
-   input  [ 5: 0] lastTRACK;                    // Last track number
-   input  [ 5: 0] rpSA;                         // Sector address
-   input  [ 5: 0] rpTA;                         // Track address
+   input          cmdPRESET;                    // Preset command
    input  [35: 0] rpDATAI;                      // RP Data In
    input          rpdcWRITE;                    // DC Write
-   input          incSECTOR;                    // Increment sector
+   input          rpINCCYL;                     // Increment cylinder
    output [15: 0] rpDC;                         // rpDC Output
 
    //
@@ -67,11 +63,11 @@ module RPDC(clk, rst, clr, lastSECTOR, lastTRACK, rpSA, rpTA, rpDATAI,
         if (rst)
           rpDCA <= 0;
         else
-          if (clr)
+          if (clr | cmdPRESET)
             rpDCA <= 0;
           else if (rpdcWRITE)
             rpDCA <= `rpDC_DCA(rpDATAI);
-          else if (incSECTOR & (rpTA == lastTRACK) & (rpSA == lastSECTOR))
+          else if (rpINCCYL)
             rpDCA <= rpDCA + 1'b1;
      end
 

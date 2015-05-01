@@ -61,7 +61,7 @@
 `define funCLEAR   5'o04        // 11
 `define funRELEASE 5'o05        // 13
 `define funOFFSET  5'o06        // 15
-`define funRETURN  5'o07        // 17
+`define funCENTER  5'o07        // 17
 `define funPRESET  5'o10        // 21
 `define funPAKACK  5'o11        // 23
 `define funSEARCH  5'o14        // 31

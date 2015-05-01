@@ -142,7 +142,7 @@ module RPMR(clk, rst, clr, rpDATAI, rpmrWRITE, rpGO, rpMR);
         else
           if (clr)
             rpDMD <= 0;
-          else if (rpmrWRITE | !rpGO)
+          else if (rpmrWRITE & !rpGO)
             rpDMD <= rpDATAI;
      end
 

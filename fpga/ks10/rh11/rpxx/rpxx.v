@@ -265,10 +265,24 @@ module RPXX(clk, rst, clr,
    endfunction
 
    //
-   // rpGO
+   // Commands
+   //
+   // Trace
+   //  M7774/RG4/E60
    //
 
-   wire cmdGO = devWRITE & devIO & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & `rpCS1_GO(rpDATAI);
+   wire cmdGO     = rpcs1WRITE & `rpCS1_GO(rpDATAI);
+   wire cmdDRVCLR = cmdGO & (`rpCS1_FUN(rpDATAI) == `funCLEAR);         // Drive clear
+   wire cmdPRESET = cmdGO & (`rpCS1_FUN(rpDATAI) == `funPRESET);        // Read-in preset
+   wire cmdCENTER = cmdGO & (`rpCS1_FUN(rpDATAI) == `funCENTER);        // Return to center
+
+   //
+   // Master Clear
+   //
+
+   // wire masterCLR = (( )
+   //                    );
+
 
    //
    // State Definition
@@ -281,7 +295,7 @@ module RPXX(clk, rst, clr,
                     stateWAITSD  =  4,
                     stateCLEAR   =  5,
                     stateOFFSET  =  6,
-                    stateRETURN  =  7,
+                    stateCENTER  =  7,
                     statePRESET  =  8,
                     statePAKACK  =  9,
                     stateILLFUN  = 10,
@@ -298,7 +312,6 @@ module RPXX(clk, rst, clr,
    RPCS1 CS1 (
       .clk         (clk),
       .rst         (rst),
-      .clrFUN      (clr),
       .clrGO       (clr | (state == stateDONE)),
       .rpDATAI     (rpDATAI),
       .rpcs1WRITE  (rpcs1WRITE & rpDRY),
@@ -342,11 +355,13 @@ module RPXX(clk, rst, clr,
       .stateOFFSET (stateOFFSET),
       .statePRESET (statePRESET),
       .statePAKACK (statePAKACK),
-      .stateRETURN (stateRETURN),
+      .stateCENTER (stateCENTER),
       .stateSEEKDLY(stateSEEKDLY),
       .rpDA        (rpDA),
       .rpDC        (rpDC),
       .rpER1       (rpER1),
+      .rpER2       (rpER2),
+      .rpER3       (rpER3),
       .rpDS        (rpDS)
    );
 
@@ -392,7 +407,9 @@ module RPXX(clk, rst, clr,
    RPOF OF (
       .clk        (clk),
       .rst        (rst),
-      .clr        (clr | (state == statePRESET)),
+      .clr        (clr),
+      .cmdCENTER  (state == stateCENTER),
+      .cmdPRESET  (state == statePRESET),
       .rpDATAI    (rpDATAI),
       .rpofWRITE  (rpofWRITE & rpDRY),
       .rpOF       (rpOF)
@@ -405,14 +422,11 @@ module RPXX(clk, rst, clr,
    RPDC DC (
       .clk        (clk),
       .rst        (rst),
-      .clr        (clr | (state == statePRESET)),
-      .lastSECTOR (lastSECTOR),
-      .lastTRACK  (lastTRACK),
-      .rpSA       (rpSA),
-      .rpTA       (rpTA),
+      .clr        (clr),
+      .cmdPRESET  (state == statePRESET),
       .rpDATAI    (rpDATAI),
       .rpdcWRITE  (rpdcWRITE & rpDRY),
-      .incSECTOR  (incSECTOR & unitSEL),
+      .rpINCCYL   (incSECTOR & (rpTA == lastTRACK) & (rpSA == lastSECTOR)),
       .rpDC       (rpDC)
    );
 
@@ -423,7 +437,7 @@ module RPXX(clk, rst, clr,
    RPMR MR (
       .clk        (clk),
       .rst        (rst),
-      .clr        (clr),
+      .clr        (clr | (state == stateCLEAR)),
       .rpDATAI    (rpDATAI),
       .rpmrWRITE  (rpmrWRITE),
       .rpGO       (rpGO),
@@ -516,7 +530,7 @@ module RPXX(clk, rst, clr,
                         // Decode Command (Function)
                         //
 
-                        case (rpDATAI[6:0])
+                        case (`rpCS1_FUN(rpDATAI))
 
                           //
                           // NOP Command
@@ -595,7 +609,7 @@ module RPXX(clk, rst, clr,
                             end
 
                           //
-                          // Device Clear Command
+                          // Drive Clear Command
                           //
 
                           `funCLEAR:
@@ -640,7 +654,7 @@ module RPXX(clk, rst, clr,
                           // This command does nothing.
                           //
 
-                          `funRETURN:
+                          `funCENTER:
                             begin
                                if (rpERR)
                                  state <= stateILLFUN;
@@ -874,12 +888,12 @@ module RPXX(clk, rst, clr,
                    state <= stateDONE;
 
                  //
-                 // stateRETURN
+                 // stateCENTER
                  // This state modifies the bits that occur
                  // when Return Command function is executed.
                  //
 
-                 stateRETURN:
+                 stateCENTER:
                    state <= stateDONE;
 
                  //

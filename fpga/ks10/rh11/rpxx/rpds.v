@@ -44,8 +44,8 @@
 
 module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
             state, stateATA, stateCLEAR, stateIDLE, stateOFFSET,
-            statePRESET, statePAKACK, stateRETURN, stateSEEKDLY,
-            rpDA, rpDC, rpER1, rpDS);
+            statePRESET, statePAKACK, stateCENTER, stateSEEKDLY,
+            rpDA, rpDC, rpER1, rpER2, rpER3, rpDS);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
@@ -63,17 +63,21 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    input  [ 4: 0] stateOFFSET;                  // StateOFFSET
    input  [ 4: 0] statePRESET;                  // StatePRESET
    input  [ 4: 0] statePAKACK;                  // StatePAKACK
-   input  [ 4: 0] stateRETURN;                  // StateRETURN
+   input  [ 4: 0] stateCENTER;                  // StateCENTER
    input  [ 4: 0] stateSEEKDLY;                 // StateSEELDLY
    input  [15: 0] rpDA;                         // rpDA register
    input  [15: 0] rpDC;                         // rpDC register
    input  [15: 0] rpER1;                        // rpER1 register
+   input  [15: 0] rpER2;                        // rpER2 register
+   input  [15: 0] rpER3;                        // rpER3 register
    output [15: 0] rpDS;                         // rpDS register
 
    //
    // RPDS Attention (rpATA)
    //
    // Trace
+   //  M7787/DP2/E57
+   //  M7774/RG6/E23
    //
 
    reg rpATA;
@@ -92,14 +96,32 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    // RPDS Error (rpERR)
    //
    // Trace
+   //  M7774/RG0/E4
+   //  M7774/RG0/E29
+   //  M7774/RG0/E33
+   //  M7774/RG0/E46
+   //  M7774/RG0/E47
+   //  M7774/RG6/E23
+   //  M7776/EC6/E52
+   //  M7776/EC6/E80
+   //  M7776/EC6/E85
+   //  M7776/EC7/E49
+   //  M7776/EC7/E59
+   //  M7776/EC7/E85
+   //  M7776/EC7/E95
    //
 
-   wire rpERR = (rpER1 != 0);
+   wire rpERR = ((rpER1 != 0) |
+                 (rpER2 != 0) |
+                 (rpER3 != 0));
 
    //
    // RPDS Positioning In Progress (rpPIP)
    //
    // Trace
+   //  M7774/RG3/E77
+   //  M7774/RG3/E81
+   //  M7774/RG6/E23
    //
 
    wire rpPIP = (state == stateSEEKDLY);
@@ -108,6 +130,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    // RPDS Medium On-Line (rpMOL)
    //
    // Trace
+   //  M7774/RG6/E23
    //
 
    wire rpMOL = rpCD;
@@ -116,6 +139,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    // RPDS Write Lock (rpWRL)
    //
    // Trace
+   //  M7774/RG6/E16
    //
 
    wire rpWRL = rpWP;
@@ -124,6 +148,8 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    // RPDS Last Sector Transferred (rpLST)
    //
    // Trace
+   //  M7774/RG6/E16
+   //  M7774/RG6/E40
    //
 
    wire rpLST = (`rpDA_SA(rpDA) == lastSECTOR) & (`rpDA_TA(rpDA) == lastTRACK) & (`rpDC_DCA(rpDC) == lastCYL);
@@ -132,6 +158,8 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    // RPDS Programmable (rpPGM)
    //
    // Trace
+   //  M7774/DP4/ "PROGRAMMABLE H"
+   //  M7774/RG6/E16
    //
 
    wire rpPGM = 1'b0;
@@ -140,6 +168,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    // RPDS Drive Present (rpDPR)
    //
    // Trace
+   //  M7774/RG6/E16
    //
 
    wire rpDPR = 1'b1;
@@ -148,6 +177,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    // RPDS Drive Ready (rpDRY)
    //
    // Trace
+   //  M7774/RG6/E16
    //
 
    wire rpDRY = (state == stateIDLE);
@@ -156,6 +186,13 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    // RPDS Volume Valid (rpVV)
    //
    // Trace
+   //  M7774/RG4/E50
+   //  M7774/RG4/E52
+   //  M7774/RG4/E55
+   //  M7774/RG4/E58
+   //  M7774/RG4/E59
+   //  M7774/RG4/E68
+   //  M7774/RG6/E16
    //
 
    reg rpVV;
@@ -181,6 +218,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
    // RPDS Offset Mode (rpOM)
    //
    // Trace
+   //  FIXME
    //
 
    reg rpOM;
@@ -195,7 +233,7 @@ module RPDS(clk, rst, clr, ataCLR, lastSECTOR, lastTRACK, lastCYL, rpCD, rpWP,
             case (state)
               stateOFFSET:
                 rpOM <= 1;
-              stateRETURN:
+              stateCENTER:
                 rpOM <= 0;
             endcase
      end

@@ -40,11 +40,13 @@
 
 `include "rpof.vh"
 
-module RPOF(clk, rst, clr, rpDATAI, rpofWRITE, rpOF);
+module RPOF(clk, rst, clr, cmdCENTER, cmdPRESET, rpDATAI, rpofWRITE, rpOF);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
+   input          cmdCENTER;                    // Center command
+   input          cmdPRESET;                    // Preset command
    input  [35: 0] rpDATAI;                      // RP Data In
    input          rpofWRITE;                    // OF Write
    output [15: 0] rpOF;                         // rpOF Output
@@ -54,6 +56,7 @@ module RPOF(clk, rst, clr, rpDATAI, rpofWRITE, rpOF);
    //  Not implemented.
    //
    // Trace
+   //  M7774/RG1/E1
    //
 
    reg ofF16;
@@ -62,7 +65,7 @@ module RPOF(clk, rst, clr, rpDATAI, rpofWRITE, rpOF);
         if (rst)
           ofF16 <= 0;
         else
-          if (clr)
+          if (cmdPRESET)
             ofF16 <= 0;
           else if (rpofWRITE)
             ofF16 <= `rpOF_F16(rpDATAI);
@@ -73,6 +76,7 @@ module RPOF(clk, rst, clr, rpDATAI, rpofWRITE, rpOF);
    //  Not implemented.
    //
    // Trace
+   //  M7774/RG1/E1
    //
 
    reg ofECI;
@@ -81,7 +85,7 @@ module RPOF(clk, rst, clr, rpDATAI, rpofWRITE, rpOF);
         if (rst)
           ofECI <= 0;
         else
-          if (clr)
+          if (cmdPRESET)
             ofECI <= 0;
           else if (rpofWRITE)
             ofECI <= `rpOF_ECI(rpDATAI);
@@ -92,6 +96,7 @@ module RPOF(clk, rst, clr, rpDATAI, rpofWRITE, rpOF);
    //  Not implemented.
    //
    // Trace
+   //  M7774/RG1/E1
    //
 
    reg ofHCI;
@@ -100,7 +105,7 @@ module RPOF(clk, rst, clr, rpDATAI, rpofWRITE, rpOF);
         if (rst)
           ofHCI <= 0;
         else
-          if (clr)
+          if (cmdPRESET)
             ofHCI <= 0;
           else if (rpofWRITE)
             ofHCI <= `rpOF_HCI(rpDATAI);
@@ -111,6 +116,7 @@ module RPOF(clk, rst, clr, rpDATAI, rpofWRITE, rpOF);
    //  Not implemented.
    //
    // Trace
+   //  M7774/RG1/E8
    //
 
    reg ofOFD;
@@ -119,7 +125,7 @@ module RPOF(clk, rst, clr, rpDATAI, rpofWRITE, rpOF);
         if (rst)
           ofOFD <= 0;
         else
-          if (clr)
+          if (clr | cmdCENTER)
             ofOFD <= 0;
           else if (rpofWRITE)
             ofOFD <= `rpOF_OFD(rpDATAI);
@@ -130,6 +136,8 @@ module RPOF(clk, rst, clr, rpDATAI, rpofWRITE, rpOF);
    //  Not implemented.
    //
    // Trace
+   //  M7774/RG1/E7
+   //  M7774/RG1/E8
    //
 
    reg [6:0] ofOFS;
@@ -138,7 +146,7 @@ module RPOF(clk, rst, clr, rpDATAI, rpofWRITE, rpOF);
         if (rst)
           ofOFS <= 0;
         else
-          if (clr)
+          if (clr | cmdCENTER)
             ofOFS <= 0;
           else if (rpofWRITE)
             ofOFS <= `rpOF_OFS(rpDATAI);
