@@ -217,7 +217,7 @@ module RHCS1(clk, rst,
    //  M7295/BCTJ/E59 (12:15)
    //
 
-   wire [15:0] rhCS1 = {cs1SC, cs1TRE, cs1CPE, 1'b1, rpDVA, cs1PSEL,
+   wire [15:0] rhCS1 = {cs1SC, cs1TRE, cs1CPE, 1'b0, rpDVA, cs1PSEL,
                         rhBA[17:16], cs1RDY, cs1IE, rpFUN, rpGO};
 
 endmodule
