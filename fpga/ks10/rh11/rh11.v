@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -15,10 +15,6 @@
 //
 //     Whereas the 'Unibus' is 18-bit data and 16-bit address, I've implemented
 //     the IO bus as 36-bit address and 36-bit data just to keep things simple.
-//
-//   Regarding interrupts:
-//     Please read the white pager entited "PDP-11 Interrupts: Variations On A
-//     Theme", Bob Supnik, 03-Feb-2002 [revised 20-Feb-2004]
 //
 // File
 //   rh11.v
@@ -54,6 +50,7 @@
 `timescale 1ns/1ps
 
 `include "rh11.vh"
+`include "rhas.vh"
 `include "rhcs1.vh"
 `include "rhcs2.vh"
 `include "rpxx/rpcs1.vh"
@@ -139,8 +136,8 @@ module RH11(clk,      rst,
    // Address Flags
    //
 
-   localparam [0:19] rdFLAGS = 20'b0001_0000_0000_0000_0000;
-   localparam [0:19] wrFLAGS = 20'b0000_0100_0000_0000_0000;
+   localparam [0:17] rdFLAGS = 18'b000_100_000_000_000_000;
+   localparam [0:17] wrFLAGS = 18'b000_001_000_000_000_000;
 
    //
    // Selector function
@@ -190,8 +187,8 @@ module RH11(clk,      rst,
    wire rpdsWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dsADDR[18:34]);
    wire rper1READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
    wire rper1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
-   wire rpasREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
-   wire rpasWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
+   wire rhasREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
+   wire rhasWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
 
    wire rplaREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
    wire rplaWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
@@ -244,7 +241,6 @@ module RH11(clk,      rst,
    wire [15:0] rpDA [7:0];              // DA  Reguster
    wire [15:0] rpDS [7:0];              // DS  Register
    wire [15:0] rpER1[7:0];              // ER1 Register
-   wire [15:0] rpAS;                    // AS  Register (Pseudo register)
    wire [15:0] rpLA [7:0];              // LA  Register
    wire [15:0] rpMR [7:0];              // MR  Register
    wire [15:0] rpDT [7:0];              // DT  Register
@@ -254,32 +250,57 @@ module RH11(clk,      rst,
    wire [15:0] rpCC [7:0];              // CC  Register
    wire [15:0] rpER2[7:0];              // ER2 Register
    wire [15:0] rpER3[7:0];              // ER3 Register
-   wire [15:0] rpEC1 = {15'b0};         // EC1 Register (always 0)
-   wire [15:0] rpEC2 = {15'b0};         // EC2 Register (always 0)
+   wire [15:0] rpEC1 = 15'b0;           // EC1 Register (always 0)
+   wire [15:0] rpEC2 = 15'b0;           // EC2 Register (always 0)
 
    //
    // RH11 Control/Status #1 (CS1) Register
    //
 
-   wire rhSC  = `rhCS1_SC(rhCS1);
+   wire rhSC  = `rhCS1_SC (rhCS1);
    wire rhRDY = `rhCS1_RDY(rhCS1);
-   wire rhIE  = `rhCS1_IE(rhCS1);
+   wire rhIE  = `rhCS1_IE (rhCS1);
 
    //
    // RH11 Control/Status #2 (CS2) Register
    //
 
-   wire rhCLR  = `rhCS2_CLR(rhCS2);
-   wire rhBAI  = `rhCS2_BAI(rhCS2);
-   wire [ 2:0] rhUNIT = `rhCS2_UNIT(rhCS2);
+   wire rhDLT = `rhCS2_DLT(rhCS2);
+   wire rhWCE = `rhCS2_WCE(rhCS2);
+   wire rhUPE = `rhCS2_UPE(rhCS2);
+   wire rhNED = `rhCS2_NED(rhCS2);
+   wire rhNEM = `rhCS2_NEM(rhCS2);
+   wire rhPGE = `rhCS2_PGE(rhCS2);
+   wire rhMXF = `rhCS2_MXF(rhCS2);
+   wire rhDPE = `rhCS2_DPE(rhCS2);
+   wire rhOR  = `rhCS2_OR (rhCS2);
+   wire rhIR  = `rhCS2_IR (rhCS2);
+   wire rhCLR = `rhCS2_CLR(rhCS2);
+   wire rhPAT = `rhCS2_PAT(rhCS2);
+   wire rhBAI = `rhCS2_BAI(rhCS2);
+   wire [2:0] rhUNIT = `rhCS2_UNIT(rhCS2);
 
    //
-   // RH11 Attention Summary (AS) Register
+   // RH11 Attention Summary (RHAS) Register (Pseudo register)
    //
 
-   assign rpAS = {8'b0,
-                  rpDS[7][15], rpDS[6][15], rpDS[5][15], rpDS[4][15],
-                  rpDS[3][15], rpDS[2][15], rpDS[1][15], rpDS[0][15]};
+   wire [ 7:0] ataCLR = (rhasWRITE) ? `rhAS_AS(rhDATAI) : 8'b0;
+
+   wire [15:0] rhAS   = {8'b0,
+                         rpDS[7][15], rpDS[6][15], rpDS[5][15], rpDS[4][15],
+                         rpDS[3][15], rpDS[2][15], rpDS[1][15], rpDS[0][15]};
+
+   wire rpATA = (rpDS[7][15] | rpDS[6][15] | rpDS[5][15] | rpDS[4][15] |
+                 rpDS[3][15] | rpDS[2][15] | rpDS[1][15] | rpDS[0][15]);
+
+   //
+   // RPXX Status
+   //
+
+   wire       rpERR = rpDS [rhUNIT][14];
+   wire       rpDVA = rpCS1[rhUNIT][11];
+   wire [5:1] rpFUN = rpCS1[rhUNIT][5:1];
+   wire       rpGO  = rpCS1[rhUNIT][0];
 
    //
    // RPXX Serial Number Registes
@@ -295,31 +316,20 @@ module RH11(clk,      rst,
    assign rpSN[7] = `rpSN7;
 
    //
-   //
+   // RH Signals
    //
 
-   wire rpATA = (rpDS[0][15] | rpDS[1][15] | rpDS[2][15] | rpDS[3][15] |
-                 rpDS[4][15] | rpDS[5][15] | rpDS[6][15] | rpDS[7][15]);
+   wire rhINCWORD;                      // Increment word
+   wire rhINCSECT;                      // Increment Sector
 
+   //
+   // SD Signals
+   //
 
    wire [ 1:0] rpSDOP  [7:0];           // SD Operation
    wire [31:0] rpSDADDR[7:0];           // SD Sector Address
-   wire [ 7:0] rpSDREQ;                 // RP is ready for SD
-
-   //
-   // Signals
-   //
-
-   wire sdINCWORD;                      // Increment word
-   wire sdINCSECT;                      // Increment Sector
-
-   //
-   // FIXME
-   //
-
-   wire setWCE = 0;     // FIXME
-   wire setNEM = 0;     // FIXME
-   wire setPGE = 0;     // FIXME
+   wire [ 7:0] rpSDREQ;                 // RP requests the SD
+   wire [ 7:0] rpSDACK;                 // SD acknowledges the RP
 
    //
    // Transfer Error Clear
@@ -345,12 +355,23 @@ module RH11(clk,      rst,
       .devHIBYTE  (devHIBYTE),
       .devDATAI   (devDATAI),
       .rhcs1WRITE (rhcs1WRITE),
-      .rpATA      (rpATA),
       .goCLR      (goCLR),
-      .intrDONE   (1'b0),       // FIXME
-      .rhBA       (rhBA),
-      .rhCS2      (rhCS2),
-      .rpCS1      (rpCS1[rhUNIT]),
+      .rhDLT      (rhDLT),
+      .rhWCE      (rhWCE),
+      .rhUPE      (rhUPE),
+      .rhNED      (rhNED),
+      .rhNEM      (rhNEM),
+      .rhPGE      (rhPGE),
+      .rhMXF      (rhMXF),
+      .rhDPE      (rhDPE),
+      .rhCLR      (rhCLR),
+      .rhIACK     (devWRU & (devINTA == rhINTR)),
+      .rpATA      (rpATA),
+      .rpERR      (rpERR),
+      .rpDVA      (rpDVA),
+      .rpFUN      (rpFUN),
+      .rpGO       (rpGO),
+      .rhBA       (rhBA[17:16]),
       .rhCS1      (rhCS1)
    );
 
@@ -361,12 +382,13 @@ module RH11(clk,      rst,
    RHWC WC (
       .clk        (clk),
       .rst        (rst),
-      .clr        (devRESET | rhCLR),
+      .devRESET   (devRESET),
       .devLOBYTE  (devLOBYTE),
       .devHIBYTE  (devHIBYTE),
       .devDATAI   (devDATAI),
       .rhwcWRITE  (rhwcWRITE),
-      .rhINCWC    (sdINCWORD),
+      .rhCLR      (rhCLR),
+      .rhINCWC    (rhINCWORD),
       .rhWC       (rhWC)
    );
 
@@ -377,14 +399,15 @@ module RH11(clk,      rst,
    RHBA BA (
       .clk        (clk),
       .rst        (rst),
-      .clr        (devRESET | rhCLR),
+      .devRESET   (devRESET),
       .devLOBYTE  (devLOBYTE),
       .devHIBYTE  (devHIBYTE),
       .devDATAI   (devDATAI),
       .rhcs1WRITE (rhcs1WRITE),
       .rhbaWRITE  (rhbaWRITE),
+      .rhCLR      (rhCLR),
       .rhRDY      (rhRDY),
-      .rhINCBA    (sdINCWORD & !rhBAI),
+      .rhINCBA    (rhINCWORD & !rhBAI),
       .rhBA       (rhBA)
    );
 
@@ -400,11 +423,11 @@ module RH11(clk,      rst,
       .devHIBYTE  (devHIBYTE),
       .devDATAI   (devDATAI),
       .rhcs2WRITE (rhcs2WRITE),
-      .setWCE     (setWCE),
-      .setNEM     (setNEM),
-      .setPGE     (setPGE),
+      .setWCE     (1'b0),
+      .setNEM     (1'b0),
+      .setPGE     (1'b0),
       .goCLR      (goCLR),
-      .treCLR     (treCLR),         // FIXME
+      .treCLR     (treCLR),
       .rhCS1      (rhCS1),
       .rhCS2      (rhCS2)
    );
@@ -416,95 +439,52 @@ module RH11(clk,      rst,
    RHDB DB (
       .clk        (clk),
       .rst        (rst),
-      .clr        (rhCLR | devRESET),
+      .devRESET   (devRESET),
       .devLOBYTE  (devLOBYTE),
       .devHIBYTE  (devHIBYTE),
       .devDATAI   (devDATAI),
+      .rhCLR      (rhCLR),
       .rhdbWRITE  (rhdbWRITE),
       .rhDB       (rhDB)
    );
 
    //
-   // Attention Summary Pseudo Register
+   // RPXX Completion Monitor
    //
 
-   wire [ 7:0] ataCLR = (rpasWRITE) ? rhDATAI[7:0] : 8'b0;
+   wire [2:0] scan;
+
+   RHSCAN SCAN (
+      .clk        (clk),
+      .rst        (rst),
+      .sdREQ      (rpSDREQ),
+      .sdACK      (rpSDACK),
+      .scan       (scan)
+   );
 
    //
-   // Completion Monitor
-   //
-   // Details:
-   //  The Completion Monitor scans the disk drives (round robbin) and
-   //  checks for drives that are requesting access to the SD Controller.
+   // RH11 Interrupt Controller
    //
 
-   localparam [2:0] stateSCAN = 0,
-                    stateBUSY = 1,
-                    stateACK  = 2;
-
-   reg [2:0] state;
-   reg [2:0] scan;
-   always @(posedge clk)
-     begin
-        if (rst)
-          begin
-             scan <= 0;
-             state <= stateSCAN;
-          end
-        else
-          begin
-             case (state)
-               stateSCAN:
-                 begin
-                    if (rpSDREQ[scan])
-                      begin
-                         if (rpSDOP[scan] == `sdopNOP)
-                           state <= stateACK;
-                         else
-                           state <= stateBUSY;
-                      end
-                    else
-                      begin
-                         scan <= scan + 1'b1;
-                      end
-                 end
-
-               //
-               //
-               //
-
-               stateBUSY:
-                 begin
-                 end
-
-               //
-               // ACK the RP so that it will complete it's operation and
-               // become ready for the next operation.
-               //
-
-               stateACK:
-                 begin
-                    state <= stateSCAN;
-                 end
-             endcase
-          end
-     end
-
-   //
-   // RH11 Interrupts
-   //
-
-   wire rhIFF;
+   wire rhIRQ;
 
    RHINTR INTR (
       .clk        (clk),
       .rst        (rst),
-      .clr        (rhCLR | devRESET),
-      .rhIFF      (rhIFF)
+      .devRESET   (devRESET),
+      .devLOBYTE  (devLOBYTE),
+      .devDATAI   (devDATAI),
+      .rhcs1WRITE (rhcs1WRITE),
+      .rhSC       (rhSC),
+      .rhRDY      (rhRDY),
+      .rhIE       (rhIE),
+      .rhCLR      (rhCLR),
+      .rhIACK     (devWRU & (devINTA == rhINTR)),
+      .rhIRQ      (rhIRQ)
    );
 
    //
-   // Build an array 8 RPxx disk drives
+   // An array 8 RPxx disk drives
    //
 
    genvar i;
@@ -520,10 +500,11 @@ module RH11(clk,      rst,
               .rst      (rst),
               .clr      (rhCLR | devRESET),
               .unitSEL  (rhUNIT == i[2:0]),
-              .incSECTOR(sdINCSECT),
+              .incSECTOR(rhINCSECT),
               .ataCLR   (ataCLR[i]),
               .devADDRI (devADDRI),
               .devDATAI (devDATAI),
+              .rpPAT    (rhPAT),
               .rpCD     (rh11CD),
               .rpWP     (rh11WP),
               .rpCS1    (rpCS1[i]),
@@ -540,7 +521,7 @@ module RH11(clk,      rst,
               .rpER3    (rpER3[i]),
               .rpSDOP   (rpSDOP[i]),
               .rpSDREQ  (rpSDREQ[i]),
-              .rpSDACK  ((scan == i[2:0]) && (state == stateACK)),
+              .rpSDACK  (rpSDACK[i]),
               .rpSDADDR (rpSDADDR[i])
            );
         end
@@ -551,6 +532,7 @@ module RH11(clk,      rst,
    //
 
    wire sdSTAT;
+   wire [0:35] sdDATAO;
 
    SD uSD (
       .clk       (clk),
@@ -562,17 +544,12 @@ module RH11(clk,      rst,
       .sdOP      (rpSDOP[scan]),
       .sdSECTADDR(rpSDADDR[scan]),
       .sdWDCNT   (rhWC),
-
-      //here
-      //.sdBUSADDR (sdBUSADDR),
-
-//      .sdDATAI   (sdDATAI),
-//      .sdDATAO   (sdDATAO),
-//      .dmaREQ    (devREQO),  // fixme
-//      .dmaACK    (devACKI),
-
-      .sdINCWORD (sdINCWORD),
-      .sdINCSECT (sdINCSECT),
+      .sdDATAI   (devDATAI),
+      .sdDATAO   (sdDATAO),
+      .sdREQO    (devREQO),
+      .sdACKI    (devACKI),
+      .sdINCWORD (rhINCWORD),
+      .sdINCSECT (rhINCSECT),
       .sdSTAT    (sdSTAT),
       .sdDEBUG   (rh11DEBUG)
    );
@@ -589,7 +566,7 @@ module RH11(clk,      rst,
                      rhcs2WRITE | rhcs2READ |
                      rpdsWRITE  | rpdsREAD  |
                      rper1WRITE | rper1READ |
-                     rpasWRITE  | rpasREAD  |
+                     rhasWRITE  | rhasREAD  |
                      //
                      rplaWRITE  | rplaREAD  |
                      rhdbWRITE  | rhdbREAD  |
@@ -629,8 +606,8 @@ module RH11(clk,      rst,
           devDATAO = {20'b0, rpDS[rhUNIT]};
         if (rper1WRITE | rper1READ)
           devDATAO = {20'b0, rpER1[rhUNIT]};
-        if (rpasWRITE | rpasREAD)
-          devDATAO = {20'b0, rpAS};
+        if (rhasWRITE | rhasREAD)
+          devDATAO = {20'b0, rhAS};
         if (rplaWRITE | rplaREAD)
           devDATAO = {20'b0, rpLA[rhUNIT]};
         if (rhdbWRITE | rhdbREAD)
@@ -655,19 +632,21 @@ module RH11(clk,      rst,
           devDATAO = {20'b0, rpEC1};
         if (rpec2WRITE | rpec2READ)
           devDATAO = {20'b0, rpEC2};
+        if (devACKI)
+          devDATAO = sdDATAO;
      end
 
    //
    // Interrupt Request
    //
 
-   assign devINTR = (rhIFF | (rhSC & rhRDY & rhIE)) ? rhINTR : 4'b0;
+   assign devINTR = rhIRQ ? rhINTR : 4'b0;
 
    //
    // Create address
-   // FIXME:
+   //
 
-   //wire devADDRO = (readOP) ? {rdFLAGS, sdBUSADDR} : {wrFLAGS, sdBUSADDR};
+   assign devADDRO = (rpSDOP[scan] == `sdopWR) ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
 
 `ifndef SYNTHESIS
 

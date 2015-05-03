@@ -47,26 +47,79 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module RHINTR(clk, rst, clr,
-              rhIFF);
+`include "rhcs1.vh"
 
+module RHINTR(clk, rst, devRESET, devLOBYTE, devDATAI, rhcs1WRITE, rhSC,
+              rhRDY, rhIE, rhCLR, rhIACK, rhIRQ);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          clr;                          // Clear
+   input          devRESET;                     // Device reset from UBA
+   input          devLOBYTE;                    // Device low byte
+   input  [ 0:35] devDATAI;                     // Device data in
+   input          rhcs1WRITE;                   // CS1 write
+   input          rhSC;                         // Special Conditions (RHCS1[SC ])
+   input          rhRDY;                        // Ready              (RHCS1[RDY])
+   input          rhIE;                         // Interrupt enable   (RHCS1[IE ])
+   input          rhCLR;                        // Controller         (RHCS2[CLR])
+   input          rhIACK;                       // Interrupt acknowledge
+   output         rhIRQ;                        // Interrupt request
 
-   output rhIFF;
+   //
+   // Big-endian to little-endian data bus swap
+   //
 
-/*
-   FIXME
+   wire [35:0] rhDATAI = devDATAI[0:35];
+
+   //
+   // Keep track of rhRDY transitions.
+   //
+
+   reg lastRDY;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          lastRDY <= 0;
+        else
+          lastRDY <= rhRDY;
+     end
+
+   //
+   // Interrupt Flip-flop.
+   //  An interrupt is triggered on the rising edge of rhRDY when interrupts are
+   //  enabled. An interrupt is also created when rhRDY and rhIE are written
+   //  simultaneously.
+   //
+   //  The interrupt is cleared when an interrupt acknowledge is received.
+   //
+   // Trace
+   //  M7286/CSRA/E14
+   //  M7286/CSRA/E18A
+   //
 
    reg rhIFF;
-             if (devINTA == rhINTR)
-               rhIFF <= 0;
-             else if (rhRDY & ~lastRDY)
-               rhIFF <= rhIE;
-*/
 
-   assign rhIFF = 0;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          rhIFF <= 0;
+        else
+          if (devRESET | rhCLR | rhIACK)
+            rhIFF <= 0;
+          else if ((rhRDY & !lastRDY & rhIE) |
+                   (rhcs1WRITE & devLOBYTE & `rhCS1_RDY(rhDATAI) & `rhCS1_IE(rhDATAI)))
+            rhIFF <= 1;
+     end
+
+   //
+   // Interrupt request
+   //
+   // Trace
+   //  M7296/CSRA/E17B
+   //  M7296/CSRA/E17C
+   //
+
+   assign rhIRQ = rhIFF | (rhSC & rhRDY);
 
 endmodule

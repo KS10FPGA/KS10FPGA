@@ -41,19 +41,20 @@
 `include "rhba.vh"
 `include "rhcs1.vh"
 
-module RHBA(clk, rst, clr,
+module RHBA(clk, rst, devRESET,
             devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE,
-            rhbaWRITE, rhRDY, rhINCBA, rhBA);
+            rhbaWRITE, rhCLR, rhRDY, rhINCBA, rhBA);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          clr;                          // Clear
+   input          devRESET;                     // Device reset
    input          devLOBYTE;                    // Device Low Byte
    input          devHIBYTE;                    // Device High Byte
    input  [ 0:35] devDATAI;                     // Device Data In
    input          rhcs1WRITE;                   // Write to RHCS1
    input          rhbaWRITE;                    // Write to BA
-   input          rhRDY;                        // Ready
+   input          rhCLR;                        // Controller clear
+   input          rhRDY;                        // Controller ready
    input          rhINCBA;                      // Increment BA
    output [17: 0] rhBA;                         // rhBA Output
 
@@ -66,39 +67,48 @@ module RHBA(clk, rst, clr,
    //
    // RH11 Bus Address (RHBA) Register
    //
+   // The LSB of the bus address is always zero.   This makes the bus address
+   // always even for word addressing.
+   //
+   // In the RH11, the bus address can decrement supporting a 'reverse write-
+   // check' and a 'reverse read' operation.  The documents imply that this was
+   // never supported.  This is not implemented.
+   //
    // Trace
    //  M7295/BCTC/E14
    //  M7295/BCTC/E22
    //  M7295/BCTC/E30
    //  M7295/BCTC/E36
    //  M7295/BCTC/E37
+   //  M7295/BCTC/E88
    //
 
-   reg [17:0] rhBA;
+   reg [17:1] addr;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          rhBA <= 0;
+          addr <= 0;
         else
-          begin
-             if (clr)
-               rhBA <= 0;
-             else
-               begin
-                  if (rhcs1WRITE & devHIBYTE & rhRDY)
-                    rhBA[17:16] <= `rhCS1_BAE(rhDATAI);
-                  if (rhbaWRITE)
-                    begin
-                       if (devHIBYTE)
-                         rhBA[15:8] <= `rhBA_HI(rhDATAI);
-                       if (devLOBYTE)
-                         rhBA[ 7:0] <= `rhBA_LO(rhDATAI);
-                    end
-                  else if (rhINCBA)
-                    rhBA <= rhBA + 2'd2;
-               end
-          end
+          if (devRESET | rhCLR)
+            addr <= 0;
+          else if (rhcs1WRITE & devHIBYTE & rhRDY)
+            addr[17:16] <= `rhCS1_BAE(rhDATAI);
+          else if (rhbaWRITE)
+            begin
+               if (devHIBYTE)
+                 addr[15: 8] <= `rhBA_HI(rhDATAI);
+               if (devLOBYTE)
+                 addr[ 7: 1] <= `rhBA_LO(rhDATAI);
+            end
+          else if (rhINCBA)
+            addr <= addr + 1'b1;
      end
+
+   //
+   // Create RHBA
+   //
+
+   assign rhBA = {addr, 1'b0};
 
 endmodule

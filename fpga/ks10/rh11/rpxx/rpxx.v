@@ -62,7 +62,7 @@
 `include "../../ubabus.vh"
 
 module RPXX(clk, rst, clr,
-            unitSEL, incSECTOR, ataCLR, devADDRI, devDATAI, rpCD, rpWP,
+            unitSEL, incSECTOR, ataCLR, devADDRI, devDATAI, rpPAT, rpCD, rpWP,
             rpCS1, rpDA, rpDS, rpER1, rpLA, rpMR, rpDT, rpOF, rpDC, rpCC, rpER2, rpER3,
             rpSDOP, rpSDREQ, rpSDACK, rpSDADDR);
 
@@ -75,6 +75,7 @@ module RPXX(clk, rst, clr,
    input  [ 0:35] devADDRI;                     // Device Address In
    input  [ 0:35] devDATAI;                     // Device Data In
    input          rpCD;                         // Card Detect from SD Card
+   input          rpPAT;                        // Parity Test
    input          rpWP;                         // Write Protect from SD Card
    output [15: 0] rpCS1;                        // CS1 Register
    output [15: 0] rpDA;                         // DA  Register
@@ -166,14 +167,21 @@ module RPXX(clk, rst, clr,
    //   M7774/RG5/E75
    //
 
-   wire rpcs1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & unitSEL;    //  0
-   wire rper1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]) & unitSEL;    //  2
-   wire rpmrWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]) & unitSEL;    //  3
-   wire rpofWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]) & unitSEL;    //  9
-   wire rpdaWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]) & unitSEL;    //  5
-   wire rpdcWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]) & unitSEL;    // 10
-   wire rper2WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]) & unitSEL;    // 12
-   wire rper3WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]) & unitSEL;    // 13
+   wire rpcs1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & unitSEL;
+   wire rper1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]) & unitSEL;
+   wire rpmrWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]) & unitSEL;
+   wire rpofWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]) & unitSEL;
+   wire rpdaWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]) & unitSEL;
+   wire rpdcWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]) & unitSEL;
+   wire rper2WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]) & unitSEL;
+   wire rper3WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]) & unitSEL;
+
+   //
+   // Any write
+   //
+
+   wire anyWRITE   = (rpcs1WRITE | rper1WRITE | rpmrWRITE  | rpofWRITE |
+                      rpdaWRITE  | rpdcWRITE  | rper2WRITE | rper3WRITE);
 
    //
    // Big-endian to little-endian data bus swap
@@ -279,7 +287,7 @@ module RPXX(clk, rst, clr,
    //  M7774/RG4/E60
    //
 
-   wire cmdGO     = rpcs1WRITE & `rpCS1_GO(rpDATAI);
+   wire cmdGO     = rpcs1WRITE & `rpCS1_GO(rpDATAI) & !rpPAT;
    wire cmdDRVCLR = cmdGO & (`rpCS1_FUN(rpDATAI) == `funCLEAR);         // Drive clear
    wire cmdPRESET = cmdGO & (`rpCS1_FUN(rpDATAI) == `funPRESET);        // Read-in preset
    wire cmdCENTER = cmdGO & (`rpCS1_FUN(rpDATAI) == `funCENTER);        // Return to center
@@ -348,7 +356,7 @@ module RPXX(clk, rst, clr,
    RPDS DS (
       .clk         (clk),
       .rst         (rst),
-      .clrATA      (masterCLR),
+      .clrATA      (masterCLR | ataCLR),
       .setATA      (state == stateATA),
       .setERR      ((rpER1 != 0) | (rpER2 != 0) | (rpER3 != 0)),
       .setPIP      (state == stateSEEKDLY),
@@ -385,8 +393,8 @@ module RPXX(clk, rst, clr,
       .setECH      (1'b0),
       .setWCF      (1'b0),
       .setFER      (1'b0),
-      .setPAR      (1'b0),
-      .setRMR      (!`rpDS_DRY(rpDS) & (rpcs1WRITE | rper1WRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)),
+      .setPAR      (rpPAT & anyWRITE),
+      .setRMR      (!rpDRY & (rpcs1WRITE | rper1WRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)),
       .setILR      (1'b0),
       .setILF      (state == stateILLFUN),
       .data        (rpDATAI),

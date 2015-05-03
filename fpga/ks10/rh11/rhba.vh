@@ -43,6 +43,6 @@
 //
 
 `define rhBA_HI(reg)  (reg[15:8])       // High byte
-`define rhBA_LO(reg)  (reg[ 7:0])       // Low byte
+`define rhBA_LO(reg)  (reg[ 7:1])       // Low byte (LSB is always zero)
 
 `endif

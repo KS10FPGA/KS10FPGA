@@ -68,7 +68,7 @@ module RHCS2(clk, rst,
 
    //
    // CS2 Device Late
-   //  Not implemented.  The SD Card is never late.
+   //  Not implemented.
    //
    // Trace
    //  M7294/DBCB/E61
@@ -79,7 +79,21 @@ module RHCS2(clk, rst,
    //  M7294/DBCB/E97
    //
 
-   wire rhcs2DLT = 0;
+  wire rhcs2DLT = 0;
+
+ /*
+   reg rhcs2DLT;
+   always @(posedge clk)
+     begin
+        if (rst)
+          rhcs2DLT <= 0;
+        else
+          if (clrDLT)
+            rhcs2DLT <= 0;
+          else if (setDLT)
+            rhcs2DLT <= 1;
+     end
+*/
 
    //
    // RHCS2 Write Check Error

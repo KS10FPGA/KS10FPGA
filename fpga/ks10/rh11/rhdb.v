@@ -40,17 +40,18 @@
 
 `include "rhdb.vh"
 
-module RHDB(clk, rst, clr,
-            devLOBYTE, devHIBYTE, devDATAI, rhdbWRITE, rhDB);
+module RHDB(clk, rst,
+            devRESET, devLOBYTE, devHIBYTE, devDATAI, rhCLR, rhdbWRITE, rhDB);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          clr;                          // Clear
-   input          devLOBYTE;                    // Device Low Byte
-   input          devHIBYTE;                    // Device High Byte
-   input  [ 0:35] devDATAI;                     // Device Data In
+   input          devRESET;                     // Device clear
+   input          devLOBYTE;                    // Device low byte
+   input          devHIBYTE;                    // Device high byte
+   input  [ 0:35] devDATAI;                     // Device data in
+   input          rhCLR;                        // Controller clear
    input          rhdbWRITE;                    // Write to DB
-   output [15: 0] rhDB;                         // rhDB Output
+   output [15: 0] rhDB;                         // rhDB output
 
    //
    // Big-endian to little-endian data bus swap
@@ -71,18 +72,15 @@ module RHDB(clk, rst, clr,
         if (rst)
           rhDB <= 0;
         else
-          begin
-             if (clr)
-               rhDB <= 0;
-             else
-               if (rhdbWRITE)
-                 begin
-                    if (devHIBYTE)
-                      rhDB[15:8] <= `rhDB_HI(rhDATAI);
-                    if (devLOBYTE)
-                      rhDB[ 7:0] <= `rhDB_LO(rhDATAI);
-                 end
-          end
+          if (devRESET | rhCLR)
+            rhDB <= 0;
+          else if (rhdbWRITE)
+            begin
+               if (devHIBYTE)
+                 rhDB[15:8] <= `rhDB_HI(rhDATAI);
+               if (devLOBYTE)
+                 rhDB[ 7:0] <= `rhDB_LO(rhDATAI);
+            end
      end
 
 endmodule

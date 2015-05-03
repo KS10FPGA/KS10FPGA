@@ -49,9 +49,9 @@ module SD(clk, rst,
           // SPI Interface
           sdMISO, sdMOSI, sdSCLK, sdCS,
           // Control
-          sdOP, sdSECTADDR, sdWDCNT, sdBUSADDR,
+          sdOP, sdSECTADDR, sdWDCNT,
           // Data Interface
-          sdDATAI, sdDATAO, dmaREQ, dmaACK,
+          sdDATAI, sdDATAO, sdREQO, sdACKI,
           //
           sdINCWORD, sdINCSECT, sdSTAT,
           // Debug
@@ -68,13 +68,12 @@ module SD(clk, rst,
    input  [ 1:0] sdOP;                  // SD Operation
    input  [31:0] sdSECTADDR;            // SD Sector Number
    input  [15:0] sdWDCNT;               // SD Word Count
-   input  [15:0] sdBUSADDR;             // SD Bus Address
 
    // DMA Interface
    input  [0:35] sdDATAI;               // Data Input (Writes)
    output [0:35] sdDATAO;               // Data Output (Reads)
-   output        dmaREQ;                // DMA Request
-   input         dmaACK;                // DMA Acknowledge
+   output        sdREQO;                // DMA Request
+   input         sdACKI;                // DMA Acknowledge
 
    // Outputs
    output        sdINCWORD;             // Increment Word Count
@@ -192,7 +191,7 @@ module SD(clk, rst,
    reg        sdINCWORD;                // Increment Word
    reg        rwDONE;                   // Read/Write Completed
    reg        readOP;                   // Read/Write Operation
-   reg        dmaREQ;                   // DMA Request
+   reg        sdREQO;                   // DMA Request
 
    reg [0:35] sdDATAO;                  // DMA Data Out
    reg [ 7:0] state;                    // Current State
@@ -293,7 +292,7 @@ module SD(clk, rst,
         else
           begin
 
-             dmaREQ    <= 0;
+             sdREQO    <= 0;
              sdINCSECT <= 0;
              spiOP     <= `spiNOP;
 
@@ -1308,7 +1307,7 @@ module SD(clk, rst,
                            begin
                               spiOP  <= `spiTR;
                               spiTXD <= 8'hff;
-                              dmaREQ <= 1;
+                              sdREQO <= 1;
                               state  <= stateREAD12;
                            end
                       end
@@ -1321,7 +1320,7 @@ module SD(clk, rst,
 
                stateREAD12:
                  begin
-                    if (dmaACK)
+                    if (sdACKI)
                       begin
                          state <= stateREAD13;
                       end
@@ -1576,8 +1575,8 @@ module SD(clk, rst,
 
                stateWRITE05:
                  begin
-                    dmaREQ <= 1;
-                    if (dmaACK)
+                    sdREQO <= 1;
+                    if (sdACKI)
                       begin
                          state <= stateWRITE06;
                       end
@@ -1590,7 +1589,7 @@ module SD(clk, rst,
 
                stateWRITE06:
                  begin
-                    if (dmaREQ)
+                    if (sdREQO)
                       begin
                          //dmaRD <= 1;
                       end
@@ -1601,8 +1600,8 @@ module SD(clk, rst,
                // stateWRITE07:
                //  Write LSBYTE of data to disk (even addresses)
                //   This state has two modes:
-               //    If dmaREQ is asserted we are operating normally.
-               //    If dmaREQ is negated we are writing the last 128
+               //    If sdREQO is asserted we are operating normally.
+               //    If sdREQO is negated we are writing the last 128
                //     words of a 128 word operation.  Therefore we
                //     write zeros.  See file header.
                //
@@ -1610,7 +1609,7 @@ module SD(clk, rst,
                stateWRITE07:
                  begin
                     spiOP  <= `spiTR;
-                    if (dmaREQ)
+                    if (sdREQO)
                       begin
                          spiTXD <= sdDATAI[4:11];
                       end
@@ -1648,14 +1647,14 @@ module SD(clk, rst,
                       begin
                          if (abort)
                            begin
-                              dmaREQ  <= 0;
+                              sdREQO  <= 0;
                               spiOP   <= `spiCSH;
                               loopCNT <= 0;
                               state   <= stateFINI;
                            end
                          else if (loopCNT == 511)
                            begin
-                              dmaREQ  <= 0;
+                              sdREQO  <= 0;
                               spiOP   <= `spiTR;
                               spiTXD  <= 8'hff;
                               loopCNT <= 0;

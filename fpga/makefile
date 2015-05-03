@@ -222,6 +222,7 @@ RTL_FILES := \
 	rtl/ks10/uba/dz11/dz11.v \
 	rtl/ks10/uba/rh11/rh11.v \
 	rtl/ks10/uba/rh11/rhintr.v \
+	rtl/ks10/uba/rh11/rhscan.v \
 	rtl/ks10/uba/rh11/rhba.v \
 	rtl/ks10/uba/rh11/rhdb.v \
 	rtl/ks10/uba/rh11/rhwc.v \
@@ -308,6 +309,7 @@ INC_FILES := \
 	rtl/ks10/uba/dz11/dztcr.vh \
 	rtl/ks10/uba/dz11/dztdr.vh \
 	rtl/ks10/uba/dz11/dzuart.vh \
+	rtl/ks10/uba/rh11/rhas.vh \
 	rtl/ks10/uba/rh11/rhba.vh \
 	rtl/ks10/uba/rh11/rhdb.vh \
 	rtl/ks10/uba/rh11/rhwc.vh \

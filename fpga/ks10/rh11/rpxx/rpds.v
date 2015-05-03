@@ -71,6 +71,17 @@ module RPDS(clk, rst,
    // Trace
    //  M7787/DP2/E57
    //  M7774/RG6/E23
+   //  M7774/RG5/E37 (online transition)
+   //  M7774/RG5/E39 (online transition)
+   //  M7774/RG5/E48 (unload command/Go with composite error)
+   //  M7774/RG5/E66
+   //  M7774/RG5/E68 (search complete)
+   //  M7774/RG5/E81 (position complete)
+   //  M7774/RG5/E79 (release command)
+   //  M7774/RG5/E80
+   //  M7774/RG5/E81 (position complete)
+   //  M7774/RG5/E51 (position complete)
+   //  M7774/RG5/E57 (position complete)
    //
 
    reg rpATA;

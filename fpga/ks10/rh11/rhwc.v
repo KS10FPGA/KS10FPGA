@@ -40,16 +40,18 @@
 
 `include "rhwc.vh"
 
-module RHWC(clk, rst, clr,
-            devLOBYTE, devHIBYTE, devDATAI, rhwcWRITE, rhINCWC, rhWC);
+module RHWC(clk, rst,
+            devRESET, devLOBYTE, devHIBYTE, devDATAI, rhwcWRITE, rhCLR,
+            rhINCWC, rhWC);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          clr;                          // Clear
-   input          devLOBYTE;                    // Device Low Byte
-   input          devHIBYTE;                    // Device High Byte
-   input  [ 0:35] devDATAI;                     // Device Data In
+   input          devRESET;                     // Device reset
+   input          devLOBYTE;                    // Device low byte
+   input          devHIBYTE;                    // Device high byte
+   input  [ 0:35] devDATAI;                     // Device data in
    input          rhwcWRITE;                    // Write to WC
+   input          rhCLR;                        // Controller clear
    input          rhINCWC;                      // Increment WC
    output [15: 0] rhWC;                         // WC Output
 
@@ -84,20 +86,18 @@ module RHWC(clk, rst, clr,
         if (rst)
           rhWC <= 0;
         else
-          begin
-             if (clr)
-               rhWC <= 0;
-             else
-               if (rhwcWRITE)
-                 begin
-                    if (devHIBYTE)
-                      rhWC[15:8] <= `rhWC_HI(rhDATAI);
-                    if (devLOBYTE)
-                      rhWC[ 7:0] <= `rhWC_LO(rhDATAI);
-                 end
-               else if (rhINCWC)
-                 rhWC <= rhWC + 1'b1;
-          end
+          if (devRESET | rhCLR)
+            rhWC <= 0;
+          else
+            if (rhwcWRITE)
+              begin
+                 if (devHIBYTE)
+                   rhWC[15:8] <= `rhWC_HI(rhDATAI);
+                 if (devLOBYTE)
+                   rhWC[ 7:0] <= `rhWC_LO(rhDATAI);
+              end
+            else if (rhINCWC)
+              rhWC <= rhWC + 1'b1;
      end
 
 endmodule
