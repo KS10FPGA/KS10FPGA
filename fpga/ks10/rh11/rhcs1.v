@@ -41,7 +41,7 @@
 `include "rhcs1.vh"
 
 module RHCS1(clk, rst,
-             devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE, goCLR,
+             devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE, goCLR, treCLR,
              rhDLT, rhWCE, rhUPE, rhNED, rhNEM, rhPGE, rhMXF, rhDPE, rhCLR, rhIACK,
              rpATA, rpERR, rpDVA, rpFUN, rpGO, rhBA, rhCS1);
 
@@ -53,6 +53,7 @@ module RHCS1(clk, rst,
    input  [ 0:35] devDATAI;                     // Device data in
    input          rhcs1WRITE;                   // CS1 write
    input          goCLR;                        // Go clear
+   input          treCLR;                       // Transfer error clear
    input          rhDLT;                        // Data late error       (RHCS2[DLT])
    input          rhWCE;                        // Write check error     (RHCS2[WCE])
    input          rhUPE;                        // Unibus parity error   (RHCS2[UPE])
@@ -76,12 +77,6 @@ module RHCS1(clk, rst,
    //
 
    wire [35:0] rhDATAI = devDATAI[0:35];
-
-   //
-   // Clear Transfer Error
-   //
-
-   wire treCLR = rhcs1WRITE & devHIBYTE & `rhCS1_TRE(rhDATAI);
 
    //
    // Transfer Error (TRE)
@@ -121,6 +116,7 @@ module RHCS1(clk, rst,
    //
    // Note:
    //  Transfer error is asserted on the *transition* of the status signals.
+   //  Cleared by Error Clear
    //
    // Trace
    //  M7296/CSRB/E2
@@ -139,7 +135,7 @@ module RHCS1(clk, rst,
           cs1TRE  <= 0;
         else
           begin
-             if (devRESET | rhCLR | goCLR | treCLR)
+             if (devRESET | rhCLR | treCLR | goCLR)
                cs1TRE <= 0;
              else if (statTRE & !lastTRE)
                cs1TRE <= 1;
@@ -166,7 +162,7 @@ module RHCS1(clk, rst,
    //
 
    reg cs1PSEL;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           cs1PSEL <= 0;
@@ -196,7 +192,7 @@ module RHCS1(clk, rst,
    //
 
    reg cs1IE;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           cs1IE <= 0;
@@ -206,6 +202,28 @@ module RHCS1(clk, rst,
           else if (rhcs1WRITE & devLOBYTE)
             cs1IE <= `rhCS1_IE(rhDATAI);
      end
+
+   //
+   // CS1 Function (FUN)
+   //
+   // From Massbus
+   //
+   // Trace
+   //  R11-0-01/MBSA/
+   //
+
+   wire [5:1] cs1FUN = rpFUN;
+
+   //
+   // CS1 GO
+   //
+   // From Massbus
+   //
+   // Trace
+   //  R11-0-01/MBSA/
+   //
+
+   wire cs1GO = rpGO;
 
    //
    // Build CS1 Register
@@ -218,7 +236,6 @@ module RHCS1(clk, rst,
    //
 
    wire [15:0] rhCS1 = {cs1SC, cs1TRE, cs1CPE, 1'b0, rpDVA, cs1PSEL,
-                        rhBA[17:16], cs1RDY, cs1IE, rpFUN, rpGO};
+                        rhBA[17:16], cs1RDY, cs1IE, cs1FUN, cs1GO};
 
 endmodule
-

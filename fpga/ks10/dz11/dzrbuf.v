@@ -161,7 +161,7 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXOVRE, uartRXFRME,
                   rd_ptr <= 0;
                   wr_ptr <= 0;
                end
-             else if (rd & ~wr & !empty)
+             else if (rd & !wr & !empty)
                begin
                   depth <= depth - 1'b1;
                   if (rd_ptr == `SIZE)

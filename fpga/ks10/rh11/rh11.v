@@ -338,10 +338,30 @@ module RH11(clk,      rst,
    wire treCLR = rhcs1WRITE & devHIBYTE & `rhCS1_TRE(rhDATAI);
 
    //
-   // Go Clear Command
+   // Command Clear
+   //
+   // The logic doesn't fully decode the Read, Write, and Wrchk commands.
+   // This 'feature' is replicated here.
+   //
+   // Trace
+   //  M7296/CSRA/E6
+   //  M7296/CSRA/E14
+   //  M7296/CSRA/E16
+   //  M7296/CSRA/E17
    //
 
-   wire goCLR = rhcs1WRITE & (rhDATAI[5:1] == `funCLEAR) & `rpCS1_GO(rhDATAI) & rhRDY;
+   wire goCLR = ((rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funWRCHK ) & `rpCS1_GO(rhDATAI)) |
+                 (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funWRCHKH) & `rpCS1_GO(rhDATAI)) |
+                 (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o26     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
+                 (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o27     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
+                 (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funWRITE ) & `rpCS1_GO(rhDATAI)) |
+                 (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funWRITEH) & `rpCS1_GO(rhDATAI)) |
+                 (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o32     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
+                 (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o33     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
+                 (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funREAD  ) & `rpCS1_GO(rhDATAI)) |
+                 (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funREADH ) & `rpCS1_GO(rhDATAI)) |
+                 (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o36     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
+                 (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o37     ) & `rpCS1_GO(rhDATAI)));  // Illegal command
 
    //
    // RH11 Control/Status #1 (RHCS1) Register
@@ -356,6 +376,7 @@ module RH11(clk,      rst,
       .devDATAI   (devDATAI),
       .rhcs1WRITE (rhcs1WRITE),
       .goCLR      (goCLR),
+      .treCLR     (treCLR),
       .rhDLT      (rhDLT),
       .rhWCE      (rhWCE),
       .rhUPE      (rhUPE),
@@ -423,18 +444,25 @@ module RH11(clk,      rst,
       .devHIBYTE  (devHIBYTE),
       .devDATAI   (devDATAI),
       .rhcs2WRITE (rhcs2WRITE),
-      .setWCE     (1'b0),
-      .setNEM     (1'b0),
-      .setPGE     (1'b0),
       .goCLR      (goCLR),
       .treCLR     (treCLR),
-      .rhCS1      (rhCS1),
+      .rhCLR      (rhCLR),
+      .rhRDY      (rhRDY),
+      .rhSETDLT   (rhSETDLT),
+      .rhSETNEM   (rhSETNEM),
+      .rhSETWCE   (rhSETWCE),
+      .rhBUFIR    (rhBUFIR),
+      .rhBUFOR    (rhBUFOR),
       .rhCS2      (rhCS2)
    );
 
    //
    // RH11 Data Buffer (RHDB) Register
    //
+
+   wire rhSETDLT;       // Set device late
+   wire rhBUFIR;        // Buffer input ready
+   wire rhBUFOR;        // Buffer output ready
 
    RHDB DB (
       .clk        (clk),
@@ -443,8 +471,14 @@ module RH11(clk,      rst,
       .devLOBYTE  (devLOBYTE),
       .devHIBYTE  (devHIBYTE),
       .devDATAI   (devDATAI),
+      .goCLR      (goCLR),
+      .treCLR     (treCLR),
       .rhCLR      (rhCLR),
+      .rhdbREAD   (rhdbREAD),
       .rhdbWRITE  (rhdbWRITE),
+      .rhSETDLT   (rhSETDLT),
+      .rhBUFIR    (rhBUFIR),
+      .rhBUFOR    (rhBUFOR),
       .rhDB       (rhDB)
    );
 
@@ -481,6 +515,20 @@ module RH11(clk,      rst,
       .rhCLR      (rhCLR),
       .rhIACK     (devWRU & (devINTA == rhINTR)),
       .rhIRQ      (rhIRQ)
+   );
+
+   //
+   // Non-existent Memory
+   //
+
+   wire rhSETNEM;
+
+   RHNEM NEM (
+      .clk        (clk),
+      .rst        (rst),
+      .devREQO    (devREQO),
+      .devACKI    (devACKI),
+      .setNEM     (rhSETNEM)
    );
 
    //
@@ -532,26 +580,28 @@ module RH11(clk,      rst,
    //
 
    wire sdSTAT;
+   wire rhSETWCE;
    wire [0:35] sdDATAO;
 
    SD uSD (
-      .clk       (clk),
-      .rst       (rst),
-      .sdMISO    (rh11MISO),
-      .sdMOSI    (rh11MOSI),
-      .sdSCLK    (rh11SCLK),
-      .sdCS      (rh11CS),
-      .sdOP      (rpSDOP[scan]),
-      .sdSECTADDR(rpSDADDR[scan]),
-      .sdWDCNT   (rhWC),
-      .sdDATAI   (devDATAI),
-      .sdDATAO   (sdDATAO),
-      .sdREQO    (devREQO),
-      .sdACKI    (devACKI),
-      .sdINCWORD (rhINCWORD),
-      .sdINCSECT (rhINCSECT),
-      .sdSTAT    (sdSTAT),
-      .sdDEBUG   (rh11DEBUG)
+      .clk        (clk),
+      .rst        (rst),
+      .sdMISO     (rh11MISO),
+      .sdMOSI     (rh11MOSI),
+      .sdSCLK     (rh11SCLK),
+      .sdCS       (rh11CS),
+      .sdOP       (rpSDOP[scan]),
+      .sdSECTADDR (rpSDADDR[scan]),
+      .sdWDCNT    (rhWC),
+      .sdDATAI    (devDATAI),
+      .sdDATAO    (sdDATAO),
+      .sdREQO     (devREQO),
+      .sdACKI     (devACKI),
+      .sdINCWORD  (rhINCWORD),
+      .sdINCSECT  (rhINCSECT),
+      .sdSETWCE   (rhSETWCE),
+      .sdSTAT     (sdSTAT),
+      .sdDEBUG    (rh11DEBUG)
    );
 
    //
@@ -651,38 +701,12 @@ module RH11(clk,      rst,
 `ifndef SYNTHESIS
 
    //
-   // Bus Monitor
-   //
-   // Details
-   //  Wait for Bus ACK on bus accesses.  Generate message on a timeout.
-   //
-
-   localparam [0:3] nxmTimeout = 15;
-   reg        [0:3] nxmCount;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          nxmCount <= nxmTimeout;
-        else
-          begin
-             if (devREQO & !devACKI)
-               begin
-                  if (nxmCount != 0)
-                    nxmCount <= nxmCount - 1'b1;
-               end
-             else
-               nxmCount <= nxmTimeout;
-          end
-     end
-
-   //
    // Whine about unacked bus cycles
    //
 
    always @(posedge clk)
      begin
-        if (nxmCount == 1)
+        if (rhSETNEM)
           begin
              $display("[%11.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o",
                       $time/1.0e3, devADDRO);

@@ -53,7 +53,7 @@ module SD(clk, rst,
           // Data Interface
           sdDATAI, sdDATAO, sdREQO, sdACKI,
           //
-          sdINCWORD, sdINCSECT, sdSTAT,
+          sdINCWORD, sdINCSECT, sdSETWCE, sdSTAT,
           // Debug
           sdDEBUG);
 
@@ -78,6 +78,7 @@ module SD(clk, rst,
    // Outputs
    output        sdINCWORD;             // Increment Word Count
    output        sdINCSECT;             // Increment Sector
+   output        sdSETWCE;              // Set write check error
    output        sdSTAT;                // Status
    output [0:63] sdDEBUG;               // Debug Output
 
@@ -189,6 +190,7 @@ module SD(clk, rst,
    reg [ 7:0] sdERR;                    // Error State
    reg        sdINCSECT;                // Increment Sector
    reg        sdINCWORD;                // Increment Word
+   reg        sdSETWCE;                 // Write check error
    reg        rwDONE;                   // Read/Write Completed
    reg        readOP;                   // Read/Write Operation
    reg        sdREQO;                   // DMA Request
@@ -262,6 +264,7 @@ module SD(clk, rst,
              sectADDR   <= 0;
              sdINCSECT  <= 0;
              sdINCWORD  <= 0;
+             sdSETWCE   <= 0;
              loopCNT    <= 0;
 
              sdDATAO    <= 0;

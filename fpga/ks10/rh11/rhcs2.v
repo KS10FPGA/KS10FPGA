@@ -43,7 +43,8 @@
 
 module RHCS2(clk, rst,
              devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs2WRITE,
-             setWCE, setNEM, setPGE, goCLR, treCLR, rhCS1, rhCS2);
+             goCLR, treCLR, rhCLR, rhRDY, rhSETDLT, rhSETNEM, rhSETWCE,
+             rhBUFIR, rhBUFOR, rhCS2);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
@@ -52,12 +53,15 @@ module RHCS2(clk, rst,
    input          devHIBYTE;                    // Device High Byte
    input  [ 0:35] devDATAI;                     // Device Data In
    input          rhcs2WRITE;                   // Write to CS2
-   input          setWCE;                       // Set WCE
-   input          setNEM;                       // Set NEM
-   input          setPGE;                       // Set PGE
-   input          goCLR;                        // GO CLR
-   input          treCLR;                       // TRE CLR
-   input  [15: 0] rhCS1;                        // CS1 Input
+   input          goCLR;                        // Command clear
+   input          treCLR;                       // Transfer error clear
+   input          rhCLR;                        // Controller clear
+   input          rhRDY;                        // Controller ready
+   input          rhSETDLT;                     // Set DLT
+   input          rhSETWCE;                     // Set WCE
+   input          rhSETNEM;                     // Set NEM
+   input          rhBUFIR;                      // Status IR
+   input          rhBUFOR;                      // Status OR
    output [15: 0] rhCS2;                        // CS2 Output
 
    //
@@ -65,6 +69,17 @@ module RHCS2(clk, rst,
    //
 
    wire [35:0] rhDATAI = devDATAI[0:35];
+
+   //
+   // Error Clear
+   //
+   // Trace
+   //  M7296/CSRB/E2
+   //  M7296/CSRB/E5
+   //  M7296/CSRB/E11
+   //
+
+   wire errCLR = devRESET | rhCLR | treCLR | goCLR;
 
    //
    // CS2 Device Late
@@ -79,21 +94,17 @@ module RHCS2(clk, rst,
    //  M7294/DBCB/E97
    //
 
-  wire rhcs2DLT = 0;
-
- /*
    reg rhcs2DLT;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           rhcs2DLT <= 0;
         else
-          if (clrDLT)
+          if (errCLR)
             rhcs2DLT <= 0;
-          else if (setDLT)
+          else if (rhSETDLT)
             rhcs2DLT <= 1;
      end
-*/
 
    //
    // RHCS2 Write Check Error
@@ -108,32 +119,35 @@ module RHCS2(clk, rst,
    //
 
    reg rhcs2WCE;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           rhcs2WCE <= 0;
         else
-          if (devRESET | rhcs2CLR | treCLR | goCLR)
+          if (errCLR)
             rhcs2WCE <= 0;
-          else if (setWCE)
+          else if (rhSETWCE)
             rhcs2WCE <= 1;
      end
 
    //
    // RHCS2 Unibus Parity Error
+   //  Not implemented.
    //
    // Trace
    //  M7296/CSRB/E25
    //
 
    reg rhcs2UPE;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           rhcs2UPE <= 0;
         else
-          if (devRESET | rhcs2CLR | treCLR | goCLR)
+          if (errCLR)
             rhcs2UPE <= 0;
+          else if (1'b0)
+            rhcs2UPE <= 1;
           else if (rhcs2WRITE & devHIBYTE)
             rhcs2UPE <= `rhCS2_UPE(rhDATAI);
      end
@@ -144,6 +158,10 @@ module RHCS2(clk, rst,
    //
    // Trace
    //  M7296/CSRB/E9
+   //  M7295/BCTB/E72
+   //  M7295/BCTB/E91
+   //  M7295/BCTB/E92
+   //  M7295/BCTB/E93
    //
 
    wire rhcs2NED = 0;
@@ -159,14 +177,14 @@ module RHCS2(clk, rst,
    //
 
    reg rhcs2NEM;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           rhcs2NEM <= 0;
         else
-          if (devRESET | rhcs2CLR | treCLR | goCLR)
+          if (errCLR)
             rhcs2NEM <= 0;
-          else if (setNEM)
+          else if (rhSETNEM)
             rhcs2NEM <= 1;
      end
 
@@ -179,14 +197,14 @@ module RHCS2(clk, rst,
    //
 
    reg rhcs2PGE;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           rhcs2PGE <= 0;
         else
-          if (devRESET | rhcs2CLR | treCLR)
+          if (devRESET | rhCLR | treCLR)
             rhcs2PGE <= 0;
-          else if (setPGE)
+          else if (!rhRDY)
             rhcs2PGE <= 1;
      end
 
@@ -202,12 +220,12 @@ module RHCS2(clk, rst,
    //
 
    reg rhcs2MXF;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           rhcs2MXF <= 0;
         else
-          if (devRESET | rhcs2CLR | treCLR | goCLR)
+          if (errCLR)
             rhcs2MXF <= 0;
           else if (rhcs2WRITE & devHIBYTE)
             rhcs2MXF <= `rhCS2_MXF(rhDATAI);
@@ -234,7 +252,7 @@ module RHCS2(clk, rst,
    //  M7294/DBCB/E87 (OBUF FULL)
    //
 
-   wire rhcs2OR = 0;
+   wire rhcs2OR = rhBUFOR;
 
    //
    // RHCS2 Input Ready
@@ -244,7 +262,7 @@ module RHCS2(clk, rst,
    //  M7294/DBCB/E81 (IBUF FULL)
    //
 
-   wire rhcs2IR = 0;
+   wire rhcs2IR = rhBUFIR;
 
    //
    // RHCS2 Clear
@@ -265,7 +283,7 @@ module RHCS2(clk, rst,
    //
 
    reg rhcs2PAT;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           rhcs2PAT <= 0;
@@ -280,20 +298,20 @@ module RHCS2(clk, rst,
    // RHCS2 Bus Address Increment Inhibit
    //
    // Trace
-   //  M7296/CSRB/E12
    //  M7296/CSRB/E8
+   //  M7296/CSRB/E12
    //  M7296/CSRB/E27
    //
 
    reg rhcs2BAI;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           rhcs2BAI <= 0;
         else
           if (devRESET | rhcs2CLR)
             rhcs2BAI <= 0;
-          else if (rhcs2WRITE & devLOBYTE & `rhCS1_RDY(rhCS1))
+          else if (rhcs2WRITE & devLOBYTE & rhRDY)
             rhcs2BAI <= `rhCS2_BAI(rhDATAI);
      end
 
@@ -305,7 +323,7 @@ module RHCS2(clk, rst,
    //
 
    reg [2:0] rhcs2UNIT;
-   always @(posedge clk)
+   always @(posedge clk or posedge rst)
      begin
         if (rst)
           rhcs2UNIT <= 0;

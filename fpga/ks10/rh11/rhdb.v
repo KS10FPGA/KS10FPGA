@@ -39,9 +39,11 @@
 `timescale 1ns/1ps
 
 `include "rhdb.vh"
+`define SIZE 66
 
 module RHDB(clk, rst,
-            devRESET, devLOBYTE, devHIBYTE, devDATAI, rhCLR, rhdbWRITE, rhDB);
+            devRESET, devLOBYTE, devHIBYTE, devDATAI, goCLR, treCLR, rhCLR,
+            rhdbREAD, rhdbWRITE, rhSETDLT, rhBUFIR, rhBUFOR, rhDB);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
@@ -49,8 +51,14 @@ module RHDB(clk, rst,
    input          devLOBYTE;                    // Device low byte
    input          devHIBYTE;                    // Device high byte
    input  [ 0:35] devDATAI;                     // Device data in
+   input          goCLR;                        // Command clear
+   input          treCLR;                       // Transfer error clear
    input          rhCLR;                        // Controller clear
+   input          rhdbREAD;                     // Read from DB
    input          rhdbWRITE;                    // Write to DB
+   output         rhSETDLT;                     // Set DLT
+   output         rhBUFIR;                      // Status IR
+   output         rhBUFOR;                      // Status OR
    output [15: 0] rhDB;                         // rhDB output
 
    //
@@ -82,5 +90,40 @@ module RHDB(clk, rst,
                  rhDB[ 7:0] <= `rhDB_LO(rhDATAI);
             end
      end
+
+   //
+   // FIFO Interface
+   //
+
+   reg [6:0] depth;
+   wire wr    = rhdbWRITE;
+   wire rd    = rhdbWRITE;
+   wire empty = (depth == 0);
+   wire full  = (depth == `SIZE);
+
+   //
+   // FIFO State
+   //
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          depth <= 0;
+        else
+          if (devRESET | rhCLR | treCLR | goCLR)
+            depth <= 0;
+          else if (rd & !wr & !empty)
+            depth <= depth - 1'b1;
+          else if (wr & !rd & !full)
+            depth <= depth + 1'b1;
+     end
+
+   //
+   // Device Late
+   //
+
+   assign rhSETDLT = (empty & rhdbREAD) | (full & rhdbWRITE);
+   assign rhBUFIR  = empty;
+   assign rhBUFOR  = full;
 
 endmodule
