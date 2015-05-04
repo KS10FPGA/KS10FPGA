@@ -42,27 +42,27 @@
 `include "rpdc.vh"
 `include "rpds.vh"
 
-module RPDS(clk, rst,
-            clrATA, setATA, setERR, setPIP, setMOL, setWRL, setLST,
-            setPGM, setDPR, setDRY, clrVV,  setVV,  clrOM,  setOM,
-            rpDS);
+module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
+            setATA, setERR, setPIP, setLST,
+            setPGM, setDPR, setDRY,
+            cmdDRVCLR, cmdPRESET, cmdPAKACK, rpDS);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
+   input          clr;                          // Clr
+   input          ataCLR;                       // Clr ATA
+   input          rpCD;                         // SD Card Detect
+   input          rpWP;                         // SD Write Protect
    input          setATA;                       // Set ATA
-   input          clrATA;                       // Clr ATA
    input          setERR;                       // Set ERR
    input          setPIP;                       // Set PIP
-   input          setMOL;                       // Set MOL
-   input          setWRL;                       // Set WRL
    input          setLST;                       // Set LST
    input          setPGM;                       // Set PGM
    input          setDPR;                       // Set DPR
    input          setDRY;                       // Set DRY
-   input          clrVV;                        // Clr VV
-   input          setVV;                        // Set VV
-   input          clrOM;                        // Clr OM
-   input          setOM;                        // Set OM
+   input          cmdDRVCLR;                    // Drive clear command
+   input          cmdPRESET;                    // Preset command
+   input          cmdPAKACK;                    // Pack Ack command
    output [15: 0] rpDS;                         // rpDS register
 
    //
@@ -90,7 +90,7 @@ module RPDS(clk, rst,
         if (rst)
           rpATA <= 0;
         else
-          if (clrATA)
+          if (clr | ataCLR | cmdDRVCLR)
             rpATA <= 0;
           else if (setATA)
             rpATA <= 1;
@@ -135,7 +135,7 @@ module RPDS(clk, rst,
    //  M7774/RG6/E23
    //
 
-   wire rpMOL = setMOL;
+   wire rpMOL = rpCD;
 
    //
    // RPDS Write Lock (rpWRL)
@@ -144,7 +144,7 @@ module RPDS(clk, rst,
    //  M7774/RG6/E16
    //
 
-   wire rpWRL = setWRL;
+   wire rpWRL = rpWP;
 
    //
    // RPDS Last Sector Transferred (rpLST)
@@ -203,9 +203,9 @@ module RPDS(clk, rst,
         if (rst)
           rpVV <= 0;
         else
-          if (clrVV)
+          if (clr | !rpCD)
             rpVV <= 0;
-          else if (setVV)
+          else if (rpCD & (cmdPRESET | cmdPAKACK))
             rpVV <= 1;
      end
 

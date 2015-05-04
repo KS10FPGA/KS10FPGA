@@ -43,13 +43,13 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module RPER2(clk, rst, clr, data, write, rpER2);
+module RPER2(clk, rst, clr, rpDATAI, rper2WRITE, rpER2);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
-   input  [35: 0] data;                         // Data in
-   input          write;                        // Write
+   input  [35: 0] rpDATAI;                      // Data in
+   input          rper2WRITE;                   // Write
    output [15: 0] rpER2;                        // ER2 Output
 
    //
@@ -77,8 +77,8 @@ module RPER2(clk, rst, clr, data, write, rpER2);
         else
           if (clr)
             rpER2 <= 0;
-          else if (write)
-            rpER2 <= data;
+          else if (rper2WRITE)
+            rpER2 <= rpDATAI;
      end
 
 endmodule

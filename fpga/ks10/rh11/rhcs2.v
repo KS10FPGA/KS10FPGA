@@ -246,7 +246,6 @@ module RHCS2(clk, rst,
 
    //
    // RHCS2 Output Ready
-   //  Not implemented.
    //
    // Trace
    //  M7294/DBCB/E87 (OBUF FULL)
@@ -256,7 +255,6 @@ module RHCS2(clk, rst,
 
    //
    // RHCS2 Input Ready
-   //  Not implemented.
    //
    // Trace
    //  M7294/DBCB/E81 (IBUF FULL)

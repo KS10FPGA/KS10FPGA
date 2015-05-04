@@ -39,7 +39,7 @@
 `timescale 1ns/1ps
 
 `include "rhdb.vh"
-`define SIZE 66
+`define SIZE 64
 
 module RHDB(clk, rst,
             devRESET, devLOBYTE, devHIBYTE, devDATAI, goCLR, treCLR, rhCLR,
@@ -92,14 +92,21 @@ module RHDB(clk, rst,
      end
 
    //
+   // The FIFO state is updated after the read and write signals.
+   //
+
+   wire wr;
+   wire rd;
+   EDGETRIG FIFORD(clk, rst, 1'b1, 1'b0, rhdbWRITE, wr);
+   EDGETRIG FIFOWR(clk, rst, 1'b1, 1'b0, rhdbREAD,  rd);
+
+   //
    // FIFO Interface
    //
 
    reg [6:0] depth;
-   wire wr    = rhdbWRITE;
-   wire rd    = rhdbWRITE;
-   wire empty = (depth == 0);
-   wire full  = (depth == `SIZE);
+   reg [6:0] rd_ptr;
+   reg [6:0] wr_ptr;
 
    //
    // FIFO State
@@ -108,22 +115,81 @@ module RHDB(clk, rst,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          depth <= 0;
+          begin
+             depth  <= 0;
+             rd_ptr <= 0;
+             wr_ptr <= 0;
+          end
         else
           if (devRESET | rhCLR | treCLR | goCLR)
-            depth <= 0;
+            begin
+               depth  <= 0;
+               rd_ptr <= 0;
+               wr_ptr <= 0;
+            end
           else if (rd & !wr & !empty)
-            depth <= depth - 1'b1;
+            begin
+               depth <= depth - 1'b1;
+               if (rd_ptr == 7'd127)
+                 rd_ptr <= 0;
+               else
+                 rd_ptr <= rd_ptr + 1'b1;
+            end
           else if (wr & !rd & !full)
-            depth <= depth + 1'b1;
+            begin
+               depth <= depth + 1'b1;
+               if (wr_ptr == 7'd127)
+                 wr_ptr <= 0;
+               else
+                 wr_ptr <= wr_ptr + 1'b1;
+            end
      end
 
    //
-   // Device Late
+   // FIFO Status
+   //
+
+   wire empty = (depth == 0);
+   wire full  = (depth == `SIZE);
+
+   //
+   // Dual Port RAM circular buffer
+   //
+   // Details
+   //
+
+/*
+`ifndef SYNTHESIS
+   integer i;
+`endif
+
+   reg [14:0] fifoDATA;
+   reg [14:0] DPRAM[0:`SIZE];
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+`ifdef SYNTHESIS
+          ;
+`else
+          for (i = 0; i <= `SIZE; i = i + 1)
+            DPRAM[i] <= 0;
+`endif
+        else
+          begin
+             if (wr)
+               DPRAM[wr_ptr] <= 0;
+             fifoDATA <= DPRAM[rd_ptr];
+          end
+     end
+*/
+
+   //
+   // Device Late, Input Ready, and Output Ready
    //
 
    assign rhSETDLT = (empty & rhdbREAD) | (full & rhdbWRITE);
-   assign rhBUFIR  = empty;
-   assign rhBUFOR  = full;
+   assign rhBUFIR  = !full;
+   assign rhBUFOR  = !empty;
 
 endmodule

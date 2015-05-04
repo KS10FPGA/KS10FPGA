@@ -356,20 +356,20 @@ module RPXX(clk, rst, clr,
    RPDS DS (
       .clk         (clk),
       .rst         (rst),
-      .clrATA      (masterCLR | ataCLR),
+      .clr         (clr),
+      .ataCLR      (ataCLR),
+      .rpCD        (rpCD),
+      .rpWP        (rpWP),
       .setATA      (state == stateATA),
       .setERR      ((rpER1 != 0) | (rpER2 != 0) | (rpER3 != 0)),
       .setPIP      (state == stateSEEKDLY),
-      .setMOL      (rpCD),
-      .setWRL      (rpWP),
       .setLST      ((`rpDA_SA(rpDA) == lastSECTOR) & (`rpDA_TA(rpDA) == lastTRACK) & (`rpDC_DCA(rpDC) == lastCYL)),
       .setPGM      (1'b0),
       .setDPR      (1'b1),
       .setDRY      (state == stateIDLE),
-      .clrVV       (clr | !rpCD),
-      .setVV       ((rpCD & (state == statePRESET)) | (rpCD & (state == statePAKACK))),
-      .clrOM       (clr | (state == stateCENTER)),
-      .setOM       (state == stateOFFSET),
+      .cmdDRVCLR   (cmdDRVCLR),
+      .cmdPRESET   (state == statePRESET),
+      .cmdPAKACK   (state == statePAKACK),
       .rpDS        (rpDS)
    );
 
@@ -397,8 +397,8 @@ module RPXX(clk, rst, clr,
       .setRMR      (!rpDRY & (rpcs1WRITE | rper1WRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)),
       .setILR      (1'b0),
       .setILF      (state == stateILLFUN),
-      .data        (rpDATAI),
-      .write       (rper1WRITE),
+      .rpDATAI     (rpDATAI),
+      .rper1WRITE  (rper1WRITE),
       .rpER1       (rpER1)
    );
 
@@ -472,8 +472,8 @@ module RPXX(clk, rst, clr,
       .clk        (clk),
       .rst        (rst),
       .clr        (masterCLR),
-      .data       (rpDATAI),
-      .write      (rper2WRITE),
+      .rpDATAI    (rpDATAI),
+      .rper2WRITE (rper2WRITE),
       .rpER2      (rpER2)
    );
 
@@ -485,8 +485,8 @@ module RPXX(clk, rst, clr,
       .clk        (clk),
       .rst        (rst),
       .clr        (masterCLR),
-      .data       (rpDATAI),
-      .write      (rper3WRITE),
+      .rpDATAI    (rpDATAI),
+      .rper3WRITE (rper3WRITE),
       .rpER3      (rpER3)
    );
 

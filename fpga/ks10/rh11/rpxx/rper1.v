@@ -46,7 +46,7 @@
 module RPER1(clk, rst, clr,
              setDCK, setUNS, setIOP, setDTE, setWLE, setIAE, setAOE, setHCRC,
              setHCE, setECH, setWCF, setFER, setPAR, setRMR, setILR, setILF,
-             data, write, rpER1);
+             rpDATAI, rper1WRITE, rpER1);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
@@ -67,8 +67,8 @@ module RPER1(clk, rst, clr,
    input          setRMR;                       // Set RMR
    input          setILR;                       // Set ILR
    input          setILF;                       // Set ILF
-   input  [35: 0] data;                         // Data in
-   input          write;                        // Write
+   input  [35: 0] rpDATAI;                      // Data in
+   input          rper1WRITE;                   // Write
    output [15: 0] rpER1;                        // rpER1 register
 
    //
@@ -88,8 +88,8 @@ module RPER1(clk, rst, clr,
             rpDCK <= 0;
           else if (setDCK)
             rpDCK <= 1;
-          else if (write)
-            rpDCK <= `rpER1_DCK(data);
+          else if (rper1WRITE)
+            rpDCK <= `rpER1_DCK(rpDATAI);
      end
 
    //
@@ -109,8 +109,8 @@ module RPER1(clk, rst, clr,
             rpUNS <= 0;
           else if (setUNS)
             rpUNS <= 1;
-          else if (write)
-            rpUNS <= `rpER1_UNS(data);
+          else if (rper1WRITE)
+            rpUNS <= `rpER1_UNS(rpDATAI);
      end
 
    //
@@ -130,8 +130,8 @@ module RPER1(clk, rst, clr,
             rpIOP <= 0;
           else if (setIOP)
             rpIOP <= 1;
-          else if (write)
-            rpIOP <= `rpER1_IOP(data);
+          else if (rper1WRITE)
+            rpIOP <= `rpER1_IOP(rpDATAI);
      end
 
    //
@@ -151,8 +151,8 @@ module RPER1(clk, rst, clr,
             rpDTE <= 0;
           else if (setDTE)
             rpDTE <= 1;
-          else if (write)
-            rpDTE <= `rpER1_DTE(data);
+          else if (rper1WRITE)
+            rpDTE <= `rpER1_DTE(rpDATAI);
      end
 
    //
@@ -172,8 +172,8 @@ module RPER1(clk, rst, clr,
             rpWLE <= 0;
           else if (setWLE)
             rpWLE <= 1;
-          else if (write)
-            rpWLE <= `rpER1_WLE(data);
+          else if (rper1WRITE)
+            rpWLE <= `rpER1_WLE(rpDATAI);
      end
 
    //
@@ -193,8 +193,8 @@ module RPER1(clk, rst, clr,
             rpIAE <= 0;
           else if (setIAE)
             rpIAE <= 1;
-          else if (write)
-            rpIAE <= `rpER1_IAE(data);
+          else if (rper1WRITE)
+            rpIAE <= `rpER1_IAE(rpDATAI);
      end
 
    //
@@ -214,8 +214,8 @@ module RPER1(clk, rst, clr,
             rpAOE <= 0;
           else if (setAOE)
             rpAOE <= 1;
-          else if (write)
-            rpAOE <= `rpER1_AOE(data);
+          else if (rper1WRITE)
+            rpAOE <= `rpER1_AOE(rpDATAI);
      end
 
    //
@@ -235,8 +235,8 @@ module RPER1(clk, rst, clr,
             rpHCRC <= 0;
           else if (setHCRC)
             rpHCRC <= 1;
-          else if (write)
-            rpHCRC <= `rpER1_HCRC(data);
+          else if (rper1WRITE)
+            rpHCRC <= `rpER1_HCRC(rpDATAI);
      end
 
    //
@@ -256,8 +256,8 @@ module RPER1(clk, rst, clr,
             rpHCE <= 0;
           else if (setHCE)
             rpHCE <= 1;
-          else if (write)
-            rpHCE <= `rpER1_HCE(data);
+          else if (rper1WRITE)
+            rpHCE <= `rpER1_HCE(rpDATAI);
      end
 
    //
@@ -277,8 +277,8 @@ module RPER1(clk, rst, clr,
             rpECH <= 0;
           else if (setECH)
             rpECH <= 1;
-          else if (write)
-            rpECH <= `rpER1_ECH(data);
+          else if (rper1WRITE)
+            rpECH <= `rpER1_ECH(rpDATAI);
      end
 
    //
@@ -298,8 +298,8 @@ module RPER1(clk, rst, clr,
             rpWCF <= 0;
           else if (setWCF)
             rpWCF <= 1;
-          else if (write)
-            rpWCF <= `rpER1_WCF(data);
+          else if (rper1WRITE)
+            rpWCF <= `rpER1_WCF(rpDATAI);
      end
 
    //
@@ -319,8 +319,8 @@ module RPER1(clk, rst, clr,
             rpFER <= 0;
           else if (setFER)
             rpFER <= 1;
-          else if (write)
-            rpFER <= `rpER1_FER(data);
+          else if (rper1WRITE)
+            rpFER <= `rpER1_FER(rpDATAI);
      end
 
    //
@@ -340,8 +340,8 @@ module RPER1(clk, rst, clr,
             rpPAR <= 0;
           else if (setPAR)
             rpPAR <= 1;
-          else if (write)
-            rpPAR <= `rpER1_PAR(data);
+          else if (rper1WRITE)
+            rpPAR <= `rpER1_PAR(rpDATAI);
      end
 
    //
@@ -361,8 +361,8 @@ module RPER1(clk, rst, clr,
             rpRMR <= 0;
           else if (setRMR)
             rpRMR <= 1;
-          else if (write)
-            rpRMR <= `rpER1_RMR(data);
+          else if (rper1WRITE)
+            rpRMR <= `rpER1_RMR(rpDATAI);
      end
 
    //
@@ -382,8 +382,8 @@ module RPER1(clk, rst, clr,
             rpILR <= 0;
           else if (setILR)
             rpILR <= 1;
-          else if (write)
-            rpILR <= `rpER1_ILR(data);
+          else if (rper1WRITE)
+            rpILR <= `rpER1_ILR(rpDATAI);
      end
 
    //
@@ -403,8 +403,8 @@ module RPER1(clk, rst, clr,
             rpILF <= 0;
           else if (setILF)
             rpILF <= 1;
-          else if (write)
-            rpILF <= `rpER1_ILF(data);
+          else if (rper1WRITE)
+            rpILF <= `rpER1_ILF(rpDATAI);
      end
 
    //
