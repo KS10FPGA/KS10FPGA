@@ -40,14 +40,15 @@
 
 `include "rpdc.vh"
 
-module RPDC(clk, rst, clr, data, write, incr, rpDC);
+ module RPDC(clk, rst, clr, rpDATAI, rpdcWRITE, rpDRY, rpINCCYL, rpDC);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
-   input  [35: 0] data;                         // Data in
-   input          write;                        // Write
-   input          incr;                         // Increment cylinder
+   input  [35: 0] rpDATAI;                      // Data in
+   input          rpdcWRITE;                    // Write RPDC
+   input          rpINCCYL;                     // Increment cylinder
+   input          rpDRY;                        // Drive ready
    output [15: 0] rpDC;                         // rpDC Output
 
    //
@@ -67,9 +68,9 @@ module RPDC(clk, rst, clr, data, write, incr, rpDC);
         else
           if (clr)
             rpDCA <= 0;
-          else if (write)
-            rpDCA <= `rpDC_DCA(data);
-          else if (incr)
+          else if (rpdcWRITE & rpDRY)
+            rpDCA <= `rpDC_DCA(rpDATAI);
+          else if (rpINCCYL)
             rpDCA <= rpDCA + 1'b1;
      end
 

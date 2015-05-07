@@ -43,13 +43,15 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module RPER3(clk, rst, clr, rpDATAI, rper3WRITE, rpER3);
+module RPER3(clk, rst, clr, rpDRVCLR, rpDATAI, rper3WRITE, rpDRY, rpER3);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
+   input          rpDRVCLR;                     // Drive clear command
    input  [35: 0] rpDATAI;                      // Data in
    input          rper3WRITE;                   // Write
+   input          rpDRY;                        // Drive ready
    output [15: 0] rpER3;                        // ER3 Output
 
    //
@@ -75,9 +77,9 @@ module RPER3(clk, rst, clr, rpDATAI, rper3WRITE, rpER3);
         if (rst)
           rpER3 <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpER3 <= 0;
-          else if (rper3WRITE)
+          else if (rper3WRITE & rpDRY)
             rpER3 <= rpDATAI;
      end
 

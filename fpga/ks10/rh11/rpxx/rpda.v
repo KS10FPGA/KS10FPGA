@@ -41,16 +41,18 @@
 `include "rpda.vh"
 
 module RPDA(clk, rst, clr,
-            rpDATAI, lastSECTOR, lastTRACK, rpdaWRITE, incSECTOR, rpDA);
+            rpDATAI, rpdaWRITE, rpPRESET, rpSECNUM, rpTRKNUM, rpINCSECT, rpDRY, rpDA);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
    input  [35: 0] rpDATAI;                      // RP Data In
-   input  [ 5: 0] lastSECTOR;                   // Last sector number
-   input  [ 5: 0] lastTRACK;                    // Last track number
    input          rpdaWRITE;                    // DA Write
-   input          incSECTOR;                    // Increment sector/track/cylinder
+   input          rpPRESET;                     // Preset command
+   input  [ 5: 0] rpSECNUM;                     // Last sector number
+   input  [ 5: 0] rpTRKNUM;                     // Last track number
+   input          rpINCSECT;                    // Increment sector/track/cylinder
+   input          rpDRY;                        // Drive ready
    output [15: 0] rpDA;                         // rpDA Output
 
    //
@@ -67,13 +69,13 @@ module RPDA(clk, rst, clr,
         if (rst)
           rpSA <= 0;
         else
-          if (clr)
+          if (clr | rpPRESET)
             rpSA <= 0;
-          else if (rpdaWRITE)
+          else if (rpdaWRITE & rpDRY)
             rpSA <= `rpDA_SA(rpDATAI);
-          else if (incSECTOR)
+          else if (rpINCSECT)
             begin
-               if (rpSA == lastSECTOR)
+               if (rpSA == rpSECNUM)
                  rpSA <= 0;
                else
                  rpSA <= rpSA + 1'b1;
@@ -94,13 +96,13 @@ module RPDA(clk, rst, clr,
         if (rst)
           rpTA <= 0;
         else
-          if (clr)
+          if (clr | rpPRESET)
             rpTA <= 0;
-          else if (rpdaWRITE)
+          else if (rpdaWRITE & rpDRY)
             rpTA <= `rpDA_TA(rpDATAI);
-          else if (incSECTOR & (rpSA == lastSECTOR))
+          else if (rpINCSECT & (rpSA == rpSECNUM))
             begin
-               if (rpTA == lastTRACK)
+               if (rpTA == rpTRKNUM)
                  rpTA <= 0;
                else
                  rpTA <= rpTA + 1'b1;

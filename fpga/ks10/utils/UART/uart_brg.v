@@ -58,8 +58,8 @@ module UART_BRG(clk, rst, speed, brgCLKEN);
    // Divider constants
    //
 
-   localparam  CLKFRQ = `CLKFRQ;                // Clock frequency
-   localparam  CLKDIV = `CLKDIV;                // 16x Clock
+   localparam CLKFRQ = `CLKFRQ;                 // Clock frequency
+   localparam CLKDIV = `CLKDIV;                 // 16x Clock
 
    //
    // Fractional N increment ROM

@@ -43,32 +43,23 @@
 `include "rpds.vh"
 `include "rper1.vh"
 
-module RPER1(clk, rst, clr,
-             setDCK, setUNS, setIOP, setDTE, setWLE, setIAE, setAOE, setHCRC,
-             setHCE, setECH, setWCF, setFER, setPAR, setRMR, setILR, setILF,
-             rpDATAI, rper1WRITE, rpER1);
+module RPER1(clk, rst, clr, rpDRVCLR,
+             rpSETWLE, rpSETIAE, rpSETAOE, rpSETPAR, rpSETRMR, rpSETILF,
+             rpDATAI, rper1WRITE, rpDRY, rpER1);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
-   input          setDCK;                       // Set DCK
-   input          setUNS;                       // Set UNS
-   input          setIOP;                       // Set IOP
-   input          setDTE;                       // Set DTE
-   input          setWLE;                       // Set WLE
-   input          setIAE;                       // Set IAE
-   input          setAOE;                       // Set AOE
-   input          setHCRC;                      // Set HCRC
-   input          setHCE;                       // Set HCE
-   input          setECH;                       // Set ECH
-   input          setWCF;                       // Set WCF
-   input          setFER;                       // Set FER
-   input          setPAR;                       // Set PAR
-   input          setRMR;                       // Set RMR
-   input          setILR;                       // Set ILR
-   input          setILF;                       // Set ILF
+   input          rpDRVCLR;                     // Drive clear
+   input          rpSETWLE;                     // Set WLE
+   input          rpSETIAE;                     // Set IAE
+   input          rpSETAOE;                     // Set AOE
+   input          rpSETPAR;                     // Set PAR
+   input          rpSETRMR;                     // Set RMR
+   input          rpSETILF;                     // Set ILF
    input  [35: 0] rpDATAI;                      // Data in
    input          rper1WRITE;                   // Write
+   input          rpDRY;                        // Drive ready
    output [15: 0] rpER1;                        // rpER1 register
 
    //
@@ -84,11 +75,9 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpDCK <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpDCK <= 0;
-          else if (setDCK)
-            rpDCK <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpDCK <= `rpER1_DCK(rpDATAI);
      end
 
@@ -105,11 +94,9 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpUNS <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpUNS <= 0;
-          else if (setUNS)
-            rpUNS <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpUNS <= `rpER1_UNS(rpDATAI);
      end
 
@@ -126,11 +113,9 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpIOP <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpIOP <= 0;
-          else if (setIOP)
-            rpIOP <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpIOP <= `rpER1_IOP(rpDATAI);
      end
 
@@ -147,11 +132,9 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpDTE <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpDTE <= 0;
-          else if (setDTE)
-            rpDTE <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpDTE <= `rpER1_DTE(rpDATAI);
      end
 
@@ -168,11 +151,11 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpWLE <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpWLE <= 0;
-          else if (setWLE)
+          else if (rpSETWLE)
             rpWLE <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpWLE <= `rpER1_WLE(rpDATAI);
      end
 
@@ -189,11 +172,11 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpIAE <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpIAE <= 0;
-          else if (setIAE)
+          else if (rpSETIAE)
             rpIAE <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpIAE <= `rpER1_IAE(rpDATAI);
      end
 
@@ -210,11 +193,11 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpAOE <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpAOE <= 0;
-          else if (setAOE)
+          else if (rpSETAOE)
             rpAOE <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpAOE <= `rpER1_AOE(rpDATAI);
      end
 
@@ -231,11 +214,9 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpHCRC <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpHCRC <= 0;
-          else if (setHCRC)
-            rpHCRC <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpHCRC <= `rpER1_HCRC(rpDATAI);
      end
 
@@ -252,11 +233,9 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpHCE <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpHCE <= 0;
-          else if (setHCE)
-            rpHCE <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpHCE <= `rpER1_HCE(rpDATAI);
      end
 
@@ -273,11 +252,9 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpECH <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpECH <= 0;
-          else if (setECH)
-            rpECH <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpECH <= `rpER1_ECH(rpDATAI);
      end
 
@@ -294,11 +271,9 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpWCF <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpWCF <= 0;
-          else if (setWCF)
-            rpWCF <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpWCF <= `rpER1_WCF(rpDATAI);
      end
 
@@ -315,11 +290,9 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpFER <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpFER <= 0;
-          else if (setFER)
-            rpFER <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpFER <= `rpER1_FER(rpDATAI);
      end
 
@@ -336,11 +309,11 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpPAR <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpPAR <= 0;
-          else if (setPAR)
+          else if (rpSETPAR)
             rpPAR <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpPAR <= `rpER1_PAR(rpDATAI);
      end
 
@@ -357,11 +330,11 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpRMR <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpRMR <= 0;
-          else if (setRMR)
+          else if (rpSETRMR)
             rpRMR <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpRMR <= `rpER1_RMR(rpDATAI);
      end
 
@@ -378,11 +351,9 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpILR <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpILR <= 0;
-          else if (setILR)
-            rpILR <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpILR <= `rpER1_ILR(rpDATAI);
      end
 
@@ -399,11 +370,11 @@ module RPER1(clk, rst, clr,
         if (rst)
           rpILF <= 0;
         else
-          if (clr)
+          if (clr | rpDRVCLR)
             rpILF <= 0;
-          else if (setILF)
+          else if (rpSETILF)
             rpILF <= 1;
-          else if (rper1WRITE)
+          else if (rper1WRITE & rpDRY)
             rpILF <= `rpER1_ILF(rpDATAI);
      end
 

@@ -39,10 +39,12 @@
 `timescale 1ns/1ps
 
 `include "rhdb.vh"
-`define SIZE 64
+`define SIZE 66
+
+`define FIFO
 
 module RHDB(clk, rst,
-            devRESET, devLOBYTE, devHIBYTE, devDATAI, goCLR, treCLR, rhCLR,
+            devRESET, devLOBYTE, devHIBYTE, devDATAI, rhCLRGO, rhCLRTRE, rhCLR,
             rhdbREAD, rhdbWRITE, rhSETDLT, rhBUFIR, rhBUFOR, rhDB);
 
    input          clk;                          // Clock
@@ -51,8 +53,8 @@ module RHDB(clk, rst,
    input          devLOBYTE;                    // Device low byte
    input          devHIBYTE;                    // Device high byte
    input  [ 0:35] devDATAI;                     // Device data in
-   input          goCLR;                        // Command clear
-   input          treCLR;                       // Transfer error clear
+   input          rhCLRGO;                      // Command clear
+   input          rhCLRTRE;                     // Transfer error clear
    input          rhCLR;                        // Controller clear
    input          rhdbREAD;                     // Read from DB
    input          rhdbWRITE;                    // Write to DB
@@ -73,6 +75,8 @@ module RHDB(clk, rst,
    // Trace
    //
 
+`ifndef FIFO
+
    reg [15:0] rhDB;
 
    always @(posedge clk or posedge rst)
@@ -90,6 +94,8 @@ module RHDB(clk, rst,
                  rhDB[ 7:0] <= `rhDB_LO(rhDATAI);
             end
      end
+
+`endif
 
    //
    // The FIFO state is updated after the read and write signals.
@@ -121,7 +127,7 @@ module RHDB(clk, rst,
              wr_ptr <= 0;
           end
         else
-          if (devRESET | rhCLR | treCLR | goCLR)
+          if (devRESET | rhCLR | rhCLRTRE | rhCLRGO)
             begin
                depth  <= 0;
                rd_ptr <= 0;
@@ -158,13 +164,14 @@ module RHDB(clk, rst,
    // Details
    //
 
-/*
+`ifdef FIFO
+
 `ifndef SYNTHESIS
    integer i;
 `endif
 
-   reg [14:0] fifoDATA;
-   reg [14:0] DPRAM[0:`SIZE];
+   reg [15:0] rhDB;
+   reg [15:0] mem[0:127];
 
    always @(posedge clk or posedge rst)
      begin
@@ -172,17 +179,18 @@ module RHDB(clk, rst,
 `ifdef SYNTHESIS
           ;
 `else
-          for (i = 0; i <= `SIZE; i = i + 1)
-            DPRAM[i] <= 0;
+          for (i = 0; i <= 127; i = i + 1)
+            mem[i] <= 0;
 `endif
         else
           begin
-             if (wr)
-               DPRAM[wr_ptr] <= 0;
-             fifoDATA <= DPRAM[rd_ptr];
+             if (rhdbWRITE & !full)
+               mem[wr_ptr] <= rhDATAI[15:0];    // FIXME
+             rhDB <= mem[rd_ptr];
           end
      end
-*/
+
+`endif
 
    //
    // Device Late, Input Ready, and Output Ready

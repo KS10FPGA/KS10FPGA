@@ -42,7 +42,7 @@
 // RPOF Register Bits
 //
 
-`define rpOF_F16(bus)   (bus[12])       // 16-bit format
+`define rpOF_FMT22(bus) (bus[12])       // 16-bit format
 `define rpOF_ECI(bus)   (bus[11])       // Error correction inhibit
 `define rpOF_HCI(bus)   (bus[10])       // Header compare inhibit
 `define rpOF_OFD(bus)   (bus[ 7])       // Offset direction

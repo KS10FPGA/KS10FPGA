@@ -42,8 +42,8 @@
 `include "rhcs2.vh"
 
 module RHCS2(clk, rst,
-             devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs2WRITE,
-             goCLR, treCLR, rhCLR, rhRDY, rhSETDLT, rhSETNEM, rhSETWCE,
+             devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs2WRITE, rhCMDGO,
+             rhCLRGO, rhCLRTRE, rhCLR, rhRDY, rhSETDLT, rhSETNEM, rhSETWCE,
              rhBUFIR, rhBUFOR, rhCS2);
 
    input          clk;                          // Clock
@@ -53,8 +53,9 @@ module RHCS2(clk, rst,
    input          devHIBYTE;                    // Device High Byte
    input  [ 0:35] devDATAI;                     // Device Data In
    input          rhcs2WRITE;                   // Write to CS2
-   input          goCLR;                        // Command clear
-   input          treCLR;                       // Transfer error clear
+   input          rhCMDGO;			// Go command
+   input          rhCLRGO;                      // Command clear
+   input          rhCLRTRE;                     // Transfer error clear
    input          rhCLR;                        // Controller clear
    input          rhRDY;                        // Controller ready
    input          rhSETDLT;                     // Set DLT
@@ -79,7 +80,7 @@ module RHCS2(clk, rst,
    //  M7296/CSRB/E11
    //
 
-   wire errCLR = devRESET | rhCLR | treCLR | goCLR;
+   wire errCLR = devRESET | rhCLR | rhCLRTRE | rhCLRGO;
 
    //
    // CS2 Device Late
@@ -202,9 +203,9 @@ module RHCS2(clk, rst,
         if (rst)
           rhcs2PGE <= 0;
         else
-          if (devRESET | rhCLR | treCLR)
+          if (devRESET | rhCLR | rhCLRTRE)
             rhcs2PGE <= 0;
-          else if (!rhRDY)
+          else if (rhCMDGO & !rhRDY)
             rhcs2PGE <= 1;
      end
 

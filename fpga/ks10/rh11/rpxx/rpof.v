@@ -40,35 +40,36 @@
 
 `include "rpof.vh"
 
-module RPOF(clk, rst, clr, cmdCENTER, cmdPRESET, rpDATAI, rpofWRITE, rpOF);
+module RPOF(clk, rst, clr, rpCENTER, rpPRESET, rpDATAI, rpofWRITE, rpDRY, rpOF);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
-   input          cmdCENTER;                    // Center command
-   input          cmdPRESET;                    // Preset command
+   input          rpCENTER;                     // Center command
+   input          rpPRESET;                     // Preset command
    input  [35: 0] rpDATAI;                      // RP Data In
    input          rpofWRITE;                    // OF Write
+   input          rpDRY;                        // Drive ready
    output [15: 0] rpOF;                         // rpOF Output
 
    //
-   // RPOF Format 16 bit (F16)
+   // RPOF Format 16 bit (FMT22)
    //  Not implemented.
    //
    // Trace
    //  M7774/RG1/E1
    //
 
-   reg ofF16;
+   reg ofFMT22;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          ofF16 <= 0;
+          ofFMT22 <= 0;
         else
-          if (cmdPRESET)
-            ofF16 <= 0;
-          else if (rpofWRITE)
-            ofF16 <= `rpOF_F16(rpDATAI);
+          if (rpPRESET)
+            ofFMT22 <= 0;
+          else if (rpofWRITE & rpDRY)
+            ofFMT22 <= `rpOF_FMT22(rpDATAI);
      end
 
    //
@@ -85,9 +86,9 @@ module RPOF(clk, rst, clr, cmdCENTER, cmdPRESET, rpDATAI, rpofWRITE, rpOF);
         if (rst)
           ofECI <= 0;
         else
-          if (cmdPRESET)
+          if (rpPRESET)
             ofECI <= 0;
-          else if (rpofWRITE)
+          else if (rpofWRITE & rpDRY)
             ofECI <= `rpOF_ECI(rpDATAI);
      end
 
@@ -105,9 +106,9 @@ module RPOF(clk, rst, clr, cmdCENTER, cmdPRESET, rpDATAI, rpofWRITE, rpOF);
         if (rst)
           ofHCI <= 0;
         else
-          if (cmdPRESET)
+          if (rpPRESET)
             ofHCI <= 0;
-          else if (rpofWRITE)
+          else if (rpofWRITE & rpDRY)
             ofHCI <= `rpOF_HCI(rpDATAI);
      end
 
@@ -125,9 +126,9 @@ module RPOF(clk, rst, clr, cmdCENTER, cmdPRESET, rpDATAI, rpofWRITE, rpOF);
         if (rst)
           ofOFD <= 0;
         else
-          if (clr | cmdCENTER)
+          if (clr | rpCENTER)
             ofOFD <= 0;
-          else if (rpofWRITE)
+          else if (rpofWRITE & rpDRY)
             ofOFD <= `rpOF_OFD(rpDATAI);
      end
 
@@ -146,9 +147,9 @@ module RPOF(clk, rst, clr, cmdCENTER, cmdPRESET, rpDATAI, rpofWRITE, rpOF);
         if (rst)
           ofOFS <= 0;
         else
-          if (clr | cmdCENTER)
+          if (clr | rpCENTER)
             ofOFS <= 0;
-          else if (rpofWRITE)
+          else if (rpofWRITE & rpDRY)
             ofOFS <= `rpOF_OFS(rpDATAI);
      end
 
@@ -156,6 +157,6 @@ module RPOF(clk, rst, clr, cmdCENTER, cmdPRESET, rpDATAI, rpofWRITE, rpOF);
    // Build the RPOF Register
    //
 
-   assign rpOF = {3'b0, ofF16, ofECI, ofHCI, 2'b0, ofOFD, ofOFS};
+   assign rpOF = {3'b0, ofFMT22, ofECI, ofHCI, 2'b0, ofOFD, ofOFS};
 
 endmodule

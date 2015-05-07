@@ -105,14 +105,6 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX
 #   -D CHIPSCOPE_SD     Instrument the SD Controller
 #   -D CHIPSCOPE_MEM    Instrument the Memory Controller
 #   -D CHIPSCOPE_CSL    Instrument the Console Interface
-#
-
-#	-D SIM_SMMON \
-#	-D CHIPSCOPE_CPU \
-#	-D CHIPSCOPE_MEM \
-#	-D SIM_SDHC \
-#	-D STOP_ON_COMPLETE \
-
 
 DEBUG_ARGS := \
 	-D SIM_CTY \
@@ -222,21 +214,24 @@ RTL_FILES := \
 	rtl/ks10/uba/dz11/dz11.v \
 	rtl/ks10/uba/rh11/rh11.v \
 	rtl/ks10/uba/rh11/rhintr.v \
+	rtl/ks10/uba/rh11/rhnem.v \
 	rtl/ks10/uba/rh11/rhscan.v \
 	rtl/ks10/uba/rh11/rhba.v \
 	rtl/ks10/uba/rh11/rhdb.v \
 	rtl/ks10/uba/rh11/rhwc.v \
 	rtl/ks10/uba/rh11/rhcs1.v \
 	rtl/ks10/uba/rh11/rhcs2.v \
-	rtl/ks10/uba/rh11/rpxx/sdaddr.v \
+	rtl/ks10/uba/rh11/rpxx/rpaddr.v \
+	rtl/ks10/uba/rh11/rpxx/rpcc.v \
 	rtl/ks10/uba/rh11/rpxx/rpcs1.v \
 	rtl/ks10/uba/rh11/rpxx/rpda.v \
-	rtl/ks10/uba/rh11/rpxx/rpcc.v \
+	rtl/ks10/uba/rh11/rpxx/rpctrl.v \
 	rtl/ks10/uba/rh11/rpxx/rpdc.v \
 	rtl/ks10/uba/rh11/rpxx/rpds.v \
 	rtl/ks10/uba/rh11/rpxx/rper1.v \
 	rtl/ks10/uba/rh11/rpxx/rper2.v \
 	rtl/ks10/uba/rh11/rpxx/rper3.v \
+	rtl/ks10/uba/rh11/rpxx/rpla.v \
 	rtl/ks10/uba/rh11/rpxx/rpmr.v \
 	rtl/ks10/uba/rh11/rpxx/rpof.v \
 	rtl/ks10/uba/rh11/rpxx/rpxx.v \

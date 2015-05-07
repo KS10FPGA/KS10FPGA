@@ -148,7 +148,7 @@ NET "RXD<2>"            LOC = "K26"  | IOSTANDARD = LVCMOS33;
 # SD Card Interfaces
 #
 
-NET "rh11CD"            LOC = "D26"  | IOSTANDARD = LVCMOS33;
+NET "rh11CD_N"          LOC = "D26"  | IOSTANDARD = LVCMOS33;
 NET "rh11CS"            LOC = "B25"  | IOSTANDARD = LVCMOS33;
 NET "rh11MISO"          LOC = "C25"  | IOSTANDARD = LVCMOS33;
 NET "rh11MOSI"          LOC = "A25"  | IOSTANDARD = LVCMOS33;

@@ -62,18 +62,18 @@
 `include "../../ubabus.vh"
 
 module RPXX(clk, rst, clr,
-            unitSEL, incSECTOR, ataCLR, devADDRI, devDATAI, rpPAT, rpCD, rpWP,
+            rhINCSECT, rhATACLR, devADDRI, devDATAI, rpSELECT, rpPAT, rpCD, rpWP,
             rpCS1, rpDA, rpDS, rpER1, rpLA, rpMR, rpDT, rpOF, rpDC, rpCC, rpER2, rpER3,
-            rpSDOP, rpSDREQ, rpSDACK, rpSDADDR);
+            rpSDOP, rpSDREQ, rpSDACK, rpSDLSA);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
-   input          unitSEL;                      // Unit Select
-   input          incSECTOR;                    // Increment Sector
-   input          ataCLR;                       // Clear RPDS[ATA]
+   input          rhINCSECT;                    // Increment Sector
+   input          rhATACLR;                     // Clear RPDS[ATA]
    input  [ 0:35] devADDRI;                     // Device Address In
    input  [ 0:35] devDATAI;                     // Device Data In
+   input          rpSELECT;                     // Unit Select
    input          rpCD;                         // Card Detect from SD Card
    input          rpPAT;                        // Parity Test
    input          rpWP;                         // Write Protect from SD Card
@@ -92,7 +92,7 @@ module RPXX(clk, rst, clr,
    output [ 1: 0] rpSDOP;                       // SD Operation
    output         rpSDREQ;                      // SD Request
    input          rpSDACK;                      // SD Complete Acknowledge
-   output [31: 0] rpSDADDR;                     // SD Sector Address
+   output [31: 0] rpSDLSA;                      // SD Linear Sector Address
 
    //
    // RH Parameters
@@ -135,19 +135,12 @@ module RPXX(clk, rst, clr,
    localparam [18:35] undADDR = rhADDR + `undOFFSET;
 
    //
-   // Timing Parameters
-   //
-
-   localparam [24:0] fiveMS = 100000;                           // 5 milliseconds
-   localparam [24:0] oneUS  = 50;                               // 1 microsecond
-
-   //
    // Lookup Drive Geometries
    //
 
-   localparam [5:0] lastSECTOR = `getLAST_SECTOR(drvTYPE);      // Sectors
-   localparam [5:0] lastTRACK  = `getLAST_TRACK(drvTYPE);       // Tracks (or surfaces or heads)
-   localparam [9:0] lastCYL    = `getLAST_CYL (drvTYPE);        // Cylinder
+   localparam [5:0] rpSECNUM = `getLAST_SECTOR(drvTYPE);        // Sectors
+   localparam [5:0] rpTRKNUM = `getLAST_TRACK(drvTYPE);         // Tracks (or surfaces or heads)
+   localparam [9:0] rpCYLNUM = `getLAST_CYL (drvTYPE);          // Cylinder
 
    //
    // Device Address and Flags
@@ -167,21 +160,14 @@ module RPXX(clk, rst, clr,
    //   M7774/RG5/E75
    //
 
-   wire rpcs1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & unitSEL;
-   wire rper1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]) & unitSEL;
-   wire rpmrWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]) & unitSEL;
-   wire rpofWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]) & unitSEL;
-   wire rpdaWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]) & unitSEL;
-   wire rpdcWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]) & unitSEL;
-   wire rper2WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]) & unitSEL;
-   wire rper3WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]) & unitSEL;
-
-   //
-   // Any write
-   //
-
-   wire anyWRITE   = (rpcs1WRITE | rper1WRITE | rpmrWRITE  | rpofWRITE |
-                      rpdaWRITE  | rpdcWRITE  | rper2WRITE | rper3WRITE);
+   wire rpcs1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & rpSELECT;
+   wire rper1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]) & rpSELECT;
+   wire rpmrWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]) & rpSELECT;
+   wire rpofWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]) & rpSELECT;
+   wire rpdaWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]) & rpSELECT;
+   wire rpdcWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]) & rpSELECT;
+   wire rper2WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]) & rpSELECT;
+   wire rper3WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]) & rpSELECT;
 
    //
    // Big-endian to little-endian data bus swap
@@ -202,7 +188,6 @@ module RPXX(clk, rst, clr,
 
    wire [15:0] rpDS;
    wire        rpERR = `rpDS_ERR(rpDS);
-   wire        rpDRY = `rpDS_DRY(rpDS);
 
    //
    // RPxx Disk Address Register (RPDA)
@@ -223,6 +208,7 @@ module RPXX(clk, rst, clr,
    //
 
    wire [15:0] rpOF;
+   wire        rpFMT22 = `rpOF_FMT22(rpOF);
 
    //
    // RPxx Desired Cylinder (RPDC) Register
@@ -239,86 +225,67 @@ module RPXX(clk, rst, clr,
    wire [ 9:0] rpCCA = `rpCC_CCA(rpCC);
 
    //
-   // SD Sector Address
-   //
-
-   wire [31:0] rpSDADDR;
-
-   //
-   // Function to calculate disk seek delay.  This is psudeo exponential.
-   // The RP06 has 815 cyclinders
-   //
-
-   function [24:0] seekDELAY;
-      input [9:0] newCYL;               // New Cylinder
-      input [9:0] oldCYL;               // Old Cylinder
-      reg   [9:0] diffCYL;              // Distance between Cylinders
-      begin
-         diffCYL = (newCYL > oldCYL) ? newCYL - oldCYL : oldCYL - newCYL;
-         if (diffCYL[9])
-           seekDELAY = fiveMS * 10;     // 50 ms (more than 512 cylinders away)
-         else if (diffCYL[8])
-           seekDELAY = fiveMS *  9;     // 45 ms (more than 256 cylinders away)
-         else if (diffCYL[7])
-           seekDELAY = fiveMS *  8;     // 40 ms (more than 128 cylinders away)
-         else if (diffCYL[6])
-           seekDELAY = fiveMS *  7;     // 35 ms (more than  64 cylinders away)
-         else if (diffCYL[5])
-           seekDELAY = fiveMS *  6;     // 30 ms (more than  32 cylinders away)
-         else if (diffCYL[4])
-           seekDELAY = fiveMS *  5;     // 25 ms (more than  16 cylinders away)
-         else if (diffCYL[3])
-           seekDELAY = fiveMS *  4;     // 20 ms (more than   8 cylinders away)
-         else if (diffCYL[2])
-           seekDELAY = fiveMS *  3;     // 15 ms (more than   4 cylinders away)
-         else if (diffCYL[1])
-           seekDELAY = fiveMS *  2;     // 10 ms (more than   2 cylinders away)
-         else if (diffCYL[0])
-           seekDELAY = fiveMS *  1;     //  5 ms (more than   1 cylinders away)
-         else
-           seekDELAY = fiveMS *  0;     //  0 ms (same cylinder)
-      end
-   endfunction
-
-   //
    // Commands
    //
    // Trace
    //  M7774/RG4/E60
    //
 
-   wire cmdGO     = rpcs1WRITE & `rpCS1_GO(rpDATAI) & !rpPAT;
-   wire cmdDRVCLR = cmdGO & (`rpCS1_FUN(rpDATAI) == `funCLEAR);         // Drive clear
-   wire cmdPRESET = cmdGO & (`rpCS1_FUN(rpDATAI) == `funPRESET);        // Read-in preset
-   wire cmdCENTER = cmdGO & (`rpCS1_FUN(rpDATAI) == `funCENTER);        // Return to center
+   wire rpCMDGO  = rpcs1WRITE & `rpCS1_GO(rpDATAI) & !rpPAT;            // Go command
+   wire rpDRVCLR = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funCLEAR);        // Drive clear
+   wire rpPRESET = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funPRESET);       // Read-in preset
+   wire rpCENTER = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funCENTER);       // Return to center
+   wire rpPAKACK = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funPAKACK);       // Pack acknowledge
 
    //
-   // Master Clear
+   //
    //
 
-   wire masterCLR = clr | cmdDRVCLR;
+   wire rpDRY;                                                          // Drive ready
+   wire rpPIP;                                                          // Positioning in progress
+   wire rpSETATA;                                                       // Set ATA
+   wire rpADRSTRT;                                                      // Start sector address calculation
+   wire rpADRBUSY;                                                      // Busy calculation sector address
+   wire rpccWRITE;
+   wire rpSETWLE = rpCMDGO & rpWP;                                      // Write lock error
+   wire rpSETIAE = ((rpCMDGO & (rpSA  > rpSECNUM)) |                    // Invalid address error
+                    (rpCMDGO & (rpTA  > rpTRKNUM)) |
+                    (rpCMDGO & (rpDCA > rpCYLNUM)));
+   wire rpSETAOE = (rpINCSECT & (rpSA == rpSECNUM) &                    // Address overflow error
+                    (rpTA == rpTRKNUM) & (rpDCA == rpCYLNUM));
 
-   //
-   // State Definition
-   //
 
-   localparam [4:0] stateIDLE    =  0,
-                    stateSEEK    =  1,
-                    stateSEEKDLY =  2,
-                    stateSEEKEND =  3,
-                    stateROTDLY  =  4,
-                    stateWAITSD  =  5,
-                    stateCLEAR   =  6,
-                    stateOFFSET  =  7,
-                    stateCENTER  =  8,
-                    statePRESET  =  9,
-                    statePAKACK  = 10,
-                    stateILLFUN  = 11,
-                    stateINVADDR = 12,
-                    stateWRLOCK  = 13,
-                    stateATA     = 14,
-                    stateDONE    = 31;
-   reg [ 4: 0] state;                   // RPxx State
+
+   wire rpINCCYL = rpINCSECT & ((rpSA == rpSECNUM) & (rpTA == rpTRKNUM));                               // Increment cylinder
+   wire rpSETLST = /*FIXME*/   ((rpSA == rpSECNUM) & (rpTA == rpTRKNUM) & (rpDCA == rpCYLNUM));         // Last sector transferred
+   wire rpSETRMR = !rpDRY & (rpcs1WRITE | rper1WRITE | rpofWRITE  |     // Register modification refused
+                             rpdaWRITE  | rpdcWRITE  | rper2WRITE |
+                             rper3WRITE);
+
+   wire rpSETPAR =  rpPAT & (rpcs1WRITE | rper1WRITE | rpmrWRITE |      // Parity error
+                             rpofWRITE  | rpdaWRITE  | rpdcWRITE |
+                             rper2WRITE | rper3WRITE);
+
+
+
+   wire rpINCSECT = rhINCSECT & rpSELECT;                               // Increment RPxx sector
+   wire rpSETILF  = ((rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o12)) |       // Illegal functions
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o13)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o15)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o16)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o17)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o20)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o21)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o22)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o23)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o26)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o27)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o32)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o33)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o36)) |
+                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o37)));
+
+   wire [31:0] rpSDADDR;
 
    //
    // RPxx Control/Status Register (RPCS1)
@@ -327,9 +294,10 @@ module RPXX(clk, rst, clr,
    RPCS1 CS1 (
       .clk         (clk),
       .rst         (rst),
-      .clrGO       (clr | (state == stateDONE)),
+      .clr         (clr),
       .rpDATAI     (rpDATAI),
-      .rpcs1WRITE  (rpcs1WRITE & rpDRY),
+      .rpcs1WRITE  (rpcs1WRITE),
+      .rpDRY       (rpDRY),
       .rpCS1       (rpCS1)
    );
 
@@ -340,12 +308,14 @@ module RPXX(clk, rst, clr,
    RPDA DA (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr | (state == statePRESET)),
+      .clr         (clr),
       .rpDATAI     (rpDATAI),
-      .lastSECTOR  (lastSECTOR),
-      .lastTRACK   (lastTRACK),
-      .rpdaWRITE   (rpdaWRITE & rpDRY),
-      .incSECTOR   (incSECTOR & unitSEL),
+      .rpdaWRITE   (rpdaWRITE),
+      .rpPRESET    (rpPRESET),
+      .rpSECNUM    (rpSECNUM),
+      .rpTRKNUM    (rpTRKNUM),
+      .rpINCSECT   (rpINCSECT),
+      .rpDRY       (rpDRY),
       .rpDA        (rpDA)
    );
 
@@ -357,19 +327,20 @@ module RPXX(clk, rst, clr,
       .clk         (clk),
       .rst         (rst),
       .clr         (clr),
-      .ataCLR      (ataCLR),
+      .rhATACLR    (rhATACLR),
+      .rpSETLST    (rpSETLST),
+      .rpSETATA    (rpSETATA),
       .rpCD        (rpCD),
       .rpWP        (rpWP),
-      .setATA      (state == stateATA),
-      .setERR      ((rpER1 != 0) | (rpER2 != 0) | (rpER3 != 0)),
-      .setPIP      (state == stateSEEKDLY),
-      .setLST      ((`rpDA_SA(rpDA) == lastSECTOR) & (`rpDA_TA(rpDA) == lastTRACK) & (`rpDC_DCA(rpDC) == lastCYL)),
-      .setPGM      (1'b0),
-      .setDPR      (1'b1),
-      .setDRY      (state == stateIDLE),
-      .cmdDRVCLR   (cmdDRVCLR),
-      .cmdPRESET   (state == statePRESET),
-      .cmdPAKACK   (state == statePAKACK),
+      .rpPIP       (rpPIP),
+      .rpDRY       (rpDRY),
+      .rpDRVCLR    (rpDRVCLR),
+      .rpPRESET    (rpPRESET),
+      .rpPAKACK    (rpPAKACK),
+      .rpdaWRITE   (rpdaWRITE),
+      .rpER1       (rpER1),
+      .rpER2       (rpER2),
+      .rpER3       (rpER3),
       .rpDS        (rpDS)
    );
 
@@ -380,25 +351,17 @@ module RPXX(clk, rst, clr,
    RPER1 ER1 (
       .clk         (clk),
       .rst         (rst),
-      .clr         (masterCLR),
-      .setDCK      (1'b0),
-      .setUNS      (1'b0),
-      .setIOP      (1'b0),
-      .setDTE      (1'b0),
-      .setWLE      (state == stateWRLOCK),
-      .setIAE      (state == stateINVADDR),
-      .setAOE      (incSECTOR  & (`rpDA_SA(rpDA) == lastSECTOR) & (`rpDA_TA(rpDA) == lastTRACK) & (`rpDC_DCA(rpDC) == lastCYL)),
-      .setHCRC     (1'b0),
-      .setHCE      (1'b0),
-      .setECH      (1'b0),
-      .setWCF      (1'b0),
-      .setFER      (1'b0),
-      .setPAR      (rpPAT & anyWRITE),
-      .setRMR      (!rpDRY & (rpcs1WRITE | rper1WRITE | rpdaWRITE |  rpofWRITE | rpdcWRITE)),
-      .setILR      (1'b0),
-      .setILF      (state == stateILLFUN),
+      .clr         (clr),
+      .rpDRVCLR    (rpDRVCLR),
+      .rpSETWLE    (rpSETWLE),
+      .rpSETIAE    (rpSETIAE),
+      .rpSETAOE    (rpSETAOE),
+      .rpSETPAR    (rpSETPAR),
+      .rpSETRMR    (rpSETRMR),
+      .rpSETILF    (rpSETILF),
       .rpDATAI     (rpDATAI),
       .rper1WRITE  (rper1WRITE),
+      .rpDRY       (rpDRY),
       .rpER1       (rpER1)
    );
 
@@ -406,21 +369,30 @@ module RPXX(clk, rst, clr,
    // RPxx Look Ahead (RPLA) Register
    //
 
-   assign rpLA = {4'b0, rpSA, 6'b0};
+   RPLA LA (
+      .clk         (clk),
+      .rst         (rst),
+      .clr         (clr),
+      .rpFMT22     (rpFMT22),
+      .rpMR        (rpMR),
+      .rpSA        (rpSA),
+      .rpLA        (rpLA)
+   );
 
    //
    // RPxx Offset (RPOF) Register
    //
 
    RPOF OF (
-      .clk        (clk),
-      .rst        (rst),
-      .clr        (clr),
-      .cmdCENTER  (state == stateCENTER),
-      .cmdPRESET  (state == statePRESET),
-      .rpDATAI    (rpDATAI),
-      .rpofWRITE  (rpofWRITE & rpDRY),
-      .rpOF       (rpOF)
+      .clk         (clk),
+      .rst         (rst),
+      .clr         (clr),
+      .rpCENTER    (rpCENTER),
+      .rpPRESET    (rpPRESET),
+      .rpDATAI     (rpDATAI),
+      .rpofWRITE   (rpofWRITE),
+      .rpDRY       (rpDRY),
+      .rpOF        (rpOF)
    );
 
    //
@@ -428,13 +400,14 @@ module RPXX(clk, rst, clr,
    //
 
    RPDC DC (
-      .clk        (clk),
-      .rst        (rst),
-      .clr        (state == statePRESET),
-      .data       (rpDATAI),
-      .write      (rpdcWRITE & rpDRY),
-      .incr       (incSECTOR & (rpTA == lastTRACK) & (rpSA == lastSECTOR)),
-      .rpDC       (rpDC)
+      .clk         (clk),
+      .rst         (rst),
+      .clr         (rpPRESET),
+      .rpDATAI     (rpDATAI),
+      .rpdcWRITE   (rpdcWRITE),
+      .rpINCCYL    (rpINCCYL),
+      .rpDRY       (rpDRY),
+      .rpDC        (rpDC)
    );
 
    //
@@ -442,12 +415,12 @@ module RPXX(clk, rst, clr,
    //
 
    RPCC CC (
-      .clk        (clk),
-      .rst        (rst),
-      .clr        (state == statePRESET),
-      .data       (rpDC),
-      .write      (state == stateSEEKEND),
-      .rpCC       (rpCC)
+      .clk         (clk),
+      .rst         (rst),
+      .clr         (rpPRESET),
+      .rpDC        (rpDC),
+      .rpccWRITE   (rpccWRITE),
+      .rpCC        (rpCC)
    );
 
    //
@@ -455,13 +428,14 @@ module RPXX(clk, rst, clr,
    //
 
    RPMR MR (
-      .clk        (clk),
-      .rst        (rst),
-      .clr        (masterCLR),
-      .data       (rpDATAI),
-      .write      (rpmrWRITE),
-      .go         (rpGO),
-      .rpMR       (rpMR)
+      .clk         (clk),
+      .rst         (rst),
+      .clr         (clr),
+      .rpDRVCLR    (rpDRVCLR),
+      .rpDATAI     (rpDATAI),
+      .rpmrWRITE   (rpmrWRITE),
+      .rpGO        (rpGO),
+      .rpMR        (rpMR)
    );
 
    //
@@ -469,12 +443,14 @@ module RPXX(clk, rst, clr,
    //
 
    RPER2 ER2 (
-      .clk        (clk),
-      .rst        (rst),
-      .clr        (masterCLR),
-      .rpDATAI    (rpDATAI),
-      .rper2WRITE (rper2WRITE),
-      .rpER2      (rpER2)
+      .clk         (clk),
+      .rst         (rst),
+      .clr         (clr),
+      .rpDRVCLR    (rpDRVCLR),
+      .rpDATAI     (rpDATAI),
+      .rper2WRITE  (rper2WRITE),
+      .rpDRY       (rpDRY),
+      .rpER2       (rpER2)
    );
 
    //
@@ -482,509 +458,65 @@ module RPXX(clk, rst, clr,
    //
 
    RPER3 ER3 (
-      .clk        (clk),
-      .rst        (rst),
-      .clr        (masterCLR),
-      .rpDATAI    (rpDATAI),
-      .rper3WRITE (rper3WRITE),
-      .rpER3      (rpER3)
+      .clk         (clk),
+      .rst         (rst),
+      .clr         (clr),
+      .rpDRVCLR    (rpDRVCLR),
+      .rpDATAI     (rpDATAI),
+      .rper3WRITE  (rper3WRITE),
+      .rpDRY       (rpDRY),
+      .rpER3       (rpER3)
    );
 
    //
-   // SD Sector Address Calculation
+   // Linear sector address calculation
    //
 
-   SDADDR uSDADDR (
-      .clk        (clk),
-      .rst        (rst),
-      .start      (state == stateSEEK),
-      .lastTRACK  (lastTRACK),
-      .lastSECTOR (lastSECTOR),
-      .rpDCA      (rpDCA),
-      .rpTA       (rpTA),
-      .rpSA       (rpSA),
-      .sdADDR     (rpSDADDR),
-      .done       ()
+   RPADDR ADDR (
+      .clk         (clk),
+      .rst         (rst),
+      .rpTRKNUM    (rpTRKNUM),
+      .rpSECNUM    (rpSECNUM),
+      .rpDCA       (rpDCA),
+      .rpTA        (rpTA),
+      .rpSA        (rpSA),
+      .rpSDLSA     (rpSDLSA),
+      .rpADRSTRT   (rpADRSTRT),
+      .rpADRBUSY   (rpADRBUSY)
    );
 
    //
-   // Disk Motion Simlation State Machine
+   // Controller state machine
    //
 
-   reg [ 1: 0] rpSDOP;                  // SD Operation
-   reg [24: 0] delay;                   // RPxx Delay Simulation
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          begin
-             delay  <= 0;
-             rpSDOP <= `sdopNOP;
-             state  <= stateIDLE;
-          end
-        else
-          begin
-             if (clr)
-               begin
-                  delay  <= 0;
-                  rpSDOP <= `sdopNOP;
-                  state  <= stateIDLE;
-               end
-             else
-               case (state)
-
-                 //
-                 // stateIDLE
-                 //  Look for a function (command) to go process
-                 //
-
-                 stateIDLE:
-                   begin
-                      if (cmdGO)
-
-                        //
-                        // Decode Command (Function)
-                        //
-
-                        case (`rpCS1_FUN(rpDATAI))
-
-                          //
-                          // NOP Command
-                          //  Does nothing
-                          //
-
-                          `funNOP:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else
-                                 state <= stateDONE;
-                            end
-
-                          //
-                          // Unload Head Command
-                          //  On an RPxx disk, the seek command would cause the
-                          //  heads to retract. This command simulates head
-                          //  motion to cylinder 0.
-                          //
-
-                          `funUNLOAD:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else
-                                 begin
-                                    rpSDOP <= `sdopNOP;
-                                    delay  <= seekDELAY(0, rpCCA);
-                                    state  <= stateSEEK;
-                                 end
-                            end
-
-                          //
-                          // Seek Command
-                          //  On an RPxx disk, the seek command causes the heads
-                          //  to move to the cylinder specified by the RPDC
-                          //  register.
-                          //
-                          //  This command simulates head motion to the new
-                          //  cylinder specified by the RPDC register
-                          //
-
-                          `funSEEK:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else if ((rpDCA > lastCYL) |
-                                        (rpTA  > lastTRACK) |
-                                        (rpSA  > lastSECTOR))
-                                 state <= stateINVADDR;
-                               else
-                                 begin
-                                    rpSDOP <= `sdopNOP;
-                                    delay  <= seekDELAY(rpDCA, rpCCA);
-                                    state  <= stateSEEK;
-                                 end
-                            end
-
-                          //
-                          // Recalibrate Command
-                          //  The seek command causes the heads to move to
-                          //  cylinder 0.
-                          //
-
-                          `funRECAL:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else
-                                 begin
-                                    rpSDOP <= `sdopNOP;
-                                    delay  <= seekDELAY(0, rpCCA);
-                                    state  <= stateSEEK;
-                                 end
-                            end
-
-                          //
-                          // Drive Clear Command
-                          //
-
-                          `funCLEAR:
-                            begin
-                               state <= stateCLEAR;
-                            end
-
-                          //
-                          // Port Release Command
-                          //  This command does nothing.
-                          //
-
-                          `funRELEASE:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else
-                                 state <= stateDONE;
-                            end
-
-                          //
-                          // Offset Comand
-                          //  On an RPxx disk, the offset command moves the
-                          //  heads off the track centerline as specfied by the
-                          //  RPOF register either toward the spindle or away
-                          //  from the spindle.
-                          //
-                          //  This command does nothing.
-                          //
-
-                          `funOFFSET:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else
-                                 state <= stateATA;
-                            end
-
-                          //
-                          // Return to Centerline Command.
-                          //
-                          // On an RPxx disk, this command would return the
-                          // heads back to the centerline of the track.
-                          //
-                          // This command does nothing.
-                          //
-
-                          `funCENTER:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else
-                                 state <= stateATA;
-                            end
-
-                          //
-                          // Read-in Preset Command
-                          //
-
-                          `funPRESET:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else
-                                 state <= statePRESET;
-                            end
-
-                          //
-                          // Pack Acknowldege Command
-                          //
-
-                          `funPAKACK:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else
-                                 state <= statePAKACK;
-                            end
-
-                          //
-                          // Search Command
-                          //
-                          //  On an RPxx disk, The search command compares the
-                          //  actual sector address with the requested sector
-                          //  address.  When they match, the adapter asserts
-                          //  the attention line.
-                          //
-                          //  This command behaves exactly the same as a seek
-                          //  command.
-                          //
-
-                          `funSEARCH:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else if ((rpDCA > lastCYL) |
-                                        (rpTA  > lastTRACK) |
-                                        (rpSA  > lastSECTOR))
-                                 state <= stateINVADDR;
-                               else
-                                 begin
-                                    rpSDOP <= `sdopNOP;
-                                    delay  <= seekDELAY(rpDCA, rpCCA);
-                                    state  <= stateSEEK;
-                                 end
-                            end
-
-////////////////////////////////////////////////////////////////////////////////
-
-                          //
-                          // Write Check Commands
-                          //
-
-                          `funWRCHK,
-                          `funWRCHKH:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else if ((rpDCA > lastCYL) |
-                                        (rpTA  > lastTRACK) |
-                                        (rpSA  > lastSECTOR))
-                                 state <= stateINVADDR;
-                               else
-                                 begin
-                                    rpSDOP <= `sdopWRCHK;
-                                    state  <= stateSEEK;
-                                 end
-                            end
-
-                          //
-                          // Write Commands
-                          //
-
-                          `funWRITE,
-                          `funWRITEH:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else if (rpWP)
-                                 state <= stateWRLOCK;
-                               else if ((rpDCA > lastCYL) |
-                                        (rpTA  > lastTRACK) |
-                                        (rpSA  > lastSECTOR))
-                                 state <= stateINVADDR;
-                               else
-                                 begin
-                                    rpSDOP <= `sdopWR;
-                                    state  <= stateSEEK;
-                                 end
-                            end
-
-                          //
-                          // Read Commands
-                          //
-
-                          `funREAD,
-                          `funREADH:
-                            begin
-                               if (rpERR)
-                                 state <= stateILLFUN;
-                               else if ((rpDCA > lastCYL) |
-                                        (rpTA  > lastTRACK) |
-                                        (rpSA  > lastSECTOR))
-                                 state <= stateINVADDR;
-                               else
-                                 begin
-                                    rpSDOP <= `sdopRD;
-                                    state  <= stateSEEK;
-                                 end
-                            end
-
-                          //
-                          // Functions that don't exist
-                          //
-
-                          default:
-                            state <= stateILLFUN;
-
-                        endcase
-                   end
-
-                 //
-                 // stateSEEK
-                 //  This state starts the SD Address Calculation
-                 //
-
-                 stateSEEK:
-                   begin
-                      state <= stateSEEKDLY;
-                   end
-
-                 //
-                 // stateSEEKDLY
-                 //
-                 //  Simulate Seek Timing on Seek Commands.
-                 //
-                 //
-
-                 stateSEEKDLY:
-                   begin
-                      if (delay == 0)
-                        state <= stateSEEKEND;
-                      else
-                        delay <= delay - 1'b1;
-                   end
-
-                 //
-                 // stateSEEKEND
-                 //
-                 //  Update Current Cylinder Address after delay.
-                 //
-
-                 stateSEEKEND:
-                   begin
-                      if (rpSDOP == `sdopNOP)
-                        state <= stateATA;
-                      else
-                        begin
-                           if (simTIME)
-                             delay <= fiveMS;
-                           else
-                             delay <= oneUS;
-                           state <= stateROTDLY;
-                        end
-                   end
-
-                 //
-                 // stateROTDLY:
-                 //
-                 //  Simulate Rotation Latency on Reads/Writes
-                 //
-
-                 stateROTDLY:
-                   begin
-                      if (delay == 0)
-                        state <= stateWAITSD;
-                      else
-                        delay <= delay - 1'b1;
-                   end
-
-                 //
-                 // stateWAITSD:
-                 //
-                 //  Wait for SD to handle Read/Write operaton
-                 //
-
-                 stateWAITSD:
-                   begin
-                      if (rpSDACK)
-                        state <= stateDONE;
-                   end
-
-                 //
-                 // stateCLEAR
-                 //
-                 //  This state modifies the bits that occur when Clear Command
-                 //  function is executed.
-                 //
-
-                 stateCLEAR:
-                   state <= stateDONE;
-
-                 //
-                 // statePRESET
-                 //
-                 //  This state modifies the bits that occur when Preset Command
-                 //  function is executed.
-                 //
-
-                 statePRESET:
-                   state <= stateDONE;
-
-                 //
-                 // stateOFFSET
-                 //
-                 //  This state modifies the bits that occur when Offset Command
-                 //  function is executed.
-                 //
-
-                 stateOFFSET:
-                   state <= stateDONE;
-
-                 //
-                 // stateCENTER
-                 // This state modifies the bits that occur
-                 // when Return Command function is executed.
-                 //
-
-                 stateCENTER:
-                   state <= stateDONE;
-
-                 //
-                 // statePAKACK
-                 // This state modifies the bits that occur
-                 // when Pack Acknowledge Command function
-                 // is executed.
-                 //
-
-                 statePAKACK:
-                   state <= stateDONE;
-
-                 //
-                 // stateILLFUN
-                 // This state modifies the bits that occur
-                 // when an illegal function is executed.
-                 //
-
-                 stateILLFUN:
-                   state <= stateDONE;
-
-                 //
-                 // stateINVADDR
-                 // This state modifies the bits that occur
-                 // when an invalid seek error is provided.
-                 //
-
-                 stateINVADDR:
-                   state <= stateDONE;
-
-                 //
-                 // stateWRLOCK
-                 // This state modifies the bits that occur
-                 // when a write-locked disk is written to
-                 //
-
-                 stateWRLOCK:
-                   state <= stateDONE;
-
-                 //
-                 // stateATA
-                 // This state sets the RPDS[ATA] bit.
-                 //
-
-                 stateATA:
-                   state <= stateDONE;
-
-                 //
-                 // stateDONE:
-                 //  Update the disk state
-                 //
-
-                 stateDONE:
-                   begin
-                      rpSDOP <= `sdopNOP;
-                      state  <= stateIDLE;
-                   end
-
-                 //
-                 // Everything else
-                 //
-
-                 default:
-                   state <= stateIDLE;
-
-               endcase
-          end
-     end
-
-   assign rpDT    = drvTYPE;
-   assign rpSDREQ = (state == stateWAITSD);
+   RPCTRL #(
+      .simTIME     (simTIME)
+   )
+   CTRL (
+      .clk         (clk),
+      .rst         (rst),
+      .clr         (clr),
+      .rpCMDGO     (rpCMDGO),
+      .rpCMDFUN    (`rpCS1_FUN(rpDATAI)),
+      .rpADRSTRT   (rpADRSTRT),
+      .rpADRBUSY   (rpADRBUSY),
+      .rpPIP       (rpPIP),
+      .rpDRY       (rpDRY),
+      .rpSETWLE    (rpSETWLE),
+      .rpSETATA    (rpSETATA),
+      .rpSETIAE    (rpSETIAE),
+      .rpccWRITE   (rpccWRITE),
+      .rpSDOP      (rpSDOP),
+      .rpSDREQ     (rpSDREQ),
+      .rpSDACK     (rpSDACK),
+      .rpDCA       (rpDCA),
+      .rpCCA       (rpCCA)
+   );
+
+   //
+   // Fixups
+   //
+
+   assign rpDT = drvTYPE;
 
 endmodule

@@ -43,7 +43,7 @@
 
 module RHBA(clk, rst, devRESET,
             devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE,
-            rhbaWRITE, rhCLR, rhRDY, rhINCBA, rhBA);
+            rhbaWRITE, rhCLR, rhRDY, rhBAI, rhINCBA, rhBA);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
@@ -55,6 +55,7 @@ module RHBA(clk, rst, devRESET,
    input          rhbaWRITE;                    // Write to BA
    input          rhCLR;                        // Controller clear
    input          rhRDY;                        // Controller ready
+   input          rhBAI;                        // Inhibit increment
    input          rhINCBA;                      // Increment BA
    output [17: 0] rhBA;                         // rhBA Output
 
@@ -101,7 +102,7 @@ module RHBA(clk, rst, devRESET,
                if (devLOBYTE)
                  addr[ 7: 1] <= `rhBA_LO(rhDATAI);
             end
-          else if (rhINCBA)
+          else if (rhINCBA & !rhBAI)
             addr <= addr + 1'b1;
      end
 

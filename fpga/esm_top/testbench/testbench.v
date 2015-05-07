@@ -38,7 +38,8 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`define STRDEF 0:20*8-1
+`define STRLEN 80
+`define STRDEF 0:`STRLEN*8-1
 
 module testbench;
 
@@ -76,7 +77,7 @@ module testbench;
    // RH11 Secure Digital Interface
    //
 
-   wire        rh11CD = 0;      // RH11 Card Detect
+   wire        rh11CD_N = 0;    // RH11 Card Detect
    wire        rh11MISO;        // RH11 Data In
    wire        rh11MOSI;        // RH11 Data Out
    wire        rh11SCLK;        // RH11 Clock
@@ -142,6 +143,13 @@ module testbench;
    localparam [18:35] addrRHBASE  = 18'o000036;
    localparam [18:35] addrBOOTDSK = 18'o000037;
    localparam [18:35] addrBOOTMAG = 18'o000040;
+
+   //
+   // Line buffer for expect()
+   //
+
+   reg [`STRDEF] inBuf;
+   reg [`STRDEF] outBuf;
 
    //
    // Task to write to KS10 memory
@@ -376,6 +384,98 @@ module testbench;
       end
    endtask
 
+
+
+   //
+   // strlen()
+   //
+
+   function [0:31] strlen;
+      input [`STRDEF] s;
+      integer i;
+      begin : loop
+         for (i = 0; i < `STRLEN; i = i + 1)
+           begin
+              if (s == 0)
+                begin
+                   strlen = i;
+                   disable loop;
+                end
+              s = s >> 8;
+           end
+      end
+   endfunction // strlen
+
+   //
+   // This function left justifies a string
+   //
+
+   function [`STRDEF] ljstr;
+      input [`STRDEF] s;
+      begin
+         while (s[0:7] == 0)
+           s = s << 8;
+         ljstr = s;
+      end
+   endfunction
+
+   //
+   // This function left justifies a line
+   //
+
+   function [`STRDEF] ljlin;
+      input [`STRDEF] l;
+      begin
+         while (l[0:7] == 0)
+           l = l << 8;
+         ljlin = l;
+      end
+   endfunction
+
+   //
+   // This function right justifies a line
+   //
+
+   function [`STRDEF] rjlin;
+      input [`STRDEF] l;
+      begin
+         while (l[`STRLEN*8-8:`STRLEN*8-1] == 0)
+           l = l >> 8;
+         rjlin = l;
+      end
+   endfunction
+
+   //
+   // strcmp()
+   //
+
+   function [0:0] strcmp;
+      input [`STRDEF] s;
+      input [`STRDEF] l;
+      begin : break
+         //$display("$$$$$$$$$$$$$$$$$$ Comparing \"%s\" and \"%s\".", s, l);
+         //$display("$$$$$$$$$$$$$$$$$$ Comparing \"%c\" and \"%c\" top", l[`STRLEN*8-8:`STRLEN*8-1], s[`STRLEN*8-8:`STRLEN*8-1]);
+         if ((l[`STRLEN*8-8:`STRLEN*8-1] == s[`STRLEN*8-8:`STRLEN*8-1]) && (s != 0) || (l != 0))
+           begin
+              strcmp = 0;
+              while ((s != "") && (l != ""))
+                begin
+                   if (l[`STRLEN*8-8:`STRLEN*8-1] != s[`STRLEN*8-8:`STRLEN*8-1])
+                     begin
+                        //$display("$$$$$$$$$$$$$$$$$$ NO MATCH $$$$$$$$$$$$$$$$$$");
+                        strcmp = 1;
+                        disable break;
+                     end
+                   s = s >> 8;
+                   l = l >> 8;
+                   //$display("$$$$$$$$$$$$$$$$$$ Comparing \"%c\" and \"%c\".", l[`STRLEN*8-8:`STRLEN*8-1], s[`STRLEN*8-8:`STRLEN*8-1]);
+                end
+           end
+         else
+           strcmp = 1;
+      end
+   endfunction
+
    //
    // This task polls the console output register.  When the VALID bit is
    // asserted, a character is present.  When the character has been read, the
@@ -384,21 +484,22 @@ module testbench;
 
    task getchar;
       input  integer fd;
-      input  [18:35] addr;
       reg    [ 0:35] temp;
       begin
-         conREADMEM(addr, temp);
+         conREADMEM(addrCOUT, temp);
          if (temp[27])
            begin
               if ((temp[28:35] >= 8'h20) && (temp[28:35] < 8'h7f))
                 begin
                    $display("[%11.3f] KS10: CTY Output: \"%s\"", $time/1.0e3, temp[28:35]);
                    $fwrite(fd, "%s", temp[28:35]);
+                   inBuf = {inBuf, temp[28:35]};
                 end
               else if ((temp[28:35] == 8'h0a) || (temp[28:35] == 8'h0d))
                 begin
                    $display("[%11.3f] KS10: CTY Output: \"<%02x>\"", $time/1.0e3, temp[28:35]);
                    $fwrite(fd, "%s", temp[28:35]);
+                   inBuf = 0;
                 end
               else
                 begin
@@ -406,17 +507,65 @@ module testbench;
 //                 $fwrite(fd, "<%02x>", temp[28:35]);
                 end
               $fflush(fd);
-              conWRITEMEM(addr, 36'b0);
+              conWRITEMEM(addrCOUT, 36'b0);
            end
       end
    endtask
 
    //
-   // This task writes a string to the CTY input at a specific time
+   // putchar()
+   //
+
+   task putchar;
+      input [0:7] ch;
+      begin
+         outBuf = {outBuf, ch};
+      end
+   endtask
+
+   //
+   // puts()
    //
 
    task puts;
-      input [18:35]   addr;
+      input [`STRDEF] s;
+      begin
+         outBuf = 0;
+         while (s != 0)
+           begin
+              s = ljstr(s);
+              putchar(s[0:7]);
+              s = s << 8;
+           end
+      end
+   endtask
+
+   //
+   // charout
+   //
+
+   task charout;
+      reg [0:35] temp;
+      begin
+         conREADMEM(addrCIN, temp);
+         if ((outBuf != 0) && !temp[27])
+           begin
+              outBuf = ljlin(outBuf);
+
+              //$display("*************** outbuf = \"%s\".", outBuf);
+
+              conWRITEMEM(addrCIN, {23'b0, 1'b1, outBuf[0:7]});
+              if ((outBuf[0:7] >= 8'h20) && (outBuf[0:7] < 8'h7f))
+                $display("[%11.3f] KS10: CTY Input: \"%s\"", $time/1.0e3, outBuf[0:7]);
+              else
+                $display("[%11.3f] KS10: CTY Input: \"<%02x>\"", $time/1.0e3, outBuf[0:7]);
+              outBuf = outBuf << 8;
+              //outBuf = rjlin(outBuf);
+           end
+      end
+   endtask
+
+  task putt;
       input [ 0:35]   ch;
       inout [`STRDEF] msg;
       input time trigger;
@@ -431,14 +580,27 @@ module testbench;
    endtask
 
    //
-   // This task left justifies a string
+   // Expect
    //
 
-   task ljstr;
-      inout [`STRDEF] str;
+   task expect;
+      input [`STRDEF] inString;
+      input [`STRDEF] outString;
+      inout state;
       begin
-         while (str[0:7] == 0)
-           str = str << 8;
+         if (strcmp(inString, inBuf) == 0)
+           begin
+              if (state == 0)
+                begin
+                   $display("--------------- expect(%s) triggered -----------------", inString);
+                   $display("\007\007\007\007\007");
+                   puts(outString);
+                   state = 1;
+                   //$display("---------------- outBuf \"%s\" -------------------", outBuf);
+                end
+           end
+         else
+           state = 0;
       end
    endtask
 
@@ -459,16 +621,17 @@ module testbench;
         // Initial state
         //
 
-        clk      = 0;
-        reset    = 1;
-        conWR_N  = 1;
-        conRD_N  = 1;
-        conBLE_N = 1;
-        conBHE_N = 1;
-        conADDR <= 0;
-        conDATO <= 0;
-
+        clk       = 0;
+        reset     = 1;
+        conWR_N   = 1;
+        conRD_N   = 1;
+        conBLE_N  = 1;
+        conBHE_N  = 1;
+        conADDR  <= 0;
+        conDATO  <= 0;
         initHalt <= 1;
+        inBuf    <= 0;
+        outBuf   <= 0;
 
         //
         // Release reset at 95 nS
@@ -542,23 +705,18 @@ module testbench;
              // Initialize Console Interface
              //
 
-             conWRITEMEM(addrSWITCH, 36'o000000_000000);        // Initialize Switch Register
-             conWRITEMEM(addrSTAT,   36'o000000_000000);        // Maintenance Mode
-             conWRITEMEM(addrRHBASE, 36'o000000_000000);        // RH Base Address
+             conWRITEMEM(addrSWITCH,  36'o000000_000000);       // Initialize Switch Register
+             conWRITEMEM(addrSTAT,    36'o000000_000000);       // Maintenance Mode
+             conWRITEMEM(addrCIN,     36'o000000_000000);       // Console Input
+             conWRITEMEM(addrCOUT,    36'o000000_000000);       // Console Output
+             conWRITEMEM(addrKIN,     36'o000000_000000);       // Klinik Input
+             conWRITEMEM(addrKOUT,    36'o000000_000000);       // Klinik Output
+             conWRITEMEM(addrRHBASE,  36'o000000_000000);       // RH Base Address
+             conWRITEMEM(addrBOOTDSK, 36'o000000_000000);       // Boot Disk Unit Number
+             conWRITEMEM(addrBOOTMAG, 36'o000000_000000);       // Boot Magtape Parameters
 
              //
-             // Initialize Other stuff
-             //
-
-             conWRITEMEM(18'o025741, 36'o000000_000000);
-             conWRITEMEM(18'o026040, 36'o000000_000000);
-             conWRITEMEM(18'o030024, 36'o000000_000000);
-             conWRITEMEM(18'o030037, 36'o000000_000000);
-             conWRITEMEM(18'o061121, 36'o000000_000000);
-             conWRITEMEM(18'o061125, 36'o000000_000000);
-
-             //
-             // Start executing code
+             // Start executing code (Push the Continue Button).
              //
 
 `ifdef ENABLE_TIMER
@@ -597,6 +755,8 @@ module testbench;
 
 `ifdef SIM_CTY
 
+/*
+
    //
    // This task outputs a character to the console input register and then
    // polls the VALID bit to know when the KS10 has picked up the character.
@@ -615,38 +775,53 @@ module testbench;
       end
    endtask
 
-   reg [0:35] ch;
-   integer cty_ofile;
-   integer kty_ofile;
+*/
 
-   reg [`STRDEF] msgSTD = "STD\n";
-   reg [`STRDEF] msgSWT = 16'h59_0d;                    // Y<CR>      : response to "TTY SWITCH CONTROL ? - 0,S OR Y <CR> - "
-   reg [`STRDEF] msgSLH = 56'h30_30_30_31_30_30_0d;     // 000100<CR> : response to LH SWITCHES <# OR ?> -
-   reg [`STRDEF] msgSRH = 56'h30_30_30_30_30_30_0d;     // 000000<CR> : response to RH SWITCHES <# OR ?> -
+   integer fd_cty;
+   reg [0:31] state;
 
    initial
      begin
-        ch = 0;
-        cty_ofile = $fopen("cty_out.txt", "w");
-        kty_ofile = $fopen("kty_out.txt", "w");
+        state = 0;
 
-        ljstr(msgSTD);
-        ljstr(msgSWT);
-        ljstr(msgSLH);
-        ljstr(msgSRH);
+ `ifdef __ICARUS__
+        fd_cty = $fopen({``DEBUG, "_cty_out.txt"}, "w");
+ `else
+        fd_cty = $fopen("cty_out.txt", "w");
+ `endif
 
         #200000;
+
         forever
           begin
-             getchar(cty_ofile, addrCOUT);
-             getchar(kty_ofile, addrKOUT);
+             getchar(fd_cty);
 
-             conREADMEM(addrCIN, ch);
-             puts(addrCIN, ch, msgSTD,  6000000);
-             puts(addrCIN, ch, msgSWT, 23000000);
-             puts(addrCIN, ch, msgSLH, 26000000);
-             puts(addrCIN, ch, msgSRH, 29000000);
+             //
+             // SMMON (DECSYSTEM 2020 DIAGNOSTIC MONITOR) Responses
+             //
 
+             expect("UBA # - ",                                  "0\015",       state[0]);
+             expect("DISK:<DIRECTORY> OR DISK:[P,PN] - ",        "\015",        state[1]);
+             expect("SMMON CMD - ",                              "STD\015",     state[2]);
+             expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",   " Y\015",      state[3]);
+             expect("LH SWITCHES <# OR ?> - ",                   " 000000\015", state[4]);
+             expect("RH SWITCHES <# OR ?> - ",                   " 400000\015", state[5]);
+             
+             //
+             // DSRPA (RP06-RH11 BASIC DRIVE DIAGNOSTIC) Responses
+             //
+
+             expect("LIST PGM SWITCH OPTIONS ?  Y OR N <CR> - ", " N\015",      state[6]);
+             expect("SELECT DRIVES (0-7 OR \"A\") - ",           " 0\015",      state[7]);
+             expect("HEADS LOADED CORRECTLY ?  Y OR N <CR> - ",  " Y\015",      state[8]);
+             expect("PUT DRIVE ON LINE. HIT <CR> WHEN READY",    "\015",        state[9]);
+
+             //
+             //
+             //
+
+
+             charout();
           end
      end
 
@@ -692,7 +867,7 @@ module testbench;
       .TXD              (TXD),
       .RXD              (RXD),
       // RH11 Interfaces
-      .rh11CD           (rh11CD),
+      .rh11CD_N         (rh11CD_N),
       .rh11MISO         (rh11MISO),
       .rh11MOSI         (rh11MOSI),
       .rh11SCLK         (rh11SCLK),

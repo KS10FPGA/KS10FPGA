@@ -46,7 +46,7 @@ module ESM_KS10(RESET_N, CLK50MHZ, MR_N, MR,
                 // DZ11 Interfaces
                 TXD, RXD,
                 // RH11 Interfaces
-                rh11CD, rh11MISO, rh11MOSI, rh11SCLK, rh11CS,
+                rh11CD_N, rh11MISO, rh11MOSI, rh11SCLK, rh11CS,
                 // Console Interfaces
                 conADDR, conDATA, conBLE_N, conBHE_N, conRD_N, conWR_N, conINTR_N,
                 // SSRAM Interfaces
@@ -64,7 +64,7 @@ module ESM_KS10(RESET_N, CLK50MHZ, MR_N, MR,
    input  [1: 2]  TXD;          // DZ11 RS-232 Transmitted Data
    output [1: 2]  RXD;          // DZ11 RS-232 Received Data
    // RH11 Interfaces
-   input          rh11CD;       // RH11 Card Detect
+   input          rh11CD_N;     // RH11 Card Detect
    input          rh11MISO;     // RH11 Data In
    output         rh11MOSI;     // RH11 Data Out
    output         rh11SCLK;     // RH11 Clock
@@ -120,7 +120,7 @@ module ESM_KS10(RESET_N, CLK50MHZ, MR_N, MR,
       .dz11CO           (dz11CO),
       .dz11RI           (dz11RI),
       // RH11
-      .rh11CD           (rh11CD),
+      .rh11CD           (!rh11CD_N),
       .rh11WP           (rh11WP),
       .rh11MISO         (rh11MISO),
       .rh11MOSI         (rh11MOSI),

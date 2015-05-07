@@ -42,27 +42,27 @@
 `include "rpdc.vh"
 `include "rpds.vh"
 
-module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
-            setATA, setERR, setPIP, setLST,
-            setPGM, setDPR, setDRY,
-            cmdDRVCLR, cmdPRESET, cmdPAKACK, rpDS);
+module RPDS(clk, rst, clr, rhATACLR, rpSETLST, rpSETATA, rpCD, rpWP, rpPIP,
+            rpDRY, rpDRVCLR, rpPRESET, rpPAKACK, rpdaWRITE,
+            rpER1, rpER2, rpER3, rpDS);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clr
-   input          ataCLR;                       // Clr ATA
-   input          rpCD;                         // SD Card Detect
-   input          rpWP;                         // SD Write Protect
-   input          setATA;                       // Set ATA
-   input          setERR;                       // Set ERR
-   input          setPIP;                       // Set PIP
-   input          setLST;                       // Set LST
-   input          setPGM;                       // Set PGM
-   input          setDPR;                       // Set DPR
-   input          setDRY;                       // Set DRY
-   input          cmdDRVCLR;                    // Drive clear command
-   input          cmdPRESET;                    // Preset command
-   input          cmdPAKACK;                    // Pack Ack command
+   input          rhATACLR;                     // ATA clr
+   input          rpSETLST;                     // Last sector transferred
+   input          rpSETATA;                     // Set ATA
+   input          rpCD;                         // SD Card detect
+   input          rpWP;                         // SD Write protect
+   input          rpPIP;                        // Positioning in progress
+   input          rpDRY;                        // Drive ready
+   input          rpDRVCLR;                     // Drive clear command
+   input          rpPRESET;                     // Preset command
+   input          rpPAKACK;                     // Pack Ack command
+   input          rpdaWRITE;                    // Write RPDA
+   input  [15: 0] rpER1;                        // rpER1 register
+   input  [15: 0] rpER2;                        // rpER2 register
+   input  [15: 0] rpER3;                        // rpER3 register
    output [15: 0] rpDS;                         // rpDS register
 
    //
@@ -71,33 +71,33 @@ module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
    // Trace
    //  M7787/DP2/E57
    //  M7774/RG6/E23
-   //  M7774/RG5/E37 (online transition)
-   //  M7774/RG5/E39 (online transition)
-   //  M7774/RG5/E48 (unload command/Go with composite error)
+   //  M7774/RG5/E37
+   //  M7774/RG5/E39
+   //  M7774/RG5/E48
    //  M7774/RG5/E66
-   //  M7774/RG5/E68 (search complete)
-   //  M7774/RG5/E81 (position complete)
-   //  M7774/RG5/E79 (release command)
+   //  M7774/RG5/E68
+   //  M7774/RG5/E81
+   //  M7774/RG5/E79
    //  M7774/RG5/E80
-   //  M7774/RG5/E81 (position complete)
-   //  M7774/RG5/E51 (position complete)
-   //  M7774/RG5/E57 (position complete)
+   //  M7774/RG5/E81
+   //  M7774/RG5/E51
+   //  M7774/RG5/E57
    //
 
-   reg rpATA;
+   reg dsATA;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          rpATA <= 0;
+          dsATA <= 0;
         else
-          if (clr | ataCLR | cmdDRVCLR)
-            rpATA <= 0;
-          else if (setATA)
-            rpATA <= 1;
+          if (clr | rhATACLR | rpDRVCLR)
+            dsATA <= 0;
+          else if (rpSETATA)
+            dsATA <= 1;
      end
 
    //
-   // RPDS Error (rpERR)
+   // RPDS Composite Error (rpERR)
    //
    // Trace
    //  M7774/RG0/E4
@@ -115,7 +115,7 @@ module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
    //  M7776/EC7/E95
    //
 
-   wire rpERR = setERR;
+   wire dsERR = (rpER1 != 0) | (rpER2 != 0) | (rpER3 != 0);
 
    //
    // RPDS Positioning In Progress (rpPIP)
@@ -126,7 +126,7 @@ module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
    //  M7774/RG6/E23
    //
 
-   wire rpPIP = setPIP;
+   wire dsPIP = rpPIP;
 
    //
    // RPDS Medium On-Line (rpMOL)
@@ -135,7 +135,7 @@ module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
    //  M7774/RG6/E23
    //
 
-   wire rpMOL = rpCD;
+   wire dsMOL = rpCD;
 
    //
    // RPDS Write Lock (rpWRL)
@@ -144,7 +144,7 @@ module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
    //  M7774/RG6/E16
    //
 
-   wire rpWRL = rpWP;
+   wire dsWRL = rpWP;
 
    //
    // RPDS Last Sector Transferred (rpLST)
@@ -152,9 +152,20 @@ module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
    // Trace
    //  M7774/RG6/E16
    //  M7774/RG6/E40
+   //  SS4/
    //
 
-   wire rpLST = setLST;
+   reg dsLST;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          dsLST <= 0;
+        else
+          if (clr | rpdaWRITE)
+            dsLST <= 0;
+          else if (rpSETLST)
+            dsLST <= 1;
+     end
 
    //
    // RPDS Programmable (rpPGM)
@@ -164,7 +175,7 @@ module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
    //  M7774/RG6/E16
    //
 
-   wire rpPGM = setPGM;
+   wire dsPGM = 1;
 
    //
    // RPDS Drive Present (rpDPR)
@@ -173,7 +184,7 @@ module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
    //  M7774/RG6/E16
    //
 
-   wire rpDPR = setDPR;
+   wire dsDPR = 1;
 
    //
    // RPDS Drive Ready (rpDRY)
@@ -182,7 +193,7 @@ module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
    //  M7774/RG6/E16
    //
 
-   wire rpDRY = setDRY;
+   wire dsDRY = rpDRY;
 
    //
    // RPDS Volume Valid (rpVV)
@@ -197,23 +208,23 @@ module RPDS(clk, rst, clr, ataCLR, rpCD, rpWP,
    //  M7774/RG6/E16
    //
 
-   reg rpVV;
+   reg dsVV;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          rpVV <= 0;
+          dsVV <= 0;
         else
           if (clr | !rpCD)
-            rpVV <= 0;
-          else if (rpCD & (cmdPRESET | cmdPAKACK))
-            rpVV <= 1;
+            dsVV <= 0;
+          else if (rpCD & (rpPRESET | rpPAKACK))
+            dsVV <= 1;
      end
 
    //
    // Build RPDS
    //
 
-   assign rpDS = {rpATA, rpERR, rpPIP, rpMOL, rpWRL, rpLST,
-                  rpPGM, rpDPR, rpDRY, rpVV,  6'b0};
+   assign rpDS = {dsATA, dsERR, dsPIP, dsMOL, dsWRL, dsLST,
+                  dsPGM, dsDPR, dsDRY, dsVV,  6'b0};
 
 endmodule

@@ -40,13 +40,14 @@
 
 `include "rpcs1.vh"
 
-module RPCS1(clk, rst, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
+module RPCS1(clk, rst, clr, rpDATAI, rpcs1WRITE, rpDRY, rpCS1);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
-   input          clrGO;                        // Clear Go bit
+   input          clr;                          // Clr
    input  [35: 0] rpDATAI;                      // RH Data In
    input          rpcs1WRITE;                   // Write to CS1
+   input          rpDRY;                        // Drive ready
    output [15: 0] rpCS1;                        // rpCS1 Output
 
    //
@@ -72,7 +73,7 @@ module RPCS1(clk, rst, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
         if (rst)
           rpFUN <= 0;
         else
-          if (rpcs1WRITE)
+          if (rpcs1WRITE & rpDRY)
             rpFUN <= `rpCS1_FUN(rpDATAI);
      end
 
@@ -83,17 +84,7 @@ module RPCS1(clk, rst, clrGO, rpDATAI, rpcs1WRITE, rpCS1);
    //  M7774/RG3/E44
    //
 
-   reg rpGO;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          rpGO <= 0;
-        else
-          if (clrGO)
-            rpGO <= 0;
-          else if (rpcs1WRITE)
-            rpGO <= `rpCS1_GO(rpDATAI);
-     end
+   wire rpGO = !rpDRY;
 
    //
    // Build CS1 Register

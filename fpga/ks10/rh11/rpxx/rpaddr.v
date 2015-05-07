@@ -3,13 +3,18 @@
 // KS-10 Processor
 //
 // Brief
-//   SD Card Sector Address Calculator
+//   Linear Sector Address Calculator
 //
 // Details
-//   This module calculates a SD Sector Address from the Disk CHS address.
+//   This module calculates a Linear Sector Address from the Disk CHS address.
+//   The linear sector address is used the SD Card.  This calculation follows
+//   the SIMH addressing convention.
+//
+//   This requires 75 clock cycles to perform the address calculation
+//   (worst case).
 //
 // File
-//   sdaddr.v
+//   rpaddr.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -41,18 +46,19 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module SDADDR(clk, rst, lastTRACK, lastSECTOR, start, rpDCA, rpTA, rpSA, sdADDR, done);
+module RPADDR(clk, rst, rpTRKNUM, rpSECNUM, rpDCA, rpTA, rpSA, rpSDLSA,
+              rpADRSTRT, rpADRBUSY);
 
    input          clk;          // Clock
    input          rst;          // Reset
-   input  [ 5: 0] lastTRACK;    // Number of tracks
-   input  [ 5: 0] lastSECTOR;   // Number of sectors
-   input          start;        // Start calculation
+   input  [ 5: 0] rpTRKNUM;     // Number of tracks
+   input  [ 5: 0] rpSECNUM;     // Number of sectors
    input  [ 9: 0] rpDCA;        // Cylinder
    input  [ 5: 0] rpTA;         // Track
    input  [ 5: 0] rpSA;         // Sector
-   output [31: 0] sdADDR;       // SD Sector Address
-   output         done;         // Calculation completed
+   output [31: 0] rpSDLSA;      // Linear sector address
+   input          rpADRSTRT;    // Start calculation
+   output         rpADRBUSY;    // Calculation completed
 
    //
    // States
@@ -86,11 +92,11 @@ module SDADDR(clk, rst, lastTRACK, lastSECTOR, start, rpDCA, rpTA, rpSA, sdADDR,
              case (state)
                stateIDLE:
                  begin
-                    if (start)
+                    if (rpADRSTRT)
                       begin
                          sum   <= 0;
                          temp  <= rpDCA;
-                         loop  <= lastTRACK;
+                         loop  <= rpTRKNUM;
                          state <= stateTRACK;
                       end
                  end
@@ -100,7 +106,7 @@ module SDADDR(clk, rst, lastTRACK, lastSECTOR, start, rpDCA, rpTA, rpSA, sdADDR,
                       begin
                          sum   <= 0;
                          temp  <= sum + rpTA;
-                         loop  <= lastSECTOR;
+                         loop  <= rpSECNUM;
                          state <= stateSECT;
                       end
                     else
@@ -131,7 +137,7 @@ module SDADDR(clk, rst, lastTRACK, lastSECTOR, start, rpDCA, rpTA, rpSA, sdADDR,
           end
      end
 
-   assign sdADDR = sum;
-   assign done   = (state == stateIDLE);
+   assign rpSDLSA   = sum;
+   assign rpADRBUSY = !(state == stateIDLE);
 
 endmodule

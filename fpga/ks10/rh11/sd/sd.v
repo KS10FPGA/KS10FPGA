@@ -49,11 +49,11 @@ module SD(clk, rst,
           // SPI Interface
           sdMISO, sdMOSI, sdSCLK, sdCS,
           // Control
-          sdOP, sdSECTADDR, sdWDCNT,
+          sdOP, sdLSA, sdWDCNT,
           // Data Interface
           sdDATAI, sdDATAO, sdREQO, sdACKI,
           //
-          sdINCWORD, sdINCSECT, sdSETWCE, sdSTAT,
+          sdINCWORD, sdINCSECT, sdSETWCE,
           // Debug
           sdDEBUG);
 
@@ -66,7 +66,7 @@ module SD(clk, rst,
    output        sdCS;                  // SD Chip Select
    // Control
    input  [ 1:0] sdOP;                  // SD Operation
-   input  [31:0] sdSECTADDR;            // SD Sector Number
+   input  [31:0] sdLSA;                 // SD Linear sector address
    input  [15:0] sdWDCNT;               // SD Word Count
 
    // DMA Interface
@@ -79,7 +79,6 @@ module SD(clk, rst,
    output        sdINCWORD;             // Increment Word Count
    output        sdINCSECT;             // Increment Sector
    output        sdSETWCE;              // Set write check error
-   output        sdSTAT;                // Status
    output [0:63] sdDEBUG;               // Debug Output
 
    //
@@ -1002,7 +1001,7 @@ module SD(clk, rst,
                         begin
                            readOP   <= 1;
                            wdCNT    <= sdWDCNT;
-                           sectADDR <= sdSECTADDR;
+                           sectADDR <= sdLSA;
                            sdRDCNT  <= sdRDCNT + 1'b1;
                            state    <= stateREAD00;
                         end
@@ -1010,7 +1009,7 @@ module SD(clk, rst,
                         begin
                            readOP   <= 0;
                            wdCNT    <= sdWDCNT;
-                           sectADDR <= sdSECTADDR;
+                           sectADDR <= sdLSA;
                            sdWRCNT  <= sdWRCNT + 1'b1;
                            state    <= stateWRITE00;
                         end
@@ -1018,7 +1017,7 @@ module SD(clk, rst,
                         begin
                            readOP   <= 1;
                            wdCNT    <= sdWDCNT;
-                           sectADDR <= sdSECTADDR;
+                           sectADDR <= sdLSA;
                            sdRDCNT  <= sdRDCNT + 1'b1;
                            state    <= stateWRCHK00;
                         end

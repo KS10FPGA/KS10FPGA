@@ -41,7 +41,7 @@
 `include "rhcs1.vh"
 
 module RHCS1(clk, rst,
-             devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE, goCLR, treCLR,
+             devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE, rhCLRGO, rhCLRTRE,
              rhDLT, rhWCE, rhUPE, rhNED, rhNEM, rhPGE, rhMXF, rhDPE, rhCLR, rhIACK,
              rpATA, rpERR, rpDVA, rpFUN, rpGO, rhBA, rhCS1);
 
@@ -52,8 +52,8 @@ module RHCS1(clk, rst,
    input          devHIBYTE;                    // Device high byte
    input  [ 0:35] devDATAI;                     // Device data in
    input          rhcs1WRITE;                   // CS1 write
-   input          goCLR;                        // Go clear
-   input          treCLR;                       // Transfer error clear
+   input          rhCLRGO;                      // Go clear
+   input          rhCLRTRE;                     // Transfer error clear
    input          rhDLT;                        // Data late error       (RHCS2[DLT])
    input          rhWCE;                        // Write check error     (RHCS2[WCE])
    input          rhUPE;                        // Unibus parity error   (RHCS2[UPE])
@@ -132,10 +132,10 @@ module RHCS1(clk, rst,
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          cs1TRE  <= 0;
+          cs1TRE <= 0;
         else
           begin
-             if (devRESET | rhCLR | treCLR | goCLR)
+             if (devRESET | rhCLR | rhCLRTRE | rhCLRGO)
                cs1TRE <= 0;
              else if (statTRE & !lastTRE)
                cs1TRE <= 1;

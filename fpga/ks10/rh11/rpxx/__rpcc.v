@@ -40,13 +40,13 @@
 
 `include "rpcc.vh"
 
-module RPCC(clk, rst, clr, data, write, rpCC);
+module RPCC(clk, rst, clr, rpDC, rpccWRITE, rpCC);
 
    input          clk;                          // Clock
    input          rst;                          // Reset
    input          clr;                          // Clear
-   input  [15: 0] data;                         // Data in
-   input          write;                        // Write
+   input  [15: 0] rpDC;                         // Data in
+   input          rpccWRITE;                    // Write
    output [15: 0] rpCC;                         // rpCC Output
 
    //
@@ -57,6 +57,9 @@ module RPCC(clk, rst, clr, data, write, rpCC);
    //  M7786/SS1/E5
    //  M7786/SS1/E21
    //
+   // FIXME
+   //  rpCCA should be cleared by recalibrate command
+   //
 
    reg [9:0] rpCCA;
    always @(posedge clk or posedge rst)
@@ -66,8 +69,8 @@ module RPCC(clk, rst, clr, data, write, rpCC);
         else
           if (clr)
             rpCCA <= 0;
-          else if (write)
-            rpCCA <= `rpCC_CCA(data);
+          else if (rpccWRITE)
+            rpCCA <= `rpCC_CCA(rpDC);
      end
 
    //
