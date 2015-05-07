@@ -12,7 +12,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013 Rob Doyle
+// Copyright (C) 2013-2015 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

@@ -25,7 +25,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2014-2015 Rob Doyle
+// Copyright (C) 2013-2015 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -69,7 +69,7 @@
 // Fatal error macro
 //
 
-#define fatal(...)                \
+#define fatal(...)              \
     do {                        \
         ROM_IntMasterDisable(); \
         printf( __VA_ARGS__);   \
@@ -180,6 +180,24 @@ const char *prerror(portBASE_TYPE error) {
             return "Unknown";
     }
 }
+
+//
+//
+// ! Initialize the Communications block.
+//
+
+static void initCOMBLK(void) {
+    ks10_t::writeMem(000030, 0000000000000);	// Initialize switch register
+    ks10_t::writeMem(000031, 0000000000000);	// Initialize keep-alive
+    ks10_t::writeMem(000032, 0000000000000);	// Initialize CTY input word
+    ks10_t::writeMem(000033, 0000000000000);	// Initialize CTY output word
+    ks10_t::writeMem(000034, 0000000000000);	// Initialize KTY input word
+    ks10_t::writeMem(000035, 0000000000000);	// Initialize KTY output word
+    ks10_t::writeMem(000036, 0000000000000);	// Initialize RH11 base address
+    ks10_t::writeMem(000037, 0000000000000);	// Initialize UNIT number
+    ks10_t::writeMem(000040, 0000000000000);	// Initialize magtape params.
+}
+
 
 //
 //! Read characters from the input and create a command line

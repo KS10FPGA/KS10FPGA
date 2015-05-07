@@ -108,16 +108,33 @@ static ks10_t::data_t parseOctal(const char *buf) {
 //! \param
 //!     b is a pointer to the input data
 //!
+//! \details
+//!     Data is in the format:
+//!
+//!       Byte 0:   0  B00 B01 B02 B03 B04 B05 B06
+//!       Byte 1:   0  B07 B08 B09 B10 B11 B12 B13
+//!       Byte 2:   0  B14 B15 B16 B17 B18 B19 B20
+//!       Byte 3:   0  B21 B22 B23 B24 B25 B26 B27
+//!       Byte 4:  B35 B28 B29 B30 B31 B32 B33 B34
+//!
+//!       Note the position of B35!
+//!     
+//!     See "TOPS-10 Tape Processing Manual" Section 6.4 entitled "ANSI-ASCII
+//!     Mode" for format definition.
+//!
+//!     See also document entitled "Dumper and Backup Tape Formats".
+//!
 //! \returns
 //!     36-bit data word
 //!
 
 ks10_t::data_t rdword(const uint8_t *b) {
-    return (((ks10_t::data_t)b[0] << 28) |
-            ((ks10_t::data_t)b[1] << 20) |
-            ((ks10_t::data_t)b[2] << 12) |
-            ((ks10_t::data_t)b[3] <<  4) |
-            ((ks10_t::data_t)b[4] <<  0));
+    return ((((ks10_t::data_t)(b[0] & 0x7f)) << 29) |   // Bit  0 - Bit  6
+            (((ks10_t::data_t)(b[1] & 0x7f)) << 22) |   // Bit  7 - Bit 13
+            (((ks10_t::data_t)(b[2] & 0x7f)) << 15) |   // Bit 14 - Bit 20
+            (((ks10_t::data_t)(b[3] & 0x7f)) <<  8) |   // Bit 21 - Bit 27
+            (((ks10_t::data_t)(b[4] & 0x7f)) <<  1) |   // Bit 28 - Bit 34
+            (((ks10_t::data_t)(b[4] & 0x80)) >>  7));   // Bit 35
 }
 
 //
@@ -226,14 +243,14 @@ static bool loadCode(const char * filename) {
 void printRH11Debug(void) {
     volatile ks10_t::rh11debug_t * rh11debug = ks10_t::getRH11debug();
     printf("KS10> RH11 Status summary: 0x%016llx\n"
-           "KS10>   State  = %d\n"
-           "KS10>   Err    = %d\n"
-           "KS10>   Val    = %d\n"
-           "KS10>   WrCnt  = %d\n"
-           "KS10>   RdCnt  = %d\n"
-           "KS10>   Res1   = 0x%02x\n"
-           "KS10>   Res2   = 0x%02x\n"
-           "KS10>   Status = 0x%02x\n"
+           "KS10>   State = %d\n"
+           "KS10>   Err   = %d\n"
+           "KS10>   Val   = %d\n"
+           "KS10>   WrCnt = %d\n"
+           "KS10>   RdCnt = %d\n"
+           "KS10>   Res1  = 0x%02x\n"
+           "KS10>   Res2  = 0x%02x\n"
+           "KS10>   Res3  = 0x%02x\n"
            "",
            *reinterpret_cast<volatile uint64_t*>(rh11debug),
            rh11debug->state,
@@ -243,7 +260,7 @@ void printRH11Debug(void) {
            rh11debug->rdcnt,
            rh11debug->res1,
            rh11debug->res2,
-           rh11debug->status);
+           rh11debug->res3);
 }
 
 //
@@ -1004,6 +1021,271 @@ static void cmdRD(int argc, char *argv[]) {
 
 #endif
 
+#if 1
+
+//
+// Test RH11
+//
+
+static void cmdRH(int argc, char *argv[]) {
+    const char *usage =
+        "Usage: RH\n"
+        "Test RH11\n";
+
+    const ks10_t::addr_t rhcs1_addr = 01776700;
+    const ks10_t::addr_t rhwc_addr  = 01776702;
+    const ks10_t::addr_t rhba_addr  = 01776704;
+    const ks10_t::addr_t rhda_addr  = 01776706;
+    const ks10_t::addr_t rhcs2_addr = 01776710;
+    const ks10_t::addr_t rpla_addr  = 01776720;
+    const ks10_t::addr_t rhdb_addr  = 01776722;
+    const ks10_t::addr_t rpmr_addr  = 01776724;
+
+    char *buf = argv[1];
+
+    if (buf[0] == 'F' && buf[1] == 'I' && buf[2] == 'F' && buf[3] == 'O') {
+
+        //
+        // Controller Reset
+        //
+        
+        const ks10_t::data_t csr2_clr = 0x0020;
+        ks10_t::writeIO(rhcs2_addr, csr2_clr);
+        
+        //
+        // Read RHCS2
+        //
+        
+        const ks10_t::data_t csr2_ir = 0x0040;
+        const ks10_t::data_t csr2_or = 0x0080;
+
+        ks10_t::data_t csr2 = ks10_t::readIO(rhcs2_addr);
+        
+        //
+        // Test buffer operation
+        //
+        
+        bool fail = false;
+        for (int i = 0; i < 70; i++) {
+            
+            //
+            // Read RHCS2
+            //
+
+            csr2 = ks10_t::readIO(rhcs2_addr) & 0xffff;
+#if 0
+            printf("      %2d: RHCS2 is 0x%04llx (%d)\n", 0, csr2, i);
+#endif
+
+            //
+            // Check results
+            //
+
+            switch (i) {
+                case 0:
+                    if ((csr2 & csr2_ir) == 0) {
+                        fail = true;
+                        printf("      CSR2[IR] should be set after reset\n");
+                    }
+                    if ((csr2 & csr2_or) != 0) {
+                        fail = true;
+                        printf("      CSR2[OR] Should be clear after reset\n");
+                    }
+                    break;
+                case 1 ... 65:
+                    if ((csr2 & csr2_ir) == 0) {
+                        fail = true;
+                        printf("      CSR2[IR] should be set after %d entries.\n", i);
+                    }
+                    if ((csr2 & csr2_or) == 0) {
+                        fail = true;
+                        printf("      CSR2[OR] Should be set after %d entries.\n", i);
+                    }
+                    break;
+                case 66 ... 75:
+                    if ((csr2 & csr2_ir) != 0) {
+                        fail = true;
+                        printf("      CSR2[IR] should be clear after %d entries.\n", i);
+                    }
+                    if ((csr2 & csr2_or) == 0) {
+                        fail = true;
+                        printf("      CSR2[OR] Should be set after %d entries.\n", i);
+                    }
+                    break;
+            }
+
+            //
+            // Write data to RHDB
+            //
+
+            ks10_t::writeIO(rhdb_addr, (ks10_t::data_t)(0xff00 + i));
+
+        }
+        
+        //
+        // Uload the FIFO.   Check for correctness.
+        //
+
+        for (unsigned int i = 0; i < 70; i++) {
+
+            //
+            // Read data from FIFO
+            //
+
+            ks10_t::data_t rhdb = ks10_t::readIO(rhdb_addr) & 0xffff;
+#if 0
+            printf("        ----> 0x%04llx \n", rhdb);
+#endif
+
+            //
+            // Check results
+            //
+
+            switch (i) {
+                case 0 ... 65:
+                    if (rhdb != (0xff00 + i)) {
+                        fail = true;
+                        printf("      Data from FIFO is incorrect on word %d.  Expected 0x%04llx.  Received 0x%04llx.\n",
+                               i, 0xff00 + i, rhdb);
+                    }
+                    break;
+                case 66 ... 75:
+                    if (rhdb != 0) {
+                        fail = true;
+                        printf("      Data from FIFO is incorrect on word %d.  Expected 0x%04llx.  Received 0x%04llx.\n",
+                               i, 0, rhdb);
+                    }
+            }
+        }
+
+        //
+        // Print results
+        //
+
+        printf("      RHDB FIFO test %s.\n", fail ? "failed" : "passed");
+      
+    } else if (buf[0] == 'R' && buf[1] == 'P' && buf[2] == 'L' && buf[3] == 'A') {
+        
+        //
+        // Controller Reset
+        //
+        
+        const ks10_t::data_t csr2_clr = 0x0020;
+        ks10_t::writeIO(rhcs2_addr, csr2_clr);
+
+        //
+        // Put unit in diagnostic mode.  Assert DMD.
+        //
+
+        const ks10_t::data_t mr_dmd  = 0x0001;
+        const ks10_t::data_t mr_dclk = 0x0002;
+        const ks10_t::data_t mr_dind = 0x0004;
+        const ks10_t::data_t mr_dsck = 0x0008;
+        
+        ks10_t::writeIO(rpmr_addr, mr_dmd);
+
+        //
+        // Create index pulse.  Clear byte counter.
+        //  DIND asserted with DSCK clock.  Don't reset DMD.
+        //
+
+        ks10_t::writeIO(rpmr_addr, mr_dind | mr_dsck | mr_dmd);
+        ks10_t::writeIO(rpmr_addr, mr_dmd);
+
+        //
+        // Start clocking bytes
+        //
+
+        bool fail = false;
+        for (int i = 0; i <= 12768; i++) {
+
+            //
+            // Read look ahead register RPLA
+            //
+            
+            unsigned int rpla = ks10_t::readIO(rpla_addr) & 0x0ff0;
+            
+            //
+            // Check results
+            //
+
+            switch (i) {
+                case 0 ... 127:
+                    if (rpla != 0x0000) {
+                        fail = true;
+                        printf("      RPLA SEC should be 0, EXT should be 0 after %3d clocks\n", i);
+                    }
+                    break;
+                case 128 ... 255:
+                    if (rpla != 0x0010) {
+                        fail = true;
+                        printf("      RPLA SEC should be 0, EXT should be 20 after %3d clocks\n", i);
+                    }
+                    break;
+                case 256 ... 511:
+                    if (rpla != 0x0020) {
+                        fail = true;
+                        printf("      RPLA SEC should be 0, EXT should be 40 after %3d clocks\n", i);
+                    }
+                    break;
+                case 512 ... 671:
+                    if (rpla != 0x0030) {
+                        fail = true;
+                        printf("      RPLA SEC should be 0, EXT should be 60 after %3d clocks\n", i);
+                    }
+                    break;
+                case 672 ... 799:
+                    if (rpla != 0x0040) {
+                        fail = true;
+                        printf("      RPLA SEC should be 1, EXT should be 00 after %3d clocks\n", i);
+                    }
+                    break;
+                case 800 ... 927:
+                    if (rpla != 0x0050) {
+                        fail = true;
+                        printf("      RPLA SEC should be 0, EXT should be 20 after %3d clocks\n", i);
+                    }
+                    break;
+                case 928 ... 1183:
+                    if (rpla != 0x0060) {
+                        fail = true;
+                        printf("      RPLA SEC should be 0, EXT should be 40 after %3d clocks\n", i);
+                    }
+                    break;
+                    //                case 12608 ... 12767:
+                case 12767:
+                    if (rpla != 0x04b0) {
+                        fail = true;
+                        printf("      RPLA SEC should be 1, EXT should be 00 after %3d clocks\n", i);
+                    }
+                    break;
+                case 12768:
+                    if (rpla != 0x0000) {
+                        fail = true;
+                        printf("      RPLA SEC should be 0, EXT should be 00 after %3d clocks\n", i);
+                    }
+                    break;
+            }
+
+            //
+            // Create clock pulse
+            //
+
+            ks10_t::writeIO(rpmr_addr, mr_dsck | mr_dmd);
+            ks10_t::writeIO(rpmr_addr, mr_dmd);
+
+        }
+
+        //
+        // Print results
+        //
+
+        printf("      RPLA/RPMR byte counter test %s.\n", fail ? "failed" : "passed");
+   } 
+}
+
+#endif
+
 //
 //! SD Card
 //!
@@ -1436,6 +1718,9 @@ void parseCommand(char * buf) {
         {"RP", cmdXX},          // Not implemented.
 #if 1
         {"RD", cmdRD},          // Simple memory read
+#endif
+#if 1
+        {"RH", cmdRH},          // RH11 Tests
 #endif
         {"SC", cmdXX},          // Not implemented.
         {"SD", cmdSD},

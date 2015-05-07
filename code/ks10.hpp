@@ -15,7 +15,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2014 Rob Doyle
+// Copyright (C) 2013-2015 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -91,14 +91,14 @@ class ks10_t {
         //
 
         struct rh11debug_t {
-            uint8_t status;                             //!< Status (LSB)
-            uint8_t res1;                               //!< Reserved
+            uint8_t res3;                               //!< Reserved
             uint8_t res2;                               //!< Reserved
-            uint8_t wrcnt;                              //!< Write count
+            uint8_t res1;                               //!< Reserved
             uint8_t rdcnt;                              //!< Read count
+            uint8_t wrcnt;                              //!< Write count
             uint8_t val;                                //!< Error value
-            uint8_t state;                              //!< Controller state
             uint8_t err;                                //!< Error number (MSB)
+            uint8_t state;                              //!< Controller state
         };
 
         //

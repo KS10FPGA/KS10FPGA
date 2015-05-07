@@ -15,7 +15,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013 Rob Doyle
+// Copyright (C) 2013-2015 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@
 // Debug macros
 //
 
-#define VERVOSE_SD
+//#define VERBOSE_SD
 
 #ifdef VERBOSE_SD
 #define debug(...) printf(__VA_ARGS__)
@@ -312,14 +312,14 @@ bool sdInitialize(void) {
                     return false;
                 }
 
-                //
-                // Send APP_CMD Command
-                // Check R1 Response
-                //
-
                 int loop = 10;
                 uint8_t rsp41;
                 do {
+
+                    //
+                    // Send APP_CMD Command
+                    // Check R1 Response
+                    //
 
                     debug("Sending CMD55.\n");
                     chipEnable(true);
@@ -330,7 +330,6 @@ bool sdInitialize(void) {
                         debug("CMD55: R1 Response was 0x%02x.\n", rsp55);
                         return false;
                     }
-                    debug("CMD55: R1 Response was 0x%02x.\n", rsp55);
 
                     //
                     // Send APP_SEND_OP_COND Command
@@ -598,7 +597,7 @@ bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
     // Start Writing Data
     //
 
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < 512; i++) {
         transactData(*buf++);
     }
 
