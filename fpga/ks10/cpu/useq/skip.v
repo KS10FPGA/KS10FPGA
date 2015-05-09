@@ -57,15 +57,13 @@
 `include "crom.vh"
 `include "drom.vh"
 
-module SKIP(crom, skip40, skip20, skip10, skipADDR);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input  [0:cromWidth-1] crom;         // Control ROM Data
-   input  [1:7]           skip40;       // Skip 40 bits
-   input  [1:7]           skip20;       // Skip 20 bits
-   input  [1:7]           skip10;       // Skip 10 bits
-   output [0:11]          skipADDR;     // Skip Address
+module SKIP (
+      input  wire [0:107] crom,                 // Control ROM Data
+      input  wire [1:  7] skip40,               // Skip 40 bits
+      input  wire [1:  7] skip20,               // Skip 20 bits
+      input  wire [1:  7] skip10,               // Skip 10 bits
+      output wire [0: 11] skipADDR              // Skip Address
+   );
 
    //
    // SKIP 40

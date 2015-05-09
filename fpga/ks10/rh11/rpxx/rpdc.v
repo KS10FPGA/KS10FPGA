@@ -40,16 +40,16 @@
 
 `include "rpdc.vh"
 
- module RPDC(clk, rst, clr, rpDATAI, rpdcWRITE, rpDRY, rpINCCYL, rpDC);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clear
-   input  [35: 0] rpDATAI;                      // Data in
-   input          rpdcWRITE;                    // Write RPDC
-   input          rpINCCYL;                     // Increment cylinder
-   input          rpDRY;                        // Drive ready
-   output [15: 0] rpDC;                         // rpDC Output
+ module RPDC (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clear
+      input  wire [35: 0] rpDATAI,              // Data in
+      input  wire         rpdcWRITE,            // Write RPDC
+      input  wire         rpINCCYL,             // Increment cylinder
+      input  wire         rpDRY,                // Drive ready
+      output wire [15: 0] rpDC                  // rpDC Output
+   );
 
    //
    // RPDC Desired Cylinder Address (DCA)

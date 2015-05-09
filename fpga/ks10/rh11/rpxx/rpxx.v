@@ -61,38 +61,35 @@
 `include "../sd/sd.vh"
 `include "../../ubabus.vh"
 
-module RPXX(clk, rst, clr,
-            rhINCSECT, rhATACLR, devADDRI, devDATAI, rpSELECT, rpPAT, rpCD, rpWP,
-            rpCS1, rpDA, rpDS, rpER1, rpLA, rpMR, rpDT, rpOF, rpDC, rpCC, rpER2, rpER3,
-            rpSDOP, rpSDREQ, rpSDACK, rpSDLSA);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clear
-   input          rhINCSECT;                    // Increment Sector
-   input          rhATACLR;                     // Clear RPDS[ATA]
-   input  [ 0:35] devADDRI;                     // Device Address In
-   input  [ 0:35] devDATAI;                     // Device Data In
-   input          rpSELECT;                     // Unit Select
-   input          rpCD;                         // Card Detect from SD Card
-   input          rpPAT;                        // Parity Test
-   input          rpWP;                         // Write Protect from SD Card
-   output [15: 0] rpCS1;                        // CS1 Register
-   output [15: 0] rpDA;                         // DA  Register
-   output [15: 0] rpDS;                         // DS  Register
-   output [15: 0] rpER1;                        // ER1 Register
-   output [15: 0] rpLA;                         // LA  Register
-   output [15: 0] rpMR;                         // MR  Register
-   output [15: 0] rpDT;                         // DT  Register
-   output [15: 0] rpOF;                         // OF  Register
-   output [15: 0] rpDC;                         // DC  Register
-   output [15: 0] rpCC;                         // CC  Register
-   output [15: 0] rpER2;                        // ER2 Register
-   output [15: 0] rpER3;                        // ER3 Register
-   output [ 1: 0] rpSDOP;                       // SD Operation
-   output         rpSDREQ;                      // SD Request
-   input          rpSDACK;                      // SD Complete Acknowledge
-   output [31: 0] rpSDLSA;                      // SD Linear Sector Address
+module RPXX (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clear
+      input  wire         rhINCSECT,            // Increment Sector
+      input  wire         rhATACLR,             // Clear RPDS[ATA]
+      input  wire [ 0:35] devADDRI,             // Device Address In
+      input  wire [ 0:35] devDATAI,             // Device Data In
+      input  wire         rpSELECT,             // Unit Select
+      input  wire         rpCD,                 // Card Detect from SD Card
+      input  wire         rpPAT,                // Parity Test
+      input  wire         rpWP,                 // Write Protect from SD Card
+      output wire [15: 0] rpCS1,                // CS1 Register
+      output wire [15: 0] rpDA,                 // DA  Register
+      output wire [15: 0] rpDS,                 // DS  Register
+      output wire [15: 0] rpER1,                // ER1 Register
+      output wire [15: 0] rpLA,                 // LA  Register
+      output wire [15: 0] rpMR,                 // MR  Register
+      output wire [15: 0] rpDT,                 // DT  Register
+      output wire [15: 0] rpOF,                 // OF  Register
+      output wire [15: 0] rpDC,                 // DC  Register
+      output wire [15: 0] rpCC,                 // CC  Register
+      output wire [15: 0] rpER2,                // ER2 Register
+      output wire [15: 0] rpER3,                // ER3 Register
+      output wire [ 1: 0] rpSDOP,               // SD Operation
+      output wire         rpSDREQ,              // SD Request
+      input  wire         rpSDACK,              // SD Complete Acknowledge
+      output wire [31: 0] rpSDLSA               // SD Linear Sector Address
+   );
 
    //
    // RH Parameters
@@ -179,50 +176,38 @@ module RPXX(clk, rst, clr,
    // RPxx Control/Status Register (RPCS1)
    //
 
-   wire [15:0] rpCS1;
-   wire        rpGO = `rpCS1_GO(rpCS1);
+   wire rpGO = `rpCS1_GO(rpCS1);
 
    //
    // RPxx Disk Status Register (RPDS)
    //
 
-   wire [15:0] rpDS;
-   wire        rpERR = `rpDS_ERR(rpDS);
+   wire rpERR = `rpDS_ERR(rpDS);
 
    //
    // RPxx Disk Address Register (RPDA)
    //
 
-   wire [15:0] rpDA;
-   wire [ 5:0] rpSA = `rpDA_SA(rpDA);
-   wire [ 5:0] rpTA = `rpDA_TA(rpDA);
-
-   //
-   // RPxx Error #1 (RPER1) Register
-   //
-
-   wire [15:0] rpER1;
+   wire [5:0] rpSA = `rpDA_SA(rpDA);
+   wire [5:0] rpTA = `rpDA_TA(rpDA);
 
    //
    // RPxx Offset (RPOF) Register
    //
 
-   wire [15:0] rpOF;
-   wire        rpFMT22 = `rpOF_FMT22(rpOF);
+   wire rpFMT22 = `rpOF_FMT22(rpOF);
 
    //
    // RPxx Desired Cylinder (RPDC) Register
    //
 
-   wire [15:0] rpDC;
-   wire [ 9:0] rpDCA = `rpDC_DCA(rpDC);
+   wire [9:0] rpDCA = `rpDC_DCA(rpDC);
 
    //
    // RPxx Current Cylinder (RPCC) Register
    //
 
-   wire [15:0] rpCC;
-   wire [ 9:0] rpCCA = `rpCC_CCA(rpCC);
+   wire [9:0] rpCCA = `rpCC_CCA(rpCC);
 
    //
    // Commands

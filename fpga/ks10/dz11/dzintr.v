@@ -47,23 +47,22 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module DZINTR(clk, rst, clr, iack, vectREAD, rxVECTOR, csrRIE, csrRRDY,
-              rbufREAD, rxINTR, csrTIE, csrTRDY, tdrWRITE, txINTR);
-
-   input  clk;                          // Clock
-   input  rst;                          // Reset
-   input  clr;                          // Clear
-   input  iack;                         // Interrupt acknowledge
-   input  vectREAD;                     // Interrupt vector cycle
-   output rxVECTOR;                     // RX Vector
-   input  csrRIE;                       // RX Interrupt enable
-   input  csrRRDY;                      // RX Interrupt set
-   input  rbufREAD;                     // RX Interrupt done
-   output rxINTR;                       // RX Interrupt out
-   input  csrTIE;                       // TX Interrupt enable
-   input  csrTRDY;                      // TX Interrupt set
-   input  tdrWRITE;                     // TX Interrupt done
-   output txINTR;                       // TX Interrupt out
+module DZINTR (
+      input  wire clk,                  // Clock
+      input  wire rst,                  // Reset
+      input  wire clr,                  // Clear
+      input  wire iack,                 // Interrupt acknowledge
+      input  wire vectREAD,             // Interrupt vector cycle
+      output reg  rxVECTOR,             // RX Vector
+      input  wire csrRIE,               // RX Interrupt enable
+      input  wire csrRRDY,              // RX Interrupt set
+      input  wire rbufREAD,             // RX Interrupt done
+      output wire rxINTR,               // RX Interrupt out
+      input  wire csrTIE,               // TX Interrupt enable
+      input  wire csrTRDY,              // TX Interrupt set
+      input  wire tdrWRITE,             // TX Interrupt done
+      output wire txINTR                // TX Interrupt out
+   );
 
    localparam [3:0] stateIDLE     = 0,
                     stateACT      = 1,
@@ -116,7 +115,7 @@ module DZINTR(clk, rst, clr, iack, vectREAD, rxVECTOR, csrRIE, csrRRDY,
           end
      end
 
-   wire rxINTR = (rxstate == stateACT) & csrRIE;
+   assign rxINTR = (rxstate == stateACT) & csrRIE;
 
    //
    // TX Interrupt State Machine
@@ -159,7 +158,7 @@ module DZINTR(clk, rst, clr, iack, vectREAD, rxVECTOR, csrRIE, csrRRDY,
           end
      end
 
-   wire txINTR = (txstate == stateACT) & csrTIE;
+   assign txINTR = (txstate == stateACT) & csrTIE;
 
    //
    // Arbiter
@@ -190,7 +189,6 @@ module DZINTR(clk, rst, clr, iack, vectREAD, rxVECTOR, csrRIE, csrRRDY,
    //
 
    reg [3:0] arbstate;
-   reg       rxVECTOR;
 
    always @(posedge clk or posedge rst)
      begin

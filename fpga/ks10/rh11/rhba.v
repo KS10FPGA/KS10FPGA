@@ -41,23 +41,21 @@
 `include "rhba.vh"
 `include "rhcs1.vh"
 
-module RHBA(clk, rst, devRESET,
-            devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE,
-            rhbaWRITE, rhCLR, rhRDY, rhBAI, rhINCBA, rhBA);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          devRESET;                     // Device reset
-   input          devLOBYTE;                    // Device Low Byte
-   input          devHIBYTE;                    // Device High Byte
-   input  [ 0:35] devDATAI;                     // Device Data In
-   input          rhcs1WRITE;                   // Write to RHCS1
-   input          rhbaWRITE;                    // Write to BA
-   input          rhCLR;                        // Controller clear
-   input          rhRDY;                        // Controller ready
-   input          rhBAI;                        // Inhibit increment
-   input          rhINCBA;                      // Increment BA
-   output [17: 0] rhBA;                         // rhBA Output
+module RHBA (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         devRESET,             // Device reset
+      input  wire         devLOBYTE,            // Device Low Byte
+      input  wire         devHIBYTE,            // Device High Byte
+      input  wire [ 0:35] devDATAI,             // Device Data In
+      input  wire         rhcs1WRITE,           // Write to RHCS1
+      input  wire         rhbaWRITE,            // Write to BA
+      input  wire         rhCLR,                // Controller clear
+      input  wire         rhRDY,                // Controller ready
+      input  wire         rhBAI,                // Inhibit increment
+      input  wire         rhINCBA,              // Increment BA
+      output wire [17: 0] rhBA                  // rhBA Output
+   );
 
    //
    // Big-endian to little-endian data bus swap

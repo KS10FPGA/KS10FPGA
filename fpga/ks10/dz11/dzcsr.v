@@ -45,23 +45,21 @@
 `include "dztcr.vh"
 `include "../../ks10.vh"
 
-module DZCSR(clk, rst,
-             devRESET, devLOBYTE, devHIBYTE, devDATAI, csrWRITE, tdrWRITE,
-             rbufRDONE, rbufSA, uartTXEMPTY, regTCR, regCSR);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          devRESET;                     // Device Reset from UBA
-   input          devLOBYTE;                    // Device Low Byte
-   input          devHIBYTE;                    // Device High Byte
-   input  [ 0:35] devDATAI;                     // Device Data In
-   input          csrWRITE;                     // Write to CSR
-   input          tdrWRITE;                     // Write to TDR
-   input          rbufRDONE;                    // RBUF Receiver Done
-   input          rbufSA;                       // RBUF Silo Alarm
-   input  [ 7: 0] uartTXEMPTY;                  // UART transmitter buffer empty
-   input  [15: 0] regTCR;                       // TCR Register
-   output [15: 0] regCSR;                       // CSR Output
+module DZCSR (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         devRESET,             // Device Reset from UBA
+      input  wire         devLOBYTE,            // Device Low Byte
+      input  wire         devHIBYTE,            // Device High Byte
+      input  wire [ 0:35] devDATAI,             // Device Data In
+      input  wire         csrWRITE,             // Write to CSR
+      input  wire         tdrWRITE,             // Write to TDR
+      input  wire         rbufRDONE,            // RBUF Receiver Done
+      input  wire         rbufSA,               // RBUF Silo Alarm
+      input  wire [ 7: 0] uartTXEMPTY,          // UART transmitter buffer empty
+      input  wire [15: 0] regTCR,               // TCR Register
+      output wire [15: 0] regCSR                // CSR Output
+   );
 
    //
    // Big-endian to little-endian data bus swap
@@ -275,7 +273,7 @@ module DZCSR(clk, rst,
    // Build CSR
    //
 
-   wire [15:0] regCSR = {csrTRDY,  csrTIE, rbufSA, csrSAE,  1'b0, csrTLINE[2:0],
-                         rbufRDONE, csrRIE, csrMSE, csrCLR, csrMAINT, 3'b0};
+   assign regCSR = {csrTRDY,  csrTIE, rbufSA, csrSAE,  1'b0, csrTLINE[2:0],
+                    rbufRDONE, csrRIE, csrMSE, csrCLR, csrMAINT, 3'b0};
 
 endmodule

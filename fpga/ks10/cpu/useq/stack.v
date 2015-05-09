@@ -55,17 +55,15 @@
 
 `include "crom.vh"
 
-module STACK(clk, rst, clken, call, ret, addrIN, addrOUT);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input         clk;           // Clock
-   input         rst;           // Reset
-   input         clken;         // Clock Enable
-   input         call;          // Push addr onto stakc
-   input         ret;           // Pop addr from stack
-   input  [0:11] addrIN;        // Calling address for stack
-   output [0:11] addrOUT;       // Return address from stack
+module STACK (
+      input  wire        clk,                   // Clock
+      input  wire        rst,                   // Reset
+      input  wire        clken,                 // Clock Enable
+      input  wire        call,                  // Push addr onto stakc
+      input  wire        ret,                   // Pop addr from stack
+      input  wire [0:11] addrIN,                // Calling address for stack
+      output wire [0:11] addrOUT                // Return address from stack
+   );
 
    //
    // Stack Pointer

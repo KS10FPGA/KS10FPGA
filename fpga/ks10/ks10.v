@@ -49,54 +49,44 @@
 `include "uba/rh11/rh11.vh"
 `include "uba/rh11/rpxx/rpxx.vh"
 
-module KS10(RESET_N, CLK50MHZ,
-            // DZ11 Interfaces
-            dz11TXD, dz11RXD, dz11CO, dz11RI, dz11DTR,
-            // RH11 Interfaces
-            rh11CD, rh11WP, rh11MISO, rh11MOSI, rh11SCLK, rh11CS,
-            // Console Interfaces
-            conADDR, conDATA, conBLE_N, conBHE_N, conRD_N, conWR_N, conINTR_N,
-            // SSRAM Interfaces
-            ssramCLK, ssramCLKEN_N, ssramADV, ssramBW_N,
-            ssramOE_N, ssramWE_N, ssramCE, ssramADDR, ssramDATA,
-            haltLED, test);
-
-   // Clock/Reset
-   input         RESET_N;       // Reset
-   input         CLK50MHZ;      // Clock
-   // DZ11 Interfaces
-   output [ 7: 0] dz11TXD;      // DZ11 Transmitter Serial Data
-   input  [ 7: 0] dz11RXD;      // DZ11 Receiver Serial Data
-   input  [ 7: 0] dz11CO;       // DZ11 Carrier Detect Input
-   input  [ 7: 0] dz11RI;       // DZ11 Ring Indicator Input
-   output [ 7: 0] dz11DTR;      // DZ11 Data Terminal Ready Output
-   // RH11 Interfaces
-   input         rh11CD;        // RH11 Card Detect
-   input         rh11WP;        // RH11 Write Protect
-   input         rh11MISO;      // RH11 Data In
-   output        rh11MOSI;      // RH11 Data Out
-   output        rh11SCLK;      // RH11 Clock
-   output        rh11CS;        // SD11 Chip Select
-   // Console Interfaces
-   inout [15: 0] conDATA;       // Console Data Bus
-   input [ 5: 1] conADDR;       // Console Address Bus
-   input         conBLE_N;      // Console Bus Lane
-   input         conBHE_N;      // Console Bus Lane
-   input         conRD_N;       // Console Read Strobe
-   input         conWR_N;       // Console Write Strobe
-   output        conINTR_N;     // KS10 Interrupt to Console
-   // SSRAM Interfaces
-   output        ssramCLK;      // SSRAM Clock
-   output        ssramCLKEN_N;  // SSRAM CLKEN#
-   output        ssramADV;      // SSRAM Advance
-   output [1: 4] ssramBW_N;     // SSRAM BW#
-   output        ssramOE_N;     // SSRAM OE#
-   output        ssramWE_N;     // SSRAM WE#
-   output        ssramCE;       // SSRAM CE
-   output [0:22] ssramADDR;     // SSRAM Address Bus
-   inout  [0:35] ssramDATA;     // SSRAM Data Bus
-   output        haltLED;       // Halt LED
-   output [0: 7] test;          // Test signals
+module KS10 (
+      // Clock/Reset
+      input  wire         RESET_N,      // Reset
+      input  wire         CLK50MHZ,     // Clock
+      // DZ11 Interfaces
+      output wire [ 7: 0] dz11TXD,      // DZ11 Transmitter Serial Data
+      input  wire [ 7: 0] dz11RXD,      // DZ11 Receiver Serial Data
+      input  wire [ 7: 0] dz11CO,       // DZ11 Carrier Detect Input
+      input  wire [ 7: 0] dz11RI,       // DZ11 Ring Indicator Input
+      output wire [ 7: 0] dz11DTR,      // DZ11 Data Terminal Ready Output
+      // RH11 Interfaces
+      input  wire         rh11CD,       // RH11 Card Detect
+      input  wire         rh11WP,       // RH11 Write Protect
+      input  wire         rh11MISO,     // RH11 Data In
+      output wire         rh11MOSI,     // RH11 Data Out
+      output wire         rh11SCLK,     // RH11 Clock
+      output wire         rh11CS,       // SD11 Chip Select
+      // Console Interfaces
+      inout  wire [15: 0] conDATA,      // Console Data Bus
+      input  wire [ 5: 1] conADDR,      // Console Address Bus
+      input  wire         conBLE_N,     // Console Bus Lane
+      input  wire         conBHE_N,     // Console Bus Lane
+      input  wire         conRD_N,      // Console Read Strobe
+      input  wire         conWR_N,      // Console Write Strobe
+      output wire         conINTR_N,    // KS10 Interrupt to Console
+      // SSRAM Interfaces
+      output wire         ssramCLK,     // SSRAM Clock
+      output wire         ssramCLKEN_N, // SSRAM CLKEN#
+      output wire         ssramADV,     // SSRAM Advance
+      output wire [ 1: 4] ssramBW_N,    // SSRAM BW#
+      output wire         ssramOE_N,    // SSRAM OE#
+      output wire         ssramWE_N,    // SSRAM WE#
+      output wire         ssramCE,      // SSRAM CE
+      output wire [ 0:22] ssramADDR,    // SSRAM Address Bus
+      inout  wire [ 0:35] ssramDATA,    // SSRAM Data Bus
+      output wire         haltLED,      // Halt LED
+      output wire [ 0: 7] test          // Test signals
+   );
 
    //
    // Bus Arbiter Outputs

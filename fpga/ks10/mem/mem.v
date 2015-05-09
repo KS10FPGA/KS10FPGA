@@ -45,28 +45,26 @@
 `include "../cpu/bus.vh"
 `include "../ks10.vh"
 
-module MEM(rst, clk, clkPHS,
-           busREQI, busACKO, busADDRI, busDATAI, busDATAO,
-           ssramCLK, ssramCLKEN_N, ssramADV, ssramBW_N, ssramOE_N, ssramWE_N,
-           ssramCE, ssramADDR, ssramDATA);
-
-   input         rst;           // Reset
-   input         clk;           // Clock
-   input  [1: 4] clkPHS;        // Clock Phase
-   input         busREQI;       // Memory Request In
-   output        busACKO;       // Memory Acknowledge Out
-   input  [0:35] busADDRI;      // Address Address In
-   input  [0:35] busDATAI;      // Data in
-   output [0:35] busDATAO;      // Data out
-   input         ssramCLK;      // SSRAM Clock
-   output        ssramCLKEN_N;  // SSRAM CLKEN#
-   output        ssramADV;      // SSRAM Advance (burst)
-   output [1: 4] ssramBW_N;     // SSRAM BW#
-   output        ssramOE_N;     // SSRAM OE#
-   output        ssramWE_N;     // SSRAM WE#
-   output        ssramCE;       // SSRAM CE
-   output [0:22] ssramADDR;     // SSRAM Address Bus
-   inout  [0:35] ssramDATA;     // SSRAM Data Bus
+module MEM(
+      input  wire         rst,          // Reset
+      input  wire         cpuCLK,       // Clock
+      input  wire         memCLK,       // Memory clock
+      input  wire [ 1: 4] clkPHS,       // Clock Phase
+      input  wire         busREQI,      // Memory Request In
+      output wire         busACKO,      // Memory Acknowledge Out
+      input  wire [ 0:35] busADDRI,     // Address Address In
+      input  wire [ 0:35] busDATAI,     // Data in
+      output wire [ 0:35] busDATAO,     // Data out
+      output wire         ssramCLK,     // SSRAM Clock
+      output wire         ssramCLKEN_N, // SSRAM CLKEN#
+      output wire         ssramADV,     // SSRAM Advance (burst)
+      output wire [ 1: 4] ssramBW_N,    // SSRAM BW#
+      output wire         ssramOE_N,    // SSRAM OE#
+      output wire         ssramWE_N,    // SSRAM WE#
+      output wire         ssramCE,      // SSRAM CE
+      output wire [ 0:22] ssramADDR,    // SSRAM Address Bus
+      inout  wire [ 0:35] ssramDATA     // SSRAM Data Bus
+   );
 
    //
    // The Memory Conroller is Device 0
@@ -115,7 +113,7 @@ module MEM(rst, clk, clkPHS,
 
    MEMSTAT STAT (
       .rst       (rst),
-      .clk       (clk),
+      .clk       (cpuCLK),
       .busDATAI  (busDATAI),
       .msrWRITE  (msrWRITE),
       .regSTAT   (regSTAT)
@@ -158,7 +156,7 @@ module MEM(rst, clk, clkPHS,
    };
 
    chipscope_mem_ila uILA (
-      .CLK       (ssramCLK),
+      .CLK       (memCLK),
       .CONTROL   (control0),
       .TRIG0     (TRIG0)
    );
@@ -166,14 +164,14 @@ module MEM(rst, clk, clkPHS,
 `endif
 `endif
 
-/*
    //
    // Data is written to the SSRAM on clkPHS[4] which is
    // two clock cycles after the WE signal is asserted.
    //
+/*
 
    reg dir;
-   always @(negedge ssramCLK or posedge rst)
+   always @(negedge memCLK or posedge rst)
      begin
         if (rst)
           dir <= 0;
@@ -186,20 +184,36 @@ module MEM(rst, clk, clkPHS,
    //
 
    reg ssramWE;
-   always @(negedge ssramCLK or posedge rst)
+   always @(negedge memCLK or posedge rst)
      begin
         if (rst)
           ssramWE <= 0;
         else
           ssramWE <= memWrite & clkPHS[1];
      end
+*/
 
    //
+   // Register the Bus Data In
    //
+
+/*
+   reg [0:35] writeReg;
+   always @(posedge memCLK or posedge rst)
+     begin
+        if (rst)
+          writeReg <= 0;
+        else
+          if (clkPHS[1])
+            writeReg <= busDATAI;
+     end
+
+   //
+   // Register the Bus Data Out
    //
 
    reg [0:35] readReg;
-   always @(posedge ssramCLK or posedge rst)
+   always @(posedge memCLK or posedge rst)
      begin
         if (rst)
           readReg <= 0;
@@ -222,6 +236,7 @@ module MEM(rst, clk, clkPHS,
    //  are not used and are always set to zero.
    //
 
+// assign ssramCLK     = !memCLK;
    assign ssramCLKEN_N = 0;
    assign ssramADV     = 0;
    assign ssramBW_N    = 0;
@@ -231,8 +246,9 @@ module MEM(rst, clk, clkPHS,
 // assign ssramOE_N    = !(memRead  & clkPHS[4]);
    assign ssramCE      = 1;
    assign ssramADDR    = {3'b0, busMEMADDR};
+// assign ssramDATA    = memWRITE & clkPHS[4] ? writeReg : 36'bz;
    assign ssramDATA    = memWRITE & clkPHS[4] ? busDATAI : 36'bz;
- //assign ssramDATA  = dir ? busDATAI : 36'bz;
+// assign ssramDATA    = dir ? busDATAI : 36'bz;
 
    //
    // Bus Multiplexer
@@ -260,13 +276,43 @@ module MEM(rst, clk, clkPHS,
 
    assign busACKO = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
 
+`ifdef XILINX
+
+   //
+   // Xilinx calls this 'clock forwarding'.  The synthesis tools will give
+   // errors/warning if you attempt to drive a clock output off-chip without
+   // this.
+   //
+
+   ODDR2 #(
+       .DDR_ALIGNMENT      ("NONE"),    // Sets output alignment
+       .INIT               (1'b0),      // Initial state of the Q output
+       .SRTYPE             ("SYNC")     // Reset type: "SYNC" or "ASYNC"
+   )
+   iODDR2 (
+       .Q                  (ssramCLK),  // 1-bit DDR output data
+       .C0                 (!memCLK),   // 1-bit clock input
+       .C1                 (memCLK),    // 1-bit clock input
+       .CE                 (1'b1),      // 1-bit clock enable input
+       .D0                 (1'b1),      // 1-bit data input (associated with C0)
+       .D1                 (1'b0),      // 1-bit data input (associated with C1)
+       .R                  (1'b0),      // 1-bit reset input
+       .S                  (1'b0)       // 1-bit set input
+   );
+
+`else
+
+   assign ssramCLK = !memCLK;
+
+`endif
+
    //
    // Simulation/Debug
    //
 
 `ifndef SYNTHESIS
 
-   always @(negedge clk)
+   always @(negedge cpuCLK)
      begin
         if (msrREAD)
           $display("[%11.3f] MEM: Memory Status Register Read", $time/1.0e3);

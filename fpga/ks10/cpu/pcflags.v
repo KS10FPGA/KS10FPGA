@@ -83,21 +83,18 @@
 `include "alu.vh"
 `include "regir.vh"
 
-module PCFLAGS(clk, rst, clken, crom, dp, scad, regIR,
-               aluFLAGS, pcFLAGS, skipJFCL);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                  clk;                  // Clock
-   input                  rst;                  // Reset
-   input                  clken;                // Clock Enable
-   input  [0:cromWidth-1] crom;                 // Control ROM Data
-   input  [0:35]          dp;                   // Data path
-   input  [0: 9]          scad;                 // SCAD
-   input  [0:17]          regIR;                // Instruction Register
-   input  [0: 8]          aluFLAGS;             // ALU Flags
-   output [0:17]          pcFLAGS;              // Flags
-   output                 skipJFCL;             // JFCL Skip
+module PCFLAGS (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         clken,        // Clock Enable
+      input  wire [0:107] crom,         // Control ROM Data
+      input  wire [0: 35] dp,           // Data path
+      input  wire [0:  9] scad,         // SCAD
+      input  wire [0: 17] regIR,        // Instruction Register
+      input  wire [0:  8] aluFLAGS,     // ALU Flags
+      output wire [0: 17] pcFLAGS,      // Flags
+      output wire         skipJFCL      // JFCL Skip
+   );
 
    //
    // ALU Flags

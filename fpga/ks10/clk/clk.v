@@ -46,40 +46,43 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module CLK(RESET_N, CLK50MHZ, clk, clkPHS, ssramCLK, rst);
+module CLK(RESET_N, CLK50MHZ, cpuCLK, memCLK, rst, clkPHS);
 
    input        RESET_N;
    input        CLK50MHZ;
-   output       clk;
-   output [1:4] clkPHS;
-   output       ssramCLK;
+   output       cpuCLK;
+   output       memCLK;
    output       rst;
+   output [1:4] clkPHS;
 
+   wire locked;
    wire RESET = !RESET_N;
 
-`ifdef XILINX
+`ifdef __XILINX
 
    //
    // The following code is Xilinx Spartan 6 specific.
    //
 
-   wire clkfbo;
-   wire clkfbi;
-   wire uclk;
-   wire locked;
+   wire clk50;          // 50.0 MHz
+   wire clk12;          // 12.5 MHz
+
+   //
+   // Phase locked loop.  PLL is 400 MHz
+   //
 
    PLL_BASE #(
        .BANDWIDTH          ("OPTIMIZED"),
-       .CLK_FEEDBACK       ("CLKFBOUT"),
+       .CLK_FEEDBACK       ("CLKOUT0"),
        .COMPENSATION       ("SYSTEM_SYNCHRONOUS"),
        .DIVCLK_DIVIDE      (1),
-       .CLKFBOUT_MULT      (8),
+       .CLKFBOUT_MULT      (1),
        .CLKFBOUT_PHASE     (0.000),
-       .CLKOUT0_DIVIDE     (32),
+       .CLKOUT0_DIVIDE     (8),
        .CLKOUT0_PHASE      (0.000),
        .CLKOUT0_DUTY_CYCLE (0.500),
        .CLKOUT1_DIVIDE     (32),
-       .CLKOUT1_PHASE      (180.000),
+       .CLKOUT1_PHASE      (0.000),
        .CLKOUT1_DUTY_CYCLE (0.500),
        .CLKOUT2_DIVIDE     (32),
        .CLKOUT2_PHASE      (0.000),
@@ -99,59 +102,108 @@ module CLK(RESET_N, CLK50MHZ, clk, clkPHS, ssramCLK, rst);
    iPLL_BASE (
        .RST                (RESET),
        .CLKIN              (CLK50MHZ),
-       .CLKFBIN            (clkfbi),
-       .CLKOUT0            (uclk),
-       .CLKOUT1            (),
+       .CLKFBIN            (memCLK),
+       .CLKOUT0            (clk50),
+       .CLKOUT1            (clk12),
        .CLKOUT2            (clkPHS[1]),
        .CLKOUT3            (clkPHS[2]),
        .CLKOUT4            (clkPHS[3]),
        .CLKOUT5            (clkPHS[4]),
-       .CLKFBOUT           (clkfbo),
+       .CLKFBOUT           (),
        .LOCKED             (locked)
    );
 
    //
-   // Clock Buffers
+   // Output clock buffers
    //
 
    BUFG bufgCLKF (
-       .I                  (clkfbo),
-       .O                  (clkfbi)
+       .I                  (clk50),
+       .O                  (memCLK)
    );
 
-   BUFG bufgCLK (
-       .I                  (uclk),
-       .O                  (clk)
+   BUFG bufgCLKO (
+       .I                  (clk12),
+       .O                  (cpuCLK)
    );
 
-   //
-   // Xilinx calls this 'clock forwarding'.  The synthesis tools will give
-   // errors/warning if you attempt to drive a clock output off-chip without
-   // this.
-   //
-
-   ODDR2 #(
-       .DDR_ALIGNMENT      ("NONE"),    // Sets output alignment
-       .INIT               (1'b0),      // Initial state of the Q output
-       .SRTYPE             ("SYNC")     // Reset type: "SYNC" or "ASYNC"
-   )
-   iODDR2 (
-       .Q                  (ssramCLK),  // 1-bit DDR output data
-       .C0                 (!CLK50MHZ), // 1-bit clock input
-       .C1                 (CLK50MHZ),  // 1-bit clock input
-       .CE                 (1'b1),      // 1-bit clock enable input
-       .D0                 (1'b1),      // 1-bit data input (associated with C0)
-       .D1                 (1'b0),      // 1-bit data input (associated with C1)
-       .R                  (1'b0),      // 1-bit reset input
-       .S                  (1'b0)       // 1-bit set input
-   );
+`else
 
    //
-   // Synchronize locked (and reset)
+   // 4 phase clock Generator for SSRAM
+   //
+
+   parameter [1:4] clkT1 = 4'b1000,
+                   clkT2 = 4'b0100,
+                   clkT3 = 4'b0010,
+                   clkT4 = 4'b0001;
+
+   //
+   // State Machine
+   //
+
+   reg       cpuCLK;
+   reg [1:4] clkPHS;
+
+   always @(posedge CLK50MHZ or posedge RESET)
+     begin
+        if (RESET)
+          begin
+             clkPHS <= clkT1;
+             cpuCLK <= 0;
+          end
+        else
+          begin
+             case (clkPHS)
+               clkT1:
+                 begin
+                    clkPHS <= clkT2;
+                    cpuCLK <= 1;
+                 end
+               clkT2:
+                 begin
+                    clkPHS <= clkT3;
+                    cpuCLK <= 1;
+                 end
+               clkT3:
+                 begin
+                    clkPHS <= clkT4;
+                    cpuCLK <= 0;
+                 end
+               clkT4:
+                 begin
+                    clkPHS <= clkT1;
+                    cpuCLK <= 0;
+                 end
+               default:
+                 begin
+                    clkPHS <= clkT1;
+                    cpuCLK <= 0;
+                 end
+             endcase
+          end
+     end
+
+   //
+   // No phase-locked loop here
+   //
+
+   assign locked = 1'b1;
+
+   //
+   // RAM Clock Output
+   //
+
+   assign memCLK = CLK50MHZ;
+
+`endif
+
+   //
+   // Synchronize reset
    //
 
    reg [2:0] d;
-   always @(posedge clk or posedge RESET)
+   always @(posedge cpuCLK or posedge RESET)
      begin
         if (RESET)
           d <= 3'b111;
@@ -161,102 +213,14 @@ module CLK(RESET_N, CLK50MHZ, clk, clkPHS, ssramCLK, rst);
 
    assign rst = d[2];
 
- `ifndef SYNTHESIS
+   //
+   // Debugging
+   //
+
+`ifndef SYNTHESIS
 
    always @(posedge locked)
      $display("[%11.3f] CLK: PLL locked", $time/1.0e3);
-
- `endif
-
-`else
-
-   //
-   // Clock Generator
-   //
-
-   parameter [0:1] stateT1 = 0,
-                   stateT2 = 1,
-                   stateT3 = 2,
-                   stateT4 = 3;
-
-   reg [0:1] clkState;
-   reg [1:4] clkPHS;
-   reg       clk;
-
-   always @(posedge CLK50MHZ or posedge RESET)
-     begin
-        if (RESET)
-          begin
-             clkPHS[1] <= 0;
-             clkPHS[2] <= 0;
-             clkPHS[3] <= 0;
-             clkPHS[4] <= 0;
-             clk       <= 1;
-             clkState  <= stateT1;
-          end
-        else
-          begin
-             case (clkState)
-               stateT1:
-                 begin
-                    clkPHS[1] <= 1;
-                    clkPHS[2] <= 0;
-                    clkPHS[3] <= 0;
-                    clkPHS[4] <= 0;
-                    clk       <= 1;
-                    clkState  <= stateT2;
-              end
-               stateT2:
-                 begin
-                    clkPHS[1] <= 0;
-                    clkPHS[2] <= 1;
-                    clkPHS[3] <= 0;
-                    clkPHS[4] <= 0;
-                    clk       <= 1;
-                    clkState  <= stateT3;
-                 end
-               stateT3:
-                 begin
-                    clkPHS[1] <= 0;
-                    clkPHS[2] <= 0;
-                    clkPHS[3] <= 1;
-                    clkPHS[4] <= 0;
-                    clk       <= 0;
-                    clkState  <= stateT4;
-                 end
-               stateT4:
-                 begin
-                    clkPHS[1] <= 0;
-                    clkPHS[2] <= 0;
-                    clkPHS[3] <= 0;
-                    clkPHS[4] <= 1;
-                    clk       <= 0;
-                    clkState  <= stateT1;
-                 end
-             endcase
-          end
-     end
-
-   //
-   // SSRAM Clock Output
-   //
-
-   assign ssramCLK = !CLK50MHZ;
-
-   //
-   // Synchronize reset
-   //
-
-   reg [2:0] d;
-   always @(posedge CLK50MHZ or posedge RESET)
-     begin
-        if (RESET)
-          d <= 3'b111;
-        else
-          d <= {d[1:0], 1'b0};
-     end
-
-   assign rst = d[2];
 
 `endif
 

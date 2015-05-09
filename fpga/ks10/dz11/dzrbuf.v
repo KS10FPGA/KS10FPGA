@@ -44,26 +44,24 @@
 
 `define SIZE 64
 
-module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXOVRE, uartRXFRME,
-              uartRXPARE, uartRXDATA, uartRXFULL, uartRXCLR, rbufREAD,
-              rbufRDONE, rbufSA, regRBUF);
-
-   input         clk;                           // Clock
-   input         rst;                           // Reset
-   input         clr;                           // Clear
-   input         csrMSE;                        // CSR[MSE]
-   input         csrSAE;                        // CSR[SAE]
-   input  [ 2:0] scan;                          // Scan
-   input         uartRXOVRE;                    // UART overrun error
-   input         uartRXFRME;                    // UART framing error
-   input         uartRXPARE;                    // UART parity error
-   input  [ 7:0] uartRXDATA;                    // UART data
-   input         uartRXFULL;                    // UART full
-   output [ 7:0] uartRXCLR;                     // UART clear
-   input         rbufREAD;                      // RBUF read
-   output        rbufRDONE;                     // RBUF is empty
-   output        rbufSA;                        // RBUF Silo Alarm
-   output [15:0] regRBUF;                       // RBUF output
+module DZRBUF (
+      input  wire        clk,                   // Clock
+      input  wire        rst,                   // Reset
+      input  wire        clr,                   // Clear
+      input  wire        csrMSE,                // CSR[MSE]
+      input  wire        csrSAE,                // CSR[SAE]
+      input  wire [ 2:0] scan,                  // Scan
+      input  wire        uartRXOVRE,            // UART overrun error
+      input  wire        uartRXFRME,            // UART framing error
+      input  wire        uartRXPARE,            // UART parity error
+      input  wire [ 7:0] uartRXDATA,            // UART data
+      input  wire        uartRXFULL,            // UART full
+      output reg  [ 7:0] uartRXCLR,             // UART clear
+      input  wire        rbufREAD,              // RBUF read
+      output wire        rbufRDONE,             // RBUF is empty
+      output reg         rbufSA,                // RBUF Silo Alarm
+      output wire [15:0] regRBUF                // RBUF output
+   );
 
    //
    // UART Receiver Interface
@@ -72,8 +70,6 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXOVRE, uartRXFRME,
    //  If the UART receiver is full, empty the UART receiver data into the FIFO
    //  and clear the UART full flag of the correct UART.
    //
-
-   reg [7:0] uartRXCLR;
 
    always @*
      begin
@@ -190,7 +186,7 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXOVRE, uartRXFRME,
    //  RDONE is asserted when the FIFO is not empty.
    //
 
-   wire rbufRDONE = !empty;
+   assign rbufRDONE = !empty;
 
    //
    // RBUF[OVRE]
@@ -267,8 +263,6 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXOVRE, uartRXFRME,
    // The Silo Alarm is cleared after reading the RBUF or clearing SAE.
    //
 
-   reg rbufSA;
-
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -323,7 +317,7 @@ module DZRBUF(clk, rst, clr, csrMSE, csrSAE, scan, uartRXOVRE, uartRXFRME,
    //  RBUF[DVAL] is the FIFO Status.  Everything else is read from the FIFO.
    //
 
-   wire [15:0] regRBUF = {rbufDVAL, fifoDATA};
+   assign regRBUF = {rbufDVAL, fifoDATA};
 
    //
    // Status

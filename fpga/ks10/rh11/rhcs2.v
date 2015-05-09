@@ -41,29 +41,26 @@
 `include "rhcs1.vh"
 `include "rhcs2.vh"
 
-module RHCS2(clk, rst,
-             devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs2WRITE, rhCMDGO,
-             rhCLRGO, rhCLRTRE, rhCLR, rhRDY, rhSETDLT, rhSETNEM, rhSETWCE,
-             rhBUFIR, rhBUFOR, rhCS2);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          devRESET;                     // Device Reset from UBA
-   input          devLOBYTE;                    // Device Low Byte
-   input          devHIBYTE;                    // Device High Byte
-   input  [ 0:35] devDATAI;                     // Device Data In
-   input          rhcs2WRITE;                   // Write to CS2
-   input          rhCMDGO;			// Go command
-   input          rhCLRGO;                      // Command clear
-   input          rhCLRTRE;                     // Transfer error clear
-   input          rhCLR;                        // Controller clear
-   input          rhRDY;                        // Controller ready
-   input          rhSETDLT;                     // Set DLT
-   input          rhSETWCE;                     // Set WCE
-   input          rhSETNEM;                     // Set NEM
-   input          rhBUFIR;                      // Status IR
-   input          rhBUFOR;                      // Status OR
-   output [15: 0] rhCS2;                        // CS2 Output
+module RHCS2 (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         devRESET,             // Device Reset from UBA
+      input  wire         devLOBYTE,            // Device Low Byte
+      input  wire         devHIBYTE,            // Device High Byte
+      input  wire [ 0:35] devDATAI,             // Device Data In
+      input  wire         rhcs2WRITE,           // Write to CS2
+      input  wire         rhCMDGO,              // Go command
+      input  wire         rhCLRGO,              // Command clear
+      input  wire         rhCLRTRE,             // Transfer error clear
+      input  wire         rhCLR,                // Controller clear
+      input  wire         rhRDY,                // Controller ready
+      input  wire         rhSETDLT,             // Set DLT
+      input  wire         rhSETWCE,             // Set WCE
+      input  wire         rhSETNEM,             // Set NEM
+      input  wire         rhBUFIR,              // Status IR
+      input  wire         rhBUFOR,              // Status OR
+      output wire [15: 0] rhCS2                 // CS2 Output
+   );
 
    //
    // Big-endian to little-endian data bus swap
@@ -343,8 +340,8 @@ module RHCS2(clk, rst,
    //  M7295/BCTJ/E59 (12:15)
    //
 
-   wire [15:0] rhCS2 = {rhcs2DLT, rhcs2WCE, rhcs2UPE, rhcs2NED, rhcs2NEM,
-                        rhcs2PGE, rhcs2MXF, rhcs2DPE, rhcs2OR,  rhcs2IR,
-                        rhcs2CLR, rhcs2PAT, rhcs2BAI, rhcs2UNIT};
+   assign rhCS2 = {rhcs2DLT, rhcs2WCE, rhcs2UPE, rhcs2NED, rhcs2NEM,
+                   rhcs2PGE, rhcs2MXF, rhcs2DPE, rhcs2OR,  rhcs2IR,
+                   rhcs2CLR, rhcs2PAT, rhcs2BAI, rhcs2UNIT};
 
 endmodule

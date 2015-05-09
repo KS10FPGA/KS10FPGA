@@ -49,21 +49,20 @@
 
 `include "rhcs1.vh"
 
-module RHINTR(clk, rst, devRESET, devLOBYTE, devDATAI, rhcs1WRITE, rhSC,
-              rhRDY, rhIE, rhCLR, rhIACK, rhIRQ);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          devRESET;                     // Device reset from UBA
-   input          devLOBYTE;                    // Device low byte
-   input  [ 0:35] devDATAI;                     // Device data in
-   input          rhcs1WRITE;                   // CS1 write
-   input          rhSC;                         // Special Conditions (RHCS1[SC ])
-   input          rhRDY;                        // Ready              (RHCS1[RDY])
-   input          rhIE;                         // Interrupt enable   (RHCS1[IE ])
-   input          rhCLR;                        // Controller         (RHCS2[CLR])
-   input          rhIACK;                       // Interrupt acknowledge
-   output         rhIRQ;                        // Interrupt request
+module RHINTR (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         devRESET,             // Device reset from UBA
+      input  wire         devLOBYTE,            // Device low byte
+      input  wire [ 0:35] devDATAI,             // Device data in
+      input  wire         rhcs1WRITE,           // CS1 write
+      input  wire         rhSC,                 // Special Conditions (RHCS1[SC ])
+      input  wire         rhRDY,                // Ready              (RHCS1[RDY])
+      input  wire         rhIE,                 // Interrupt enable   (RHCS1[IE ])
+      input  wire         rhCLR,                // Controller         (RHCS2[CLR])
+      input  wire         rhIACK,               // Interrupt acknowledge
+      output wire         rhIRQ                 // Interrupt request
+   );
 
    //
    // Big-endian to little-endian data bus swap

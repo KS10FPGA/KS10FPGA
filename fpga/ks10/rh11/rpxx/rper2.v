@@ -43,16 +43,16 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module RPER2(clk, rst, clr, rpDRVCLR, rpDATAI, rper2WRITE, rpDRY, rpER2);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clear
-   input          rpDRVCLR;                     // Drive clear
-   input  [35: 0] rpDATAI;                      // Data in
-   input          rper2WRITE;                   // Write
-   input          rpDRY;                        // Drive ready
-   output [15: 0] rpER2;                        // ER2 Output
+module RPER2 (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clear
+      input  wire         rpDRVCLR,             // Drive clear
+      input  wire [35: 0] rpDATAI,              // Data in
+      input  wire         rper2WRITE,           // Write
+      input  wire         rpDRY,                // Drive ready
+      output reg  [15: 0] rpER2                 // ER2 Output
+   );
 
    //
    // RPER2 Register
@@ -71,7 +71,6 @@ module RPER2(clk, rst, clr, rpDRVCLR, rpDATAI, rper2WRITE, rpDRY, rpER2);
    //  M7776/EC6/E79
    //
 
-   reg [15:0] rpER2;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -80,7 +79,7 @@ module RPER2(clk, rst, clr, rpDRVCLR, rpDATAI, rper2WRITE, rpDRY, rpER2);
           if (clr | rpDRVCLR)
             rpER2 <= 0;
           else if (rper2WRITE & rpDRY)
-            rpER2 <= rpDATAI;
+            rpER2 <= rpDATAI[15:0];
      end
 
 endmodule

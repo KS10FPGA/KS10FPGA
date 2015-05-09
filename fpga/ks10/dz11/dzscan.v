@@ -41,13 +41,13 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module DZSCAN(clk, rst, clr, csrMSE, scan);
-
-   input        clk;                    // Clock
-   input        rst;                    // Reset
-   input        clr;                    // Clear
-   input        csrMSE;                 // CSR[MSE]
-   output [2:0] scan;                   // Scanner
+module DZSCAN (
+      input  wire       clk,            // Clock
+      input  wire       rst,            // Reset
+      input  wire       clr,            // Clear
+      input  wire       csrMSE,         // CSR[MSE]
+      output reg  [2:0] scan            // Scanner
+   );
 
    //
    // Scanner
@@ -55,8 +55,6 @@ module DZSCAN(clk, rst, clr, csrMSE, scan);
    // Details
    //  This just increments the scan signal.
    //
-
-   reg [2:0] scan;
 
    always @(posedge clk or posedge rst)
      begin

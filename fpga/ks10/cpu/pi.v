@@ -55,20 +55,18 @@
 
 `include "useq/crom.vh"
 
-module PI(clk, rst, clken, crom, dp, ubaINTR, aprINTR, piREQPRI, piCURPRI, piINTR);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input                  clken;        // Clock enable
-   input  [0:cromWidth-1] crom;         // Control ROM Data
-   input  [0:35]          dp;           // Data path
-   input  [1: 7]          aprINTR;      // Arithmetic Processor request
-   input  [1: 7]          ubaINTR;      // Unibus request
-   output [0: 2]          piREQPRI;     // Requested Interrupt Priority
-   output [0: 2]          piCURPRI;     // Current Prioity Interrupt number
-   output                 piINTR;       // Interrupt Request
+module PI (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         clken,        // Clock enable
+      input  wire [0:107] crom,         // Control ROM Data
+      input  wire [0: 35] dp,           // Data path
+      input  wire [1:  7] aprINTR,      // Arithmetic Processor request
+      input  wire [1:  7] ubaINTR,      // Unibus request
+      output wire [0:  2] piREQPRI,     // Requested Interrupt Priority
+      output wire [0:  2] piCURPRI,     // Current Prioity Interrupt number
+      output reg          piINTR        // Interrupt Request
+   );
 
    //
    // Microcode Decode
@@ -185,7 +183,6 @@ module PI(clk, rst, clken, crom, dp, ubaINTR, aprINTR, piREQPRI, piCURPRI, piINT
    //  DPEB/E167
    //
 
-   reg piINTR;
    always @(posedge clk or posedge rst)
      begin
         if (rst)

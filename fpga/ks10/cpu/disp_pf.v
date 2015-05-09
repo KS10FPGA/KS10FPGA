@@ -95,26 +95,22 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
-               piINTR, nxmINTR, timerINTR, pageFAIL, dispPF);
-
-   parameter cromWidth = `CROM_WIDTH;
-   parameter dromWidth = `DROM_WIDTH;
-
-   input                   clk;                 // Clock
-   input                   rst;                 // Reset
-   input                   clken;               // Clock Enable
-   input  [ 0:cromWidth-1] crom;                // Control ROM Data
-   input  [ 0:dromWidth-1] drom;                // Dispatch ROM Data
-   input  [ 0:35]          dp;                  // Datapath
-   input  [ 0:35]          vmaREG;              // Virtual Memory Register
-   input  [22:35]          aprFLAGS;            // APR Flags
-   input  [ 0: 3]          pageFLAGS;           // Page Flags
-   input                   timerINTR;           // Timer Interrupt
-   input                   piINTR;              // CPU Interrupt
-   input                   nxmINTR;             // NXM Interrupt
-   output                  pageFAIL;            // Page Fail
-   output [ 0: 3]          dispPF;              // Page Fail Dispatch
+module DISP_PF (
+      input  wire          clk,         // Clock
+      input  wire          rst,         // Reset
+      input  wire          clken,       // Clock Enable
+      input  wire [ 0:107] crom,        // Control ROM Data
+      input  wire [ 0: 35] drom,        // Dispatch ROM Data
+      input  wire [ 0: 35] dp,          // Datapath
+      input  wire [ 0: 35] vmaREG,      // Virtual Memory Register
+      input  wire [22: 35] aprFLAGS,    // APR Flags
+      input  wire [ 0:  3] pageFLAGS,   // Page Flags
+      input  wire          timerINTR,   // Timer Interrupt
+      input  wire          piINTR,      // CPU Interrupt
+      input  wire          nxmINTR,     // NXM Interrupt
+      output reg           pageFAIL,    // Page Fail
+      output reg  [ 0:  3] dispPF       // Page Fail Dispatch
+   );
 
    //
    // Dispatch values
@@ -251,7 +247,6 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
    // Page Fail Dispatch
    //
 
-   reg pageFAIL;
    reg [0:3] dispatch;
 
    always @*
@@ -298,8 +293,6 @@ module DISP_PF(clk, rst, clken, crom, drom, dp, vmaREG, aprFLAGS, pageFLAGS,
    //
    // Page fail dispatch register
    //
-
-   reg [0:3] dispPF;
 
    always @(posedge clk or posedge rst)
      begin

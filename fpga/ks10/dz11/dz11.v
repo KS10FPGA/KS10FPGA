@@ -62,37 +62,32 @@
 `include "../ubabus.vh"
 `include "../../ks10.vh"
 
-module DZ11(clk,      rst,
-            dz11TXD,  dz11RXD,  dz11CO,  dz11RI,  dz11DTR,
-            devRESET, devINTR,  devINTA,
-            devREQI,  devACKO,  devADDRI,
-            devREQO,  devACKI,  devADDRO,
-            devDATAI, devDATAO);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   // DZ11 Interfaces
-   output [ 7: 0] dz11TXD;                      // DZ11 Transmitter Serial Data
-   input  [ 7: 0] dz11RXD;                      // DZ11 Receiver Serial Data
-   input  [ 7: 0] dz11CO;                       // DZ11 Carrier Detect
-   input  [ 7: 0] dz11RI;                       // DZ11 Ring Indicator
-   output [ 7: 0] dz11DTR;                      // DZ11 Data Terminal Ready
-   // Reset
-   input          devRESET;                     // IO Bus Bridge Reset
-   // Interrupt
-   output [ 7: 4] devINTR;                      // Interrupt Request
-   input  [ 7: 4] devINTA;                      // Interrupt Acknowledge
-   // Target
-   input          devREQI;                      // Device Request In
-   output         devACKO;                      // Device Acknowledge Out
-   input  [ 0:35] devADDRI;                     // Device Address In
-   // Initiator
-   output         devREQO;                      // Device Request Out
-   input          devACKI;                      // Device Acknowledge In
-   output [ 0:35] devADDRO;                     // Device Address Out
-   // Data
-   input  [ 0:35] devDATAI;                     // Data In
-   output [ 0:35] devDATAO;                     // Data Out
+module DZ11 (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      // DZ11 Interfaces
+      output wire [ 7: 0] dz11TXD,              // DZ11 Transmitter Serial Data
+      input  wire [ 7: 0] dz11RXD,              // DZ11 Receiver Serial Data
+      input  wire [ 7: 0] dz11CO,               // DZ11 Carrier Detect
+      input  wire [ 7: 0] dz11RI,               // DZ11 Ring Indicator
+      output wire [ 7: 0] dz11DTR,              // DZ11 Data Terminal Ready
+      // Reset
+      input  wire         devRESET,             // IO Bus Bridge Reset
+      // Interrupt
+      output wire [ 7: 4] devINTR,              // Interrupt Request
+      input  wire [ 7: 4] devINTA,              // Interrupt Acknowledge
+      // Target
+      input  wire         devREQI,              // Device Request In
+      output reg          devACKO,              // Device Acknowledge Out
+      input  wire [ 0:35] devADDRI,             // Device Address In
+      // Initiator
+      output wire         devREQO,              // Device Request Out
+      input  wire         devACKI,              // Device Acknowledge In
+      output wire [ 0:35] devADDRO,             // Device Address Out
+      // Data
+      input  wire [ 0:35] devDATAI,             // Data In
+      output reg  [ 0:35] devDATAO              // Data Out
+   );
 
    //
    // DZ Parameters
@@ -382,9 +377,6 @@ module DZ11(clk,      rst,
    //
    // Bus Mux and little-endian to big-endian bus swap.
    //
-
-   reg devACKO;
-   reg [0:35] devDATAO;
 
    always @*
      begin

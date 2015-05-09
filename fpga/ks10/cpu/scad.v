@@ -45,30 +45,28 @@
 
 `include "useq/crom.vh"
 
-module SCAD(clk, rst, clken, crom, dp, feSIGN, scSIGN, scad, dispSCAD);
-
-   parameter  cromWidth = `CROM_WIDTH;
-
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input                  clken;        // Clock Enable
-   input  [0:cromWidth-1] crom;         // Control ROM Data
-   input  [0:35]          dp;           // Data path
-   output                 feSIGN;       // FE Sign
-   output                 scSIGN;       // SC Sign
-   output [0: 9]          scad;         // SCAD
-   output [8:11]          dispSCAD;     // SCAD Dispatch
+module SCAD (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         clken,        // Clock Enable
+      input  wire [0:107] crom,         // Control ROM Data
+      input  wire [0: 35] dp,           // Data path
+      output wire         feSIGN,       // FE Sign
+      output wire         scSIGN,       // SC Sign
+      output reg  [0:  9] scad,         // SCAD
+      output wire [8: 11] dispSCAD      // SCAD Dispatch
+   );
 
    //
    // CROM interface
    //
 
-   wire [0:2] fun     = `cromSCAD_FUN;  // SCAN Function
-   wire [0:2] asel    = `cromSCAD_ASEL; // SCAD B Input
-   wire [0:1] bsel    = `cromSCAD_BSEL; // SCAD A Input
-   wire [0:9] snum    = `cromSNUM;      // Small number field
-   wire       loadSC  = `cromLOADSC;    // Load SC
-   wire       loadFE  = `cromLOADFE;    // Load FE
+   wire [0:2] fun    = `cromSCAD_FUN;   // SCAN Function
+   wire [0:2] asel   = `cromSCAD_ASEL;  // SCAD B Input
+   wire [0:1] bsel   = `cromSCAD_BSEL;  // SCAD A Input
+   wire [0:9] snum   = `cromSNUM;       // Small number field
+   wire       loadSC = `cromLOADSC;     // Load SC
+   wire       loadFE = `cromLOADFE;     // Load FE
 
    //
    // SCADA MUX
@@ -187,7 +185,6 @@ module SCAD(clk, rst, clken, crom, dp, feSIGN, scSIGN, scad, dispSCAD);
    //  DPM3/E24
    //
 
-   reg [0:9] scad;
    always @(fun or scadA or scadB)
      begin
         case (fun)

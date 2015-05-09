@@ -44,19 +44,17 @@
 
 `include "useq/crom.vh"
 
-module REGIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, opJRST0);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input                  clken;        // Clock Enable
-   input  [0:cromWidth-1] crom;         // Control ROM Data
-   input  [0:35]          dbus;         // Input Bus
-   input                  prevEN;       // Previous Enable
-   output [0:17]          regIR;        // Instruction register
-   output                 xrPREV;       // XR Previous
-   output                 opJRST0;      // JRST Instruction
+module REGIR (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         clken,        // Clock Enable
+      input  wire [0:107] crom,         // Control ROM Data
+      input  wire [0: 35] dbus,         // Input Bus
+      input  wire         prevEN,       // Previous Enable
+      output reg  [0: 17] regIR,        // Instruction register
+      output reg          xrPREV,       // XR Previous
+      output wire         opJRST0       // JRST Instruction
+   );
 
    //
    // Microcode Decode
@@ -78,9 +76,6 @@ module REGIR(clk, rst, clken, crom, dbus, prevEN, regIR, xrPREV, opJRST0);
    //  DPEA/E93
    //  DPEA/E99
    //
-
-   reg [0:17] regIR;
-   reg        xrPREV;
 
    always @(posedge clk or posedge rst)
     begin

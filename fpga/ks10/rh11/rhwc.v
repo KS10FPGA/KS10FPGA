@@ -40,20 +40,18 @@
 
 `include "rhwc.vh"
 
-module RHWC(clk, rst,
-            devRESET, devLOBYTE, devHIBYTE, devDATAI, rhwcWRITE, rhCLR,
-            rhINCWC, rhWC);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          devRESET;                     // Device reset
-   input          devLOBYTE;                    // Device low byte
-   input          devHIBYTE;                    // Device high byte
-   input  [ 0:35] devDATAI;                     // Device data in
-   input          rhwcWRITE;                    // Write to WC
-   input          rhCLR;                        // Controller clear
-   input          rhINCWC;                      // Increment WC
-   output [15: 0] rhWC;                         // WC Output
+module RHWC (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         devRESET,             // Device reset
+      input  wire         devLOBYTE,            // Device low byte
+      input  wire         devHIBYTE,            // Device high byte
+      input  wire [ 0:35] devDATAI,             // Device data in
+      input  wire         rhwcWRITE,            // Write to WC
+      input  wire         rhCLR,                // Controller clear
+      input  wire         rhINCWC,              // Increment WC
+      output reg  [15: 0] rhWC                  // WC Output
+   );
 
    //
    // Big-endian to little-endian data bus swap
@@ -78,8 +76,6 @@ module RHWC(clk, rst,
    //  M7295/BCTD/E53
    //  M7295/BCTD/E54
    //
-
-   reg [15:0] rhWC;
 
    always @(posedge clk or posedge rst)
      begin

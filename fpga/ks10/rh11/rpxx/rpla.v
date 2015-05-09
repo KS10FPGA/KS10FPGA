@@ -72,15 +72,15 @@
 
 `include "rpmr.vh"
 
-module RPLA(clk, rst, clr, rpFMT22, rpMR, rpSA, rpLA);
-
-   input         clk;                           // Clock
-   input         rst;                           // Reset
-   input         clr;                           // Clear
-   input         rpFMT22;                       // 22 (octal) sector mode
-   input  [15:0] rpMR;                          // Maintenance register
-   input  [ 5:0] rpSA;                          // Sector address
-   output [15:0] rpLA;                          // Look ahead register
+module RPLA (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clear
+      input  wire         rpFMT22,              // 22 (octal) sector mode
+      input  wire [15: 0] rpMR,                 // Maintenance register
+      input  wire [ 5: 0] rpSA,                 // Sector address
+      output reg  [15: 0] rpLA                  // Look ahead register
+   );
 
    //
    // Decode rpMR
@@ -171,8 +171,8 @@ module RPLA(clk, rst, clr, rpFMT22, rpMR, rpSA, rpLA);
                if (rpDIND)
                  sectorcnt <= 0;
                else if (incsector)
-                 if (( rpFMT22 & (sectorcnt == 19)) |
-                     (!rpFMT22 & (sectorcnt == 21)))
+                 if ((!rpFMT22 & (sectorcnt == 18)) |
+                     ( rpFMT22 & (sectorcnt == 21)))
                    sectorcnt <= 0;
                  else
                    sectorcnt <= sectorcnt + 1'b1;
@@ -183,7 +183,6 @@ module RPLA(clk, rst, clr, rpFMT22, rpMR, rpSA, rpLA);
    // RPLA Register
    //
 
-   reg [15:0] rpLA;
    always @*
      begin
         if (rpDMD)

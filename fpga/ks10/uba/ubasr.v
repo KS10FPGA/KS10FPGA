@@ -74,18 +74,17 @@
 `include "../ks10.vh"
 `include "../cpu/bus.vh"
 
-module UBASR(clk, rst, busDATAI, statINTHI, statINTLO, statWRITE,
-             setNXD, setTMO, regUBASR);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input  [ 0:35] busDATAI;                     // Backplane Bus Data In
-   input          statWRITE;                    // Write to status register
-   input          statINTHI;                    // Interrupt status low
-   input          statINTLO;                    // Interrupt status high
-   input          setNXD;                       // Set NXD bit
-   input          setTMO;                       // Set TMO bit
-   output [ 0:35] regUBASR;                     // Status Register
+module UBASR (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire [ 0:35] busDATAI,             // Backplane Bus Data In
+      input  wire         statWRITE,            // Write to status register
+      input  wire         statINTHI,            // Interrupt status low
+      input  wire         statINTLO,            // Interrupt status high
+      input  wire         setNXD,               // Set NXD bit
+      input  wire         setTMO,               // Set TMO bit
+      output wire [ 0:35] regUBASR              // Status Register
+   );
 
    //
    // Control/Status Register
@@ -96,8 +95,6 @@ module UBASR(clk, rst, busDATAI, statINTHI, statINTLO, statWRITE,
    reg       statDXF;
    reg [0:2] statPIH;
    reg [0:2] statPIL;
-   wire      setNXD;
-   wire      setTMO;
 
    always @(posedge clk or posedge rst)
      begin
@@ -163,7 +160,7 @@ module UBASR(clk, rst, busDATAI, statINTHI, statINTLO, statWRITE,
    // Build Status Register
    //
 
-   wire [0:35] regUBASR = {18'b0, statTMO, 2'b0, statNXD, 2'b0, statINTHI,
-                           statINTLO, 2'b0, statDXF, statINI, statPIH, statPIL};
+   assign  regUBASR = {18'b0, statTMO, 2'b0, statNXD, 2'b0, statINTHI,
+                       statINTLO, 2'b0, statDXF, statINI, statPIH, statPIL};
 
 endmodule

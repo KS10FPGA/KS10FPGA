@@ -38,13 +38,13 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module RHNEM(clk, rst, devREQO, devACKI, setNEM);
-
-   input        clk;                            // Clock
-   input        rst;                            // Reset
-   input        devREQO;                        // Memory request
-   input        devACKI;                        // Memory acknowledge
-   output       setNEM;                         // Set NEM
+module RHNEM (
+      input  wire clk,                          // Clock
+      input  wire rst,                          // Reset
+      input  wire devREQO,                      // Memory request
+      input  wire devACKI,                      // Memory acknowledge
+      output wire setNEM                        // Set NEM
+   );
 
    //
    // Non-existent memory monitor

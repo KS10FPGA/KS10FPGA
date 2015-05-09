@@ -43,17 +43,15 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module TIMING(clk, rst, crom, feSIGN, busWAIT, clkenDP, clkenCR);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input  [0:cromWidth-1] crom;         // Control ROM Data
-   input                  feSIGN;       // FE Sign
-   input                  busWAIT;      // Memory Wait
-   output                 clkenDP;      // Clock Enable
-   output                 clkenCR;      // Clock Enable Microsequencer
+module TIMING (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire [0:107] crom,         // Control ROM Data
+      input  wire         feSIGN,       // FE Sign
+      input  wire         busWAIT,      // Memory Wait
+      output wire         clkenDP,      // Clock Enable
+      output wire         clkenCR       // Clock Enable Microsequencer
+   );
 
    //
    // Fast Shift

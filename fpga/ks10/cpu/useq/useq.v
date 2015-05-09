@@ -47,40 +47,33 @@
 `include "../pcflags.vh"
 `include "../regir.vh"
 
-module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
-            piINTR, cpuEXEC, cpuCONT, ioBUSY, timerINTR,
-            skipJFCL, opJRST0, trapCYCLE, scSIGN, aluFLAGS,
-            dispPF, dispNI, dispBYTE, dispSCAD,
-            regIR, pcFLAGS, drom, crom, cromADDR);
-
-   parameter cromWidth = `CROM_WIDTH;
-   parameter dromWidth = `DROM_WIDTH;
-
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input                  clken;        // Clock Enable
-   input                  pageFAIL;     // Page Fail
-   input  [0:35]          dp;           // Datapath
-   input  [0:11]          dispDIAG;     // Diagnostic Addr
-   input                  piINTR;       // Extenal Interrupt
-   input                  cpuEXEC;      // Execute Switch Active
-   input                  cpuCONT;      // Continue Switch Active
-   input                  ioBUSY;       // IO Busy
-   input                  timerINTR;    // Timer Interrupt
-   input                  trapCYCLE;    // Trap Cycle
-   input                  scSIGN;       // SC Sign
-   input  [0: 8]          aluFLAGS;     // ALU Flags
-   input                  skipJFCL;     // JFCL Instruction
-   input                  opJRST0;      // JRST 0 Instruction
-   input  [0: 3]          dispPF;       // Page Fail Dispatch
-   input  [0: 3]          dispNI;       // Next Instruction Dispatch
-   input  [0: 3]          dispBYTE;     // Byte Size/Position Dispatch
-   input  [0: 3]          dispSCAD;     // SCAD Dispatch
-   input  [0:17]          regIR;        // Instruction Register
-   input  [0:17]          pcFLAGS;      // PC Flags
-   input  [0:dromWidth-1] drom;         // Dispatch ROM Data
-   output [0:cromWidth-1] crom;         // Control ROM Data
-   output [0:11]          cromADDR;     // Control ROM Address
+module USEQ (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clken,                // Clock Enable
+      input  wire         pageFAIL,             // Page Fail
+      input  wire [0: 35] dp,                   // Datapath
+      input  wire [0: 11] dispDIAG,             // Diagnostic Addr
+      input  wire         piINTR,               // Extenal Interrupt
+      input  wire         cpuEXEC,              // Execute Switch Active
+      input  wire         cpuCONT,              // Continue Switch Active
+      input  wire         ioBUSY,               // IO Busy
+      input  wire         timerINTR,            // Timer Interrupt
+      input  wire         trapCYCLE,            // Trap Cycle
+      input  wire         scSIGN,               // SC Sign
+      input  wire [0:  8] aluFLAGS,             // ALU Flags
+      input  wire         skipJFCL,             // JFCL Instruction
+      input  wire         opJRST0,              // JRST 0 Instruction
+      input  wire [0:  3] dispPF,               // Page Fail Dispatch
+      input  wire [0:  3] dispNI,               // Next Instruction Dispatch
+      input  wire [0:  3] dispBYTE,             // Byte Size/Position Dispatch
+      input  wire [0:  3] dispSCAD,             // SCAD Dispatch
+      input  wire [0: 17] regIR,                // Instruction Register
+      input  wire [0: 17] pcFLAGS,              // PC Flags
+      input  wire [0: 35] drom,                 // Dispatch ROM Data
+      output wire [0:107] crom,                 // Control ROM Data
+      output wire [0: 11] cromADDR              // Control ROM Address
+   );
 
    //
    // ALU Flags
@@ -278,7 +271,7 @@ module USEQ(clk, rst, clken, pageFAIL, dp, dispDIAG,
    //  heirarchy.
    //
    //  The Page Fail address is hardwired to address o3777 on machines with 2K
-   //  words of microcode and hardwired to address o7777 on machines with 4K 
+   //  words of microcode and hardwired to address o7777 on machines with 4K
    //  words of microcode.
    //
    // Trace:

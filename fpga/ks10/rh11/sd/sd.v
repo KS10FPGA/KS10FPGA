@@ -45,44 +45,32 @@
 `include "sd.vh"
 `include "sdspi.vh"
 
-module SD(clk, rst,
-          // SPI Interface
-          sdMISO, sdMOSI, sdSCLK, sdCS,
-          // Control
-          sdOP, sdLSA, sdWDCNT,
-          // Data Interface
-          sdDATAI, sdDATAO, sdREQO, sdACKI,
-          //
-          sdINCWORD, sdINCSECT, sdSETWCE,
-          // Debug
-          sdDEBUG);
-
-   input         clk;                   // Clock
-   input         rst;                   // Reset
-   // SPI Interface
-   input         sdMISO;                // SD Data In
-   output        sdMOSI;                // SD Data Out
-   output        sdSCLK;                // SD Clock
-   output        sdCS;                  // SD Chip Select
-   // Control
-   input  [ 1:0] sdOP;                  // SD Operation
-   input  [31:0] sdLSA;                 // SD Linear sector address
-   input  [15:0] sdWDCNT;               // SD Word Count
-
-   // DMA Interface
-   input  [0:35] sdDATAI;               // Data Input (Writes)
-   output [0:35] sdDATAO;               // Data Output (Reads)
-   output        sdREQO;                // DMA Request
-   input         sdACKI;                // DMA Acknowledge
-
-   // Outputs
-   output        sdINCWORD;             // Increment Word Count
-   output        sdINCSECT;             // Increment Sector
-   output        sdSETWCE;              // Set write check error
-   output [0:63] sdDEBUG;               // Debug Output
+module SD (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      // SPI Interface
+      input  wire         sdMISO,               // SD Data In
+      output wire         sdMOSI,               // SD Data Out
+      output wire         sdSCLK,               // SD Clock
+      output wire         sdCS,                 // SD Chip Select
+      // Control
+      input  wire [ 1: 0] sdOP,                 // SD Operation
+      input  wire [31: 0] sdLSA,                // SD Linear sector address
+      input  wire [15: 0] sdWC,                 // SD Word Count
+      // DMA Interface
+      input  wire [ 0:35] sdDATAI,              // Data Input (Writes)
+      output reg  [ 0:35] sdDATAO,              // Data Output (Reads)
+      output reg          sdREQO,               // DMA Request
+      input  wire         sdACKI,               // DMA Acknowledge
+      // Outputs
+      output reg          sdINCWORD,            // Increment Word Count
+      output reg          sdINCSECT,            // Increment Sector
+      output reg          sdSETWCE,             // Set write check error
+      output wire [ 0:63] sdDEBUG               // Debug Output
+   );
 
    //
-   // Timing wires
+   // Timing parameters
    //
 
    localparam [15:0] nCR  =    8;        // NCR from SD Spec
@@ -182,19 +170,12 @@ module SD(clk, rst,
    reg [19:0] timeout;                  // Timeout
    reg [ 7:0] sdRDCNT;                  // Read Counter
    reg [ 7:0] sdWRCNT;                  // Write Counter
-   reg [15:0] wdCNT;                    // Word Count
    reg [31:0] sectADDR;                 // Sector Address
 
    reg [ 7:0] sdVAL;                    // Error Value
    reg [ 7:0] sdERR;                    // Error State
-   reg        sdINCSECT;                // Increment Sector
-   reg        sdINCWORD;                // Increment Word
-   reg        sdSETWCE;                 // Write check error
    reg        rwDONE;                   // Read/Write Completed
    reg        readOP;                   // Read/Write Operation
-   reg        sdREQO;                   // DMA Request
-
-   reg [0:35] sdDATAO;                  // DMA Data Out
    reg [ 7:0] state;                    // Current State
 
    wire       spiDONE;                  // Asserted by SPI when done
@@ -259,7 +240,6 @@ module SD(clk, rst,
              sdVAL      <= 0;
              sdWRCNT    <= 0;
              sdRDCNT    <= 0;
-             wdCNT      <= 0;
              sectADDR   <= 0;
              sdINCSECT  <= 0;
              sdINCWORD  <= 0;
@@ -1000,7 +980,6 @@ module SD(clk, rst,
                       `sdopRD:
                         begin
                            readOP   <= 1;
-                           wdCNT    <= sdWDCNT;
                            sectADDR <= sdLSA;
                            sdRDCNT  <= sdRDCNT + 1'b1;
                            state    <= stateREAD00;
@@ -1008,7 +987,6 @@ module SD(clk, rst,
                       `sdopWR:
                         begin
                            readOP   <= 0;
-                           wdCNT    <= sdWDCNT;
                            sectADDR <= sdLSA;
                            sdWRCNT  <= sdWRCNT + 1'b1;
                            state    <= stateWRITE00;
@@ -1016,7 +994,6 @@ module SD(clk, rst,
                       `sdopWRCHK:
                         begin
                            readOP   <= 1;
-                           wdCNT    <= sdWDCNT;
                            sectADDR <= sdLSA;
                            sdRDCNT  <= sdRDCNT + 1'b1;
                            state    <= stateWRCHK00;
@@ -1356,7 +1333,7 @@ module SD(clk, rst,
                       end
                     else
                       begin
-                         if (wdCNT == 0)
+                         if (sdWC == 0)
                            begin
                               rwDONE <= 0;
                            end
@@ -1369,7 +1346,6 @@ module SD(clk, rst,
 
                          if (loopCNT == 63)
                            begin
-                              wdCNT    <= wdCNT - 1'b1;
                               loopCNT  <= loopCNT + 1'b1;
                               sectADDR <= sectADDR + 1'b1;
                               state    <= stateREAD00;
@@ -1383,7 +1359,6 @@ module SD(clk, rst,
 
                          else if (loopCNT == 127)
                            begin
-                              wdCNT     <= wdCNT - 1'b1;
                               loopCNT   <= loopCNT + 1'b1;
                               sectADDR  <= sectADDR + 1'b1;
                               sdINCSECT <= 1;
@@ -1396,7 +1371,6 @@ module SD(clk, rst,
 
                          else
                            begin
-                              wdCNT      <= wdCNT - 1'b1;
                               loopCNT    <= loopCNT + 1'b1;
                               state      <= stateREAD04;
                            end

@@ -43,19 +43,18 @@
 
 `include "sdspi.vh"
 
-module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
-             spiMISO, spiMOSI, spiSCLK, spiCS, spiDONE);
-
-   input        clk;            // Clock
-   input        rst;            // Reset
-   input  [2:0] spiOP;          // Operation
-   input  [7:0] spiTXD;         // Transmit Data
-   output [7:0] spiRXD;         // Receive Data
-   input        spiMISO;        // SD Data In
-   output       spiMOSI;        // SD Data Out
-   output       spiSCLK;        // SD Clock
-   output       spiCS;          // SD Chip Select
-   output       spiDONE;        // Done
+module SDSPI (
+      input  wire       clk,            // Clock
+      input  wire       rst,            // Reset
+      input  wire [2:0] spiOP,          // Operation
+      input  wire [7:0] spiTXD,         // Transmit Data
+      output wire [7:0] spiRXD,         // Receive Data
+      input  wire       spiMISO,        // SD Data In
+      output wire       spiMOSI,        // SD Data Out
+      output wire       spiSCLK,        // SD Clock
+      output reg        spiCS,          // SD Chip Select
+      output reg        spiDONE         // Done
+   );
 
    //
    // State Machine States
@@ -85,8 +84,6 @@ module SDSPI(clk, rst, spiOP, spiTXD, spiRXD,
    reg [7:0]    rxd;
    reg [5:0]    clkcnt;
    reg [5:0]    clkdiv;
-   reg          spiDONE;
-   reg          spiCS;
 
    always @(posedge clk)
      begin

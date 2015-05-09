@@ -43,15 +43,13 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module RHSCAN(clk, rst, sdREQ, sdACK, scan);
-
-
-
-   input        clk;                            // Clock
-   input        rst;                            // Reset
-   input  [7:0] sdREQ;                          // SD Request
-   output [7:0] sdACK;                          // SD Acknowledge
-   output [2:0] scan;                           // Scan
+module RHSCAN (
+      input  wire       clk,                    // Clock
+      input  wire       rst,                    // Reset
+      input  wire [7:0] sdREQ,                  // SD Request
+      output reg  [7:0] sdACK,                  // SD Acknowledge
+      output reg  [2:0] scan                    // Scan
+   );
 
    //
    // States
@@ -66,8 +64,6 @@ module RHSCAN(clk, rst, sdREQ, sdACK, scan);
    //
 
    reg [2:0] state;
-   reg [2:0] scan;
-   reg [7:0] sdACK;
 
    always @(posedge clk or posedge rst)
      begin

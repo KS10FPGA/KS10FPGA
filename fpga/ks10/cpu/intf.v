@@ -42,24 +42,20 @@
 
 `include "useq/crom.vh"
 
-module INTF(clk, rst, clken, crom,
-            cslSET, cslRUN, cslCONT, cslEXEC,
-            cpuRUN, cpuCONT, cpuEXEC, cpuHALT);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                 clk;                   // clock
-   input                 rst;                   // reset
-   input                 clken;                 // clock enable
-   input [0:cromWidth-1] crom;                  // Control ROM Data
-   input                 cslSET;                // Console modify RUN, CONT, EXEC
-   input                 cslRUN;                // Console Run Switch
-   input                 cslCONT;               // Console Continue Switch
-   input                 cslEXEC;               // Console Execute Switch
-   output reg            cpuRUN;                // CPU Run Status
-   output reg            cpuCONT;               // CPU Continue Status
-   output reg            cpuEXEC;               // CPU Execute Status
-   output reg            cpuHALT;               // CPU Halt Status
+module INTF (
+      input  wire         clk,          // clock
+      input  wire         rst,          // reset
+      input  wire         clken,        // clock enable
+      input  wire [0:107] crom,         // Control ROM Data
+      input  wire         cslSET,       // Console modify RUN, CONT, EXEC
+      input  wire         cslRUN,       // Console Run Switch
+      input  wire         cslCONT,      // Console Continue Switch
+      input  wire         cslEXEC,      // Console Execute Switch
+      output reg          cpuRUN,       // CPU Run Status
+      output reg          cpuCONT,      // CPU Continue Status
+      output reg          cpuEXEC,      // CPU Execute Status
+      output reg          cpuHALT       // CPU Halt Status
+   );
 
    //
    // Spec Decoder

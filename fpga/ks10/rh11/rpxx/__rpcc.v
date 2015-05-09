@@ -40,14 +40,14 @@
 
 `include "rpcc.vh"
 
-module RPCC(clk, rst, clr, rpDC, rpccWRITE, rpCC);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clear
-   input  [15: 0] rpDC;                         // Data in
-   input          rpccWRITE;                    // Write
-   output [15: 0] rpCC;                         // rpCC Output
+module RPCC (
+       input  wire         clk,                 // Clock
+       input  wire         rst,                 // Reset
+       input  wire         clr,                 // Clear
+       input  wire [15: 0] rpDC,                // Data in
+       input  wire         rpccWRITE,           // Write
+       output wire [15: 0] rpCC                 // rpCC Output
+   );
 
    //
    // RPCC Current Cylinder Address (CCA)

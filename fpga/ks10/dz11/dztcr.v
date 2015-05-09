@@ -43,19 +43,17 @@
 
 `include "dztcr.vh"
 
-module DZTCR(clk, rst,
-             devRESET, devLOBYTE, devHIBYTE, devDATAI,
-             csrCLR, tcrWRITE, regTCR);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          devRESET;                     // Device Reset from UBA
-   input          devLOBYTE;                    // Device Low Byte
-   input          devHIBYTE;                    // Device High Byte
-   input  [ 0:35] devDATAI;                     // Device Data In
-   input          csrCLR;                       // CSR clear bit
-   input          tcrWRITE;                     // Write to TCR
-   output [15: 0] regTCR;                       // TCR Output
+module DZTCR (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         devRESET,             // Device Reset from UBA
+      input  wire         devLOBYTE,            // Device Low Byte
+      input  wire         devHIBYTE,            // Device High Byte
+      input  wire [ 0:35] devDATAI,             // Device Data In
+      input  wire         csrCLR,               // CSR clear bit
+      input  wire         tcrWRITE,             // Write to TCR
+      output wire [15: 0] regTCR                // TCR Output
+   );
 
    //
    // Big-endian to little-endian data bus swap
@@ -104,6 +102,6 @@ module DZTCR(clk, rst,
           end
      end
 
-   wire [15:0] regTCR = {tcrDTR, tcrLIN};
+   assign regTCR = {tcrDTR, tcrLIN};
 
 endmodule

@@ -58,39 +58,34 @@
 `include "sd/sd.vh"
 `include "../ubabus.vh"
 
-module RH11(clk,      rst,
-            rh11CD,   rh11WP,   rh11MISO, rh11MOSI, rh11SCLK, rh11CS, rh11DEBUG,
-            devRESET, devINTR,  devINTA,
-            devREQI,  devACKO,  devADDRI,
-            devREQO,  devACKI,  devADDRO,
-            devDATAI, devDATAO);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   // RH11 Interfaces
-   input          rh11CD;                       // RH11 Card Detect
-   input          rh11WP;                       // RH11 Write Protect
-   input          rh11MISO;                     // RH11 Data In
-   output         rh11MOSI;                     // RH11 Data Out
-   output         rh11SCLK;                     // RH11 Clock
-   output         rh11CS;                       // RH11 Chip Select
-   output [ 0:63] rh11DEBUG;                    // RH11 Debug Output
-   // Reset
-   input          devRESET;                     // IO Bus Bridge Reset
-   // Interrupt
-   output [ 7: 4] devINTR;                      // Interrupt Request
-   input  [ 7: 4] devINTA;                      // Interrupt Acknowledge
-   // Target
-   input          devREQI;                      // Device Request In
-   output         devACKO;                      // Device Acknowledge Out
-   input  [ 0:35] devADDRI;                     // Device Address In
-   // Initiator
-   output         devREQO;                      // Device Request Out
-   input          devACKI;                      // Device Acknowledge In
-   output [ 0:35] devADDRO;                     // Device Address Out
-   // Data
-   input  [ 0:35] devDATAI;                     // Data In
-   output [ 0:35] devDATAO;                     // Data Out
+module RH11 (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      // RH11 Interfaces
+      input  wire         rh11CD,               // RH11 Card Detect
+      input  wire         rh11WP,               // RH11 Write Protect
+      input  wire         rh11MISO,             // RH11 Data In
+      output wire         rh11MOSI,             // RH11 Data Out
+      output wire         rh11SCLK,             // RH11 Clock
+      output wire         rh11CS,               // RH11 Chip Select
+      output wire [ 0:63] rh11DEBUG,            // RH11 Debug Output
+      // Reset
+      input  wire         devRESET,             // IO Bus Bridge Reset
+      // Interrupt
+      output wire [ 7: 4] devINTR,              // Interrupt Request
+      input  wire [ 7: 4] devINTA,              // Interrupt Acknowledge
+      // Target
+      input  wire         devREQI,              // Device Request In
+      output wire         devACKO,              // Device Acknowledge Out
+      input  wire [ 0:35] devADDRI,             // Device Address In
+      // Initiator
+      output wire         devREQO,              // Device Request Out
+      input  wire         devACKI,              // Device Acknowledge In
+      output wire [ 0:35] devADDRO,             // Device Address Out
+      // Data
+      input  wire [ 0:35] devDATAI,             // Data In
+      output reg  [ 0:35] devDATAO              // Data Out
+   );
 
    //
    // RH Parameters
@@ -599,7 +594,7 @@ module RH11(clk,      rst,
       .sdCS       (rh11CS),
       .sdOP       (rpSDOP[rhSCAN]),
       .sdLSA      (rpSDLSA[rhSCAN]),
-      .sdWDCNT    (rhWC),
+      .sdWC       (rhWC),
       .sdDATAI    (devDATAI),
       .sdDATAO    (sdDATAO),
       .sdREQO     (devREQO),
@@ -642,8 +637,6 @@ module RH11(clk,      rst,
    //
    // Bus Mux and little-endian to big-endian bus swap.
    //
-
-   reg [0:35] devDATAO;
 
    always @*
      begin

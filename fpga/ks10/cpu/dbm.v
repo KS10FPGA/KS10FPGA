@@ -40,19 +40,17 @@
 
 `include "useq/crom.vh"
 
-module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaREG, cpuDATAI, dbm);
-
-   parameter  cromWidth = `CROM_WIDTH;
-
-   input  [ 0:cromWidth-1] crom;        // Control ROM Data
-   input  [ 0:35]          dp;          // Datapath
-   input  [ 0: 9]          scad;        // SCAD
-   input  [ 8:11]          dispPF;      // Page Fail Dispatch
-   input  [22:35]          aprFLAGS;    // APR Flags
-   input  [18:35]          timerCOUNT;  // Timer Count
-   input  [ 0:35]          vmaREG;      // VMA Register
-   input  [ 0:35]          cpuDATAI;    // Memory Bus Data
-   output [ 0:35]          dbm;         // DBM output
+module DBM (
+      input  wire [ 0:107] crom,        // Control ROM Data
+      input  wire [ 0: 35] dp,          // Datapath
+      input  wire [ 0:  9] scad,        // SCAD
+      input  wire [ 8: 11] dispPF,      // Page Fail Dispatch
+      input  wire [22: 35] aprFLAGS,    // APR Flags
+      input  wire [18: 35] timerCOUNT,  // Timer Count
+      input  wire [ 0: 35] vmaREG,      // VMA Register
+      input  wire [ 0: 35] cpuDATAI,    // Memory Bus Data
+      output reg  [ 0: 35] dbm          // DBM output
+   );
 
    //
    // DBM Bus Mux
@@ -107,8 +105,6 @@ module DBM(crom, dp, scad, dispPF, aprFLAGS, timerCOUNT, vmaREG, cpuDATAI, dbm);
    //   DPM2/E165
    //   DPM2/E188
    //
-
-   reg [0:35] dbm;
 
    always @*
      begin

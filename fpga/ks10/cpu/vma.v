@@ -45,22 +45,19 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS, pageFAIL, vmaREG);
-
-   parameter cromWidth = `CROM_WIDTH;
-   parameter dromWidth = `DROM_WIDTH;
-
-   input                   clk;         // Clock
-   input                   rst;         // Reset
-   input                   clken;       // Clock Enable
-   input  [ 0:cromWidth-1] crom;        // Control ROM Data
-   input  [ 0:dromWidth-1] drom;        // Dispatch ROM Data
-   input  [ 0:35]          dp;          // Data path
-   input                   cpuEXEC;     // Execute
-   input                   prevEN;      // Previous Enable
-   input  [ 0:17]          pcFLAGS;     // PC Flags
-   input  pageFAIL;
-   output [ 0:35]          vmaREG;      // VMA Register
+module VMA (
+      input  wire          clk,         // Clock
+      input  wire          rst,         // Reset
+      input  wire          clken,       // Clock Enable
+      input  wire [ 0:107] crom,        // Control ROM Data
+      input  wire [ 0: 35] drom,        // Dispatch ROM Data
+      input  wire [ 0: 35] dp,          // Data path
+      input  wire          cpuEXEC,     // Execute
+      input  wire          prevEN,      // Previous enable
+      input  wire [ 0: 17] pcFLAGS,     // PC Flags
+      input  wire          pageFAIL,    // Page fail
+      output reg  [ 0: 35] vmaREG       // VMA register
+   );
 
    //
    // PC Flags
@@ -111,8 +108,6 @@ module VMA(clk, rst, clken, crom, drom, dp, cpuEXEC, prevEN, pcFLAGS, pageFAIL, 
    wire vmaEN = ((`cromMEM_CYCLE & `cromMEM_LOADVMA           ) |
                  (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA) |
                  (cacheSWEEP));
-
-   reg [ 0:35] vmaREG;
 
    always @(posedge clk or posedge rst)
      begin

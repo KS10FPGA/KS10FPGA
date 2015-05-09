@@ -41,29 +41,28 @@
 `include "uba.vh"
 `include "ubasr.vh"
 
-module UBAINTR(clk, rst, busPI, wruREAD, dev1INTR, dev2INTR,
-               statPIH, statPIL, statINTHI, statINTLO, busINTR, devINTA);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input  [15:17] busPI;                        // IO Bridge PI Request
-   input          wruREAD;                      // Who are you?
-   input  [ 7: 4] dev1INTR;                     // IO Device #1 Interrupt Request
-   input  [ 7: 4] dev2INTR;                     // IO Device #2 Interrupt Request
-   input  [ 0: 2] statPIH;                      // Interrupt priority high
-   input  [ 0: 2] statPIL;                      // Interrupt priority low
-   output         statINTHI;                    // Interrupt status low
-   output         statINTLO;                    // Interrupt status high
-   output [ 1: 7] busINTR;                      // Interrupt to CPU
-   output [ 7: 4] devINTA;                      // IO Device Interrupt Acknowledge
+module UBAINTR (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire [15:17] busPI,                // IO Bridge PI Request
+      input  wire         wruREAD,              // Who are you?
+      input  wire [ 7: 4] dev1INTR,             // IO Device #1 Interrupt Request
+      input  wire [ 7: 4] dev2INTR,             // IO Device #2 Interrupt Request
+      input  wire [ 0: 2] statPIH,              // Interrupt priority high
+      input  wire [ 0: 2] statPIL,              // Interrupt priority low
+      output wire         statINTHI,            // Interrupt status low
+      output wire         statINTLO,            // Interrupt status high
+      output wire [ 1: 7] busINTR,              // Interrupt to CPU
+      output reg  [ 7: 4] devINTA               // IO Device Interrupt Acknowledge
+   );
 
    //
    // IO Bridge Interrupt Request
    //
 
    wire [7:4] intREQ = dev1INTR  | dev2INTR;
-   wire       statINTHI = intREQ[7] | intREQ[6];
-   wire       statINTLO = intREQ[5] | intREQ[4];
+   assign statINTHI = intREQ[7] | intREQ[6];
+   assign statINTLO = intREQ[5] | intREQ[4];
 
    //
    // High Priority Interrupt
@@ -139,7 +138,6 @@ module UBAINTR(clk, rst, busPI, wruREAD, dev1INTR, dev2INTR,
    //  UBA7/E185
    //
 
-   reg [7:4] devINTA;
    always @(posedge clk or posedge rst)
      begin
         if (rst)

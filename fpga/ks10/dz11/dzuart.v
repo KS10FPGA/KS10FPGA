@@ -46,27 +46,25 @@
 
 `include "dzlpr.vh"
 
-module DZUART(clk, rst, clr, num, lprWRITE, dzDATAI,
-              rxd, rxclr, rxfull, rxdata, rxpare, rxfrme, rxovre,
-              txd, txdata, txload, txempty);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clear
-   input  [ 2: 0] num;                          // UART Number
-   input          lprWRITE;                     // Write to LPR
-   input  [35: 0] dzDATAI;                      // Device Data In
-   input          rxd;                          // Receiver serial data
-   input          rxclr;                        // Receiver flag clear
-   output         rxfull;                       // Receiver full flag
-   output [ 7: 0] rxdata;                       // Received data
-   output         rxpare;                       // Receiver parity error
-   output         rxfrme;                       // Receiver framing error
-   output         rxovre;                       // Receiver overrun error
-   output         txd;                          // Transmitter serial data
-   output         txempty;                      // Transmitter empty
-   input          txload;                       // Transmitter load
-   input  [ 7: 0] txdata;                       // Transmitter data
+module DZUART (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clear
+      input  wire [ 2: 0] num,                  // UART Number
+      input  wire         lprWRITE,             // Write to LPR
+      input  wire [35: 0] dzDATAI,              // Device Data In
+      input  wire         rxd,                  // Receiver serial data
+      input  wire         rxclr,                // Receiver flag clear
+      output wire         rxfull,               // Receiver full flag
+      output wire [ 7: 0] rxdata,               // Received data
+      output wire         rxpare,               // Receiver parity error
+      output wire         rxfrme,               // Receiver framing error
+      output wire         rxovre,               // Receiver overrun error
+      output wire         txd,                  // Transmitter serial data
+      output wire         txempty,              // Transmitter empty
+      input  wire         txload,               // Transmitter load
+      input  wire [ 7: 0] txdata                // Transmitter data
+   );
 
    //
    // LPR Register

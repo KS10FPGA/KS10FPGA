@@ -43,25 +43,23 @@
 
 `define FIFO
 
-module RHDB(clk, rst,
-            devRESET, devLOBYTE, devHIBYTE, devDATAI, rhCLRGO, rhCLRTRE, rhCLR,
-            rhdbREAD, rhdbWRITE, rhSETDLT, rhBUFIR, rhBUFOR, rhDB);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          devRESET;                     // Device clear
-   input          devLOBYTE;                    // Device low byte
-   input          devHIBYTE;                    // Device high byte
-   input  [ 0:35] devDATAI;                     // Device data in
-   input          rhCLRGO;                      // Command clear
-   input          rhCLRTRE;                     // Transfer error clear
-   input          rhCLR;                        // Controller clear
-   input          rhdbREAD;                     // Read from DB
-   input          rhdbWRITE;                    // Write to DB
-   output         rhSETDLT;                     // Set DLT
-   output         rhBUFIR;                      // Status IR
-   output         rhBUFOR;                      // Status OR
-   output [15: 0] rhDB;                         // rhDB output
+module RHDB (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         devRESET,             // Device clear
+      input  wire         devLOBYTE,            // Device low byte
+      input  wire         devHIBYTE,            // Device high byte
+      input  wire [ 0:35] devDATAI,             // Device data in
+      input  wire         rhCLRGO,              // Command clear
+      input  wire         rhCLRTRE,             // Transfer error clear
+      input  wire         rhCLR,                // Controller clear
+      input  wire         rhdbREAD,             // Read from DB
+      input  wire         rhdbWRITE,            // Write to DB
+      output wire         rhSETDLT,             // Set DLT
+      output wire         rhBUFIR,              // Status IR
+      output wire         rhBUFOR,              // Status OR
+      output reg  [15: 0] rhDB                  // rhDB output
+   );
 
    //
    // Big-endian to little-endian data bus swap
@@ -170,7 +168,6 @@ module RHDB(clk, rst,
    integer i;
 `endif
 
-   reg [15:0] rhDB;
    reg [15:0] mem[0:127];
 
    always @(posedge clk or posedge rst)

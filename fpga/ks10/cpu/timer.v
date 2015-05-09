@@ -66,19 +66,22 @@
 `include "useq/crom.vh"
 `include "../ks10.vh"
 
-module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
+module TIMER (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         clken,        // Clock Enable
+      input  wire [0:107] crom,         // Control ROM Data
+      input  wire         timerEN,      // Timer Enable
+      output reg          timerINTR,    // Timer Interrupt
+      output wire [18:35] timerCOUNT    // Timer output
+   );
 
-   parameter cromWidth = `CROM_WIDTH;
-   parameter CLKFRQ    = `CLKFRQ;
-   parameter TIMFRQ    = 4.1e6;
+   //
+   // Timer clock frequencies
+   //
 
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input                  clken;        // Clock Enable
-   input  [0:cromWidth-1] crom;         // Control ROM Data
-   input                  timerEN;      // Timer Enable
-   output                 timerINTR;    // Timer Interrupt
-   output [18:35]         timerCOUNT;   // Timer output
+   parameter CLKFRQ = `CLKFRQ;
+   parameter TIMFRQ = 4.1e6;
 
    //
    // Microcode Decode
@@ -183,8 +186,6 @@ module TIMER(clk, rst, clken, crom, timerEN, timerINTR, timerCOUNT);
    //  DPMC/E1
    //  DPMC/E3
    //
-
-   reg timerINTR;
 
    always @(posedge clk or posedge rst)
      begin

@@ -43,19 +43,17 @@
 
 `include "dztdr.vh"
 
-module DZTDR(clk, rst,
-             devLOBYTE, devHIBYTE, devDATAI,
-             csrTLINE, tdrWRITE, uartTXLOAD, regTDR);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          devLOBYTE;                    // Device Low Byte
-   input          devHIBYTE;                    // Device High Byte
-   input  [ 0:35] devDATAI;                     // Device Data In
-   input  [ 2: 0] csrTLINE;                     // CSR[TLINE] bits
-   input          tdrWRITE;                     // Write to TDR
-   output [ 7: 0] uartTXLOAD;                   // Load UART
-   output [15: 0] regTDR;                       // TDR Output
+module DZTDR (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         devLOBYTE,            // Device Low Byte
+      input  wire         devHIBYTE,            // Device High Byte
+      input  wire [ 0:35] devDATAI,             // Device Data In
+      input  wire [ 2: 0] csrTLINE,             // CSR[TLINE] bits
+      input  wire         tdrWRITE,             // Write to TDR
+      output reg  [ 7: 0] uartTXLOAD,           // Load UART
+      output wire [15: 0] regTDR                // TDR Output
+   );
 
    //
    // Big-endian to little-endian data bus swap
@@ -69,8 +67,6 @@ module DZTDR(clk, rst,
    // Details
    //  TDR is write-only and can be accessed as bytes or words
    //
-
-   reg [7:0] uartTXLOAD;
 
    always @(csrTLINE or tdrWRITE or devLOBYTE)
      begin
@@ -93,6 +89,6 @@ module DZTDR(clk, rst,
    // Build TDR.  Break is not implemented.
    //
 
-   wire [15:0] regTDR = {8'b0, `dzTDR_TBUF(dzDATAI)};
+   assign regTDR = {8'b0, `dzTDR_TBUF(dzDATAI)};
 
 endmodule

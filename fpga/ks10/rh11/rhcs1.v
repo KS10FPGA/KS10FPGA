@@ -40,37 +40,34 @@
 
 `include "rhcs1.vh"
 
-module RHCS1(clk, rst,
-             devRESET, devLOBYTE, devHIBYTE, devDATAI, rhcs1WRITE, rhCLRGO, rhCLRTRE,
-             rhDLT, rhWCE, rhUPE, rhNED, rhNEM, rhPGE, rhMXF, rhDPE, rhCLR, rhIACK,
-             rpATA, rpERR, rpDVA, rpFUN, rpGO, rhBA, rhCS1);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          devRESET;                     // Device reset from UBA
-   input          devLOBYTE;                    // Device low byte
-   input          devHIBYTE;                    // Device high byte
-   input  [ 0:35] devDATAI;                     // Device data in
-   input          rhcs1WRITE;                   // CS1 write
-   input          rhCLRGO;                      // Go clear
-   input          rhCLRTRE;                     // Transfer error clear
-   input          rhDLT;                        // Data late error       (RHCS2[DLT])
-   input          rhWCE;                        // Write check error     (RHCS2[WCE])
-   input          rhUPE;                        // Unibus parity error   (RHCS2[UPE])
-   input          rhNED;                        // Non-existent drive    (RHCS2[NED])
-   input          rhNEM;                        // Non-existent memory   (RHCS2[NEM])
-   input          rhPGE;                        // Program Error         (RHCS2[PGE])
-   input          rhMXF;                        // Missed Transfer Error (RHCS2[MXF])
-   input          rhDPE;                        // Data Parity Error     (RHCS2[DPE])
-   input          rhCLR;                        // Controller Clear      (RHCS2[CLR])
-   input          rhIACK;                       // Interrupt acknowledge
-   input          rpATA;                        // RPxx Attention
-   input          rpERR;                        // RPxx Composite error  (RPDS [ERR])
-   input          rpDVA;                        // RPxx Drive available  (RPCS1[DVA])
-   input  [ 5: 1] rpFUN;                        // RPxx Function         (RPCA1[FUN])
-   input          rpGO;                         // RPxx Go               (RPCS1[GO ])
-   input  [17:16] rhBA;                         // rhBA address extension
-   output [15: 0] rhCS1;                        // rhCS1 output
+module RHCS1 (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         devRESET,             // Device reset from UBA
+      input  wire         devLOBYTE,            // Device low byte
+      input  wire         devHIBYTE,            // Device high byte
+      input  wire [ 0:35] devDATAI,             // Device data in
+      input  wire         rhcs1WRITE,           // CS1 write
+      input  wire         rhCLRGO,              // Go clear
+      input  wire         rhCLRTRE,             // Transfer error clear
+      input  wire         rhDLT,                // Data late error       (RHCS2[DLT])
+      input  wire         rhWCE,                // Write check error     (RHCS2[WCE])
+      input  wire         rhUPE,                // Unibus parity error   (RHCS2[UPE])
+      input  wire         rhNED,                // Non-existent drive    (RHCS2[NED])
+      input  wire         rhNEM,                // Non-existent memory   (RHCS2[NEM])
+      input  wire         rhPGE,                // Program Error         (RHCS2[PGE])
+      input  wire         rhMXF,                // Missed Transfer Error (RHCS2[MXF])
+      input  wire         rhDPE,                // Data Parity Error     (RHCS2[DPE])
+      input  wire         rhCLR,                // Controller Clear      (RHCS2[CLR])
+      input  wire         rhIACK,               // Interrupt acknowledge
+      input  wire         rpATA,                // RPxx Attention
+      input  wire         rpERR,                // RPxx Composite error  (RPDS [ERR])
+      input  wire         rpDVA,                // RPxx Drive available  (RPCS1[DVA])
+      input  wire [ 5: 1] rpFUN,                // RPxx Function         (RPCA1[FUN])
+      input  wire         rpGO,                 // RPxx Go               (RPCS1[GO ])
+      input  wire [17:16] rhBA,                 // rhBA address extension
+      output wire [15: 0] rhCS1                 // rhCS1 output
+   );
 
    //
    // Big-endian to little-endian data bus swap
@@ -235,7 +232,7 @@ module RHCS1(clk, rst,
    //  M7295/BCTJ/E59 (12:15)
    //
 
-   wire [15:0] rhCS1 = {cs1SC, cs1TRE, cs1CPE, 1'b0, rpDVA, cs1PSEL,
-                        rhBA[17:16], cs1RDY, cs1IE, cs1FUN, cs1GO};
+   assign rhCS1 = {cs1SC, cs1TRE, cs1CPE, 1'b0, rpDVA, cs1PSEL,
+                   rhBA[17:16], cs1RDY, cs1IE, cs1FUN, cs1GO};
 
 endmodule

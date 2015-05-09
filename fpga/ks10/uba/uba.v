@@ -55,48 +55,40 @@
 `include "../ks10.vh"
 `include "../cpu/bus.vh"
 
-module UBA(rst, clk,
-           // KS10 Bus Interface
-           busREQI, busREQO, busACKI, busACKO, busADDRI, busADDRO, busDATAI, busDATAO, busINTR,
-           // Device Interface
-           devREQO, devADDRO, devDATAO, devINTA, devRESET,
-           // Device #1 Interface
-           dev1REQI, dev1ACKI, dev1ADDRI, dev1DATAI, dev1INTR, dev1ACKO,
-           // Device #2 Interface
-           dev2REQI, dev2ACKI, dev2ADDRI, dev2DATAI, dev2INTR, dev2ACKO);
-
-   input          rst;                          // Reset
-   input          clk;                          // Clock
-   // KS10 Backplane Bus Interface
-   input          busREQI;                      // Backplane Bus Request In
-   output         busREQO;                      // Backplane Bus Request Out
-   input          busACKI;                      // Backplane Bus Acknowledge In
-   output         busACKO;                      // Backplane Bus Acknowledge Out
-   input  [ 0:35] busADDRI;                     // Backplane Bus Address In
-   output [ 0:35] busADDRO;                     // Backplane Bus Address Out
-   input  [ 0:35] busDATAI;                     // Backplane Bus Data In
-   output [ 0:35] busDATAO;                     // Backplane Bus Data Out
-   output [ 1: 7] busINTR;                      // Backplane Bus Interrupt Request
-   // Device Interface
-   output         devREQO;                      // IO Device Request Out
-   output [ 0:35] devADDRO;                     // IO Device Address Out
-   output [ 0:35] devDATAO;                     // IO Device Data Out
-   output [ 7: 4] devINTA;                      // IO Device Interrupt Acknowledge
-   output         devRESET;                     // IO Device Reset
-   // Device #1 Interface
-   input          dev1REQI;                     // IO Device #1 Request In
-   input          dev1ACKI;                     // IO Device #1 Acknowledge In
-   input  [ 0:35] dev1ADDRI;                    // IO Device #1 Address In
-   input  [ 0:35] dev1DATAI;                    // IO Device #1 Data In
-   input  [ 7: 4] dev1INTR;                     // IO Device #1 Interrupt Request
-   output         dev1ACKO;                     // IO Device #1 Acknowledge Out
-   // Device #2 Interface
-   input          dev2REQI;                     // IO Device #2 Request In
-   input          dev2ACKI;                     // IO Device #2 Acknowledge In
-   input  [ 0:35] dev2ADDRI;                    // IO Device #2 Address In
-   input  [ 0:35] dev2DATAI;                    // IO Device #2 Data In
-   input  [ 7: 4] dev2INTR;                     // IO Device #2 Interrupt Request
-   output         dev2ACKO;                     // IO Device #2 Acknowledge Out
+module UBA (
+      input  wire         rst,                  // Reset
+      input  wire         clk,                  // Clock
+      // KS10 Backplane Bus Interface
+      input  wire         busREQI,              // Backplane Bus Request In
+      output wire         busREQO,              // Backplane Bus Request Out
+      input  wire         busACKI,              // Backplane Bus Acknowledge In
+      output wire         busACKO,              // Backplane Bus Acknowledge Out
+      input  wire [ 0:35] busADDRI,             // Backplane Bus Address In
+      output wire [ 0:35] busADDRO,             // Backplane Bus Address Out
+      input  wire [ 0:35] busDATAI,             // Backplane Bus Data In
+      output reg  [ 0:35] busDATAO,             // Backplane Bus Data Out
+      output wire [ 1: 7] busINTR,              // Backplane Bus Interrupt Request
+      // Device Interface
+      output reg          devREQO,              // IO Device Request Out
+      output reg  [ 0:35] devADDRO,             // IO Device Address Out
+      output reg  [ 0:35] devDATAO,             // IO Device Data Out
+      output wire [ 7: 4] devINTA,              // IO Device Interrupt Acknowledge
+      output wire         devRESET,             // IO Device Reset
+      // Device #1 Interface
+      input  wire         dev1REQI,             // IO Device #1 Request In
+      input  wire         dev1ACKI,             // IO Device #1 Acknowledge In
+      input  wire [ 0:35] dev1ADDRI,            // IO Device #1 Address In
+      input  wire [ 0:35] dev1DATAI,            // IO Device #1 Data In
+      input  wire [ 7: 4] dev1INTR,             // IO Device #1 Interrupt Request
+      output wire         dev1ACKO,             // IO Device #1 Acknowledge Out
+      // Device #2 Interface
+      input  wire         dev2REQI,             // IO Device #2 Request In
+      input  wire         dev2ACKI,             // IO Device #2 Acknowledge In
+      input  wire [ 0:35] dev2ADDRI,            // IO Device #2 Address In
+      input  wire [ 0:35] dev2DATAI,            // IO Device #2 Data In
+      input  wire [ 7: 4] dev2INTR,             // IO Device #2 Interrupt Request
+      output wire         dev2ACKO              // IO Device #2 Acknowledge Out
+   );
 
    //
    // IO Bridge Configuration
@@ -275,10 +267,6 @@ module UBA(rst, clk,
    // KS10 to Device Buffer
    //
 
-   reg devREQO;
-   reg [0:35] devDATAO;
-   reg [0:35] devADDRO;
-
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -339,7 +327,6 @@ module UBA(rst, clk,
    // Loopback Mux
    //
 
-
    assign      busREQO   = regUBAMR ? loopREQO  : devREQI;
    wire [0:35] pageADDRI = regUBAMR ? loopADDRO : devADDRI;
 
@@ -366,8 +353,6 @@ module UBA(rst, clk,
    //
    // KS10 Bus Data Multiplexer
    //
-
-   reg [0:35] busDATAO;
 
    always @*
      begin

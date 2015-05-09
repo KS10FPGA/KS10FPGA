@@ -40,15 +40,15 @@
 
 `include "rpcs1.vh"
 
-module RPCS1(clk, rst, clr, rpDATAI, rpcs1WRITE, rpDRY, rpCS1);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clr
-   input  [35: 0] rpDATAI;                      // RH Data In
-   input          rpcs1WRITE;                   // Write to CS1
-   input          rpDRY;                        // Drive ready
-   output [15: 0] rpCS1;                        // rpCS1 Output
+module RPCS1 (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clr
+      input  wire [35: 0] rpDATAI,              // RH Data In
+      input  wire         rpcs1WRITE,           // Write to CS1
+      input  wire         rpDRY,                // Drive ready
+      output wire [15: 0] rpCS1                 // rpCS1 Output
+   );
 
    //
    // RPCS1 Data Valid (DVA)
@@ -90,6 +90,6 @@ module RPCS1(clk, rst, clr, rpDATAI, rpcs1WRITE, rpDRY, rpCS1);
    // Build CS1 Register
    //
 
-   wire [15:0] rpCS1 = {4'b0, rpDVA, 5'b0, rpFUN, rpGO};
+   assign rpCS1 = {4'b0, rpDVA, 5'b0, rpFUN, rpGO};
 
 endmodule

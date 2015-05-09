@@ -73,20 +73,17 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 
-module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
-
-   parameter cromWidth = `CROM_WIDTH;
-   parameter dromWidth = `DROM_WIDTH;
-
-   input                   clk;                 // Clock
-   input                   rst;                 // Reset
-   input                   clken;               // Clock Enable
-   input  [ 0:cromWidth-1] crom;                // Control ROM Data
-   input  [ 0:dromWidth-1] drom;                // Dispatch ROM Data
-   input  [ 0:35]          dp;                  // Data path
-   input  [ 0:35]          vmaREG;              // VMA Register
-   output [ 0: 3]          pageFLAGS;           // Page Flags
-   output [16:26]          pageADDR;            // Page Address
+module PAGER (
+      input  wire          clk,         // Clock
+      input  wire          rst,         // Reset
+      input  wire          clken,       // Clock Enable
+      input  wire [ 0:107] crom,        // Control ROM Data
+      input  wire [ 0: 35] drom,        // Dispatch ROM Data
+      input  wire [ 0: 35] dp,          // Data path
+      input  wire [ 0: 35] vmaREG,      // VMA Register
+      output reg  [ 0:  3] pageFLAGS,   // Page Flags
+      output reg  [16: 26] pageADDR     // Page Address
+   );
 
    //
    // vmaFLAGS
@@ -220,9 +217,6 @@ module PAGER(clk, rst, clken, crom, drom, dp, vmaREG, pageFLAGS, pageADDR);
    //
    // Page Table Read
    //
-
-   reg [16:26] pageADDR;
-   reg [ 0: 3] pageFLAGS;
 
    always @(posedge clk or posedge rst)
      begin

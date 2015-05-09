@@ -69,17 +69,15 @@
 
 `include "useq/crom.vh"
 
-module PXCT(clk, rst, clken, crom, dp, prevEN, acBLOCK);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                  clk;                  // clock
-   input                  rst;                  // reset
-   input                  clken;                // clock enable
-   input  [0:cromWidth-1] crom;                 // Control ROM Data
-   input  [0:35]          dp;                   // Data Path
-   output                 prevEN;               // Previous Enable
-   output [0: 5]          acBLOCK;              // Blocks
+module PXCT (
+      input  wire         clk,                  // clock
+      input  wire         rst,                  // reset
+      input  wire         clken,                // clock enable
+      input  wire [0:107] crom,                 // Control ROM Data
+      input  wire [0: 35] dp,                   // Data Path
+      output reg          prevEN,               // Previous Enable
+      output reg  [0:  5] acBLOCK               // Blocks
+   );
 
    //
    // Microcode fields
@@ -100,8 +98,6 @@ module PXCT(clk, rst, clken, crom, dp, prevEN, acBLOCK);
    // Trace
    //  DPE5/E308
    //
-
-   reg [0:5] acBLOCK;
 
    always @(posedge clk or posedge rst)
     begin
@@ -163,7 +159,6 @@ module PXCT(clk, rst, clken, crom, dp, prevEN, acBLOCK);
    //  DPMA/E63
    //
 
-   reg prevEN;
    always @*
      begin
         if (enPXCT)

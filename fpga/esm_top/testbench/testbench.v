@@ -806,7 +806,7 @@ module testbench;
              expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",   " Y\015",      state[3]);
              expect("LH SWITCHES <# OR ?> - ",                   " 000000\015", state[4]);
              expect("RH SWITCHES <# OR ?> - ",                   " 400000\015", state[5]);
-             
+
              //
              // DSRPA (RP06-RH11 BASIC DRIVE DIAGNOSTIC) Responses
              //

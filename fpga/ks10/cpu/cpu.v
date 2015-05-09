@@ -44,45 +44,39 @@
 `include "useq/drom.vh"
 `include "apr.vh"
 
-module CPU(rst, clk, cslSET, cslRUN, cslCONT, cslEXEC,
-           cslTIMEREN, cslTRAPEN, cslCACHEEN, cslINTRI, cslINTRO, ubaINTR,
-           cpuREQO, cpuACKI, cpuADDRO, cpuDATAI, cpuDATAO, cpuHALT, cpuRUN,
-           cpuEXEC, cpuCONT);
-
-   parameter cromWidth = `CROM_WIDTH;
-   parameter dromWidth = `DROM_WIDTH;
-
-   input          rst;          // Reset
-   input          clk;          // Clock
-   // Console
-   input          cslSET;       // Set Console RUN, EXEC, CONT
-   input          cslRUN;       // Run
-   input          cslCONT;      // Continue
-   input          cslEXEC;      // Execute
-   input          cslTIMEREN;   // Timer Enable
-   input          cslTRAPEN;    // Enable Traps
-   input          cslCACHEEN;   // Enable Cache
-   input          cslINTRI;     // Console Interrupt to CPU
-   output         cslINTRO;     // CPU Interrupt to Console
+module CPU (
+      input  wire         rst,          // Reset
+      input  wire         clk,          // Clock
+      // Console
+      input  wire         cslSET,       // Set Console RUN, EXEC, CONT
+      input  wire         cslRUN,       // Run
+      input  wire         cslCONT,      // Continue
+      input  wire         cslEXEC,      // Execute
+      input  wire         cslTIMEREN,   // Timer Enable
+      input  wire         cslTRAPEN,    // Enable Traps
+      input  wire         cslCACHEEN,   // Enable Cache
+      input  wire         cslINTRI,     // Console Interrupt to CPU
+      output wire         cslINTRO,     // CPU Interrupt to Console
    // UBA
-   input  [ 1: 7] ubaINTR;      // Unibus Interrupt Request
+      input  wire [ 1: 7] ubaINTR,      // Unibus Interrupt Request
    // CPU
-   output         cpuREQO;      // CPU Bus Request
-   input          cpuACKI;      // Bus Acknowledge
-   output [ 0:35] cpuADDRO;     // CPU Addr and Flags
-   input  [ 0:35] cpuDATAI;     // Bus Data Input
-   output [ 0:35] cpuDATAO;     // CPU Data Output
-   output         cpuHALT;      // CPU Halt Status
-   output         cpuRUN;       // CPU Run Status
-   output         cpuEXEC;      // CPU Exec Status
-   output         cpuCONT;      // CPU Cont Status
+      output wire         cpuREQO,      // CPU Bus Request
+      input  wire         cpuACKI,      // Bus Acknowledge
+      output wire [ 0:35] cpuADDRO,     // CPU Addr and Flags
+      input  wire [ 0:35] cpuDATAI,     // Bus Data Input
+      output wire [ 0:35] cpuDATAO,     // CPU Data Output
+      output wire         cpuHALT,      // CPU Halt Status
+      output wire         cpuRUN,       // CPU Run Status
+      output wire         cpuEXEC,      // CPU Exec Status
+      output wire         cpuCONT       // CPU Cont Status
+   );
 
    //
    // ROMS
    //
 
-   wire [0:cromWidth-1] crom;   // Control ROM
-   wire [0:dromWidth-1] drom;   // Dispatch ROM
+   wire [0:107] crom;           // Control ROM
+   wire [0: 35] drom;           // Dispatch ROM
 
    //
    // Flags

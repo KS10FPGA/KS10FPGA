@@ -50,24 +50,23 @@
 
 `include "../dzuart.vh"
 
-module UART_RX(clk, rst, clr, length, stop, parity, rxd,  brgCLKEN, rfull,
-               full, intr, data, pare, frme, ovre);
-
-   input        clk;                    // Clock
-   input        rst;                    // Reset
-   input        clr;                    // Clear
-   input        brgCLKEN;               // Clock enable from BRG
-   input  [1:0] length;                 // Character length
-   input        stop;                   // Number of stop bits
-   input  [1:0] parity;                 // Receiver parity
-   input        rxd;                    // Receiver serial data
-   input        rfull;                  // Receiver reset full flag
-   output       full;                   // Receiver full flag
-   output       intr;                   // Receiver interrupt
-   output [7:0] data;                   // Received data
-   output       pare;                   // Receiver parity error
-   output       frme;                   // Receiver framing error
-   output       ovre;                   // Receiver overrun error
+module UART_RX (
+      input  wire       clk,            // Clock
+      input  wire       rst,            // Reset
+      input  wire       clr,            // Clear
+      input  wire       brgCLKEN,       // Clock enable from BRG
+      input  wire [1:0] length,         // Character length
+      input  wire       stop,           // Number of stop bits
+      input  wire [1:0] parity,         // Receiver parity
+      input  wire       rxd,            // Receiver serial data
+      input  wire       rfull,          // Receiver reset full flag
+      output reg        full,           // Receiver full flag
+      output wire       intr,           // Receiver interrupt
+      output wire [7:0] data,           // Received data
+      output reg        pare,           // Receiver parity error
+      output reg        frme,           // Receiver framing error
+      output reg        ovre            // Receiver overrun error
+   );
 
    //
    // State machine states
@@ -143,9 +142,6 @@ module UART_RX(clk, rst, clr, length, stop, parity, rxd,  brgCLKEN, rfull,
 
    reg [3:0] brdiv;
    reg [7:0] rxREG;
-   reg       pare;
-   reg       frme;
-   reg       ovre;
    reg [3:0] state;
 
    always @(posedge clk or posedge rst)
@@ -466,8 +462,6 @@ module UART_RX(clk, rst, clr, length, stop, parity, rxd,  brgCLKEN, rfull,
    //
    // Full flag
    //
-
-   reg full;
 
    always @(posedge clk or posedge rst)
      begin

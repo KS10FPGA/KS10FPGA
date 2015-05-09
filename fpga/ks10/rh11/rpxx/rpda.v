@@ -40,20 +40,19 @@
 
 `include "rpda.vh"
 
-module RPDA(clk, rst, clr,
-            rpDATAI, rpdaWRITE, rpPRESET, rpSECNUM, rpTRKNUM, rpINCSECT, rpDRY, rpDA);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clear
-   input  [35: 0] rpDATAI;                      // RP Data In
-   input          rpdaWRITE;                    // DA Write
-   input          rpPRESET;                     // Preset command
-   input  [ 5: 0] rpSECNUM;                     // Last sector number
-   input  [ 5: 0] rpTRKNUM;                     // Last track number
-   input          rpINCSECT;                    // Increment sector/track/cylinder
-   input          rpDRY;                        // Drive ready
-   output [15: 0] rpDA;                         // rpDA Output
+module RPDA (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clear
+      input  wire [35: 0] rpDATAI,              // RP Data In
+      input  wire         rpdaWRITE,            // DA Write
+      input  wire         rpPRESET,             // Preset command
+      input  wire [ 5: 0] rpSECNUM,             // Last sector number
+      input  wire [ 5: 0] rpTRKNUM,             // Last track number
+      input  wire         rpINCSECT,            // Increment sector/track/cylinder
+      input  wire         rpDRY,                // Drive ready
+      output wire [15: 0] rpDA                  // rpDA Output
+   );
 
    //
    // RPDA Sector Address (RPSA)

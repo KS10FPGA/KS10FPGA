@@ -50,22 +50,19 @@
 `include "pcflags.vh"
 `include "useq/crom.vh"
 
-module DISP_NI (clk, rst, clken, crom, aprFLAGS, pcFLAGS, cslTRAPEN,
-                cpuRUN, memory_cycle, dispNI, trapCYCLE);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                   clk;         // Clock
-   input                   rst;         // Reset
-   input                   clken;       // Clock Enable
-   input  [ 0:cromWidth-1] crom;        // Control ROM Data
-   input  [ 0:17]          pcFLAGS;     // PC Flags
-   input  [22:35]          aprFLAGS;    // APR Flags
-   input                   cslTRAPEN;   // Console Trap Enable
-   input                   cpuRUN;      // Run
-   input                   memory_cycle;// Memory Cycle
-   output [ 8:11]          dispNI;      // Next Instruction dispatch
-   output                  trapCYCLE;   // Trap Cycle
+module DISP_NI (
+      input  wire          clk,         // Clock
+      input  wire          rst,         // Reset
+      input  wire          clken,       // Clock Enable
+      input  wire [ 0:107] crom,        // Control ROM Data
+      input  wire [ 0: 17] pcFLAGS,     // PC Flags
+      input  wire [22: 35] aprFLAGS,    // APR Flags
+      input  wire          cslTRAPEN,   // Console Trap Enable
+      input  wire          cpuRUN,      // Run
+      input  wire          memory_cycle,// Memory Cycle
+      output reg  [ 8: 11] dispNI,      // Next Instruction dispatch
+      output reg           trapCYCLE    // Trap Cycle
+   );
 
    //
    // Microcode Decode
@@ -103,7 +100,6 @@ module DISP_NI (clk, rst, clken, crom, aprFLAGS, pcFLAGS, cslTRAPEN,
    //  DPE9/E125
    //
 
-   reg [8:11] dispNI;
    always @*
      begin
         if (cslTRAPEN & flagTRAPEN)
@@ -131,7 +127,6 @@ module DISP_NI (clk, rst, clken, crom, aprFLAGS, pcFLAGS, cslTRAPEN,
    //  CRA2/E159
    //
 
-   reg trapCYCLE;
    always @(posedge clk or posedge rst)
      begin
         if (rst)

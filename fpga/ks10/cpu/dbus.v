@@ -48,18 +48,16 @@
 `include "vma.vh"
 `include "useq/crom.vh"
 
-module DBUS(crom, piREQPRI, vmaREG, pcFLAGS, dp, ramfile, dbm, dbus);
-
-   parameter  cromWidth = `CROM_WIDTH;
-
-   input      [0:cromWidth-1] crom;             // Control ROM Data
-   input      [ 0: 2]         piREQPRI;         // Requested Interrupt Priority
-   input      [ 0:35]         vmaREG;           // VMA Register
-   input      [ 0:17]         pcFLAGS;          // PC Flags in Left Half
-   input      [ 0:35]         dp;               // Datapath
-   input      [ 0:35]         ramfile;          // Ramfile
-   input      [ 0:35]         dbm;              // Databus Mux
-   output reg [ 0:35]         dbus;             // DBus
+module DBUS (
+      input  wire [0:107] crom,         // Control ROM Data
+      input  wire [0:  2] piREQPRI,     // Requested Interrupt Priority
+      input  wire [0: 35] vmaREG,       // VMA Register
+      input  wire [0: 17] pcFLAGS,      // PC Flags in Left Half
+      input  wire [0: 35] dp,           // Datapath
+      input  wire [0: 35] ramfile,      // Ramfile
+      input  wire [0: 35] dbm,          // Databus Mux
+      output reg  [0: 35] dbus          // DBus
+   );
 
    //
    // VMA Flags

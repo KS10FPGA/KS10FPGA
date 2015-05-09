@@ -41,19 +41,18 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module DZMSR(clk, rst, dz11CO, dz11RI, regMSR);
-
-   input         clk;                           // Clock
-   input         rst;                           // Reset
-   input  [ 7:0] dz11CO;                        // DZ11 Carrier Detect
-   input  [ 7:0] dz11RI;                        // DZ11 Ring Indicator
-   output [15:0] regMSR;                        // MSR Output
+module DZMSR (
+      input  wire        clk,                   // Clock
+      input  wire        rst,                   // Reset
+      input  wire [ 7:0] dz11CO,                // DZ11 Carrier Detect
+      input  wire [ 7:0] dz11RI,                // DZ11 Ring Indicator
+      output reg  [15:0] regMSR                 // MSR Output
+   );
 
    //
    // The MSR Register is just a synchronizer
    //
 
-   reg [15:0] regMSR;
    reg [15:0] tmpMSR;
 
    always @(posedge clk or posedge rst)

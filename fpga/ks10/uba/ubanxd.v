@@ -41,20 +41,19 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module UBANXD(clk, rst, busREQI, busACKO, ubaREQ, ubaACK, devREQ, devACK,
-              wruREQ, wruACK, setNXD);
-
-   input  clk;                                  // Clock
-   input  rst;                                  // Reset
-   input  busREQI;                              // Bus Request
-   output busACKO;                              // Bus Acknowledge
-   input  ubaREQ;                               // UBA Request
-   input  ubaACK;                               // UBA Ack
-   input  devREQ;                               // DEV Request
-   input  devACK;                               // DEV Ack
-   input  wruREQ;                               // WRU Request
-   input  wruACK;                               // WRU Ack
-   output setNXD;                               // Set NXD
+module UBANXD (
+      input  wire clk,                          // Clock
+      input  wire rst,                          // Reset
+      input  wire busREQI,                      // Bus Request
+      output wire busACKO,                      // Bus Acknowledge
+      input  wire ubaREQ,                       // UBA Request
+      input  wire ubaACK,                       // UBA Ack
+      input  wire devREQ,                       // DEV Request
+      input  wire devACK,                       // DEV Ack
+      input  wire wruREQ,                       // WRU Request
+      input  wire wruACK,                       // WRU Ack
+      output wire setNXD                        // Set NXD
+   );
 
    localparam [0:3] stateNULL =  0,
                     stateCNT0 =  1,

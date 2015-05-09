@@ -44,18 +44,17 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module SYNC(clk, rst, o, i);
+module SYNC (
+      input  wire             clk,  // Clock
+      input  wire             rst,  // Reset
+      output reg  [WIDTH-1:0] o,    // Output
+      input  wire [WIDTH-1:0] i     // Input
+   );
 
    parameter INIT  = 0;
    parameter WIDTH = 1;
 
-   input              clk;          // Clock
-   input              rst;          // Reset
-   output [WIDTH-1:0] o;            // Output
-   input  [WIDTH-1:0] i;            // Input
-
-   reg    [WIDTH-1:0] o;
-   reg    [WIDTH-1:0] d;
+   reg [WIDTH-1:0] d;
 
    always @(posedge clk or posedge rst)
      begin

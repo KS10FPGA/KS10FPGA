@@ -40,17 +40,17 @@
 
 `include "rpof.vh"
 
-module RPOF(clk, rst, clr, rpCENTER, rpPRESET, rpDATAI, rpofWRITE, rpDRY, rpOF);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clear
-   input          rpCENTER;                     // Center command
-   input          rpPRESET;                     // Preset command
-   input  [35: 0] rpDATAI;                      // RP Data In
-   input          rpofWRITE;                    // OF Write
-   input          rpDRY;                        // Drive ready
-   output [15: 0] rpOF;                         // rpOF Output
+module RPOF (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clear
+      input  wire         rpCENTER,             // Center command
+      input  wire         rpPRESET,             // Preset command
+      input  wire [35: 0] rpDATAI,              // RP Data In
+      input  wire         rpofWRITE,            // OF Write
+      input  wire         rpDRY,                // Drive ready
+      output wire [15: 0] rpOF                  // rpOF Output
+   );
 
    //
    // RPOF Format 16 bit (FMT22)

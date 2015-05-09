@@ -44,16 +44,21 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module EDGETRIG(clk, rst, clken, pol, i, o);
+module EDGETRIG (
+      input  wire clk,          // Clock
+      input  wire rst,          // Reset
+      input  wire clken,        // Clock Enable
+      input  wire pol,          // Polarity
+      input  wire i,            // Input
+      output wire o             // Output
+   );
 
-   input  clk;          // Clock
-   input  rst;          // Reset
-   input  clken;        // Clock Enable
-   input  pol;          // Polarity
-   input  i;            // Input
-   output o;            // Output
+   //
+   // Previous state of input
+   //
 
    reg last;
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)

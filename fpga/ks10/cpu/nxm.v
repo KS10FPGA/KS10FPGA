@@ -40,15 +40,15 @@
 
 `include "bus.vh"
 
-module NXM(clk, rst, cpuADDRO, cpuREQO, cpuACKI, memWAIT, nxmINTR);
-
-   input          clk;                  // Clock
-   input          rst;                  // Reset
-   input  [ 0:35] cpuADDRO;             // Bus Address
-   input          cpuREQO;              // Bus Request
-   input          cpuACKI;              // Bus Acknowledge
-   output         memWAIT;              // Wait for Memory
-   output         nxmINTR;              // Non-existant Memory Interrupt
+module NXM (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire [ 0:35] cpuADDRO,     // Bus Address
+      input  wire         cpuREQO,      // Bus Request
+      input  wire         cpuACKI,      // Bus Acknowledge
+      output wire         memWAIT,      // Wait for Memory
+      output wire         nxmINTR       // Non-existant Memory Interrupt
+   );
 
    //
    // Bus Flags

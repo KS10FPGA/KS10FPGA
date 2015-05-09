@@ -43,10 +43,10 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module DISP_BYTE(dp, dispBYTE);
-
-   input      [0:35] dp;                // Data path
-   output reg [8:11] dispBYTE;          // Byte dispatch
+module DISP_BYTE (
+      input  wire [0:35] dp,            // Data path
+      output reg  [8:11] dispBYTE       // Byte dispatch
+   );
 
    //
    // BYTE DISP

@@ -123,20 +123,19 @@
 `include "ubapage.vh"
 `include "../ks10.vh"
 
-module UBAPAGE(clk, rst, busREQO, busADDRI, busDATAI, busADDRO,
-               pageWRITE, pageDATAO, pageADDRI, pageFLAGS, pageFAIL);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          busREQO;                      // IO Device Request In
-   input  [ 0:35] busADDRI;                     // KS10 Bus Address In
-   input  [ 0:35] busDATAI;                     // KS10 Bus Data In
-   output [ 0:35] busADDRO;                     // KS10 Bus Address Out (paged)
-   input          pageWRITE;                    // Page RAM write
-   output [ 0:35] pageDATAO;                    // Paging RAM Data Out
-   input  [ 0:35] pageADDRI;                    // IO Device Address In
-   output [ 0: 3] pageFLAGS;                    // Page flags
-   output         pageFAIL;                     // Page NXM
+module UBAPAGE (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         busREQO,              // IO Device Request In
+      input  wire [ 0:35] busADDRI,             // KS10 Bus Address In
+      input  wire [ 0:35] busDATAI,             // KS10 Bus Data In
+      output wire [ 0:35] busADDRO,             // KS10 Bus Address Out (paged)
+      input  wire         pageWRITE,            // Page RAM write
+      output wire [ 0:35] pageDATAO,            // Paging RAM Data Out
+      input  wire [ 0:35] pageADDRI,            // IO Device Address In
+      output wire [ 0: 3] pageFLAGS,            // Page flags
+      output wire         pageFAIL              // Page NXM
+   );
 
    //
    // Paging addresses

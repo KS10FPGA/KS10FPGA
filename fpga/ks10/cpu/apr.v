@@ -42,19 +42,17 @@
 
 `include "useq/crom.vh"
 
-module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                   clk;         // Clock
-   input                   rst;         // Reset
-   input                   clken;       // Clock Enable
-   input  [ 0:cromWidth-1] crom;        // Control ROM Data
-   input  [ 0:35]          dp;          // Data path
-   input                   nxmINTR;     // Non existant memory interrupt
-   input                   cslINTR;     // Interrupt from Console
-   output [22:35]          aprFLAGS;    // APR Flags
-   output [ 1: 7]          aprINTR;     // APR Interrupt Request
+module APR (
+      input  wire          clk,         // Clock
+      input  wire          rst,         // Reset
+      input  wire          clken,       // Clock Enable
+      input  wire [ 0:107] crom,        // Control ROM Data
+      input  wire [ 0: 35] dp,          // Data path
+      input  wire          nxmINTR,     // Non existant memory interrupt
+      input  wire          cslINTR,     // Interrupt from Console
+      output wire [22: 35] aprFLAGS,    // APR Flags
+      output reg  [ 1:  7] aprINTR      // APR Interrupt Request
+   );
 
    //
    // Microcode Decode
@@ -294,7 +292,6 @@ module APR(clk, rst, clken, crom, dp, nxmINTR, cslINTR, aprFLAGS, aprINTR);
    //  DPEB/E166
    //
 
-   reg [1:7] aprINTR;
    always @*
      begin
         if (aprINTREQ)

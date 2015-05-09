@@ -42,53 +42,42 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module ESM_KS10(RESET_N, CLK50MHZ, MR_N, MR,
-                // DZ11 Interfaces
-                TXD, RXD,
-                // RH11 Interfaces
-                rh11CD_N, rh11MISO, rh11MOSI, rh11SCLK, rh11CS,
-                // Console Interfaces
-                conADDR, conDATA, conBLE_N, conBHE_N, conRD_N, conWR_N, conINTR_N,
-                // SSRAM Interfaces
-                ssramCLK, ssramCLKEN_N, ssramADV, ssramBW_N, ssramOE_N,
-                ssramWE_N, ssramCE, ssramADDR, ssramDATA,
-                // Test Interfaces
-                haltLED, test);
-
-   // Clock/Reset
-   input          RESET_N;      // Reset
-   input          CLK50MHZ;     // Clock
-   input          MR_N;         // Master Reset push button
-   output         MR;           // Master Reset out
-   // DZ11 Interfaces
-   input  [1: 2]  TXD;          // DZ11 RS-232 Transmitted Data
-   output [1: 2]  RXD;          // DZ11 RS-232 Received Data
-   // RH11 Interfaces
-   input          rh11CD_N;     // RH11 Card Detect
-   input          rh11MISO;     // RH11 Data In
-   output         rh11MOSI;     // RH11 Data Out
-   output         rh11SCLK;     // RH11 Clock
-   output         rh11CS;       // RH11 Chip Select
-   // Console Microcontroller Interfaces
-   inout  [15: 0] conDATA;      // Console Data Bus
-   input  [ 5: 1] conADDR;      // Console Address Bus
-   input          conBLE_N;     // Console Bus Lane
-   input          conBHE_N;     // Console Bus Lane
-   input          conRD_N;      // Console Read Strobe
-   input          conWR_N;      // Console Write Strobe
-   output         conINTR_N;    // Console Interrupt
-   // SSRAM Interfaces
-   output         ssramCLK;     // SSRAM Clock
-   output         ssramCLKEN_N; // SSRAM Clken
-   output         ssramADV;     // SSRAM Advance
-   output [ 1: 4] ssramBW_N;    // SSRAM BWA#
-   output         ssramOE_N;    // SSRAM OE#
-   output         ssramWE_N;    // SSRAM WE#
-   output         ssramCE;      // SSRAM CE
-   output [ 0:22] ssramADDR;    // SSRAM Address Bus
-   inout  [ 0:35] ssramDATA;    // SSRAM Data Bus
-   output         haltLED;      // Halt LED
-   output [ 0: 7] test;         // Test signals
+module ESM_KS10 (
+      // Clock/Reset
+      input  wire         RESET_N,      // Reset
+      input  wire         CLK50MHZ,     // Clock
+      input  wire         MR_N,         // Master Reset push button
+      output wire         MR,           // Master Reset out
+      // DZ11 Interfaces
+      input  wire [ 1: 2] TXD,          // DZ11 RS-232 Transmitted Data
+      output wire [ 1: 2] RXD,          // DZ11 RS-232 Received Data
+      // RH11 Interfaces
+      input  wire         rh11CD_N,     // RH11 Card Detect
+      input  wire         rh11MISO,     // RH11 Data In
+      output wire         rh11MOSI,     // RH11 Data Out
+      output wire         rh11SCLK,     // RH11 Clock
+      output wire         rh11CS,       // RH11 Chip Select
+      // Console Microcontroller Interfaces
+      inout  wire [15: 0] conDATA,      // Console Data Bus
+      input  wire [ 5: 1] conADDR,      // Console Address Bus
+      input  wire         conBLE_N,     // Console Bus Lane
+      input  wire         conBHE_N,     // Console Bus Lane
+      input  wire         conRD_N,      // Console Read Strobe
+      input  wire         conWR_N,      // Console Write Strobe
+      output wire         conINTR_N,    // Console Interrupt
+      // SSRAM Interfaces
+      output wire         ssramCLK,     // SSRAM Clock
+      output wire         ssramCLKEN_N, // SSRAM Clken
+      output wire         ssramADV,     // SSRAM Advance
+      output wire [ 1: 4] ssramBW_N,    // SSRAM BWA#
+      output wire         ssramOE_N,    // SSRAM OE#
+      output wire         ssramWE_N,    // SSRAM WE#
+      output wire         ssramCE,      // SSRAM CE
+      output wire [ 0:22] ssramADDR,    // SSRAM Address Bus
+      inout  wire [ 0:35] ssramDATA,    // SSRAM Data Bus
+      output wire         haltLED,      // Halt LED
+      output wire [ 0: 7] test          // Test signals
+   );
 
    //
    // RH-11 Stubs

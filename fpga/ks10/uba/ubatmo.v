@@ -41,13 +41,13 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module UBATMO(clk, rst, busREQO, busACKI, setTMO);
-
-   input  clk;                                  // Clock
-   input  rst;                                  // Reset
-   input  busREQO;                              // Bus Request
-   input  busACKI;                              // Bus Acknowledge
-   output setTMO;                               // Set TMO
+module UBATMO (
+      input  wire clk,                          // Clock
+      input  wire rst,                          // Reset
+      input  wire busREQO,                      // Bus Request
+      input  wire busACKI,                      // Bus Acknowledge
+      output wire setTMO                        // Set TMO
+   );
 
    //
    // TMO Timout

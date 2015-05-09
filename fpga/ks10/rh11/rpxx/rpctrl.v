@@ -43,37 +43,35 @@
 `include "../sd/sd.vh"
 `include "../../../ks10.vh"
 
-module RPCTRL(clk, rst, clr, rpCMDGO, rpCMDFUN,
-              rpADRSTRT, rpADRBUSY, rpPIP, rpDRY, rpSETWLE, rpSETIAE, rpSETATA, rpccWRITE, rpSDOP,
-              rpSDREQ, rpSDACK, rpDCA, rpCCA);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clr
-   input          rpCMDGO;                      // Go command
-   input  [ 5: 1] rpCMDFUN;                     // Function
-   output         rpADRSTRT;                    // Address calculation start
-   input          rpADRBUSY;                    // Address calculation busy
-   output         rpPIP;                        // Positioning-in-progress
-   output         rpDRY;                        // Drive ready
-   input          rpSETWLE;                     // Write lock error
-   input          rpSETIAE;                     // Invalid address error
-   output         rpccWRITE;                    //
-   output         rpSETATA;                     //
-   output [ 1: 0] rpSDOP;                       //
-   output         rpSDREQ;                      //
-   input          rpSDACK;                      //
-   input  [ 9: 0] rpDCA;                        // Desired cylinder
-   input  [ 9: 0] rpCCA;                        // Current cylinder
+module RPCTRL (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clr
+      input  wire         rpCMDGO,              // Go command
+      input  wire [ 5: 1] rpCMDFUN,             // Function
+      output wire         rpADRSTRT,            // Address calculation start
+      input  wire         rpADRBUSY,            // Address calculation busy
+      output reg          rpPIP,                // Positioning-in-progress
+      output reg          rpDRY,                // Drive ready
+      input  wire         rpSETWLE,             // Write lock error
+      input  wire         rpSETIAE,             // Invalid address error
+      output wire         rpccWRITE,            // Update RPCC
+      output reg          rpSETATA,             // Set ATA
+      output reg  [ 1: 0] rpSDOP,               // SD operation
+      output wire         rpSDREQ,              // SD request
+      input  wire         rpSDACK,              // SD acknowledge
+      input  wire [ 9: 0] rpDCA,                // Desired cylinder
+      input  wire [ 9: 0] rpCCA                 // Current cylinder
+   );
 
    //
    // Timing Parameters
    //
 
-   parameter  simTIME = 1'b0;            	// Simulate timing
-   localparam CLKFRQ  = `CLKFRQ;         	// Clock frequency
-   localparam ROTDELAY = 0.005000 * `CLKFRQ;	// Rotation delay (5 ms)
-   localparam FIXDELAY = 0.000100 * `CLKFRQ;	// Fixed delay (100 us)
+   parameter  simTIME = 1'b0;                   // Simulate timing
+   localparam CLKFRQ  = `CLKFRQ;                // Clock frequency
+   localparam ROTDELAY = 0.005000 * `CLKFRQ;    // Rotation delay (5 ms)
+   localparam FIXDELAY = 0.000100 * `CLKFRQ;    // Fixed delay (100 us)
 
    //
    // Function to calculate disk seek delay.  This is psudeo exponential.
@@ -129,10 +127,7 @@ module RPCTRL(clk, rst, clr, rpCMDGO, rpCMDFUN,
 
    reg ata;                                     // Do ATA at end
    reg busy;                                    // Drive busy
-   reg rpPIP;                                   // Positioning in progress
-   reg rpSETATA;                                // Set ATA
    reg [24: 0] delay;                           // RPxx Delay Simulation
-   reg [ 1: 0] rpSDOP;                          // SD Operation
    reg [ 4: 0] state;                           // State
 
    always @(posedge clk or posedge rst)
@@ -477,7 +472,6 @@ module RPCTRL(clk, rst, clr, rpCMDGO, rpCMDFUN,
    //  Don't negate rpDRY while GO is asserted
    //
 
-   reg rpDRY;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -485,7 +479,7 @@ module RPCTRL(clk, rst, clr, rpCMDGO, rpCMDFUN,
         else
           rpDRY <= !busy | rpCMDGO;
      end
- 
+
    //
    // State decode
    //

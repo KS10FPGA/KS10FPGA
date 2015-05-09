@@ -43,29 +43,24 @@
 
 `include "crom.vh"
 
-module DISPATCH(crom, dp, dispDIAG, dispRET, dispJ, dispAREAD,
-                dispMUL, dispPF, dispNI, dispBYTE, dispEA,
-                dispSCAD, dispNORM, dispDROM_A, dispDROM_B,
-                dispADDR);
-
-   parameter  cromWidth = `CROM_WIDTH;
-
-   input      [0:cromWidth-1] crom;             // Control ROM Data
-   input      [0:35]          dp;               // Datapath Dispatch
-   input      [0:11]          dispDIAG;         // Diagnostic dispatch
-   input      [0:11]          dispRET;          // Microcode return dispatch
-   input      [0:11]          dispJ;            // Jump dispatch
-   input      [0:11]          dispAREAD;        // Address Read dispatch
-   input      [8:11]          dispMUL;          // Multiply Dispatch
-   input      [8:11]          dispPF;           // Page Fail Dispatch
-   input      [8:11]          dispNI;           // Next Instruction Dispatch
-   input      [8:11]          dispBYTE;         // Byte Size/Position Dispatch
-   input      [8:11]          dispEA;           // Effective Address Mode Dispatch
-   input      [8:11]          dispSCAD;         // SCAD Dispatch
-   input      [8:11]          dispNORM;         // Normalize Dispatch
-   input      [8:11]          dispDROM_A;       // DROM A Dispatch
-   input      [8:11]          dispDROM_B;       // DROM B Dispatch
-   output reg [0:11]          dispADDR;         // Dispatch Addr
+module DISPATCH (
+      input  wire [0:107] crom,                 // Control ROM Data
+      input  wire [0: 35] dp,                   // Datapath Dispatch
+      input  wire [0: 11] dispDIAG,             // Diagnostic dispatch
+      input  wire [0: 11] dispRET,              // Microcode return dispatch
+      input  wire [0: 11] dispJ,                // Jump dispatch
+      input  wire [0: 11] dispAREAD,            // Address Read dispatch
+      input  wire [8: 11] dispMUL,              // Multiply Dispatch
+      input  wire [8: 11] dispPF,               // Page Fail Dispatch
+      input  wire [8: 11] dispNI,               // Next Instruction Dispatch
+      input  wire [8: 11] dispBYTE,             // Byte Size/Position Dispatch
+      input  wire [8: 11] dispEA,               // Effective Address Mode Dispatch
+      input  wire [8: 11] dispSCAD,             // SCAD Dispatch
+      input  wire [8: 11] dispNORM,             // Normalize Dispatch
+      input  wire [8: 11] dispDROM_A,           // DROM A Dispatch
+      input  wire [8: 11] dispDROM_B,           // DROM B Dispatch
+      output reg  [0: 11] dispADDR              // Dispatch Addr
+   );
 
    //
    // Microcode aliases

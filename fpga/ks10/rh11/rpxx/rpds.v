@@ -42,28 +42,26 @@
 `include "rpdc.vh"
 `include "rpds.vh"
 
-module RPDS(clk, rst, clr, rhATACLR, rpSETLST, rpSETATA, rpCD, rpWP, rpPIP,
-            rpDRY, rpDRVCLR, rpPRESET, rpPAKACK, rpdaWRITE,
-            rpER1, rpER2, rpER3, rpDS);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clr
-   input          rhATACLR;                     // ATA clr
-   input          rpSETLST;                     // Last sector transferred
-   input          rpSETATA;                     // Set ATA
-   input          rpCD;                         // SD Card detect
-   input          rpWP;                         // SD Write protect
-   input          rpPIP;                        // Positioning in progress
-   input          rpDRY;                        // Drive ready
-   input          rpDRVCLR;                     // Drive clear command
-   input          rpPRESET;                     // Preset command
-   input          rpPAKACK;                     // Pack Ack command
-   input          rpdaWRITE;                    // Write RPDA
-   input  [15: 0] rpER1;                        // rpER1 register
-   input  [15: 0] rpER2;                        // rpER2 register
-   input  [15: 0] rpER3;                        // rpER3 register
-   output [15: 0] rpDS;                         // rpDS register
+module RPDS (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clr
+      input  wire         rhATACLR,             // ATA clr
+      input  wire         rpSETLST,             // Last sector transferred
+      input  wire         rpSETATA,             // Set ATA
+      input  wire         rpCD,                 // SD Card detect
+      input  wire         rpWP,                 // SD Write protect
+      input  wire         rpPIP,                // Positioning in progress
+      input  wire         rpDRY,                // Drive ready
+      input  wire         rpDRVCLR,             // Drive clear command
+      input  wire         rpPRESET,             // Preset command
+      input  wire         rpPAKACK,             // Pack Ack command
+      input  wire         rpdaWRITE,            // Write RPDA
+      input  wire [15: 0] rpER1,                // rpER1 register
+      input  wire [15: 0] rpER2,                // rpER2 register
+      input  wire [15: 0] rpER3,                // rpER3 register
+      output wire [15: 0] rpDS                  // rpDS register
+   );
 
    //
    // RPDS Attention (rpATA)

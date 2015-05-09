@@ -101,20 +101,18 @@
 `define RAMFILE_DAT "ramfile.dat"
 `endif
 
-module RAMFILE(clk, rst, clken, crom, dbus, regIR, xrPREV, vmaREG, acBLOCK, ramfile);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                   clk;                 // Clock
-   input                   rst;                 // Reset
-   input                   clken;               // Clock enable
-   input  [ 0:cromWidth-1] crom;                // Control ROM Data
-   input  [ 0:35]          dbus;                // DBUS Input
-   input  [ 0:17]          regIR;               // Instruction Register
-   input                   xrPREV;              // XR Previous
-   input  [ 0:35]          vmaREG;              // VMA Register
-   input  [ 0: 5]          acBLOCK;             // AC Blocks
-   output [ 0:35]          ramfile;             // RAMFILE output
+module RAMFILE (
+      input  wire          clk,                 // Clock
+      input  wire          rst,                 // Reset
+      input  wire          clken,               // Clock enable
+      input  wire [ 0:107] crom,                // Control ROM Data
+      input  wire [ 0: 35] dbus,                // DBUS Input
+      input  wire [ 0: 17] regIR,               // Instruction Register
+      input  wire          xrPREV,              // XR Previous
+      input  wire [ 0: 35] vmaREG,              // VMA Register
+      input  wire [ 0:  5] acBLOCK,             // AC Blocks
+      output wire [ 0: 35] ramfile              // RAMFILE output
+   );
 
    //
    // IR Fields

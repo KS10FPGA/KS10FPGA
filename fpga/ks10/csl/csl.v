@@ -193,51 +193,44 @@
 `include "../uba/uba.vh"
 `include "../cpu/bus.vh"
 
-module CSL(clk, rst,
-           conDATA,  conADDR,  conBLE_N, conBHE_N, conRD_N,  conWR_N,
-           busREQI,  busREQO,  busACKI,  busACKO,
-           busADDRI, busADDRO, busDATAI, busDATAO,
-           cpuRUN, cpuCONT, cpuEXEC, cpuHALT,
-           cslSET, cslRUN, cslCONT, cslEXEC,
-           cslTIMEREN, cslTRAPEN, cslCACHEEN, cslINTR, cslRESET,
-           rh11DEBUG);
-
-   // Clock/Reset
-   input         clk;           // Clock
-   input         rst;           // Reset
-   // Console Microcontroller Intefaces
-   inout [15: 0] conDATA;       // Console Address Bus
-   input [ 5: 1] conADDR;       // Console Data Bus
-   input         conBLE_N;      // Console Bus Lane
-   input         conBHE_N;      // Console Bus Lane
-   input         conRD_N;       // Console Read Strobe
-   input         conWR_N;       // Console Write Strobe
-   // Bus Interfaces
-   input         busREQI;       // Bus Request In
-   output        busREQO;       // Bus Request Out
-   input         busACKI;       // Bus Acknowledge In
-   output        busACKO;       // Bus Acknowledge Out
-   input  [0:35] busADDRI;      // Bus Address In
-   output [0:35] busADDRO;      // Bus Address Out
-   input  [0:35] busDATAI;      // Bus Data In
-   output [0:35] busDATAO;      // Bus Data Out
-   // CPU Interfaces
-   input         cpuRUN;        // CPU Run Status
-   input         cpuCONT;       // CPU Cont Status
-   input         cpuEXEC;       // CPU Exec Status
-   input         cpuHALT;       // CPU Halt Status
-   // Console Interfaces
-   output        cslSET;        // Set Switches
-   output        cslRUN;        // Run Switch
-   output        cslCONT;       // Continue Switch
-   output        cslEXEC;       // Execute Switch
-   output        cslTIMEREN;    // Timer Enable
-   output        cslTRAPEN;     // Trap Enable
-   output        cslCACHEEN;    // Cache Enable
-   output        cslINTR;       // Interrupt KS10
-   output        cslRESET;      // Reset KS10
-   // RH11 Interfaces
-   input  [0:63] rh11DEBUG;     // RH11 Debug Info
+module CSL (
+      // Clock/Reset
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+     // Console Microcontroller Intefaces
+      inout  wire [15: 0] conDATA,      // Console Address Bus
+      input  wire [ 5: 1] conADDR,      // Console Data Bus
+      input  wire         conBLE_N,     // Console Bus Lane
+      input  wire         conBHE_N,     // Console Bus Lane
+      input  wire         conRD_N,      // Console Read Strobe
+      input  wire         conWR_N,      // Console Write Strobe
+      // Bus Interfaces
+      input  wire         busREQI,      // Bus Request In
+      output wire         busREQO,      // Bus Request Out
+      input  wire         busACKI,      // Bus Acknowledge In
+      output wire         busACKO,      // Bus Acknowledge Out
+      input  wire [ 0:35] busADDRI,     // Bus Address In
+      output wire [ 0:35] busADDRO,     // Bus Address Out
+      input  wire [ 0:35] busDATAI,     // Bus Data In
+      output reg  [ 0:35] busDATAO,     // Bus Data Out
+      // CPU Interfaces
+      input  wire         cpuRUN,       // CPU Run Status
+      input  wire         cpuCONT,      // CPU Cont Status
+      input  wire         cpuEXEC,      // CPU Exec Status
+      input  wire         cpuHALT,      // CPU Halt Status
+      // Console Interfaces
+      output wire         cslSET,       // Set Switches
+      output wire         cslRUN,       // Run Switch
+      output wire         cslCONT,      // Continue Switch
+      output wire         cslEXEC,      // Execute Switch
+      output wire         cslTIMEREN,   // Timer Enable
+      output wire         cslTRAPEN,    // Trap Enable
+      output wire         cslCACHEEN,   // Cache Enable
+      output wire         cslINTR,      // Interrupt KS10
+      output wire         cslRESET,     // Reset KS10
+      // RH11 Interfaces
+      input  wire [0 :63] rh11DEBUG     // RH11 Debug Info
+   );
 
    //
    // Revision Info
@@ -631,7 +624,6 @@ module CSL(clk, rst,
    // KS10 Bus Mux
    //
 
-   reg [0:35] busDATAO;
    always @*
      begin
         if (cirREAD)

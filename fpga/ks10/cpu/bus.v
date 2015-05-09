@@ -73,22 +73,19 @@
 `include "vma.vh"
 `include "useq/crom.vh"
 
-module BUS(clk, rst, dp, crom, vmaREG, pageADDR, aprFLAGS, piCURPRI,
-           cpuDATAO, cpuADDRO, cpuREQO);
-
-   parameter  cromWidth = `CROM_WIDTH;
-
-   input          clk;                  // Clock
-   input          rst;                  // Reset
-   input  [ 0:35]          dp;          // Data path
-   input  [ 0:cromWidth-1] crom;        // Control ROM Data
-   input  [ 0:35]          vmaREG;      // VMA Register
-   input  [16:26]          pageADDR;    // Page Address
-   input  [22:35]          aprFLAGS;    // APR Flags
-   input  [ 0: 2]          piCURPRI;    // Current Interrupt Priority
-   output [ 0:35]          cpuDATAO;    // CPU Data Out
-   output [ 0:35]          cpuADDRO;    // CPU Address Out
-   output                  cpuREQO;     // CPU Request
+module BUS (
+      input  wire          clk,         // Clock
+      input  wire          rst,         // Reset
+      input  wire [ 0: 35] dp,          // Data path
+      input  wire [ 0:107] crom,        // Control ROM Data
+      input  wire [ 0: 35] vmaREG,      // VMA Register
+      input  wire [16: 26] pageADDR,    // Page Address
+      input  wire [22: 35] aprFLAGS,    // APR Flags
+      input  wire [ 0:  2] piCURPRI,    // Current Interrupt Priority
+      output wire [ 0: 35] cpuDATAO,    // CPU Data Out
+      output reg  [ 0: 35] cpuADDRO,    // CPU Address Out
+      output wire          cpuREQO      // CPU Request
+   );
 
    //
    // APR Flags
@@ -152,8 +149,6 @@ module BUS(clk, rst, dp, crom, vmaREG, pageADDR, aprFLAGS, piCURPRI,
    //
    // Address Output
    //
-
-   reg [0:35] cpuADDRO;
 
    always @*
      begin

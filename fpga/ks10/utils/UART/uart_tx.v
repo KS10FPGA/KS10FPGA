@@ -50,21 +50,20 @@
 
 `include "../dzuart.vh"
 
-module UART_TX(clk, rst, clr, length, parity, stop, brgCLKEN, data, load,
-               empty, intr, txd);
-
-   input        clk;                    // Clock
-   input        rst;                    // Reset
-   input        clr;                    // Clear
-   input  [1:0] length;                 // Character length
-   input  [1:0] parity;                 // Parity
-   input        stop;                   // Number of stop bits
-   input        brgCLKEN;               // Clock enable from BRG
-   input  [7:0] data;                   // Transmitter data
-   input        load;                   // Load transmitter
-   output       empty;                  // Transmitter buffer empty
-   output       intr;                   // Transmitter interrupt
-   output       txd;                    // Transmitter serial data
+module UART_TX (
+      input  wire       clk,            // Clock
+      input  wire       rst,            // Reset
+      input  wire       clr,            // Clear
+      input  wire [1:0] length,         // Character length
+      input  wire [1:0] parity,         // Parity
+      input  wire       stop,           // Number of stop bits
+      input  wire       brgCLKEN,       // Clock enable from BRG
+      input  wire [7:0] data,           // Transmitter data
+      input  wire       load,           // Load transmitter
+      output wire       empty,          // Transmitter buffer empty
+      output wire       intr,           // Transmitter interrupt
+      output wire       txd             // Transmitter serial data
+   );
 
    //
    // State machine states

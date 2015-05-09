@@ -41,48 +41,43 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
-           cslREQI, cslREQO, cslACKI, cslACKO, cslADDRI, cslDATAI, cslDATAO,
-           ubaREQI, ubaREQO, ubaACKI, ubaACKO,
-           uba0ADDRI, uba1ADDRI, uba2ADDRI, uba3ADDRI,
-           uba0DATAI, uba1DATAI, uba2DATAI, uba3DATAI, ubaDATAO,
-           memREQO, memACKI, memDATAI, memDATAO, arbADDRO);
-
-   // CPU Interfaces
-   input         cpuREQI;       // CPU Bus Request
-   output        cpuACKO;       // CPU Bus Acknowledge
-   input  [0:35] cpuADDRI;      // CPU Address
-   input  [0:35] cpuDATAI;      // CPU Data In
-   output [0:35] cpuDATAO;      // CPU Data Out
-   // Console Interfaces
-   input         cslREQI;       // CSL Bus Request In
-   output        cslREQO;       // CSL Bus Request Out
-   input         cslACKI;       // CSL Bus Acknowledge In
-   output        cslACKO;       // CSL Bus Acknowledge Out
-   input  [0:35] cslADDRI;      // CSL Address In
-   input  [0:35] cslDATAI;      // CSL Data In
-   output [0:35] cslDATAO;      // CSL Data Out
-   // UBA Interfaces
-   input  [0: 3] ubaREQI;       // UBA Bus RequestIn
-   output        ubaREQO;       // UBA Bus Request Out
-   input  [0: 3] ubaACKI;       // UBA Bus Acknowledge In
-   output [0: 3] ubaACKO;       // UBA Bus Acknowledge Out
-   input  [0:35] uba0ADDRI;     // UBA 0 Address In
-   input  [0:35] uba1ADDRI;     // UBA 1 Address In
-   input  [0:35] uba2ADDRI;     // UBA 2 Address In
-   input  [0:35] uba3ADDRI;     // UBA 3 Address In
-   input  [0:35] uba0DATAI;     // UBA 0 Data In
-   input  [0:35] uba1DATAI;     // UBA 1 Data In
-   input  [0:35] uba2DATAI;     // UBA 2 Data In
-   input  [0:35] uba3DATAI;     // UBA 3 Data In
-   output [0:35] ubaDATAO;      // UBA Data Out
-   // Memory Interfaces
-   output        memREQO;       // MEM Bus Request Out
-   input         memACKI;       // MEM Bus Acknowledge In
-   input  [0:35] memDATAI;      // MEM Data In
-   output [0:35] memDATAO;      // MEM Data Out
-   // ARB Output
-   output [0:35] arbADDRO;      // ARB Address
+module ARB (
+      // CPU Interfaces
+      input  wire        cpuREQI,       // CPU Bus Request
+      output reg         cpuACKO,       // CPU Bus Acknowledge
+      input  wire [0:35] cpuADDRI,      // CPU Address
+      input  wire [0:35] cpuDATAI,      // CPU Data In
+      output reg  [0:35] cpuDATAO,      // CPU Data Out
+      // Console Interfaces
+      input  wire        cslREQI,       // CSL Bus Request In
+      output reg         cslREQO,       // CSL Bus Request Out
+      input  wire        cslACKI,       // CSL Bus Acknowledge In
+      output reg         cslACKO,       // CSL Bus Acknowledge Out
+      input  wire [0:35] cslADDRI,      // CSL Address In
+      input  wire [0:35] cslDATAI,      // CSL Data In
+      output reg  [0:35] cslDATAO,      // CSL Data Out
+      // UBA Interfaces
+      input  wire [0: 3] ubaREQI,       // UBA Bus RequestIn
+      output reg         ubaREQO,       // UBA Bus Request Out
+      input  wire [0: 3] ubaACKI,       // UBA Bus Acknowledge In
+      output reg  [0: 3] ubaACKO,       // UBA Bus Acknowledge Out
+      input  wire [0:35] uba0ADDRI,     // UBA 0 Address In
+      input  wire [0:35] uba1ADDRI,     // UBA 1 Address In
+      input  wire [0:35] uba2ADDRI,     // UBA 2 Address In
+      input  wire [0:35] uba3ADDRI,     // UBA 3 Address In
+      input  wire [0:35] uba0DATAI,     // UBA 0 Data In
+      input  wire [0:35] uba1DATAI,     // UBA 1 Data In
+      input  wire [0:35] uba2DATAI,     // UBA 2 Data In
+      input  wire [0:35] uba3DATAI,     // UBA 3 Data In
+      output reg  [0:35] ubaDATAO,      // UBA Data Out
+      // Memory Interfaces
+      output reg         memREQO,       // MEM Bus Request Out
+      input  wire        memACKI,       // MEM Bus Acknowledge In
+      input  wire [0:35] memDATAI,      // MEM Data In
+      output reg  [0:35] memDATAO,      // MEM Data Out
+      // ARB Output
+      output reg  [0:35] arbADDRO       // ARB Address
+   );
 
    //
    // Bus Request Arbitration
@@ -93,20 +88,7 @@ module ARB(cpuREQI, cpuACKO, cpuADDRI, cpuDATAI, cpuDATAO,
    //  CPU has lowest priority
    //
 
-   reg cpuACKO;
-   reg cslACKO;
-   reg cslREQO;
-   reg memREQO;
-   reg ubaREQO;
-   reg [0: 3] ubaACKO;
-   reg [0:35] cslDATAO;
-   reg [0:35] cpuDATAO;
-   reg [0:35] memDATAO;
-   reg [0:35] ubaDATAO;
-   reg [0:35] arbADDRO;
-
    always @*
-
      begin
 
         cpuACKO  = 0;

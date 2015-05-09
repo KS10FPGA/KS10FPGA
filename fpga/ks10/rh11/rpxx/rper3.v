@@ -43,16 +43,16 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module RPER3(clk, rst, clr, rpDRVCLR, rpDATAI, rper3WRITE, rpDRY, rpER3);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clear
-   input          rpDRVCLR;                     // Drive clear command
-   input  [35: 0] rpDATAI;                      // Data in
-   input          rper3WRITE;                   // Write
-   input          rpDRY;                        // Drive ready
-   output [15: 0] rpER3;                        // ER3 Output
+module RPER3 (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clear
+      input  wire         rpDRVCLR,             // Drive clear command
+      input  wire [35: 0] rpDATAI,              // Data in
+      input  wire         rper3WRITE,           // Write
+      input  wire         rpDRY,                // Drive ready
+      output reg  [15: 0] rpER3                 // ER3 Output
+   );
 
    //
    // RPER3 Register
@@ -71,7 +71,6 @@ module RPER3(clk, rst, clr, rpDRVCLR, rpDATAI, rper3WRITE, rpDRY, rpER3);
    //  M7776/EC7/E69
    //
 
-   reg [15:0] rpER3;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -80,7 +79,7 @@ module RPER3(clk, rst, clr, rpDRVCLR, rpDATAI, rper3WRITE, rpDRY, rpER3);
           if (clr | rpDRVCLR)
             rpER3 <= 0;
           else if (rper3WRITE & rpDRY)
-            rpER3 <= rpDATAI;
+            rpER3 <= rpDATAI[15:0];
      end
 
 endmodule

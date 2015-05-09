@@ -46,19 +46,18 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module RPADDR(clk, rst, rpTRKNUM, rpSECNUM, rpDCA, rpTA, rpSA, rpSDLSA,
-              rpADRSTRT, rpADRBUSY);
-
-   input          clk;          // Clock
-   input          rst;          // Reset
-   input  [ 5: 0] rpTRKNUM;     // Number of tracks
-   input  [ 5: 0] rpSECNUM;     // Number of sectors
-   input  [ 9: 0] rpDCA;        // Cylinder
-   input  [ 5: 0] rpTA;         // Track
-   input  [ 5: 0] rpSA;         // Sector
-   output [31: 0] rpSDLSA;      // Linear sector address
-   input          rpADRSTRT;    // Start calculation
-   output         rpADRBUSY;    // Calculation completed
+module RPADDR (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire [ 5: 0] rpTRKNUM,     // Number of tracks
+      input  wire [ 5: 0] rpSECNUM,     // Number of sectors
+      input  wire [ 9: 0] rpDCA,        // Cylinder
+      input  wire [ 5: 0] rpTA,         // Track
+      input  wire [ 5: 0] rpSA,         // Sector
+      output wire [31: 0] rpSDLSA,      // Linear sector address
+      input  wire        rpADRSTRT,     // Start calculation
+      output wire        rpADRBUSY      // Calculation completed
+   );
 
    //
    // States

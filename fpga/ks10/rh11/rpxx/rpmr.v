@@ -40,16 +40,16 @@
 
 `include "rpmr.vh"
 
-module RPMR(clk, rst, clr, rpDRVCLR, rpDATAI, rpmrWRITE, rpGO, rpMR);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clear
-   input          rpDRVCLR;                     // Drive clear
-   input  [35: 0] rpDATAI;                      // Data In
-   input          rpmrWRITE;                    // Write
-   input          rpGO;                         // Go
-   output [15: 0] rpMR;                         // MR Output
+module RPMR (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clear
+      input  wire         rpDRVCLR,             // Drive clear
+      input  wire [35: 0] rpDATAI,              // Data In
+      input  wire         rpmrWRITE,            // Write
+      input  wire         rpGO,                 // Go
+      output wire [15: 0] rpMR                  // MR Output
+   );
 
    //
    // RPMR Diagnostic Data (rpDDAT)

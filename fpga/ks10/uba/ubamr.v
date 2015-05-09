@@ -62,19 +62,17 @@
 `include "ubamr.vh"
 `include "../cpu/bus.vh"
 
-module UBAMR(clk, rst, busDATAI, maintWRITE, regUBAMR);
-
-   input         clk;                           // Clock
-   input         rst;                           // Reset
-   input [ 0:35] busDATAI;                      // Backplane bus data in
-   input         maintWRITE;                    // Write to register
-   output        regUBAMR;                      // Maintenance Register
+module UBAMR (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire [ 0:35] busDATAI,             // Backplane bus data in
+      input  wire         maintWRITE,           // Write to register
+      output reg          regUBAMR              // Maintenance Register
+   );
 
    //
    // Maintenance Register
    //
-
-   reg regUBAMR;
 
    always @(posedge clk or posedge rst)
      begin

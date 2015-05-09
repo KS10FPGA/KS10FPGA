@@ -56,20 +56,18 @@
 
 `include "useq/crom.vh"
 
-module DEBUG(clk, rst, clken, crom, cromADDR, dp, dbm, dbus, debugDATA, debugADDR);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input                  clken;        // Clock Enable
-   input  [0:cromWidth-1] crom;         // Control ROM Data
-   input  [0:11]          cromADDR;     // Control ROM Address
-   input  [0:35]          dp;           // dp bus
-   input  [0:35]          dbm;          // dbm bus
-   input  [0:35]          dbus;         // dbus bus
-   input  [0:35]          debugDATA;    // DEBUG Data
-   output [0: 3]          debugADDR;    // DEBUG Address
+module DEBUG (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         clken,        // Clock Enable
+      input  wire [0:107] crom,         // Control ROM Data
+      input  wire [0: 11] cromADDR,     // Control ROM Address
+      input  wire [0: 35] dp,           // dp bus
+      input  wire [0: 35] dbm,          // dbm bus
+      input  wire [0: 35] dbus,         // dbus bus
+      input  wire [0: 35] debugDATA,    // DEBUG Data
+      output wire [0:  3] debugADDR     // DEBUG Address
+   );
 
 `ifdef SYNTHESIS
 
@@ -210,6 +208,8 @@ module DEBUG(clk, rst, clken, crom, cromADDR, dp, dbm, dbus, debugDATA, debugADD
                   `include "debug_dskcg.vh"
              `elsif DEBUG_DSKEA
                   `include "debug_dskea.vh"
+             `elsif DEBUG_DSKEB
+                  `include "debug_dskeb.vh"
              `elsif DEBUG_DSKEC
                   `include "debug_dskec.vh"
              `elsif DEBUG_DSDZA

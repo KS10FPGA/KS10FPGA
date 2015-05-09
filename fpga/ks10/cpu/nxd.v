@@ -53,18 +53,16 @@
 `include "useq/crom.vh"
 `include "bus.vh"
 
-module NXD(clk, rst, crom, cpuADDRO, cpuREQO, cpuACKI, ioWAIT, ioBUSY);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                  clk;          // Clock
-   input                  rst;          // Reset
-   input  [0:cromWidth-1] crom;         // Control ROM Data
-   input  [0:35]          cpuADDRO;     // Bus Address
-   input                  cpuREQO;      // CPU Bus Request
-   input                  cpuACKI;      // CPU Bus Acknowledge
-   output                 ioWAIT;       // IO Wait
-   output                 ioBUSY;       // IO Busy
+module NXD (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire [0:107] crom,         // Control ROM Data
+      input  wire [0: 35] cpuADDRO,     // Bus Address
+      input  wire         cpuREQO,      // CPU Bus Request
+      input  wire         cpuACKI,      // CPU Bus Acknowledge
+      output wire         ioWAIT,       // IO Wait
+      output wire         ioBUSY        // IO Busy
+   );
 
    //
    // Microcode decode

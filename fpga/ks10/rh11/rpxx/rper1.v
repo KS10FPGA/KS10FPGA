@@ -43,24 +43,22 @@
 `include "rpds.vh"
 `include "rper1.vh"
 
-module RPER1(clk, rst, clr, rpDRVCLR,
-             rpSETWLE, rpSETIAE, rpSETAOE, rpSETPAR, rpSETRMR, rpSETILF,
-             rpDATAI, rper1WRITE, rpDRY, rpER1);
-
-   input          clk;                          // Clock
-   input          rst;                          // Reset
-   input          clr;                          // Clear
-   input          rpDRVCLR;                     // Drive clear
-   input          rpSETWLE;                     // Set WLE
-   input          rpSETIAE;                     // Set IAE
-   input          rpSETAOE;                     // Set AOE
-   input          rpSETPAR;                     // Set PAR
-   input          rpSETRMR;                     // Set RMR
-   input          rpSETILF;                     // Set ILF
-   input  [35: 0] rpDATAI;                      // Data in
-   input          rper1WRITE;                   // Write
-   input          rpDRY;                        // Drive ready
-   output [15: 0] rpER1;                        // rpER1 register
+module RPER1 (
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire         clr,                  // Clear
+      input  wire         rpDRVCLR,             // Drive clear
+      input  wire         rpSETWLE,             // Set WLE
+      input  wire         rpSETIAE,             // Set IAE
+      input  wire         rpSETAOE,             // Set AOE
+      input  wire         rpSETPAR,             // Set PAR
+      input  wire         rpSETRMR,             // Set RMR
+      input  wire         rpSETILF,             // Set ILF
+      input  wire [35: 0] rpDATAI,              // Data in
+      input  wire         rper1WRITE,           // Write
+      input  wire         rpDRY,                // Drive ready
+      output wire [15: 0] rpER1                 // rpER1 register
+   );
 
    //
    // RPER1 Data Check (rpDCK)

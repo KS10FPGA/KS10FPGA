@@ -55,19 +55,17 @@
 
 `include "useq/crom.vh"
 
-module ALU(clk, rst, clken, crom, aluIN, aluFLAGS, aluOUT, debugADDR, debugDATA);
-
-   parameter cromWidth = `CROM_WIDTH;
-
-   input                  clk;                  // Clock
-   input                  rst;                  // Reset
-   input                  clken;                // Clock enable
-   input  [0:cromWidth-1] crom;                 // Control ROM Data
-   input  [0:35]          aluIN;                // Bus input
-   output [0: 8]          aluFLAGS;             // ALU Flags
-   output [0:35]          aluOUT;               // ALU Output
-   input  [0: 3]          debugADDR;            // DEBUG Address
-   output [0:35]          debugDATA;            // DEBUG Data
+module ALU (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         clken,        // Clock enable
+      input  wire [0:107] crom,         // Control ROM Data
+      input  wire [0: 35] aluIN,        // Bus input
+      output wire [0:  8] aluFLAGS,     // ALU Flags
+      output wire [0: 35] aluOUT,       // ALU Output
+      input  wire [0:  3] debugADDR,    // DEBUG Address
+      output wire [0: 35] debugDATA     // DEBUG Data
+   );
 
    //
    // Microcode fields

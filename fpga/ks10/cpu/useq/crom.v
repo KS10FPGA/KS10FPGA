@@ -51,20 +51,16 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`include "crom.vh"
-
 `ifndef CROM_DAT
 `define CROM_DAT "crom.dat"
 `endif
 
-module CROM(clk, clken, addr, crom);
-
-   parameter  cromWidth = `CROM_WIDTH;
-
-   input                      clk;      // Clock
-   input                      clken;    // Clock Enable
-   input      [0:11]          addr;     // Address
-   output reg [0:cromWidth-1] crom;     // Output Data
+module CROM (
+      input  wire         clk,          // Clock
+      input  wire         clken,        // Clock Enable
+      input  wire [0: 11] addr,         // Address
+      output reg  [0:107] crom          // Output Data
+   );
 
    //
    // Control ROM
@@ -119,7 +115,7 @@ module CROM(clk, clken, addr, crom);
    //   CRM7/E156, CRM7/E163, CRM7/E176, CRM7/E181, CRM7/E188, CRM7/E195,
    //
 
-   reg [0:cromWidth-1] CROM[0:4095];
+   reg [0:107] CROM[0:4095];
 
    initial
      begin

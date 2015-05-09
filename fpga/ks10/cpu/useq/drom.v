@@ -49,22 +49,18 @@
 `timescale 1ns/1ps
 
 `include "crom.vh"
-`include "drom.vh"
 
 `ifndef DROM_DAT
 `define DROM_DAT "drom.dat"
 `endif
 
-module DROM(clk, clken, dbus, crom, drom);
-
-   parameter  cromWidth = `CROM_WIDTH;
-   parameter  dromWidth = `DROM_WIDTH;
-
-   input                      clk;      // Clock
-   input                      clken;    // Clock Enable
-   input      [0:35]          dbus;     // DBUS
-   input      [0:cromWidth-1] crom;     // Control ROM
-   output reg [0:dromWidth-1] drom;     // Dispatch ROM Output
+module DROM (
+      input  wire         clk,          // Clock
+      input  wire         clken,        // Clock Enable
+      input  wire [0: 35] dbus,         // DBUS
+      input  wire [0:107] crom,         // Control ROM
+      output reg  [0: 35] drom          // Dispatch ROM Output
+   );
 
    //
    // Microcode decode
@@ -91,7 +87,7 @@ module DROM(clk, clken, dbus, crom, drom);
    //  DPEA/E110
    //
 
-   reg [0:dromWidth-1] DROM[0:511];
+   reg [0:35] DROM[0:511];
 
    initial
      begin

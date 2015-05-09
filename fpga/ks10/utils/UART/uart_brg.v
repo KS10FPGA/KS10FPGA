@@ -47,12 +47,12 @@
 `include "../dzuart.vh"
 `include "../../../ks10.vh"
 
-module UART_BRG(clk, rst, speed, brgCLKEN);
-
-   input       clk;                             // Clock
-   input       rst;                             // Reset
-   input [3:0] speed;                           // Speed Select
-   output      brgCLKEN;                        // BRG Clock Enable
+module UART_BRG (
+      input  wire       clk,                    // Clock
+      input  wire       rst,                    // Reset
+      input  wire [3:0] speed,                  // Speed Select
+      output wire       brgCLKEN                // BRG Clock Enable
+   );
 
    //
    // Divider constants
