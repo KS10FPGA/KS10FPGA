@@ -81,13 +81,13 @@
 
 `include "memstat.vh"
 
-module MEMSTAT(clk, rst, busDATAI, msrWRITE, regSTAT);
-
-   input         clk;                           // Clock
-   input         rst;                           // Reset
-   input  [0:35] busDATAI;                      // Bus data
-   input         msrWRITE;                      // Write to MSR
-   output [0:35] regSTAT;                       // Status Register
+module MEMSTAT (
+      input  wire        clk,                   // Clock
+      input  wire        rst,                   // Reset
+      input  wire [0:35] busDATAI,              // Bus data
+      input  wire        msrWRITE,              // Write to MSR
+      output wire [0:35] regSTAT                // Status Register
+   );
 
    //
    // Memory Status Register Parity Error (PE) bit
