@@ -54,7 +54,7 @@ static const char *lower_digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 //!     Character read from UART receiver.
 //!
 
-char getchar(void) {
+int getchar(void) {
     return getUART();
 }
 

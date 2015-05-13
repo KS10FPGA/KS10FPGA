@@ -43,7 +43,7 @@ extern "C"
 
     int putchar(int ch);
     int puts(const char *s);
-    char getchar(void);
+    int getchar(void);
     int printf(const char *fmt, ...);
 
 #ifdef __cplusplus

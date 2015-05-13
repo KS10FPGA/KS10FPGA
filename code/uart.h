@@ -40,7 +40,7 @@ extern "C"
 
     bool txFull(void);
     void putUART(char ch);
-    char getUART(void);
+    int  getUART(void);
     void enableUARTIntr(void);
 
 #ifdef __cplusplus

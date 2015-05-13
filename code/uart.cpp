@@ -119,22 +119,16 @@ void putUART(char ch) {
 //! This function gets a character from the UART receiver queue.
 //!
 //! \returns
-//!     Character read from UART receiver.
+//!     Character read from UART receiver.  -1 if empty.
 //
 
-char getUART(void) {
-    for (;;) {
-        char ch;
-        portBASE_TYPE status = xQueueReceive(serialQueueHandle, &ch, 0);
-        switch (status) {
-            case pdPASS:
-                return ch;
-            case errQUEUE_EMPTY:
-                xTaskDelay(1);
-                break;
-            default:
-                return 0;
-        }
+int getUART(void) {
+    char ch;
+    portBASE_TYPE status = xQueueReceive(serialQueueHandle, &ch, 0);
+    if (status == pdPASS) {
+        return ch;
+    } else {
+        return -1;
     }
 }
 
