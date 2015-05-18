@@ -34,8 +34,7 @@
 #define __UART_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
     bool txFull(void);
