@@ -105,8 +105,8 @@ class ks10_t {
         // Opcodes
         //
 
-        static const uint32_t opJRST  = 0254000;        //!< JRST Instruction
-        static const uint32_t opRDHSB = 0702300;        //!< RDHSB Instruction
+        static const data_t opJRST  = 0254000;          //!< JRST Instruction
+        static const data_t opRDHSB = 0702300;          //!< RDHSB Instruction
 
         //
         // KS10 addresses
@@ -140,13 +140,16 @@ class ks10_t {
         static          void               writeIO(addr_t addr, data_t data);
         static          uint16_t           readIObyte(addr_t addr);
         static          void               writeIObyte(addr_t addr, uint16_t data);
-        static          void               run(bool enable);
         static          bool               run(void);
-        static          void               cont(bool enable);
+        static          void               run(bool);
         static          bool               cont(void);
-        static          void               exec(bool enable);
         static          bool               exec(void);
         static          bool               halt(void);
+        static          void               execute(void);
+        static          void               step(void);
+        static          void               contin(void);
+        static          void               begin(void);
+        static          void               boot(void);
         static          bool               waitHalt(void);
         static          bool               timerEnable(void);
         static          void               timerEnable(bool enable);
@@ -158,11 +161,11 @@ class ks10_t {
         static          void               cpuReset(bool enable);
         static          void               cpuIntr(void);
         static          bool               nxmnxd(void);
-        static          bool               testRegs(void);
+        static          bool               testRegs(bool verbose);
         static          haltStatusWord_t  &getHaltStatusWord(void);
         static          haltStatusBlock_t &getHaltStatusBlock(addr_t addr);
         static volatile rh11debug_t       *getRH11debug(void);
-        static const    char              *getFirmwareRev(void);
+        static          bool               printFirmwareRev(void);
         static          void              (*consIntrHandler)(void);
 
     private:
@@ -217,9 +220,9 @@ class ks10_t {
         static data_t readReg(volatile void * reg);
         static void   writeReg(volatile void * reg, data_t data);
         static void   go(void);
-        static bool   testReg08(volatile void * addr, const char *name, uint64_t mask);
-        static bool   testReg64(volatile void * addr, const char *name, uint64_t mask);
-        static bool   testRegister(volatile void * addr, const char *name, uint64_t mask = 0xffffffffffffffffull);
+        static bool   testReg08(volatile void * addr, const char *name, bool verbose, uint64_t mask);
+        static bool   testReg64(volatile void * addr, const char *name, bool verbose, uint64_t mask);
+        static bool   testRegister(volatile void * addr, const char *name, bool verbose, uint64_t mask = 0xffffffffffffffffull);
 
         //
         // Control/Status Register Bits

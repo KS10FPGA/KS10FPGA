@@ -43,32 +43,33 @@ CFLAGS := \
 	-Wall \
 	-DPART_${PART} \
 	-DTARGET_IS_TEMPEST_RC3 \
-        -Wall \
+	-Wall \
 	-mthumb \
 	-mcpu=cortex-m3 \
 	-Os \
 	-ffunction-sections \
 	-fdata-sections \
-        -ffreestanding \
+	-ffreestanding \
 	-MD \
-        -g \
+	-g \
 	-I. \
 	-I.. \
 	-I../driverlib \
 	-I../fatfslib \
-        -I../lwiplib \
-        -I../telnetlib \
-        -I../ustdlib \
-        -I../lwiplib/lwip-1.3.2/src/include/ \
-        -I../lwiplib/lwip-1.3.2/src/include/ipv4 \
-        -I../lwiplib/lwip-1.3.2/ports/Stellaris/include
+	-I../lwiplib \
+	-I../telnetlib \
+	-I../ustdlib \
+	-I../lwiplib/lwip-1.3.2/src/include/ \
+	-I../lwiplib/lwip-1.3.2/src/include/ipv4 \
+	-I../lwiplib/lwip-1.3.2/ports/Stellaris/include
 
 CPPFLAGS := \
 	-std=gnu++11 \
 	-DPART_${PART} \
 	-DTARGET_IS_TEMPEST_RC3 \
 	-W \
-        -Wall \
+	-Wall \
+	-Werror \
 	-mthumb \
 	-mcpu=cortex-m3 \
 	-Os \
@@ -76,21 +77,21 @@ CPPFLAGS := \
 	-ffunction-sections \
 	-fdata-sections \
 	-fpermissive \
-        -ffreestanding \
+	-ffreestanding \
 	-MD \
 	-g \
-        -Wno-ctor-dtor-privacy \
+	-Wno-ctor-dtor-privacy \
 	-Wno-non-virtual-dtor \
 	-I. \
 	-I.. \
 	-I../driverlib \
 	-I../fatfslib \
-        -I../lwiplib \
-        -I../telnetlib \
-        -I../ustdlib/ \
-        -I../lwiplib/lwip-1.3.2/src/include/ \
-        -I../lwiplib/lwip-1.3.2/src/include/ipv4 \
-        -I../lwiplib/lwip-1.3.2/ports/Stellaris/include
+	-I../lwiplib \
+	-I../telnetlib \
+	-I../ustdlib/ \
+	-I../lwiplib/lwip-1.3.2/src/include/ \
+	-I../lwiplib/lwip-1.3.2/src/include/ipv4 \
+	-I../lwiplib/lwip-1.3.2/ports/Stellaris/include
 
 #
 # Rule to compile C programs

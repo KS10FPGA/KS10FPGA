@@ -59,15 +59,15 @@ int main(void) {
     //ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_8MHZ | SYSCTL_OSC_MAIN);
 
     printf("\x1b[H\x1b[2J");
-    printf("KS10> Console booted...\n");
-    printf("KS10> CPU device identifier is 0x%08lx.\n", HWREG(SYSCTL_DID0));
+    printf("CPU : Console alive.\n");
+    printf("CPU : Device identifier is 0x%08lx.\n", HWREG(SYSCTL_DID0));
 
     //
     // Device Rev C3 is required for the ROM functions.
     //
 
     if (!REVISION_IS_C3) {
-        printf("KS10> Unsupported processor revision.\n");
+        printf("CPU : Unsupported processor revision.\n");
         for (;;) {
             ;
         }

@@ -39,15 +39,14 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-    void sdTask(void * param);
     bool sdStatus(void);
     bool sdInitialize(void);
     bool sdReadSector(uint8_t *buf, uint32_t sector);
     bool sdWriteSector(const uint8_t *buf, uint32_t sector);
+    void startSdTask(void);
 
 #ifdef __cplusplus
 }

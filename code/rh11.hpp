@@ -44,11 +44,35 @@
 
 class rh11_t {
     private:
+
+        //
+        // RH11 Control and Status Register #1 (RHCS1)
+        //
+
         static const ks10_t::addr_t rhcs1_addr = 01776700;
+        static const ks10_t::data_t rhcs1_go   = 0x0001;
+        static const ks10_t::data_t rhcs1_read = 0x0038;
+        static const ks10_t::data_t rhcs1_rdy  = 0x0080;
+
+
+        //
+        // RH11 Word Count Register (RHWC)
+        //
+
         static const ks10_t::addr_t rhwc_addr  = 01776702;
+
+        //
+        // RH11 Bus Address Register (RHBA)
+        //
+
         static const ks10_t::addr_t rhba_addr  = 01776704;
-        static const ks10_t::addr_t rhda_addr  = 01776706;
-    
+
+        //
+        // RPxx Disk Address Register (RPDA)
+        //
+
+        static const ks10_t::addr_t rpda_addr  = 01776706;
+
         //
         // RH11 Control and Status Register #2 (RHCS2) definitions
         //
@@ -58,7 +82,16 @@ class rh11_t {
         static const ks10_t::data_t rhcs2_ir   = 0x0040;
         static const ks10_t::data_t rhcs2_clr  = 0x0020;
 
+        //
+        // RPxx Look Ahead Register (RPLA)
+        //
+
         static const ks10_t::addr_t rpla_addr  = 01776720;
+
+        //
+        // RH11 Data Buffer Register (RHDB)
+        //
+
         static const ks10_t::addr_t rhdb_addr  = 01776722;
 
         //
@@ -70,11 +103,13 @@ class rh11_t {
         static const ks10_t::data_t mr_dclk    = 0x0002;
         static const ks10_t::data_t mr_dind    = 0x0004;
         static const ks10_t::data_t mr_dsck    = 0x0008;
- 
+
     public:
 
         static void testFIFO(void);
         static void testRPLA(void);
+        static void testRead(unsigned int disk);
+
 };
 
 #endif

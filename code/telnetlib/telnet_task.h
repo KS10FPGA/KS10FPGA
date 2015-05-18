@@ -39,7 +39,7 @@
 extern "C" {
 #endif
 
-unsigned long telnetTaskInit(void);
+void startTelnetTask(void);
 
 #ifdef __cplusplus
 }

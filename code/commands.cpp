@@ -38,20 +38,23 @@
 
 #include "sd.h"
 #include "stdio.h"
+#include "dz11.hpp"
 #include "ks10.hpp"
+#include "rh11.hpp"
+#include "align.hpp"
+#include "prompt.hpp"
 #include "commands.hpp"
+#include "taskutil.hpp"
 #include "fatfslib/dir.h"
 #include "fatfslib/ff.h"
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
+#include "telnetlib/telnet.h"
+#include "SafeRTOS/SafeRTOS_API.h"
 
-//
-// Debug macro
-//
+#define DEBUG_COMMANDS
 
-#define DEBUG
-
-#ifdef DEBUG
+#ifdef DEBUG_COMMANDS
 #define debug(...) printf(__VA_ARGS__)
 #else
 #define debug(...)
@@ -73,7 +76,7 @@ static enum access_t {
 } access;
 
 //
-//! Parses an octal number from the command line
+//! Parses an octal number
 //!
 //! \param [in] buf
 //!     Pointer to line buffer.
@@ -102,6 +105,44 @@ static ks10_t::data_t parseOctal(const char *buf) {
     return num;
 }
 
+#if 0
+//
+//! Parses a hex number
+//!
+//! \param [in] buf
+//!     Pointer to line buffer.
+//!
+//! \returns
+//!     Number
+//
+
+static ks10_t::data_t parseHex(const char *buf) {
+
+    ks10_t::data_t num = 0;
+
+    for (int i = 0; i < 64; i += 4) {
+        if (*buf >= '0' && *buf <= '7') {
+            num += *buf++ - '0';
+            num <<= 4;
+        } else if (*buf >= 'A' && *buf <= 'F') {
+            num += *buf++ - 0x37;
+            num <<= 4;
+        } else if (*buf >= 'a' && *buf <= 'f') {
+            num += *buf++ - 0x57;
+            num <<= 4;
+        } else {
+            if (*buf != 0) {
+                printf("Parsed invalid character.\n");
+            }
+            break;
+        }
+    }
+    num >>= 4;
+
+    return num;
+}
+#endif
+
 //
 //! This function builds a 36-bit data word from the contents of the .SAV file.
 //!
@@ -118,7 +159,7 @@ static ks10_t::data_t parseOctal(const char *buf) {
 //!       Byte 4:  B35 B28 B29 B30 B31 B32 B33 B34
 //!
 //!       Note the position of B35!
-//!     
+//!
 //!     See "TOPS-10 Tape Processing Manual" Section 6.4 entitled "ANSI-ASCII
 //!     Mode" for format definition.
 //!
@@ -200,6 +241,9 @@ static bool loadCode(const char * filename) {
         ks10_t::data_t data36 = getdata(&fp);
         unsigned int words    = ks10_t::lh(data36);
         unsigned int addr     = ks10_t::rh(data36);
+#if 0
+        printf("addr is %06o, words is %06o\n", addr, words);
+#endif
 
         //
         // Check for end
@@ -228,13 +272,164 @@ static bool loadCode(const char * filename) {
 
         while ((words & 0400000) != 0) {
             ks10_t::data_t data36 = getdata(&fp);
-            ks10_t::writeMem(addr, data36);
-            debug("%06o: %06lo%06lo\n", addr, ks10_t::lh(data36), ks10_t::rh(data36));
             addr  = (addr  + 1) & 0777777;
+            ks10_t::writeMem(addr, data36);
+#if 0
+            debug("%06o: %06lo%06lo\n", addr, ks10_t::lh(data36), ks10_t::rh(data36));
+#endif
             words = (words + 1) & 0777777;
         }
     }
 }
+
+#if 0
+
+//
+//! Load code into the KS10 from a DAT file
+//!
+//! This function reads the .DAT file and writes the contents to to the KS10.
+//!
+//! \param [in] filename
+//!     filename of the .DAT file
+//!
+//! \note
+//!     The DAT file is in the same format as a verilog file
+//
+
+static int fgetc(FIL *fp) {
+    char ch;
+    unsigned int numbytes;
+
+    FRESULT status = f_read(fp, &ch, 1, &numbytes);
+    if (status != FR_OK || numbytes == 0) {
+        debug("f_read() returned %d\n", status);
+        return -1;
+    }
+    return ch;
+}
+
+static int gettoken(FIL *fp, ks10_t::data_t& data) {
+
+    data = 0;
+    int ch = 0;
+    int prevch = 0;
+    bool addrFlag = false;
+
+    do {
+
+        ch = fgetc(fp);
+
+        //fprintf(stdout, "Read1 %c\n", ch);
+
+        switch (ch) {
+            case '0' ... '9':
+            case 'a' ... 'f':
+            case 'A' ... 'F':
+                //printf("BEGIN HEX NUMBER\n");
+                for (;;) {
+                    switch(ch) {
+                        case '0' ... '9':
+                            data = (data << 4) + ch - '0';
+                            break;
+                        case 'A' ... 'F':
+                            data = (data << 4) + ch - 'A' + 10;
+                            break;
+                        case 'a' ... 'f':
+                            data = (data << 4) + ch - 'a' + 10;
+                            break;
+                        default:
+                            //printf("END HEX NUMBER - %09llx\n", data);
+                            return addrFlag ? 1 : 2;
+                    }
+                    ch = fgetc(fp);
+                    //fprintf(stdout, "Read4 %c\n", ch);
+                }
+                break;
+            case '@':
+                //printf("FOUND ADDRFLAG\n");
+                addrFlag = true;
+                break;
+            case '\n':
+                addrFlag = false;
+                ch = 0;
+                break;
+            case '/':
+                if (prevch == '/') {
+                    //printf("BEGIN EOL COMMENT\n");
+                    for (;;) {
+                        prevch = ch;
+                        ch = fgetc(fp);
+                        //fprintf(stdout, "Read3 %c\n", ch);
+                        if (ch == '\n') {
+                            break;
+                        }
+                    }
+                    //printf("END EOL COMMENT\n");
+                    return 0;
+                }
+                break;
+            case '*':
+                if (prevch == '/') {
+                    //printf("BEGIN COMMENT\n");
+                    for (;;) {
+                        prevch = ch;
+                        ch = fgetc(fp);
+                        //fprintf(stdout, "Read2 %c\n", ch);
+                        if (ch == '/' && prevch == '*') {
+                            break;
+                        }
+                    }
+                    //printf("END COMMENT\n");
+                    return 0;
+                }
+                break;
+            case -1:
+                return -1;
+            default:
+                break;
+        }
+        prevch = ch;
+    } while (ch != 0);
+
+    return 0;
+}
+
+static bool readDatFile(const char * filename) {
+
+    FIL fp;
+    FRESULT status = f_open(&fp, filename, FA_READ);
+    if (status != FR_OK) {
+        debug("f_open() returned %d\n", status);
+        return false;
+    }
+
+    ks10_t::addr_t addr = 0;
+
+    for (;;) {
+        ks10_t::data_t data;
+        int status = gettoken(&fp, data);
+
+        //printf("gettoken() returned %012llo\n", data);
+
+        switch (status) {
+            case -1:
+                return true;
+            case 0:
+                break;
+            case 1:
+                addr = data;
+                //debug("addr set to %06o\n", addr);
+                break;
+            case 2:
+                if (addr > 035122) {
+                    //    debug("%06llo: %06lo,,%06lo\n", addr, ks10_t::lh(data), ks10_t::rh(data));
+                }
+                ks10_t::writeMem(addr++, data);
+                break;
+        }
+    }
+}
+#endif
 
 //
 //! Print RH11 Debug Word
@@ -242,15 +437,15 @@ static bool loadCode(const char * filename) {
 
 void printRH11Debug(void) {
     volatile ks10_t::rh11debug_t * rh11debug = ks10_t::getRH11debug();
-    printf("KS10> RH11 Status summary: 0x%016llx\n"
-           "KS10>   State = %d\n"
-           "KS10>   Err   = %d\n"
-           "KS10>   Val   = %d\n"
-           "KS10>   WrCnt = %d\n"
-           "KS10>   RdCnt = %d\n"
-           "KS10>   Res1  = 0x%02x\n"
-           "KS10>   Res2  = 0x%02x\n"
-           "KS10>   Res3  = 0x%02x\n"
+    printf("RH11 Status summary: 0x%016llx\n"
+           "  State = %d\n"
+           "  Err   = %d\n"
+           "  Val   = %d\n"
+           "  WrCnt = %d\n"
+           "  RdCnt = %d\n"
+           "  Res1  = 0x%02x\n"
+           "  Res2  = 0x%02x\n"
+           "  Res3  = 0x%02x\n"
            "",
            *reinterpret_cast<volatile uint64_t*>(rh11debug),
            rh11debug->state,
@@ -268,100 +463,24 @@ void printRH11Debug(void) {
 //!
 //! This function prints the Halt Status Word and the Halt Status Block.
 //!
+//! \details
+//!     The code executes a RDHSB instruction in the Console Instruction
+//!     Register to get the address of the Halt Status Block from the CPU.
+//!
 //! \todo
 //!     The microcode doesn't seem to store the FE/SC registers like the
 //!     documents describe.   Delete it?
-//!
-//! \todo
-//!     This has the Halt Status Block address hard coded.  It should execute
-//!     a RDHSB instruction using the Console Instruction Register to get the
-//!     address of the Halt Status Block.   The 0376000 address is only valid
-//!     until TOPS10 or TOPS20 changes it.
 //
 
 void printHaltStatus(void) {
 
     //
-    // Retreive the Halt Status Word
+    // Retreive and print the Halt Status Word
     //
 
     const ks10_t::haltStatusWord_t haltStatusWord = ks10_t::getHaltStatusWord();
 
-    //
-    // Halt Status Block address.  Assume default location.
-    //
-
-    ks10_t::addr_t hsbAddr = 0376000;
-
-#warning FIXME: Stubbed code
-#if 0
-
-    //
-    // We need a temporary memory location to stash the address of the Halt
-    // Status Block by executing a RDHSB instruction.
-    //
-
-    const ks10_t::addr_t tempAddr = 0100;
-
-    //
-    // Save the data at that location so that it may be restored later.
-    //
-
-    const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
-
-    //
-    // Load an RDHSB instruction into the CIR.
-    //
-
-    ks10_t::writeRegCIR((ks10_t::opRDHSB << 18) | tempAddr);
-
-    //
-    // Execute the RDHSB instruction
-    //
-
-    ks10_t::cont(true);
-    ks10_t::exec(true);
-    ks10_t::run(false);
-
-    //
-    // Wait for the processor to HALT again.
-    //
-
-    while (!ks10_t::halt()) {
-        ;
-    }
-
-    //
-    // Read the address of the Halt Status Block from location 0
-    //
-
-    hsbAddr = ks10_t::readMem(tempAddr);
-
-    //
-    // Restore the data at the temporary location.
-    //
-
-    ks10_t::writeMem(tempAddr, tempData);
-
-#endif
-
-    //
-    // Retreive and print the Halt Status Block
-    //
-
-    const ks10_t::haltStatusBlock_t haltStatusBlock = ks10_t::getHaltStatusBlock(hsbAddr);
-
-    printf("KS10> Halt Cause: %s (PC=%012llo, A=%06llo)\n"
-           "KS10>   PC  is %012llo     MAG is %012llo\n"
-           "KS10>   PC  is %012llo     HR  is %012llo\n"
-           "KS10>   AR  is %012llo     ARX is %012llo\n"
-           "KS10>   BR  is %012llo     BRX is %012llo\n"
-           "KS10>   ONE is %012llo     EBR is %012llo\n"
-           "KS10>   UBR is %012llo     MSK is %012llo\n"
-           "KS10>   FLG is %012llo     PI  is %012llo\n"
-           "KS10>   X1  is %012llo     TO  is %012llo\n"
-           "KS10>   T1  is %012llo     VMA is %012llo\n"
-           "KS10>   FE  is %012llo                   \n",
+    printf("KS10: Halt Cause: %s (PC=%06llo)\n",
            (haltStatusWord.status == 00000 ? "Microcode Startup."                     :
             (haltStatusWord.status == 00001 ? "Halt Instruction."                     :
              (haltStatusWord.status == 00002 ? "Console Halt."                        :
@@ -371,27 +490,80 @@ void printHaltStatus(void) {
                  (haltStatusWord.status == 01000 ? "Illegal Microcode Dispatch."      :
                   (haltStatusWord.status == 01005 ? "Microcode Startup Check Failed." :
                    "Unknown.")))))))),
-           haltStatusWord.status,
-           hsbAddr,
-           haltStatusWord.pc,
-           haltStatusBlock.mag,
-           haltStatusBlock.pc,
-           haltStatusBlock.hr,
-           haltStatusBlock.ar,
-           haltStatusBlock.arx,
-           haltStatusBlock.br,
-           haltStatusBlock.brx,
-           haltStatusBlock.one,
-           haltStatusBlock.ebr,
-           haltStatusBlock.ubr,
-           haltStatusBlock.mask,
-           haltStatusBlock.flg,
-           haltStatusBlock.pi,
-           haltStatusBlock.x1,
-           haltStatusBlock.t0,
-           haltStatusBlock.t1,
-           haltStatusBlock.vma,
-           haltStatusBlock.fe);
+           haltStatusWord.pc);
+
+    //
+    // Print the Halt Status Block when not at Microcode Startup
+    //
+
+    if (haltStatusWord.status != 00000) {
+
+        //
+        // Create a temporary memory location to stash the address of the Halt
+        // Status Block.  Save the data in the console.  We'll restore it when
+        // we're done.
+        //
+
+        const ks10_t::addr_t tempAddr = 0100;
+        const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
+
+        //
+        // Load an RDHSB instruction into the CIR and execute it.
+        //
+
+        ks10_t::writeRegCIR((ks10_t::opRDHSB << 18) | tempAddr);
+        ks10_t::execute();
+
+        //
+        // Wait for the processor to HALT.
+        //
+
+        while (!ks10_t::halt()) {
+            ;
+        }
+
+        //
+        // Read the address of the Halt Status Block from the temporary location
+        // then restore the data at the temporary location.
+        //
+
+        ks10_t::addr_t hsbAddr = ks10_t::readMem(tempAddr);
+        ks10_t::writeMem(tempAddr, tempData);
+
+        //
+        // Retreive and print the Halt Status Block
+        //
+
+        const ks10_t::haltStatusBlock_t haltStatusBlock = ks10_t::getHaltStatusBlock(hsbAddr);
+        printf("  PC  is %012llo     HR  is %012llo\n"
+               "  MAG is %012llo     ONE is %012llo\n"
+               "  AR  is %012llo     ARX is %012llo\n"
+               "  BR  is %012llo     BRX is %012llo\n"
+               "  EBR is %012llo     UBR is %012llo\n"
+               "  MSK is %012llo     FLG is %012llo\n"
+               "  PI  is %012llo     X1  is %012llo\n"
+               "  TO  is %012llo     T1  is %012llo \n"
+               "  VMA is %012llo     FE  is %012llo\n"
+               "KS10> ",
+               haltStatusBlock.pc,
+               haltStatusBlock.hr,
+               haltStatusBlock.mag,
+               haltStatusBlock.one,
+               haltStatusBlock.ar,
+               haltStatusBlock.arx,
+               haltStatusBlock.br,
+               haltStatusBlock.brx,
+               haltStatusBlock.ebr,
+               haltStatusBlock.ubr,
+               haltStatusBlock.mask,
+               haltStatusBlock.flg,
+               haltStatusBlock.pi,
+               haltStatusBlock.x1,
+               haltStatusBlock.t0,
+               haltStatusBlock.t1,
+               haltStatusBlock.vma,
+               haltStatusBlock.fe);
+    }
 }
 
 //
@@ -422,7 +594,9 @@ static void cmdBT(int argc, char *argv[]) {
         if (!loadCode(argv[1])) {
             printf("Unable to open file \"%s\".\n", argv[1]);
         }
+#if 0
         ks10_t::run(true);
+#endif
     } else {
         printf(usage);
     }
@@ -488,7 +662,7 @@ static void cmdCO(int argc, char *[]) {
         "Continue the KS10 from the HALT state.\n";
 
     if (argc == 1) {
-        ks10_t::cont();
+        ks10_t::contin();
     } else {
         printf(usage);
     }
@@ -614,81 +788,32 @@ static void cmdDS(int, char *[]) {
 
 static void cmdDZ(int argc, char *argv[]) {
     const char *usage =
-        "Usage: DZ port.\n"
-        "Test one of the DZ11 Transmitters.  Valid ports are 0-7.\n";
+        "Usage: DZ {TX port | RX port | EC[HO] port}.\n"
+        "DZ11 Tests.\n"
+        "  DZ TX port - Test one of the DZ11 Transmitters.\n"
+        "  DZ RX port - Test one of the DZ11 Receivers.\n"
+        "  DZ ECHO port - Echo receiver back to transmitter."
+        "  Valid ports are 0-7.\n"
+        "  Note: This is all 9600 baud, no parity, 8 data bit, 1 stop bit.\n";
 
-    const ks10_t::addr_t dzcsr_addr = 03760010;
-    const ks10_t::addr_t dzlpr_addr = 03760012;
-    const ks10_t::addr_t dztcr_addr = 03760014;
-    const ks10_t::addr_t dztdr_addr = 03760016;
-
-    char testmsg[] = "This is a test on line ?\r\n";
-
-    if ((argc == 2) && (*argv[1] >= '0') && (*argv[1] <= '7')) {
-
-        testmsg[23] = *argv[1];
-
-        //
-        // Assert Device Clear
-        //
-
-        const ks10_t::data_t csr_clr = 0x0010;
-        ks10_t::writeIO(dzcsr_addr, csr_clr);
-
-        //
-        // Wait for Device Clear to negate.  This takes about 15 uS.
-        //
-
-        while (ks10_t::readIO(dzcsr_addr) & csr_clr) {
-            ;
+    char *buf = argv[1];
+    if ((argc == 3) && (buf[0] =='T') && (buf[1] >= 'X')) {
+        if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
+            dz11_t::testTX(*argv[2]);
+        } else {
+            printf(usage);
         }
-
-        //
-        // Configure all 8 Line Parameter Registers for 9600,N,8,1
-        //
-
-        ks10_t::writeIO(dzlpr_addr, 0x1e18);
-        ks10_t::writeIO(dzlpr_addr, 0x1e19);
-        ks10_t::writeIO(dzlpr_addr, 0x1e1a);
-        ks10_t::writeIO(dzlpr_addr, 0x1e1b);
-        ks10_t::writeIO(dzlpr_addr, 0x1e1c);
-        ks10_t::writeIO(dzlpr_addr, 0x1e1d);
-        ks10_t::writeIO(dzlpr_addr, 0x1e1e);
-        ks10_t::writeIO(dzlpr_addr, 0x1e1f);
-
-        //
-        // Enable selected line
-        //
-
-        ks10_t::writeIO(dztcr_addr, (1 << (*argv[1] - '0')));
-
-        //
-        // Enable Master Scan Enable
-        //
-
-        ks10_t::writeIO(dzcsr_addr, 0x0020);
-
-        //
-        // Print test message
-        //
-
-        char *s = testmsg;
-        while (*s != 0) {
-
-            //
-            // Wait for Transmitter Ready
-            //
-
-            const ks10_t::data_t csr_trdy = 0x8000;
-            while (!(ks10_t::readIO(dzcsr_addr) & csr_trdy)) {
-                ;
-            }
-
-            //
-            // Output character to Transmitter Data Register
-            //
-
-            ks10_t::writeIO(dztdr_addr, *s++);
+    } else if ((argc == 3) && (buf[0] =='R') && (buf[1] >= 'X')) {
+        if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
+            dz11_t::testRX(*argv[2]);
+        } else {
+            printf(usage);
+        }
+    } else if ((argc == 3) && (buf[0] =='E') && (buf[1] >= 'C')) {
+        if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
+            dz11_t::testECHO(*argv[2]);
+        } else {
+            printf(usage);
         }
     } else {
         printf(usage);
@@ -810,19 +935,115 @@ static void cmdEN(int argc, char *[]) {
 //!    Number of arguments.
 ///
 
-static void cmdEX(int argc, char *[]) {
+static void cmdEX(int argc, char *argv[]) {
     const char *usage =
-        "Usage: EX\n"
-        "Execute the next instruction and then halt.\n";
+        "Usage: EX Instruction\n"
+        "Put and instruction in the CIR and execute it.\n";
 
-    if (argc == 1) {
-        ks10_t::run(false);
-        ks10_t::exec(true);
-        ks10_t::cont(true);
+    if (argc == 2) {
+        ks10_t::data_t data = parseOctal(argv[1]);
+        ks10_t::writeRegCIR(data);
+        ks10_t::execute();
     } else {
         printf(usage);
     }
 }
+
+bool running = false;
+
+#if 1
+static void cmdGO(int argc, char *argv[]) {
+    const char *usage =
+        "Usage: GO\n"
+        "Set the RUN, EXEC, and CONT bits\n";
+
+    if (argc == 3) {
+        ks10_t::writeMem(000030, 0000000000000);        // Initialize switch register
+        ks10_t::writeMem(000031, 0000000000000);        // Initialize keep-alive
+        ks10_t::writeMem(000032, 0000000000000);        // Initialize CTY input word
+        ks10_t::writeMem(000033, 0000000000000);        // Initialize CTY output word
+        ks10_t::writeMem(000034, 0000000000000);        // Initialize KTY input word
+        ks10_t::writeMem(000035, 0000000000000);        // Initialize KTY output word
+        ks10_t::writeMem(000036, 0000000000000);        // Initialize RH11 base address
+        ks10_t::writeMem(000037, 0000000000000);        // Initialize UNIT number
+        ks10_t::writeMem(000040, 0000000000000);        // Initialize magtape params.
+
+        ks10_t::trapEnable(true);
+        ks10_t::timerEnable(false);
+
+        printf("COM block initialized\n");
+        loadCode("diag/subsm.sav");
+        printf("Loaded diag/subsm.sav\n");
+        loadCode("diag/smddt.sav");
+        printf("Loaded diag/smddt.sav\n");
+        loadCode("diag/smmon.sav");
+        printf("Loaded diag/smmon.sav\n");
+        loadCode(argv[1]);
+        //readDatFile(argv[1]);
+        printf  ("Loaded %s\n", argv[1]);
+
+#if 0
+        loadCode("diag/dskea.sav");
+        printf  ("Loaded diag/dskea.sav\n");
+#endif
+#if 0
+        loadCode("diag/dsrpa.sav");
+        printf  ("Loaded diag/dsrpa.sav\n");
+#endif
+#if 0
+        loadCode("diag/dsmmc.sav");
+        printf  ("Loaded diag/dsmmc.sav\n");
+#endif
+#if 0
+        loadCode("diag/dskaa.sav");
+        printf("Loaded diag/dskaa.sav\n");
+#endif
+        ks10_t::data_t start = parseOctal(argv[2]);
+
+        ks10_t::writeRegCIR(0254000000000 | start);
+        //ks10_t::writeRegCIR(0254000030010);
+        printf("Wrote CIR\n");
+        ks10_t::writeMem(030057, 0254200030060);        // Halt
+        ks10_t::writeMem(025163, 0254000025172);        // Skip disk
+
+        //ks10_t::writeMem(007304, 000000000600);
+        //ks10_t::writeMem(007366, 000000000100);
+
+        printf("Patched code\n");
+        //intf("Starting up...\n");
+        if (ks10_t::cpuReset()) {
+            printf("????? KS10 should not be reset.\n");
+        }
+        if (!ks10_t::halt()) {
+            printf("????? KS10 should be halted.\n");
+        }
+        running = true;
+        ks10_t::begin();
+        if (!ks10_t::run()) {
+            printf("????? KS10 should be running.\n");
+        }
+        while (!ks10_t::halt()) {
+            ks10_t::data_t cty_out = ks10_t::readMem(000033);
+            if ((cty_out & 0x0100) != 0) {
+                printf("%c", ((unsigned char)(cty_out & 0x7f)));
+                ks10_t::writeMem(000033, 0000000000000);
+            }
+            int ch = getchar();
+            if (ch != -1) {
+                ks10_t::data_t cty_in = ks10_t::readMem(000032);
+                if ((cty_in & 0x0100) == 0) {
+                    ks10_t::writeMem(000032, 0x0100 | (ch & 0xff));
+                    ks10_t::cpuIntr();
+                }
+            }
+        }
+        running = false;
+    } else {
+        printf(usage);
+    }
+}
+
+#endif
 
 //
 //! Halt the KS10
@@ -853,11 +1074,19 @@ static void cmdHA(int argc, char *[]) {
         while (!ks10_t::halt()) {
             ;
         }
-        printf("KS10> Halted\n");
+        printf("Halted\n");
     } else {
         printf(usage);
     }
 }
+
+#if 1
+
+static void cmdHS(int , char *[]) {
+    printHaltStatus();
+}
+
+#endif
 
 //
 //! Load Memory Address
@@ -1029,259 +1258,22 @@ static void cmdRD(int argc, char *argv[]) {
 
 static void cmdRH(int argc, char *argv[]) {
     const char *usage =
-        "Usage: RH\n"
-        "Test RH11\n";
-
-    const ks10_t::addr_t rhcs1_addr = 01776700;
-    const ks10_t::addr_t rhwc_addr  = 01776702;
-    const ks10_t::addr_t rhba_addr  = 01776704;
-    const ks10_t::addr_t rhda_addr  = 01776706;
-    const ks10_t::addr_t rhcs2_addr = 01776710;
-    const ks10_t::addr_t rpla_addr  = 01776720;
-    const ks10_t::addr_t rhdb_addr  = 01776722;
-    const ks10_t::addr_t rpmr_addr  = 01776724;
+        "Usage: RH {FIFO | RPLA | `READ}\n"
+        "RH11 Tests.\n"
+        " RH FIFO - Test RH11 FIFO\n"
+        " RH RPLA - Test RH11 RPLA\n"
+        " RH READ - Test RH11 Disk Read\n";
 
     char *buf = argv[1];
-
-    if (buf[0] == 'F' && buf[1] == 'I' && buf[2] == 'F' && buf[3] == 'O') {
-
-        //
-        // Controller Reset
-        //
-        
-        const ks10_t::data_t csr2_clr = 0x0020;
-        ks10_t::writeIO(rhcs2_addr, csr2_clr);
-        
-        //
-        // Read RHCS2
-        //
-        
-        const ks10_t::data_t csr2_ir = 0x0040;
-        const ks10_t::data_t csr2_or = 0x0080;
-
-        ks10_t::data_t csr2 = ks10_t::readIO(rhcs2_addr);
-        
-        //
-        // Test buffer operation
-        //
-        
-        bool fail = false;
-        for (int i = 0; i < 70; i++) {
-            
-            //
-            // Read RHCS2
-            //
-
-            csr2 = ks10_t::readIO(rhcs2_addr) & 0xffff;
-#if 0
-            printf("      %2d: RHCS2 is 0x%04llx (%d)\n", 0, csr2, i);
-#endif
-
-            //
-            // Check results
-            //
-
-            switch (i) {
-                case 0:
-                    if ((csr2 & csr2_ir) == 0) {
-                        fail = true;
-                        printf("      CSR2[IR] should be set after reset\n");
-                    }
-                    if ((csr2 & csr2_or) != 0) {
-                        fail = true;
-                        printf("      CSR2[OR] Should be clear after reset\n");
-                    }
-                    break;
-                case 1 ... 65:
-                    if ((csr2 & csr2_ir) == 0) {
-                        fail = true;
-                        printf("      CSR2[IR] should be set after %d entries.\n", i);
-                    }
-                    if ((csr2 & csr2_or) == 0) {
-                        fail = true;
-                        printf("      CSR2[OR] Should be set after %d entries.\n", i);
-                    }
-                    break;
-                case 66 ... 75:
-                    if ((csr2 & csr2_ir) != 0) {
-                        fail = true;
-                        printf("      CSR2[IR] should be clear after %d entries.\n", i);
-                    }
-                    if ((csr2 & csr2_or) == 0) {
-                        fail = true;
-                        printf("      CSR2[OR] Should be set after %d entries.\n", i);
-                    }
-                    break;
-            }
-
-            //
-            // Write data to RHDB
-            //
-
-            ks10_t::writeIO(rhdb_addr, (ks10_t::data_t)(0xff00 + i));
-
-        }
-        
-        //
-        // Uload the FIFO.   Check for correctness.
-        //
-
-        for (unsigned int i = 0; i < 70; i++) {
-
-            //
-            // Read data from FIFO
-            //
-
-            ks10_t::data_t rhdb = ks10_t::readIO(rhdb_addr) & 0xffff;
-#if 0
-            printf("        ----> 0x%04llx \n", rhdb);
-#endif
-
-            //
-            // Check results
-            //
-
-            switch (i) {
-                case 0 ... 65:
-                    if (rhdb != (0xff00 + i)) {
-                        fail = true;
-                        printf("      Data from FIFO is incorrect on word %d.  Expected 0x%04llx.  Received 0x%04llx.\n",
-                               i, 0xff00 + i, rhdb);
-                    }
-                    break;
-                case 66 ... 75:
-                    if (rhdb != 0) {
-                        fail = true;
-                        printf("      Data from FIFO is incorrect on word %d.  Expected 0x%04llx.  Received 0x%04llx.\n",
-                               i, 0, rhdb);
-                    }
-            }
-        }
-
-        //
-        // Print results
-        //
-
-        printf("      RHDB FIFO test %s.\n", fail ? "failed" : "passed");
-      
-    } else if (buf[0] == 'R' && buf[1] == 'P' && buf[2] == 'L' && buf[3] == 'A') {
-        
-        //
-        // Controller Reset
-        //
-        
-        const ks10_t::data_t csr2_clr = 0x0020;
-        ks10_t::writeIO(rhcs2_addr, csr2_clr);
-
-        //
-        // Put unit in diagnostic mode.  Assert DMD.
-        //
-
-        const ks10_t::data_t mr_dmd  = 0x0001;
-        const ks10_t::data_t mr_dclk = 0x0002;
-        const ks10_t::data_t mr_dind = 0x0004;
-        const ks10_t::data_t mr_dsck = 0x0008;
-        
-        ks10_t::writeIO(rpmr_addr, mr_dmd);
-
-        //
-        // Create index pulse.  Clear byte counter.
-        //  DIND asserted with DSCK clock.  Don't reset DMD.
-        //
-
-        ks10_t::writeIO(rpmr_addr, mr_dind | mr_dsck | mr_dmd);
-        ks10_t::writeIO(rpmr_addr, mr_dmd);
-
-        //
-        // Start clocking bytes
-        //
-
-        bool fail = false;
-        for (int i = 0; i <= 12768; i++) {
-
-            //
-            // Read look ahead register RPLA
-            //
-            
-            unsigned int rpla = ks10_t::readIO(rpla_addr) & 0x0ff0;
-            
-            //
-            // Check results
-            //
-
-            switch (i) {
-                case 0 ... 127:
-                    if (rpla != 0x0000) {
-                        fail = true;
-                        printf("      RPLA SEC should be 0, EXT should be 0 after %3d clocks\n", i);
-                    }
-                    break;
-                case 128 ... 255:
-                    if (rpla != 0x0010) {
-                        fail = true;
-                        printf("      RPLA SEC should be 0, EXT should be 20 after %3d clocks\n", i);
-                    }
-                    break;
-                case 256 ... 511:
-                    if (rpla != 0x0020) {
-                        fail = true;
-                        printf("      RPLA SEC should be 0, EXT should be 40 after %3d clocks\n", i);
-                    }
-                    break;
-                case 512 ... 671:
-                    if (rpla != 0x0030) {
-                        fail = true;
-                        printf("      RPLA SEC should be 0, EXT should be 60 after %3d clocks\n", i);
-                    }
-                    break;
-                case 672 ... 799:
-                    if (rpla != 0x0040) {
-                        fail = true;
-                        printf("      RPLA SEC should be 1, EXT should be 00 after %3d clocks\n", i);
-                    }
-                    break;
-                case 800 ... 927:
-                    if (rpla != 0x0050) {
-                        fail = true;
-                        printf("      RPLA SEC should be 0, EXT should be 20 after %3d clocks\n", i);
-                    }
-                    break;
-                case 928 ... 1183:
-                    if (rpla != 0x0060) {
-                        fail = true;
-                        printf("      RPLA SEC should be 0, EXT should be 40 after %3d clocks\n", i);
-                    }
-                    break;
-                    //                case 12608 ... 12767:
-                case 12767:
-                    if (rpla != 0x04b0) {
-                        fail = true;
-                        printf("      RPLA SEC should be 1, EXT should be 00 after %3d clocks\n", i);
-                    }
-                    break;
-                case 12768:
-                    if (rpla != 0x0000) {
-                        fail = true;
-                        printf("      RPLA SEC should be 0, EXT should be 00 after %3d clocks\n", i);
-                    }
-                    break;
-            }
-
-            //
-            // Create clock pulse
-            //
-
-            ks10_t::writeIO(rpmr_addr, mr_dsck | mr_dmd);
-            ks10_t::writeIO(rpmr_addr, mr_dmd);
-
-        }
-
-        //
-        // Print results
-        //
-
-        printf("      RPLA/RPMR byte counter test %s.\n", fail ? "failed" : "passed");
-   } 
+    if ((argc == 3) && (buf[0] == 'F' && buf[1] == 'I' && buf[2] == 'F' && buf[3] == 'O')) {
+        rh11_t::testFIFO();
+    } else if ((argc == 3) && (buf[0] == 'R' && buf[1] == 'P' && buf[2] == 'L' && buf[3] == 'A')) {
+        rh11_t::testRPLA();
+    } else if ((argc == 3) && (buf[0] == 'R' && buf[1] == 'E' && buf[2] == 'A' && buf[3] == 'D')) {
+        rh11_t::testRead(0);
+    } else {
+        printf(usage);
+    }
 }
 
 #endif
@@ -1366,8 +1358,7 @@ static void cmdSI(int argc, char *[]) {
         "Step Instruction: Single step the KS10.\n";
 
     if (argc == 1) {
-        ks10_t::run(false);
-        ks10_t::cont(true);
+        ks10_t::step();
     } else {
         printf(usage);
     }
@@ -1424,9 +1415,7 @@ static void cmdST(int argc, char *argv[]) {
         ks10_t::addr_t addr = parseOctal(argv[1]);
         if (addr <= ks10_t::maxVirtAddr) {
             ks10_t::writeRegCIR((ks10_t::opJRST << 18) | (addr & 0777777));
-            ks10_t::exec(true);
-            ks10_t::run(true);
-            ks10_t::cont(true);
+            ks10_t::begin();
         } else {
             printf("Invalid Address\n"
                    "Valid addresses are %08o-%08llo\n",
@@ -1634,7 +1623,7 @@ static void cmdZZ(int argc, char *argv[]) {
             }
         } else if (*argv[1] == 'W') {
             if (strncmp(argv[2], "REGCIR", 4) == 0) {
-                ks10_t::writeRegCIR(0377777777776);
+                ks10_t::writeRegCIR(0254000020000);
                 printf(" CIR Register written.\n");
             } else if (strncmp(argv[2], "REGDIR", 4) == 0) {
                 ks10_t::writeRegCIR(0);
@@ -1654,7 +1643,10 @@ static void cmdZZ(int argc, char *argv[]) {
 //!    command line
 //
 
-void parseCommand(char * buf) {
+static void parseCommand(char * buf) {
+
+//static void taskCommand(void * param) {
+//    char * buf = reinterpret_cast<char *>(param);
 
     //
     // List of Commands
@@ -1695,7 +1687,13 @@ void parseCommand(char * buf) {
         {"ER", cmdXX},          // Not implemented.
         {"EX", cmdEX},
         {"FI", cmdXX},          // Not implemented.
+#if 1
+        {"GO", cmdGO},
+#endif
         {"HA", cmdHA},
+#if 1
+        {"HS", cmdHS},
+#endif
         {"KL", cmdXX},          // Not implemented.
         {"LA", cmdLA},
         {"LB", cmdLB},
@@ -1780,4 +1778,48 @@ void parseCommand(char * buf) {
         }
         printf("Command not found.\n");
     }
+    //printf("%s ", prompt);
+    //xTaskDelete(NULL);
+}
+
+//
+//! Command processing task
+//!
+//! \param
+//!    param - pointer to command line buffer
+//!
+//! \note
+//!    When the command finishes executing, the task deletes itself.
+//
+
+void taskCommand(void * param) {
+    char * buf = reinterpret_cast<char *>(param);
+    parseCommand(buf);
+    printf(PROMPT);
+    xTaskDelete(NULL);
+}
+
+//
+//! Command Processing
+//!
+//! \note
+//!    Command processing is implemented as a task so that it can be:
+//!    - suspended with a ^S keystoke
+//!    - resumed with a ^Q keystroke
+//!    - deleted with a ^C keystroke
+//!
+//! \note
+//!    This function executes within the context of the Console Task and not
+//!    the command processing task.
+//!
+//
+
+void startCommandTask(char *lineBuffer, xTaskHandle &taskHandle) {
+
+    static char __align64 stack[4096-4];
+    portBASE_TYPE status = xTaskCreate(taskCommand, "Command", stack, sizeof(stack), lineBuffer, taskCommandPriority, &taskHandle);
+    if (status != pdPASS) {
+        debug("RTOS: Failed to create Command task.  Status was %s.\n", taskError(status));
+    }
+
 }

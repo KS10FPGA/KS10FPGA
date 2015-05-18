@@ -35,10 +35,9 @@
 #ifndef __COMMANDS_HPP
 #define __COMMANDS_HPP
 
-#include "ks10.hpp"
+#include "SafeRTOS/SafeRTOS_API.h"
 
-void parseCommand(char * buf);
 void printHaltStatus(void);
-void printRH11Debug(void);
+void startCommandTask(char *lineBuffer, xTaskHandle &taskHandle);
 
 #endif

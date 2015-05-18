@@ -62,18 +62,18 @@ void SetupServices(void *arg) {
     (void)arg;
     handle23   = telnet_init(23);
     handle2000 = telnet_init(2000);
-    printf("KS10> Telnet started.\n");
+    printf("NET : Telnet started.\n");
 }
 
 //
-//! telnetTaskInit
+//! startTelnetTask
 //!
 //! \details
 //!    This function initializes the LWIP task and sets up a callback to
 //!    initialize the telnet interfaces.
 //
 
-unsigned long telnetTaskInit(void) {
+void startTelnetTask(void) {
 
     //
     // Get the MAC address from the user registers.
@@ -106,7 +106,7 @@ unsigned long telnetTaskInit(void) {
     macAddr[4] = ((user1 >>  8) & 0xff);
     macAddr[5] = ((user1 >> 16) & 0xff);
 
-    printf("KS10> MAC Address is %02x:%02x:%02x:%02x:%02x:%02x\n",
+    printf("NET : MAC Address is %02x:%02x:%02x:%02x:%02x:%02x\n",
            macAddr[0], macAddr[1], macAddr[2],
            macAddr[3], macAddr[4], macAddr[5]);
 
@@ -134,5 +134,6 @@ unsigned long telnetTaskInit(void) {
     // Success.
     //
 
-    return 0;
+    printf("NET : Successfully started telnet task.\n");
+    return;
 }

@@ -35,7 +35,9 @@
 //
 
 #include "stdio.h"
+#include "uba.hpp"
 #include "rh11.hpp"
+#include "SafeRTOS/SafeRTOS_API.h"
 
 //
 //! This tests the operation of the RH11 FIFO (aka SILO)
@@ -277,4 +279,157 @@ void rh11_t::testRPLA(void) {
     //
 
     printf("      RPLA/RPMR byte counter test %s.\n", fail ? "failed" : "passed");
+}
+
+//
+//
+//
+
+void rh11_t::testRead(unsigned int disk) {
+    bool pass = true;
+    const unsigned int words     = 128;
+    const unsigned int dest_addr = 004000;
+    const ks10_t::data_t pattern = 052525252525252;
+
+    //
+    // UBA Reset
+    //
+
+#if 1
+    ks10_t::writeIO(uba_t::csr_addr, 0000100);
+#endif
+   
+    //
+    // Controller Reset
+    //
+
+#if 1
+    ks10_t::writeIO(rhcs2_addr, rhcs2_clr);
+#endif
+
+    //
+    // Configure RHWC
+    //
+
+    ks10_t::writeIO(rhwc_addr, -words);
+
+    //
+    // Set Unibus mapping
+    //  This will page the destination to 070000
+    //
+
+    ks10_t::writeIO(uba_t::pag_addr + 1, uba_t::pag_ftm | uba_t::pag_vld | uba_t::page70);
+
+    //
+    // Set destination address
+    //
+
+    ks10_t::writeIO(rhba_addr, dest_addr);
+
+    //
+    // Fill destination with data
+    //
+
+    for (unsigned int i = 0; i < words+2; i++) {
+        ks10_t::writeMem(067777 + i, pattern);
+    }
+
+    //
+    // Select disk
+    //
+
+    ks10_t::writeIO(rhcs2_addr, disk & 0x0007);
+
+    //
+    // Issue read command
+    //
+
+    ks10_t::writeIO(rhcs1_addr, rhcs1_read | rhcs1_go);
+
+    //
+    // Verify that disk goes busy
+    //
+
+    ks10_t::data_t rhcs1 = ks10_t::readIO(rhcs1_addr);
+    if (!rhcs1 & rhcs1_rdy) {
+        pass = false;
+        printf("Disk should be busy.\n");
+    }
+
+    //
+    // Wait for read to complete
+    //
+
+    rhcs1 = ks10_t::readIO(rhcs1_addr);
+    for (int i = 0; i < 1000; i++) {
+        if (rhcs1 & rhcs1_rdy) {
+            break;
+        }
+        xTaskDelay(1);
+        rhcs1 = ks10_t::readIO(rhcs1_addr);
+    }
+    printf("ubacsr is %06llo (after)\n", ks10_t::readIO(uba_t::csr_addr));
+
+    //
+    // Check ready status
+    //
+
+    if ((rhcs1 & rhcs1_rdy) == 0) {
+        pass = false;
+        printf("Timeout waiting for disk\n");
+    }
+
+    //
+    // RHCS1[GO] bit should be negated.
+    //
+
+    if ((rhcs1 & rhcs1_go) != 0) {
+        pass = false;
+        printf("RHCS1[GO] should be negated.\n");
+    }
+    
+    //
+    // RHCS1[FUN] should still be set
+    //
+
+    if ((rhcs1 & 0x003e) != rhcs1_read) {
+        pass = false;
+        printf("RHCS1[FUN] should be a read command.\n");
+    }
+
+    //
+    // Check RH11 Word Count (RHWC) register
+    //
+
+    ks10_t::data_t rhwc = ks10_t::readIO(rhwc_addr);
+    if (rhwc != 0) {
+        pass = false;
+        printf("RH11 Word Count Register (RHWC) should be 0.\n"
+               "RH11 Word Count Register (RHWC) was 0x%04llx\n", rhwc);
+    }
+
+    //
+    // Check RH11 Bus Address (RHBA) register
+    //
+
+    ks10_t::data_t rhba = ks10_t::readIO(rhba_addr);
+    if (rhba != dest_addr + 2*words) {
+        pass = false;
+        printf("RH11 Bus Address Register (RHBA) should be %06o.\n"
+               "RH11 Bus Address Register (RHBA) was %06llo\n",
+               dest_addr + 2*words, rhba);
+    }
+
+    //printf("RHBA Register is 0x%04llx\n", ks10_t::readIO(rhba_addr));
+
+    //printf("RHCS1 Register is 0x%04llx\n", rhcs1);
+
+    printf("ubacsr is %06llo (after)\n", ks10_t::readIO(uba_t::csr_addr));
+
+    //
+    // Print results
+    //
+
+    printf("RH11 disk read test %s.\n", pass ? "passed" : "failed");
+
 }

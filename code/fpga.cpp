@@ -70,7 +70,7 @@
 
 bool fpgaProg(void) {
 
-    printf("KS10> Programming FPGA with firmware.");
+    printf("FPGA: Programming with firmware.");
 
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_PROG);
@@ -91,8 +91,8 @@ bool fpgaProg(void) {
     //
 
     if (ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_DONE) != 0) {
-        printf("\nKS10> FPGA Programming Error.  FPGA Done should be negated.\n");
-        return;
+        printf("\nFPGA: Programming Error.  Done should be negated.\n");
+        return false;
     }
 
     //
@@ -108,22 +108,22 @@ bool fpgaProg(void) {
     //
 
     for (int i = 0; i < 10; i++) {
-	if (ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_DONE) == GPIO_PIN_DONE) {
-	    printf("\nKS10> FPGA programmed successfully.\n");
-	    return true;
-	}
+        if (ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_DONE) == GPIO_PIN_DONE) {
+            printf("\nFPGA: Programmed successfully.\n");
+            return true;
+        }
 
 #if 0
-	if (ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_INIT) == 0) {
-	    printf("\nKS10> FPGA Programming Error.  CRC Failure.\n");
-	    return false;
-	}
+        if (ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_INIT) == 0) {
+            printf("\nFPGA: Programming Error.  CRC Failure.\n");
+            return false;
+        }
 #endif
 
-	printf(" .");
-	xTaskDelayUntil(&lastTick, delay);
+        printf(" .");
+        xTaskDelayUntil(&lastTick, delay);
     }
-    printf("\nKS10> FPGA Programming Error.  Programming timed out.\n");
+    printf("\nFPGA: Programming Error.  Time out.\n");
     return false;
 
 }

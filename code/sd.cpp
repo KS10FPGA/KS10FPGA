@@ -36,6 +36,9 @@
 #include <stdint.h>
 #include "sd.h"
 #include "stdio.h"
+#include "fatal.hpp"
+#include "align.hpp"
+#include "taskutil.hpp"
 #include "fatfslib/ff.h"
 #include "driverlib/inc/hw_types.h"
 #include "driverlib/rom.h"
@@ -687,7 +690,7 @@ bool sdStatus(void) {
 //! initialize the SD Card and mount the FAT32 Filesystem.
 //
 
-void sdTask(void * /* param */) {
+static void sdTask(void * /* param */) {
 
     //
     // Check card status every second
@@ -705,11 +708,9 @@ void sdTask(void * /* param */) {
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTCS_BASE, GPIO_PIN_CS);
     ROM_GPIOPinTypeGPIOInput(GPIO_PORTCD_BASE, GPIO_PIN_CD);
     ROM_GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5);
-    ROM_SSIConfigSetExpClk(SSI0_BASE, ROM_SysCtlClockGet(), SSI_FRF_MOTO_MODE_0,
-                           SSI_MODE_MASTER, bitRate, 8);
+    ROM_SSIConfigSetExpClk(SSI0_BASE, ROM_SysCtlClockGet(), SSI_FRF_MOTO_MODE_0, SSI_MODE_MASTER, bitRate, 8);
     ROM_SSIEnable(SSI0_BASE);
     chipEnable(false);
-    portTickType lastTick = xTaskGetTickCount();
 
     //
     // Check card status periodically
@@ -717,28 +718,43 @@ void sdTask(void * /* param */) {
 
     FATFS fatFS;
     bool lastCardDetect = false;
+    portTickType lastTick = xTaskGetTickCount();
 
     for (;;) {
         bool cardDetect = !ROM_GPIOPinRead(GPIO_PORTCD_BASE, GPIO_PIN_CD);
         if (cardDetect && !lastCardDetect) {
-            printf("KS10> SD Card inserted.\n");
+            printf("SDHC: Card inserted.\n");
             if (sdInitialize()) {
-                printf("KS10> SD Card initialized successfully.\n");
+                printf("SDHC: Card initialized successfully.\n");
                 FRESULT status = f_mount(0, &fatFS);
                 if (status == FR_OK) {
-                    printf("KS10> FAT filesystem successfully mounted on SD media.\n");
+                    printf("SDHC: FAT filesystem successfully mounted on SD media.\n");
                 } else {
-                    printf("KS10> Failed to mount FAT filesystem on SD media."
-                           "  Status was %d.\n", status);
+                    printf("SDHC: Failed to mount FAT filesystem on SD media.  Status was %d.\n", status);
                 }
             } else {
-                printf("KS10> Failed to initialize SD Card.\n");
+                printf("SDHC: Failed to initialize SD Card.\n");
             }
         } else if (!cardDetect && lastCardDetect) {
-            printf("KS10> SD Card ejected.\n");
+            printf("SDHC: Card ejected.\n");
             initialized = false;
         }
         lastCardDetect = cardDetect;
         xTaskDelayUntil(&lastTick, delay);
     }
+}
+
+//
+//! Start the SD Task
+//
+
+void startSdTask(void) {
+
+    static char __align64 stack[5120-4];
+
+    portBASE_TYPE status = xTaskCreate(sdTask, "SD", stack, sizeof(stack), 0, taskSDPriority, NULL);
+    if (status != pdPASS) {
+        fatal("SDHC: Failed to create SD task.  Status was %s.\n", taskError(status));
+    }
+   
 }

@@ -38,7 +38,9 @@
 //
 
 #include "epi.hpp"
+#include "stdio.h"
 #include "ks10.hpp"
+#include "fatal.hpp"
 #include "driverlib/rom.h"
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
@@ -48,7 +50,6 @@
 #include "driverlib/inc/hw_memmap.h"
 #include "SafeRTOS/SafeRTOS_API.h"
 
-#include "stdio.h"
 #define GPIO_HALT_LED  GPIO_PIN_7
 
 void (*ks10_t::consIntrHandler)(void);
@@ -376,23 +377,6 @@ bool ks10_t::run(void) {
 }
 
 //
-//! This function controls the <b>CONT</b> mode of the KS10.
-//!
-//! \param enable -
-//!     <b>True</b> puts the KS10 in <b>CONT</b> mode.
-//!     <b>False</b> takes the KS10 out of <b>CONT</b> mode.
-//
-
-void ks10_t::cont(bool enable) {
-    data_t status = readReg(regStat);
-    if (enable) {
-        writeReg(regStat, status | statCONT);
-    } else {
-        writeReg(regStat, status & ~statCONT);
-    }
-}
-
-//
 //! This function checks the KS10 <b>CONT</b> status.
 //!
 //! This function examines the <b>CONT</b> bit in the <b>Console Control/Status
@@ -407,20 +391,37 @@ bool ks10_t::cont(void) {
 }
 
 //
-//! This function controls the <b>EXEC</b> mode of the KS10.
-//!
-//! \param enable -
-//!     <b>True</b> puts the KS10 in <b>EXEC</b> mode.
-//!     <b>False</b> takes the KS10 out of <b>EXEC</b> mode.
+//! Execute a single instruction in the CIR
+//
 //
 
-void ks10_t::exec(bool enable) {
+void ks10_t::execute(void) {
+    writeReg(regStat, statCONT | statEXEC | readReg(regStat));
+}
+
+//
+//! Execute a single instruction at the current PC
+//
+
+void ks10_t::step(void) {
+    writeReg(regStat, statCONT | readReg(regStat));
+}
+
+//
+//! Continue execution at the current PC.
+//
+
+void ks10_t::contin(void) {
+    writeReg(regStat, statRUN | statCONT | readReg(regStat));
+}
+
+//
+//! Begin execution with instruction in the CIR.
+//
+
+void ks10_t::begin(void) {
     data_t status = readReg(regStat);
-    if (enable) {
-        writeReg(regStat, status | statEXEC);
-    } else {
-        writeReg(regStat, status & ~statEXEC);
-    }
+    writeReg(regStat, status | statRUN | statCONT | statEXEC);
 }
 
 //
@@ -453,6 +454,44 @@ bool ks10_t::halt(void) {
 #else
     return ROM_GPIOPinRead(GPIO_PORTD_BASE, GPIO_HALT_LED) == GPIO_HALT_LED;
 #endif
+}
+
+//
+//! Boot the KS10
+//!
+//
+
+void ks10_t::boot(void) {
+
+    //
+    // Unreset the CPU
+    //
+
+    if (!ks10_t::cpuReset()) {
+        fatal("KS10 should be reset.\n");
+    }
+
+    if (ks10_t::halt()) {
+        fatal("KS10 should not be halted.\n");
+    }
+
+    if (ks10_t::run()) {
+        fatal("KS10 should not be running.\n");
+    }
+
+    ks10_t::cpuReset(false);
+
+    if (ks10_t::cpuReset()) {
+        fatal("KS10 should be unreset.\n");
+    }
+
+    if (ks10_t::halt()) {
+        fatal("KS10 should not be halted.\n");
+    }
+
+    if (ks10_t::run()) {
+        fatal("KS10 should not be running.\n");
+    }
 }
 
 //
@@ -631,14 +670,24 @@ bool ks10_t::nxmnxd(void) {
 }
 
 //
-//! This function gets the firmware revision of the KS10 FPGA firmware
+//! This function prints the firmware revision of the KS10 FPGA.
+//!
+//! The FPGA should respond with "REVxx.yy" where xx is the major revision and
+//! yy is the minor revision.
 //!
 //! \returns
-//!     character string with firmware information
+//!     True if the version string is valid, false otherwise.
 //
 
-const char *ks10_t::getFirmwareRev(void) {
-    return regVers;
+bool ks10_t::printFirmwareRev(void) {
+    const char *buf = regVers;
+    if ((buf[0] == 'R') && (buf[1] == 'E') && (buf[2] == 'V') && (buf[5] == 0xae)) {
+        printf("FPGA: Firmware is %c%c%c %c%c%c%c%c\n",
+               buf[0] & 0x7f, buf[1] & 0x7f, buf[2] & 0x7f, buf[3] & 0x7f,
+               buf[4] & 0x7f, buf[5] & 0x7f, buf[6] & 0x7f, buf[7] & 0x7f);
+        return true;
+    }
+    return false;
 }
 
 //
@@ -667,9 +716,10 @@ ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
 //!     True if test pass, false otherwise.
 //
 
-bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
-    printf("KS10>   %s: Checking 64-bit accesses.\n", name);
-
+bool ks10_t::testReg64(volatile void * addr, const char *name, bool verbose, uint64_t mask) {
+    if (verbose) {
+        printf("FPGA:  %s: Checking 64-bit accesses.\n", name);
+    }
     bool ret = true;
     volatile uint64_t * reg64 = (uint64_t*)addr;
     uint64_t write64 = 0;
@@ -678,7 +728,9 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
         *reg64 = write64;
         uint64_t read64 = *reg64;
         if (read64 != (write64 & mask)) {
-            printf("KS10>   %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
+            if (verbose) {
+                printf("FPGA:  %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
+            }
             ret = false;
         }
         write64 = (write64 << 8) | 0xff;
@@ -696,8 +748,11 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
 //!     True if test pass, false otherwise.
 //
 
-bool ks10_t::testReg08(volatile void * addr, const char *name, uint64_t mask) {
-    printf("KS10>   %s: Checking 8-bit accesses.\n", name);
+bool ks10_t::testReg08(volatile void * addr, const char *name, bool verbose, uint64_t mask) {
+
+    if (verbose) {
+        printf("FPGA:  %s: Checking 8-bit accesses.\n", name);
+    }
 
     bool ret = true;
     volatile uint64_t * addr64 = (uint64_t *)addr;
@@ -708,7 +763,9 @@ bool ks10_t::testReg08(volatile void * addr, const char *name, uint64_t mask) {
         *addr08 = 0xff;
         uint64_t read64 = *addr64;
         if (read64 != (test64 & mask)) {
-            printf("KS10>   %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, test64);
+            if (verbose) {
+                printf("FPGA:  %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, test64);
+            }
             ret = false;
         }
         addr08++;
@@ -726,7 +783,7 @@ bool ks10_t::testReg08(volatile void * addr, const char *name, uint64_t mask) {
 //!     True if test pass, false otherwise.
 //
 
-bool ks10_t::testRegister(volatile void * addr, const char *name, uint64_t mask) {
+bool ks10_t::testRegister(volatile void * addr, const char *name, bool verbose, uint64_t mask) {
     bool success = true;
 
     //
@@ -739,8 +796,8 @@ bool ks10_t::testRegister(volatile void * addr, const char *name, uint64_t mask)
     // Perform tests
     //
 
-    success &= testReg64(addr, name, mask);
-    success &= testReg08(addr, name, mask);
+    success &= testReg64(addr, name, verbose, mask);
+    success &= testReg08(addr, name, verbose, mask);
 
     //
     // Restore register contents
@@ -757,15 +814,17 @@ bool ks10_t::testRegister(volatile void * addr, const char *name, uint64_t mask)
 //!     True if test pass, false otherwise.
 //
 
-bool ks10_t::testRegs(void) {
+bool ks10_t::testRegs(bool verbose) {
     bool success = true;
-    printf("KS10> Testing KS10 Interface Registers.\n");
-    success &= testRegister(regAddr, "regADDR", 0xfffffffff);
-//  success &= testRegister(regData, "regDATA", 0xfffffffff);
-    success &= testRegister(regCIR,  "regCIR ", 0xfffffffff);
-    success &= testRegister(regTest, "regTEST");
+    if (verbose) {
+        printf("FPGA: Testing KS10 Interface Registers.\n");
+    }
+    success &= testRegister(regAddr, "regADDR", verbose, 0xfffffffff);
+    success &= testRegister(regData, "regDATA", verbose, 0xfffffffff);
+    success &= testRegister(regCIR,  "regCIR ", verbose, 0xfffffffff);
+    success &= testRegister(regTest, "regTEST", verbose);
     if (success) {
-        printf("KS10> Registers tested successfully.\n");
+        printf("FPGA: Registers tested completed successfully.\n");
     }
     return success;
 }
@@ -777,6 +836,10 @@ bool ks10_t::testRegs(void) {
 //!
 //! \returns
 //!     Contents of the Halt Status Block.
+//!
+//! \todo
+//!     The microcode doesn't seem to dump the FE or SC registers.  Are the
+//!     documents wrong?
 //
 
 ks10_t::haltStatusBlock_t &ks10_t::getHaltStatusBlock(addr_t addr) {
@@ -800,14 +863,10 @@ ks10_t::haltStatusBlock_t &ks10_t::getHaltStatusBlock(addr_t addr) {
     haltStatusBlock.t1   = readMem(addr + 15);
     haltStatusBlock.vma  = readMem(addr + 16);
 
-    //
-    // FIXME: The microcode doesn't seem to implement what the
-    // KS10 documents describe.   Namely the FE or SC
-    // registers.
-
-#warning FIMXME: Stubbed code.
-#if 1
-    haltStatusBlock.fe   = readMem(addr + 17); // Doesn't appear to be implemented
+#if 0
+    haltStatusBlock.fe   = readMem(addr + 17);
+#else
+    haltStatusBlock.fe   = 0;
 #endif
 
     return haltStatusBlock;
