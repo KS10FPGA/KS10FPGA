@@ -16,24 +16,36 @@ LDFLAGS := \
 FILES := \
 	console.o \
 	commands.o \
+	dz11.o \
 	epi.o \
 	fpga.o \
 	ks10.o \
 	main.o\
+	rh11.o \
 	sd.o \
 	startup.o \
 	stdio.o \
+	taskhalt.o \
+	taskutil.o \
 	uart.o 
 
 HEADERS := \
+	align.hpp \
 	commands.hpp \
 	console.hpp \
+	dz11.hpp \
 	epi.hpp \
+	fatal.hpp \
 	fpga.hpp \
 	ks10.hpp\
+	prompt.hpp \
+	rh11.hpp \
 	sd.h \
 	stdio.h \
-	uart.h
+	taskhalt.hpp \
+	taskutil.hpp \
+	uart.h \
+	uba.hpp
 
 DRIVERLIB := \
 	driverlib/driverlib.a
