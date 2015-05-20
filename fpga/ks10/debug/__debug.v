@@ -65,6 +65,10 @@ module DEBUG (
       input  wire [0: 35] dp,           // dp bus
       input  wire [0: 35] dbm,          // dbm bus
       input  wire [0: 35] dbus,         // dbus bus
+      input  wire         cpuRUN,       // CPU Run Status
+      input  wire         cpuCONT,      // CPU Continue Status
+      input  wire         cpuEXEC,      // CPU Execute Status
+      input  wire         cpuHALT,      // CPU Halt Status
       input  wire [0: 35] debugDATA,    // DEBUG Data
       output wire [0:  3] debugADDR     // DEBUG Address
    );
@@ -72,6 +76,26 @@ module DEBUG (
 `ifdef SYNTHESIS
 
 `ifdef CHIPSCOPE_CPU
+
+   //
+   // Microcode Decode
+   //
+
+   wire loadIR  = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADIR);
+
+   //
+   // Capture the PC
+   //
+
+   reg [18:35] PC;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          PC <= 0;
+        else
+          if (loadIR)
+            PC <= debugDATA[18:35];
+     end
 
    //
    // ChipScope Pro Integrated Controller (ICON)
@@ -120,12 +144,19 @@ module DEBUG (
    // ChipScope Pro Integrated Logic Analyzer (ILA)
    //
 
-   wire [120:0] TRIG0 = {
-       rst,                     // dataport[    120]
-       cromADDR,                // dataport[108:119]
-       dp,                      // dataport[ 72:107]
-       dbus,                    // dataport[ 36: 71]
-       debugDATA                // dataport[  0: 35]
+   wire [127:0] TRIG0 = {
+       rst,                     // dataport[    127]
+       cromADDR,                // dataport[115:126]
+       dp,                      // dataport[ 79:114]
+       {18'b0, PC},             // dataport[ 43: 78]
+       debugDATA,               // dataport[  7: 42]
+       loadIR,                  // dataport[      6]
+       1'b0,                    // dataport[      5]
+       cpuRUN,                  // dataport[      4]
+       cpuCONT,                 // dataport[      3]
+       cpuEXEC,                 // dataport[      2]
+       cpuHALT,                 // dataport[      1]
+       1'b0                     // dataport[      0]
    };
 
    chipscope_cpu_ila uILA (
