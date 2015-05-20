@@ -101,7 +101,7 @@ module RHBA (
                  addr[ 7: 1] <= `rhBA_LO(rhDATAI);
             end
           else if (rhINCBA & !rhBAI)
-            addr <= addr + 1'b1;
+            addr <= addr + 2'b10;
      end
 
    //

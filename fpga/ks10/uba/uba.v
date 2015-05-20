@@ -150,6 +150,8 @@ module UBA (
    wire        pageFAIL;
    wire        statINTHI;
    wire        statINTLO;
+   wire        loopACKO;
+   wire        regUBAMR;
    wire [0:35] regUBASR;
    wire        statINI = `statINI(regUBASR);
    wire [0: 2] statPIH = `statPIH(regUBASR);
@@ -175,38 +177,12 @@ module UBA (
    //  The maintenance register is write only.
    //
 
-   wire regUBAMR;
-
    UBAMR MR (
       .rst        (rst),
       .clk        (clk),
       .busDATAI   (busDATAI),
       .maintWRITE (maintWRITE),
       .regUBAMR   (regUBAMR)
-   );
-
-   //
-   // Maintenance Loopback
-   //
-
-   wire loopREQO;
-   wire [0:35] loopADDRO;
-   wire [0:35] loopDATAO;
-   wire [0: 3] pageFLAGS;
-
-   UBALOOP LOOP (
-      .rst        (rst),
-      .clk        (clk),
-      .busADDRI   (busADDRI),
-      .busADDRO   (busADDRO),
-      .busDATAI   (busDATAI),
-      .busACKI    (busACKI),
-      .pageFLAGS  (pageFLAGS),
-      .loopREAD   (loopREAD),
-      .loopWRITE  (loopWRITE),
-      .loopREQO   (loopREQO),
-      .loopADDRO  (loopADDRO),
-      .loopDATAO  (loopDATAO)
    );
 
    //
@@ -282,53 +258,46 @@ module UBA (
              devADDRO <= busADDRI;
           end
      end
-
+   
    //
-   // Device to KS10
+   // UBA Non Processor (DMA) Request 
    //
-
-   localparam [0:1] arbIDLE = 0,
-                    arbDEV1 = 1,
-                    arbDEV2 = 2;
-
-   reg [0:1] arbState;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          arbState <= arbIDLE;
-        else
-          case (arbState)
-            arbIDLE:
-              if (dev1REQI)
-                arbState <= arbDEV1;
-              else if (dev2REQI)
-                arbState <= arbDEV2;
-            arbDEV1:
-              if (!dev1REQI)
-                if (dev2REQI)
-                  arbState <= arbDEV2;
-                else
-                  arbState <= arbIDLE;
-            arbDEV2:
-              if (!dev2REQI)
-                if (dev1REQI)
-                  arbState <= arbDEV1;
-                else
-                  arbState <= arbIDLE;
-          endcase
-     end
-
-   wire        devREQI  = dev1REQI | dev2REQI;
-   wire [0:35] devADDRI = (arbState == arbDEV1) ? dev1ADDRI : dev2ADDRI;
-   wire [0:35] devDATAI = (arbState == arbDEV1) ? dev1DATAI : dev2DATAI;
-
-   //
-   // Loopback Mux
-   //
-
-   assign      busREQO   = regUBAMR ? loopREQO  : devREQI;
-   wire [0:35] pageADDRI = regUBAMR ? loopADDRO : devADDRI;
+   
+   wire [0:35] nprDATAO;
+   wire [0:35] nprADDRO;
+   wire [0: 3] pageFLAGS;
+   
+   UBANPR NPR (
+      .rst        (rst),
+      .clk        (clk),
+      // Control
+      .regUBAMR   (regUBAMR),
+      .pageADDR   (busADDRO),
+      .pageFLAGS  (pageFLAGS),
+      // Bus Interface
+      .busADDRI   (busADDRI),
+      .busADDRO   (nprADDRO),
+      .busDATAI   (busDATAI),
+      .busDATAO   (nprDATAO),
+      .busACKI    (busACKI),
+      .busREQO    (busREQO),
+      // Loopback Interface
+      .loopREAD   (loopREAD),
+      .loopWRITE  (loopWRITE),
+      .loopACKO   (loopACKO),	// FIXME
+      // Device #1 Interface
+      .dev1REQI   (dev1REQI),
+      .dev1ACKI   (dev1ACKI),
+      .dev1ACKO   (dev1ACKO),
+      .dev1ADDRI  (dev1ADDRI),
+      .dev1DATAI  (dev1DATAI),
+      // Device #2 Interface
+      .dev2REQI   (dev2REQI),
+      .dev2ACKI   (dev2ACKI),
+      .dev2ACKO   (dev2ACKO),
+      .dev2ADDRI  (dev2ADDRI),
+      .dev2DATAI  (dev2DATAI)
+   );
 
    //
    // IO Bus Paging
@@ -337,19 +306,20 @@ module UBA (
    wire [0:35] pageDATAO;
 
    UBAPAGE PAGE (
-      .rst          (rst),
-      .clk          (clk),
-      .busREQO      (busREQO),
-      .busADDRI     (busADDRI),
-      .busDATAI     (busDATAI),
-      .busADDRO     (busADDRO),
-      .pageWRITE    (pageWRITE),
-      .pageDATAO    (pageDATAO),
-      .pageADDRI    (pageADDRI),
-      .pageFLAGS    (pageFLAGS),
-      .pageFAIL     (pageFAIL)
+      .rst        (rst),
+      .clk        (clk),
+      .regUBAMR   (regUBAMR),
+      .busREQO    (busREQO),
+      .busADDRI   (busADDRI),
+      .busDATAI   (busDATAI),
+      .busADDRO   (busADDRO),
+      .pageWRITE  (pageWRITE),
+      .pageDATAO  (pageDATAO),
+      .pageADDRI  (nprADDRO),
+      .pageFLAGS  (pageFLAGS),
+      .pageFAIL   (pageFAIL)
    );
-
+   
    //
    // KS10 Bus Data Multiplexer
    //
@@ -369,25 +339,53 @@ module UBA (
         if (wruREAD)
           busDATAO = wruRESP;
         if (busREQO & busACKI)
-          if (regUBAMR)
-            busDATAO = loopDATAO;
-          else
-            busDATAO = devDATAI;
+          busDATAO = nprDATAO;
      end
-
-   //
-   // FIXME
-   //  These assignments are stubbed
-   //
-
-   assign dev1ACKO = 0;
-   assign dev2ACKO = 0;
 
    //
    // Whine about NXD and TMO
    //
 
-`ifndef SYNTHESIS
+`ifdef SYNTHESIS
+`ifdef CHIPSCOPE_UBA
+
+   //
+   // ChipScope Pro Integrated Controller (ICON)
+   //
+
+   wire [35:0] control0;
+
+   chipscope_uba_icon uICON (
+      .CONTROL0   (control0)
+   );
+
+   //
+   // ChipScope Pro Integrated Logic Analyzer (ILA)
+   //
+
+   wire [151:0] TRIG0 = {
+       dev1ADDRI,		// dataport[116:151]
+       dev1DATAI,               // dataport[ 80:115]
+       busADDRO,		// dataport[ 44: 79]
+       busDATAO,                // dataport[  8: 43]
+       pageFAIL,                // dataport[      7]
+       setTMO,			// dataport[      6]
+       setNXD,			// dataport[      5]
+       busACKO,			// dataport[      4]
+       busACKI,			// dataport[      3]
+       busREQO,			// dataport[      2]
+       busREQI,			// dataport[      1]
+       rst                      // dataport[      0]
+   };
+
+   chipscope_uba_ila uILA (
+      .CLK        (clk),
+      .CONTROL    (control0),
+      .TRIG0      (TRIG0)
+   );
+   
+`endif
+`else
 
    reg [0:35] addr;
 
@@ -399,8 +397,10 @@ module UBA (
           begin
              if (busREQI)
                addr <= busADDRI;
-             if (devREQI)
-               addr <= devADDRI;
+             if (dev1REQI)
+               addr <= dev1ADDRI;
+             if (dev2REQI)
+               addr <= dev2ADDRI;
              if (setNXD)
                $display("[%11.3f] UBA%d: Nonexistent device (NXD).  Addr = %012o.",
                         $time/1.0e3, ubaNUM, addr);

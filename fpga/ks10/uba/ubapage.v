@@ -126,6 +126,7 @@
 module UBAPAGE (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
+      input  wire         regUBAMR,             // Maintenance Register
       input  wire         busREQO,              // IO Device Request In
       input  wire [ 0:35] busADDRI,             // KS10 Bus Address In
       input  wire [ 0:35] busDATAI,             // KS10 Bus Data In
@@ -169,9 +170,12 @@ module UBAPAGE (
    // NXM generated when:
    //   - UBA A17 not zero
    //   - Page not valid
+   //   - two address LSB not zero
    //
 
    assign pageFAIL = ((busREQO & pageADDRI[18]) |
+                      (busREQO & pageADDRI[34] & !regUBAMR) |
+                      (busREQO & pageADDRI[35] & !regUBAMR) |
                       (busREQO & !`flagsVLD(pageFLAGS)));
 
 endmodule

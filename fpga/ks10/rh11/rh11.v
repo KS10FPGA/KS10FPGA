@@ -320,7 +320,6 @@ module RH11 (
    // RH Signals
    //
 
-   wire [2:0] rhSCAN;                   // Current RP accessing SD
    wire rhSETNEM;                       // Set non-existent memory
    wire rhSETDLT;                       // Set device late
    wire rhBUFIR;                        // Buffer input ready
@@ -331,9 +330,11 @@ module RH11 (
    // SD Signals
    //
 
+   wire [2:0] sdSCAN;                   // Current RP accessing SD
    wire sdINCWORD;                      // Increment word
    wire sdINCSECT;                      // Increment Sector
    wire sdSETWCE;                       // Set write check error
+   wire sdREADOP;                       // Read or write check operation
 
    //
    // RP Signals
@@ -354,8 +355,9 @@ module RH11 (
    //
    // Command Clear
    //
-   // The logic doesn't fully decode the Read, Write, and Wrchk commands.
-   // This 'feature' is replicated here.
+   // The logic doesn't fully decode the Read, Write, and Wrchk commands and
+   // therefore includes some illegal commands.  This 'feature' is replicated
+   // here.
    //
    // Trace
    //  M7296/CSRA/E6
@@ -495,18 +497,6 @@ module RH11 (
    );
 
    //
-   // RPXX Completion Monitor
-   //
-
-   RHSCAN SCAN (
-      .clk        (clk),
-      .rst        (rst),
-      .sdREQ      (rpSDREQ),
-      .sdACK      (rpSDACK),
-      .scan       (rhSCAN)
-   );
-
-   //
    // RH11 Interrupt Controller
    //
 
@@ -588,20 +578,29 @@ module RH11 (
    SD uSD (
       .clk        (clk),
       .rst        (rst),
+      .clr        (rhCLR | devRESET),
       .sdMISO     (rh11MISO),
       .sdMOSI     (rh11MOSI),
       .sdSCLK     (rh11SCLK),
       .sdCS       (rh11CS),
-      .sdOP       (rpSDOP[rhSCAN]),
-      .sdLSA      (rpSDLSA[rhSCAN]),
-      .sdWC       (rhWC),
-      .sdDATAI    (devDATAI),
-      .sdDATAO    (sdDATAO),
-      .sdREQO     (devREQO),
-      .sdACKI     (devACKI),
+      // Device interface
+      .devDATAI   (devDATAI),
+      .devDATAO   (sdDATAO),
+      .devREQO    (devREQO),
+      .devACKI    (devACKI),
+      // RH11 interfaces
+      .rhWC       (rhWC),
+      // RPXX interface
+      .rpSDOP     (rpSDOP[sdSCAN]),
+      .rpSDLSA    (rpSDLSA[sdSCAN]),
+      .rpSDREQ    (rpSDREQ),
+      .rpSDACK    (rpSDACK),
+      // SD Outputsx
       .sdINCWORD  (sdINCWORD),
       .sdINCSECT  (sdINCSECT),
       .sdSETWCE   (sdSETWCE),
+      .sdREADOP   (sdREADOP),
+      .sdSCAN     (sdSCAN),
       .sdDEBUG    (rh11DEBUG)
    );
 
@@ -640,7 +639,7 @@ module RH11 (
 
    always @*
      begin
-        devDATAO = 36'b0;
+        devDATAO = sdDATAO;
         if (rhcs1WRITE | rhcs1READ)
           devDATAO = {20'b0, rhCS1};
         if (rhwcWRITE | rhwcREAD)
@@ -681,8 +680,6 @@ module RH11 (
           devDATAO = {20'b0, rpEC1};
         if (rpec2WRITE | rpec2READ)
           devDATAO = {20'b0, rpEC2};
-        if (devACKI)
-          devDATAO = sdDATAO;
      end
 
    //
@@ -695,7 +692,7 @@ module RH11 (
    // Create address
    //
 
-   assign devADDRO = (rpSDOP[rhSCAN] == `sdopWR) ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
+   assign devADDRO = (sdREADOP) ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
 
    //
    // Whine about unacked bus cycles
@@ -710,6 +707,10 @@ module RH11 (
              $display("[%11.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o",
                       $time/1.0e3, devADDRO);
              $stop;
+          end
+        if (devACKI)
+          begin
+             $display("[%11.3f] RH11: Wrote 0x%09x to address %012o\n", $time/1.0e3, sdDATAO, devADDRO);
           end
      end
 

@@ -93,7 +93,7 @@ module RHWC (
                    rhWC[ 7:0] <= `rhWC_LO(rhDATAI);
               end
             else if (rhINCWC)
-              rhWC <= rhWC + 1'b1;
+              rhWC <= rhWC + 2'b10;
      end
 
 endmodule

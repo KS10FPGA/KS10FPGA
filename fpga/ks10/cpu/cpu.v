@@ -336,6 +336,10 @@ module CPU (
       .dp               (dp),
       .dbm              (dbm),
       .dbus             (dbus),
+      .cpuRUN           (cpuRUN),
+      .cpuCONT          (cpuCONT),
+      .cpuEXEC          (cpuEXEC),
+      .cpuHALT          (cpuHALT),
       .debugDATA        (debugDATA),
       .debugADDR        (debugADDR)
    );
