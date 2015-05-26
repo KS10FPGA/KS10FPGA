@@ -47,14 +47,14 @@
 `timescale 1ns/1ps
 
 module RPADDR (
-      input  wire         clk,          // Clock
-      input  wire         rst,          // Reset
-      input  wire [ 5: 0] rpTRKNUM,     // Number of tracks
-      input  wire [ 5: 0] rpSECNUM,     // Number of sectors
-      input  wire [ 9: 0] rpDCA,        // Cylinder
-      input  wire [ 5: 0] rpTA,         // Track
-      input  wire [ 5: 0] rpSA,         // Sector
-      output wire [31: 0] rpSDLSA,      // Linear sector address
+      input  wire        clk,           // Clock
+      input  wire        rst,           // Reset
+      input  wire [ 5:0] rpTRKNUM,      // Number of tracks
+      input  wire [ 5:0] rpSECNUM,      // Number of sectors
+      input  wire [ 9:0] rpDCA,         // Cylinder
+      input  wire [ 5:0] rpTA,          // Track
+      input  wire [ 5:0] rpSA,          // Sector
+      output wire [20:0] rpSDLSA,       // Linear sector address
       input  wire        rpADRSTRT,     // Start calculation
       output wire        rpADRBUSY      // Calculation completed
    );
@@ -72,8 +72,8 @@ module RPADDR (
    // SD Sector Address Calculator State Machine
    //
 
-   reg [31:0] sum;
-   reg [31:0] temp;
+   reg [20:0] sum;
+   reg [20:0] temp;
    reg [ 1:0] state;
    reg [ 5:0] loop;
 

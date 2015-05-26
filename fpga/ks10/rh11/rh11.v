@@ -135,6 +135,19 @@ module RH11 (
    localparam [0:17] wrFLAGS = 18'b000_001_000_000_000_000;
 
    //
+   // Debug output
+   //
+
+`ifndef SYNTHESIS
+
+   integer file;
+
+   initial
+     file = $fopen("rhstatus.txt",  "w");
+
+`endif
+
+   //
    // Selector function
    //
 
@@ -331,7 +344,8 @@ module RH11 (
    //
 
    wire [2:0] sdSCAN;                   // Current RP accessing SD
-   wire sdINCWORD;                      // Increment word
+   wire sdINCWC;                        // Increment word count
+   wire sdINCBA;                        // Increment bus address
    wire sdINCSECT;                      // Increment Sector
    wire sdSETWCE;                       // Set write check error
    wire sdREADOP;                       // Read or write check operation
@@ -341,7 +355,7 @@ module RH11 (
    //
 
    wire [ 1:0] rpSDOP [7:0];            // SD operation
-   wire [31:0] rpSDLSA[7:0];            // SD Linear sector address
+   wire [20:0] rpSDLSA[7:0];            // SD Linear sector address
    wire [ 7:0] rpSDREQ;                 // RP requests the SD
    wire [ 7:0] rpSDACK;                 // SD acknowledges the RP
    wire [0:35] sdDATAO;                 // SD DMA data out
@@ -425,7 +439,7 @@ module RH11 (
       .devDATAI   (devDATAI),
       .rhwcWRITE  (rhwcWRITE),
       .rhCLR      (rhCLR),
-      .rhINCWC    (sdINCWORD),
+      .rhINCWC    (sdINCWC),
       .rhWC       (rhWC)
    );
 
@@ -445,7 +459,7 @@ module RH11 (
       .rhCLR      (rhCLR),
       .rhRDY      (rhRDY),
       .rhBAI      (rhBAI),
-      .rhINCBA    (sdINCWORD),
+      .rhINCBA    (sdINCBA),
       .rhBA       (rhBA)
    );
 
@@ -579,6 +593,9 @@ module RH11 (
       .clk        (clk),
       .rst        (rst),
       .clr        (rhCLR | devRESET),
+`ifndef SYNTHESIS
+      .file       (file),
+`endif
       .sdMISO     (rh11MISO),
       .sdMOSI     (rh11MOSI),
       .sdSCLK     (rh11SCLK),
@@ -595,8 +612,9 @@ module RH11 (
       .rpSDLSA    (rpSDLSA[sdSCAN]),
       .rpSDREQ    (rpSDREQ),
       .rpSDACK    (rpSDACK),
-      // SD Outputsx
-      .sdINCWORD  (sdINCWORD),
+      // SD Output
+      .sdINCWC    (sdINCWC),
+      .sdINCBA    (sdINCBA),
       .sdINCSECT  (sdINCSECT),
       .sdSETWCE   (sdSETWCE),
       .sdREADOP   (sdREADOP),
@@ -689,7 +707,7 @@ module RH11 (
    assign devINTR = rhIRQ ? rhINTR : 4'b0;
 
    //
-   // Create address
+   // Create DMA address
    //
 
    assign devADDRO = (sdREADOP) ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
@@ -704,13 +722,13 @@ module RH11 (
      begin
         if (rhSETNEM)
           begin
-             $display("[%11.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o",
-                      $time/1.0e3, devADDRO);
+             $display(file, "[%11.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o", $time/1.0e3, devADDRO);
              $stop;
           end
         if (devACKI)
           begin
-             $display("[%11.3f] RH11: Wrote 0x%09x to address %012o\n", $time/1.0e3, sdDATAO, devADDRO);
+             $fwrite(file, "[%11.3f] RH11: Wrote %012o to address %012o.  rhWC = 0x%04x\n", $time/1.0e3, sdDATAO, devADDRO, rhWC);
+             $fflush(file);
           end
      end
 

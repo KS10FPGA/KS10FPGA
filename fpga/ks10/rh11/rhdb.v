@@ -182,7 +182,7 @@ module RHDB (
         else
           begin
              if (rhdbWRITE & !full)
-               mem[wr_ptr] <= rhDATAI[15:0];    // FIXME
+               mem[wr_ptr] <= {`rhDB_HI(rhDATAI), `rhDB_LO(rhDATAI)};
              rhDB <= mem[rd_ptr];
           end
      end

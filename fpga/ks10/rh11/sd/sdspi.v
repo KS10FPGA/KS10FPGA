@@ -78,20 +78,20 @@ module SDSPI (
    // State Variables
    //
 
-   reg [2:0]    state;
-   reg [2:0]    bitcnt;
-   reg [7:0]    txd;
-   reg [7:0]    rxd;
-   reg [5:0]    clkcnt;
-   reg [5:0]    clkdiv;
+   reg [2:0] state;
+   reg [2:0] bitcnt;
+   reg [7:0] txd;
+   reg [7:0] rxd;
+   reg [5:0] clkcnt;
+   reg [5:0] clkdiv;
 
    always @(posedge clk)
      begin
         if (rst)
           begin
              spiDONE <= 0;
-             txd     <= 8'b1111_1111;
-             rxd     <= 8'b1111_1111;
+             txd     <= 8'hff;
+             rxd     <= 8'hff;
              spiCS   <= 1;
              bitcnt  <= 0;
              clkcnt  <= 0;
@@ -99,135 +99,120 @@ module SDSPI (
              state   <= stateRESET;
           end
         else
-          begin
-             case (state)
+          case (state)
 
-               //
-               // StateRESET
-               // Initialize variables
-               //
+            //
+            // StateRESET
+            // Initialize variables
+            //
 
-               stateRESET:
-                 begin
-                    clkdiv  <= slowDiv;
-                    state   <= stateIDLE;
-                 end
+            stateRESET:
+              begin
+                 clkdiv <= slowDiv;
+                 state  <= stateIDLE;
+              end
 
-               //
-               // StateIDLE
-               // Wait for a command to start the state machine.
-               //
+            //
+            // StateIDLE
+            // Wait for a command to start the state machine.
+            //
 
-               stateIDLE:
-                 begin
-                    spiDONE <= 0;
-                    case (spiOP)
-                      `spiNOP:
-                        ;
-                      `spiCSL:
-                        spiCS <= 0;
-                      `spiCSH:
-                        spiCS <= 1;
-                      `spiFAST:
-                        clkdiv <= fastDiv;
-                      `spiSLOW:
-                        clkdiv <= slowDiv;
-                      `spiTR:
-                        begin
-                           clkcnt <= clkdiv;
-                           bitcnt <= 7;
-                           txd    <= spiTXD;
-                           state  <= stateTXL;
-                        end
-                      default:
-                        state <= stateIDLE;
-                    endcase
-                 end
+            stateIDLE:
+              begin
+                 spiDONE <= 0;
+                 case (spiOP)
+                   `spiNOP:
+                     ;
+                   `spiCSL:
+                     spiCS <= 0;
+                   `spiCSH:
+                     spiCS <= 1;
+                   `spiFAST:
+                     clkdiv <= fastDiv;
+                   `spiSLOW:
+                     clkdiv <= slowDiv;
+                   `spiTR:
+                     begin
+                        clkcnt <= clkdiv;
+                        bitcnt <= 7;
+                        txd    <= spiTXD;
+                        state  <= stateTXL;
+                     end
+                   default:
+                     state <= stateIDLE;
+                 endcase
+              end
 
-               //
-               // Clock Low
-               //
+            //
+            // Clock Low
+            //
 
-               stateTXL:
-                 begin
-                    if (clkcnt == 0)
-                      begin
-                         clkcnt <= clkdiv;
-                         rxd    <= {rxd[6:0], spiMISO};
-                         state  <= stateTXH;
-                      end
-                    else
-                      clkcnt <= clkcnt - 1'b1;
-                 end
+            stateTXL:
+              if (clkcnt == 0)
+                begin
+                   clkcnt <= clkdiv;
+                   rxd    <= {rxd[6:0], spiMISO};
+                   state  <= stateTXH;
+                end
+              else
+                clkcnt <= clkcnt - 1'b1;
 
-               //
-               // Clock High
-               //
+            //
+            // Clock High
+            //
 
-               stateTXH:
-                 begin
-                    if (clkcnt == 0)
-                      begin
-                         if (bitcnt == 0)
-                           begin
-                              clkcnt <= clkdiv;
-                              state  <= stateTXM;
-                           end
-                         else
-                           begin
-                              clkcnt <= clkdiv;
-                              txd    <= {txd[6:0], 1'b1};
-                              bitcnt <= bitcnt - 1'b1;
-                              state  <= stateTXL;
-                           end
-                      end
-                    else
-                      clkcnt <= clkcnt - 1'b1;
-                 end
+            stateTXH:
+              if (clkcnt == 0)
+                if (bitcnt == 0)
+                  begin
+                     clkcnt <= clkdiv;
+                     state  <= stateTXM;
+                  end
+                else
+                  begin
+                     clkcnt <= clkdiv;
+                     txd    <= {txd[6:0], 1'b1};
+                     bitcnt <= bitcnt - 1'b1;
+                     state  <= stateTXL;
+                  end
+              else
+                clkcnt <= clkcnt - 1'b1;
 
-               //
-               // Last bit clock high
-               //
+            //
+            // Last bit clock high
+            //
 
-               stateTXM:
-                 begin
-                    if (clkcnt == 0)
-                      begin
-                         clkcnt <= clkdiv;
-                         state  <= stateTXN;
-                      end
-                    else
-                      begin
-                         clkcnt <= clkcnt - 1'b1;
-                      end
-                 end
+            stateTXM:
+              if (clkcnt == 0)
+                begin
+                   clkcnt <= clkdiv;
+                   state  <= stateTXN;
+                end
+              else
+                clkcnt <= clkcnt - 1'b1;
 
-               //
-               // Last bit clock low
-               //
+            //
+            // Last bit clock low
+            //
 
-               stateTXN:
-                 begin
-                    if (clkcnt == 0)
-                      begin
-                         clkcnt  <= clkdiv;
-                         spiDONE <= 1;
-                         state   <= stateIDLE;
-                      end
-                    else
-                      clkcnt <= clkcnt - 1'b1;
-                 end
+            stateTXN:
+              if (clkcnt == 0)
+                begin
+                   clkcnt  <= clkdiv;
+                   spiDONE <= 1;
+                   state   <= stateIDLE;
+                end
+              else
+                clkcnt <= clkcnt - 1'b1;
 
-               //
-               // Everything else
-               //
+            //
+            // Everything else
+            //
 
-               default:
-                 state <= stateIDLE;
-             endcase
-          end
+            default:
+              state <= stateIDLE;
+          endcase
      end
-
 
    assign spiSCLK = (state != stateTXL);
    assign spiMOSI = txd[7];

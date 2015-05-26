@@ -328,7 +328,7 @@ module DZRBUF (
    //
 
 `ifndef SYNTHESIS
- `ifdef DEBUG_DSDZA
+`ifdef DEBUG_DSDZA
 
    integer file;
 

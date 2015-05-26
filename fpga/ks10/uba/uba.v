@@ -258,15 +258,15 @@ module UBA (
              devADDRO <= busADDRI;
           end
      end
-   
+
    //
-   // UBA Non Processor (DMA) Request 
+   // UBA Non Processor (DMA) Request
    //
-   
+
    wire [0:35] nprDATAO;
    wire [0:35] nprADDRO;
    wire [0: 3] pageFLAGS;
-   
+
    UBANPR NPR (
       .rst        (rst),
       .clk        (clk),
@@ -284,7 +284,7 @@ module UBA (
       // Loopback Interface
       .loopREAD   (loopREAD),
       .loopWRITE  (loopWRITE),
-      .loopACKO   (loopACKO),	// FIXME
+      .loopACKO   (loopACKO),   // FIXME
       // Device #1 Interface
       .dev1REQI   (dev1REQI),
       .dev1ACKI   (dev1ACKI),
@@ -319,7 +319,7 @@ module UBA (
       .pageFLAGS  (pageFLAGS),
       .pageFAIL   (pageFAIL)
    );
-   
+
    //
    // KS10 Bus Data Multiplexer
    //
@@ -364,17 +364,17 @@ module UBA (
    //
 
    wire [151:0] TRIG0 = {
-       dev1ADDRI,		// dataport[116:151]
+       dev1ADDRI,               // dataport[116:151]
        dev1DATAI,               // dataport[ 80:115]
-       busADDRO,		// dataport[ 44: 79]
+       busADDRO,                // dataport[ 44: 79]
        busDATAO,                // dataport[  8: 43]
        pageFAIL,                // dataport[      7]
-       setTMO,			// dataport[      6]
-       setNXD,			// dataport[      5]
-       busACKO,			// dataport[      4]
-       busACKI,			// dataport[      3]
-       busREQO,			// dataport[      2]
-       busREQI,			// dataport[      1]
+       setTMO,                  // dataport[      6]
+       setNXD,                  // dataport[      5]
+       busACKO,                 // dataport[      4]
+       busACKI,                 // dataport[      3]
+       busREQO,                 // dataport[      2]
+       busREQI,                 // dataport[      1]
        rst                      // dataport[      0]
    };
 
@@ -383,7 +383,7 @@ module UBA (
       .CONTROL    (control0),
       .TRIG0      (TRIG0)
    );
-   
+
 `endif
 `else
 

@@ -88,7 +88,7 @@ module RPXX (
       output wire [ 1: 0] rpSDOP,               // SD Operation
       output wire         rpSDREQ,              // SD Request
       input  wire         rpSDACK,              // SD Complete Acknowledge
-      output wire [31: 0] rpSDLSA               // SD Linear Sector Address
+      output wire [20: 0] rpSDLSA               // SD Linear Sector Address
    );
 
    //

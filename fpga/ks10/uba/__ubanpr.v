@@ -372,10 +372,10 @@ module UBANPR (
                //
                //
                //
-               
+
                stateWRDONE:
                  state <= stateIDLE;
-               
+
                //
                // stateRDADDRWAIT:
                //   This state is used on a loopback read NPR cycle.   The
