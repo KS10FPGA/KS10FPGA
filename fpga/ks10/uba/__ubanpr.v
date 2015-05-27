@@ -112,7 +112,8 @@ module UBANPR (
                     stateWRDONE     =  7,
                     stateRDADDRWAIT =  8,
                     stateRDWAIT     =  9,
-                    stateRDREQ      = 10;
+                    stateRDREQ      = 10,
+                    stateRDDONE     = 11;
 
    //
    // NPR request type
@@ -358,7 +359,7 @@ module UBANPR (
                               dev1ACKO <= 1;
                               busDATAO <= dev1DATAI;
                            end
-                         else if (req == reqDEV1)
+                         else if (req == reqDEV2)
                            begin
                               dev2ACKO <= 1;
                               busDATAO <= dev2DATAI;
@@ -370,7 +371,8 @@ module UBANPR (
                  end
 
                //
-               //
+               // stateWRDONE:
+               //  Wait for write to complete.
                //
 
                stateWRDONE:
@@ -402,19 +404,36 @@ module UBANPR (
                //
                // stateRDREQ:
                //   This state is used on a loopback read NPR cycle.  This
-               //   stage waits for the KS10 to acknowledge the read request.
+               //   stage waits for the KS10 to acknowledge the read request
+               //   and the acknowledges the selected device.
                //
 
                stateRDREQ:
                  begin
                     if (busACKI)
                       begin
+                         if (req == reqDEV1)
+                           begin
+                              dev1ACKO <= 1;
+                           end
+                         else if (req == reqDEV2)
+                           begin
+                              dev2ACKO <= 1;
+                           end
                          loopACKO <= 1;
-                         state    <= stateIDLE;
+                         state <= stateRDDONE;
                       end
                     else
                       busREQO <= 1;
                  end
+
+               //
+               // stateRDDONE:
+               //  Wait for read to complete.
+               //
+
+               stateRDDONE:
+                 state <= stateIDLE;
 
              endcase
           end

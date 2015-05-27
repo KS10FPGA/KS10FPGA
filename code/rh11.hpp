@@ -49,11 +49,11 @@ class rh11_t {
         // RH11 Control and Status Register #1 (RHCS1)
         //
 
-        static const ks10_t::addr_t rhcs1_addr = 01776700;
-        static const ks10_t::data_t rhcs1_go   = 0x0001;
-        static const ks10_t::data_t rhcs1_read = 0x0038;
-        static const ks10_t::data_t rhcs1_rdy  = 0x0080;
-
+        static const ks10_t::addr_t rhcs1_addr  = 01776700;
+        static const ks10_t::data_t rhcs1_go    = 0x0001;
+        static const ks10_t::data_t rhcs1_read  = 0x0038;
+        static const ks10_t::data_t rhcs1_write = 0x0030;
+        static const ks10_t::data_t rhcs1_rdy   = 0x0080;
 
         //
         // RH11 Word Count Register (RHWC)
@@ -106,9 +106,11 @@ class rh11_t {
 
     public:
 
+        static void clear(void);
         static void testFIFO(void);
         static void testRPLA(void);
         static void testRead(unsigned int disk);
+        static void testWrite(unsigned int disk);
 
 };
 

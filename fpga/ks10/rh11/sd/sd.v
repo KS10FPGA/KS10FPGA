@@ -233,7 +233,6 @@ module SD (
              sdCMD[3]  <= 0;
              sdCMD[4]  <= 0;
              sdCMD[5]  <= 0;
-             sdREADOP  <= 0;
              spiOP     <= `spiNOP;
              spiTXD    <= 0;
              sectCNT   <= 0;
@@ -264,7 +263,6 @@ module SD (
                sdCMD[3]  <= 0;
                sdCMD[4]  <= 0;
                sdCMD[5]  <= 0;
-               sdREADOP  <= 0;
                spiOP     <= `spiNOP;
                spiTXD    <= 0;
                sectCNT   <= 0;
@@ -981,7 +979,7 @@ module SD (
                                sdWRCNT  <= sdWRCNT + 1'b1;
                                state    <= stateWRITE00;
 `ifndef SYNTHESIS
-                               $fwrite(file, "[%11.3f] RH11: SD Controller received a WRITE Command from RPXX[%d]\n.", $time/1.0e3, sdSCAN);
+                               $fwrite(file, "[%11.3f] RH11: SD Controller received a WRITE Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
                                $fwrite(file, "[%11.3f] RH11: Sector address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
                                $fflush(file);
 `endif
@@ -994,7 +992,7 @@ module SD (
                                sdRDCNT  <= sdRDCNT + 1'b1;
                                state    <= stateWRCHK00;
 `ifndef SYNTHESIS
-                               $fwrite(file, "[%11.3f] RH11: SD Controller received a WRCHK Command from RPXX[%d]\n.", $time/1.0e3, sdSCAN);
+                               $fwrite(file, "[%11.3f] RH11: SD Controller received a WRCHK Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
                                $fwrite(file, "[%11.3f] RH11: Sector address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
                                $fflush(file);
 `endif
@@ -1634,10 +1632,8 @@ module SD (
                            sdINCBA <= 1;
                            if (loopCNT == 63)
                              begin
-                                loopCNT   <= 0;
-                                sdINCSECT <= sectCNT;
-                                sectCNT   <= !sectCNT;
-                                sectADDR  <= sectADDR + 1'b1;
+                                spiOP     <= `spiTR;
+                                spiTXD    <= 8'hff;
                                 state     <= stateWRITE16;
                              end
                            else

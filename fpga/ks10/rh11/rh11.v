@@ -722,12 +722,15 @@ module RH11 (
      begin
         if (rhSETNEM)
           begin
-             $display(file, "[%11.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o", $time/1.0e3, devADDRO);
+             $display("[%11.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o", $time/1.0e3, devADDRO);
              $stop;
           end
         if (devACKI)
           begin
-             $fwrite(file, "[%11.3f] RH11: Wrote %012o to address %012o.  rhWC = 0x%04x\n", $time/1.0e3, sdDATAO, devADDRO, rhWC);
+             if (sdREADOP)
+               $fwrite(file, "[%11.3f] RH11: Wrote %012o to address %012o.  rhWC = 0x%04x\n", $time/1.0e3, sdDATAO, devADDRO, rhWC);
+             else
+               $fwrite(file, "[%11.3f] RH11: Read %012o from address %012o.  rhWC = 0x%04x\n", $time/1.0e3, devDATAI, devADDRO, rhWC);
              $fflush(file);
           end
      end

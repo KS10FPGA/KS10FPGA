@@ -496,7 +496,7 @@ void printHaltStatus(void) {
     // Print the Halt Status Block when not at Microcode Startup
     //
 
-    if (haltStatusWord.status != 00000) {
+    if (haltStatusWord.status != 0) {
 
         //
         // Create a temporary memory location to stash the address of the Halt
@@ -1258,19 +1258,28 @@ static void cmdRD(int argc, char *argv[]) {
 
 static void cmdRH(int argc, char *argv[]) {
     const char *usage =
-        "Usage: RH {FIFO | RPLA | `READ}\n"
+        "Usage: RH {CLR | STAT | FIFO | RPLA | `READ | WRITE}\n"
         "RH11 Tests.\n"
+        " RH CLR - RH11 Controller Clear\n"
+        " RH STAT - Print Debug Register\n"
         " RH FIFO - Test RH11 FIFO\n"
         " RH RPLA - Test RH11 RPLA\n"
-        " RH READ - Test RH11 Disk Read\n";
+        " RH READ - Test RH11 Disk Read\n"
+        " RH WRITE - Test RH11 Disk Write\n";
 
     char *buf = argv[1];
-    if ((argc == 3) && (buf[0] == 'F' && buf[1] == 'I' && buf[2] == 'F' && buf[3] == 'O')) {
+    if ((argc == 2) && (buf[0] == 'F' && buf[1] == 'I' && buf[2] == 'F' && buf[3] == 'O')) {
         rh11_t::testFIFO();
-    } else if ((argc == 3) && (buf[0] == 'R' && buf[1] == 'P' && buf[2] == 'L' && buf[3] == 'A')) {
+    } else if ((argc == 2) && (buf[0] == 'R' && buf[1] == 'P' && buf[2] == 'L' && buf[3] == 'A')) {
         rh11_t::testRPLA();
-    } else if ((argc == 3) && (buf[0] == 'R' && buf[1] == 'E' && buf[2] == 'A' && buf[3] == 'D')) {
+    } else if ((argc == 2) && (buf[0] == 'R' && buf[1] == 'E' && buf[2] == 'A' && buf[3] == 'D')) {
         rh11_t::testRead(0);
+    } else if ((argc == 2) && (buf[0] == 'W' && buf[1] == 'R' && buf[2] == 'I' && buf[3] == 'T')) {
+        rh11_t::testWrite(0);
+    } else if ((argc == 2) && (buf[0] == 'C' && buf[1] == 'L' && buf[2] == 'R')) {
+        rh11_t::clear();
+    } else if ((argc == 2) && (buf[0] == 'S' && buf[1] == 'T' && buf[2] == 'A' && buf[3] == 'T')) {
+        printRH11Debug();
     } else {
         printf(usage);
     }

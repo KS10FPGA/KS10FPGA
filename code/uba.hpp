@@ -62,7 +62,7 @@ class uba_t {
         // UBA Paging RAM
         //
 
-        static const ks10_t::addr_t pag_addr = 0176300;
+        static const ks10_t::addr_t pag_addr = 01763000;
         static const ks10_t::data_t pag_rpw  = 0400000;
         static const ks10_t::data_t pag_e16  = 0200000;
         static const ks10_t::data_t pag_ftm  = 0100000;
