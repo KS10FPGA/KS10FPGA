@@ -279,6 +279,7 @@ module SD (
                sdINCBA   <= 0;
                sdINCWC   <= 0;
                sdINCSECT <= 0;
+               sdSETWCE  <= 0;
                spiOP     <= `spiNOP;
 
                case (state)
@@ -986,7 +987,7 @@ module SD (
                             end
                           `sdopWRCHK:
                             begin
-                               sdREADOP <= 1;
+                               sdREADOP <= 0;
                                sectCNT  <= 0;
                                sectADDR <= {8'b0, sdSCAN, rpSDLSA};
                                sdRDCNT  <= sdRDCNT + 1'b1;
@@ -1522,9 +1523,11 @@ module SD (
 
                  stateWRITE07:
                    begin
-                      spiOP  <= `spiTR;
-                      spiTXD <= tempDATA[28:35];
-                      state  <= stateWRITE08;
+                      sdINCBA <= 1;
+                      sdINCWC <= (rhWC != 0);
+                      spiOP   <= `spiTR;
+                      spiTXD  <= tempDATA[28:35];
+                      state   <= stateWRITE08;
                    end
 
                  //
@@ -1628,13 +1631,11 @@ module SD (
                    begin
                       if (spiDONE)
                         begin
-                           sdINCWC <= (rhWC != 0);
-                           sdINCBA <= 1;
                            if (loopCNT == 63)
                              begin
-                                spiOP     <= `spiTR;
-                                spiTXD    <= 8'hff;
-                                state     <= stateWRITE16;
+                                spiOP   <= `spiTR;
+                                spiTXD  <= 8'hff;
+                                state   <= stateWRITE16;
                              end
                            else
                              begin
@@ -1853,7 +1854,7 @@ module SD (
                    if (spiDONE)
                      begin
                         spiOP <= `spiCSH;
-                        if (rhWC == 0)
+                        if (sectCNT & (rhWC == 0))
                           begin
                              loopCNT <= 0;
                              sectCNT <= 0;
@@ -2156,32 +2157,23 @@ module SD (
 
                  //
                  // stateWRCHK13:
-                 //  A PDP10 sector is exactly two SD sectors (1024 bytes).
-                 //  This is because a PDP10 sector is 128 words and SIMH uses
-                 //  8 bytes (64-bits) per word.
+                 //  Determine if we are done reading the SD Sector.
                  //
 
                  stateWRCHK13:
                    begin
-
-                      //
-                      // Done with sector.  If it is the second sector, set
-                      // sdINCSECT to increment sector address in the RPXX.
-                      //
-
+                      sdINCBA <= 1;
+                      sdINCWC <= (rhWC != 0);
                       if (loopCNT == 63)
                         begin
                            spiOP  <= `spiTR;
                            spiTXD <= 8'hff;
                            state  <= stateWRCHK14;
                         end
-
-                      //
-                      // We're not done reading the SD Sector.  Keep reading.
-                      //
-
                       else
                         begin
+                           spiOP   <= `spiTR;
+                           spiTXD  <= 8'hff;
                            loopCNT <= loopCNT + 1'b1;
                            state   <= stateWRCHK04;
                         end
@@ -2209,8 +2201,8 @@ module SD (
                  stateWRCHK15:
                    if (spiDONE)
                      begin
-                        spiOP   <= `spiCSH;
-                        if (rhWC == 0)
+                        spiOP <= `spiCSH;
+                        if (sectCNT & (rhWC == 0))
                           begin
                              loopCNT <= 0;
                              sectCNT <= 0;
