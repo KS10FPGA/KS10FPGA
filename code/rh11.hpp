@@ -36,6 +36,8 @@
 #ifndef __RH11_HPP
 #define __RH11_HPP
 
+#include <stdio.h>
+#include "uba.hpp"
 #include "ks10.hpp"
 
 //!
@@ -43,74 +45,272 @@
 //!
 
 class rh11_t {
+
     private:
 
         //
-        // RH11 Control and Status Register #1 (RHCS1)
+        // Register Addresses
         //
 
-        static const ks10_t::addr_t rhcs1_addr  = 01776700;
-        static const ks10_t::data_t rhcs1_go    = 0x0001;
-        static const ks10_t::data_t rhcs1_read  = 0x0038;
-        static const ks10_t::data_t rhcs1_write = 0x0030;
-        static const ks10_t::data_t rhcs1_rdy   = 0x0080;
+        const ks10_t::addr_t cs1_addr;
+        const ks10_t::addr_t wc_addr;
+        const ks10_t::addr_t ba_addr;
+        const ks10_t::addr_t da_addr;
+        const ks10_t::addr_t cs2_addr;
+        const ks10_t::addr_t la_addr;
+        const ks10_t::addr_t db_addr;
+        const ks10_t::addr_t mr_addr;
+        const ks10_t::addr_t dc_addr;
 
         //
-        // RH11 Word Count Register (RHWC)
+        // Register offsets
         //
 
-        static const ks10_t::addr_t rhwc_addr  = 01776702;
+        static const ks10_t::addr_t cs1_offset = 00;
+        static const ks10_t::addr_t wc_offset  = 02;
+        static const ks10_t::addr_t ba_offset  = 04;
+        static const ks10_t::addr_t da_offset  = 06;
+        static const ks10_t::addr_t cs2_offset = 010;
+        static const ks10_t::addr_t la_offset  = 020;
+        static const ks10_t::addr_t db_offset  = 022;
+        static const ks10_t::addr_t mr_offset  = 024;
+        static const ks10_t::addr_t dc_offset  = 034;
 
         //
-        // RH11 Bus Address Register (RHBA)
+        // Unit
         //
 
-        static const ks10_t::addr_t rhba_addr  = 01776704;
+        const unsigned int unit;
 
         //
-        // RPxx Disk Address Register (RPDA)
+        // UBA
         //
 
-        static const ks10_t::addr_t rpda_addr  = 01776706;
+        uba_t &uba;
+
+        //
+        // Private functions
+        //
+
+        bool wait(bool verbose = false);
+        bool isHomBlock(ks10_t::addr_t addr);
+        bool readBlock(ks10_t::addr_t vaddr, ks10_t::data_t block);
+        bool bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr, ks10_t::data_t block, const char *name); 
+
+    public:
+
+        static const ks10_t::addr_t rh11_offset = 0763000;
+
+        //
+        // RH11 Control and Status Register #1 (CS1)
+        //
+
+        static const ks10_t::data_t cs1_sc     = 0100000;
+        static const ks10_t::data_t cs1_rdy    = 0000200;
+        static const ks10_t::data_t cs1_cmdrd  = 0000070;
+        static const ks10_t::data_t cs1_cmdwr  = 0000060;
+        static const ks10_t::data_t cs1_cmdwch = 0000050;
+        static const ks10_t::data_t cs1_cmdpre = 0000020;
+        static const ks10_t::data_t cs1_go     = 0000001;
 
         //
         // RH11 Control and Status Register #2 (RHCS2) definitions
         //
 
-        static const ks10_t::addr_t rhcs2_addr = 01776710;
-        static const ks10_t::data_t rhcs2_or   = 0x0080;
-        static const ks10_t::data_t rhcs2_ir   = 0x0040;
-        static const ks10_t::data_t rhcs2_clr  = 0x0020;
-
-        //
-        // RPxx Look Ahead Register (RPLA)
-        //
-
-        static const ks10_t::addr_t rpla_addr  = 01776720;
-
-        //
-        // RH11 Data Buffer Register (RHDB)
-        //
-
-        static const ks10_t::addr_t rhdb_addr  = 01776722;
+        static const ks10_t::data_t cs2_wce    = 0040000;
+        static const ks10_t::data_t cs2_or     = 0000200;
+        static const ks10_t::data_t cs2_ir     = 0000100;
+        static const ks10_t::data_t cs2_clr    = 0000040;
 
         //
         // RPxx Maintenance Register (RPMR) Definitions
         //
 
-        static const ks10_t::addr_t rpmr_addr  = 01776724;
-        static const ks10_t::data_t mr_dmd     = 0x0001;
-        static const ks10_t::data_t mr_dclk    = 0x0002;
-        static const ks10_t::data_t mr_dind    = 0x0004;
-        static const ks10_t::data_t mr_dsck    = 0x0008;
+        static const ks10_t::data_t mr_dsck    = 0000010;
+        static const ks10_t::data_t mr_dind    = 0000004;
+        static const ks10_t::data_t mr_dclk    = 0000002;
+        static const ks10_t::data_t mr_dmd     = 0000001;
 
-    public:
+        //
+        // RH11 base Addresses
+        //
 
-        static void clear(void);
-        static void testFIFO(void);
-        static void testRPLA(void);
-        static void testRead(unsigned int disk);
-        static void testWrite(unsigned int disk);
+        static const ks10_t::addr_t num1 = 01776700;
+        static const ks10_t::addr_t num3 = 03772440;
+    
+        //
+        // Public functions
+        //
+
+        void clear(void);
+        void testFIFO(void);
+        void testRPLA(void);
+        void testRead(void);
+        void testWrite(void);
+        void testWrchk(void);
+        void boot(void);
+
+        //
+        // Constructor
+        //
+
+    rh11_t (ks10_t::addr_t base_addr, unsigned int unit, uba_t &uba) :
+            cs1_addr((base_addr & 07777700) + cs1_offset),
+            wc_addr ((base_addr & 07777700) + wc_offset ),
+            ba_addr ((base_addr & 07777700) + ba_offset ),
+            da_addr ((base_addr & 07777700) + da_offset ),
+            cs2_addr((base_addr & 07777700) + cs2_offset),
+            la_addr ((base_addr & 07777700) + la_offset ),
+            db_addr ((base_addr & 07777700) + db_offset ),
+            mr_addr ((base_addr & 07777700) + mr_offset ),
+            dc_addr ((base_addr & 07777700) + dc_offset ),
+            unit(unit),
+            uba(uba) {
+        }
+
+        //
+        // Write to CS1
+        //
+
+        void cs1_write(ks10_t::data_t data) {
+            ks10_t::writeIO(cs1_addr, data);
+        }
+       
+        //
+        // Read from CS1
+        //
+
+        ks10_t::data_t cs1_read(void) {
+            return ks10_t::readIO(cs1_addr);
+        }
+
+        //
+        // Write to WC
+        //
+
+        void wc_write(ks10_t::data_t data) {
+            ks10_t::writeIO(wc_addr, data);
+        }
+       
+        //
+        // Read from WC
+        //
+
+        ks10_t::data_t wc_read(void) {
+            return ks10_t::readIO(wc_addr);
+        }
+
+        //
+        // Write to BA
+        //
+
+        void ba_write(ks10_t::data_t data) {
+            ks10_t::writeIO(ba_addr, data);
+        }
+       
+        //
+        // Read from BA
+        //
+
+        ks10_t::data_t ba_read(void) {
+            return ks10_t::readIO(ba_addr);
+        }
+
+        //
+        // Write to DA
+        //
+
+        void da_write(ks10_t::data_t data) {
+            ks10_t::writeIO(da_addr, data);
+        }
+       
+        //
+        // Read from DA
+        //
+
+        ks10_t::data_t da_read(void) {
+            return ks10_t::readIO(da_addr);
+        }
+
+        //
+        // Write to CS2
+        //
+
+        void cs2_write(ks10_t::data_t data) {
+            ks10_t::writeIO(cs2_addr, data);
+        }
+       
+        //
+        // Read from CS2
+        //
+
+        ks10_t::data_t cs2_read(void) {
+            return ks10_t::readIO(cs2_addr);
+        }
+
+        //
+        // Write to LA
+        //
+
+        void la_write(ks10_t::data_t data) {
+            ks10_t::writeIO(la_addr, data);
+        }
+       
+        //
+        // Read from LA
+        //
+
+        ks10_t::data_t la_read(void) {
+            return ks10_t::readIO(la_addr);
+        }
+
+        //
+        // Write to DB
+        //
+
+        void db_write(ks10_t::data_t data) {
+            ks10_t::writeIO(db_addr, data);
+        }
+       
+        //
+        // Read from DB
+        //
+
+        ks10_t::data_t db_read(void) {
+            return ks10_t::readIO(db_addr);
+        }
+
+        //
+        // Write to MR
+        //
+
+        void mr_write(ks10_t::data_t data) {
+            ks10_t::writeIO(mr_addr, data);
+        }
+       
+        //
+        // Read from MR
+        //
+
+        ks10_t::data_t mr_read(void) {
+            return ks10_t::readIO(mr_addr);
+        }
+
+        //
+        // Write to DC
+        //
+
+        void dc_write(ks10_t::data_t data) {
+            ks10_t::writeIO(dc_addr, data);
+        }
+       
+        //
+        // Read from DC
+        //
+
+        ks10_t::data_t dc_read(void) {
+            return ks10_t::readIO(dc_addr);
+        }
 
 };
 

@@ -46,8 +46,6 @@
 //!
 //! Prints a message when the KS10 changes halt state.
 //!
-//! \param [in] param (not used)
-//!
 //
 
 static void taskHalt(void * /*param*/) {

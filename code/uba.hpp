@@ -44,30 +44,99 @@
 
 class uba_t {
 
+    private:
+
+        //
+        // Register Addresses
+        //
+
+        const ks10_t::addr_t csr_addr;
+        const ks10_t::addr_t pag_addr;
+        static const ks10_t::addr_t uba_offset = 0763000;
+
     public:
 
+        //
+        // UBA Base Addresses
+        //
+                
+        static const ks10_t::addr_t pag_offset = 0000000;
+        static const ks10_t::addr_t uba0       = (0 << 18) + uba_offset;
+        static const ks10_t::addr_t uba1       = (1 << 18) + uba_offset;
+        static const ks10_t::addr_t uba2       = (2 << 18) + uba_offset;
+        static const ks10_t::addr_t uba3       = (3 << 18) + uba_offset;
+        static const ks10_t::addr_t uba4       = (4 << 18) + uba_offset;
+                                
         //
         // UBA Control Status Register (UBACSR)
         //
 
-        static const ks10_t::addr_t csr_addr = 01763100;
-        static const ks10_t::data_t csr_tmo  = 0400000;
-        static const ks10_t::data_t csr_nxd  = 0040000;
-        static const ks10_t::data_t csr_hi   = 0004000;
-        static const ks10_t::data_t csr_lo   = 0002000;
-        static const ks10_t::data_t csr_pwr  = 0002000;
-        static const ks10_t::data_t csr_ini  = 0000100;
+        static const ks10_t::addr_t csr_offset = 0000100;          
+        static const ks10_t::data_t csr_tmo    = 0400000;
+        static const ks10_t::data_t csr_nxd    = 0040000;
+        static const ks10_t::data_t csr_hi     = 0004000;
+        static const ks10_t::data_t csr_lo     = 0002000;
+        static const ks10_t::data_t csr_pwr    = 0002000;
+        static const ks10_t::data_t csr_ini    = 0000100;
 
         //
         // UBA Paging RAM
         //
 
-        static const ks10_t::addr_t pag_addr = 01763000;
-        static const ks10_t::data_t pag_rpw  = 0400000;
-        static const ks10_t::data_t pag_e16  = 0200000;
-        static const ks10_t::data_t pag_ftm  = 0100000;
-        static const ks10_t::data_t pag_vld  = 0040000;
-        static const ks10_t::data_t page70   = 0000070;
+        static const ks10_t::data_t pag_rpw    = 0400000;
+        static const ks10_t::data_t pag_e16    = 0200000;
+        static const ks10_t::data_t pag_ftm    = 0100000;
+        static const ks10_t::data_t pag_vld    = 0040000;
+
+        //
+        // Constructor
+        //
+
+        uba_t (ks10_t::addr_t base_addr) :
+            csr_addr((base_addr & 07000000) + uba_offset + csr_offset),
+            pag_addr((base_addr & 07000000) + uba_offset + pag_offset) {
+            ;
+        }
+
+        //
+        // Write to CSR
+        //
+
+        void csr_write(ks10_t::data_t data) {
+            ks10_t::writeIO(csr_addr, data);
+        }
+
+        //
+        // Read from CSR
+        //
+
+        ks10_t::data_t csr_read(void) {
+            return ks10_t::readIO(csr_addr);
+        }
+
+        //
+        // Write to Paging Memory
+        //
+
+        void pag_write(ks10_t::addr_t offset, ks10_t::data_t data) {
+            ks10_t::writeIO(pag_addr + offset, data);
+        }
+
+        //
+        // Read from Paging Memory
+        //
+
+        ks10_t::data_t pag_read(ks10_t::addr_t offset) {
+            return ks10_t::readIO(pag_addr + offset);
+        }
+
+        //
+        // Function to convert address to page
+        //
+
+        static inline ks10_t::data_t addr2page(ks10_t::addr_t addr) {
+            return (addr >> 9) & 03777;
+        }
 };
 
 #endif

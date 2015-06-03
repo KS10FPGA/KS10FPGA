@@ -93,6 +93,22 @@ void createSerialQueue(void) {
 }
 
 //
+//! Initialize console communcations area
+//
+
+void initConsoleCommunications(void) {
+    ks10_t::writeMem(ks10_t::switch_addr, 000000000000);        // Initialize switch register
+    ks10_t::writeMem(ks10_t::keepa_addr,  000000000000);        // Initialize keep-alive
+    ks10_t::writeMem(ks10_t::ctyin_addr,  000000000000);        // Initialize CTY input word
+    ks10_t::writeMem(ks10_t::ctyout_addr, 000000000000);        // Initialize CTY output word
+    ks10_t::writeMem(ks10_t::klnin_addr,  000000000000);        // Initialize KLINIK input word
+    ks10_t::writeMem(ks10_t::klnout_addr, 000000000000);        // Initialize KLINIK output word
+    ks10_t::writeMem(ks10_t::rhbase_addr, 000001776700);        // Initialize RH11 base address
+    ks10_t::writeMem(ks10_t::rhunit_addr, 000000000000);        // Initialize UNIT number
+    ks10_t::writeMem(ks10_t::mtparm_addr, 000000000000);        // Initialize magtape params.
+}
+
+//
 //! Read characters from the input and create a command line
 //!
 //! \param buf
@@ -282,7 +298,13 @@ void taskConsole(void * /*param*/) {
     //
 
     enableUARTIntr();
+    
+    //
+    // Initialize the Console Communications memory area
+    //
 
+    initConsoleCommunications();
+    
     //
     // Process commands
     //

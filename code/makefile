@@ -71,19 +71,19 @@ $(TARGET).elf : $(TARGET).ld $(DRIVERLIB) $(USTDLIB) $(FATFSLIB) $(LWIPLIB) $(TE
 $(TARGET).o : $(TARGET).cpp $(HEADERS)
 
 $(DRIVERLIB) : FORCE
-	make -C driverlib
+	${MAKE} -C driverlib
 
 $(FATFSLIB) : FORCE
-	make -C fatfslib
+	${MAKE} -C fatfslib
 
 $(LWIPLIB) : FORCE
-	make -C lwiplib
+	${MAKE} -C lwiplib
 
 $(TELNETLIB) : FORCE
-	make -C telnetlib
+	${MAKE} -C telnetlib
 
 $(USTDLIB) : FORCE
-	make -C ustdlib
+	${MAKE} -C ustdlib
 
 FORCE:
 
@@ -108,33 +108,36 @@ clean:
 	rm -f *.o
 	rm -f *.d
 	rm -rf ../doc/Doxygen/*
-	make -C driverlib clean
-	make -C fatfslib clean
-	make -C lwiplib clean
-	make -C telnetlib clean
-	make -C ustdlib clean
+	${MAKE} -C driverlib clean
+	${MAKE} -C fatfslib clean
+	${MAKE} -C lwiplib clean
+	${MAKE} -C telnetlib clean
+	${MAKE} -C ustdlib clean
 
 rcsclean: clean
 	rcsclean *
-	make -C driverlib rcsclean
-	make -C fatfslib rcsclean
-	make -C lwiplib rcsclean
-	make -C telnetlib rcsclean
-	make -C ustdlib rcsclean
+	${MAKE} -C driverlib rcsclean
+	${MAKE} -C fatfslib rcsclean
+	${MAKE} -C lwiplib rcsclean
+	${MAKE} -C telnetlib rcsclean
+	${MAKE} -C ustdlib rcsclean
 
 rcsfetch: $(HEADERS) $(FILES:.o=.cpp) $(OPENOCD_CFG) $(TARGET).ld makefile makedefs
-	make -C driverlib rcsfetch
-	make -C fatfslib rcsfetch
-	make -C lwiplib rcsfetch
-	make -C telnetlib rcsfetch
-	make -C ustdlib rcsfetch
+	${MAKE} -C driverlib rcsfetch
+	${MAKE} -C fatfslib rcsfetch
+	${MAKE} -C lwiplib rcsfetch
+	${MAKE} -C telnetlib rcsfetch
+	${MAKE} -C ustdlib rcsfetch
 
 archive_all:
 	tar -czvf ks10_code_all_`date '+%y%m%d'`.tgz *
 
 archive_dist:
-	make rcsfetch
+	${MAKE} rcsfetch
 	tar --exclude-vcs -czvf ks10_code_dist_`date '+%y%m%d'`.tgz *
+
+doxygen : Doxyfile
+	/cygdrive/c/Program\ Files/doxygen/bin/doxygen.exe
 
 ifneq (${MAKECMDGOALS}, clean)
 -include ${wildcard *.d} __dummy__

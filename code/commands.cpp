@@ -38,6 +38,7 @@
 
 #include "sd.h"
 #include "stdio.h"
+#include "uba.hpp"
 #include "dz11.hpp"
 #include "ks10.hpp"
 #include "rh11.hpp"
@@ -213,14 +214,12 @@ ks10_t::data_t getdata(FIL *fp) {
 //
 //! Load code into the KS10
 //!
-//! This function reads the .SAV file and writes the contents to to the KS10.
+//! This function reads a .SAV file and writes the contents of that file to
+//! the KS10 memory.  The .SAV file also contains the starting address of the
+//! executable.  This address is loaded into the Console Instruction Register.
 //!
 //! \param [in] filename
 //!     filename of the .SAV file
-//!
-//! \note
-//!     This function sets the starting address in the Console Instruction
-//!     Register with the starting address contained in the .SAV file.
 //
 
 static bool loadCode(const char * filename) {
@@ -770,12 +769,66 @@ static void cmdDN(int argc, char *argv[]) {
 //!
 //! Disk Select
 //!
-//! The <b>DS</b> (Disk Select) select the Unit, Unibus Adapter to load when
-//!  booting.
+//! The <b>DS</b> (Disk Select) select the Unibus Adapter, RH11 Base address,
+//!  and Unit for booting.
 //
 
-static void cmdDS(int, char *[]) {
-    printf("DS Command is not implemented, yet.\n");
+static void cmdDS(int argc, char *argv[]) {
+   const char *usage =
+       "Usage: DS {UBA RHBASE RHUNIT}\n"
+       "       DS UBA RHBASE RHUNIT - Set boot parameters\n"
+       "       DS - Display boot parameters\n"
+       "       Default is DS 1 776700 0\n"
+       "       Valid UBA is 1-4\n"
+       "       Valid RHBASE is 776700\n"
+       "       Valid RHUNIT is 0-7\n";
+
+   if (argc == 4) {
+       bool success = true;
+       unsigned int uba    = parseOctal(argv[1]);
+       unsigned int rhbase = parseOctal(argv[2]);
+       unsigned int rhunit = parseOctal(argv[3]);
+       if (uba > 4) {
+           success = false;
+           printf("Invalid UBA Parameter\n");
+       }
+       if ((rhbase != 0776700) && (rhbase != 0)) {
+           success = false;
+           printf("Invalid RHBASE Parameter\n");
+       }
+       if (rhunit > 7) {
+           success = false;
+           printf("Invalid RHUNIT Parameter\n%s");
+       }
+       if (success) {
+           uba = uba << 18;
+           ks10_t::data_t temp = ks10_t::readMem(ks10_t::rhbase_addr);
+           if (uba == 0) {
+               uba = temp & 03000000;
+           }
+           if (rhbase == 0) {
+               rhbase = temp & 0777777;
+           }
+           ks10_t::writeMem(ks10_t::rhbase_addr, uba | rhbase);
+           ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
+       } else {
+           printf(usage);
+       }
+   } else if (argc == 1) {
+       ks10_t::data_t rhbase = ks10_t::readMem(ks10_t::rhbase_addr);
+       ks10_t::data_t rhunit = ks10_t::readMem(ks10_t::rhunit_addr);
+       printf("UBA = %o\n"
+              "RHBASE = %06o\n"
+              "RHUNIT = %o\n"
+	      "\n"
+              "%s",
+              static_cast<unsigned int>((rhbase >> 18) & 0000007),
+              static_cast<unsigned int>((rhbase >>  0) & 0777777),
+              static_cast<unsigned int>((rhunit >>  0) & 0000007),
+              usage);
+   } else {
+       printf(usage);
+   }
 }
 
 #if 1
@@ -860,8 +913,6 @@ static void cmdEI(int argc, char *[]) {
 //! \param [in] argc
 //!    Number of arguments.
 //!
-//! \param [in] argv
-//!    Array of pointers to the arguments.
 //
 
 static void cmdEM(int argc, char *[]) {
@@ -892,8 +943,6 @@ static void cmdEM(int argc, char *[]) {
 //! \param [in] argc
 //!    Number of arguments.
 //!
-//! \param [in] argv
-//!    Array of pointers to the arguments.
 //
 
 static void cmdEN(int argc, char *[]) {
@@ -925,7 +974,7 @@ static void cmdEN(int argc, char *[]) {
 //
 //! Execute the next instruction
 //!
-//! The <b>EX/b> (Execute) command causes the KS10 to execute the
+//! The <b>EX</b> (Execute) command causes the KS10 to execute the
 //! instruction in the Console Instruction Register, then return to
 //! the halt state.
 //!
@@ -933,7 +982,10 @@ static void cmdEN(int argc, char *[]) {
 //!
 //! \param [in] argc
 //!    Number of arguments.
-///
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//
 
 static void cmdEX(int argc, char *argv[]) {
     const char *usage =
@@ -958,20 +1010,10 @@ static void cmdGO(int argc, char *argv[]) {
         "Set the RUN, EXEC, and CONT bits\n";
 
     if (argc == 3) {
-        ks10_t::writeMem(000030, 0000000000000);        // Initialize switch register
-        ks10_t::writeMem(000031, 0000000000000);        // Initialize keep-alive
-        ks10_t::writeMem(000032, 0000000000000);        // Initialize CTY input word
-        ks10_t::writeMem(000033, 0000000000000);        // Initialize CTY output word
-        ks10_t::writeMem(000034, 0000000000000);        // Initialize KTY input word
-        ks10_t::writeMem(000035, 0000000000000);        // Initialize KTY output word
-        ks10_t::writeMem(000036, 0000000000000);        // Initialize RH11 base address
-        ks10_t::writeMem(000037, 0000000000000);        // Initialize UNIT number
-        ks10_t::writeMem(000040, 0000000000000);        // Initialize magtape params.
 
         ks10_t::trapEnable(true);
         ks10_t::timerEnable(false);
 
-        printf("COM block initialized\n");
         loadCode("diag/subsm.sav");
         printf("Loaded diag/subsm.sav\n");
         loadCode("diag/smddt.sav");
@@ -1060,8 +1102,6 @@ static void cmdGO(int argc, char *argv[]) {
 //! \param [in] argc
 //!    Number of arguments.
 //!
-//! \param [in] argv
-//!    Array of pointers to the arguments.
 //
 
 static void cmdHA(int argc, char *[]) {
@@ -1131,11 +1171,6 @@ static void cmdLA(int argc, char *argv[]) {
 //!
 //! The <b>LB</b> (Load Diagnostic) command loads the diagnostic Monitor.
 //!
-//! \param [in] argc
-//!    Number of arguments.
-//!
-//! \param [in] argv
-//!    Array of pointers to the arguments.
 //
 
 static void cmdLB(int, char *[]) {
@@ -1258,28 +1293,41 @@ static void cmdRD(int argc, char *argv[]) {
 
 static void cmdRH(int argc, char *argv[]) {
     const char *usage =
-        "Usage: RH {CLR | STAT | FIFO | RPLA | `READ | WRITE}\n"
+        "Usage: RH {CLR | BOOT | STAT | FIFO | RPLA | READ | WRITE | WRCHK}\n"
         "RH11 Tests.\n"
         " RH CLR - RH11 Controller Clear\n"
+        " RH BOOT - Load Monitor Boot into memory\n"
         " RH STAT - Print Debug Register\n"
         " RH FIFO - Test RH11 FIFO\n"
         " RH RPLA - Test RH11 RPLA\n"
         " RH READ - Test RH11 Disk Read\n"
-        " RH WRITE - Test RH11 Disk Write\n";
+        " RH WRITE - Test RH11 Disk Write\n"
+        " RH WRCHK - Test RH11 Disk Write Check\n";
 
     char *buf = argv[1];
+
+    ks10_t::data_t rhbase = ks10_t::readMem(ks10_t::rhbase_addr);
+    ks10_t::data_t rhunit = ks10_t::readMem(ks10_t::rhunit_addr);
+
+    uba_t uba(rhbase);
+    rh11_t rh11(rhbase, rhunit, uba);
+
     if ((argc == 2) && (buf[0] == 'F' && buf[1] == 'I' && buf[2] == 'F' && buf[3] == 'O')) {
-        rh11_t::testFIFO();
+        rh11.testFIFO();
     } else if ((argc == 2) && (buf[0] == 'R' && buf[1] == 'P' && buf[2] == 'L' && buf[3] == 'A')) {
-        rh11_t::testRPLA();
+        rh11.testRPLA();
     } else if ((argc == 2) && (buf[0] == 'R' && buf[1] == 'E' && buf[2] == 'A' && buf[3] == 'D')) {
-        rh11_t::testRead(0);
+        rh11.testRead();
     } else if ((argc == 2) && (buf[0] == 'W' && buf[1] == 'R' && buf[2] == 'I' && buf[3] == 'T')) {
-        rh11_t::testWrite(0);
+        rh11.testWrite();
+    } else if ((argc == 2) && (buf[0] == 'W' && buf[1] == 'R' && buf[2] == 'C' && buf[3] == 'H')) {
+        rh11.testWrchk();
     } else if ((argc == 2) && (buf[0] == 'C' && buf[1] == 'L' && buf[2] == 'R')) {
-        rh11_t::clear();
+        rh11.clear();
     } else if ((argc == 2) && (buf[0] == 'S' && buf[1] == 'T' && buf[2] == 'A' && buf[3] == 'T')) {
         printRH11Debug();
+    } else if ((argc == 2) && (buf[0] == 'B' && buf[1] == 'O' && buf[2] == 'O' && buf[3] == 'T')) {
+        rh11.boot();
     } else {
         printf(usage);
     }
@@ -1357,8 +1405,6 @@ static void cmdSD(int argc, char *argv[]) {
 //! \param [in] argc
 //!    Number of arguments.
 //!
-//! \param [in] argv
-//!    Array of pointers to the arguments.
 //
 
 static void cmdSI(int argc, char *[]) {
@@ -1382,8 +1428,6 @@ static void cmdSI(int argc, char *[]) {
 //! \param [in] argc
 //!    Number of arguments.
 //!
-//! \param [in] argv
-//!    Array of pointers to the arguments.
 //
 
 static void cmdSH(int argc, char *[]) {
@@ -1553,9 +1597,6 @@ static void cmdWR(int argc, char *argv[]) {
 //! Not implemented
 //!
 //! This function handles commands that are not implemented.
-//!
-//! \param [in] argc
-//!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.

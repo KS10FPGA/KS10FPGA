@@ -368,7 +368,7 @@ void ks10_t::run(bool enable) {
 //! Register</b>.
 //!
 //! \returns
-//!     <b>true</b> if the KS10 is in <b>RUN<\b> mode, <b>false</b> if the KS10
+//!     <b>true</b> if the KS10 is in <b>RUN</b> mode, <b>false</b> if the KS10
 //!     is in <b>HALT</b> mode..
 //
 
@@ -383,7 +383,8 @@ bool ks10_t::run(void) {
 //! Register</b>.
 //!
 //! \returns
-//!     <b>true</b> if the KS10 is in <b>CONT<\b> mode, false otherwise.
+//!     <b>true</b> if the KS10 is in <b>CONT</b> mode, false otherwise.
+//!
 //
 
 bool ks10_t::cont(void) {
@@ -431,7 +432,7 @@ void ks10_t::begin(void) {
 //! Register</b>.
 //!
 //! \returns
-//!     <b>true</b> if the KS10 is in <b>EXEC<\b> mode, false otherwise.
+//!     <b>true</b> if the KS10 is in <b>EXEC</b> mode, false otherwise.
 //
 
 bool ks10_t::exec(void) {
