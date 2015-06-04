@@ -143,7 +143,7 @@ module RH11 (
    integer file;
 
    initial
-     file = $fopen("rhstatus.txt",  "w");
+     file = $fopen("rhstatus.txt", "w");
 
 `endif
 

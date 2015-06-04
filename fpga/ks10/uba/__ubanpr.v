@@ -229,18 +229,14 @@ module UBANPR (
                       //
 
                       if (req == reqDEV1)
-                        begin
-                           state <= stateWRWAIT;
-                        end
-
+                        state <= stateWRWAIT;
+		      
                       //
                       // FTM from device #2
                       //
 
                       else if (req == reqDEV2)
-                        begin
-                           state <= stateWRWAIT;
-                        end
+                        state <= stateWRWAIT;
 
                       //
                       // FTM from loopback.
@@ -413,13 +409,9 @@ module UBANPR (
                     if (busACKI)
                       begin
                          if (req == reqDEV1)
-                           begin
-                              dev1ACKO <= 1;
-                           end
+                           dev1ACKO <= 1;
                          else if (req == reqDEV2)
-                           begin
-                              dev2ACKO <= 1;
-                           end
+                           dev2ACKO <= 1;
                          loopACKO <= 1;
                          state <= stateRDDONE;
                       end
