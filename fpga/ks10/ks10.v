@@ -45,9 +45,9 @@
 
 `include "ks10.vh"
 `include "uba/uba.vh"
-`include "uba/dz11/dz11.vh"
-`include "uba/rh11/rh11.vh"
-`include "uba/rh11/rpxx/rpxx.vh"
+`include "dz11/dz11.vh"
+`include "rh11/rh11.vh"
+`include "rh11/rpxx/rpxx.vh"
 
 module KS10 (
       // Clock/Reset

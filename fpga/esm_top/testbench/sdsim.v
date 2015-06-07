@@ -39,9 +39,8 @@
 `timescale 1ns/1ps
 
 `ifndef SDSIM_DSK
- `define SDSIM_DSK "../rtl/esm/sdsim.dsk"
+ `define SDSIM_DSK "./sdsim.dsk"
 `endif
-
 
  module SDSIM (rst, clk, sdMISO, sdMOSI, sdSCLK, sdCS);
 
@@ -80,10 +79,6 @@
    reg [0: 3]   state;
 
    reg [0: 1]   clkstat;
-
-
-
-
 
    //
    // This process reads the disk file into the image array

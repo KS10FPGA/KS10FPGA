@@ -41,7 +41,7 @@
 `include "rpmr.vh"
 `include "rpcs1.vh"
 `include "../sd/sd.vh"
-`include "../../../ks10.vh"
+`include "../../ks10.vh"
 
 module RPCTRL (
       input  wire         clk,                  // Clock

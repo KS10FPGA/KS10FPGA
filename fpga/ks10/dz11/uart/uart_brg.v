@@ -45,7 +45,7 @@
 `timescale 1ns/1ps
 
 `include "../dzuart.vh"
-`include "../../../ks10.vh"
+`include "../../ks10.vh"
 
 module UART_BRG (
       input  wire       clk,                    // Clock

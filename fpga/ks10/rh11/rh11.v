@@ -56,7 +56,7 @@
 `include "rpxx/rpcs1.vh"
 `include "rpxx/rpxx.vh"
 `include "sd/sd.vh"
-`include "../ubabus.vh"
+`include "../uba/ubabus.vh"
 
 module RH11 (
       input  wire         clk,                  // Clock
@@ -349,6 +349,7 @@ module RH11 (
    wire sdINCSECT;                      // Increment Sector
    wire sdSETWCE;                       // Set write check error
    wire sdREADOP;                       // Read or write check operation
+   wire sdMOL;                          // Medium on-line
 
    //
    // RP Signals
@@ -557,6 +558,7 @@ module RH11 (
               .clk      (clk),
               .rst      (rst),
               .clr      (rhCLR | devRESET),
+              .rhMOL    (sdMOL),
               .rhINCSECT(sdINCSECT),
               .rhATACLR (rhATACLR[i]),
               .devADDRI (devADDRI),
@@ -606,6 +608,7 @@ module RH11 (
       .devREQO    (devREQO),
       .devACKI    (devACKI),
       // RH11 interfaces
+      .rhCD       (rh11CD),
       .rhWC       (rhWC),
       // RPXX interface
       .rpSDOP     (rpSDOP[sdSCAN]),
@@ -618,6 +621,7 @@ module RH11 (
       .sdINCSECT  (sdINCSECT),
       .sdSETWCE   (sdSETWCE),
       .sdREADOP   (sdREADOP),
+      .sdMOL      (sdMOL),
       .sdSCAN     (sdSCAN),
       .sdDEBUG    (rh11DEBUG)
    );

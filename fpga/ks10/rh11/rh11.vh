@@ -41,7 +41,7 @@
 `ifndef __RH11_VH
 `define __RH11_VH
 
-`include "../uba.vh"
+`include "../uba/uba.vh"
 
 //
 // RH Device 1 (RPxx) Parameters

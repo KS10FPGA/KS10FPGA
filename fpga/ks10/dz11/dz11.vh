@@ -43,7 +43,7 @@
 `ifndef __DZ11_VH
 `define __DZ11_VH
 
-`include "../uba.vh"
+`include "../uba/uba.vh"
 
 //
 // DZ Device 1 Parameters

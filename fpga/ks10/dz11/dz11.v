@@ -59,8 +59,8 @@
 `include "dzcsr.vh"
 `include "dztcr.vh"
 `include "dztdr.vh"
-`include "../ubabus.vh"
-`include "../../ks10.vh"
+`include "../ks10.vh"
+`include "../uba/ubabus.vh"
 
 module DZ11 (
       input  wire         clk,                  // Clock

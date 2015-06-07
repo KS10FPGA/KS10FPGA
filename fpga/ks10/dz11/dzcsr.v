@@ -43,7 +43,7 @@
 
 `include "dzcsr.vh"
 `include "dztcr.vh"
-`include "../../ks10.vh"
+`include "../ks10.vh"
 
 module DZCSR (
       input  wire         clk,                  // Clock

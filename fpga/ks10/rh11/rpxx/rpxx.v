@@ -59,12 +59,13 @@
 `include "rper1.vh"
 `include "../rh11.vh"
 `include "../sd/sd.vh"
-`include "../../ubabus.vh"
+`include "../../uba/ubabus.vh"
 
 module RPXX (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       input  wire         clr,                  // Clear
+      input  wire         rhMOL,                // Medium on-line
       input  wire         rhINCSECT,            // Increment Sector
       input  wire         rhATACLR,             // Clear RPDS[ATA]
       input  wire [ 0:35] devADDRI,             // Device Address In
@@ -312,6 +313,7 @@ module RPXX (
       .clk         (clk),
       .rst         (rst),
       .clr         (clr),
+      .rhMOL       (rhMOL),
       .rhATACLR    (rhATACLR),
       .rpSETLST    (rpSETLST),
       .rpSETATA    (rpSETATA),
