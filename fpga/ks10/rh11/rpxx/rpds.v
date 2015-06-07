@@ -46,7 +46,7 @@ module RPDS (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       input  wire         clr,                  // Clr
-      input  wire         rhMOL,		// Medium on-line
+      input  wire         rhMOL,                // Medium on-line
       input  wire         rhATACLR,             // ATA clr
       input  wire         rpSETLST,             // Last sector transferred
       input  wire         rpSETATA,             // Set ATA

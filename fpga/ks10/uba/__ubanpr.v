@@ -230,7 +230,7 @@ module UBANPR (
 
                       if (req == reqDEV1)
                         state <= stateWRWAIT;
-		      
+
                       //
                       // FTM from device #2
                       //
