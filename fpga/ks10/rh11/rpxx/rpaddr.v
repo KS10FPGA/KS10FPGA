@@ -95,7 +95,7 @@ module RPADDR (
                       begin
                          sum   <= 0;
                          temp  <= rpDCA;
-                         loop  <= rpTRKNUM;
+                         loop  <= rpTRKNUM+1;
                          state <= stateTRACK;
                       end
                  end
@@ -105,7 +105,7 @@ module RPADDR (
                       begin
                          sum   <= 0;
                          temp  <= sum + rpTA;
-                         loop  <= rpSECNUM;
+                         loop  <= rpSECNUM+1;
                          state <= stateSECT;
                       end
                     else

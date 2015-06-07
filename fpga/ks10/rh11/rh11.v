@@ -232,6 +232,15 @@ module RH11 (
    wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
+   // Synchronize that which is asynchronous
+   //
+
+   wire rhCD;
+   wire rhWP;
+   SYNC syncCD(clk, rst, rhCD, rh11CD);
+   SYNC syncWP(clk, rst, rhWP, rh11WP);
+
+   //
    // Interrupt Acknowledge
    //
 
@@ -565,8 +574,8 @@ module RH11 (
               .devDATAI (devDATAI),
               .rpSELECT (rhUNIT == i[2:0]),
               .rpPAT    (rhPAT),
-              .rpCD     (rh11CD),
-              .rpWP     (rh11WP),
+              .rpCD     (rhCD),
+              .rpWP     (rhWP),
               .rpCS1    (rpCS1[i]),
               .rpDA     (rpDA[i]),
               .rpDS     (rpDS[i]),
@@ -608,7 +617,7 @@ module RH11 (
       .devREQO    (devREQO),
       .devACKI    (devACKI),
       // RH11 interfaces
-      .rhCD       (rh11CD),
+      .rhCD       (rhCD),
       .rhWC       (rhWC),
       // RPXX interface
       .rpSDOP     (rpSDOP[sdSCAN]),
