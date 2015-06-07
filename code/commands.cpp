@@ -1299,6 +1299,7 @@ static void cmdRH(int argc, char *argv[]) {
         " RH BOOT - Load Monitor Boot into memory\n"
         " RH STAT - Print Debug Register\n"
         " RH FIFO - Test RH11 FIFO\n"
+        " RH INIT - Test RH11 Initialization\n"
         " RH RPLA - Test RH11 RPLA\n"
         " RH READ - Test RH11 Disk Read\n"
         " RH WRITE - Test RH11 Disk Write\n"
@@ -1306,14 +1307,16 @@ static void cmdRH(int argc, char *argv[]) {
 
     char *buf = argv[1];
 
-    ks10_t::data_t rhbase = ks10_t::readMem(ks10_t::rhbase_addr);
+    ks10_t::addr_t rhbase = ks10_t::readMem(ks10_t::rhbase_addr);
     ks10_t::data_t rhunit = ks10_t::readMem(ks10_t::rhunit_addr);
-
+    
     uba_t uba(rhbase);
     rh11_t rh11(rhbase, rhunit, uba);
 
     if ((argc == 2) && (buf[0] == 'F' && buf[1] == 'I' && buf[2] == 'F' && buf[3] == 'O')) {
         rh11.testFIFO();
+    } else if ((argc == 2) && (buf[0] == 'I' && buf[1] == 'N' && buf[2] == 'I' && buf[3] == 'T')) {
+        rh11.testInit();
     } else if ((argc == 2) && (buf[0] == 'R' && buf[1] == 'P' && buf[2] == 'L' && buf[3] == 'A')) {
         rh11.testRPLA();
     } else if ((argc == 2) && (buf[0] == 'R' && buf[1] == 'E' && buf[2] == 'A' && buf[3] == 'D')) {

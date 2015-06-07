@@ -57,6 +57,7 @@ class rh11_t {
         const ks10_t::addr_t ba_addr;
         const ks10_t::addr_t da_addr;
         const ks10_t::addr_t cs2_addr;
+        const ks10_t::addr_t ds_addr;
         const ks10_t::addr_t la_addr;
         const ks10_t::addr_t db_addr;
         const ks10_t::addr_t mr_addr;
@@ -71,6 +72,7 @@ class rh11_t {
         static const ks10_t::addr_t ba_offset  = 04;
         static const ks10_t::addr_t da_offset  = 06;
         static const ks10_t::addr_t cs2_offset = 010;
+        static const ks10_t::addr_t ds_offset  = 012;
         static const ks10_t::addr_t la_offset  = 020;
         static const ks10_t::addr_t db_offset  = 022;
         static const ks10_t::addr_t mr_offset  = 024;
@@ -121,6 +123,7 @@ class rh11_t {
         static const ks10_t::data_t cs2_or     = 0000200;
         static const ks10_t::data_t cs2_ir     = 0000100;
         static const ks10_t::data_t cs2_clr    = 0000040;
+        static const ks10_t::data_t cs2_unit   = 0000007;
 
         //
         // RPxx Maintenance Register (RPMR) Definitions
@@ -130,6 +133,13 @@ class rh11_t {
         static const ks10_t::data_t mr_dind    = 0000004;
         static const ks10_t::data_t mr_dclk    = 0000002;
         static const ks10_t::data_t mr_dmd     = 0000001;
+
+        //
+        // RPxx Drive Status Register (RPDS) Definitions
+        // 
+
+        static const ks10_t::data_t ds_mol     = 0010000;
+        static const ks10_t::data_t ds_vv      = 0000100;
 
         //
         // RH11 base Addresses
@@ -144,6 +154,7 @@ class rh11_t {
 
         void clear(void);
         void testFIFO(void);
+        void testInit(void);
         void testRPLA(void);
         void testRead(void);
         void testWrite(void);
@@ -160,6 +171,7 @@ class rh11_t {
             ba_addr ((base_addr & 07777700) + ba_offset ),
             da_addr ((base_addr & 07777700) + da_offset ),
             cs2_addr((base_addr & 07777700) + cs2_offset),
+            ds_addr ((base_addr & 07777700) + ds_offset ),
             la_addr ((base_addr & 07777700) + la_offset ),
             db_addr ((base_addr & 07777700) + db_offset ),
             mr_addr ((base_addr & 07777700) + mr_offset ),
@@ -246,6 +258,22 @@ class rh11_t {
 
         ks10_t::data_t cs2_read(void) {
             return ks10_t::readIO(cs2_addr);
+        }
+
+        //
+        // Write to DS
+        //
+
+        void ds_write(ks10_t::data_t data) {
+            ks10_t::writeIO(ds_addr, data);
+        }
+       
+        //
+        // Read from DS
+        //
+
+        ks10_t::data_t ds_read(void) {
+            return ks10_t::readIO(ds_addr);
         }
 
         //

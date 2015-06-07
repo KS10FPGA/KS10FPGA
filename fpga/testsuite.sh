@@ -18,7 +18,6 @@ FILES="\
     DSKAK
     DSKAL
     DSKAM
-    DSKBA-RD00
     DSKCA
     DSKCB
     DSKCC
@@ -49,15 +48,15 @@ GRN='\e[0;32m'
 END='\e[0m'
 
 date "+Testing performed on %a, %b %d %Y." | tee ${RESFILE}
-if [ ! -f rtl/testbench/ssram.awk ]; then
-    co -q "rtl/testbench/ssram.awk"
+if [ ! -f esm_top/testbench/ssram.awk ]; then
+    co -q "esm_top/testbench/ssram.awk"
 fi
 
 date "+[%r] Testing started." | tee -a ${RESFILE}
 for FILE in ${FILES}
 do
-    if [ ! -f rtl/testbench/${PREFIX}${FILE}.SEQ ]; then
-        co -q "rtl/testbench/${PREFIX}${FILE}.SEQ"
+    if [ ! -f ../maindec/${PREFIX}${FILE}.SEQ ]; then
+        co -q "../maindec/${PREFIX}${FILE}.SEQ"
     fi
     date "+[%r] Testing ${FILE}$" | tr $ \\t | tr -d \\n | expand -t 20 | tee -a ${RESFILE}
     make -B -s DIAG=${FILE} ${DIR}/${FILE}.vvp 2> /dev/null > /dev/null

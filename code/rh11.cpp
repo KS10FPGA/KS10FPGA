@@ -71,7 +71,6 @@ void rh11_t::clear(void) {
 //!     True if no errors, false otherwise.
 //
 
-
 bool rh11_t::wait(bool verbose) {
 
     bool success = true;
@@ -118,11 +117,11 @@ bool rh11_t::wait(bool verbose) {
         success = false;
         if (verbose) {
             printf("Disk error.  CS1 = %012llo\n", cs1_read());
+            printf("             CS2 = %012llo\n", cs2_read());
+            printf("             DS  = %012llo\n", ds_read());
         }
     }
 #endif
-
-    // FIXME
 
     return success;
 }
@@ -142,7 +141,9 @@ bool rh11_t::wait(bool verbose) {
 
 bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
 
-    printf("Readblock: vaddr=%06o, daddr=%012llo\n", vaddr, daddr);
+#if 0
+    printf("Readblock: vaddr=%06llo, daddr=%012llo\n", vaddr, daddr);
+#endif
 
     //
     // Configure RHWC
@@ -163,13 +164,6 @@ bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
     //
 
     da_write(daddr);
-
-    //
-    // Configure CS2
-    //  Set disk (unit)
-    //
-
-    cs2_write(unit & 000007);
 
     //
     // Configure RPDC
@@ -291,7 +285,7 @@ bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
 //!       Bits [31:35] - Sector
 //!
 //!       Bits [20:35] are formatted as required by the RPDA register
-//!       Bits [ 3:11] are formatted as required by the RPDS register once
+//!       Bits [ 0:11] are formatted as required by the RPDS register once
 //!                    shifted into the proper place.
 //!
 //!   This is documented in the SMFILE source code entitled:
@@ -309,10 +303,8 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
     // Read the Home Block
     //
 
+    printf("Reading Home Block\n");
     bool success = readBlock(vaddr, daddr);
-    for (int i = 0; i < 10; i++) {
-        printf("data[%d] = %012llo\n", i, ks10_t::readMem(paddr + i));
-    }
     if (success) {
         if (isHomBlock(paddr)) {
 
@@ -328,6 +320,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                 // Read the FE File Page (a.k.a. Page of Pointers).
                 //
 
+                printf("Reading FE File Page\n");
                 success = readBlock(vaddr, daddr);
                 if (success) {
 
@@ -336,7 +329,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                     // Page.
                     //
 
-                    ks10_t::addr_t mon_preboot_offset = 4;
+                    ks10_t::addr_t mon_preboot_offset  = 4;
                     daddr = ks10_t::readMem(paddr + mon_preboot_offset);
                     if (daddr != 0) {
 
@@ -344,8 +337,14 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                         // Read the Monitor Pre-boot.
                         //
 
+                        printf("Reading Monitor Pre-boot\n");
                         success = readBlock(vaddr, daddr);
                         if (success) {
+#if 1
+                            for (int i = 0; i < 10; i++) {
+                                printf("data[%d] = %012llo\n", i, ks10_t::readMem(paddr + i));
+                            }
+#endif
                             ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
                             printf("%s Monitor pre-boot read successfully\n", name);
                             printf("boot with \"ST 1000\"\n");
@@ -381,18 +380,20 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
 //
 
 void rh11_t::testFIFO(void) {
+    bool fail = false;
 
     //
-    // Controller Reset
+    // Controller Clear
     //
 
+#if 0
     cs2_write(cs2_clr);
+#endif
 
     //
     // Test buffer operation
     //
 
-    bool fail = false;
     for (int i = 0; i < 70; i++) {
 
         //
@@ -496,17 +497,18 @@ void rh11_t::testFIFO(void) {
 void rh11_t::testRPLA(void) {
 
     //
-    // Controller Reset
+    // Controller Clear
     //
 
+#if 0
     cs2_write(cs2_clr);
+#endif
 
     //
-    // Configure CS2
-    //  Set disk (unit)
+    // Select disk (unit)
     //
 
-    cs2_write(unit & 000007);
+    cs2_write((cs2_read() & ~cs2_unit) | (unit & 7));
 
     //
     // Put unit in diagnostic mode.  Assert DMD.
@@ -613,6 +615,88 @@ void rh11_t::testRPLA(void) {
 }
 
 //
+// Test Disk Initialization
+//
+
+void rh11_t::testInit(void) {
+    bool fail = false;
+
+    printf("RPDS is %012llo\n", ds_read());
+
+    //
+    // Controller Clear
+    //
+
+#if 0
+    cs2_write(cs2_clr);
+#endif
+    printf("RPDS is %012llo\n", ds_read());
+
+    //
+    // Select disk (unit)
+    //
+
+    cs2_write((cs2_read() & ~cs2_unit) | (unit & 7));
+
+    //
+    // Check if disk in on-line
+    //
+
+    if (!(ds_read() & ds_mol)) {
+        printf("Disk is off-line.\n");
+        return;
+    }
+    printf("Disk is on-line\n");
+
+    //
+    // Wait for initialization to complete
+    //
+
+    for (int i = 0; i < 1000; i++) {
+        if (ds_read() & ds_mol) {
+            break;
+        }
+        xTaskDelay(1);
+    }
+
+    if (!(ds_read() & ds_mol)) {
+        fail = true;
+        printf("Disk initialization timeout.\n");
+    }
+
+    //
+    // Check Volume Valid
+    //
+
+    if (ds_read() & ds_vv) {
+        fail = true;
+        printf("Volume Valid should not be set after initialization.\n");
+    }
+    
+    //
+    // Issue Reading Preset Command
+    //
+
+    cs1_write(cs1_cmdpre | cs1_go);
+
+    //
+    // Recheck Volume Valid
+    //
+
+    if (!(ds_read() & ds_vv)) {
+        fail = true;
+        printf("Volume Valid should be set after preset command.\n");
+    }
+ 
+    //
+    // Print results
+    //
+
+    printf("Disk initialization test %s.\n", fail ? "failed" : "passed");
+  
+}
+
+//
 // Test Disk Read
 //
 
@@ -622,6 +706,29 @@ void rh11_t::testRead(void) {
     const ks10_t::addr_t vaddr   = 004000;
     const ks10_t::addr_t paddr   = 070000;
     const ks10_t::data_t pattern = 0525252525252;
+
+    //
+    // Controller Clear
+    //
+
+#if 0
+    cs2_write(cs2_clr);
+#endif
+
+    //
+    // Select disk
+    //
+
+    cs2_write((cs2_read() & ~cs2_unit) | (unit & 7));
+
+    //
+    // Check if disk in on-line
+    //
+
+    if (!(ds_read() & ds_mol)) {
+        printf("Disk is off-line.\n");
+        return;
+    }
 
     //
     // Configure RHWC
@@ -651,17 +758,17 @@ void rh11_t::testRead(void) {
     }
 
     //
-    // Set disk addressing
+    // Set disk address
+    //  Cylinders 809-814 are maintenance cylinders and can be
+    //  scribbled without permission.
     //
+    
+    const unsigned int cylinder = 809;
+    const unsigned int track    = 0;
+    const unsigned int sector   = 1;
 
-    da_write(1);
-    dc_write(0);
-
-    //
-    // Select disk
-    //
-
-    cs2_write(unit & 000007);
+    da_write(((track & 077) << 8) | ((sector & 077) << 0));
+    dc_write(cylinder);
 
     //
     // Issue read command
@@ -738,6 +845,16 @@ void rh11_t::testRead(void) {
     }
 
     //
+    // Check UBACSR
+    //
+
+#if 1
+    uba.csr_write(7);
+    printf("UBACSR is %012llo\n", uba.csr_read());
+    printf("UBAPAG[1] is %012llo\n", uba.pag_read(1));
+#endif
+
+    //
     // Print results
     //
 
@@ -755,6 +872,29 @@ void rh11_t::testWrite(void) {
     const ks10_t::addr_t vaddr   = 004000;
     const ks10_t::addr_t paddr   = 070000;
     const ks10_t::data_t pattern = 0123456654321;
+
+    //
+    // Controller Clear
+    //
+
+#if 0
+    cs2_write(cs2_clr);
+#endif
+
+    //
+    // Select disk
+    //
+
+    cs2_write((cs2_read() & ~cs2_unit) | (unit & 7));
+
+    //
+    // Check if disk in on-line
+    //
+
+    if (!(ds_read() & ds_mol)) {
+        printf("Disk is off-line.\n");
+        return;
+    }
 
     //
     // Create data pattern
@@ -784,10 +924,17 @@ void rh11_t::testWrite(void) {
     ba_write(vaddr);
 
     //
-    // Select disk
+    // Set disk address
+    //  Cylinders 809-814 are maintenance cylinders and can be
+    //  scribbled without permission.
     //
+    
+    const unsigned int cylinder = 809;
+    const unsigned int track    = 0;
+    const unsigned int sector   = 1;
 
-    cs2_write(unit & 000007);
+    da_write(((track & 077) << 8) | ((sector & 077) << 0));
+    dc_write(cylinder);
 
     //
     // Issue write command
@@ -845,7 +992,7 @@ void rh11_t::testWrite(void) {
     // Print results
     //
 
-    printf("RH11 disk read test %s.\n", pass ? "passed" : "failed");
+    printf("RH11 disk write test %s.\n", pass ? "passed" : "failed");
 
 }
 
@@ -860,10 +1007,34 @@ void rh11_t::testWrchk(void) {
     const unsigned int paddr     = 070000;
     const ks10_t::data_t pattern = 0123456654321;
 
+    //
+    // Controller Clear
+    //
+
+#if 0
+    cs2_write(cs2_clr);
+#endif
+
+    //
+    // Select disk (unit)
+    //
+
+    cs2_write((cs2_read() & ~cs2_unit) | (unit & 7));
+
+    //
+    // Check if disk in on-line
+    //
+
+    if (!(ds_read() & ds_mol)) {
+        printf("Disk is off-line.\n");
+        return;
+    }
+
 #if 1
 
     {
-        wc_write(0);
+        //wc_write(-words*2);
+        wc_write(-2);
         cs1_write(cs1_cmdrd | cs1_go);
         for (int i = 0; i < 1000; i++) {
             if (cs1_read() & cs1_rdy) {
@@ -903,10 +1074,23 @@ void rh11_t::testWrchk(void) {
     ba_write(vaddr);
 
     //
+    // Set disk address
+    //  Cylinders 809-814 are maintenance cylinders and can be
+    //  scribbled without permission.
+    //
+    
+    const unsigned int cylinder = 809;
+    const unsigned int track    = 0;
+    const unsigned int sector   = 1;
+
+    da_write(((track & 077) << 8) | ((sector & 077) << 0));
+    dc_write(cylinder);
+
+    //
     // Select disk
     //
 
-    cs2_write(unit & 000007);
+    cs2_write((cs2_read() & ~cs2_unit) | (unit & 7));
 
 #if 0
 
@@ -920,13 +1104,13 @@ void rh11_t::testWrchk(void) {
     // Issue write command
     //
 
-    cs1_write(cs1_write | cs1_go);
+    cs1_write(cs1_cmdwr | cs1_go);
 
     //
     // Wait for write to complete
     //
 
-    pass &= wait(rh_base, false);
+    pass &= wait(false);
 
 #endif
 
@@ -1003,8 +1187,11 @@ void rh11_t::testWrchk(void) {
 }
 
 //
-// Bootstrap from RH11
-//
+//! Bootstrap from RH11
+//!
+//! \param [in] diag
+//!     Boot to diagnostic mode.  I.e., SMMON
+//!
 
 void rh11_t::boot(void) {
 
@@ -1016,17 +1203,34 @@ void rh11_t::boot(void) {
     const unsigned int secHomeBlock = 10;
 
     //
+    // Controller clear
+    //
+
+#if 0
+    cs2_write(cs2_clr);
+#endif
+
+    //
+    // Select disk (unit)
+    //
+
+    cs2_write((cs2_read() & ~cs2_unit) | (unit & 7));
+
+    //
+    // Check if disk in on-line
+    //
+
+    if (!(ds_read() & ds_mol)) {
+        printf("Disk is off-line.\n");
+        return;
+    }
+
+    //
     // Set Unibus mapping
     //  This will page the destination to 01000
     //
 
     uba.pag_write(1, uba_t::pag_ftm | uba_t::pag_vld | uba_t::addr2page(paddr));
-
-    //
-    // Controller clear
-    //
-
-    clear();
 
     //
     // Execute Read in Preset Command
