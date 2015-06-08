@@ -756,5 +756,5 @@ void startSdTask(void) {
     if (status != pdPASS) {
         fatal("SDHC: Failed to create SD task.  Status was %s.\n", taskError(status));
     }
-   
+
 }

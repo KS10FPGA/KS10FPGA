@@ -820,7 +820,7 @@ static void cmdDS(int argc, char *argv[]) {
        printf("UBA = %o\n"
               "RHBASE = %06o\n"
               "RHUNIT = %o\n"
-	      "\n"
+              "\n"
               "%s",
               static_cast<unsigned int>((rhbase >> 18) & 0000007),
               static_cast<unsigned int>((rhbase >>  0) & 0777777),
@@ -1309,7 +1309,7 @@ static void cmdRH(int argc, char *argv[]) {
 
     ks10_t::addr_t rhbase = ks10_t::readMem(ks10_t::rhbase_addr);
     ks10_t::data_t rhunit = ks10_t::readMem(ks10_t::rhunit_addr);
-    
+
     uba_t uba(rhbase);
     rh11_t rh11(rhbase, rhunit, uba);
 

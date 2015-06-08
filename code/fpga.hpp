@@ -6,7 +6,7 @@
 //!
 //! This object provides the interfaces that are required to load/program the
 //! FPGA.
-//!  
+//!
 //! The FPGA provides 3 interface signals to the console microcontroller:
 //! -#  PROG# output.  When asserted (low), this signal causes the FPGA to
 //!      begin to load firmware from the serial flash memory device.

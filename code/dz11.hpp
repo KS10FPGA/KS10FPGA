@@ -58,7 +58,7 @@ class dz11_t {
         //
         // Receiver Buffer Register (RBUF) definitions
         //
-    
+
         static const ks10_t::addr_t rbuf_addr = 03760012;
 
         //
@@ -72,7 +72,7 @@ class dz11_t {
         //
 
         static const ks10_t::addr_t tcr_addr = 03760014;
-    
+
         //
         // Modem Status Register (MSR) definitions
         //

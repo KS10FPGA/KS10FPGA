@@ -298,13 +298,13 @@ void taskConsole(void * /*param*/) {
     //
 
     enableUARTIntr();
-    
+
     //
     // Initialize the Console Communications memory area
     //
 
     initConsoleCommunications();
-    
+
     //
     // Process commands
     //

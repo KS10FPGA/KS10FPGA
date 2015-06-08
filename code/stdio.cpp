@@ -104,7 +104,7 @@ int puts(const char *s) {
 //! This function converts an unsigned integer value to a null-terminated
 //! string using the radix that was specified.  The result is stored in the
 //! array given by buffer parameter.
-//! 
+//!
 //! \param [in] value
 //!    Value to be printed
 //!
@@ -113,7 +113,7 @@ int puts(const char *s) {
 //!
 //! \param [in] radix
 //!    Radix of the print operation.  Radix must be between 2 and 36.
-//! 
+//!
 //! \param [in] digits
 //!    Pointer to string of either uppercase or lowercase digits
 //!
@@ -141,7 +141,7 @@ static char *__utoa(unsigned int value, char * buffer, unsigned int radix,
 //! This function converts an unsigned long integer value to a null-terminated
 //! string using the radix that was specified.  The result is stored in the
 //! array given by buffer parameter.
-//! 
+//!
 //! \param [in] value
 //!    Value to be printed
 //!
@@ -150,7 +150,7 @@ static char *__utoa(unsigned int value, char * buffer, unsigned int radix,
 //!
 //! \param [in] radix
 //!    Radix of the print operation.  Radix must be between 2 and 36.
-//! 
+//!
 //! \param [in] digits
 //!    Pointer to string of either uppercase or lowercase digits
 //!
@@ -178,7 +178,7 @@ static char *__ultoa(unsigned long value, char * buffer, unsigned int radix,
 //! This function converts an unsigned long long integer value to a null-
 //! terminated string using the radix that was specified.  The result is
 //! stored in the array given by buffer parameter.
-//! 
+//!
 //! This function is specially hacked to work on only octal and hex numbers.
 //! These don't require long long division - just shifts.  The long long
 //! division by arbitrary radix requires a lot of support from the run time
@@ -194,7 +194,7 @@ static char *__ultoa(unsigned long value, char * buffer, unsigned int radix,
 //!
 //! \param [in] radix
 //!    Radix of the print operation.  Radix must be between 2 and 36.
-//! 
+//!
 //! \param [in] digits
 //!    Pointer to string of either uppercase or lowercase digits
 //!
@@ -236,7 +236,7 @@ char *__ulltoa(unsigned long long value, char * buffer, unsigned int radix,
 //! array given by buffer parameter.
 //!
 //! Negative numbers are printed properly.
-//! 
+//!
 //! \param [in] value
 //!    Value to be printed
 //!
@@ -245,7 +245,7 @@ char *__ulltoa(unsigned long long value, char * buffer, unsigned int radix,
 //!
 //! \param [in] radix
 //!    Radix of the print operation.  Radix must be between 2 and 36.
-//! 
+//!
 //! \note
 //!    This function uses recursion to parse the number.  Beware of stack
 //!    space issues.
@@ -266,7 +266,7 @@ char *itoa(int value, char * buffer, int radix) {
         value =- value;
         *buffer++ = '-';
     }
-    
+
     __utoa(value, buffer, radix, lower_digits);
     return bufsav;
 }
@@ -279,7 +279,7 @@ char *itoa(int value, char * buffer, int radix) {
 //! array given by buffer parameter.
 //!
 //! Negative numbers are printed properly.
-//! 
+//!
 //! \param [in] value
 //!    Value to be printed
 //!
@@ -288,7 +288,7 @@ char *itoa(int value, char * buffer, int radix) {
 //!
 //! \param [in] radix
 //!    Radix of the print operation.  Radix must be between 2 and 36.
-//! 
+//!
 //! \note
 //!    This function uses recursion to parse the number.  Beware of stack
 //!    space issues.
@@ -299,7 +299,7 @@ char *itoa(int value, char * buffer, int radix) {
 
 char *ltoa(long value, char * buffer, int radix) {
     char *bufsav = buffer;
-    
+
     if (radix < 2 || radix > 36) {
         *buffer = 0;
         return buffer;
@@ -327,7 +327,7 @@ char *ltoa(long value, char * buffer, int radix) {
 //! library and it isn't worth the extra code space since it will not be used.
 //!
 //! The only support for signed long long is octal or hex printing.
-//! 
+//!
 //! \param [in] value
 //!    Value to be printed
 //!
@@ -336,7 +336,7 @@ char *ltoa(long value, char * buffer, int radix) {
 //!
 //! \param [in] radix
 //!    Radix of the print operation.  Radix must be between 2 and 36.
-//! 
+//!
 //! \note
 //!    This function uses recursion to parse the number.  Beware of stack
 //!    space issues.
@@ -347,7 +347,7 @@ char *ltoa(long value, char * buffer, int radix) {
 
 char *lltoa(long long value, char * buffer, int radix) {
     char *bufsav = buffer;
-    
+
     if (radix < 2 || radix > 36) {
         *buffer = 0;
         return buffer;
@@ -370,13 +370,13 @@ char *lltoa(long long value, char * buffer, int radix) {
 //!
 //! \param [in] prec
 //!    Precision.  Not implemented.
-//! 
+//!
 //! \param [in] padchar
 //!    Either a zero or a space
 //!
 //! \param [in] leftFlag
 //!    Left justify flag.  Not implemented.
-//! 
+//!
 //! \param [in, out] buffer
 //!    Workspace.
 //
@@ -388,7 +388,7 @@ static void padout(int width, int prec, char padchar, bool leftFlag, char* buffe
     while (*p++ && width > 0){
         width--;
     }
-    while (width-- > 0) { 
+    while (width-- > 0) {
         putchar(padchar);
     }
     while (*buffer) {
@@ -401,9 +401,9 @@ static void padout(int width, int prec, char padchar, bool leftFlag, char* buffe
 //! Print formatted data to stdout
 //!
 //! The print format string has the following form:
-//!   
+//!
 //!  % [flags] [width] [.precision] [modifier] type
-//!   
+//!
 //!  <dl>
 //!      <dt>flags:</dt>
 //!          <dd><b>'-'</b> - Left justifies the result by padding with blanks
@@ -419,7 +419,7 @@ static void padout(int width, int prec, char padchar, bool leftFlag, char* buffe
 //!          <dd><b>0n</b> - At least <b>n</b> characters are printed.  If the
 //!                          output value has less than <b>n</b> characters,
 //!                          the output is padded with zeros.</dd>
-//!          
+//!
 //!      <dt>precision:</dt>
 //!          <dd><b>l</b> - arg is interpreted as a long</dd>
 //!      <dt></dt>
@@ -495,11 +495,11 @@ int printf(const char *fmt, ...)  {
                 width = (width * 10) + (ch - '0');
                 ch = *fmt++;
             }
-            
+
             //
             // Parse precision
             //
-            
+
             if (ch == '.') {
                 ch = *fmt++;
                 while (ch >= '0' && ch <= '9') {
@@ -520,13 +520,13 @@ int printf(const char *fmt, ...)  {
                 ch = *fmt++;
                 size = 2;
             }
-            
+
             //
             // Parse conversion type
             //
 
             switch (ch) {
-                case 0: 
+                case 0:
                     va_end(va);
                     return 0;
                 case 'u' :
@@ -585,7 +585,7 @@ int printf(const char *fmt, ...)  {
                     }
                     padout(width, prec, padchar, leftFlag, buf);
                     break;
-                case 'X' : 
+                case 'X' :
                     switch(size) {
                         case 0:
                             __utoa(va_arg(va, unsigned int), buf, 16, upper_digits);
@@ -599,10 +599,10 @@ int printf(const char *fmt, ...)  {
                     }
                     padout(width, prec, padchar, leftFlag, buf);
                     break;
-                case 'c' : 
+                case 'c' :
                     putchar((char)(va_arg(va, int)));
                     break;
-                case 's' : 
+                case 's' :
                     padout(width, prec, 0, leftFlag, va_arg(va, char*));
                     break;
                 case '%' :

@@ -303,7 +303,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
     // Read the Home Block
     //
 
-    printf("Reading Home Block\n");
+    printf("Reading Home Block.\n");
     bool success = readBlock(vaddr, daddr);
     if (success) {
         if (isHomBlock(paddr)) {
@@ -320,12 +320,12 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                 // Read the FE File Page (a.k.a. Page of Pointers).
                 //
 
-                printf("Reading FE File Page\n");
+                printf("Reading FE File Page.\n");
                 success = readBlock(vaddr, daddr);
                 if (success) {
 
                     //
-                    // Get the disk address of the Monitor Pre-boot from the FE File
+                    // Get the disk address of the Monitor Pre-Boot from the FE File
                     // Page.
                     //
 
@@ -337,24 +337,24 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                         // Read the Monitor Pre-boot.
                         //
 
-                        printf("Reading Monitor Pre-boot\n");
+                        printf("Reading Monitor Pre-Boot Page.\n");
                         success = readBlock(vaddr, daddr);
                         if (success) {
 #if 1
-                            for (int i = 0; i < 10; i++) {
-                                printf("data[%d] = %012llo\n", i, ks10_t::readMem(paddr + i));
+                            for (int i = 0; i < 20; i++) {
+                                printf("data[%o] = %012llo\n", 01000 + i, ks10_t::readMem(paddr + i));
                             }
 #endif
                             ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
-                            printf("%s Monitor pre-boot read successfully\n", name);
-                            printf("boot with \"ST 1000\"\n");
+                            printf("%s Monitor Pre-Boot read successfully.\n", name);
+                            printf("Boot with \"ST 1000\"\n");
                             return true;
                         } else {
-                            printf("%s Monitor pre-boot is unreadable.\n", name);
+                            printf("%s Monitor Pre-Boot Page is unreadable.\n", name);
                             return false;
                         }
                     } else {
-                        printf("%s Invalid monitor pre-boot address.\n", name);
+                        printf("%s Invalid Monitor Pre-Boot disk address.\n", name);
                         return false;
                     }
                 } else {
@@ -672,7 +672,7 @@ void rh11_t::testInit(void) {
         fail = true;
         printf("Volume Valid should not be set after initialization.\n");
     }
-    
+
     //
     // Issue Reading Preset Command
     //
@@ -687,13 +687,13 @@ void rh11_t::testInit(void) {
         fail = true;
         printf("Volume Valid should be set after preset command.\n");
     }
- 
+
     //
     // Print results
     //
 
     printf("Disk initialization test %s.\n", fail ? "failed" : "passed");
-  
+
 }
 
 //
@@ -762,7 +762,7 @@ void rh11_t::testRead(void) {
     //  Cylinders 809-814 are maintenance cylinders and can be
     //  scribbled without permission.
     //
-    
+
     const unsigned int cylinder = 809;
     const unsigned int track    = 0;
     const unsigned int sector   = 1;
@@ -928,7 +928,7 @@ void rh11_t::testWrite(void) {
     //  Cylinders 809-814 are maintenance cylinders and can be
     //  scribbled without permission.
     //
-    
+
     const unsigned int cylinder = 809;
     const unsigned int track    = 0;
     const unsigned int sector   = 1;
@@ -1078,7 +1078,7 @@ void rh11_t::testWrchk(void) {
     //  Cylinders 809-814 are maintenance cylinders and can be
     //  scribbled without permission.
     //
-    
+
     const unsigned int cylinder = 809;
     const unsigned int track    = 0;
     const unsigned int sector   = 1;
@@ -1097,7 +1097,7 @@ void rh11_t::testWrchk(void) {
     //
     // Configure RHWC
     //
-    
+
     wc_write(-words*2);
 
     //

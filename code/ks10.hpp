@@ -123,15 +123,15 @@ class ks10_t {
         // Communications block addresses
         //
 
-        static const addr_t switch_addr = 000030;   	//!< Switch address
-        static const addr_t keepa_addr  = 000031;   	//!< Keep alive address
-        static const addr_t ctyin_addr  = 000032;   	//!< CTY input address
-        static const addr_t ctyout_addr = 000033;   	//!< CTY output address
-        static const addr_t klnin_addr  = 000034;   	//!< KLINIK input address
-        static const addr_t klnout_addr = 000035;   	//!< KLINIK output address
-        static const addr_t rhbase_addr = 000036;   	//!< RH11 base address
-        static const addr_t rhunit_addr = 000037;   	//!< RH11 unit number
-        static const addr_t mtparm_addr = 000040;   	//!< Magtape parameters
+        static const addr_t switch_addr = 000030;       //!< Switch address
+        static const addr_t keepa_addr  = 000031;       //!< Keep alive address
+        static const addr_t ctyin_addr  = 000032;       //!< CTY input address
+        static const addr_t ctyout_addr = 000033;       //!< CTY output address
+        static const addr_t klnin_addr  = 000034;       //!< KLINIK input address
+        static const addr_t klnout_addr = 000035;       //!< KLINIK output address
+        static const addr_t rhbase_addr = 000036;       //!< RH11 base address
+        static const addr_t rhunit_addr = 000037;       //!< RH11 unit number
+        static const addr_t mtparm_addr = 000040;       //!< Magtape parameters
 
         //
         // Functions

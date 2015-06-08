@@ -97,7 +97,7 @@ class rh11_t {
         bool wait(bool verbose = false);
         bool isHomBlock(ks10_t::addr_t addr);
         bool readBlock(ks10_t::addr_t vaddr, ks10_t::data_t block);
-        bool bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr, ks10_t::data_t block, const char *name); 
+        bool bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr, ks10_t::data_t block, const char *name);
 
     public:
 
@@ -136,7 +136,7 @@ class rh11_t {
 
         //
         // RPxx Drive Status Register (RPDS) Definitions
-        // 
+        //
 
         static const ks10_t::data_t ds_mol     = 0010000;
         static const ks10_t::data_t ds_vv      = 0000100;
@@ -147,7 +147,7 @@ class rh11_t {
 
         static const ks10_t::addr_t num1 = 01776700;
         static const ks10_t::addr_t num3 = 03772440;
-    
+
         //
         // Public functions
         //
@@ -187,7 +187,7 @@ class rh11_t {
         void cs1_write(ks10_t::data_t data) {
             ks10_t::writeIO(cs1_addr, data);
         }
-       
+
         //
         // Read from CS1
         //
@@ -203,7 +203,7 @@ class rh11_t {
         void wc_write(ks10_t::data_t data) {
             ks10_t::writeIO(wc_addr, data);
         }
-       
+
         //
         // Read from WC
         //
@@ -219,7 +219,7 @@ class rh11_t {
         void ba_write(ks10_t::data_t data) {
             ks10_t::writeIO(ba_addr, data);
         }
-       
+
         //
         // Read from BA
         //
@@ -235,7 +235,7 @@ class rh11_t {
         void da_write(ks10_t::data_t data) {
             ks10_t::writeIO(da_addr, data);
         }
-       
+
         //
         // Read from DA
         //
@@ -251,7 +251,7 @@ class rh11_t {
         void cs2_write(ks10_t::data_t data) {
             ks10_t::writeIO(cs2_addr, data);
         }
-       
+
         //
         // Read from CS2
         //
@@ -267,7 +267,7 @@ class rh11_t {
         void ds_write(ks10_t::data_t data) {
             ks10_t::writeIO(ds_addr, data);
         }
-       
+
         //
         // Read from DS
         //
@@ -283,7 +283,7 @@ class rh11_t {
         void la_write(ks10_t::data_t data) {
             ks10_t::writeIO(la_addr, data);
         }
-       
+
         //
         // Read from LA
         //
@@ -299,7 +299,7 @@ class rh11_t {
         void db_write(ks10_t::data_t data) {
             ks10_t::writeIO(db_addr, data);
         }
-       
+
         //
         // Read from DB
         //
@@ -315,7 +315,7 @@ class rh11_t {
         void mr_write(ks10_t::data_t data) {
             ks10_t::writeIO(mr_addr, data);
         }
-       
+
         //
         // Read from MR
         //
@@ -331,7 +331,7 @@ class rh11_t {
         void dc_write(ks10_t::data_t data) {
             ks10_t::writeIO(dc_addr, data);
         }
-       
+
         //
         // Read from DC
         //

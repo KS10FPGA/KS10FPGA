@@ -59,19 +59,19 @@ class uba_t {
         //
         // UBA Base Addresses
         //
-                
+
         static const ks10_t::addr_t pag_offset = 0000000;
         static const ks10_t::addr_t uba0       = (0 << 18) + uba_offset;
         static const ks10_t::addr_t uba1       = (1 << 18) + uba_offset;
         static const ks10_t::addr_t uba2       = (2 << 18) + uba_offset;
         static const ks10_t::addr_t uba3       = (3 << 18) + uba_offset;
         static const ks10_t::addr_t uba4       = (4 << 18) + uba_offset;
-                                
+
         //
         // UBA Control Status Register (UBACSR)
         //
 
-        static const ks10_t::addr_t csr_offset = 0000100;          
+        static const ks10_t::addr_t csr_offset = 0000100;
         static const ks10_t::data_t csr_tmo    = 0400000;
         static const ks10_t::data_t csr_nxd    = 0040000;
         static const ks10_t::data_t csr_hi     = 0004000;

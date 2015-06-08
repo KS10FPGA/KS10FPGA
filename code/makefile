@@ -137,7 +137,16 @@ archive_dist:
 	tar --exclude-vcs -czvf ks10_code_dist_`date '+%y%m%d'`.tgz *
 
 doxygen : Doxyfile
-	/cygdrive/c/Program\ Files/doxygen/bin/doxygen.exe
+	doxygen.exe
+
+check :
+	@echo "Tabs in:"
+	@-find . -type f | grep -v RCS | grep -e '\.cpp$$' -e '\.hpp$$' | xargs grep -P '\t'
+	@echo "Trailing white space in:"
+	@-find . -type f | grep -v RCS | grep -e '\.cpp$$' -e '\.hpp$$' | xargs grep -P '[ ]+$$'
+	@echo "FIXMEs in:"
+	@-find . -type f | grep -v RCS | grep -e '\.cpp$$' -e '\.hpp$$' | xargs grep -i 'fixme'
+
 
 ifneq (${MAKECMDGOALS}, clean)
 -include ${wildcard *.d} __dummy__
