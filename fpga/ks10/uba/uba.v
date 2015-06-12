@@ -410,6 +410,15 @@ module UBA (
              if (pageFAIL)
                $display("[%11.3f] UBA%d: Page Failure (TMO).  Addr = %012o.",
                         $time/1.0e3, ubaNUM, addr);
+
+             if (busACKI)
+               begin
+                  if (`busREAD(busADDRO))
+                    $display("[%11.3f] UBA: Read %012o from address %012o.", $time/1.0e3, busDATAI, busADDRO);
+                  else
+                    $display("[%11.3f] UBA: Wrote %012o to address %012o.", $time/1.0e3, busDATAO, busADDRO);
+               end
+             
           end
      end
 

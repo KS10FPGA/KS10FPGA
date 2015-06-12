@@ -57,8 +57,8 @@ module RHNEM (
    //  M7294/DBCA/E85
    //
 
-   localparam [0:3] nxmTimeout = 15;
-   reg        [0:3] nxmCount;
+   localparam [0:5] nxmTimeout = 63;
+   reg        [0:5] nxmCount;
 
    always @(posedge clk or posedge rst)
      begin
