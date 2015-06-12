@@ -39,17 +39,24 @@
 `timescale 1ns/1ps
 
 `ifndef SDSIM_DSK
- `define SDSIM_DSK "./sdsim.dsk"
+ `define SDSIM_DSK "./sdsim1.dsk"
 `endif
 
- module SDSIM (rst, clk, sdMISO, sdMOSI, sdSCLK, sdCS);
+`define SEEK_SET 0
+`define SEEK_CUR 1
+`define SEEK_END 2
 
-   input        rst;                    // Reset
-   input        clk;                    // Clock
-   output       sdMISO;                 // MISO
-   input        sdMOSI;                 // MOSI
-   input        sdSCLK;                 // SCLK
-   input        sdCS;                   // CS
+`define NULL 0
+`define EOF 32'hFFFF_FFFF
+
+ module SDSIM (
+      input  wire rst,                  // Reset
+      input  wire clk,                  // Clock
+      output wire sdMISO,               // MISO
+      input  wire sdMOSI,               // MOSI
+      input  wire sdSCLK,               // SCLK
+      input  wire sdCS                  // CS
+   );
 
    //
    // States
@@ -64,67 +71,61 @@
                     stateWRITE1 = 6,
                     stateWRITE2 = 7;
 
-
-
-   integer      file;                   // File descriptor for disk image file
-   integer      size;                   // File size
-   integer      bitcnt;
-   integer      bytecnt;
-
-   reg [0: 7]   image [0:4194303];      // Disk image (4 MB)
-   reg [0:21]   index;                  // Index into disk image
-
-   reg [0:55]   spiRX;
-   reg [0:55]   spiTX;
-   reg [0: 3]   state;
-
-   reg [0: 1]   clkstat;
-
    //
-   // This process reads the disk file into the image array
+   // Open the file
    //
+
+   integer fd;
 
    initial
      begin
-
-        file = $fopen(`SDSIM_DSK, "rb");
-
-        if (file != 0)
+        fd = $fopen(`SDSIM_DSK, "r+b");
+        if (fd == 0)
           begin
-             size = $fread(image, file);
-             $display("[%11.3f] KS10: Read disk image \"%s\" - %7d bytes.",
-                      $time/1.0e3, `SDSIM_DSK, size);
-             $fclose(file);
-          end
-        else
-          begin
-             $display("[%11.3f] KS10: Unable to open \"%s\".\n",
-                      $time/1.0e3, `SDSIM_DSK);
+             $display("[%11.3f] KS10: Unable to open \"%s\".\n", $time/1.0e3, `SDSIM_DSK);
              $stop;
           end
      end
 
+   //
+   // Syncrhonize sdSCLK
+   //
+
+   reg [0: 1] clkstat;
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          clkstat = 0;
+          clkstat <= 0;
         else
-          clkstat = {clkstat[1], sdSCLK};
+          clkstat <= {clkstat[1], sdSCLK};
      end
 
    //
    // State Machine
    //
 
+   reg [0:55] spiRX;
+   reg [0:55] spiTX;
+   reg [0: 3] state;
+   reg [0: 7] ch;
+
+   integer status;                      // File status
+   integer bitcnt;                      // Bit counter
+   integer bytecnt;                     // Byte counter
+   integer sector;                      // Sector address
+   integer position;                    // fseek position
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-            spiRX  <= {56{1'b1}};
-            spiTX  <= {56{1'b1}};
-            state  <= stateRESET;
-            index  <= 0;
-            bitcnt <= 0;
+             ch      <= 0;
+             spiRX   <= {56{1'b1}};
+             spiTX   <= {56{1'b1}};
+             state   <= stateRESET;
+             bitcnt  <= 0;
+             bytecnt <= 0;
           end
         else
           begin
@@ -148,7 +149,7 @@
                          bitcnt <= 15;
                          spiTX  <= 56'hff_01_ff_ff_ff_ff_ff;
                          state  <= stateRSP;
-                      end
+                       end
 
                     //
                     // CMD8:
@@ -180,9 +181,20 @@
 
                     else if ((spiRX[0:7] == 8'h51) && (clkstat == 2'b10))
                       begin
+
+                         sector = spiRX[16:39];
+                         position = sector * 512;
+
+                         status = $fseek(fd, position, `SEEK_SET);
+                         if (status == `EOF)
+                           begin
+                              $display("[%11.3f] KS10: SDSIM - $fseek() returned EOF.\n", $time/1.0e3);
+                              $stop();
+                           end
+                         $display("[%11.3f] KS10: SDSIM - Seek to SD Sector %d. (Position = %d).\n", $time/1.0e3, sector, position);
+
                          bitcnt <= 47;
                          spiTX  <= 56'hff_ff_00_ff_ff_fe_ff;
-                         index  <= spiRX[27:39] * 512;
                          state  <= stateREAD0;
                       end
 
@@ -193,9 +205,20 @@
 
                     else if ((spiRX[0:7] == 8'h58) && (clkstat == 2'b10))
                       begin
+
+                         sector = spiRX[16:39];
+                         position = sector * 512;
+
+                         status = $fseek(fd, position, `SEEK_SET);
+                         if (status == `EOF)
+                           begin
+                              $display("[%11.3f] KS10: SDSIM - $fseek() returned EOF.\n", $time/1.0e3);
+                              $stop();
+                           end
+                         $display("[%11.3f] KS10: SDSIM - Seek to SD Sector %d.\n", $time/1.0e3, sector);
+
                          bitcnt <= 47;
                          spiTX  <= 56'hff_ff_00_ff_ff_fe_ff;
-                         index  <= spiRX[27:39] * 512;
                          state  <= stateWRITE0;
                       end
 
@@ -258,10 +281,10 @@
                    begin
                       if (bitcnt == 0)
                         begin
+                           status   = $fscanf(fd, "%c", ch);
                            bitcnt  <= 7;
                            bytecnt <= 0;
-                           spiTX   <= {image[index], 48'h00_00_00_00_00_00};
-                           index   <= index + 1;
+                           spiTX   <= {ch, 48'h00_00_00_00_00_00};
                            state   <= stateREAD1;
                         end
                       else
@@ -292,9 +315,9 @@
                           end
                         else
                           begin
+                             status   = $fscanf(fd, "%c", ch);
                              bitcnt  <= 7;
-                             spiTX   <= {image[index], 48'h00_00_00_00_00_00};
-                             index   <= index + 1;
+                             spiTX   <= {ch, 48'h00_00_00_00_00_00};
                              bytecnt <= bytecnt + 1;
                           end
                       else
@@ -330,11 +353,10 @@
                      begin
                         if (bitcnt == 0)
                           begin
+                             $fwrite(fd, "%c", spiRX[48:55]);
                              bitcnt  <= 7;
                              bytecnt <= 0;
-                             image[index] = spiRX[48:55];
                              spiTX   <=56'hff_ff_ff_ff_ff_ff_ff;
-                             index   <= index + 1;
                              state   <= stateWRITE1;
                           end
                         else
@@ -366,10 +388,9 @@
                              end
                            else
                              begin
+                                $fwrite(fd, "%c", spiRX[48:55]);
                                 bitcnt  <= 7;
-                                image[index] = spiRX[48:55];
                                 spiTX   <= 56'hff_ff_ff_ff_ff_ff_ff;
-                                index   <= index + 1;
                                 bytecnt <= bytecnt + 1;
                              end
                         end
@@ -390,9 +411,7 @@
                    begin
                       if ((bitcnt == 0) || sdCS)
                         begin
-                           //bitcnt  <= 15;
-                           //bytecnt <= 0;
-                           //spiTX   <= x"00_ff_ff_ff_ff_ff_ff";
+                           $fflush(fd);
                            state  <= stateRESET;
                         end
                       else

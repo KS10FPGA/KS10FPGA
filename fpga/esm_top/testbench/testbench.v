@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor Testbench
 //
@@ -77,7 +77,11 @@ module testbench;
    // RH11 Secure Digital Interface
    //
 
-   wire        rh11CD_N = 0;    // RH11 Card Detect
+`ifdef SIM_SDHC_OFFLINE
+   wire        rh11CD_N = 1;    // RH11 Card not present
+`else
+   wire        rh11CD_N = 0;    // RH11 Card present
+`endif
    wire        rh11MISO;        // RH11 Data In
    wire        rh11MOSI;        // RH11 Data Out
    wire        rh11SCLK;        // RH11 Clock
@@ -384,28 +388,6 @@ module testbench;
       end
    endtask
 
-
-
-   //
-   // strlen()
-   //
-
-   function [0:31] strlen;
-      input [`STRDEF] s;
-      integer i;
-      begin : loop
-         for (i = 0; i < `STRLEN; i = i + 1)
-           begin
-              if (s == 0)
-                begin
-                   strlen = i;
-                   disable loop;
-                end
-              s = s >> 8;
-           end
-      end
-   endfunction // strlen
-
    //
    // This function left justifies a string
    //
@@ -416,63 +398,6 @@ module testbench;
          while (s[0:7] == 0)
            s = s << 8;
          ljstr = s;
-      end
-   endfunction
-
-   //
-   // This function left justifies a line
-   //
-
-   function [`STRDEF] ljlin;
-      input [`STRDEF] l;
-      begin
-         while (l[0:7] == 0)
-           l = l << 8;
-         ljlin = l;
-      end
-   endfunction
-
-   //
-   // This function right justifies a line
-   //
-
-   function [`STRDEF] rjlin;
-      input [`STRDEF] l;
-      begin
-         while (l[`STRLEN*8-8:`STRLEN*8-1] == 0)
-           l = l >> 8;
-         rjlin = l;
-      end
-   endfunction
-
-   //
-   // strcmp()
-   //
-
-   function [0:0] strcmp;
-      input [`STRDEF] s;
-      input [`STRDEF] l;
-      begin : break
-         //$display("$$$$$$$$$$$$$$$$$$ Comparing \"%s\" and \"%s\".", s, l);
-         //$display("$$$$$$$$$$$$$$$$$$ Comparing \"%c\" and \"%c\" top", l[`STRLEN*8-8:`STRLEN*8-1], s[`STRLEN*8-8:`STRLEN*8-1]);
-         if ((l[`STRLEN*8-8:`STRLEN*8-1] == s[`STRLEN*8-8:`STRLEN*8-1]) && (s != 0) || (l != 0))
-           begin
-              strcmp = 0;
-              while ((s != "") && (l != ""))
-                begin
-                   if (l[`STRLEN*8-8:`STRLEN*8-1] != s[`STRLEN*8-8:`STRLEN*8-1])
-                     begin
-                        //$display("$$$$$$$$$$$$$$$$$$ NO MATCH $$$$$$$$$$$$$$$$$$");
-                        strcmp = 1;
-                        disable break;
-                     end
-                   s = s >> 8;
-                   l = l >> 8;
-                   //$display("$$$$$$$$$$$$$$$$$$ Comparing \"%c\" and \"%c\".", l[`STRLEN*8-8:`STRLEN*8-1], s[`STRLEN*8-8:`STRLEN*8-1]);
-                end
-           end
-         else
-           strcmp = 1;
       end
    endfunction
 
@@ -491,19 +416,22 @@ module testbench;
            begin
               if ((temp[28:35] >= 8'h20) && (temp[28:35] < 8'h7f))
                 begin
-                   $display("[%11.3f] KS10: CTY Output: \"%s\"", $time/1.0e3, temp[28:35]);
+                   $display("[%11.3f] KS10: CTY Output: \"%s\"", $time/1.0e3,
+                            temp[28:35]);
                    $fwrite(fd, "%s", temp[28:35]);
                    inBuf = {inBuf, temp[28:35]};
                 end
               else if ((temp[28:35] == 8'h0a) || (temp[28:35] == 8'h0d))
                 begin
-                   $display("[%11.3f] KS10: CTY Output: \"<%02x>\"", $time/1.0e3, temp[28:35]);
+                   $display("[%11.3f] KS10: CTY Output: \"<%02x>\"",
+                            $time/1.0e3, temp[28:35]);
                    $fwrite(fd, "%s", temp[28:35]);
                    inBuf = 0;
                 end
               else
                 begin
-                   $display("[%11.3f] KS10: CTY Output: \"<%02x>\"", $time/1.0e3, temp[28:35]);
+                   $display("[%11.3f] KS10: CTY Output: \"<%02x>\"",
+                            $time/1.0e3, temp[28:35]);
 //                 $fwrite(fd, "<%02x>", temp[28:35]);
                 end
               $fflush(fd);
@@ -541,7 +469,7 @@ module testbench;
    endtask
 
    //
-   // charout
+   // charout()
    //
 
    task charout;
@@ -550,37 +478,21 @@ module testbench;
          conREADMEM(addrCIN, temp);
          if ((outBuf != 0) && !temp[27])
            begin
-              outBuf = ljlin(outBuf);
-
-              //$display("*************** outbuf = \"%s\".", outBuf);
-
+              outBuf = ljstr(outBuf);
               conWRITEMEM(addrCIN, {23'b0, 1'b1, outBuf[0:7]});
               if ((outBuf[0:7] >= 8'h20) && (outBuf[0:7] < 8'h7f))
-                $display("[%11.3f] KS10: CTY Input: \"%s\"", $time/1.0e3, outBuf[0:7]);
+                $display("[%11.3f] KS10: CTY Input: \"%s\"", $time/1.0e3,
+                         outBuf[0:7]);
               else
-                $display("[%11.3f] KS10: CTY Input: \"<%02x>\"", $time/1.0e3, outBuf[0:7]);
+                $display("[%11.3f] KS10: CTY Input: \"<%02x>\"", $time/1.0e3,
+                         outBuf[0:7]);
               outBuf = outBuf << 8;
-              //outBuf = rjlin(outBuf);
-           end
-      end
-   endtask
-
-  task putt;
-      input [ 0:35]   ch;
-      inout [`STRDEF] msg;
-      input time trigger;
-      begin
-         if (($time > trigger) && (msg[0:7] != 0) && !ch[27])
-           begin
-              conWRITEMEM(addrCIN, {23'b0, 1'b1, msg[0:7]});
-              $display("[%11.3f] KS10: CTY Input: \"%s\"", $time/1.0e3, msg[0:7]);
-              msg = msg << 8;
            end
       end
    endtask
 
    //
-   // Expect
+   // Expect()
    //
 
    task expect;
@@ -588,15 +500,21 @@ module testbench;
       input [`STRDEF] outString;
       inout state;
       begin
-         if (strcmp(inString, inBuf) == 0)
+         if (inString == inBuf)
            begin
               if (state == 0)
                 begin
-                   $display("--------------- expect(%s) triggered -----------------", inString);
-                   $display("\007\007\007\007\007");
+                   $display("[%11.3f] KS10: Expect(%s) triggered.", $time/1.0e3, inString);
+
+                   //
+                   // Need to delay output otherwise the response will come
+                   // before the KS10 software is ready.
+                   //
+
+                   #100000;
                    puts(outString);
                    state = 1;
-                   //$display("---------------- outBuf \"%s\" -------------------", outBuf);
+                   //$display("[%11.3f] KS10: outBuf is \"%s\".", outBuf);x
                 end
            end
          else
@@ -605,17 +523,44 @@ module testbench;
    endtask
 
    //
-   // Initialization
+   // 50 MHz clock generator
+   //
+   // Details
+   //  Clock is inverted every ten nS
    //
 
+   always
+     begin
+        #10 clk = ~clk;
+     end
+
+   //
+   // Initialization.
+   //
+   // All Console IO must be here since the KS10 interface is single thread.
+   //
+
+   integer    fd_cty;
    reg [0:35] temp;
    reg [0:35] haltStatus;
    reg [0:35] haltAddr;
    reg        initHalt;
+   reg [0:31] state;
 
    initial
      begin
+
         $display("[%11.3f] KS10: Simulation Starting", $time/1.0e3);
+
+`ifdef SIM_CTY
+
+ `ifdef __ICARUS__
+        fd_cty = $fopen({``DEBUG, "_cty_out.txt"}, "w");
+ `else
+        fd_cty = $fopen("cty_out.txt", "w");
+ `endif
+
+`endif
 
         //
         // Initial state
@@ -632,6 +577,7 @@ module testbench;
         initHalt <= 1;
         inBuf    <= 0;
         outBuf   <= 0;
+        state    <= 0;
 
         //
         // Release reset at 95 nS
@@ -663,43 +609,20 @@ module testbench;
         conREAD(addrREGCIR, temp);
         $display("[%11.3f] KS10: CIR is \"%12o\"", $time/1.0e3, temp);
 
-     end
+        //
+        // Handle Startup.
+        //
+        // Details
+        //  The Microcode will always halt at startup.  Catch the halt at startup
+        //  (only).  When this occurs momentarily push the RUN, EXEC, and CONT button
+        //  to continue execution.
+        //
 
-   //
-   // Display run/halt status
-   //
-
-   always @(negedge haltLED)
-     if ($time != 0)
-       $display("[%11.3f] KS10: CPU Unhalted", $time/1.0e3);
-
-   //
-   // Notify about console interrupts
-   //
-
-   always @(posedge conINTR)
-     begin
-        $display("[%11.3f] KS10: Console Interrupted", $time/1.0e3);
-     end
-
-   //
-   // Handle Startup.
-   //
-   // Details
-   //  The Microcode will always halt at startup.  Catch the halt at startup
-   //  (only).  When this occurs momentarily push the RUN, EXEC, and CONT button
-   //  to continue execution.  Otherwise let the KS10 halt.
-   //
-
-   always @(posedge haltLED)
-     begin
-        $display("[%11.3f] KS10: CPU Halted", $time/1.0e3);
-        printHaltStatus;
-        if (!initHalt)
-          $stop;
-        else
+        @(posedge haltLED)
           begin
-             initHalt = 0;
+
+             $display("[%11.3f] KS10: CPU Halted", $time/1.0e3);
+             printHaltStatus;
 
              //
              // Initialize Console Interface
@@ -725,127 +648,70 @@ module testbench;
              conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN));
 `endif
           end
-     end
-
-`ifdef __ICARUS__
- `ifdef DUMPVARS
-
-   initial
-     begin
-
-        $dumpfile("c:\test.vcd");
 
         //
-        // Dump R0 through R7
+        // Console Processing and Monitoring
         //
 
-        $dumpvars(0, testbench,
-                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[0],
-                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[1],
-                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[2],
-                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[3],
-                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[4],
-                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[5],
-                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[6],
-                  testbench.uKS10.uKS10.uCPU.uRAMFILE.uRAM1Kx36.ram[7]);
-     end
+        forever
 
-   `endif
-`endif
+          @(posedge clk)
+
+          begin
+
+             //
+             // Stop simulation if the KS10 halts
+             //
+
+             if (haltLED)
+               begin
+                  $display("[%11.3f] KS10: CPU Halted", $time/1.0e3);
+                  printHaltStatus;
+                  $stop;
+               end
+
+             //
+             // Handle CTY IO
+             //
+
+             if (conINTR)
+               begin
+                  $display("[%11.3f] KS10: Console Interrupted", $time/1.0e3);
 
 `ifdef SIM_CTY
 
-/*
+                  getchar(fd_cty);
 
-   //
-   // This task outputs a character to the console input register and then
-   // polls the VALID bit to know when the KS10 has picked up the character.
-   //
+                  //
+                  // SMMON (DECSYSTEM 2020 DIAGNOSTIC MONITOR) Responses
+                  //
 
-   task sendchar;
-      input [18:35] addr;
-      input [ 0: 7] data;
-      reg   [ 0:35] temp;
-      begin
-         conWRITEMEM(addr, {23'b0, 1'b1, data});
-         $display("[%11.3f] KS10: CTY Input: \"%s\"", $time/1.0e3, data);
-         conREADMEM(addr, temp);
-         while (temp[27])
-           #100 conREADMEM(addr, temp);
-      end
-   endtask
+                  expect("UBA # - ",                                  "1\015",      state[0]);
+                  expect("DISK:<DIRECTORY> OR DISK:[P,PN] - ",        "\015",       state[1]);
+                  expect("SMMON CMD - ",                              "STD\015",    state[2]);
+                  expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",   "Y\015",      state[3]);
+                  expect("LH SWITCHES <# OR ?> - ",                   "000000\015", state[4]);
+                  expect("RH SWITCHES <# OR ?> - ",                   "400000\015", state[5]);
 
-*/
+                  //
+                  // DSRPA (RP06-RH11 BASIC DRIVE DIAGNOSTIC) Responses
+                  //
 
-   integer fd_cty;
-   reg [0:31] state;
+                  expect("LIST PGM SWITCH OPTIONS ?  Y OR N <CR> - ", "N\015",      state[6]);
+                  expect("SELECT DRIVES (0-7 OR \"A\") - ",           "0\015",      state[7]);
+                  expect("HEADS LOADED CORRECTLY ?  Y OR N <CR> - ",  "Y\015",      state[8]);
+                  expect("PUT DRIVE ON LINE. HIT <CR> WHEN READY",    "\015",       state[9]);
 
-   initial
-     begin
-        state = 0;
+                  //
+                  //
+                  //
 
- `ifdef __ICARUS__
-        fd_cty = $fopen({``DEBUG, "_cty_out.txt"}, "w");
- `else
-        fd_cty = $fopen("cty_out.txt", "w");
- `endif
-
-        #200000;
-
-        forever
-          begin
-             getchar(fd_cty);
-
-             //
-             // SMMON (DECSYSTEM 2020 DIAGNOSTIC MONITOR) Responses
-             //
-
-             expect("UBA # - ",                                  "0\015",       state[0]);
-             expect("DISK:<DIRECTORY> OR DISK:[P,PN] - ",        "\015",        state[1]);
-             expect("SMMON CMD - ",                              "STD\015",     state[2]);
-             expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",   " Y\015",      state[3]);
-             expect("LH SWITCHES <# OR ?> - ",                   " 000000\015", state[4]);
-             expect("RH SWITCHES <# OR ?> - ",                   " 400000\015", state[5]);
-
-             //
-             // DSRPA (RP06-RH11 BASIC DRIVE DIAGNOSTIC) Responses
-             //
-
-             expect("LIST PGM SWITCH OPTIONS ?  Y OR N <CR> - ", " N\015",      state[6]);
-             expect("SELECT DRIVES (0-7 OR \"A\") - ",           " 0\015",      state[7]);
-             expect("HEADS LOADED CORRECTLY ?  Y OR N <CR> - ",  " Y\015",      state[8]);
-             expect("PUT DRIVE ON LINE. HIT <CR> WHEN READY",    "\015",        state[9]);
-
-             //
-             //
-             //
-
-
-             charout();
-          end
-     end
+                  charout();
 
 `endif
 
-   //
-   // Clock generator
-   //
-   // Details
-   //  Clock is inverted every ten nS
-   //
-
-   always
-     begin
-        #10 clk = ~clk;
-     end
-
-   //
-   // Periodically flush the output
-   //
-
-   always
-     begin
-        #1000000 $fflush;
+               end
+          end
      end
 
    //
@@ -853,6 +719,15 @@ module testbench;
    //
 
    assign conDATA = (~conRD_N) ? 16'bz : conDATO;
+
+   //
+   // Periodically flush the output buffer
+   //
+
+   always
+     begin
+        #1000000 $fflush;
+     end
 
    //
    // KS10
