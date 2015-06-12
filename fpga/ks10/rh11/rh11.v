@@ -143,7 +143,11 @@ module RH11 (
    integer file;
 
    initial
-     file = $fopen("rhstatus.txt", "w");
+     begin
+        file = $fopen("rhstatus.txt", "w");
+        $fwrite(file, "[%11.3f] RH11: Debug Mode.\n", $time/1.0e3);
+        $fflush(file);
+     end
 
 `endif
 
@@ -179,7 +183,6 @@ module RH11 (
    //
 
    wire vectREAD   = devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == rhDEV);
-
    wire rhcs1READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
    wire rhcs1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
    wire rhwcREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  wcADDR[18:34]);
@@ -358,7 +361,6 @@ module RH11 (
    wire sdINCSECT;                      // Increment Sector
    wire sdSETWCE;                       // Set write check error
    wire sdREADOP;                       // Read or write check operation
-   wire sdMOL;                          // Medium on-line
 
    //
    // RP Signals
@@ -567,7 +569,6 @@ module RH11 (
               .clk      (clk),
               .rst      (rst),
               .clr      (rhCLR | devRESET),
-              .rhMOL    (sdMOL),
               .rhINCSECT(sdINCSECT),
               .rhATACLR (rhATACLR[i]),
               .devADDRI (devADDRI),
@@ -630,7 +631,6 @@ module RH11 (
       .sdINCSECT  (sdINCSECT),
       .sdSETWCE   (sdSETWCE),
       .sdREADOP   (sdREADOP),
-      .sdMOL      (sdMOL),
       .sdSCAN     (sdSCAN),
       .sdDEBUG    (rh11DEBUG)
    );
@@ -662,8 +662,26 @@ module RH11 (
                      rper2WRITE | rper2READ |
                      rper3WRITE | rper3READ |
                      rpec1WRITE | rpec1READ |
-                     rpec2WRITE | rpec2READ);
+                     rpec2WRITE | rpec2READ |
+                     //
+                     vectREAD);
+   //
+   // Unit Selection
+   //
 
+   wire [15:0] rpdaUNIT  = rpDA[rhUNIT];
+   wire [15:0] rpdsUNIT  = rpDS[rhUNIT];
+   wire [15:0] rplaUNIT  = rpLA[rhUNIT];
+   wire [15:0] rpmrUNIT  = rpMR[rhUNIT];
+   wire [15:0] rpdtUNIT  = rpDT[rhUNIT];
+   wire [15:0] rpsnUNIT  = rpSN[rhUNIT];
+   wire [15:0] rpofUNIT  = rpOF[rhUNIT];
+   wire [15:0] rpdcUNIT  = rpDC[rhUNIT];
+   wire [15:0] rpccUNIT  = rpCC[rhUNIT];
+   wire [15:0] rper1UNIT = rpER1[rhUNIT];
+   wire [15:0] rper2UNIT = rpER2[rhUNIT];
+   wire [15:0] rper3UNIT = rpER3[rhUNIT];
+   
    //
    // Bus Mux and little-endian to big-endian bus swap.
    //
@@ -678,39 +696,41 @@ module RH11 (
         if (rhbaWRITE | rhbaREAD)
           devDATAO = {20'b0, rhBA[15:0]};
         if (rpdaWRITE | rpdaREAD)
-          devDATAO = {20'b0, rpDA[rhUNIT]};
+          devDATAO = {20'b0, rpdaUNIT};
         if (rhcs2WRITE | rhcs2READ)
           devDATAO = {20'b0, rhCS2};
         if (rpdsWRITE | rpdsREAD)
-          devDATAO = {20'b0, rpDS[rhUNIT]};
+          devDATAO = {20'b0, rpdsUNIT};
         if (rper1WRITE | rper1READ)
-          devDATAO = {20'b0, rpER1[rhUNIT]};
+          devDATAO = {20'b0, rper1UNIT};
         if (rhasWRITE | rhasREAD)
           devDATAO = {20'b0, rhAS};
         if (rplaWRITE | rplaREAD)
-          devDATAO = {20'b0, rpLA[rhUNIT]};
+          devDATAO = {20'b0, rplaUNIT};
         if (rhdbWRITE | rhdbREAD)
           devDATAO = {20'b0, rhDB};
         if (rpmrWRITE | rpmrREAD)
-          devDATAO = {20'b0, rpMR[rhUNIT]};
+          devDATAO = {20'b0, rpmrUNIT};
         if (rpdtWRITE | rpdtREAD)
-          devDATAO = {20'b0, rpDT[rhUNIT]};
+          devDATAO = {20'b0, rpdtUNIT};
         if (rpsnWRITE | rpsnREAD)
-          devDATAO = {20'b0, rpSN[rhUNIT]};
+          devDATAO = {20'b0, rpsnUNIT};
         if (rpofWRITE | rpofREAD)
-          devDATAO = {20'b0, rpOF[rhUNIT]};
+          devDATAO = {20'b0, rpofUNIT};
         if (rpdcWRITE | rpdcREAD)
-          devDATAO = {20'b0, rpDC[rhUNIT]};
+          devDATAO = {20'b0, rpdcUNIT};
         if (rpccWRITE | rpccREAD)
-          devDATAO = {20'b0, rpCC[rhUNIT]};
+          devDATAO = {20'b0, rpccUNIT};
         if (rper2WRITE | rper2READ)
-          devDATAO = {20'b0, rpER2[rhUNIT]};
+          devDATAO = {20'b0, rper2UNIT};
         if (rper3WRITE | rper3READ)
-          devDATAO = {20'b0, rpER3[rhUNIT]};
+          devDATAO = {20'b0, rper3UNIT};
         if (rpec1WRITE | rpec1READ)
           devDATAO = {20'b0, rpEC1};
         if (rpec2WRITE | rpec2READ)
           devDATAO = {20'b0, rpEC2};
+        if (vectREAD)
+          devDATAO = {20'b0, rhVECT};
      end
 
    //
