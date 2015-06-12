@@ -39,6 +39,9 @@ BEGIN {
     data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5);
     i = strtonum("0" $2)
     lastaddr = max(lastaddr, i);
+    if ((map[i] != "") && (map[i] != data)) {
+        printf("// Address %6o modified.  Was %012o, is %012o.\n", i, map[i], data);
+    }
     map[i] = data;
 }
 
@@ -59,6 +62,9 @@ BEGIN {
     data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5 + data6);
     i = strtonum("0" $2)
     lastaddr = max(lastaddr, i);
+    if ((map[i] != "") && (map[i] != data)) {
+        printf("// Address %6o modified.  Was %012o, is %012o.\n", i, map[i], data);
+    }
     map[i] = data;
 }
 
@@ -78,6 +84,9 @@ BEGIN {
     data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5 + data6);
     i = strtonum("0" $2)
     lastaddr = max(lastaddr, i);
+    if ((map[i] != "") && (map[i] != data)) {
+        printf("// Address %6o modified.  Was %012o, is %012o.\n", i, map[i], data);
+    }
     map[i] = data;
 }
 
@@ -97,6 +106,9 @@ BEGIN {
     data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5);
     i = strtonum("0" $2)
     lastaddr = max(lastaddr, i);
+    if ((map[i] != "") && (map[i] != data)) {
+        printf("// Address %6o modified.  Was %012o, is %012o.\n", i, map[i], data);
+    }
     map[i] = data;
 }
 
@@ -116,10 +128,13 @@ BEGIN {
     data4 = substr($3, 10, 2);
     data5 = substr($3, 13, 2);
     data6 = substr($3, 16, 2);
-    #print $2, (data1 data2 data3 data4 data5 data6)
+    data  = sprintf("%012o", strtonum("0" data1 data2 data3 data4 data5 data6));
     i = strtonum("0" $2)
     lastaddr = max(lastaddr, i);
-    map[i] = (data1 data2 data3 data4 data5 data6)
+    if ((map[i] != "") && (map[i] != data)) {
+        printf("// Address %6o modified.  Was %s, is %s.\n", i, map[i], data);
+    }
+    map[i] = data;
 }
 
 #
@@ -138,9 +153,11 @@ BEGIN {
     data4 = lshift(and(strtonum("0" substr($3, 13, 3)), 0177),  8)
     data5 = lshift(and(strtonum("0" substr($3, 17, 3)), 0177),  1)
     data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5);
-    #print $2 " " data
     i = strtonum("0" $2)
     lastaddr = max(lastaddr, i);
+    if ((map[i] != "") && (map[i] != data)) {
+        printf("// Address %6o modified.  Was %s, is %s.\n", i, map[i], data)
+    }
     map[i] = data
 }
 
@@ -158,7 +175,10 @@ BEGIN {
     data = sprintf("%012o", data1)
     i = strtonum("0" $2)
     lastaddr = max(lastaddr, i);
-    map[i] = data
+    if ((map[i] != "") && (map[i] != data)) {
+        printf("// Address %6o modified.  Was %s, is %s.\n", i, map[i], data);
+    }
+    map[i] = data;
 }
 
 #
@@ -174,6 +194,9 @@ BEGIN {
     data  = sprintf("%012o", data1 + data2);
     i = strtonum("0" $2)
     lastaddr = max(lastaddr, i);
+    if ((map[i] != "") && (map[i] != data)) {
+        printf("// Address %6o modified.  Was %012o, is %012o.\n", i, map[i], data);
+    }
     map[i] = data
 }
 
@@ -193,6 +216,9 @@ BEGIN {
     data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5 + data6);
     i = strtonum("0" $2)
     lastaddr = max(lastaddr, i);
+    if ((map[i] != "") && (map[i] != data)) {
+        printf("// Address %6o modified.  Was %012o, is %012o.\n", i, map[i], data);
+    }
     map[i] = data
 
 }
@@ -214,6 +240,9 @@ BEGIN {
     data  = sprintf("%012o", data1 + data2 + data3 + data4 + data5);
     i = strtonum("0" $2)
     lastaddr = max(lastaddr, i);
+    if ((map[i] != "") && (map[i] != data)) {
+        printf("// Address %6o modified.  Was %s, is %s.\n", i, map[i], data);
+    }
     map[i] = data
 }
 
@@ -226,10 +255,13 @@ BEGIN {
 #
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7][0-7][0-7][0-7].*/ {
-    #print $2, ($3 $4)
     i = strtonum("0" $2);
+    data  = sprintf("%012o", strtonum("0" ($3 $4)));
     lastaddr = max(lastaddr, i);
-    map[i] = ($3 $4)
+    if ((map[i] != "") && (map[i] != data)) {
+        printf("// Address %6o modified.  Was %s, is %s.\n", i, map[i], data);
+    }
+    map[i] = data
 }
 
 #
@@ -238,7 +270,7 @@ BEGIN {
 
 END {
    prevaddr = 0;
-   for (addr = 0; addr < lastaddr; addr++) { 
+   for (addr = 0; addr <= lastaddr; addr++) { 
        if (map[addr] != "") {
 	   data = strtonum("0" map[addr]);
 	   if (addr != prevaddr + 1 ){
@@ -248,6 +280,7 @@ END {
 	   prevaddr = addr;
        } else {
 	   #printf "%09x\t\t// mem[%06o] = %012o (init)\n", 0, addr, 0
+	   #prevaddr = addr;
        }
    }
 }
