@@ -65,7 +65,6 @@ module SD (
       output reg          devREQO,              // DMA Request
       input  wire         devACKI,              // DMA Acknowledge
       // RH11
-      input  wire         rhCD,                 // RH Card Detect
       input  wire [15: 0] rhWC,                 // RH Word Count
       // RPXX
       input  wire [ 1: 0] rpSDOP,               // RP Operation
@@ -986,11 +985,11 @@ module SD (
                                sectADDR <= {8'b0, sdSCAN, rpSDLSA};
                                sdRDCNT  <= sdRDCNT + 1'b1;
                                state    <= stateREAD00;
-//`ifndef SYNTHESIS
+`ifndef SYNTHESIS
                                $fwrite(file, "[%11.3f] RH11: SD Controller received a READ Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
                                $fwrite(file, "[%11.3f] RH11: SD Sector Address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
                                $fflush(file);
-//`endif
+`endif
                             end
                           `sdopWR:
                             begin

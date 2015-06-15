@@ -418,7 +418,7 @@ module UBA (
                   else
                     $display("[%11.3f] UBA: Wrote %012o to address %012o.", $time/1.0e3, busDATAO, busADDRO);
                end
-             
+
           end
      end
 

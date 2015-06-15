@@ -49,7 +49,7 @@ module RPDA (
       input  wire         rpPRESET,             // Preset command
       input  wire [ 5: 0] rpSECNUM,             // Last sector number
       input  wire [ 5: 0] rpTRKNUM,             // Last track number
-      input  wire         rpINCSECT,            // Increment sector/track/cylinder
+      input  wire         rpINCSECT,            // Increment sect/track/cyl
       input  wire         rpDRY,                // Drive ready
       output wire [15: 0] rpDA                  // rpDA Output
    );

@@ -3,11 +3,7 @@
 // KS10 Processor
 //
 // Brief
-//   Utilities
-//
-// Details
-//
-// Notes
+//   Parameterized Synchronization module
 //
 // File
 //   sync.v

@@ -119,6 +119,7 @@ module RPCTRL (
                     stateSEEKEND =  3,
                     stateROTDLY  =  4,
                     stateWAITACK =  5,
+                    stateRECAL   =  6,
                     stateDONE    = 31;
 
    //
@@ -222,8 +223,8 @@ module RPCTRL (
 
                           //
                           // Recalibrate Command
-                          //  The seek command causes the heads to move to
-                          //  cylinder 0.
+                          //  The recalibrate command causes the heads to move
+                          //  to cylinder 0.
                           //
 
                           `funRECAL:
@@ -236,7 +237,7 @@ module RPCTRL (
                                  delay  <= seekDELAY(0, rpCCA);
                                else
                                  delay <= $rtoi(FIXDELAY);
-                               state <= stateSEEK;
+                               state <= stateRECAL;
                             end
 
                           //
@@ -413,6 +414,20 @@ module RPCTRL (
                              delay <= $rtoi(FIXDELAY);
                            state <= stateROTDLY;
                         end
+                   end
+
+                 //
+                 // stateRECAL
+                 //
+                 // Don't update RPCC.  It was already zeroed.
+                 //
+
+                 stateRECAL:
+                   begin
+                      if (delay == 0)
+                        state <= stateDONE;
+                      else
+                        delay <= delay - 1'b1;
                    end
 
                  //

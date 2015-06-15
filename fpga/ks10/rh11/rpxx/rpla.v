@@ -15,27 +15,49 @@
 //   Only the RPDA diagnostic cares about this.
 //
 //   When RPMR[FMT22] is negated (18-bit mode), there are 20 sectors per track.
-//   There are 672 bytes per sector and therefore 12768 bytes per track.  Of
+//   There are 672 bytes per sector and therefore 13440 bytes per track.  Of
 //   the 672 bytes of data per sector, 576 bytes are payload and 96 bytes are
 //   pre-header, header, header gap, ECC, data gap, and tolerance gap.
 //
 //   When RPMR[FMT22] is asserted (16-bit mode), there are 22 sectors per track.
-//   There are 608 bytes per sector and therefore 12768 bytes per track. Of
-//   the 608 bytes of data per sector, 512 bytes are payload and 96 bytes are
-//   pre-header, header, header gap, ECC, data gap, and tolerance gap.
+//   There are 609 bytes per sector and therefore 13398 bytes per track. Of
+//   the 609 bytes of data per sector, 512 bytes are payload and 96 bytes are
+//   pre-header, header, header gap, ECC, data gap, and tolerance gap. By my
+//   count, 1 byte is unaccounted.
 //
-//   Notice that the number of bytes per track does not change with mode.
+//   Notice that the number of bytes per track almost does not change with mode.
+//
+//   The RP06 spins at 3600 RPM.  When RPMR[FMT22] is negated (18-bit mode)
+//   this is 1200 sectors per second. This implies that the sector extension
+//   counter must be incremented at 806.400 KHz.
+//
+//   When RPMR[FMT22] is asserted (16-bit mode), this is 1320 sectors per
+//   second.  This implies that the sector extension counter must be
+//   incremented at 803.880 KHz.
+//
+//   Thus the Sector Extension Counter will be clocked at 800 KHz which is close
+//   enough.
 //
 //   The RPXX has special Diagnostic Mode hardware that allows this all to be
 //   tested via the Maintenance Mode Register (RPMR) and the Look Ahead Register
 //   (RPLA).  This is enabled when the unit is in Diagnostic Mode (RPMR[DMD]
 //   asserted).
 //
-//   The sector byte counter can be reset by generating an index pulse via the
-//   Diagnostic Index Pulse bit of the Maintenance Register (RPMR[DIND]).
-//   Thereafter, the byte counter can be incremented by bit-banging a
-//   Diagnostic Sector Clock via the RPMR[DSCK] bit.  The result can be
+//   The sector extension counter can be reset by generating an index pulse via
+//   the Diagnostic Index Pulse bit of the Maintenance Register (RPMR[DIND]).
+//   Thereafter, the sector extension counter can be incremented by bit-banging
+//   a Diagnostic Sector Clock via the RPMR[DSCK] bit.  The result can be
 //   observed via the Look Ahead Register.
+//
+//   The sector extension that is reported in the RPLA register is as follows:
+//
+//     Extension   Extension
+//      Counter      Report
+//    ----------- ----------
+//       0 - 127      0
+//     128 - 255      1
+//     256 - 512      2
+//     512 -          3
 //
 // File
 //   rpla.v
@@ -79,8 +101,15 @@ module RPLA (
       input  wire         rpFMT22,              // 22 (octal) sector mode
       input  wire [15: 0] rpMR,                 // Maintenance register
       input  wire [ 5: 0] rpSA,                 // Sector address
-      output reg  [15: 0] rpLA                  // Look ahead register
+      output wire [15: 0] rpLA                  // Look ahead register
    );
+
+   //
+   // Divider constants
+   //
+
+   localparam CLKFRQ = `CLKFRQ;                 // Clock frequency
+   localparam SECFRQ = 800000;                  // Sector clock frequency
 
    //
    // Decode rpMR
@@ -91,104 +120,165 @@ module RPLA (
    wire rpDMD  = `rpMR_DMD(rpMR);               // Diagnostic mode
 
    //
-   // Create clock enable
+   // Generate "Nomal Mode" Sector Extension Counter Clock.
+   //
+   // This is a Fractional-N divider.
    //
 
-   wire clken;
-   EDGETRIG FIFOWR(clk, rst, 1'b1, 1'b1, rpDSCK, clken);
-
-   //
-   // Prescaler. Divides by 609 or 672 depending on mode.
-   //
-
-   reg [9:0] bytecnt;
+   wire [0:31] incr = $rtoi((2.0**32.0) * SECFRQ / CLKFRQ + 0.5);
+   reg  [0:31] accum;
+   reg         carry;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          bytecnt <= 0;
+          {carry, accum} <= 33'b0;
+        else
+          {carry, accum} <= {1'b0, accum} + {1'b0, incr};
+     end
+
+   wire sect_clk = carry;
+
+   //
+   // Create "Maintenance Mode" Sector Extension Counter Clock.
+   //
+
+   wire diag_clk;
+   EDGETRIG MAINTCLK(clk, rst, 1'b1, 1'b1, rpDSCK, diag_clk);
+
+   //
+   // Clock Multiplexer.  This switches beteen "Normal" and "Maintenance" mode
+   // clocks.
+   //
+   // Trace
+   //  M7787/DP6/E36
+   //
+
+   wire clken = rpDMD ? diag_clk : sect_clk;
+
+   //
+   // Sector Extension Counter
+   //
+   // Trace
+   //  M7787/DP6/E25
+   //  M7787/DP6/E29
+   //  M7787/DP6/E30
+   //
+
+   reg [9:0] sect_ext;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          sect_ext <= 0;
         else
           if (clken)
             begin
-               if (rpDIND)
-                 bytecnt <= 0;
-               else if (incsector)
-                 bytecnt <= 0;
+               if (rpDMD & rpDIND)
+                 sect_ext <= 0;
+               else if (sect_inc)
+                 sect_ext <= 0;
                else
-                 bytecnt <= bytecnt + 1'b1;
+                 sect_ext <= sect_ext + 1'b1;
             end
      end
 
    //
-   // Increment Sector
+   // Sector Increment
+   //
+   // Trace
+   //  M7787/DP6/E16
+   //  M7787/DP6/E17
+   //  M7787/DP6/E20
+   //  M7787/DP6/E24
+   //  M7787/DP6/E43
+   //  M7787/DP6/E51
+   //  M7787/DP6/E53
    //
 
-   wire incsector = ((!rpFMT22 & (bytecnt == 671)) |    // 672 bytes per sector
-                     ( rpFMT22 & (bytecnt == 608)));    // 609 bytes per sector
+   wire sect_inc = ((!rpFMT22 & (sect_ext == 671)) |    // 672 bytes per sector
+                    ( rpFMT22 & (sect_ext == 608)));    // 609 bytes per sector
 
    //
-   // Increment Extension Counter
+   // Extension Register
+   //
+   // Trace
+   //  M7787/DP6/E64
+   //  M7787/DP6/E63
+   //  M7787/DP6/E65
    //
 
-   wire incextcnt = ((bytecnt == 127) |
-                     (bytecnt == 255) |
-                     (bytecnt == 511) |
-                     ((bytecnt == 608) &  rpFMT22) |
-                     ((bytecnt == 671) & !rpFMT22));
+   reg [1:0] ext_cnt;
 
-   //
-   // Extension counter
-   //
-
-   reg [1:0] extcnt;
-   always @(posedge clk or posedge rst)
+   always @*
      begin
-        if (rst)
-          extcnt <= 0;
+        if (sect_ext < 128)
+          ext_cnt <= 0;
+        else if (sect_ext < 256)
+          ext_cnt <= 1;
+        else if (sect_ext < 512)
+          ext_cnt <= 2;
         else
-          if (clken)
-            begin
-               if (rpDIND)
-                 extcnt <= 0;
-               else if (incextcnt)
-                 extcnt <= extcnt + 1'b1;
-            end
+          ext_cnt <= 3;
      end
 
    //
-   // Sector counter
+   // Sector Counter
+   //
+   // The Sector Counter will not increment past the last sector.  In
+   // maintenance mode, it will just stay on the last sector.   In normal mode,
+   // the Index Pulse will reset the counter to zero after the last sector.
+   //
+   // Trace
+   //  M7787/DP6/E61
+   //  M7787/DP6/E62
    //
 
-   reg [11:6] sectorcnt;
+   reg [11:6] sect_cnt;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          sectorcnt <= 0;
+          sect_cnt <= 0;
         else
           if (clken)
             begin
-               if (rpDIND)
-                 sectorcnt <= 0;
-               else if (incsector)
-                 if ((!rpFMT22 & (sectorcnt == 18)) |
-                     ( rpFMT22 & (sectorcnt == 21)))
-                   sectorcnt <= 0;
+               if (rpDMD & rpDIND)
+                 sect_cnt <= 0;
+               else if (sect_inc)
+                 if (last_sector)
+                   begin
+                      if (!rpDMD)
+                        sect_cnt <= 0;
+                   end
                  else
-                   sectorcnt <= sectorcnt + 1'b1;
+                   sect_cnt <= sect_cnt + 1'b1;
             end
      end
+
+   //
+   // Last Sector
+   //
+   // Trace
+   //  M7787/DP6/E41
+   //  M7787/DP6/E51
+   //  M7787/DP6/E53
+   //  M7787/DP6/E58
+   //
+
+   wire last_sector = ((!rpFMT22 & (sect_cnt == 19)) |
+                       ( rpFMT22 & (sect_cnt == 21)));
 
    //
    // RPLA Register
    //
+   // Trace
+   //  M7786/SS6/E6
+   //  M7786/SS6/E20
+   //  M7786/SS6/E14
+   //  M7786/SS6/E55
+   //
 
-   always @*
-     begin
-        if (rpDMD)
-          rpLA <= {4'b0, sectorcnt, extcnt, 4'b0};
-        else
-          rpLA <= {4'b0, rpSA, 6'b0};
-     end
+   assign rpLA = {4'b0, sect_cnt, ext_cnt, 4'b0};
 
 endmodule

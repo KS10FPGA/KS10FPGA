@@ -116,6 +116,7 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX
 #   -D SIM_SMMON	Boot to SMMON instead of diagnostic app (See testbench)
 #   -D SIM_CTY		Simulate the CTY (See testbench)
 #   -D SIM_SDHC		Simulate the SDHC Card
+#   -D SIM_SDHC_OFFLINE Simulate the SDHC as offline
 #   -D STOP_ON_COMPLETE Stop simulation when test is complete (See debug.v)
 #   -D STOP_ON_STUCK_PC Stop simulating when PC gets stuck.
 #   -D DEBUG_DSKAA	Diagnostic information (See debug.v)
@@ -126,11 +127,13 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX
 #   -D CHIPSCOPE_MEM    Instrument the Memory Controller
 #   -D CHIPSCOPE_CSL    Instrument the Console Interface
 
-#	-D SIM_CTY \
+
 
 DEBUG_ARGS := \
+	-D SIM_CTY \
 	-D SIM_SMMON \
 	-D SIM_SDHC \
+	-D CHIPSCOPE_CPU \
 	-D ENABLE_TIMER \
 	-D STOP_ON_COMPLETE \
 	-D STOP_ON_STUCK_PC \
@@ -271,11 +274,22 @@ RTL_FILES := \
 	ks10/utils/sync.v \
 	ks10/utils/edgetrig.v
 
+#
+# Coregen Files
+#  Added as required
+#
+
+CGN_FILES =
+
 ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
 RTL_FILES += \
 	ks10/xilinx/chipscope_cpu_ila/chipscope_cpu_ila.v \
 	ks10/xilinx/chipscope_cpu_icon/chipscope_cpu_icon.v \
 	ks10/xilinx/chipscope_cpu_vio/chipscope_cpu_vio.v
+CGN_FILES += \
+	ks10/xilinx/chipscope_cpu_ila/chipscope_cpu_ila.ngc \
+	ks10/xilinx/chipscope_cpu_icon/chipscope_cpu_icon.ngc \
+	ks10/xilinx/chipscope_cpu_vio/chipscope_cpu_vio.ngc
 endif
 
 ifneq (, $(findstring CHIPSCOPE_CSL, $(DEBUG_ARGS)))
@@ -305,9 +319,6 @@ endif
 #
 # Simulation testbench files
 #
-# I can't figure out how to make ISIM Verilog read a binary file.
-# ISIM VHDL works fine.  Use VHDL for ISIM, Verilog for Icarus Verilog
-#
  
 SIM_DISK := \
 	$(TESTBENCH)/sdsim.dsk
@@ -315,12 +326,7 @@ SIM_DISK := \
 SIM_FILES := \
 	$(TESTBENCH)/cy7c1460av33.v \
 	$(TESTBENCH)/testbench.v \
-
-SIM_FILES_V := \
 	$(TESTBENCH)/sdsim.v
-
-SIM_FILES_VHD := \
-	$(TESTBENCH)/sdsim.vhd
 
 SSRAM_DAT := \
 	$(TESTBENCH)/$(DIAG).dat
@@ -529,7 +535,6 @@ $(ISE)/$(PROJECT)_isim.prj: makefile
 	    echo 'verilog work "../../'$$FILE'"' >> $@; \
 	done
 	@echo 'verilog work "$(XILINX)/ISE_DS/ISE/verilog/src/glbl.v"' >> $@;
-	@echo 'vhdl work "../../$(SIM_FILES_VHD)"'  >> $@;
 
 $(ISE)/$(PROJECT)_isim.cmd: makefile
 	@echo "Creating "$@ > /dev/stderr
@@ -561,6 +566,7 @@ FUSE_ARGS := \
 	-d RAMFILE_DAT=\"\"../../$(RAMFILE_DAT)\"\" \
 	-d CROM_DAT=\"\"../../$(CROM_DAT)\"\" \
 	-d DROM_DAT=\"\"../../$(DROM_DAT)\"\" \
+	-d SDSIM_DSK=\"\"../../$(SIM_DISK)\"\" \
 	-intstyle $(INTSTYLE) \
 	-incremental \
 	-o   $(PROJECT)_isim.exe \
@@ -572,7 +578,7 @@ FUSE_ARGS := \
 	work.$(SIMTOP) \
 	work.glbl
 
-$(ISE)/$(PROJECT)_isim.exe: $(ISE)/$(PROJECT)_isim.prj $(RTL_FILES) $(SIM_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_FILES_VHD) $(SIM_DISK) makefile
+$(ISE)/$(PROJECT)_isim.exe: $(ISE)/$(PROJECT)_isim.prj $(RTL_FILES) $(SIM_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) makefile
 	@cd $(ISE); \
 	$(FUSE) $(FUSE_ARGS)
 
@@ -790,7 +796,7 @@ NGD_OPTS += \
 	-sd ../../ks10/xilinx/chipscope_uba_icon
 endif
 
-$(ISE)/$(PROJECT).ngd: $(ISE)/$(PROJECT).ngc $(UCF_FILE) $(ISE)/$(PROJECT).filter makefile
+$(ISE)/$(PROJECT).ngd: $(ISE)/$(PROJECT).ngc $(UCF_FILE) $(CGN_FILES) $(ISE)/$(PROJECT).filter makefile
 	@cd $(ISE); \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
 	echo Running NGDBUILD | tee -a $(PROJECT).log; \
@@ -1025,8 +1031,8 @@ reload: $(ISE)/$(PROJECT)_impact.cmd
 # iverilog
 #
 
-testsuite/$(DIAG).vvp : $(SIM_FILES) $(SIM_FILES_V) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(SSRAM_DAT) makefile
-	$(IVERILOG) -W all -s testbench -o $@ $(SIM_FILES) $(SIM_FILES_V) $(RTL_FILES) \
+testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(SSRAM_DAT) makefile
+	$(IVERILOG) -W all -s testbench -o $@ $(SIM_FILES) $(RTL_FILES) \
 	$(DEBUG_ARGS) \
 	-D SSRAM_DAT=\"$(SSRAM_DAT)\" \
 	-D RAMFILE_DAT=\"$(RAMFILE_DAT)\" \
@@ -1230,6 +1236,6 @@ check :
 	@-find ks10 -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '\t'
 	@echo "Trailing white space in:"
 	@-find ks10 -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '[ ]+$$'
-	@echo "Trailing FIXMEs in:"
+	@echo "FIXMEs in:"
 	@-find ks10 -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -i 'fixme'
 

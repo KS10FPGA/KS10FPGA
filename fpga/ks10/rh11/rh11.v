@@ -62,8 +62,8 @@ module RH11 (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       // RH11 Interfaces
-      input  wire         rh11CD,               // RH11 Card Detect
-      input  wire         rh11WP,               // RH11 Write Protect
+      input  wire [ 7: 0] rh11CD,               // RH11 Card Detect
+      input  wire [ 7: 0] rh11WP,               // RH11 Write Protect
       input  wire         rh11MISO,             // RH11 Data In
       output wire         rh11MOSI,             // RH11 Data Out
       output wire         rh11SCLK,             // RH11 Clock
@@ -235,13 +235,34 @@ module RH11 (
    wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
-   // Synchronize that which is asynchronous
+   // Synchronize the SD Card Detect
    //
 
-   wire rhCD;
-   wire rhWP;
-   SYNC syncCD(clk, rst, rhCD, rh11CD);
-   SYNC syncWP(clk, rst, rhWP, rh11WP);
+   wire [7:0] rhCD;
+
+   SYNC #(
+      .WIDTH (8)
+   ) syncCD (
+      .clk   (clk),
+      .rst   (rst),
+      .o     (rhCD),
+      .i     (rh11CD)
+   );
+
+   //
+   // Synchronize the SD Write Protect
+   //
+
+   wire [7:0] rhWP;
+
+   SYNC #(
+      .WIDTH (8)
+   ) syncWP (
+      .clk   (clk),
+      .rst   (rst),
+      .o     (rhWP),
+      .i     (rh11WP)
+   );
 
    //
    // Interrupt Acknowledge
@@ -355,12 +376,13 @@ module RH11 (
    // SD Signals
    //
 
-   wire [2:0] sdSCAN;                   // Current RP accessing SD
-   wire sdINCWC;                        // Increment word count
-   wire sdINCBA;                        // Increment bus address
-   wire sdINCSECT;                      // Increment Sector
-   wire sdSETWCE;                       // Set write check error
-   wire sdREADOP;                       // Read or write check operation
+   wire [ 2: 0] sdSCAN;                 // Current RP accessing SD
+   wire         sdINCWC;                // Increment word count
+   wire         sdINCBA;                // Increment bus address
+   wire         sdINCSECT;              // Increment Sector
+   wire         sdSETWCE;               // Set write check error
+   wire         sdREADOP;               // Read or write check operation
+   wire [ 0:35] sdDATAO;                // SD DMA data out
 
    //
    // RP Signals
@@ -370,7 +392,6 @@ module RH11 (
    wire [20:0] rpSDLSA[7:0];            // SD Linear sector address
    wire [ 7:0] rpSDREQ;                 // RP requests the SD
    wire [ 7:0] rpSDACK;                 // SD acknowledges the RP
-   wire [0:35] sdDATAO;                 // SD DMA data out
 
    //
    // Transfer Error Clear
@@ -575,8 +596,8 @@ module RH11 (
               .devDATAI (devDATAI),
               .rpSELECT (rhUNIT == i[2:0]),
               .rpPAT    (rhPAT),
-              .rpCD     (rhCD),
-              .rpWP     (rhWP),
+              .rpCD     (rhCD[i]),
+              .rpWP     (rhWP[i]),
               .rpCS1    (rpCS1[i]),
               .rpDA     (rpDA[i]),
               .rpDS     (rpDS[i]),
@@ -618,7 +639,6 @@ module RH11 (
       .devREQO    (devREQO),
       .devACKI    (devACKI),
       // RH11 interfaces
-      .rhCD       (rhCD),
       .rhWC       (rhWC),
       // RPXX interface
       .rpSDOP     (rpSDOP[sdSCAN]),
@@ -681,7 +701,7 @@ module RH11 (
    wire [15:0] rper1UNIT = rpER1[rhUNIT];
    wire [15:0] rper2UNIT = rpER2[rhUNIT];
    wire [15:0] rper3UNIT = rpER3[rhUNIT];
-   
+
    //
    // Bus Mux and little-endian to big-endian bus swap.
    //

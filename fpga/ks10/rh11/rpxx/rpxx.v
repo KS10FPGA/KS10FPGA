@@ -219,6 +219,7 @@ module RPXX (
    wire rpCMDGO  = rpcs1WRITE & `rpCS1_GO(rpDATAI) & !rpPAT;            // Go command
    wire rpDRVCLR = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funCLEAR);        // Drive clear
    wire rpPRESET = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funPRESET);       // Read-in preset
+   wire rpRECAL  = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funRECAL);        // Recalibrate
    wire rpCENTER = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funCENTER);       // Return to center
    wire rpPAKACK = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funPAKACK);       // Pack acknowledge
 
@@ -402,7 +403,8 @@ module RPXX (
    RPCC CC (
       .clk         (clk),
       .rst         (rst),
-      .clr         (rpPRESET),
+      .rpPRESET    (rpPRESET),
+      .rpRECAL     (rpRECAL),
       .rpDC        (rpDC),
       .rpccWRITE   (rpccWRITE),
       .rpCC        (rpCC)

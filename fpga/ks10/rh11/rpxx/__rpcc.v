@@ -43,7 +43,8 @@
 module RPCC (
        input  wire         clk,                 // Clock
        input  wire         rst,                 // Reset
-       input  wire         clr,                 // Clear
+       input  wire         rpPRESET,            // Preset command
+       input  wire         rpRECAL,             // Recalibrate command
        input  wire [15: 0] rpDC,                // Data in
        input  wire         rpccWRITE,           // Write
        output wire [15: 0] rpCC                 // rpCC Output
@@ -67,7 +68,7 @@ module RPCC (
         if (rst)
           rpCCA <= 0;
         else
-          if (clr)
+          if (rpPRESET | rpRECAL)
             rpCCA <= 0;
           else if (rpccWRITE)
             rpCCA <= `rpCC_CCA(rpDC);
