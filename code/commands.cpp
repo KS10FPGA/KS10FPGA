@@ -1439,7 +1439,7 @@ static void cmdSH(int argc, char *[]) {
         "Shutdown.  Shutdown TOPS20.\n";
 
     if (argc == 1) {
-        ks10_t::writeMem(030ULL, 1ULL);
+        ks10_t::writeMem(ks10_t::switch_addr, 1ULL);
     } else {
         printf(usage);
     }

@@ -491,10 +491,11 @@ void rh11_t::testFIFO(void) {
 }
 
 //
-//! This tests the operation of the sector byte counter
+//! This tests the operation of the Sector Counter in 18-bit mode.
+//! In this mode, there are 20 sectors per track.
 //
 
-void rh11_t::testRPLA(void) {
+void rh11_t::testRPLA20(void) {
 
     //
     // Controller Clear
@@ -545,7 +546,7 @@ void rh11_t::testRPLA(void) {
             case 0 ... 127:
                 if (rpla != 0x0000) {
                     fail = true;
-                    printf("RPLA SEC should be 0, EXT should be 0 after %3d clocks\n", i);
+                    printf("RPLA SEC should be 0, EXT should be 00 after %3d clocks\n", i);
                 }
                 break;
             case 128 ... 255:
@@ -575,25 +576,212 @@ void rh11_t::testRPLA(void) {
             case 800 ... 927:
                 if (rpla != 0x0050) {
                     fail = true;
-                    printf(" RPLA SEC should be 0, EXT should be 20 after %3d clocks\n", i);
+                    printf("RPLA SEC should be 1, EXT should be 20 after %3d clocks\n", i);
                 }
                 break;
             case 928 ... 1183:
                 if (rpla != 0x0060) {
                     fail = true;
-                    printf("RPLA SEC should be 0, EXT should be 40 after %3d clocks\n", i);
+                    printf("RPLA SEC should be 1, EXT should be 40 after %3d clocks\n", i);
                 }
                 break;
             case 12608 ... 12767:
                 if (rpla != 0x04b0) {
                     fail = true;
-                    printf("RPLA SEC should be 1, EXT should be 00 after %3d clocks\n", i);
+                    printf("RPLA SEC should be 18, EXT should be 60 after %3d clocks\n", i);
                 }
                 break;
-            case 12768:
+            case 12768 ... 12895:
+                if (rpla != 0x04c0) {
+                    fail = true;
+                    printf("RPLA SEC should be 19, EXT should be 00 after %3d clocks\n", i);
+                }
+                break;
+            case 12896 ... 13023:
+                if (rpla != 0x04d0) {
+                    fail = true;
+                    printf("RPLA SEC should be 19, EXT should be 20 after %3d clocks\n", i);
+                }
+                break;
+            case 13024 ... 13279:
+                if (rpla != 0x04e0) {
+                    fail = true;
+                    printf("RPLA SEC should be 19, EXT should be 40 after %3d clocks\n", i);
+                }
+                break;
+            case 13280 ... 13439:
+                if (rpla != 0x04f0) {
+                    fail = true;
+                    printf("RPLA SEC should be 19, EXT should be 60 after %3d clocks\n", i);
+                }
+                break;
+            case 13440 ... 13567:
+                if (rpla != 0x04c0) {
+                    fail = true;
+                    printf("RPLA SEC should be 19, EXT should be 00 after %3d clocks\n", i);
+                }
+                break;
+
+
+        }
+
+        //
+        // Create clock pulse
+        //
+
+        mr_write(mr_dsck | mr_dmd);
+        mr_write(mr_dmd);
+
+    }
+
+    //
+    // Print results
+    //
+
+    printf("RPLA/RPMR sector counter test (20 sector mode) %s.\n", fail ? "failed" : "passed");
+}
+
+//
+//! This tests the operation of the sector byte counter in 16-bit mode.
+//! In this mode, there are 22 sectors per track.
+//
+
+void rh11_t::testRPLA22(void) {
+
+    //
+    // Controller Clear
+    //
+
+#if 0
+    cs2_write(cs2_clr);
+#endif
+
+    //
+    // Select disk (unit)
+    //
+
+    cs2_write((cs2_read() & ~cs2_unit) | (unit & 7));
+
+    //
+    // Put is 16-bit mode
+    //
+
+    of_write(of_fmt22);
+
+    //
+    // Put unit in diagnostic mode.  Assert DMD.
+    //
+
+    mr_write(mr_dmd);
+
+    //
+    // Create index pulse.  Clear byte counter.
+    //  DIND asserted with DSCK clock.  Don't reset DMD.
+    //
+
+    mr_write(mr_dind | mr_dsck | mr_dmd);
+    mr_write(mr_dmd);
+
+    //
+    // Start clocking bytes
+    //
+
+    bool fail = false;
+    for (int i = 0; i <= 12768; i++) {
+
+        //
+        // Read look ahead register RPLA
+        //
+
+        unsigned int rpla = la_read();
+
+        //
+        // Check results
+        //
+
+        switch (i) {
+            case 0 ... 127:
                 if (rpla != 0x0000) {
                     fail = true;
                     printf("RPLA SEC should be 0, EXT should be 00 after %3d clocks\n", i);
+                }
+                break;
+            case 128 ... 255:
+                if (rpla != 0x0010) {
+                    fail = true;
+                    printf("RPLA SEC should be 0, EXT should be 20 after %3d clocks.\n", i);
+                }
+                break;
+            case 256 ... 511:
+                if (rpla != 0x0020) {
+                    fail = true;
+                    printf("RPLA SEC should be 0, EXT should be 40 after %3d clocks\n", i);
+                }
+                break;
+            case 512 ... 608:
+                if (rpla != 0x0030) {
+                    fail = true;
+                    printf("RPLA SEC should be 0, EXT should be 60 after %3d clocks\n", i);
+                }
+                break;
+            case 609 ... 736:
+                if (rpla != 0x0040) {
+                    fail = true;
+                    printf("RPLA SEC should be 1, EXT should be 00 after %3d clocks\n", i);
+                }
+                break;
+            case 737 ... 864:
+                if (rpla != 0x0050) {
+                    fail = true;
+                    printf("RPLA SEC should be 1, EXT should be 20 after %3d clocks\n", i);
+                }
+                break;
+            case 865 ... 1120:
+                if (rpla != 0x0060) {
+                    fail = true;
+                    printf("RPLA SEC should be 1, EXT should be 40 after %3d clocks\n", i);
+                }
+                break;
+            case 1121 ... 1217:
+                if (rpla != 0x0070) {
+                    fail = true;
+                    printf("RPLA SEC should be 1, EXT should be 40 after %3d clocks\n", i);
+                }
+                break;
+            case 12692 ... 12788:
+                if (rpla != 0x0530) {
+                    fail = true;
+                    printf("RPLA SEC should be 20, EXT should be 60 after %3d clocks\n", i);
+                }
+                break;
+            case 12789 ... 12916:
+                if (rpla != 0x0540) {
+                    fail = true;
+                    printf("RPLA SEC should be 21, EXT should be 00 after %3d clocks\n", i);
+                }
+                break;
+            case 12917 ... 13044:
+                if (rpla != 0x0550) {
+                    fail = true;
+                    printf("RPLA SEC should be 21, EXT should be 20 after %3d clocks\n", i);
+                }
+                break;
+            case 13045 ... 13300:
+                if (rpla != 0x0560) {
+                    fail = true;
+                    printf("RPLA SEC should be 21, EXT should be 40 after %3d clocks\n", i);
+                }
+                break;
+            case 13301 ... 13397:
+                if (rpla != 0x0570) {
+                    fail = true;
+                    printf("RPLA SEC should be 21, EXT should be 60 after %3d clocks\n", i);
+                }
+                break;
+            case 13398 ... 13525:
+                if (rpla != 0x0540) {
+                    fail = true;
+                    printf("RPLA SEC should be 21, EXT should be 00 after %3d clocks\n", i);
                 }
                 break;
         }
@@ -611,7 +799,17 @@ void rh11_t::testRPLA(void) {
     // Print results
     //
 
-    printf("RPLA/RPMR byte counter test %s.\n", fail ? "failed" : "passed");
+    printf("RPLA/RPMR sector counter test (22 sector mode) %s.\n", fail ? "failed" : "passed");
+}
+
+//
+//! This tests the operation of the Sector Counter in 20 sector mode and in
+//! 22 sector mode.
+//
+
+void rh11_t::testRPLA(void) {
+    testRPLA20();
+    testRPLA22();
 }
 
 //

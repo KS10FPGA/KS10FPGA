@@ -61,6 +61,7 @@ class rh11_t {
         const ks10_t::addr_t la_addr;
         const ks10_t::addr_t db_addr;
         const ks10_t::addr_t mr_addr;
+        const ks10_t::addr_t of_addr;
         const ks10_t::addr_t dc_addr;
 
         //
@@ -76,6 +77,7 @@ class rh11_t {
         static const ks10_t::addr_t la_offset  = 020;
         static const ks10_t::addr_t db_offset  = 022;
         static const ks10_t::addr_t mr_offset  = 024;
+        static const ks10_t::addr_t of_offset  = 032;
         static const ks10_t::addr_t dc_offset  = 034;
 
         //
@@ -94,6 +96,8 @@ class rh11_t {
         // Private functions
         //
 
+        void testRPLA20(void);
+        void testRPLA22(void);
         bool wait(bool verbose = false);
         bool isHomBlock(ks10_t::addr_t addr);
         bool readBlock(ks10_t::addr_t vaddr, ks10_t::data_t block);
@@ -124,6 +128,12 @@ class rh11_t {
         static const ks10_t::data_t cs2_ir     = 0000100;
         static const ks10_t::data_t cs2_clr    = 0000040;
         static const ks10_t::data_t cs2_unit   = 0000007;
+
+        //
+        // Offset Register (RPOF) Definitions
+        //
+
+        static const ks10_t::data_t of_fmt22   = 0010000;
 
         //
         // RPxx Maintenance Register (RPMR) Definitions
@@ -175,6 +185,7 @@ class rh11_t {
             la_addr ((base_addr & 07777700) + la_offset ),
             db_addr ((base_addr & 07777700) + db_offset ),
             mr_addr ((base_addr & 07777700) + mr_offset ),
+            of_addr ((base_addr & 07777700) + of_offset ),
             dc_addr ((base_addr & 07777700) + dc_offset ),
             unit(unit),
             uba(uba) {
@@ -322,6 +333,22 @@ class rh11_t {
 
         ks10_t::data_t mr_read(void) {
             return ks10_t::readIO(mr_addr);
+        }
+
+        //
+        // Write to OF
+        //
+
+        void of_write(ks10_t::data_t data) {
+            ks10_t::writeIO(of_addr, data);
+        }
+
+        //
+        // Read from OF
+        //
+
+        ks10_t::data_t of_read(void) {
+            return ks10_t::readIO(of_addr);
         }
 
         //
