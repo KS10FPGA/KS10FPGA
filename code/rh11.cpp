@@ -512,6 +512,12 @@ void rh11_t::testRPLA20(void) {
     cs2_write((cs2_read() & ~cs2_unit) | (unit & 7));
 
     //
+    // Put unit in 18-bit (20 sector) mode
+    //
+
+    of_write(0);
+
+    //
     // Put unit in diagnostic mode.  Assert DMD.
     //
 
@@ -663,7 +669,7 @@ void rh11_t::testRPLA22(void) {
     cs2_write((cs2_read() & ~cs2_unit) | (unit & 7));
 
     //
-    // Put is 16-bit mode
+    // Put unit in 16-bit (22 sector) mode
     //
 
     of_write(of_fmt22);
