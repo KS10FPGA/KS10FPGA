@@ -70,7 +70,8 @@
 // RP04 Disk Parameters
 //
 
-`define rp04LAST_SECTOR 6'd19           // Sector[0:19]
+`define rp04LAST_SECT18 6'd19           // Sector[0:19] (18-bit mode)
+`define rp04LAST_SECT16 6'd21           // Sector[0:21] (16-bit mode)
 `define rp04LAST_TRACK  6'd18           // Track[0:18]
 `define rp04LAST_CYL    10'd410         // Cylinder[0:410]
 
@@ -78,7 +79,8 @@
 // RP05 Disk Parameters
 //
 
-`define rp05LAST_SECTOR 6'd19           // Sector[0:19]
+`define rp05LAST_SECT18 6'd19           // Sector[0:19] (18-bit mode)
+`define rp05LAST_SECT16 6'd21           // Sector[0:21] (16-bit mode)
 `define rp05LAST_TRACK  6'd18           // Track[0:18]
 `define rp05LAST_CYL    10'd410         // Cylinder[0:410]
 
@@ -86,7 +88,8 @@
 // RP06 Disk Parameters
 //
 
-`define rp06LAST_SECTOR 6'd19           // Sector[0:19]
+`define rp06LAST_SECT18 6'd19           // Sector[0:19] (18-bit mode)
+`define rp06LAST_SECT16 6'd21           // Sector[0:21] (16-bit mode)
 `define rp06LAST_TRACK  6'd18           // Track[0:18]
 `define rp06LAST_CYL    10'd814         // Cylinder[0:814]
 
@@ -94,7 +97,8 @@
 // RP07 Disk Parameters
 //
 
-`define rp07LAST_SECTOR 6'd42           // Sector[0:42]
+`define rp07LAST_SECT18 6'd42           // Sector[0:42] (18-bit mode)
+`define rp07LAST_SECT16 6'd49           // Sector[0:49] (16-bit mode)
 `define rp07LAST_TRACK  6'd31           // Track[0:31]
 `define rp07LAST_CYL    10'd629         // Cylinder[0:629]
 
@@ -102,7 +106,8 @@
 // RM03 Disk Parameters
 //
 
-`define rm03LAST_SECTOR 6'd29           // Sector[0:29]
+`define rm03LAST_SECT18 6'd29           // Sector[0:29] (18-bit mode)
+`define rm03LAST_SECT16 6'd31           // Sector[0:31] (16-bit mode)
 `define rm03LAST_TRACK  6'd4            // Track[0:4]
 `define rm03LAST_CYL    10'd822         // Cylinder[0:822]
 
@@ -110,7 +115,8 @@
 // RM05 Disk Parameters
 //
 
-`define rm05LAST_SECTOR 6'd29           // Sector[0:29]
+`define rm05LAST_SECT18 6'd29           // Sector[0:29] (18-bit mode)
+`define rm05LAST_SECT16 6'd31           // Sector[0:29] (16-bit mode)
 `define rm05LAST_TRACK  6'd18           // Track[0:18]
 `define rm05LAST_CYL    10'd822         // Cylinder[0:822]
 
@@ -118,22 +124,37 @@
 // RM80 Disk Parameters
 //
 
-`define rm80LAST_SECTOR 6'd29           // Sector[0:29]
+`define rm80LAST_SECT18 6'd29           // Sector[0:29] (18-bit mode)
+`define rm80LAST_SECT16 6'd31           // Sector[0:29] (16-bit mode)
 `define rm80LAST_TRACK  6'd13           // Track[0:13]
 `define rm80LAST_CYL    10'd558         // Cylinder[0:558]
 
 //
-// getLAST_SECTOR(type)
+// getLAST_SECT18(type)
 //
 
-`define getLAST_SECTOR(type) (((type) == `rpRP04) ? `rp04LAST_SECTOR : \
-                              (((type) == `rpRP05) ? `rp05LAST_SECTOR : \
-                               (((type) == `rpRP06) ? `rp06LAST_SECTOR : \
-                                (((type) == `rpRP07) ? `rp07LAST_SECTOR : \
-                                 (((type) == `rpRM03) ? `rm03LAST_SECTOR : \
-                                  (((type) == `rpRM05) ? `rm05LAST_SECTOR : \
-                                   (((type) == `rpRM80) ? `rm80LAST_SECTOR : \
-                                    `rp06LAST_SECTOR)))))))
+`define getLAST_SECT18(type) (((type) == `rpRP04) ? `rp04LAST_SECT18 : \
+                              (((type) == `rpRP05) ? `rp05LAST_SECT18 : \
+                               (((type) == `rpRP06) ? `rp06LAST_SECT18 : \
+                                (((type) == `rpRP07) ? `rp07LAST_SECT18 : \
+                                 (((type) == `rpRM03) ? `rm03LAST_SECT18 : \
+                                  (((type) == `rpRM05) ? `rm05LAST_SECT18 : \
+                                   (((type) == `rpRM80) ? `rm80LAST_SECT18 : \
+                                    `rp06LAST_SECT18)))))))
+
+//
+// getLAST_SECT16(type)
+//
+
+`define getLAST_SECT16(type) (((type) == `rpRP04) ? `rp04LAST_SECT16 : \
+                              (((type) == `rpRP05) ? `rp05LAST_SECT16 : \
+                               (((type) == `rpRP06) ? `rp06LAST_SECT16 : \
+                                (((type) == `rpRP07) ? `rp07LAST_SECT16 : \
+                                 (((type) == `rpRM03) ? `rm03LAST_SECT16 : \
+                                  (((type) == `rpRM05) ? `rm05LAST_SECT16 : \
+                                   (((type) == `rpRM80) ? `rm80LAST_SECT16 : \
+                                    `rp06LAST_SECT16)))))))
+
 //
 // getLAST_TRACK(type)
 //

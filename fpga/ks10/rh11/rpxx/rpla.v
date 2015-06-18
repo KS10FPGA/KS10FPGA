@@ -93,12 +93,13 @@
 `timescale 1ns/1ps
 
 `include "rpmr.vh"
+`include "../../ks10.vh"
 
 module RPLA (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       input  wire         clr,                  // Clear
-      input  wire         rpFMT22,              // 22 (octal) sector mode
+      input  wire [ 5: 0] rpSECNUM,		// Number of sectors
       input  wire [15: 0] rpMR,                 // Maintenance register
       input  wire [ 5: 0] rpSA,                 // Sector address
       output wire [15: 0] rpLA                  // Look ahead register
@@ -186,6 +187,9 @@ module RPLA (
    //
    // Sector Increment
    //
+   // Sectors are 672 bytes per sector in 20 sector (18-bit) mode, and are 609
+   //  bytes per sector in 22 sector (16-bit) mode.
+   //
    // Trace
    //  M7787/DP6/E16
    //  M7787/DP6/E17
@@ -196,8 +200,8 @@ module RPLA (
    //  M7787/DP6/E53
    //
 
-   wire sect_inc = ((!rpFMT22 & (sect_ext == 671)) |    // 672 bytes per sector
-                    ( rpFMT22 & (sect_ext == 608)));    // 609 bytes per sector
+   wire sect_inc = (((rpSECNUM == 19) & (sect_ext == 671)) |
+                    ((rpSECNUM == 21) & (sect_ext == 608)));
 
    //
    // Extension Register
@@ -232,6 +236,10 @@ module RPLA (
    // Trace
    //  M7787/DP6/E61
    //  M7787/DP6/E62
+   //  M7787/DP6/E41
+   //  M7787/DP6/E51
+   //  M7787/DP6/E53
+   //  M7787/DP6/E58
    //
 
    reg [11:6] sect_cnt;
@@ -246,7 +254,7 @@ module RPLA (
                if (rpDMD & rpDIND)
                  sect_cnt <= 0;
                else if (sect_inc)
-                 if (last_sector)
+                 if (sect_cnt == rpSECNUM)
                    begin
                       if (!rpDMD)
                         sect_cnt <= 0;
@@ -255,19 +263,6 @@ module RPLA (
                    sect_cnt <= sect_cnt + 1'b1;
             end
      end
-
-   //
-   // Last Sector
-   //
-   // Trace
-   //  M7787/DP6/E41
-   //  M7787/DP6/E51
-   //  M7787/DP6/E53
-   //  M7787/DP6/E58
-   //
-
-   wire last_sector = ((!rpFMT22 & (sect_cnt == 19)) |
-                       ( rpFMT22 & (sect_cnt == 21)));
 
    //
    // RPLA Register

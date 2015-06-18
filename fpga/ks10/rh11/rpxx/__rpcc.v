@@ -45,9 +45,10 @@ module RPCC (
        input  wire         rst,                 // Reset
        input  wire         rpPRESET,            // Preset command
        input  wire         rpRECAL,             // Recalibrate command
-       input  wire [15: 0] rpDC,                // Data in
-       input  wire         rpccWRITE,           // Write
-       output wire [15: 0] rpCC                 // rpCC Output
+       input  wire         rpDMD,		// Diagnostic mode
+       input  wire         rpccWRITE,           // Update current cylinder
+       input  wire [15: 0] rpDC,                // Desired Cylinder
+       output wire [15: 0] rpCC                 // Current Cylinder
    );
 
    //
@@ -70,7 +71,7 @@ module RPCC (
         else
           if (rpPRESET | rpRECAL)
             rpCCA <= 0;
-          else if (rpccWRITE)
+          else if (rpccWRITE | rpDMD)
             rpCCA <= `rpCC_CCA(rpDC);
      end
 

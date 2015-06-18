@@ -135,7 +135,8 @@ module RPXX (
    // Lookup Drive Geometries
    //
 
-   localparam [5:0] rpSECNUM = `getLAST_SECTOR(drvTYPE);        // Sectors
+   localparam [5:0] rpSECN16 = `getLAST_SECT16(drvTYPE);        // Sectors in 16-bit mode
+   localparam [5:0] rpSECN18 = `getLAST_SECT18(drvTYPE);        // Sectors in 18-bit mode
    localparam [5:0] rpTRKNUM = `getLAST_TRACK(drvTYPE);         // Tracks (or surfaces or heads)
    localparam [9:0] rpCYLNUM = `getLAST_CYL (drvTYPE);          // Cylinder
 
@@ -210,18 +211,18 @@ module RPXX (
    wire [9:0] rpCCA = `rpCC_CCA(rpCC);
 
    //
-   // Commands
-   //
-   // Trace
-   //  M7774/RG4/E60
+   // RPxx Maintenance (RPMR) Register
    //
 
-   wire rpCMDGO  = rpcs1WRITE & `rpCS1_GO(rpDATAI) & !rpPAT;            // Go command
-   wire rpDRVCLR = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funCLEAR);        // Drive clear
-   wire rpPRESET = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funPRESET);       // Read-in preset
-   wire rpRECAL  = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funRECAL);        // Recalibrate
-   wire rpCENTER = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funCENTER);       // Return to center
-   wire rpPAKACK = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funPAKACK);       // Pack acknowledge
+   wire rpDMD = `rpMR_DMD(rpMR);
+   
+   //
+   // Get number of sectors for this mode.
+   //  rpFMT22 is asserted in 16-bit mode.
+   //  rpFMT22 is negated in 18-bit mode.  (default)
+   //
+   
+   wire [5:0] rpSECNUM = rpFMT22 ? rpSECN16 : rpSECN18;
 
    //
    //
@@ -232,30 +233,86 @@ module RPXX (
    wire rpSETATA;                                                       // Set ATA
    wire rpADRSTRT;                                                      // Start sector address calculation
    wire rpADRBUSY;                                                      // Busy calculation sector address
-   wire rpccWRITE;
-   wire rpSETWLE = rpCMDGO & rpWP;                                      // Write lock error
-   wire rpSETIAE = ((rpCMDGO & (rpSA  > rpSECNUM)) |                    // Invalid address error
-                    (rpCMDGO & (rpTA  > rpTRKNUM)) |
-                    (rpCMDGO & (rpDCA > rpCYLNUM)));
-   wire rpSETAOE = (rpINCSECT & (rpSA == rpSECNUM) &                    // Address overflow error
-                    (rpTA == rpTRKNUM) & (rpDCA == rpCYLNUM));
-
-
-
-   wire rpINCCYL = rpINCSECT & ((rpSA == rpSECNUM) & (rpTA == rpTRKNUM));                               // Increment cylinder
-   wire rpSETLST = /*FIXME*/   ((rpSA == rpSECNUM) & (rpTA == rpTRKNUM) & (rpDCA == rpCYLNUM));         // Last sector transferred
-   wire rpSETRMR = !rpDRY & (rpcs1WRITE | rper1WRITE | rpofWRITE  |     // Register modification refused
-                             rpdaWRITE  | rpdcWRITE  | rper2WRITE |
-                             rper3WRITE);
-
-   wire rpSETPAR =  rpPAT & (rpcs1WRITE | rper1WRITE | rpmrWRITE |      // Parity error
-                             rpofWRITE  | rpdaWRITE  | rpdcWRITE |
-                             rper2WRITE | rper3WRITE);
-
-
-
+   wire rpccWRITE;							// Update current cylinder address
    wire rpINCSECT = rhINCSECT & rpSELECT;                               // Increment RPxx sector
-   wire rpSETILF  = ((rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o12)) |       // Illegal functions
+   
+   //
+   // Command Decode
+   //
+   // Trace
+   //  M7774/RG4/E60
+   //
+
+   wire rpCMDGO   = rpcs1WRITE & `rpCS1_GO(rpDATAI) & !rpPAT;           // Go command
+   wire rpDRVCLR  = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funCLEAR);       // Drive clear
+   wire rpPRESET  = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funPRESET);      // Read-in preset
+   wire rpRECAL   = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funRECAL);       // Recalibrate
+   wire rpCENTER  = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funCENTER);      // Return to center
+   wire rpPAKACK  = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funPAKACK);      // Pack acknowledge
+
+   //
+   // Write lock error
+   //
+   
+   wire rpSETWLE  = ((rpCMDGO & rpWP & (`rpCS1_FUN(rpDATAI) == `funWRITE )) |
+                     (rpCMDGO & rpWP & (`rpCS1_FUN(rpDATAI) == `funWRITEH)));
+
+   //
+   // Invalid address error
+   //
+   
+   wire rpSETIAE  = ((rpCMDGO & (rpSA  > rpSECNUM)) |
+                     (rpCMDGO & (rpTA  > rpTRKNUM)) |
+                     (rpCMDGO & (rpDCA > rpCYLNUM)));
+
+   //
+   // Increment cylinder
+   //
+
+   wire rpINCCYL  = rpINCSECT & ((rpSA == rpSECNUM) & (rpTA == rpTRKNUM));
+   
+   //
+   // Address overflow error
+   //
+   
+   wire rpSETAOE  = (rpINCSECT & (rpSA == rpSECNUM) & (rpTA == rpTRKNUM) & (rpDCA == rpCYLNUM));
+
+   //
+   // Last sector transferred
+   //
+   
+   wire rpSETLST  = ((rpSA == rpSECNUM) & (rpTA == rpTRKNUM) & (rpDCA == rpCYLNUM)); 
+   
+   //
+   // Register Modification Refused
+   //
+   
+   wire rpSETRMR  = ((!rpDRY & rpcs1WRITE) |
+                     (!rpDRY & rper1WRITE) |
+                     (!rpDRY & rpofWRITE ) |
+                     (!rpDRY & rpdaWRITE ) |
+                     (!rpDRY & rpdcWRITE ) |
+                     (!rpDRY & rper2WRITE) |
+                     (!rpDRY & rper3WRITE));
+
+   //
+   // Parity Error
+   //
+   
+   wire rpSETPAR  =  ((rpPAT & rpcs1WRITE) |
+                      (rpPAT & rper1WRITE) |
+                      (rpPAT & rpmrWRITE)  |
+                      (rpPAT & rpofWRITE)  |
+                      (rpPAT & rpdaWRITE)  |
+                      (rpPAT & rpdcWRITE)  |
+                      (rpPAT & rper2WRITE) |
+                      (rpPAT & rper3WRITE));
+
+   //
+   // Illegal functions
+   //
+   
+   wire rpSETILF  = ((rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o12)) |
                      (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o13)) |
                      (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o15)) |
                      (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o16)) |
@@ -270,8 +327,6 @@ module RPXX (
                      (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o33)) |
                      (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o36)) |
                      (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o37)));
-
-   wire [31:0] rpSDADDR;
 
    //
    // RPxx Control/Status Register (RPCS1)
@@ -359,7 +414,7 @@ module RPXX (
       .clk         (clk),
       .rst         (rst),
       .clr         (clr),
-      .rpFMT22     (rpFMT22),
+      .rpSECNUM    (rpSECNUM),
       .rpMR        (rpMR),
       .rpSA        (rpSA),
       .rpLA        (rpLA)
@@ -405,8 +460,9 @@ module RPXX (
       .rst         (rst),
       .rpPRESET    (rpPRESET),
       .rpRECAL     (rpRECAL),
-      .rpDC        (rpDC),
+      .rpDMD       (rpDMD),
       .rpccWRITE   (rpccWRITE),
+      .rpDC        (rpDC),
       .rpCC        (rpCC)
    );
 
