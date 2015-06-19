@@ -55,6 +55,7 @@
 `include "rpdc.vh"
 `include "rpds.vh"
 `include "rpof.vh"
+`include "rpmr.vh"
 `include "rpcs1.vh"
 `include "rper1.vh"
 `include "../rh11.vh"
@@ -174,10 +175,54 @@ module RPXX (
    wire [35:0] rpDATAI = devDATAI[0:35];
 
    //
-   // RPxx Control/Status Register (RPCS1)
+   // Function Decoder
+   //
+   // Commands are ignored if they have incorrect parity.
+   //
+   // Trace
+   //  M7774/RG4/E60
    //
 
-   wire rpGO = `rpCS1_GO(rpCS1);
+   wire rpDRVCLR   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funCLEAR ) & `rpCS1_GO(rpDATAI);    // Drive clear command
+   wire rpPRESET   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funPRESET) & `rpCS1_GO(rpDATAI);    // Read-in preset command
+   wire rpRECAL    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funRECAL ) & `rpCS1_GO(rpDATAI);    // Recalibrate command
+   wire rpCENTER   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funCENTER) & `rpCS1_GO(rpDATAI);    // Return to center command
+   wire rpPAKACK   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funPAKACK) & `rpCS1_GO(rpDATAI);    // Pack acknowledge command
+   wire rpSEEK     = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funSEEK  ) & `rpCS1_GO(rpDATAI);    // Seek command
+   wire rpSEARCH   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funSEARCH) & `rpCS1_GO(rpDATAI);    // Search command
+   wire rpWRCHK    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHK ) & `rpCS1_GO(rpDATAI);    // Write check command
+   wire rpWRCHKH   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHKH) & `rpCS1_GO(rpDATAI);    // Write check header command
+   wire rpWRITE    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITE ) & `rpCS1_GO(rpDATAI);    // Write command
+   wire rpWRITEH   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITEH) & `rpCS1_GO(rpDATAI);    // Write header command
+   wire rpREAD     = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREAD  ) & `rpCS1_GO(rpDATAI);    // Read command
+   wire rpREADH    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREADH ) & `rpCS1_GO(rpDATAI);    // Read header command
+
+   //
+   // Illegal Function Decoder
+   //
+   // Commands are ignored if they have incorrect parity.
+   //
+   // Trace
+   //  M7774/RG4/E54
+   //  M7774/RG4/E65
+   //  M7774/RG4/E78
+   //
+
+  wire rpSETILF    = ((!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o12) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o13) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o15) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o16) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o17) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o20) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o21) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o22) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o23) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o26) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o27) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o32) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o33) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o36) & `rpCS1_GO(rpDATAI)) |
+                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o37) & `rpCS1_GO(rpDATAI)));
 
    //
    // RPxx Disk Status Register (RPDS)
@@ -214,79 +259,101 @@ module RPXX (
    // RPxx Maintenance (RPMR) Register
    //
 
-   wire rpDMD = `rpMR_DMD(rpMR);
-   
+   wire rpDSCK = `rpMR_DSCK(rpMR);              // Diagnostic sector clock
+   wire rpDIND = `rpMR_DIND(rpMR);              // Diagnostic index pulse
+   wire rpDMD  = `rpMR_DMD(rpMR);               // Diagnostic mode
+
    //
    // Get number of sectors for this mode.
    //  rpFMT22 is asserted in 16-bit mode.
    //  rpFMT22 is negated in 18-bit mode.  (default)
    //
-   
+
    wire [5:0] rpSECNUM = rpFMT22 ? rpSECN16 : rpSECN18;
 
    //
-   //
-   //
-
-   wire rpDRY;                                                          // Drive ready
-   wire rpPIP;                                                          // Positioning in progress
-   wire rpSETATA;                                                       // Set ATA
-   wire rpADRSTRT;                                                      // Start sector address calculation
-   wire rpADRBUSY;                                                      // Busy calculation sector address
-   wire rpccWRITE;							// Update current cylinder address
-   wire rpINCSECT = rhINCSECT & rpSELECT;                               // Increment RPxx sector
-   
-   //
-   // Command Decode
-   //
-   // Trace
-   //  M7774/RG4/E60
+   // Misc bits
    //
 
-   wire rpCMDGO   = rpcs1WRITE & `rpCS1_GO(rpDATAI) & !rpPAT;           // Go command
-   wire rpDRVCLR  = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funCLEAR);       // Drive clear
-   wire rpPRESET  = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funPRESET);      // Read-in preset
-   wire rpRECAL   = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funRECAL);       // Recalibrate
-   wire rpCENTER  = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funCENTER);      // Return to center
-   wire rpPAKACK  = rpCMDGO & (`rpCS1_FUN(rpDATAI) == `funPAKACK);      // Pack acknowledge
+   wire rpDRY;                                  // Drive ready
+   wire rpPIP;                                  // Positioning in progress
+   wire rpADRSTRT;                              // Start sector address calculation
+   wire rpADRBUSY;                              // Busy calculation sector address
+   wire rpSEEKDONE;                             // Update current cylinder address
+   wire rpSETATA;                               // Attention
 
    //
-   // Write lock error
+   // Increment sector
    //
-   
-   wire rpSETWLE  = ((rpCMDGO & rpWP & (`rpCS1_FUN(rpDATAI) == `funWRITE )) |
-                     (rpCMDGO & rpWP & (`rpCS1_FUN(rpDATAI) == `funWRITEH)));
 
-   //
-   // Invalid address error
-   //
-   
-   wire rpSETIAE  = ((rpCMDGO & (rpSA  > rpSECNUM)) |
-                     (rpCMDGO & (rpTA  > rpTRKNUM)) |
-                     (rpCMDGO & (rpDCA > rpCYLNUM)));
+   wire rpINCSECT = rhINCSECT & rpSELECT;
 
    //
    // Increment cylinder
    //
 
-   wire rpINCCYL  = rpINCSECT & ((rpSA == rpSECNUM) & (rpTA == rpTRKNUM));
-   
+   wire rpINCCYL  = rpINCSECT & (rpSA == rpSECNUM) & (rpTA == rpTRKNUM);
+
+   //
+   // Write lock error
+   //
+   // Trace
+   //  M7773/SN1/E59
+   //
+
+   wire rpSETWLE  = ((!rpPAT & rpWP & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITE ) & `rpCS1_GO(rpDATAI)) |
+                     (!rpPAT & rpWP & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITEH) & `rpCS1_GO(rpDATAI)));
+
+   //
+   // Invalid address error
+   //
+   // Asserted when an invalid disk address is selected and a disk operation is
+   // executed.
+   //
+   // Trace
+   //  M7786/SS4/E47
+   //
+
+   wire inv_addr  = (rpSA > rpSECNUM) | (rpTA > rpTRKNUM) | (rpDCA > rpCYLNUM);
+
+   wire rpSETIAE  = ((!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITE ) & `rpCS1_GO(rpDATAI)) |
+                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITEH) & `rpCS1_GO(rpDATAI)) |
+                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREAD  ) & `rpCS1_GO(rpDATAI)) |
+                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREADH ) & `rpCS1_GO(rpDATAI)) |
+                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHK ) & `rpCS1_GO(rpDATAI)) |
+                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHKH) & `rpCS1_GO(rpDATAI)) |
+                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funSEEK  ) & `rpCS1_GO(rpDATAI)) |
+                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funSEARCH) & `rpCS1_GO(rpDATAI)));
+
    //
    // Address overflow error
    //
-   
+   // The address overflow error occurs during mid-transfer seeks.
+   //
+   // Trace
+   //  M7786/SS4/E47
+   //
+
    wire rpSETAOE  = (rpINCSECT & (rpSA == rpSECNUM) & (rpTA == rpTRKNUM) & (rpDCA == rpCYLNUM));
 
    //
    // Last sector transferred
    //
-   
-   wire rpSETLST  = ((rpSA == rpSECNUM) & (rpTA == rpTRKNUM) & (rpDCA == rpCYLNUM)); 
-   
+   // Trace
+   //  M7786/SS4/E68
+   //
+
+   wire rpSETLST  = ((rpSA == rpSECNUM) & (rpTA == rpTRKNUM) & (rpDCA == rpCYLNUM));
+
    //
    // Register Modification Refused
    //
-   
+   // Only the RPMR and the RPAS registers can be written durning an operation.
+   //
+   // Trace
+   //  M7774/RG6/E29
+   //
+
    wire rpSETRMR  = ((!rpDRY & rpcs1WRITE) |
                      (!rpDRY & rper1WRITE) |
                      (!rpDRY & rpofWRITE ) |
@@ -298,7 +365,9 @@ module RPXX (
    //
    // Parity Error
    //
-   
+   // Asserted when a register is modified and there is incorrect parity.
+   //
+
    wire rpSETPAR  =  ((rpPAT & rpcs1WRITE) |
                       (rpPAT & rper1WRITE) |
                       (rpPAT & rpmrWRITE)  |
@@ -307,26 +376,6 @@ module RPXX (
                       (rpPAT & rpdcWRITE)  |
                       (rpPAT & rper2WRITE) |
                       (rpPAT & rper3WRITE));
-
-   //
-   // Illegal functions
-   //
-   
-   wire rpSETILF  = ((rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o12)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o13)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o15)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o16)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o17)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o20)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o21)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o22)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o23)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o26)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o27)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o32)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o33)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o36)) |
-                     (rpCMDGO & (`rpCS1_FUN(rpDATAI) == 5'o37)));
 
    //
    // RPxx Control/Status Register (RPCS1)
@@ -393,7 +442,17 @@ module RPXX (
       .clk         (clk),
       .rst         (rst),
       .clr         (clr),
+      .rpDMD       (rpDMD),
+      .rpDIND      (rpDIND),
       .rpDRVCLR    (rpDRVCLR),
+      .rpSEEK      (rpSEEK),
+      .rpSEARCH    (rpSEARCH),
+      .rpWRCHK     (rpWRCHK),
+      .rpWRCHKH    (rpWRCHKH),
+      .rpWRITE     (rpWRITE),
+      .rpWRITEH    (rpWRITEH),
+      .rpREAD      (rpREAD),
+      .rpREADH     (rpREADH),
       .rpSETWLE    (rpSETWLE),
       .rpSETIAE    (rpSETIAE),
       .rpSETAOE    (rpSETAOE),
@@ -414,8 +473,10 @@ module RPXX (
       .clk         (clk),
       .rst         (rst),
       .clr         (clr),
+      .rpDSCK      (rpDSCK),
+      .rpDIND      (rpDIND),
+      .rpDMD       (rpDMD),
       .rpSECNUM    (rpSECNUM),
-      .rpMR        (rpMR),
       .rpSA        (rpSA),
       .rpLA        (rpLA)
    );
@@ -460,8 +521,9 @@ module RPXX (
       .rst         (rst),
       .rpPRESET    (rpPRESET),
       .rpRECAL     (rpRECAL),
+      .rpSEEK      (rpSEEK),
       .rpDMD       (rpDMD),
-      .rpccWRITE   (rpccWRITE),
+      .rpSEEKDONE  (rpSEEKDONE),
       .rpDC        (rpDC),
       .rpCC        (rpCC)
    );
@@ -477,7 +539,7 @@ module RPXX (
       .rpDRVCLR    (rpDRVCLR),
       .rpDATAI     (rpDATAI),
       .rpmrWRITE   (rpmrWRITE),
-      .rpGO        (rpGO),
+      .rpDRY       (rpDRY),
       .rpMR        (rpMR)
    );
 
@@ -539,21 +601,24 @@ module RPXX (
       .clk         (clk),
       .rst         (rst),
       .clr         (clr),
-      .rpCMDGO     (rpCMDGO),
-      .rpCMDFUN    (`rpCS1_FUN(rpDATAI)),
-      .rpADRSTRT   (rpADRSTRT),
-      .rpADRBUSY   (rpADRBUSY),
+      .rpDATAI     (rpDATAI),
+      .rpcs1WRITE  (rpcs1WRITE),
+      .rpDCA       (rpDCA),
+      .rpCCA       (rpCCA),
+      .rpDMD       (rpDMD),
+      .rpPAT       (rpPAT),
       .rpPIP       (rpPIP),
       .rpDRY       (rpDRY),
+      .rpSETAOE    (rpSETAOE),
+      .rpSETIAE    (rpSETIAE),
       .rpSETWLE    (rpSETWLE),
       .rpSETATA    (rpSETATA),
-      .rpSETIAE    (rpSETIAE),
-      .rpccWRITE   (rpccWRITE),
+      .rpADRSTRT   (rpADRSTRT),
+      .rpADRBUSY   (rpADRBUSY),
       .rpSDOP      (rpSDOP),
       .rpSDREQ     (rpSDREQ),
       .rpSDACK     (rpSDACK),
-      .rpDCA       (rpDCA),
-      .rpCCA       (rpCCA)
+      .rpSEEKDONE  (rpSEEKDONE)
    );
 
    //
