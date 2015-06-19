@@ -60,8 +60,8 @@ module KS10 (
       input  wire [ 7: 0] dz11RI,       // DZ11 Ring Indicator Input
       output wire [ 7: 0] dz11DTR,      // DZ11 Data Terminal Ready Output
       // RH11 Interfaces
-      input  wire         rh11CD,       // RH11 Card Detect
-      input  wire         rh11WP,       // RH11 Write Protect
+      input  wire [ 7: 0] rh11CD,       // RH11 Card Detect
+      input  wire [ 7: 0] rh11WP,       // RH11 Write Protect
       input  wire         rh11MISO,     // RH11 Data In
       output wire         rh11MOSI,     // RH11 Data Out
       output wire         rh11SCLK,     // RH11 Clock
