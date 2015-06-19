@@ -99,8 +99,10 @@ module RPLA (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       input  wire         clr,                  // Clear
-      input  wire [ 5: 0] rpSECNUM,		// Number of sectors
-      input  wire [15: 0] rpMR,                 // Maintenance register
+      input  wire         rpDSCK,               // Diagnostic sector clock
+      input  wire         rpDIND,               // Diagnostic index pulse
+      input  wire         rpDMD,                // Diagnostic mode
+      input  wire [ 5: 0] rpSECNUM,             // Number of sectors
       input  wire [ 5: 0] rpSA,                 // Sector address
       output wire [15: 0] rpLA                  // Look ahead register
    );
@@ -113,15 +115,9 @@ module RPLA (
    localparam SECFRQ = 800000;                  // Sector clock frequency
 
    //
-   // Decode rpMR
+   // "Nomal Mode" Sector Extension Counter clock generator.
    //
-
-   wire rpDSCK = `rpMR_DSCK(rpMR);              // Diagnostic sector clock
-   wire rpDIND = `rpMR_DIND(rpMR);              // Diagnostic index pulse
-   wire rpDMD  = `rpMR_DMD(rpMR);               // Diagnostic mode
-
-   //
-   // Generate "Nomal Mode" Sector Extension Counter Clock.
+   // This simulates what real RP06 would generate for synchronous transfers.
    //
    // This is a Fractional-N divider.
    //
@@ -187,9 +183,6 @@ module RPLA (
    //
    // Sector Increment
    //
-   // Sectors are 672 bytes per sector in 20 sector (18-bit) mode, and are 609
-   //  bytes per sector in 22 sector (16-bit) mode.
-   //
    // Trace
    //  M7787/DP6/E16
    //  M7787/DP6/E17
@@ -200,11 +193,11 @@ module RPLA (
    //  M7787/DP6/E53
    //
 
-   wire sect_inc = (((rpSECNUM == 19) & (sect_ext == 671)) |
-                    ((rpSECNUM == 21) & (sect_ext == 608)));
+   wire sect_inc = (((rpSECNUM == 19) & (sect_ext == 671)) |    // 672 bytes per sector (18-bit mode)
+                    ((rpSECNUM == 21) & (sect_ext == 608)));    // 609 bytes per sector (16-bit mode)
 
    //
-   // Extension Register
+   // Extension Register Contents
    //
    // Trace
    //  M7787/DP6/E64
@@ -230,8 +223,9 @@ module RPLA (
    // Sector Counter
    //
    // The Sector Counter will not increment past the last sector.  In
-   // maintenance mode, it will just stay on the last sector.   In normal mode,
-   // the Index Pulse will reset the counter to zero after the last sector.
+   // maintenance mode, it will just stay on the last sector although the
+   // sector extension will continue to increment.   In normal mode, the Index
+   // Pulse will reset the counter to zero after the last sector.
    //
    // Trace
    //  M7787/DP6/E61

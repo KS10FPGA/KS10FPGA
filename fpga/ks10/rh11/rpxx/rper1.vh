@@ -44,7 +44,7 @@
 
 `define rpER1_DCK(bus)  (bus[15])       // Data check
 `define rpER1_UNS(bus)  (bus[14])       // Unsafe
-`define rpER1_IOP(bus)  (bus[13])       // Incomplete Operation
+`define rpER1_OPI(bus)  (bus[13])       // Operation Incomplete
 `define rpER1_DTE(bus)  (bus[12])       // Drive timing error
 `define rpER1_WLE(bus)  (bus[11])       // Write lock error
 `define rpER1_IAE(bus)  (bus[10])       // Invalid address error

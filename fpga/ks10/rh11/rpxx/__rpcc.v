@@ -45,8 +45,9 @@ module RPCC (
        input  wire         rst,                 // Reset
        input  wire         rpPRESET,            // Preset command
        input  wire         rpRECAL,             // Recalibrate command
-       input  wire         rpDMD,		// Diagnostic mode
-       input  wire         rpccWRITE,           // Update current cylinder
+       input  wire         rpSEEK,              // Seek command
+       input  wire         rpDMD,               // Diagnostic mode
+       input  wire         rpSEEKDONE,          // Update current cylinder
        input  wire [15: 0] rpDC,                // Desired Cylinder
        output wire [15: 0] rpCC                 // Current Cylinder
    );
@@ -59,9 +60,6 @@ module RPCC (
    //  M7786/SS1/E5
    //  M7786/SS1/E21
    //
-   // FIXME
-   //  rpCCA should be cleared by recalibrate command
-   //
 
    reg [9:0] rpCCA;
    always @(posedge clk or posedge rst)
@@ -71,7 +69,7 @@ module RPCC (
         else
           if (rpPRESET | rpRECAL)
             rpCCA <= 0;
-          else if (rpccWRITE | rpDMD)
+          else if (rpSEEKDONE | (rpSEEK & rpDMD))
             rpCCA <= `rpCC_CCA(rpDC);
      end
 

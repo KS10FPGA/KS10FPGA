@@ -400,6 +400,12 @@ module RH11 (
    wire rhCLRTRE = rhcs1WRITE & devHIBYTE & `rhCS1_TRE(rhDATAI);
 
    //
+   // Go Command
+   //
+
+   wire rhCMDGO = rhcs1WRITE & `rpCS1_GO(rhDATAI);
+
+   //
    // Command Clear
    //
    // The logic doesn't fully decode the Read, Write, and Wrchk commands and
@@ -413,18 +419,18 @@ module RH11 (
    //  M7296/CSRA/E17
    //
 
-   wire rhCLRGO = ((rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funWRCHK ) & `rpCS1_GO(rhDATAI)) |
-                   (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funWRCHKH) & `rpCS1_GO(rhDATAI)) |
-                   (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o26     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
-                   (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o27     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
-                   (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funWRITE ) & `rpCS1_GO(rhDATAI)) |
-                   (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funWRITEH) & `rpCS1_GO(rhDATAI)) |
-                   (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o32     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
-                   (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o33     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
-                   (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funREAD  ) & `rpCS1_GO(rhDATAI)) |
-                   (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == `funREADH ) & `rpCS1_GO(rhDATAI)) |
-                   (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o36     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
-                   (rhcs1WRITE & rhRDY & (rhDATAI[5:1] == 5'o37     ) & `rpCS1_GO(rhDATAI)));  // Illegal command
+   wire rhCLRGO = ((rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funWRCHK ) & `rpCS1_GO(rhDATAI)) |
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funWRCHKH) & `rpCS1_GO(rhDATAI)) |
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o26     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o27     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funWRITE ) & `rpCS1_GO(rhDATAI)) |
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funWRITEH) & `rpCS1_GO(rhDATAI)) |
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o32     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o33     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funREAD  ) & `rpCS1_GO(rhDATAI)) |
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funREADH ) & `rpCS1_GO(rhDATAI)) |
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o36     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o37     ) & `rpCS1_GO(rhDATAI)));  // Illegal command
 
    //
    // RH11 Control/Status #1 (RHCS1) Register
@@ -508,7 +514,7 @@ module RH11 (
       .devHIBYTE  (devHIBYTE),
       .devDATAI   (devDATAI),
       .rhcs2WRITE (rhcs2WRITE),
-      .rhCMDGO    (rhcs1WRITE & `rpCS1_GO(rhDATAI)),  // FIXME
+      .rhCMDGO    (rhCMDGO),
       .rhCLRGO    (rhCLRGO),
       .rhCLRTRE   (rhCLRTRE),
       .rhCLR      (rhCLR),

@@ -47,7 +47,7 @@ module RPMR (
       input  wire         rpDRVCLR,             // Drive clear
       input  wire [35: 0] rpDATAI,              // Data In
       input  wire         rpmrWRITE,            // Write
-      input  wire         rpGO,                 // Go
+      input  wire         rpDRY,                // Drive ready
       output wire [15: 0] rpMR                  // MR Output
    );
 
@@ -143,7 +143,7 @@ module RPMR (
         else
           if (clr | rpDRVCLR)
             rpDMD <= 0;
-          else if (rpmrWRITE & !rpGO)
+          else if (rpmrWRITE & rpDRY)
             rpDMD <= `rpMR_DMD(rpDATAI);
      end
 

@@ -47,7 +47,17 @@ module RPER1 (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       input  wire         clr,                  // Clear
-      input  wire         rpDRVCLR,             // Drive clear
+      input  wire         rpDMD,                // Diagnostic Mode
+      input  wire         rpDIND,               // Diagnostic Index Pulse
+      input  wire         rpDRVCLR,             // Drive clear command
+      input  wire         rpSEEK,               // Seek command
+      input  wire         rpSEARCH,             // Search commmand
+      input  wire         rpWRCHK,              // Write check command
+      input  wire         rpWRCHKH,             // Write check header command
+      input  wire         rpWRITE,              // Write command
+      input  wire         rpWRITEH,             // Write header command
+      input  wire         rpREAD,               // Read command
+      input  wire         rpREADH,              // Read header command
       input  wire         rpSETWLE,             // Set WLE
       input  wire         rpSETIAE,             // Set IAE
       input  wire         rpSETAOE,             // Set AOE
@@ -55,10 +65,39 @@ module RPER1 (
       input  wire         rpSETRMR,             // Set RMR
       input  wire         rpSETILF,             // Set ILF
       input  wire [35: 0] rpDATAI,              // Data in
-      input  wire         rper1WRITE,           // Write
+      input  wire         rper1WRITE,           // Write ER1
       input  wire         rpDRY,                // Drive ready
       output wire [15: 0] rpER1                 // rpER1 register
    );
+
+   //
+   // Reset Index Pulse Counter
+   //
+
+   wire reset = rpDRVCLR | rpSEEK | rpSEARCH | rpWRCHK | rpWRCHKH | rpWRITE | rpWRITEH | rpREAD | rpREADH;
+
+   //
+   // Index Pulse Counter
+   //
+   // Trace
+   //  M7786/SS0/E57
+   //  M7786/SS0/E58
+   //  M7786/SS0/E53
+   //
+
+   reg [1:0] index_cnt;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          index_cnt <= 0;
+        else
+          begin
+             if (clr | reset | !rpDMD)
+               index_cnt <= 0;
+             else if (rpDMD & rpDIND)
+               index_cnt <= {index_cnt[0], 1'b1};
+          end
+     end
 
    //
    // RPER1 Data Check (rpDCK)
@@ -99,22 +138,24 @@ module RPER1 (
      end
 
    //
-   // RPER1 Incomplete Operation (rpIOP)
+   // RPER1 Operation Incomplete (rpOPI)
    //
    // Trace
    //  M7774/RG0/E5
    //
 
-   reg rpIOP;
+   reg rpOPI;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          rpIOP <= 0;
+          rpOPI <= 0;
         else
           if (clr | rpDRVCLR)
-            rpIOP <= 0;
+            rpOPI <= 0;
+          else if (rpDMD & rpDIND & (index_cnt == 3))
+            rpOPI <= 1;
           else if (rper1WRITE & rpDRY)
-            rpIOP <= `rpER1_IOP(rpDATAI);
+            rpOPI <= `rpER1_OPI(rpDATAI);
      end
 
    //
@@ -380,7 +421,7 @@ module RPER1 (
    // Build the RPER1 Register
    //
 
-   assign rpER1 = {rpDCK, rpUNS, rpIOP, rpDTE, rpWLE, rpIAE, rpAOE, rpHCRC,
+   assign rpER1 = {rpDCK, rpUNS, rpOPI, rpDTE, rpWLE, rpIAE, rpAOE, rpHCRC,
                    rpHCE, rpECH, rpWCF, rpFER, rpPAR, rpRMR, rpILR, rpILF};
 
 endmodule
