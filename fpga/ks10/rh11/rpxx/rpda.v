@@ -43,7 +43,6 @@
 module RPDA (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clear
       input  wire [35: 0] rpDATAI,              // RP Data In
       input  wire         rpdaWRITE,            // DA Write
       input  wire         rpPRESET,             // Preset command
@@ -68,7 +67,7 @@ module RPDA (
         if (rst)
           rpSA <= 0;
         else
-          if (clr | rpPRESET)
+          if (rpPRESET)
             rpSA <= 0;
           else if (rpdaWRITE & rpDRY)
             rpSA <= `rpDA_SA(rpDATAI);
@@ -95,7 +94,7 @@ module RPDA (
         if (rst)
           rpTA <= 0;
         else
-          if (clr | rpPRESET)
+          if (rpPRESET)
             rpTA <= 0;
           else if (rpdaWRITE & rpDRY)
             rpTA <= `rpDA_TA(rpDATAI);

@@ -54,6 +54,8 @@
 `include "rhcs1.vh"
 `include "rhcs2.vh"
 `include "rpxx/rpcs1.vh"
+`include "rpxx/rpof.vh"
+`include "rpxx/rpds.vh"
 `include "rpxx/rpxx.vh"
 `include "sd/sd.vh"
 `include "../uba/ubabus.vh"
@@ -328,17 +330,38 @@ module RH11 (
    wire [2:0] rhUNIT = `rhCS2_UNIT(rhCS2);
 
    //
-   // RH11 Attention Summary (RHAS) Register (Pseudo register)
+   // Attention Clear
    //
 
    wire [ 7:0] rhATACLR = (rhasWRITE) ? `rhAS_AS(rhDATAI) : 8'b0;
 
-   wire [15:0] rhAS   = {8'b0,
-                         rpDS[7][15], rpDS[6][15], rpDS[5][15], rpDS[4][15],
-                         rpDS[3][15], rpDS[2][15], rpDS[1][15], rpDS[0][15]};
+   //
+   // RH11 Attention Summary (RHAS) Register
+   //
 
-   wire rpATA = (rpDS[7][15] | rpDS[6][15] | rpDS[5][15] | rpDS[4][15] |
-                 rpDS[3][15] | rpDS[2][15] | rpDS[1][15] | rpDS[0][15]);
+   wire [15:0] rhAS = {8'b0,
+                       `rpDS_ATA(rpDS[7]), `rpDS_ATA(rpDS[6]),
+                       `rpDS_ATA(rpDS[5]), `rpDS_ATA(rpDS[4]),
+                       `rpDS_ATA(rpDS[3]), `rpDS_ATA(rpDS[2]),
+                       `rpDS_ATA(rpDS[1]), `rpDS_ATA(rpDS[0])};
+
+   //
+   // ATA (from all disks)
+   //
+
+   wire rpATA = (`rpDS_ATA(rpDS[7]) | `rpDS_ATA(rpDS[6]) |
+                 `rpDS_ATA(rpDS[5]) | `rpDS_ATA(rpDS[4]) |
+                 `rpDS_ATA(rpDS[3]) | `rpDS_ATA(rpDS[2]) |
+                 `rpDS_ATA(rpDS[1]) | `rpDS_ATA(rpDS[0]));
+
+   //
+   // 22 Sector (16-bit) Mode
+   //
+
+   wire [7:0] rpFMT22 = {`rpOF_FMT22(rpOF[7]), `rpOF_FMT22(rpOF[6]),
+                         `rpOF_FMT22(rpOF[5]), `rpOF_FMT22(rpOF[4]),
+                         `rpOF_FMT22(rpOF[3]), `rpOF_FMT22(rpOF[2]),
+                         `rpOF_FMT22(rpOF[1]), `rpOF_FMT22(rpOF[0])};
 
    //
    // RPXX Status
@@ -388,7 +411,7 @@ module RH11 (
    // RP Signals
    //
 
-   wire [ 1:0] rpSDOP [7:0];            // SD operation
+   wire [ 2:0] rpSDOP [7:0];            // SD operation
    wire [20:0] rpSDLSA[7:0];            // SD Linear sector address
    wire [ 7:0] rpSDREQ;                 // RP requests the SD
    wire [ 7:0] rpSDACK;                 // SD acknowledges the RP
@@ -649,6 +672,7 @@ module RH11 (
       // RPXX interface
       .rpSDOP     (rpSDOP[sdSCAN]),
       .rpSDLSA    (rpSDLSA[sdSCAN]),
+      .rpFMT22    (rpFMT22[sdSCAN]),
       .rpSDREQ    (rpSDREQ),
       .rpSDACK    (rpSDACK),
       // SD Output

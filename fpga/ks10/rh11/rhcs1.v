@@ -143,9 +143,9 @@ module RHCS1 (
    // CS1 Massbus Control Parity Error (CPE)
    //
    // Trace
-   //  M7296/PACA/E5
-   //  M7296/PACA/E7
-   //  M7296/PACA/E10
+   //  M7297/PACA/E5
+   //  M7297/PACA/E7
+   //  M7297/PACA/E10
    //
 
    wire cs1CPE = 0;

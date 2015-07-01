@@ -6,7 +6,7 @@
 //   RPxx State Machine
 //
 // File
-//   rpstatev
+//   rpctrl.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -39,6 +39,8 @@
 `timescale 1ns/1ps
 
 `include "rpmr.vh"
+`include "rpcc.vh"
+`include "rpdc.vh"
 `include "rpcs1.vh"
 `include "../sd/sd.vh"
 `include "../../ks10.vh"
@@ -49,22 +51,28 @@ module RPCTRL (
       input  wire         clr,                  // Clr
       input  wire [35: 0] rpDATAI,              // Data input
       input  wire         rpcs1WRITE,           // CS1 write
-      input  wire [ 9: 0] rpDCA,                // Desired cylinder
-      input  wire [ 9: 0] rpCCA,                // Current cylinder
+      input  wire [15: 0] rpDC,                 // Desired cylinder
+      output reg  [15: 0] rpCC,                 // Current cylinder
       input  wire         rpDMD,                // Diagnostic Mode
+      input  wire         rpDSCK,               // Diagnostic sector clock
+      input  wire         rpDIND,               // Diagnostic index pulse
       input  wire         rpPAT,                // Parity test
       output reg          rpPIP,                // Positioning-in-progress
       output reg          rpDRY,                // Drive ready
-      input  wire         rpSETAOE,             // Address overflow error
-      input  wire         rpSETIAE,             // Invalid address error
-      input  wire         rpSETWLE,             // Write lock error
-      output reg          rpSETATA,             // Set ATA
-      output wire         rpADRSTRT,            // Address calculation start
+      output reg          rpECE,                // ECC envelope
+      output reg          rpDFE,                // Data field envelope
+      input  wire         rpFMT22,              // 22 sector format (16-bit)
+      input  wire         rpSETAOE,             // Set address overflow error
+      input  wire         rpSETIAE,             // Set invalid address error
+      input  wire         rpSETWLE,             // Set write lock error
+      output reg          rpSETATA,             // Set attenation
+      output wire         rpSETOPI,             // Set operation incomplete
+      output wire         rpSETSKI,             // Set seek incomplete
+      output reg          rpADRSTRT,            // Address calculation start
       input  wire         rpADRBUSY,            // Address calculation busy
-      output reg  [ 1: 0] rpSDOP,               // SD operation
+      output reg  [ 2: 0] rpSDOP,               // SD operation
       output wire         rpSDREQ,              // SD request
-      input  wire         rpSDACK,              // SD acknowledge
-      output wire         rpSEEKDONE            // Update RPCC
+      input  wire         rpSDACK               // SD acknowledge
    );
 
    //
@@ -74,6 +82,7 @@ module RPCTRL (
    parameter  simTIME = 1'b0;                   // Simulate timing
    localparam CLKFRQ  = `CLKFRQ;                // Clock frequency
    localparam ROTDELAY = 0.005000 * `CLKFRQ;    // Rotation delay (5 ms)
+   localparam OFFDELAY = 0.005000 * `CLKFRQ;    // Offset delay (5 ms)
    localparam FIXDELAY = 0.000100 * `CLKFRQ;    // Fixed delay (100 us)
 
    //
@@ -113,6 +122,18 @@ module RPCTRL (
    endfunction
 
    //
+   // rpDCA
+   //
+
+   wire [9:0] rpDCA = `rpDC_DCA(rpDC);
+
+   //
+   // rpCCA
+   //
+
+   wire [9:0] rpCCA = `rpCC_CCA(rpCC);
+
+   //
    // rpGO
    //
    // Commands are ignored with incorrect parity.
@@ -121,17 +142,23 @@ module RPCTRL (
    wire rpGO = !rpPAT & rpcs1WRITE & `rpCS1_GO(rpDATAI);
 
    //
+   // Diagnostic index pulse.  Triggerd on falling edge of maintenance
+   // register signal.
+   //
+
+   wire diag_index;
+   EDGETRIG uDIAGIND(clk, rst, 1'b1, 1'b0, rpDIND, diag_index);
+
+   //
    // State Definition
    //
 
-   localparam [4:0] stateIDLE     =  0,
-                    stateSEEKSTRT =  1,
-                    stateSEEKDLY  =  2,
-                    stateSEEKEND  =  3,
-                    stateROTDLY   =  4,
-                    stateWAITACK  =  5,
-                    stateRECAL    =  6,
-                    stateDONE     = 31;
+   localparam [2:0] stateIDLE       = 0,        // Idle
+                    stateSEEKDONE   = 1,        // Seek then done
+                    stateSEEKSEARCH = 2,        // Seek then search
+                    stateSEARCH     = 3,        // Searching for sector
+                    stateDATA       = 4,        // Reading/writing data
+                    stateDONE       = 7;        // Done
 
    //
    // Disk Motion Simlation State Machine
@@ -140,7 +167,8 @@ module RPCTRL (
    reg ata;                                     // Do ATA at end
    reg busy;                                    // Drive busy
    reg [24: 0] delay;                           // RPxx Delay Simulation
-   reg [ 4: 0] state;                           // State
+   reg [15: 0] tempCC;                          // rpCC value when command completes
+   reg [ 2: 0] state;                           // State
 
    always @(posedge clk or posedge rst)
      begin
@@ -148,373 +176,470 @@ module RPCTRL (
           begin
              ata      <= 0;
              busy     <= 0;
+             rpCC     <= 0;
              rpPIP    <= 0;
              rpSETATA <= 0;
              rpSDOP   <= `sdopNOP;
              delay    <= 0;
+             tempCC   <= 0;
              state    <= stateIDLE;
           end
         else
           begin
              if (clr)
                begin
-                  ata      <= 0;
-                  busy     <= 0;
-                  rpPIP    <= 0;
-                  rpSETATA <= 0;
-                  rpSDOP   <= `sdopNOP;
-                  delay    <= 0;
-                  state    <= stateIDLE;
+                  // FIXME
                end
              else
-               case (state)
+               begin
 
-                 //
-                 // stateIDLE
-                 //  Look for a function (command) to go process
-                 //
+                  rpADRSTRT <= 0;
 
-                 stateIDLE:
-                   begin
-                      ata      <= 0;
-                      busy     <= 0;
-                      rpPIP    <= 0;
-                      rpSETATA <= 0;
+                  case (state)
 
-                      //
-                      // Don't execute commands with incorrect parity
-                      //
+                    //
+                    // stateIDLE
+                    //
+                    // Look for a function (command) to go process
+                    //
 
-                      if (!rpPAT & rpcs1WRITE & `rpCS1_GO(rpDATAI))
+                    stateIDLE:
+                      begin
+                         ata      <= 0;
+                         busy     <= 0;
+                         rpPIP    <= 0;
+                         rpSETATA <= 0;
+                         tempCC   <= 0;
 
-                        //
-                        // Decode Command (Function)
-                        //
+                         //
+                         // Wait for a GO command
+                         //
 
-                        case (`rpCS1_FUN(rpDATAI))
+                         if (rpGO)
 
-                          //
-                          // Unload Command
-                          //  On an RPxx disk, the unload command would unload the
-                          //  heads, spin-down the disk, off-line the disk, allow
-                          //  the operator to change the disk pack, on-line the
-                          //  disk, spin-up the disk, and reload the heads.
-                          //
+                           //
+                           // Decode Command (Function)
+                           //
 
-                          `funUNLOAD:
-                            begin
-                               ata    <= 1;
-                               busy   <= 1;
-                               rpPIP  <= 1;
-                               rpSDOP <= `sdopNOP;
-                               if (simTIME)
-                                 delay <= seekDELAY(0, rpCCA);
-                               else
-                                 delay <= $rtoi(FIXDELAY);
-                               state <= stateSEEKSTRT;
-                            end
+                           case (`rpCS1_FUN(rpDATAI))
 
-                          //
-                          // Seek Command
-                          //  On an RPxx disk, the seek command causes the heads
-                          //  to move to the cylinder specified by the RPDC
-                          //  register.
-                          //
-                          //  This command simulates head motion to the new
-                          //  cylinder specified by the RPDC register
-                          //
-                          //  The disk will not seek to an invalid address.
-                          //
+                             //
+                             // Unload Command
+                             //
+                             // On an RPxx disk, the unload command would unload the
+                             // heads, spin-down the disk, off-line the disk, allow
+                             // the operator to change the disk pack, on-line the
+                             // disk, spin-up the disk, and reload the heads.
+                             //
 
-                          `funSEEK:
-                            begin
-                               if (!rpSETIAE & (rpDCA != rpCCA))
-                                 begin
-                                    ata    <= 1;
-                                    busy   <= 1;
-                                    rpPIP  <= 1;
-                                    rpSDOP <= `sdopNOP;
-                                    if (simTIME)
-                                      delay <= seekDELAY(rpDCA, rpCCA);
-                                    else
-                                      delay <= $rtoi(FIXDELAY);
-                                    state <= stateSEEKSTRT;
-                                 end
-                            end
+                             `funUNLOAD:
+                               begin
+                                  ata    <= 1;
+                                  busy   <= 1;
+                                  rpPIP  <= 1;
+                                  rpSDOP <= `sdopNOP;
+                                  tempCC <= rpDC;
+                                  if (simTIME)
+                                    delay <= seekDELAY(0, rpCCA);
+                                  else
+                                    delay <= $rtoi(FIXDELAY);
+                                  state <= stateSEEKDONE;
+                               end
 
-                          //
-                          // Recalibrate Command
-                          //  The recalibrate command causes the heads to move
-                          //  to cylinder 0.
-                          //
+                             //
+                             // Seek Command
+                             //
+                             // On an RPxx disk, the seek command causes the heads
+                             // to move to the cylinder specified by the RPDC
+                             // register.
+                             //
+                             // This command simulates head motion to the new
+                             // cylinder specified by the RPDC register
+                             //
+                             // The disk will not seek to an invalid address.
+                             //
 
-                          `funRECAL:
-                            begin
-                               ata    <= 1;
-                               busy   <= 1;
-                               rpPIP  <= 1;
-                               rpSDOP <= `sdopNOP;
-                               if (simTIME)
-                                 delay  <= seekDELAY(0, rpCCA);
-                               else
-                                 delay <= $rtoi(FIXDELAY);
-                               state <= stateRECAL;
-                            end
+                             `funSEEK:
+                               begin
+                                  if (!rpSETIAE)
+                                    begin
+                                       ata    <= 1;
+                                       busy   <= 1;
+                                       rpPIP  <= 1;
+                                       rpSDOP <= `sdopNOP;
+                                       tempCC <= rpDC;
+                                       if (simTIME)
+                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       else
+                                         delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEEKDONE;
+                                    end
+                               end
 
-                          //
-                          // Search Command
-                          //  A search command may have to perform an implied
-                          //  seek before before performing the search
-                          //  operation.
-                          //
-                          //  The disk will not seek to an invalid address.
-                          //
+                             //
+                             // Recalibrate Command
+                             //
+                             // The recalibrate command causes the heads to move
+                             // to cylinder 0.
+                             //
 
-                          `funSEARCH:
-                            begin
-                               if (!rpSETIAE)
-                                 begin
-                                    ata    <= 1;
-                                    busy   <= 1;
-                                    rpPIP  <= 1;
-                                    rpSDOP <= `sdopNOP;
-                                    if (simTIME)
-                                      delay <= seekDELAY(rpDCA, rpCCA);
-                                    else
-                                      delay <= $rtoi(FIXDELAY);
-                                    state <= stateSEEKSTRT;
-                                 end
-                            end
+                             `funRECAL:
+                               begin
+                                  ata    <= 1;
+                                  busy   <= 1;
+                                  rpPIP  <= 1;
+                                  rpSDOP <= `sdopNOP;
+                                  tempCC <= 0;
+                                  if (simTIME)
+                                    delay  <= seekDELAY(0, rpCCA);
+                                  else
+                                    delay <= $rtoi(FIXDELAY);
+                                  state <= stateSEEKDONE;
+                               end
 
-                          //
-                          // Offset Command
-                          //
+                             //
+                             // Search Command
+                             //
+                             // A search command may have to perform an implied
+                             // seek before before performing the search
+                             // operation.
+                             //
+                             // The disk will not seek to an invalid address.
+                             //
 
-                          `funOFFSET:
-                            begin
-                               ata    <= 1;
-                               busy   <= 1;
-                               rpPIP  <= 1;
-                               rpSDOP <= `sdopNOP;
-                               if (simTIME)
-                                 delay <= $rtoi(ROTDELAY);
-                               else
-                                 delay <= $rtoi(FIXDELAY);
-                               state <= stateSEEKSTRT;
-                            end
+                             `funSEARCH:
+                               begin
+                                  if (!rpSETIAE)
+                                    begin
+                                       ata    <= 1;
+                                       busy   <= 1;
+                                       rpPIP  <= 0;
+                                       rpSDOP <= `sdopNOP;
+                                       tempCC <= rpDC;
+                                       if (simTIME)
+                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       else
+                                         delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEEKSEARCH;
+                                    end
+                               end
 
-                          //
-                          // Return-to-center Command
-                          //
+                             //
+                             // Offset Command
+                             //
 
-                          `funCENTER:
-                            begin
-                               ata    <= 1;
-                               busy   <= 1;
-                               rpPIP  <= 1;
-                               rpSDOP <= `sdopNOP;
-                               if (simTIME)
-                                 delay <= $rtoi(ROTDELAY);
-                               else
-                                 delay <= $rtoi(FIXDELAY);
-                               state <= stateSEEKSTRT;
-                            end
+                             `funOFFSET:
+                               begin
+                                  ata    <= 1;
+                                  busy   <= 1;
+                                  rpPIP  <= 1;
+                                  rpSDOP <= `sdopNOP;
+                                  tempCC <= rpCC;
+                                  if (simTIME)
+                                    delay <= $rtoi(OFFDELAY);
+                                  else
+                                    delay <= $rtoi(FIXDELAY);
+                                  state <= stateSEEKDONE;
+                               end
 
-                          //
-                          // Write Check Commands
-                          //  A write check command may have to perform an
-                          //  implied seek before before performing the write
-                          //  check operation.
-                          //
-                          //  The disk will not seek to an invalid address.
-                          //
+                             //
+                             // Return-to-center command
+                             //
 
-                          `funWRCHK,
-                          `funWRCHKH:
-                            begin
-                               if (!rpSETIAE)
-                                 begin
-                                    ata    <= 0;
-                                    busy   <= 1;
-                                    rpPIP  <= 0;
-                                    rpSDOP <= `sdopWRCHK;
-                                    if (simTIME)
-                                      delay <= seekDELAY(rpDCA, rpCCA);
-                                    else
-                                      delay <= $rtoi(FIXDELAY);
-                                    state  <= stateSEEKSTRT;
-                                 end
-                            end
+                             `funCENTER:
+                               begin
+                                  ata    <= 1;
+                                  busy   <= 1;
+                                  rpPIP  <= 1;
+                                  rpSDOP <= `sdopNOP;
+                                  tempCC <= rpCC;
+                                  if (simTIME)
+                                    delay <= $rtoi(OFFDELAY);
+                                  else
+                                    delay <= $rtoi(FIXDELAY);
+                                  state <= stateSEEKDONE;
+                               end
 
-                          //
-                          // Write Commands
-                          //  A write command may have to perform an implied
-                          //  seek before before performing the write operation.
-                          //
-                          //  The disk will not seek to an invalid address.
-                          //
+                             //
+                             // Write check data command
+                             //
+                             // A write check command may have to perform an
+                             // implied seek before before performing the write
+                             // check operation.
+                             //
+                             // The disk will not seek to an invalid address.
+                             //
 
-                          `funWRITE,
-                          `funWRITEH:
-                            begin
-                               if (!rpSETIAE & !rpSETWLE)
-                                 begin
-                                    ata    <= 0;
-                                    busy   <= 1;
-                                    rpPIP  <= 0;
-                                    rpSDOP <= `sdopWR;
-                                    if (simTIME)
-                                      delay <= seekDELAY(rpDCA, rpCCA);
-                                    else
-                                      delay <= $rtoi(FIXDELAY);
-                                    state   <= stateSEEKSTRT;
-                                 end
-                            end
+                             `funWRCHK:
+                               begin
+                                  if (!rpSETIAE)
+                                    begin
+                                       ata    <= 0;
+                                       busy   <= 1;
+                                       rpPIP  <= 0;
+                                       rpSDOP <= `sdopWRCHK;
+                                       tempCC <= rpDC;
+                                       rpADRSTRT <= 1;
+                                       if (simTIME)
+                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       else
+                                         delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEEKSEARCH;
+                                    end
+                               end
 
-                          //
-                          // Read Commands
-                          //  A read command may have to perform an implied
-                          //  seek before before performing the read operation.
-                          //
-                          //  The disk will not seek to an invalid address.
-                          //
+                             //
+                             // Write check header and data command
+                             //
 
-                          `funREAD,
-                          `funREADH:
-                            begin
-                               if (!rpSETIAE)
-                                 begin
-                                    ata    <= 0;
-                                    busy   <= 1;
-                                    rpPIP  <= 0;
-                                    rpSDOP <= `sdopRD;
-                                    if (simTIME)
-                                      delay <= seekDELAY(rpDCA, rpCCA);
-                                    else
-                                      delay <= $rtoi(FIXDELAY);
-                                    state  <= stateSEEKSTRT;
-                                 end
-                            end
+                             `funWRCHKH:
+                               begin
+                                  if (!rpSETIAE)
+                                    begin
+                                       ata    <= 0;
+                                       busy   <= 1;
+                                       rpPIP  <= 0;
+                                       rpSDOP <= `sdopWRCHKH;
+                                       tempCC <= rpDC;
+                                       rpADRSTRT <= 1;
+                                       if (simTIME)
+                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       else
+                                         delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEEKSEARCH;
+                                    end
+                               end
 
-                        endcase
-                   end
+                             //
+                             // Write data command
+                             //
+                             // A write command may have to perform an implied
+                             // seek before before performing the write operation.
+                             //
+                             // The disk will not seek to an invalid address.
+                             //
 
-                 //
-                 // stateSEEK
-                 //  This state starts the SD Address Calculation
-                 //
+                             `funWRITE:
+                               begin
+                                  if (!rpSETIAE & !rpSETWLE)
+                                    begin
+                                       ata    <= 0;
+                                       busy   <= 1;
+                                       rpPIP  <= 0;
+                                       rpSDOP <= `sdopWR;
+                                       tempCC <= rpDC;
+                                       rpADRSTRT <= 1;
+                                       if (simTIME)
+                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       else
+                                         delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEEKSEARCH;
+                                    end
+                               end
 
-                 stateSEEKSTRT:
-                   begin
-                      state <= stateSEEKDLY;
-                   end
+                             //
+                             // Write header and data command
+                             //
 
-                 //
-                 // stateSEEKDLY
-                 //
-                 //  Simulate Seek Timing on Seek Commands.
-                 //
+                             `funWRITEH:
+                               begin
+                                  if (!rpSETIAE)
+                                    begin
+                                       ata    <= 0;
+                                       busy   <= 1;
+                                       rpPIP  <= 0;
+                                       rpSDOP <= `sdopWRH;
+                                       tempCC <= rpDC;
+                                       rpADRSTRT <= 1;
+                                       if (simTIME)
+                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       else
+                                         delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEEKSEARCH;
+                                    end
+                               end
 
-                 stateSEEKDLY:
-                   begin
-                      if ((delay == 0) & !rpADRBUSY)
-                        state <= stateSEEKEND;
-                      else
-                        delay <= delay - 1'b1;
-                   end
+                             //
+                             // Read data command
+                             //
+                             // A read command may have to perform an implied
+                             // seek before before performing the read operation.
+                             //
+                             // The disk will not seek to an invalid address.
+                             //
 
-                 //
-                 // stateSEEKEND
-                 //
-                 //  Update Current Cylinder Address after delay.
-                 //
+                             `funREAD:
+                               begin
+                                  if (!rpSETIAE)
+                                    begin
+                                       ata    <= 0;
+                                       busy   <= 1;
+                                       rpPIP  <= 0;
+                                       rpSDOP <= `sdopRD;
+                                       tempCC <= rpDC;
+                                       rpADRSTRT <= 1;
+                                       if (simTIME)
+                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       else
+                                         delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEEKSEARCH;
+                                    end
+                               end
 
-                 stateSEEKEND:
-                   begin
-                      if (rpSDOP == `sdopNOP)
-                        state <= stateDONE;
-                      else
-                        begin
-                           if (simTIME)
-                             delay <= $rtoi(ROTDELAY);
-                           else
-                             delay <= $rtoi(FIXDELAY);
-                           state <= stateROTDLY;
-                        end
-                   end
+                             //
+                             // Read header and data command
+                             //
 
-                 //
-                 // stateRECAL
-                 //
-                 // Don't update RPCC.  It was already zeroed.
-                 //
+                             `funREADH:
+                               begin
+                                  if (!rpSETIAE)
+                                    begin
+                                       ata    <= 0;
+                                       busy   <= 1;
+                                       rpPIP  <= 0;
+                                       rpSDOP <= `sdopRDH;
+                                       tempCC <= rpDC;
+                                       rpADRSTRT <= 1;
+                                       if (simTIME)
+                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       else
+                                         delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEEKSEARCH;
+                                    end
+                               end
 
-                 stateRECAL:
-                   begin
-                      if (delay == 0)
-                        state <= stateDONE;
-                      else
-                        delay <= delay - 1'b1;
-                   end
+                           endcase
 
-                 //
-                 // stateROTDLY:
-                 //
-                 //  Simulate Rotation Latency on Reads/Writes
-                 //
+                      end
 
-                 stateROTDLY:
-                   begin
-                      if (delay == 0)
-                        state <= stateWAITACK;
-                      else
-                        delay <= delay - 1'b1;
-                   end
+                    //
+                    // stateSEEKDONE
+                    //
+                    // Simulate seek timing for:
+                    //  - Seek command
+                    //  - Recalibrate command
+                    //  - Offset command
+                    //  - Return-to-center command
+                    //  - Unload command
+                    //
+                    // These commands are done once the seek is completed
+                    //
 
-                 //
-                 // stateWAITACK:
-                 //
-                 //  Wait for SD to complete Read/Write operaton
-                 //
-                 //  The controller should abort on a invalid address when it
-                 //  occurs on a mid-transfer seek.
-                 //
+                    stateSEEKDONE:
+                      begin
+                         if (delay == 0)
+                           state <= stateDONE;
+                         else
+                           delay <= delay - 1'b1;
+                      end
 
-                 stateWAITACK:
-                   begin
-                      if (rpSDACK | rpSETAOE)
-                        state <= stateDONE;
-                   end
+                    //
+                    // stateSEEKSEARCH
+                    //
+                    // Simulate seek timing for:
+                    //  - Search command
+                    //  - Read commands
+                    //  - Write commands
+                    //  - Write check commands
+                    //
+                    // These commands will do a sector search once the seek
+                    // is completed.
+                    //
 
-                 //
-                 // stateDONE:
-                 //  Update the disk state
-                 //
+                    stateSEEKSEARCH:
+                      begin
+                         if (0 & rpDMD)         // FIXME
+                           state <= stateSEARCH;
+                         else
+                           begin
+                              if (delay == 0)
+                                begin
+                                   rpCC <= tempCC;
+                                   if (simTIME)
+                                     delay <= $rtoi(ROTDELAY);
+                                   else
+                                     delay <= $rtoi(FIXDELAY);
+                                   state <= stateSEARCH;
+                                end
+                              else
+                                delay <= delay - 1'b1;
+                           end
+                      end
 
-                 stateDONE:
-                   begin
-                      ata      <= 0;
-                      busy     <= 0;
-                      rpPIP    <= 0;
-                      rpSETATA <= ata;
-                      rpSDOP   <= `sdopNOP;
-                      state    <= stateIDLE;
-                   end
+                    //
+                    // stateSEARCH
+                    //
+                    // Simulate timining for sector search
+                    //  - Search command
+                    //  - Read commands
+                    //  - Write commands
+                    //  - Write check commands
+                    //
+                    //  Wait for SD sector address calculation to complete
+                    //
 
-                 //
-                 // Everything else
-                 //
+                    stateSEARCH:
+                      begin
+                         if (delay == 0)
+                           begin
+                              if (rpSDOP == `sdopNOP)
+                                state <= stateDONE;
+                              else if (!rpADRBUSY)
+                                state <= stateDATA;
+                           end
+                         else
+                           delay <= delay - 1'b1;
+                      end
 
-                 default:
-                   state <= stateIDLE;
+                    //
+                    // stateDATA:
+                    //
+                    //  Wait for SD to complete Read/Write operaton
+                    //
+                    //  The controller should abort on a invalid address when it
+                    //  occurs on a mid-transfer seek.
+                    //
 
-               endcase
+                    stateDATA:
+                      begin
+                         if (rpSETAOE | rpSDACK)
+                           state <= stateDONE;
+                         else
+                           tempCC <= rpDC;
+                      end
+
+                    //
+                    // stateDONE:
+                    //  Update the disk state
+                    //
+
+                    stateDONE:
+                      begin
+                         ata      <= 0;
+                         busy     <= 0;
+                         rpPIP    <= 0;
+                         rpSETATA <= ata;
+                         rpSDOP   <= `sdopNOP;
+                         rpCC     <= tempCC;
+                         state    <= stateIDLE;
+                      end
+
+                    //
+                    // Everything else
+                    //
+
+                    default:
+                      state <= stateIDLE;
+
+                  endcase
+               end
           end
      end
 
    //
    // rpDRY
-   //  Don't negate rpDRY while rpGO is asserted
+   //  Don't negate rpDRY while rpGO is asserted otherwise it will create a
+   //  RHCS1[PGE] error.
    //
 
    always @(posedge clk or posedge rst)
@@ -526,11 +651,196 @@ module RPCTRL (
      end
 
    //
+   // Index pulse counter for testing OPI
+   //
+   // Trace
+   //  M7786/SS0/E57
+   //  M7786/SS0/E58
+   //  M7786/SS0/E53
+   //
+
+   reg [1:0] index_cnt;
+   wire index_fun = 1;
+
+/* FIXME
+    ((fun == `funSEEK  ) |
+     (fun == `funSEARCH) |
+     (fun == `funWRCHK ) |
+     (fun == `funWRCHKH) |
+     (fun == `funWRITE ) |
+     (fun == `funWRITEH) |
+     (fun == `funREAD  ) |
+     (fun == `funREADH ));
+ */
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          index_cnt <= 0;
+        else
+          begin
+             if (rpDMD)
+               begin
+                  if (diag_index)
+                    index_cnt <= {index_cnt[0], index_fun};
+               end
+             else
+               index_cnt <= 0;
+          end
+     end
+
+   assign rpSETOPI = rpDMD & rpDIND & index_cnt[1];
+
+   //
+   // State Definition
+   //
+
+   localparam [2:0] asdfIDLE   = 0,
+                    asdfHEADER = 1,
+                    asdfDATA   = 2,
+                    asdfECC    = 3,
+                    asdfGAP    = 4,
+                    asdfEBL    = 5;
+
+
+   //
+   // Seek incomplete testing
+   //
+
+   reg ebl;
+   reg [ 2:0] asdf;
+   reg [11:0] bit_cnt;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+
+          begin
+             rpDFE   <= 0;
+             rpECE   <= 0;
+             ebl     <= 0;
+             bit_cnt <= 0;
+             asdf    <= asdfIDLE;
+          end
+
+        else
+
+          begin
+
+             if (!rpDMD)
+               begin
+                  rpDFE    <= 0;
+                  rpECE    <= 0;
+                  ebl      <= 0;
+                  bit_cnt  <= 0;
+                  asdf     <= asdfIDLE;
+               end
+
+             else
+
+               case (asdf)
+
+                 //
+                 // Header: 496 bits
+                 //
+
+                 asdfHEADER:
+                   if (rpDSCK)
+                     begin
+                        if (bit_cnt == 495)
+                          begin
+                             bit_cnt <= 0;
+                             asdf    <= asdfDATA;
+                          end
+                        else
+                          bit_cnt <= bit_cnt + 1;
+                     end
+
+                 //
+                 // Data: 4608 bits = 256 words (18-bit mode)
+                 //       4096 bits = 256 words (16-bit mode)
+                 //
+
+                 asdfDATA:
+                   if (rpDSCK)
+                     begin
+                        rpDFE <= 1;
+                        rpECE <= 0;
+                        ebl   <= 0;
+                        if (( rpFMT22 & (bit_cnt == 4095)) |
+                            (!rpFMT22 & (bit_cnt == 4607)))
+                          begin
+                             bit_cnt <= 0;
+                             asdf    <= asdfECC;
+                          end
+                        else
+                          bit_cnt <= bit_cnt + 1;
+                     end
+
+                 //
+                 // ECC: 32 bits
+                 //
+
+                 asdfECC:
+                   if (rpDSCK)
+                     begin
+                        rpDFE <= 0;
+                        rpECE <= 1;
+                        ebl   <= 0;
+                        if (bit_cnt == 31)
+                          begin
+                             bit_cnt <= 0;
+                             asdf    <= asdfGAP;
+                          end
+                        else
+                          bit_cnt <= bit_cnt + 1;
+                     end
+
+                 //
+                 // Gap: 16 bits.
+                 //
+
+                 asdfGAP:
+                   if (rpDSCK)
+                     begin
+                        rpDFE <= 0;
+                        rpECE <= 0;
+                        ebl   <= 0;
+                        if (bit_cnt == 15)
+                          begin
+                             bit_cnt <= 0;
+                             asdf    <= asdfEBL;
+                          end
+                        else
+                          bit_cnt <= bit_cnt + 1;
+                     end
+
+                 //
+                 // EBL: (after GAP)
+                 //
+
+                 asdfEBL:
+                   if (rpDSCK)
+                     begin
+                        rpDFE <= 0;
+                        rpECE <= 0;
+                        ebl   <= 1;
+                     end
+
+                 endcase
+          end
+     end
+
+   //
    // State decode
    //
 
-   assign rpSDREQ    = (state == stateWAITACK);
-   assign rpADRSTRT  = (state == stateSEEKSTRT);
-   assign rpSEEKDONE = (state == stateSEEKEND);
+   assign rpSDREQ = (state == stateDATA);
+
+   //
+   // FIXME
+   //
+
+   assign rpSETSKI = 0;
 
 endmodule

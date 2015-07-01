@@ -48,9 +48,12 @@
 // SD Operations
 //
 
-`define sdopNOP   2'd0
-`define sdopRD    2'd1
-`define sdopWR    2'd2
-`define sdopWRCHK 2'd3
+`define sdopNOP    3'd0
+`define sdopRD     3'd1
+`define sdopRDH    3'd2
+`define sdopWR     3'd3
+`define sdopWRH    3'd4
+`define sdopWRCHK  3'd5
+`define sdopWRCHKH 3'd6
 
 `endif

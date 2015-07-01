@@ -46,6 +46,9 @@ module RPOF (
       input  wire         clr,                  // Clear
       input  wire         rpCENTER,             // Center command
       input  wire         rpPRESET,             // Preset command
+      input  wire         rpSEEK,               // Seek command
+      input  wire         rpWRITE,              // Write command
+      input  wire         rpWRITEH,             // Write header command
       input  wire [35: 0] rpDATAI,              // RP Data In
       input  wire         rpofWRITE,            // OF Write
       input  wire         rpDRY,                // Drive ready
@@ -54,7 +57,7 @@ module RPOF (
 
    //
    // RPOF Format 16 bit (FMT22)
-   //  Not implemented.
+   //  Partially implemented for maintenance mode operations.
    //
    // Trace
    //  M7774/RG1/E1
@@ -126,7 +129,7 @@ module RPOF (
         if (rst)
           ofOFD <= 0;
         else
-          if (clr | rpCENTER)
+          if (clr | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
             ofOFD <= 0;
           else if (rpofWRITE & rpDRY)
             ofOFD <= `rpOF_OFD(rpDATAI);
@@ -147,7 +150,7 @@ module RPOF (
         if (rst)
           ofOFS <= 0;
         else
-          if (clr | rpCENTER)
+          if (clr | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
             ofOFS <= 0;
           else if (rpofWRITE & rpDRY)
             ofOFS <= `rpOF_OFS(rpDATAI);

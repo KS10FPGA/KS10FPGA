@@ -49,6 +49,7 @@ module RPDS (
       input  wire         rhATACLR,             // ATA clr
       input  wire         rpSETLST,             // Last sector transferred
       input  wire         rpSETATA,             // Set ATA
+      input  wire         rpGO,                 // Go command
       input  wire         rpCD,                 // SD Card detect
       input  wire         rpWP,                 // SD Write protect
       input  wire         rpPIP,                // Positioning in progress
@@ -90,7 +91,7 @@ module RPDS (
         else
           if (clr | rhATACLR | rpDRVCLR)
             dsATA <= 0;
-          else if (rpSETATA)
+          else if (rpSETATA | rpSETMOL | (rpGO & dsERR))
             dsATA <= 1;
      end
 
@@ -133,7 +134,18 @@ module RPDS (
    //  M7774/RG6/E23
    //
 
+   reg lastMOL;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          lastMOL <= 0;
+        else
+          lastMOL <= rpCD;
+     end
+
    wire dsMOL = rpCD;
+   wire rpSETMOL = dsMOL & !lastMOL;
 
    //
    // RPDS Write Lock (rpWRL)

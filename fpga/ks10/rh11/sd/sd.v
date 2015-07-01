@@ -67,8 +67,9 @@ module SD (
       // RH11
       input  wire [15: 0] rhWC,                 // RH Word Count
       // RPXX
-      input  wire [ 1: 0] rpSDOP,               // RP Operation
+      input  wire [ 2: 0] rpSDOP,               // RP Operation
       input  wire [20: 0] rpSDLSA,              // RP Linear sector address
+      input  wire         rpFMT22,              // RP 22 Sector (16-bit) mode
       input  wire [ 7: 0] rpSDREQ,              // RP requests SD
       output reg  [ 7: 0] rpSDACK,              // SD has finished with RP
       // Output
@@ -131,48 +132,54 @@ module SD (
                     stateREAD13  = 32,
                     stateREAD14  = 33,
                     stateREAD15  = 34,
+                    stateREAD16  = 35,
+                    stateREAD17  = 36,
                     // Write States
-                    stateWRITE00 = 35,
-                    stateWRITE01 = 36,
-                    stateWRITE02 = 37,
-                    stateWRITE03 = 38,
-                    stateWRITE04 = 39,
-                    stateWRITE05 = 40,
-                    stateWRITE06 = 41,
-                    stateWRITE07 = 42,
-                    stateWRITE08 = 43,
-                    stateWRITE09 = 44,
-                    stateWRITE10 = 45,
-                    stateWRITE11 = 46,
-                    stateWRITE12 = 47,
-                    stateWRITE13 = 48,
-                    stateWRITE14 = 49,
-                    stateWRITE15 = 50,
-                    stateWRITE16 = 51,
-                    stateWRITE17 = 52,
-                    stateWRITE18 = 53,
-                    stateWRITE19 = 54,
-                    stateWRITE20 = 55,
-                    stateWRITE21 = 56,
-                    stateWRITE22 = 57,
-                    stateWRITE23 = 58,
+                    stateWRITE00 = 37,
+                    stateWRITE01 = 38,
+                    stateWRITE02 = 39,
+                    stateWRITE03 = 40,
+                    stateWRITE04 = 41,
+                    stateWRITE05 = 42,
+                    stateWRITE06 = 43,
+                    stateWRITE07 = 44,
+                    stateWRITE08 = 45,
+                    stateWRITE09 = 46,
+                    stateWRITE10 = 47,
+                    stateWRITE11 = 48,
+                    stateWRITE12 = 49,
+                    stateWRITE13 = 50,
+                    stateWRITE14 = 51,
+                    stateWRITE15 = 52,
+                    stateWRITE16 = 53,
+                    stateWRITE17 = 54,
+                    stateWRITE18 = 55,
+                    stateWRITE19 = 56,
+                    stateWRITE20 = 57,
+                    stateWRITE21 = 58,
+                    stateWRITE22 = 59,
+                    stateWRITE23 = 60,
+                    stateWRITE24 = 61,
+                    stateWRITE25 = 62,
                     // Write Check States
-                    stateWRCHK00 = 59,
-                    stateWRCHK01 = 60,
-                    stateWRCHK02 = 61,
-                    stateWRCHK03 = 62,
-                    stateWRCHK04 = 63,
-                    stateWRCHK05 = 64,
-                    stateWRCHK06 = 65,
-                    stateWRCHK07 = 66,
-                    stateWRCHK08 = 67,
-                    stateWRCHK09 = 68,
-                    stateWRCHK10 = 69,
-                    stateWRCHK11 = 70,
-                    stateWRCHK12 = 71,
-                    stateWRCHK13 = 72,
-                    stateWRCHK14 = 73,
-                    stateWRCHK15 = 74,
+                    stateWRCHK00 = 63,
+                    stateWRCHK01 = 64,
+                    stateWRCHK02 = 65,
+                    stateWRCHK03 = 66,
+                    stateWRCHK04 = 67,
+                    stateWRCHK05 = 68,
+                    stateWRCHK06 = 69,
+                    stateWRCHK07 = 70,
+                    stateWRCHK08 = 71,
+                    stateWRCHK09 = 72,
+                    stateWRCHK10 = 73,
+                    stateWRCHK11 = 74,
+                    stateWRCHK12 = 75,
+                    stateWRCHK13 = 76,
+                    stateWRCHK14 = 77,
+                    stateWRCHK15 = 78,
+                    stateWRCHK16 = 79,
+                    stateWRCHK17 = 80,
                     // Other States
                     stateFINI    = 122,
                     stateACKRP   = 123,
@@ -243,7 +250,7 @@ module SD (
              state     <= stateRESET;
           end
         else
-          if (clr & 0)
+          if (clr & 0)          // FIXME
             begin
                sdERR     <= 0;
                sdVAL     <= 0;
@@ -965,19 +972,22 @@ module SD (
 
                  stateIDLE:
                    begin
-                      if (((sdSCAN == 0) & rpSDREQ[0]) |
-                          ((sdSCAN == 1) & rpSDREQ[1]) |
-                          ((sdSCAN == 2) & rpSDREQ[2]) |
-                          ((sdSCAN == 3) & rpSDREQ[3]) |
-                          ((sdSCAN == 4) & rpSDREQ[4]) |
-                          ((sdSCAN == 5) & rpSDREQ[5]) |
-                          ((sdSCAN == 6) & rpSDREQ[6]) |
-                          ((sdSCAN == 7) & rpSDREQ[7]))
+                      if (rpSDREQ[sdSCAN])
                         case (rpSDOP)
+
+                          //
+                          // NOP command
+                          //
+
                           `sdopNOP:
                             begin
                                state <= stateIDLE;
                             end
+
+                          //
+                          // Read data command
+                          //
+
                           `sdopRD:
                             begin
                                sdREADOP <= 1;
@@ -986,11 +996,35 @@ module SD (
                                sdRDCNT  <= sdRDCNT + 1'b1;
                                state    <= stateREAD00;
 `ifndef SYNTHESIS
-                               $fwrite(file, "[%11.3f] RH11: SD Controller received a READ Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
+                               $fwrite(file, "[%11.3f] RH11: SD Controller received a Read Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
                                $fwrite(file, "[%11.3f] RH11: SD Sector Address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
                                $fflush(file);
 `endif
                             end
+
+                          //
+                          // Read header and data command
+                          //
+
+                          `sdopRDH:
+                            begin
+                               sdREADOP <= 1;
+                               sectCNT  <= 0;
+                               sectADDR <= {8'b0, sdSCAN, rpSDLSA};
+                               sdRDCNT  <= sdRDCNT + 1'b1;
+                               state    <= stateREAD00;
+`ifndef SYNTHESIS
+                               $fwrite(file, "[%11.3f] RH11: SD Controller received a Read Header Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
+                               $fwrite(file, "[%11.3f] RH11: SD Sector Address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
+                               $fwrite(file, "[%11.3f] RH11: Read Header command is not implemented.\n", $time/1.0e3);
+                               $fflush(file);
+`endif
+                            end
+
+                          //
+                          // Write data command
+                          //
+
                           `sdopWR:
                             begin
                                sdREADOP <= 0;
@@ -999,11 +1033,35 @@ module SD (
                                sdWRCNT  <= sdWRCNT + 1'b1;
                                state    <= stateWRITE00;
 `ifndef SYNTHESIS
-                               $fwrite(file, "[%11.3f] RH11: SD Controller received a WRITE Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
+                               $fwrite(file, "[%11.3f] RH11: SD Controller received a Write Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
                                $fwrite(file, "[%11.3f] RH11: SD Sector Address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
                                $fflush(file);
 `endif
                             end
+
+                          //
+                          // Write header and data command
+                          //
+
+                          `sdopWRH:
+                            begin
+                               sdREADOP <= 0;
+                               sectCNT  <= 0;
+                               sectADDR <= {8'b0, sdSCAN, rpSDLSA};
+                               sdWRCNT  <= sdWRCNT + 1'b1;
+                               state    <= stateWRITE00;
+`ifndef SYNTHESIS
+                               $fwrite(file, "[%11.3f] RH11: SD Controller received a Write Header Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
+                               $fwrite(file, "[%11.3f] RH11: SD Sector Address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
+                               $fwrite(file, "[%11.3f] RH11: Write Header Command is not implemented.\n", $time/1.0e3);
+                               $fflush(file);
+`endif
+                            end
+
+                          //
+                          // Write check data command
+                          //
+
                           `sdopWRCHK:
                             begin
                                sdREADOP <= 0;
@@ -1012,11 +1070,31 @@ module SD (
                                sdRDCNT  <= sdRDCNT + 1'b1;
                                state    <= stateWRCHK00;
 `ifndef SYNTHESIS
-                               $fwrite(file, "[%11.3f] RH11: SD Controller received a WRCHK Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
+                               $fwrite(file, "[%11.3f] RH11: SD Controller received a Write Check Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
                                $fwrite(file, "[%11.3f] RH11: SD Sector Address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
                                $fflush(file);
 `endif
                             end
+
+                          //
+                          // Write check header and data command
+                          //
+
+                          `sdopWRCHKH:
+                            begin
+                               sdREADOP <= 0;
+                               sectCNT  <= 0;
+                               sectADDR <= {8'b0, sdSCAN, rpSDLSA};
+                               sdRDCNT  <= sdRDCNT + 1'b1;
+                               state    <= stateWRCHK00;
+`ifndef SYNTHESIS
+                               $fwrite(file, "[%11.3f] RH11: SD Controller received a Write Check Header Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
+                               $fwrite(file, "[%11.3f] RH11: SD Sector Address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
+                               $fwrite(file, "[%11.3f] RH11: Write Check Header command is not implemented.\n", $time/1.0e3);
+                               $fflush(file);
+`endif
+                            end
+
                         endcase
                       else
                         begin
@@ -1366,8 +1444,37 @@ module SD (
                                 sdINCSECT <= sectCNT;
                                 sectCNT   <= !sectCNT;
                                 sectADDR  <= sectADDR + 1'b1;
-                                state     <= stateREAD00;
+                                state     <= stateREAD16;
                              end
+                        end
+                   end
+
+                 //
+                 // stateREAD16:
+                 //
+                 // Negate sdINCSECT
+                 //
+
+                 stateREAD16:
+                   begin
+                      state <= stateREAD17;
+                   end
+
+                 //
+                 // stateREAD17:
+                 //
+                 // Abort if RPXX has errors.   Specifically RPER1[AOE].
+                 //
+
+                 stateREAD17:
+                   begin
+                      if (rpSDREQ[sdSCAN])
+                        state <= stateREAD00;
+                      else
+                        begin
+                           loopCNT <= 0;
+                           sectCNT <= 0;
+                           state   <= stateFINI;
                         end
                    end
 
@@ -1884,9 +1991,38 @@ module SD (
                              sdINCSECT <= sectCNT;
                              sectCNT   <= !sectCNT;
                              sectADDR  <= sectADDR + 1'b1;
-                             state     <= stateWRITE00;
+                             state     <= stateWRITE24;
                           end
                      end
+
+                 //
+                 // stateWRITE24:
+                 //
+                 // Negate sdINCSECT
+                 //
+
+                 stateWRITE24:
+                   begin
+                      state <= stateWRITE25;
+                   end
+
+                 //
+                 // stateWRITE25:
+                 //
+                 // Abort if RPXX has errors.   Specifically RPER1[AOE].
+                 //
+
+                 stateWRITE25:
+                   begin
+                      if (rpSDREQ[sdSCAN])
+                        state <= stateWRITE00;
+                      else
+                        begin
+                           loopCNT <= 0;
+                           sectCNT <= 0;
+                           state   <= stateFINI;
+                        end
+                   end
 
                  //
                  // stateWRCHK00:
@@ -2232,9 +2368,38 @@ module SD (
                              sdINCSECT <= sectCNT;
                              sectCNT   <= !sectCNT;
                              sectADDR  <= sectADDR + 1'b1;
-                             state     <= stateWRCHK00;
+                             state     <= stateWRCHK16;
                           end
                      end
+
+                 //
+                 // stateWRCHK16:
+                 //
+                 // Negate sdINCSECT
+                 //
+
+                 stateWRCHK16:
+                   begin
+                      state <= stateWRCHK17;
+                   end
+
+                 //
+                 // stateWRCHK17:
+                 //
+                 // Abort if RPXX has errors.   Specifically RPER1[AOE].
+                 //
+
+                 stateWRCHK17:
+                   begin
+                      if (rpSDREQ[sdSCAN])
+                        state <= stateWRCHK00;
+                      else
+                        begin
+                           loopCNT <= 0;
+                           sectCNT <= 0;
+                           state   <= stateFINI;
+                        end
+                   end
 
                  //
                  // stateFINI:

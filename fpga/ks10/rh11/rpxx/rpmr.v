@@ -48,6 +48,8 @@ module RPMR (
       input  wire [35: 0] rpDATAI,              // Data In
       input  wire         rpmrWRITE,            // Write
       input  wire         rpDRY,                // Drive ready
+      input  wire         rpDFE,                // Data field envelope
+      input  wire         rpECE,                // ECC field envelope
       output wire [15: 0] rpMR                  // MR Output
    );
 
@@ -151,6 +153,7 @@ module RPMR (
    // Build RPMR
    //
 
-   assign rpMR = {11'b0, rpDDAT, rpDSCK, rpDIND,  rpDCLK,  rpDMD};
+   assign rpMR = {8'b0,
+                  rpDFE, rpECE, 1'b0, rpDDAT, rpDSCK, rpDIND,  rpDCLK,  rpDMD};
 
 endmodule

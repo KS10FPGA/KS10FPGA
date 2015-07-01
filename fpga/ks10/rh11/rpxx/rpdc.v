@@ -43,8 +43,8 @@
  module RPDC (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clear
       input  wire [35: 0] rpDATAI,              // Data in
+      input  wire         rpPRESET,             // Preset command
       input  wire         rpdcWRITE,            // Write RPDC
       input  wire         rpINCCYL,             // Increment cylinder
       input  wire         rpDRY,                // Drive ready
@@ -66,7 +66,7 @@
         if (rst)
           rpDCA <= 0;
         else
-          if (clr)
+          if (rpPRESET)
             rpDCA <= 0;
           else if (rpdcWRITE & rpDRY)
             rpDCA <= `rpDC_DCA(rpDATAI);
