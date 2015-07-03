@@ -38,6 +38,8 @@
 `default_nettype none
 `timescale 1ns/1ps
 
+`include "rpda.vh"
+`include "rpla.vh"
 `include "rpmr.vh"
 `include "rpcc.vh"
 `include "rpdc.vh"
@@ -51,6 +53,8 @@ module RPCTRL (
       input  wire         clr,                  // Clr
       input  wire [35: 0] rpDATAI,              // Data input
       input  wire         rpcs1WRITE,           // CS1 write
+      input  wire [15: 0] rpLA,                 // Lookahead register
+      input  wire [15: 0] rpDA,                 // Disk address
       input  wire [15: 0] rpDC,                 // Desired cylinder
       output reg  [15: 0] rpCC,                 // Current cylinder
       input  wire         rpDMD,                // Diagnostic Mode
@@ -79,11 +83,11 @@ module RPCTRL (
    // Timing Parameters
    //
 
-   parameter  simTIME = 1'b0;                   // Simulate timing
-   localparam CLKFRQ  = `CLKFRQ;                // Clock frequency
-   localparam ROTDELAY = 0.005000 * `CLKFRQ;    // Rotation delay (5 ms)
-   localparam OFFDELAY = 0.005000 * `CLKFRQ;    // Offset delay (5 ms)
-   localparam FIXDELAY = 0.000100 * `CLKFRQ;    // Fixed delay (100 us)
+   parameter  simSEEK   = 1'b0;                 // Simulate timing
+   parameter  simSEARCH = 1'b1;                 // Simulate search
+   localparam CLKFRQ    = `CLKFRQ;              // Clock frequency
+   localparam OFFDELAY  = 0.005000 * `CLKFRQ;   // Offset delay (5 ms)
+   localparam FIXDELAY  = 0.000100 * `CLKFRQ;   // Fixed delay (100 us)
 
    //
    // Function to calculate disk seek delay.  This is psudeo exponential.
@@ -132,6 +136,18 @@ module RPCTRL (
    //
 
    wire [9:0] rpCCA = `rpCC_CCA(rpCC);
+
+   //
+   // Desired Sector
+   //
+
+   wire [5:0] rpSA = `rpDA_SA(rpDA);
+
+   //
+   // RPLA Sector
+   //
+
+   wire [5:0] rpLAS = `rpLA_LAS(rpLA);
 
    //
    // rpGO
@@ -188,7 +204,15 @@ module RPCTRL (
           begin
              if (clr)
                begin
-                  // FIXME
+                  ata      <= 0;
+                  busy     <= 0;
+                  rpCC     <= rpDC;
+                  rpPIP    <= 0;
+                  rpSETATA <= 0;
+                  rpSDOP   <= `sdopNOP;
+                  delay    <= 0;
+                  tempCC   <= 0;
+                  state    <= stateIDLE;
                end
              else
                begin
@@ -226,10 +250,11 @@ module RPCTRL (
                              //
                              // Unload Command
                              //
-                             // On an RPxx disk, the unload command would unload the
-                             // heads, spin-down the disk, off-line the disk, allow
-                             // the operator to change the disk pack, on-line the
-                             // disk, spin-up the disk, and reload the heads.
+                             // On an RPxx disk, the unload command would unload
+                             // the heads, spin-down the disk, off-line the
+                             // disk, allow the operator to change the disk
+                             // pack, on-line the disk, spin-up the disk, and
+                             // reload the heads.
                              //
 
                              `funUNLOAD:
@@ -239,7 +264,7 @@ module RPCTRL (
                                   rpPIP  <= 1;
                                   rpSDOP <= `sdopNOP;
                                   tempCC <= rpDC;
-                                  if (simTIME)
+                                  if (simSEEK)
                                     delay <= seekDELAY(0, rpCCA);
                                   else
                                     delay <= $rtoi(FIXDELAY);
@@ -249,9 +274,9 @@ module RPCTRL (
                              //
                              // Seek Command
                              //
-                             // On an RPxx disk, the seek command causes the heads
-                             // to move to the cylinder specified by the RPDC
-                             // register.
+                             // On an RPxx disk, the seek command causes the
+                             // heads to move to the cylinder specified by the
+                             // RPDC register.
                              //
                              // This command simulates head motion to the new
                              // cylinder specified by the RPDC register
@@ -268,7 +293,7 @@ module RPCTRL (
                                        rpPIP  <= 1;
                                        rpSDOP <= `sdopNOP;
                                        tempCC <= rpDC;
-                                       if (simTIME)
+                                       if (simSEEK)
                                          delay <= seekDELAY(rpDCA, rpCCA);
                                        else
                                          delay <= $rtoi(FIXDELAY);
@@ -290,7 +315,7 @@ module RPCTRL (
                                   rpPIP  <= 1;
                                   rpSDOP <= `sdopNOP;
                                   tempCC <= 0;
-                                  if (simTIME)
+                                  if (simSEEK)
                                     delay  <= seekDELAY(0, rpCCA);
                                   else
                                     delay <= $rtoi(FIXDELAY);
@@ -316,7 +341,7 @@ module RPCTRL (
                                        rpPIP  <= 0;
                                        rpSDOP <= `sdopNOP;
                                        tempCC <= rpDC;
-                                       if (simTIME)
+                                       if (simSEEK)
                                          delay <= seekDELAY(rpDCA, rpCCA);
                                        else
                                          delay <= $rtoi(FIXDELAY);
@@ -327,6 +352,9 @@ module RPCTRL (
                              //
                              // Offset Command
                              //
+                             // This command would offset the head from the
+                             // centerline of the track.
+                             //
 
                              `funOFFSET:
                                begin
@@ -335,7 +363,7 @@ module RPCTRL (
                                   rpPIP  <= 1;
                                   rpSDOP <= `sdopNOP;
                                   tempCC <= rpCC;
-                                  if (simTIME)
+                                  if (simSEEK)
                                     delay <= $rtoi(OFFDELAY);
                                   else
                                     delay <= $rtoi(FIXDELAY);
@@ -345,6 +373,9 @@ module RPCTRL (
                              //
                              // Return-to-center command
                              //
+                             // This command would return the head to the
+                             // centerline of the track.
+                             //
 
                              `funCENTER:
                                begin
@@ -353,7 +384,7 @@ module RPCTRL (
                                   rpPIP  <= 1;
                                   rpSDOP <= `sdopNOP;
                                   tempCC <= rpCC;
-                                  if (simTIME)
+                                  if (simSEEK)
                                     delay <= $rtoi(OFFDELAY);
                                   else
                                     delay <= $rtoi(FIXDELAY);
@@ -380,7 +411,7 @@ module RPCTRL (
                                        rpSDOP <= `sdopWRCHK;
                                        tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simTIME)
+                                       if (simSEEK)
                                          delay <= seekDELAY(rpDCA, rpCCA);
                                        else
                                          delay <= $rtoi(FIXDELAY);
@@ -402,7 +433,7 @@ module RPCTRL (
                                        rpSDOP <= `sdopWRCHKH;
                                        tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simTIME)
+                                       if (simSEEK)
                                          delay <= seekDELAY(rpDCA, rpCCA);
                                        else
                                          delay <= $rtoi(FIXDELAY);
@@ -414,7 +445,8 @@ module RPCTRL (
                              // Write data command
                              //
                              // A write command may have to perform an implied
-                             // seek before before performing the write operation.
+                             // seek before before performing the write
+                             // operation.
                              //
                              // The disk will not seek to an invalid address.
                              //
@@ -429,7 +461,7 @@ module RPCTRL (
                                        rpSDOP <= `sdopWR;
                                        tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simTIME)
+                                       if (simSEEK)
                                          delay <= seekDELAY(rpDCA, rpCCA);
                                        else
                                          delay <= $rtoi(FIXDELAY);
@@ -451,7 +483,7 @@ module RPCTRL (
                                        rpSDOP <= `sdopWRH;
                                        tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simTIME)
+                                       if (simSEEK)
                                          delay <= seekDELAY(rpDCA, rpCCA);
                                        else
                                          delay <= $rtoi(FIXDELAY);
@@ -463,7 +495,8 @@ module RPCTRL (
                              // Read data command
                              //
                              // A read command may have to perform an implied
-                             // seek before before performing the read operation.
+                             // seek before before performing the read
+                             // operation.
                              //
                              // The disk will not seek to an invalid address.
                              //
@@ -478,7 +511,7 @@ module RPCTRL (
                                        rpSDOP <= `sdopRD;
                                        tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simTIME)
+                                       if (simSEEK)
                                          delay <= seekDELAY(rpDCA, rpCCA);
                                        else
                                          delay <= $rtoi(FIXDELAY);
@@ -500,7 +533,7 @@ module RPCTRL (
                                        rpSDOP <= `sdopRDH;
                                        tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simTIME)
+                                       if (simSEEK)
                                          delay <= seekDELAY(rpDCA, rpCCA);
                                        else
                                          delay <= $rtoi(FIXDELAY);
@@ -542,8 +575,8 @@ module RPCTRL (
                     //  - Write commands
                     //  - Write check commands
                     //
-                    // These commands will do a sector search once the seek
-                    // is completed.
+                    // These commands will do a sector search once the seek has
+                    // completed.
                     //
 
                     stateSEEKSEARCH:
@@ -554,11 +587,8 @@ module RPCTRL (
                            begin
                               if (delay == 0)
                                 begin
-                                   rpCC <= tempCC;
-                                   if (simTIME)
-                                     delay <= $rtoi(ROTDELAY);
-                                   else
-                                     delay <= $rtoi(FIXDELAY);
+                                   rpCC  <= tempCC;
+                                   delay <= $rtoi(FIXDELAY);
                                    state <= stateSEARCH;
                                 end
                               else
@@ -575,12 +605,18 @@ module RPCTRL (
                     //  - Write commands
                     //  - Write check commands
                     //
-                    //  Wait for SD sector address calculation to complete
+                    // If accurate search is required for diagnostics (see DSRPA
+                    // TEST-302), the search completes when the sector under
+                    // the head (visbile in the RPLA register) is the same as
+                    // the desired sector.
+                    //
+                    // Wait for SD sector address calculation to complete before
+                    // moving to a data transfer state.
                     //
 
                     stateSEARCH:
                       begin
-                         if (delay == 0)
+                         if (simSEARCH ? (rpSA == rpLAS) : (delay == 0))
                            begin
                               if (rpSDOP == `sdopNOP)
                                 state <= stateDONE;
@@ -594,10 +630,10 @@ module RPCTRL (
                     //
                     // stateDATA:
                     //
-                    //  Wait for SD to complete Read/Write operaton
+                    // Wait for SD to complete Read/Write operaton
                     //
-                    //  The controller should abort on a invalid address when it
-                    //  occurs on a mid-transfer seek.
+                    // The controller should abort on a invalid address when it
+                    // occurs on a mid-transfer seek.
                     //
 
                     stateDATA:
@@ -610,7 +646,8 @@ module RPCTRL (
 
                     //
                     // stateDONE:
-                    //  Update the disk state
+		    //
+                    // Update the visible disk state
                     //
 
                     stateDONE:
@@ -633,7 +670,9 @@ module RPCTRL (
 
                   endcase
                end
+
           end
+
      end
 
    //
@@ -660,33 +699,19 @@ module RPCTRL (
    //
 
    reg [1:0] index_cnt;
-   wire index_fun = 1;
-
-/* FIXME
-    ((fun == `funSEEK  ) |
-     (fun == `funSEARCH) |
-     (fun == `funWRCHK ) |
-     (fun == `funWRCHKH) |
-     (fun == `funWRITE ) |
-     (fun == `funWRITEH) |
-     (fun == `funREAD  ) |
-     (fun == `funREADH ));
- */
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           index_cnt <= 0;
         else
-          begin
-             if (rpDMD)
-               begin
-                  if (diag_index)
-                    index_cnt <= {index_cnt[0], index_fun};
-               end
-             else
-               index_cnt <= 0;
-          end
+          if (rpDMD)
+            begin
+               if (diag_index)
+                 index_cnt <= {index_cnt[0], 1'b1};
+            end
+          else
+            index_cnt <= 0;
      end
 
    assign rpSETOPI = rpDMD & rpDIND & index_cnt[1];

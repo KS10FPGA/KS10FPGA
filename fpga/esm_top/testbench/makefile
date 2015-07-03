@@ -59,11 +59,11 @@ DSMMD.temp.DAT : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQ
 	$(SAV2VERILOG) DSMMD.SAV tempfile
 	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSMMD.DAT > DSMMD.temp.DAT
 
-DSRPA.temp.DAT : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDC.PATCH
+DSRPA.temp.DAT : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH DSRPA.PATCH 
 	$(T10BACKUP) -i -x diagnostics..dsrpa.sav -f $(DIAGTAPE)
 	mv dsrpa.sav DSRPA.SAV
 	$(SAV2VERILOG) DSRPA.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSRPA.DAT > DSRPA.temp.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH DSRPA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSRPA.DAT > DSRPA.temp.DAT
 
 #
 # Diagnostic Programs and Subroutines
@@ -91,6 +91,15 @@ DSQDC.DAT : $(T10BACKUP) $(DIAGTAPE)
 DSQDA.PATCH : makefile
 	echo -e "000000180\t\t// mem[007304] = 000000000600" >  DSQDA.PATCH
 	echo -e "000000040\t\t// mem[007366] = 000000000100" >> DSQDA.PATCH
+
+#
+# Set the initial test number to something other than 1 at addr 077263
+#  Start on Test 0
+#
+
+DSRPA.PATCH : makefile
+	echo -e "568000000\t\t// mem[060773] = 255000000000" >  DSRPA.PATCH
+	echo -e "000000000\t\t// mem[077263] = 000000000000" >> DSRPA.PATCH
 
 #
 # Read SD Card to file so it can be examined.

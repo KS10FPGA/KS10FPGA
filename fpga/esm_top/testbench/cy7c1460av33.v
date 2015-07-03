@@ -30,34 +30,22 @@
 // NOTE :  Any setup/hold errors will force input signal to x state
 //         or if results indeterminant (write addr) core is reset x
 
-// define fixed values
-
-`define wordsize (36 -1)
-
-//
-// Simulating all memory makes things really slow
-//
-
-`ifdef SMALL_MEM
-`define no_words (  32*1024 -1)         // 32k x 36 RAM
-`else
-`define no_words (1024*1024 -1)         // 1M x 36 RAM
-`endif
+`define no_words (1024*1024 - 1)  // 1M x 36 RAM
 
 module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
 
-   inout [`wordsize:0] d;
-   input               clk,             // clock input (R)
-                       we_b,            // byte write enable(L)
-                       adv_lb,          // burst(H)/load(L) address
-                       ce1b,            // chip enable(L)
-                       ce2,             // chip enable(H)
-                       ce3b,            // chip enable(L)
-                       oeb,             // async output enable(L)(read)
-                       cenb,            // clock enable(L)
-                       mode;            // interleave(H)/linear(L) burst
-   input [ 3:0]        bws;             // byte write select(L)
-   input [19:0]        a;               // address bus
+   inout [35:0] d;
+   input        clk,            // clock input (R)
+                we_b,           // byte write enable(L)
+                adv_lb,         // burst(H)/load(L) address
+                ce1b,           // chip enable(L)
+                ce2,            // chip enable(H)
+                ce3b,           // chip enable(L)
+                oeb,            // async output enable(L)(read)
+                cenb,           // clock enable(L)
+                mode;           // interleave(H)/linear(L) burst
+   input [ 3:0] bws;            // byte write select(L)
+   input [19:0] a;              // address bus
 
 //      ***     NOTE DEVICE OPERATES #0.01 AFTER CLOCK          ***
 //      *** THEREFORE DELAYS HAVE TO TAKE THIS INTO ACCOUNT     ***
@@ -115,62 +103,62 @@ module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
 
 `endif
 
-   reg notifier;                // error support reg's
-   reg noti1_0;
-   reg noti1_1;
-   reg noti1_2;
-   reg noti1_3;
-   reg noti1_4;
-   reg noti1_5;
-   reg noti1_6;
-   reg noti2;
+   reg         notifier;        // error support reg's
+   reg         noti1_0;
+   reg         noti1_1;
+   reg         noti1_2;
+   reg         noti1_3;
+   reg         noti1_4;
+   reg         noti1_5;
+   reg         noti1_6;
+   reg         noti2;
 
-   wire chipen;                 // combined chip enable (high for an active chip)
+   wire        chipen;          // combined chip enable (high for an active chip)
 
-   reg  chipen_d;               // _d = delayed
-   reg  chipen_o;               // _o = operational = delayed sig or _d sig
+   reg         chipen_d;        // _d = delayed
+   reg         chipen_o;        // _o = operational = delayed sig or _d sig
 
-   wire writestate;             // holds 1 if any of writebus is low
-   reg  writestate_d;
-   reg  writestate_o;
+   wire        writestate;      // holds 1 if any of writebus is low
+   reg         writestate_d;
+   reg         writestate_o;
 
-   wire loadcyc;                // holds 1 for load cycles (setup and hold checks)
-   wire writecyc;               // holds 1 for write cycles (setup and hold checks)
-   wire [3:0] bws;              // holds the bws values
+   wire        loadcyc;         // holds 1 for load cycles (setup and hold checks)
+   wire        writecyc;        // holds 1 for write cycles (setup and hold checks)
+   wire [ 3:0] bws;             // holds the bws values
 
-   wire [3:0] writebusb;        // holds the "internal" bws bus based on we_b
-   reg  [3:0] writebusb_d;
-   reg  [3:0] writebusb_o;
+   wire [ 3:0] writebusb;       // holds the "internal" bws bus based on we_b
+   reg  [ 3:0] writebusb_d;
+   reg  [ 3:0] writebusb_o;
 
-   wire [2:0] operation;        // holds chipen, adv_ld and writestate
-   reg  [2:0] operation_d;
-   reg  [2:0] operation_o;
+   wire [ 2:0] operation;       // holds chipen, adv_ld and writestate
+   reg  [ 2:0] operation_d;
+   reg  [ 2:0] operation_o;
 
    wire [19:0] a;               // address input bus
    reg  [19:0] a_d;
    reg  [19:0] a_o;
 
-   reg  [`wordsize:0] do;       // data output reg
-   reg  [`wordsize:0] di;       // data input bus
-   reg  [`wordsize:0] dd;       // data delayed bus
+   reg  [35:0] do;              // data output reg
+   reg  [35:0] di;              // data input bus
+   reg  [35:0] dd;              // data delayed bus
 
-   wire tristate;               // tristate output (on a bytewise basis) when asserted
-   reg  cetri;                  // register set by chip disable which sets the tristate
-   reg  oetri;                  // register set by oe which sets the tristate
-   reg  enable;                 // register to make the ram enabled when equal to 1
+   wire        tristate;        // tristate output (on a bytewise basis) when asserted
+   reg         cetri;           // register set by chip disable which sets the tristate
+   reg         oetri;           // register set by oe which sets the tristate
+   reg         enable;          // register to make the ram enabled when equal to 1
    reg  [19:0] addreg;          // register to hold the input address
-   reg  [`wordsize:0] pipereg;  // register for the output data
-   reg  [`wordsize:0] mem [0:`no_words]; // RAM array
-   reg  [`wordsize:0] writeword;// temporary holding register for the write data
+   reg  [35:0] pipereg;  	// register for the output data
+   reg  [35:0] mem [0:`no_words]; // RAM array
+   reg  [35:0] writeword;	// temporary holding register for the write data
 
-   reg  burstinit;              // register to hold a[0] for burst type
+   reg         burstinit;       // register to hold a[0] for burst type
    reg  [19:0] i;               // temporary register used to write to all mem locs.
-   reg  writetri;               // tristate
-   reg  lw, bw;                 // pipelined write functions
-   reg  we_bl;
+   reg         writetri;        // tristate
+   reg         lw, bw;          // pipelined write functions
+   reg         we_bl;
 
 
-   wire [`wordsize:0] d = !tristate ?  do[`wordsize:0] : 36'bz ; //  data bus
+   wire [35:0] d = !tristate ?  do[35:0] : 36'bz ; //  data bus
 
    assign chipen        = (adv_lb == 1 ) ? chipen_d : ~ce1b & ce2 & ~ce3b ;
 

@@ -95,6 +95,8 @@
 `include "rpmr.vh"
 `include "../../ks10.vh"
 
+`define FAST_SEARCH
+
 module RPLA (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
@@ -108,11 +110,15 @@ module RPLA (
    );
 
    //
-   // Divider constants
+   // Fractional-N divider constants
    //
 
    localparam CLKFRQ = `CLKFRQ;                 // Clock frequency
-   localparam SECFRQ = 800000;                  // Sector clock frequency
+`ifdef FAST_SEARCH
+   localparam SECFRQ = 1600000;                 // Sector clock frequency (1.6 MHz)
+`else
+   localparam SECFRQ =  800000;                 // Sector clock frequency (800 KHz)
+`endif
 
    //
    // "Nomal Mode" Sector Extension Counter clock generator.
@@ -144,14 +150,14 @@ module RPLA (
    EDGETRIG MAINTCLK(clk, rst, 1'b1, 1'b1, rpDSCK, diag_clk);
 
    //
-   // Clock Multiplexer.  This switches beteen "Normal" and "Maintenance" mode
+   // Clock Multiplexer.  This switches between "Normal" and "Maintenance" mode
    // clocks.
    //
    // Trace
    //  M7787/DP6/E36
    //
 
-   wire clken = rpDMD ? diag_clk : sect_clk;
+   wire sect_clken = rpDMD ? diag_clk : sect_clk;
 
    //
    // Sector Extension Counter
@@ -169,7 +175,7 @@ module RPLA (
         if (rst)
           sect_ext <= 0;
         else
-          if (clken)
+          if (sect_clken)
             begin
                if (rpDMD & rpDIND)
                  sect_ext <= 0;
@@ -243,7 +249,7 @@ module RPLA (
         if (rst)
           sect_cnt <= 0;
         else
-          if (clken)
+          if (sect_clken)
             begin
                if (rpDMD & rpDIND)
                  sect_cnt <= 0;

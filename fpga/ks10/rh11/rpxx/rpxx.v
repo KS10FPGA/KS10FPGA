@@ -577,7 +577,6 @@ module RPXX (
    //
 
    RPCTRL #(
-      .simTIME     (simTIME)
    )
    CTRL (
       .clk         (clk),
@@ -585,6 +584,8 @@ module RPXX (
       .clr         (clr),
       .rpDATAI     (rpDATAI),
       .rpcs1WRITE  (rpcs1WRITE),
+      .rpLA        (rpLA),
+      .rpDA        (rpDA),
       .rpDC        (rpDC),
       .rpCC        (rpCC),
       .rpDMD       (rpDMD),

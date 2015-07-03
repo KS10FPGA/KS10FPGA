@@ -279,8 +279,8 @@ END {
 	   printf "%09x\t\t// mem[%06o] = %012o\n", data, addr, data
 	   prevaddr = addr;
        } else {
-	   #printf "%09x\t\t// mem[%06o] = %012o (init)\n", 0, addr, 0
-	   #prevaddr = addr;
+	   printf "%09x\t\t// mem[%06o] = %012o (init)\n", 0, addr, 0
+	   prevaddr = addr;
        }
    }
 }

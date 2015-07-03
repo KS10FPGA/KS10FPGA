@@ -544,7 +544,6 @@ module testbench;
    reg [0:35] temp;
    reg [0:35] haltStatus;
    reg [0:35] haltAddr;
-   reg        initHalt;
    reg [0:31] state;
 
    initial
@@ -574,7 +573,6 @@ module testbench;
         conBHE_N  = 1;
         conADDR  <= 0;
         conDATO  <= 0;
-        initHalt <= 1;
         inBuf    <= 0;
         outBuf   <= 0;
         state    <= 0;

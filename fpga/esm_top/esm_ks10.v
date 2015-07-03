@@ -83,17 +83,18 @@ module ESM_KS10 (
    // RH-11 Stubs
    //
 
-   wire rh11WP = 0;             // RH11 Write Protect (stubbed)
+   wire [ 7: 0] rh11WP = 8'b0;                  // RH11 Write Protect (stubbed)
+   wire [ 7: 0] rh11CD = {7'b0, !rh11CD_N};     // RH11 Card Detect (only drive 0 is enabled, for now)
 
    //
    // DZ-11 Interface Stubs
    //
 
-   wire [7: 0] dz11CO = 8'hff;  // DZ11 Carrier Input (stubbed)
-   wire [7: 0] dz11RI = 8'h00;  // DZ11 Ring Input (stubbed)
-   wire [7: 0] dz11DTR;         // DZ11 DTR Output (stubbed)
-   wire [7: 0] dz11TXD;         // DZ11 TXD
-   wire [7: 0] dz11RXD;         // DZ11 RXD
+   wire [ 7: 0] dz11CO = 8'hff;         // DZ11 Carrier Input (stubbed)
+   wire [ 7: 0] dz11RI = 8'h00;         // DZ11 Ring Input (stubbed)
+   wire [ 7: 0] dz11DTR;                // DZ11 DTR Output (stubbed)
+   wire [ 7: 0] dz11TXD;                // DZ11 TXD
+   wire [ 7: 0] dz11RXD;                // DZ11 RXD
 
    //
    // KS10 Processor
@@ -109,7 +110,7 @@ module ESM_KS10 (
       .dz11CO           (dz11CO),
       .dz11RI           (dz11RI),
       // RH11
-      .rh11CD           (!rh11CD_N),
+      .rh11CD           (rh11CD),
       .rh11WP           (rh11WP),
       .rh11MISO         (rh11MISO),
       .rh11MOSI         (rh11MOSI),
