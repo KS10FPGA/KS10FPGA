@@ -99,7 +99,6 @@ module RPXX (
    parameter [14:17] rhDEV    = `rh1DEV;        // Device 3
    parameter [18:35] rhADDR   = `rh1ADDR;       // RH11 #1 Base Address
    parameter [15: 0] drvTYPE  = `rpRP06;        // Drive type
-   parameter         simTIME  = 1'b0;           // Simulate timing
 
    //
    // RH Register Addresses
@@ -576,14 +575,13 @@ module RPXX (
    // Controller state machine
    //
 
-   RPCTRL #(
-   )
-   CTRL (
+   RPCTRL CTRL (
       .clk         (clk),
       .rst         (rst),
       .clr         (clr),
       .rpDATAI     (rpDATAI),
       .rpcs1WRITE  (rpcs1WRITE),
+      .rpCYLNUM    (rpCYLNUM),
       .rpLA        (rpLA),
       .rpDA        (rpDA),
       .rpDC        (rpDC),

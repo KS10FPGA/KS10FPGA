@@ -190,8 +190,8 @@ module DEBUG (
 
    reg [18:35] PC;
    reg [14*8:1] test;
-   integer lastIR;
-   integer lastVMA;
+   time lastIR;
+   time lastVMA;
 
    always @(posedge clk or posedge rst)
      begin

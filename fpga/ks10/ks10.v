@@ -388,8 +388,7 @@ module KS10 (
       .rhADDR           (`rh1ADDR),
       .rhVECT           (`rh1VECT),
       .rhINTR           (`rh1INTR),
-      .drvTYPE          (`rpRP06),
-      .simTIME          (1'b0)
+      .drvTYPE          (`rpRP06)
    )
    uRH11 (
       .rst              (cpuRST),

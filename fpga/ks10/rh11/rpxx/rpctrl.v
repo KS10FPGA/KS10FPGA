@@ -47,12 +47,16 @@
 `include "../sd/sd.vh"
 `include "../../ks10.vh"
 
+`define RPXX_SKI                                // Required to pass DSRPA test
+`define RPXX_OPI                                // Required to pass DSRPA test
+
 module RPCTRL (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       input  wire         clr,                  // Clr
       input  wire [35: 0] rpDATAI,              // Data input
       input  wire         rpcs1WRITE,           // CS1 write
+      input  wire [ 9: 0] rpCYLNUM,             // Number of cylinders
       input  wire [15: 0] rpLA,                 // Lookahead register
       input  wire [15: 0] rpDA,                 // Disk address
       input  wire [15: 0] rpDC,                 // Desired cylinder
@@ -71,7 +75,7 @@ module RPCTRL (
       input  wire         rpSETWLE,             // Set write lock error
       output reg          rpSETATA,             // Set attenation
       output wire         rpSETOPI,             // Set operation incomplete
-      output wire         rpSETSKI,             // Set seek incomplete
+      output reg          rpSETSKI,             // Set seek incomplete
       output reg          rpADRSTRT,            // Address calculation start
       input  wire         rpADRBUSY,            // Address calculation busy
       output reg  [ 2: 0] rpSDOP,               // SD operation
@@ -83,8 +87,8 @@ module RPCTRL (
    // Timing Parameters
    //
 
-   parameter  simSEEK   = 1'b0;                 // Simulate timing
-   parameter  simSEARCH = 1'b1;                 // Simulate search
+   parameter  simSEEK   = 1'b0;                 // Simulate seek accurately
+   parameter  simSEARCH = 1'b1;                 // Simulate search accurately
    localparam CLKFRQ    = `CLKFRQ;              // Clock frequency
    localparam OFFDELAY  = 0.005000 * `CLKFRQ;   // Offset delay (5 ms)
    localparam FIXDELAY  = 0.000100 * `CLKFRQ;   // Fixed delay (100 us)
@@ -138,6 +142,15 @@ module RPCTRL (
    wire [9:0] rpCCA = `rpCC_CCA(rpCC);
 
    //
+   // Head position (cylinder)
+   //
+   // The head position can be unsynchronized from the DCA/CCA if a seek is
+   // performed in maintenance mode: the DCA/CCA moves but the head does not.
+   //
+
+   reg  [9:0] head_pos;
+
+   //
    // Desired Sector
    //
 
@@ -156,14 +169,6 @@ module RPCTRL (
    //
 
    wire rpGO = !rpPAT & rpcs1WRITE & `rpCS1_GO(rpDATAI);
-
-   //
-   // Diagnostic index pulse.  Triggerd on falling edge of maintenance
-   // register signal.
-   //
-
-   wire diag_index;
-   EDGETRIG uDIAGIND(clk, rst, 1'b1, 1'b0, rpDIND, diag_index);
 
    //
    // State Definition
@@ -193,8 +198,10 @@ module RPCTRL (
              ata      <= 0;
              busy     <= 0;
              rpCC     <= 0;
+             head_pos <= 0;
              rpPIP    <= 0;
              rpSETATA <= 0;
+             rpSETSKI <= 0;
              rpSDOP   <= `sdopNOP;
              delay    <= 0;
              tempCC   <= 0;
@@ -209,6 +216,7 @@ module RPCTRL (
                   rpCC     <= rpDC;
                   rpPIP    <= 0;
                   rpSETATA <= 0;
+                  rpSETSKI <= 0;
                   rpSDOP   <= `sdopNOP;
                   delay    <= 0;
                   tempCC   <= 0;
@@ -218,6 +226,7 @@ module RPCTRL (
                begin
 
                   rpADRSTRT <= 0;
+                  rpSETSKI  <= 0;
 
                   case (state)
 
@@ -297,6 +306,35 @@ module RPCTRL (
                                          delay <= seekDELAY(rpDCA, rpCCA);
                                        else
                                          delay <= $rtoi(FIXDELAY);
+
+                                       //
+                                       // Check for RPER3[SKI] error. A  SKI
+                                       // error occurs when you seek off the
+                                       // edge of the disk.
+                                       //
+                                       // Force the disk to recalibrate (zero
+                                       // rpCC) on a SKI error.
+                                       //
+
+`ifdef RPXX_SKI
+                                       if (rpDCA > rpCCA)
+                                         begin
+                                            if (rpDCA - rpCCA > rpCYLNUM - head_pos)
+                                              begin
+                                                 tempCC   <= 0;
+                                                 rpSETSKI <= 1;
+                                              end
+                                         end
+                                       else
+                                         begin
+                                            if (rpCCA - rpDCA > head_pos)
+                                              begin
+                                                 tempCC   <= 0;
+                                                 rpSETSKI <= 1;
+                                              end
+                                         end
+`endif
+
                                        state <= stateSEEKDONE;
                                     end
                                end
@@ -561,7 +599,12 @@ module RPCTRL (
                     stateSEEKDONE:
                       begin
                          if (delay == 0)
-                           state <= stateDONE;
+                           begin
+                              if (!rpDMD)
+                                head_pos <= tempCC;
+                              rpCC  <= tempCC;
+                              state <= stateDONE;
+                           end
                          else
                            delay <= delay - 1'b1;
                       end
@@ -581,19 +624,16 @@ module RPCTRL (
 
                     stateSEEKSEARCH:
                       begin
-                         if (0 & rpDMD)         // FIXME
-                           state <= stateSEARCH;
-                         else
+                         if (delay == 0)
                            begin
-                              if (delay == 0)
-                                begin
-                                   rpCC  <= tempCC;
-                                   delay <= $rtoi(FIXDELAY);
-                                   state <= stateSEARCH;
-                                end
-                              else
-                                delay <= delay - 1'b1;
+                              if (!rpDMD)
+                                head_pos <= tempCC;
+                              rpCC  <= tempCC;
+                              delay <= $rtoi(FIXDELAY);
+                              state <= stateSEARCH;
                            end
+                         else
+                           delay <= delay - 1'b1;
                       end
 
                     //
@@ -633,7 +673,8 @@ module RPCTRL (
                     // Wait for SD to complete Read/Write operaton
                     //
                     // The controller should abort on a invalid address when it
-                    // occurs on a mid-transfer seek.
+                    // occurs on a mid-transfer seek.  Keep rpCC updated on mid-
+                    // transfer seeks.
                     //
 
                     stateDATA:
@@ -641,12 +682,12 @@ module RPCTRL (
                          if (rpSETAOE | rpSDACK)
                            state <= stateDONE;
                          else
-                           tempCC <= rpDC;
+                           rpCC <= rpDC;
                       end
 
                     //
                     // stateDONE:
-		    //
+                    //
                     // Update the visible disk state
                     //
 
@@ -657,7 +698,6 @@ module RPCTRL (
                          rpPIP    <= 0;
                          rpSETATA <= ata;
                          rpSDOP   <= `sdopNOP;
-                         rpCC     <= tempCC;
                          state    <= stateIDLE;
                       end
 
@@ -689,8 +729,21 @@ module RPCTRL (
           rpDRY <= !busy | rpGO;
      end
 
+`ifdef RPXX_OPI
+
+   //
+   // Diagnostic index pulse.  Triggerd on falling edge of maintenance
+   // register signal.
+   //
+
+   wire diag_index;
+   EDGETRIG uDIAGIND(clk, rst, 1'b1, 1'b0, rpDIND, diag_index);
+
    //
    // Index pulse counter for testing OPI
+   //
+   // This should set RPER1[OPI] on the third index pulse in maintenance mode.
+   // This is required to pass DSRPA TEST-273.
    //
    // Trace
    //  M7786/SS0/E57
@@ -716,6 +769,12 @@ module RPCTRL (
 
    assign rpSETOPI = rpDMD & rpDIND & index_cnt[1];
 
+`else
+
+   assign rpSETOPI = 0;
+
+`endif
+
    //
    // State Definition
    //
@@ -729,7 +788,8 @@ module RPCTRL (
 
 
    //
-   // Seek incomplete testing
+   // Data envelope, ECC envelope, and end-of-block (ebl)
+   // simulation
    //
 
    reg ebl;
@@ -861,11 +921,5 @@ module RPCTRL (
    //
 
    assign rpSDREQ = (state == stateDATA);
-
-   //
-   // FIXME
-   //
-
-   assign rpSETSKI = 0;
 
 endmodule

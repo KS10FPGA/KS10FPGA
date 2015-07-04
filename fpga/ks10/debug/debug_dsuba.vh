@@ -86,7 +86,6 @@ begin
      18'o034110: test = "DSUBA TEST56";
 
      //
-     // FIXME:
      // The maintenance loopback is not implemented.  The
      // following failure is expected.
      //

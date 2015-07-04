@@ -98,7 +98,6 @@ module RH11 (
    parameter [18:35] rhVECT  = `rh1VECT;        // RH11 Interrupt Vector
    parameter [ 7: 4] rhINTR  = `rh1INTR;        // RH11 Interrupt
    parameter [15: 0] drvTYPE = `rpRP06;         // Drive type
-   parameter         simTIME = 1'b0;            // Simulate timing
 
    //
    // RH Register Addresses
@@ -612,8 +611,7 @@ module RH11 (
       for (i = 0; i < 8; i = i + 1)
         begin : disk_loop
            RPXX #(
-              .drvTYPE  (`rpRP06),
-              .simTIME  (simTIME)
+              .drvTYPE  (`rpRP06)
            )
            uRPXX (
               .clk      (clk),

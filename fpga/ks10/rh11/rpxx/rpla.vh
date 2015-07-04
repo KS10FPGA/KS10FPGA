@@ -43,6 +43,6 @@
 //
 
 `define rpLA_LAS(bus)  (bus[11:6])      // Look ahead sector
-`define rpLA_LAE(bus)  (bus[5:4])	// Look ahead extension
+`define rpLA_LAE(bus)  (bus[5:4])       // Look ahead extension
 
 `endif
