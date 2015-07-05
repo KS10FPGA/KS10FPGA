@@ -598,15 +598,15 @@ module RPCTRL (
 
                     stateSEEKDONE:
                       begin
-                         if (delay == 0)
-                           begin
-                              if (!rpDMD)
+                         if (!rpDMD)
+                           if (delay == 0)
+                             begin
                                 head_pos <= tempCC;
-                              rpCC  <= tempCC;
-                              state <= stateDONE;
-                           end
-                         else
-                           delay <= delay - 1'b1;
+                                rpCC     <= tempCC;
+                                state    <= stateDONE;
+                             end
+                           else
+                             delay <= delay - 1'b1;
                       end
 
                     //
@@ -624,16 +624,16 @@ module RPCTRL (
 
                     stateSEEKSEARCH:
                       begin
-                         if (delay == 0)
-                           begin
-                              if (!rpDMD)
+                         if (!rpDMD)
+                           if (delay == 0)
+                             begin
                                 head_pos <= tempCC;
-                              rpCC  <= tempCC;
-                              delay <= $rtoi(FIXDELAY);
-                              state <= stateSEARCH;
-                           end
-                         else
-                           delay <= delay - 1'b1;
+                                rpCC     <= tempCC;
+                                delay    <= $rtoi(FIXDELAY);
+                                state    <= stateSEARCH;
+                             end
+                           else
+                             delay <= delay - 1'b1;
                       end
 
                     //

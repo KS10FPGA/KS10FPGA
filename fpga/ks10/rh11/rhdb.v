@@ -39,9 +39,8 @@
 `timescale 1ns/1ps
 
 `include "rhdb.vh"
-`define SIZE 66
 
-`define FIFO
+`define SIZE 66
 
 module RHDB (
       input  wire         clk,                  // Clock
@@ -66,34 +65,6 @@ module RHDB (
    //
 
    wire [35:0] rhDATAI = devDATAI[0:35];
-
-   //
-   // RH11 Data Buffer (RHDB) Register
-   //
-   // Trace
-   //
-
-`ifndef FIFO
-
-   reg [15:0] rhDB;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          rhDB <= 0;
-        else
-          if (devRESET | rhCLR)
-            rhDB <= 0;
-          else if (rhdbWRITE)
-            begin
-               if (devHIBYTE)
-                 rhDB[15:8] <= `rhDB_HI(rhDATAI);
-               if (devLOBYTE)
-                 rhDB[ 7:0] <= `rhDB_LO(rhDATAI);
-            end
-     end
-
-`endif
 
    //
    // The FIFO state is updated after the read and write signals.
@@ -162,8 +133,6 @@ module RHDB (
    // Details
    //
 
-`ifdef FIFO
-
 `ifndef SYNTHESIS
    integer i;
 `endif
@@ -173,12 +142,12 @@ module RHDB (
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-`ifdef SYNTHESIS
-          ;
-`else
-          for (i = 0; i <= 127; i = i + 1)
-            mem[i] <= 0;
+          begin
+`ifndef SYNTHESIS
+             for (i = 0; i <= 127; i = i + 1)
+               mem[i] <= 0;
 `endif
+          end
         else
           begin
              if (rhdbWRITE & !full)
@@ -186,8 +155,6 @@ module RHDB (
              rhDB <= mem[rd_ptr];
           end
      end
-
-`endif
 
    //
    // Device Late, Input Ready, and Output Ready
