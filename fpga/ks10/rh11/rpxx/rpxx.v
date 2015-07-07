@@ -258,6 +258,7 @@ module RPXX (
 
    wire rpDSCK = `rpMR_DSCK(rpMR);              // Diagnostic sector clock
    wire rpDIND = `rpMR_DIND(rpMR);              // Diagnostic index pulse
+   wire rpDCLK = `rpMR_DCLK(rpMR);              // Diagnostic clock
    wire rpDMD  = `rpMR_DMD(rpMR);               // Diagnostic mode
 
    //
@@ -587,6 +588,7 @@ module RPXX (
       .rpDC        (rpDC),
       .rpCC        (rpCC),
       .rpDMD       (rpDMD),
+      .rpDCLK      (rpDCLK),
       .rpDSCK      (rpDSCK),
       .rpDIND      (rpDIND),
       .rpPAT       (rpPAT),

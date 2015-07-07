@@ -153,7 +153,6 @@ module RPMR (
    // Build RPMR
    //
 
-   assign rpMR = {8'b0,
-                  rpDFE, rpECE, 1'b0, rpDDAT, rpDSCK, rpDIND,  rpDCLK,  rpDMD};
+   assign rpMR = {8'b0, rpDFE, rpECE, 1'b0, rpDDAT, rpDSCK, rpDIND, rpDCLK, rpDMD};
 
 endmodule

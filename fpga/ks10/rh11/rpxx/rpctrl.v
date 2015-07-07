@@ -49,6 +49,7 @@
 
 `define RPXX_SKI                                // Required to pass DSRPA test
 `define RPXX_OPI                                // Required to pass DSRPA test
+`define RPXX_DFE                                // Required to pass DSRPA test
 
 module RPCTRL (
       input  wire         clk,                  // Clock
@@ -63,6 +64,7 @@ module RPCTRL (
       output reg  [15: 0] rpCC,                 // Current cylinder
       input  wire         rpDMD,                // Diagnostic Mode
       input  wire         rpDSCK,               // Diagnostic sector clock
+      input  wire         rpDCLK,               // Diagnostic clock
       input  wire         rpDIND,               // Diagnostic index pulse
       input  wire         rpPAT,                // Parity test
       output reg          rpPIP,                // Positioning-in-progress
@@ -94,6 +96,36 @@ module RPCTRL (
    localparam FIXDELAY  = 0.000100 * `CLKFRQ;   // Fixed delay (100 us)
 
    //
+   // Check for RPER3[SKI] error. A  SKI error occurs when you seek off the
+   // edge of the disk.
+   //
+   // Force the disk to recalibrate (zero rpCC) on a SKI error.
+   //
+
+   task check_ski;
+      begin
+`ifdef RPXX_SKI
+         if (rpDCA > rpCCA)
+           begin
+              if (rpDCA - rpCCA > rpCYLNUM - head_pos)
+                begin
+                   tmpCC    <= 0;
+                   rpSETSKI <= 1;
+                end
+           end
+         else
+           begin
+              if (rpCCA - rpDCA > head_pos)
+                begin
+                   tmpCC    <= 0;
+                   rpSETSKI <= 1;
+                end
+           end
+`endif
+      end
+   endtask;
+
+   //
    // Function to calculate disk seek delay.  This is psudeo exponential.
    // The RP06 has 815 cyclinders
    //
@@ -103,32 +135,39 @@ module RPCTRL (
       input [9:0] oldCYL;                       // Old Cylinder
       reg   [9:0] diffCYL;                      // Distance between Cylinders
       begin
-         diffCYL = (newCYL > oldCYL) ? newCYL - oldCYL : oldCYL - newCYL;
-         if (diffCYL[9])
-           seekDELAY = $rtoi(0.05000 * CLKFRQ); // 50 ms (more than 512 cylinders away)
-         else if (diffCYL[8])
-           seekDELAY = $rtoi(0.04500 * CLKFRQ); // 45 ms (more than 256 cylinders away)
-         else if (diffCYL[7])
-           seekDELAY = $rtoi(0.04000 * CLKFRQ); // 40 ms (more than 128 cylinders away)
-         else if (diffCYL[6])
-           seekDELAY = $rtoi(0.03500 * CLKFRQ); // 35 ms (more than  64 cylinders away)
-         else if (diffCYL[5])
-           seekDELAY = $rtoi(0.03000 * CLKFRQ); // 30 ms (more than  32 cylinders away)
-         else if (diffCYL[4])
-           seekDELAY = $rtoi(0.02500 * CLKFRQ); // 25 ms (more than  16 cylinders away)
-         else if (diffCYL[3])
-           seekDELAY = $rtoi(0.02000 * CLKFRQ); // 20 ms (more than   8 cylinders away)
-         else if (diffCYL[2])
-           seekDELAY = $rtoi(0.01500 * CLKFRQ); // 15 ms (more than   4 cylinders away)
-         else if (diffCYL[1])
-           seekDELAY = $rtoi(0.01000 * CLKFRQ); // 10 ms (more than   2 cylinders away)
-         else if (diffCYL[0])
-           seekDELAY = $rtoi(0.00500 * CLKFRQ); //  5 ms (more than   1 cylinders away)
+         if (simSEEK)
+           begin
+              diffCYL = (newCYL > oldCYL) ? newCYL - oldCYL : oldCYL - newCYL;
+              if (diffCYL[9])
+                seekDELAY = $rtoi(0.05000 * CLKFRQ); // 50 ms (more than 512 cylinders away)
+              else if (diffCYL[8])
+                seekDELAY = $rtoi(0.04500 * CLKFRQ); // 45 ms (more than 256 cylinders away)
+              else if (diffCYL[7])
+                seekDELAY = $rtoi(0.04000 * CLKFRQ); // 40 ms (more than 128 cylinders away)
+              else if (diffCYL[6])
+                seekDELAY = $rtoi(0.03500 * CLKFRQ); // 35 ms (more than  64 cylinders away)
+              else if (diffCYL[5])
+                seekDELAY = $rtoi(0.03000 * CLKFRQ); // 30 ms (more than  32 cylinders away)
+              else if (diffCYL[4])
+                seekDELAY = $rtoi(0.02500 * CLKFRQ); // 25 ms (more than  16 cylinders away)
+              else if (diffCYL[3])
+                seekDELAY = $rtoi(0.02000 * CLKFRQ); // 20 ms (more than   8 cylinders away)
+              else if (diffCYL[2])
+                seekDELAY = $rtoi(0.01500 * CLKFRQ); // 15 ms (more than   4 cylinders away)
+              else if (diffCYL[1])
+                seekDELAY = $rtoi(0.01000 * CLKFRQ); // 10 ms (more than   2 cylinders away)
+              else if (diffCYL[0])
+                seekDELAY = $rtoi(0.00500 * CLKFRQ); //  5 ms (more than   1 cylinders away)
+              else
+                seekDELAY = $rtoi(0.000010 * CLKFRQ);//  10 us (same cylinder)
+           end
          else
-           seekDELAY = $rtoi(0.000010 * CLKFRQ);//  10 us (same cylinder)
+           begin
+              seekDELAY = $rtoi(FIXDELAY);
+           end
       end
    endfunction
-
+   
    //
    // rpDCA
    //
@@ -163,6 +202,13 @@ module RPCTRL (
    wire [5:0] rpLAS = `rpLA_LAS(rpLA);
 
    //
+   // Diagnostic clock
+   //
+
+   wire diag_clken;
+   EDGETRIG MAINTCLK(clk, rst, 1'b1, 1'b1, rpDCLK, diag_clken);
+
+   //
    // rpGO
    //
    // Commands are ignored with incorrect parity.
@@ -174,12 +220,19 @@ module RPCTRL (
    // State Definition
    //
 
-   localparam [2:0] stateIDLE       = 0,        // Idle
-                    stateSEEKDONE   = 1,        // Seek then done
-                    stateSEEKSEARCH = 2,        // Seek then search
-                    stateSEARCH     = 3,        // Searching for sector
-                    stateDATA       = 4,        // Reading/writing data
-                    stateDONE       = 7;        // Done
+   localparam [3:0] stateIDLE       =  0,       // Idle
+                    stateOFFSET     =  1,	// Offset/center command
+                    stateUNLOAD     =  2,	// Unload command
+                    stateRECAL      =  3,	// Recalibrate command
+                    stateSEEK       =  4,       // Seek
+                    stateSEEKSEARCH =  5,       // Seek then search
+                    stateSEARCH     =  6,       // Searching for sector
+                    stateXFERHEADER =  7,       // Diagnostic transfer header
+                    stateXFERDATA   =  8,       // Diagnostic transfer data
+                    stateXFERECC    =  9,       // Diagnostic transfer ECC
+                    stateXFERGAP    = 10,	// Diagnostic transfer data gap
+                    stateDATA       = 11,       // Reading/writing data
+                    stateDONE       = 12;       // Done
 
    //
    // Disk Motion Simlation State Machine
@@ -188,8 +241,9 @@ module RPCTRL (
    reg ata;                                     // Do ATA at end
    reg busy;                                    // Drive busy
    reg [24: 0] delay;                           // RPxx Delay Simulation
-   reg [15: 0] tempCC;                          // rpCC value when command completes
-   reg [ 2: 0] state;                           // State
+   reg [15: 0] tmpCC;                           // rpCC value when command completes
+   reg [12: 0] bit_cnt;                         // Data bit counter
+   reg [ 3: 0] state;                           // State
 
    always @(posedge clk or posedge rst)
      begin
@@ -200,11 +254,14 @@ module RPCTRL (
              rpCC     <= 0;
              head_pos <= 0;
              rpPIP    <= 0;
+             rpDFE    <= 0;
+             rpECE    <= 0;
              rpSETATA <= 0;
              rpSETSKI <= 0;
              rpSDOP   <= `sdopNOP;
+             bit_cnt  <= 0;
              delay    <= 0;
-             tempCC   <= 0;
+             tmpCC    <= 0;
              state    <= stateIDLE;
           end
         else
@@ -215,19 +272,20 @@ module RPCTRL (
                   busy     <= 0;
                   rpCC     <= rpDC;
                   rpPIP    <= 0;
+                  rpDFE    <= 0;
+                  rpECE    <= 0;
                   rpSETATA <= 0;
                   rpSETSKI <= 0;
                   rpSDOP   <= `sdopNOP;
+                  bit_cnt  <= 0;
                   delay    <= 0;
-                  tempCC   <= 0;
+                  tmpCC    <= 0;
                   state    <= stateIDLE;
                end
              else
                begin
-
                   rpADRSTRT <= 0;
                   rpSETSKI  <= 0;
-
                   case (state)
 
                     //
@@ -242,7 +300,7 @@ module RPCTRL (
                          busy     <= 0;
                          rpPIP    <= 0;
                          rpSETATA <= 0;
-                         tempCC   <= 0;
+                         tmpCC    <= 0;
 
                          //
                          // Wait for a GO command
@@ -272,12 +330,8 @@ module RPCTRL (
                                   busy   <= 1;
                                   rpPIP  <= 1;
                                   rpSDOP <= `sdopNOP;
-                                  tempCC <= rpDC;
-                                  if (simSEEK)
-                                    delay <= seekDELAY(0, rpCCA);
-                                  else
-                                    delay <= $rtoi(FIXDELAY);
-                                  state <= stateSEEKDONE;
+                                  delay  <= seekDELAY(0, rpCCA);
+                                  state  <= stateUNLOAD;
                                end
 
                              //
@@ -287,55 +341,24 @@ module RPCTRL (
                              // heads to move to the cylinder specified by the
                              // RPDC register.
                              //
-                             // This command simulates head motion to the new
-                             // cylinder specified by the RPDC register
-                             //
                              // The disk will not seek to an invalid address.
+                             //
+                             // The disk should not seek if DCY = CCY.  This is
+                             // tested by DSPRA TST262.
                              //
 
                              `funSEEK:
                                begin
-                                  if (!rpSETIAE)
+                                  if (!rpSETIAE & (rpDCA != rpCCA))
                                     begin
                                        ata    <= 1;
                                        busy   <= 1;
                                        rpPIP  <= 1;
                                        rpSDOP <= `sdopNOP;
-                                       tempCC <= rpDC;
-                                       if (simSEEK)
-                                         delay <= seekDELAY(rpDCA, rpCCA);
-                                       else
-                                         delay <= $rtoi(FIXDELAY);
-
-                                       //
-                                       // Check for RPER3[SKI] error. A  SKI
-                                       // error occurs when you seek off the
-                                       // edge of the disk.
-                                       //
-                                       // Force the disk to recalibrate (zero
-                                       // rpCC) on a SKI error.
-                                       //
-
-`ifdef RPXX_SKI
-                                       if (rpDCA > rpCCA)
-                                         begin
-                                            if (rpDCA - rpCCA > rpCYLNUM - head_pos)
-                                              begin
-                                                 tempCC   <= 0;
-                                                 rpSETSKI <= 1;
-                                              end
-                                         end
-                                       else
-                                         begin
-                                            if (rpCCA - rpDCA > head_pos)
-                                              begin
-                                                 tempCC   <= 0;
-                                                 rpSETSKI <= 1;
-                                              end
-                                         end
-`endif
-
-                                       state <= stateSEEKDONE;
+                                       tmpCC  <= rpDC;
+                                       delay  <= seekDELAY(rpDCA, rpCCA);
+                                       check_ski();
+                                       state  <= stateSEEK;
                                     end
                                end
 
@@ -352,12 +375,8 @@ module RPCTRL (
                                   busy   <= 1;
                                   rpPIP  <= 1;
                                   rpSDOP <= `sdopNOP;
-                                  tempCC <= 0;
-                                  if (simSEEK)
-                                    delay  <= seekDELAY(0, rpCCA);
-                                  else
-                                    delay <= $rtoi(FIXDELAY);
-                                  state <= stateSEEKDONE;
+                                  delay  <= seekDELAY(0, rpCCA);
+                                  state  <= stateRECAL;
                                end
 
                              //
@@ -369,6 +388,9 @@ module RPCTRL (
                              //
                              // The disk will not seek to an invalid address.
                              //
+                             // The disk should not seek if DCY = CCY.  This is
+                             // tested by DSPRA TST262.
+                             //
 
                              `funSEARCH:
                                begin
@@ -378,12 +400,17 @@ module RPCTRL (
                                        busy   <= 1;
                                        rpPIP  <= 0;
                                        rpSDOP <= `sdopNOP;
-                                       tempCC <= rpDC;
-                                       if (simSEEK)
-                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       if (rpDCA == rpCCA)
+                                         begin
+                                            delay <= $rtoi(FIXDELAY);
+                                            state <= stateSEARCH;
+                                         end
                                        else
-                                         delay <= $rtoi(FIXDELAY);
-                                       state <= stateSEEKSEARCH;
+                                         begin
+                                            tmpCC <= rpDC;
+                                            delay <= seekDELAY(rpDCA, rpCCA);
+                                            state <= stateSEEKSEARCH;
+                                         end
                                     end
                                end
 
@@ -400,12 +427,11 @@ module RPCTRL (
                                   busy   <= 1;
                                   rpPIP  <= 1;
                                   rpSDOP <= `sdopNOP;
-                                  tempCC <= rpCC;
                                   if (simSEEK)
                                     delay <= $rtoi(OFFDELAY);
                                   else
                                     delay <= $rtoi(FIXDELAY);
-                                  state <= stateSEEKDONE;
+                                  state <= stateOFFSET;
                                end
 
                              //
@@ -421,12 +447,11 @@ module RPCTRL (
                                   busy   <= 1;
                                   rpPIP  <= 1;
                                   rpSDOP <= `sdopNOP;
-                                  tempCC <= rpCC;
                                   if (simSEEK)
                                     delay <= $rtoi(OFFDELAY);
                                   else
                                     delay <= $rtoi(FIXDELAY);
-                                  state <= stateSEEKDONE;
+                                  state <= stateOFFSET;
                                end
 
                              //
@@ -438,6 +463,9 @@ module RPCTRL (
                              //
                              // The disk will not seek to an invalid address.
                              //
+                             // The disk should not seek if DCY = CCY.  This is
+                             // tested by DSPRA TST262.
+                             //
 
                              `funWRCHK:
                                begin
@@ -447,18 +475,26 @@ module RPCTRL (
                                        busy   <= 1;
                                        rpPIP  <= 0;
                                        rpSDOP <= `sdopWRCHK;
-                                       tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simSEEK)
-                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       if (rpDCA == rpCCA)
+                                         begin
+                                            delay <= $rtoi(FIXDELAY);
+                                            state <= stateSEARCH;
+                                         end
                                        else
-                                         delay <= $rtoi(FIXDELAY);
-                                       state <= stateSEEKSEARCH;
+                                         begin
+                                            tmpCC <= rpDC;
+                                            delay <= seekDELAY(rpDCA, rpCCA);
+                                            state <= stateSEEKSEARCH;
+                                         end
                                     end
                                end
 
                              //
                              // Write check header and data command
+                             //
+                             // The disk should not seek if DCY = CCY.  This is
+                             // tested by DSPRA TST262.
                              //
 
                              `funWRCHKH:
@@ -469,13 +505,19 @@ module RPCTRL (
                                        busy   <= 1;
                                        rpPIP  <= 0;
                                        rpSDOP <= `sdopWRCHKH;
-                                       tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simSEEK)
-                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       if (rpDCA == rpCCA)
+                                         begin
+                                            delay <= $rtoi(FIXDELAY);
+                                            state <= stateSEARCH;
+                                         end
                                        else
-                                         delay <= $rtoi(FIXDELAY);
-                                       state <= stateSEEKSEARCH;
+                                         begin
+                                            tmpCC <= rpDC;
+                                            delay <= seekDELAY(rpDCA, rpCCA);
+                                            check_ski();
+                                            state <= stateSEEKSEARCH;
+                                         end
                                     end
                                end
 
@@ -488,6 +530,9 @@ module RPCTRL (
                              //
                              // The disk will not seek to an invalid address.
                              //
+                             // The disk should not seek if DCY = CCY.  This is
+                             // tested by DSPRA TST262.
+                             //
 
                              `funWRITE:
                                begin
@@ -497,35 +542,50 @@ module RPCTRL (
                                        busy   <= 1;
                                        rpPIP  <= 0;
                                        rpSDOP <= `sdopWR;
-                                       tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simSEEK)
-                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       if (rpDCA == rpCCA)
+                                         begin
+                                            delay <= $rtoi(FIXDELAY);
+                                            state <= stateSEARCH;
+                                         end
                                        else
-                                         delay <= $rtoi(FIXDELAY);
-                                       state <= stateSEEKSEARCH;
+                                         begin
+                                            tmpCC <= rpDC;
+                                            delay <= seekDELAY(rpDCA, rpCCA);
+                                            check_ski();
+                                            state <= stateSEEKSEARCH;
+                                         end
                                     end
                                end
 
                              //
                              // Write header and data command
                              //
+                             // The disk should not seek if DCY = CCY.  This is
+                             // tested by DSPRA TST262.
+                             //
 
                              `funWRITEH:
                                begin
-                                  if (!rpSETIAE)
+                                  if (!rpSETIAE & !rpSETWLE)
                                     begin
                                        ata    <= 0;
                                        busy   <= 1;
                                        rpPIP  <= 0;
                                        rpSDOP <= `sdopWRH;
-                                       tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simSEEK)
-                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       if (rpDCA == rpCCA)
+                                         begin
+                                            delay <= $rtoi(FIXDELAY);
+                                            state <= stateSEARCH;
+                                         end
                                        else
-                                         delay <= $rtoi(FIXDELAY);
-                                       state <= stateSEEKSEARCH;
+                                         begin
+                                            tmpCC <= rpDC;
+                                            delay <= seekDELAY(rpDCA, rpCCA);
+                                            check_ski();
+                                            state <= stateSEEKSEARCH;
+                                         end
                                     end
                                end
 
@@ -538,6 +598,9 @@ module RPCTRL (
                              //
                              // The disk will not seek to an invalid address.
                              //
+                             // The disk should not seek if DCY = CCY.  This is
+                             // tested by DSPRA TST262.
+                             //
 
                              `funREAD:
                                begin
@@ -547,18 +610,27 @@ module RPCTRL (
                                        busy   <= 1;
                                        rpPIP  <= 0;
                                        rpSDOP <= `sdopRD;
-                                       tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simSEEK)
-                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       if (rpDCA == rpCCA)
+                                         begin
+                                            delay <= $rtoi(FIXDELAY);
+                                            state <= stateSEARCH;
+                                         end
                                        else
-                                         delay <= $rtoi(FIXDELAY);
-                                       state <= stateSEEKSEARCH;
+                                         begin
+                                            tmpCC <= rpDC;
+                                            delay <= seekDELAY(rpDCA, rpCCA);
+                                            check_ski();
+                                            state <= stateSEEKSEARCH;
+                                         end
                                     end
                                end
 
                              //
                              // Read header and data command
+                             //
+                             // The disk should not seek if DCY = CCY.  This is
+                             // tested by DSPRA TST262.
                              //
 
                              `funREADH:
@@ -569,44 +641,107 @@ module RPCTRL (
                                        busy   <= 1;
                                        rpPIP  <= 0;
                                        rpSDOP <= `sdopRDH;
-                                       tempCC <= rpDC;
                                        rpADRSTRT <= 1;
-                                       if (simSEEK)
-                                         delay <= seekDELAY(rpDCA, rpCCA);
+                                       if (rpDCA == rpCCA)
+                                         begin
+                                            delay <= $rtoi(FIXDELAY);
+                                            state <= stateSEARCH;
+                                         end
                                        else
-                                         delay <= $rtoi(FIXDELAY);
-                                       state <= stateSEEKSEARCH;
+                                         begin
+                                            tmpCC <= rpDC;
+                                            delay <= seekDELAY(rpDCA, rpCCA);
+                                            check_ski();
+                                            state <= stateSEEKSEARCH;
+                                         end
                                     end
                                end
-
                            endcase
-
                       end
 
                     //
-                    // stateSEEKDONE
+                    // stateOFFSET
+                    //
+                    // Handle Offset command And Return-to-center command.
+                    //
+                    // Heads do not move and RPCC does not change.
+                    //
+
+                    stateOFFSET:
+                      begin
+                         if (delay == 0)
+                           begin
+                              if (!rpDMD)
+                                state <= stateDONE;
+                           end
+                         else
+                           delay <= delay - 1'b1;
+                      end
+
+                    //
+                    // stateUNLOAD
+                    //
+                    // Simulate timing for
+                    //  - Unload command
+                    //
+                    // FIXME:
+                    //  This is a NOP
+                    //
+
+                    stateUNLOAD:
+                      begin
+                         rpCC  <= 0;
+                         state <= stateDONE;
+                      end
+
+                    //
+                    // stateRECAL
+                    //
+                    // Simulate timing for
+                    //  - Recalibrate command
+                    //
+                    // Heads move cylinder zero and RPCC changes to zero
+                    //
+                    
+                    stateRECAL:
+                      begin
+                         if (delay == 0)
+                           begin
+                              if (!rpDMD)
+                                begin
+                                   head_pos <= 0;
+                                   rpCC     <= 0;
+                                   state    <= stateDONE;
+                                end
+                           end
+                         else
+                           delay <= delay - 1'b1;
+                      end
+                    
+                    //
+                    // stateSEEK
                     //
                     // Simulate seek timing for:
                     //  - Seek command
-                    //  - Recalibrate command
-                    //  - Offset command
-                    //  - Return-to-center command
-                    //  - Unload command
                     //
                     // These commands are done once the seek is completed
                     //
+                    // The head position does not move in diagnostic mode.
+                    //
 
-                    stateSEEKDONE:
+                    stateSEEK:
                       begin
-                         if (!rpDMD)
-                           if (delay == 0)
-                             begin
-                                head_pos <= tempCC;
-                                rpCC     <= tempCC;
-                                state    <= stateDONE;
-                             end
-                           else
-                             delay <= delay - 1'b1;
+                         if (delay == 0)
+                           begin
+                              if (!rpDMD)
+                                begin
+                                   head_pos <= tmpCC;
+                                   rpCC     <= tmpCC;
+                                   state    <= stateDONE;
+                                end
+                           end
+                         else
+                           delay <= delay - 1'b1;
                       end
 
                     //
@@ -621,19 +756,23 @@ module RPCTRL (
                     // These commands will do a sector search once the seek has
                     // completed.
                     //
+                    // The head position does not move in diagnostic mode.
+                    //
 
                     stateSEEKSEARCH:
                       begin
-                         if (!rpDMD)
-                           if (delay == 0)
-                             begin
-                                head_pos <= tempCC;
-                                rpCC     <= tempCC;
-                                delay    <= $rtoi(FIXDELAY);
-                                state    <= stateSEARCH;
-                             end
-                           else
-                             delay <= delay - 1'b1;
+                         if (delay == 0)
+                           begin
+                              if (!rpDMD)
+                                begin
+                                   head_pos <= tmpCC;
+                                   rpCC     <= tmpCC;
+                                   delay    <= $rtoi(FIXDELAY);
+                                   state    <= stateSEARCH;
+                                end
+                           end
+                         else
+                           delay <= delay - 1'b1;
                       end
 
                     //
@@ -645,30 +784,166 @@ module RPCTRL (
                     //  - Write commands
                     //  - Write check commands
                     //
-                    // If accurate search is required for diagnostics (see DSRPA
-                    // TEST-302), the search completes when the sector under
-                    // the head (visbile in the RPLA register) is the same as
-                    // the desired sector.
-                    //
                     // Wait for SD sector address calculation to complete before
                     // moving to a data transfer state.
                     //
 
                     stateSEARCH:
                       begin
-                         if (simSEARCH ? (rpSA == rpLAS) : (delay == 0))
+
+                         if (rpDMD)
+
+                           //
+                           // In diagnostic mode.
+                           //
+                           // The search completes when a diagnostic index pulse
+                           // is detected.
+                           //
+
                            begin
-                              if (rpSDOP == `sdopNOP)
-                                state <= stateDONE;
-                              else if (!rpADRBUSY)
-                                state <= stateDATA;
+                              if (rpDIND)
+                                begin
+                                   if (rpSDOP == `sdopNOP)
+                                     state <= stateDONE;
+                                   else
+                                     begin
+                                        bit_cnt <= 0;
+                                        state   <= stateXFERHEADER;
+                                     end
+                                end
                            end
+
                          else
-                           delay <= delay - 1'b1;
+
+                           //
+                           // Not in diagnostic mode.
+                           //
+                           // If accurate search is required for diagnostics
+                           // (see DSRPA TEST-302), the search completes when
+                           // the sector under the head (visbile in the RPLA
+                           // register) is the same as the desired sector.  This
+                           // is slow but is very accurate.
+                           //
+                           // If accurate search is not required, the search
+                           // completes after a fixed period of time.   This is
+                           // much faster but fails some diagnostic tests.
+                           //
+
+                           begin
+                              if (simSEARCH ? (rpSA  == rpLAS) : (delay == 0))
+                                begin
+                                   if (rpSDOP == `sdopNOP)
+                                     state <= stateDONE;
+                                   else if (!rpADRBUSY)
+                                     state <= stateDATA;
+                                end
+                              else
+                                delay <= delay - 1'b1;
+                           end
+                      end
+
+                    //
+                    // stateXFERHEADER
+                    //
+                    // Diagnostic Mode only
+                    //
+                    // Header: 31 words (496 bits)
+                    //
+
+                    stateXFERHEADER:
+                      begin
+                         if (diag_clken)
+                           begin
+                              if (bit_cnt == 495)
+                                begin
+                                   rpDFE   <= 1;
+                                   rpECE   <= 0;
+                                   bit_cnt <= 0;
+                                   state   <= stateXFERDATA;
+                                end
+                              else
+                                bit_cnt <= bit_cnt + 1;
+                           end
+                      end
+
+                    //
+                    // stateXFERDATA
+                    //
+                    // Diagnostic Mode only
+                    //
+                    // Data: 256 words (4608 bits 18-bit mode)
+                    //       256 words (4096 bits 16-bit mode)
+                    //
+
+                    stateXFERDATA:
+                      begin
+                         if (diag_clken)
+                           begin
+                              if (( rpFMT22 & (bit_cnt == 4095)) |
+                                  (!rpFMT22 & (bit_cnt == 4607)))
+                                begin
+                                   rpDFE   <= 0;
+                                   rpECE   <= 1;
+                                   bit_cnt <= 0;
+                                   state   <= stateXFERECC;
+                                end
+                              else
+                                bit_cnt <= bit_cnt + 1;
+                           end
+                      end
+
+                    //
+                    // stateXFERECC
+                    //
+                    // Diagnostic Mode only
+                    //
+                    // ECC: 2 words (32 bits)
+                    //
+
+                    stateXFERECC:
+                      begin
+                         if (diag_clken)
+                           begin
+                              if (bit_cnt == 31)
+                                begin
+                                   rpDFE   <= 0;
+                                   rpECE   <= 0;
+                                   bit_cnt <= 0;
+                                   state   <= stateXFERGAP;
+                                end
+                              else
+                                bit_cnt <= bit_cnt + 1;
+                           end
+                      end
+
+                    //
+                    // stateXFERGAP
+                    //
+                    // Diagnostic Mode only
+                    //
+                    // Data Gap: 1 word (16 bits)
+                    //
+
+                    stateXFERGAP:
+                      begin
+                         if (diag_clken)
+                           begin
+                              if (bit_cnt == 15)
+                                begin
+                                   rpDFE   <= 0;
+                                   rpECE   <= 0;
+                                   bit_cnt <= 0;
+                                   state   <= stateDONE;
+                                end
+                              else
+                                bit_cnt <= bit_cnt + 1;
+                           end
                       end
 
                     //
                     // stateDATA:
+                    //
+                    // Not Diagnostic Mode
                     //
                     // Wait for SD to complete Read/Write operaton
                     //
@@ -710,9 +985,7 @@ module RPCTRL (
 
                   endcase
                end
-
           end
-
      end
 
    //
@@ -771,150 +1044,13 @@ module RPCTRL (
 
 `else
 
+   //
+   // Tie off rpSETOPI
+   //
+
    assign rpSETOPI = 0;
 
 `endif
-
-   //
-   // State Definition
-   //
-
-   localparam [2:0] asdfIDLE   = 0,
-                    asdfHEADER = 1,
-                    asdfDATA   = 2,
-                    asdfECC    = 3,
-                    asdfGAP    = 4,
-                    asdfEBL    = 5;
-
-
-   //
-   // Data envelope, ECC envelope, and end-of-block (ebl)
-   // simulation
-   //
-
-   reg ebl;
-   reg [ 2:0] asdf;
-   reg [11:0] bit_cnt;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-
-          begin
-             rpDFE   <= 0;
-             rpECE   <= 0;
-             ebl     <= 0;
-             bit_cnt <= 0;
-             asdf    <= asdfIDLE;
-          end
-
-        else
-
-          begin
-
-             if (!rpDMD)
-               begin
-                  rpDFE    <= 0;
-                  rpECE    <= 0;
-                  ebl      <= 0;
-                  bit_cnt  <= 0;
-                  asdf     <= asdfIDLE;
-               end
-
-             else
-
-               case (asdf)
-
-                 //
-                 // Header: 496 bits
-                 //
-
-                 asdfHEADER:
-                   if (rpDSCK)
-                     begin
-                        if (bit_cnt == 495)
-                          begin
-                             bit_cnt <= 0;
-                             asdf    <= asdfDATA;
-                          end
-                        else
-                          bit_cnt <= bit_cnt + 1;
-                     end
-
-                 //
-                 // Data: 4608 bits = 256 words (18-bit mode)
-                 //       4096 bits = 256 words (16-bit mode)
-                 //
-
-                 asdfDATA:
-                   if (rpDSCK)
-                     begin
-                        rpDFE <= 1;
-                        rpECE <= 0;
-                        ebl   <= 0;
-                        if (( rpFMT22 & (bit_cnt == 4095)) |
-                            (!rpFMT22 & (bit_cnt == 4607)))
-                          begin
-                             bit_cnt <= 0;
-                             asdf    <= asdfECC;
-                          end
-                        else
-                          bit_cnt <= bit_cnt + 1;
-                     end
-
-                 //
-                 // ECC: 32 bits
-                 //
-
-                 asdfECC:
-                   if (rpDSCK)
-                     begin
-                        rpDFE <= 0;
-                        rpECE <= 1;
-                        ebl   <= 0;
-                        if (bit_cnt == 31)
-                          begin
-                             bit_cnt <= 0;
-                             asdf    <= asdfGAP;
-                          end
-                        else
-                          bit_cnt <= bit_cnt + 1;
-                     end
-
-                 //
-                 // Gap: 16 bits.
-                 //
-
-                 asdfGAP:
-                   if (rpDSCK)
-                     begin
-                        rpDFE <= 0;
-                        rpECE <= 0;
-                        ebl   <= 0;
-                        if (bit_cnt == 15)
-                          begin
-                             bit_cnt <= 0;
-                             asdf    <= asdfEBL;
-                          end
-                        else
-                          bit_cnt <= bit_cnt + 1;
-                     end
-
-                 //
-                 // EBL: (after GAP)
-                 //
-
-                 asdfEBL:
-                   if (rpDSCK)
-                     begin
-                        rpDFE <= 0;
-                        rpECE <= 0;
-                        ebl   <= 1;
-                     end
-
-                 endcase
-          end
-     end
 
    //
    // State decode
