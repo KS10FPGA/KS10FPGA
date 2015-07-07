@@ -36,6 +36,7 @@ NGD      := $(XILEXE)/ngdbuild.exe
 PAR      := $(XILEXE)/par.exe
 PROMGEN  := $(XILEXE)/promgen.exe
 IMPACT   := $(XILEXE)/impact.exe
+TRCE     := $(XILEXE)/trce
 XST      := $(XILEXE)/xst.exe
 INTSTYLE := ise
 XILPATH  := $(XILDIR)/ISE_DS/ISE/bin/nt64:$(XILDIR)/ISE_DS/ISE/lib/nt64:$(XILDIR)/ISE_DS/common/bin/nt64:$(XILDIR)/ISE_DS/common/lib/nt64
@@ -248,7 +249,6 @@ RTL_FILES := \
 	ks10/rh11/rhcs1.v \
 	ks10/rh11/rhcs2.v \
 	ks10/rh11/rpxx/rpaddr.v \
-	ks10/rh11/rpxx/rpcc.v \
 	ks10/rh11/rpxx/rpcs1.v \
 	ks10/rh11/rpxx/rpda.v \
 	ks10/rh11/rpxx/rpctrl.v \
@@ -391,7 +391,10 @@ INC_FILES := \
 	ks10/rh11/rpxx/rpdc.vh \
 	ks10/rh11/rpxx/rpds.vh \
 	ks10/rh11/rpxx/rper1.vh \
+	ks10/rh11/rpxx/rper2.vh \
+	ks10/rh11/rpxx/rper3.vh \
 	ks10/rh11/rpxx/rpof.vh \
+	ks10/rh11/rpxx/rpla.vh \
 	ks10/rh11/rpxx/rpmr.vh \
 	ks10/rh11/rpxx/rpxx.vh \
 	ks10/rh11/sd/sdspi.vh \
@@ -560,7 +563,6 @@ $(ISE)/$(PROJECT)_impact.cmd: makefile
 
 FUSE_ARGS := \
 	$(shell echo "$(DEBUG_ARGS)" | sed -e 's/-D/-d/g') \
-	-d SMALL_MEM \
 	-d XILINX \
 	-d SSRAM_DAT=\"\"../../$(TESTBENCH)/$(DIAG).dat\"\" \
 	-d RAMFILE_DAT=\"\"../../$(RAMFILE_DAT)\"\" \
@@ -594,13 +596,18 @@ ISIM_ARGS := \
 	-intstyle $(INTSTYLE) \
 	-gui \
 	-tclbatch $(PROJECT)_isim.cmd \
-	-view $(PROJECT)_rh11.wcfg \
+	-view $(PROJECT)_rpxx.wcfg \
 	-wdb c:/temp/$(PROJECT).wdb
 
-isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT)_rh11.wcfg $(TESTBENCH)/$(DIAG).dat makefile
+isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT)_rpxx.wcfg $(TESTBENCH)/$(DIAG).dat makefile
 	@cd $(ISE); \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe $(ISIM_ARGS) &
+
+isim_bat : $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT)_rpxx.wcfg $(TESTBENCH)/$(DIAG).dat makefile
+	@cd $(ISE); \
+	export PATH=$(XILPATH):$$PATH; \
+	./$(PROJECT)_isim.exe -gui &
 
 #
 # xst
@@ -1028,6 +1035,14 @@ reload: $(ISE)/$(PROJECT)_impact.cmd
 	$(IMPACT) -batch $(PROJECT)_impact.cmd
 
 #
+# TRCE
+#
+
+trce : 
+	$(TRCE) -v -tsi asdf.tsi $(ISE)/$(PROJECT).ncd
+
+
+#
 # iverilog
 #
 
@@ -1224,7 +1239,7 @@ archive_dist: $(SRC)
 #
 
 cloc :
-	$(CLOC) --by-file --force-lang=Verilog-SystemVerilog,vh rtl
+	$(CLOC) --by-file --force-lang=Verilog-SystemVerilog,vh --exclude-dir=ise,libero,xilinx ks10 esm_top
 	$(CLOC) --by-file --exclude-dir=driverlib,SafeRTOS,lwiplib ../code
 
 #
