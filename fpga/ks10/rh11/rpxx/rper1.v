@@ -49,6 +49,7 @@ module RPER1 (
       input  wire         clr,                  // Clear
       input  wire         rpDRVCLR,             // Drive clear command
       input  wire         rpSETOPI,             // Set operation incomplete
+      input  wire         rpSETDTE,             // Set drive timing error
       input  wire         rpSETWLE,             // Set write lock error
       input  wire         rpSETIAE,             // Set invalid address error
       input  wire         rpSETAOE,             // Set address overflow error
@@ -135,6 +136,8 @@ module RPER1 (
         else
           if (clr | rpDRVCLR)
             rpDTE <= 0;
+          else if (rpSETDTE)
+            rpDTE <= 1;
           else if (rper1WRITE & rpDRY)
             rpDTE <= `rpER1_DTE(rpDATAI);
      end

@@ -228,6 +228,12 @@ module RPXX (
                       (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o37) & `rpCS1_GO(rpDATAI)));
 
    //
+   // RPxx Control Status Register #1 (RPCS1)
+   //
+
+   wire [5:1] rpFUN = `rpCS1_FUN(rpCS1);
+
+   //
    // RPxx Disk Status Register (RPDS)
    //
 
@@ -281,13 +287,18 @@ module RPXX (
    wire rpADRBUSY;                              // Busy calculation sector address
    wire rpSETATA;                               // Set attention
    wire rpSETOPI;                               // Set operation incomplete
+   wire rpSETDTE;                               // Set drive timing error
    wire rpSETSKI;                               // Set seek incomplete
+   wire rpEBL;                                  // End of block
 
    //
    // Increment sector
    //
+   // The sector is incremented by the SD Card normally but is incremented by the
+   // EBL pulse in Diagnostic Mode.
+   //
 
-   wire rpINCSECT = rhINCSECT & rpSELECT;
+   wire rpINCSECT = rpDMD ? rpEBL : (rhINCSECT & rpSELECT);
 
    //
    // Increment cylinder
@@ -379,6 +390,42 @@ module RPXX (
                       (rpPAT & rper3WRITE));
 
    //
+   // Class B error
+   //
+   // Trace
+   //  M7774/RG0/E4
+   //  M7774/RG0/E29
+   //  M7774/RG0/E33
+   //  M7774/RG0/E46
+   //  M7774/RG0/E47
+   //  M7776/EC6/E52
+   //  M7776/EC7/E80
+   //  M7776/EC7/E85
+   //  M7776/EC7/E49
+   //  M7776/EC7/E59
+   //  M7776/EC7/E85
+   //  M7776/EC7/E93
+   //
+
+   wire rpCLBERR = ((`rpER1_DCK(rpER1)) |
+                    (`rpER1_OPI(rpER1)) |
+//FIXME             (`rpER1_DTE(rpER1)) |
+                    (`rpER1_WLE(rpER1)) |
+                    (`rpER1_IAE(rpER1)) |
+                    (`rpER1_AOE(rpER1)) |
+                    (`rpER1_HCRC(rpER1) & (rpFUN == `funREADH )) |
+                    (`rpER1_HCRC(rpER1) & (rpFUN == `funWRCHKH)) |
+                    (`rpER1_HCE(rpER1)  & (rpFUN == `funREADH )) |
+                    (`rpER1_HCE(rpER1)  & (rpFUN == `funWRCHKH)) |
+                    (`rpER1_ECH(rpER1)) |
+                    (`rpER1_WCF(rpER1)) |
+                    (`rpER1_FER(rpER1)  & (rpFUN == `funREADH )) |
+                    (`rpER1_FER(rpER1)  & (rpFUN == `funWRCHKH)) |
+                    (`rpER1_ILF(rpER1)) |
+                    (rpER2 != 0) |
+                    (rpER3 != 0));
+
+   //
    // RPxx Control/Status Register (RPCS1)
    //
 
@@ -445,6 +492,7 @@ module RPXX (
       .clr         (clr),
       .rpDRVCLR    (rpDRVCLR),
       .rpSETOPI    (rpSETOPI),
+      .rpSETDTE    (rpSETDTE),
       .rpSETWLE    (rpSETWLE),
       .rpSETIAE    (rpSETIAE),
       .rpSETAOE    (rpSETAOE),
@@ -580,29 +628,32 @@ module RPXX (
       .clk         (clk),
       .rst         (rst),
       .clr         (clr),
-      .rpDATAI     (rpDATAI),
-      .rpcs1WRITE  (rpcs1WRITE),
+      .rpGO        (rpGO),
+      .rpFUN       (rpFUN),
       .rpCYLNUM    (rpCYLNUM),
-      .rpLA        (rpLA),
+      .rpCC        (rpCC),
       .rpDA        (rpDA),
       .rpDC        (rpDC),
-      .rpCC        (rpCC),
+      .rpLA        (rpLA),
       .rpDMD       (rpDMD),
       .rpDCLK      (rpDCLK),
       .rpDSCK      (rpDSCK),
       .rpDIND      (rpDIND),
+      .rpDFE       (rpDFE),
+      .rpDRY       (rpDRY),
+      .rpEBL       (rpEBL),
+      .rpECE       (rpECE),
+      .rpFMT22     (rpFMT22),
       .rpPAT       (rpPAT),
       .rpPIP       (rpPIP),
-      .rpDRY       (rpDRY),
-      .rpECE       (rpECE),
-      .rpDFE       (rpDFE),
-      .rpFMT22     (rpFMT22),
+      .rpCLBERR    (rpCLBERR),
       .rpSETAOE    (rpSETAOE),
-      .rpSETIAE    (rpSETIAE),
-      .rpSETWLE    (rpSETWLE),
       .rpSETATA    (rpSETATA),
+      .rpSETDTE    (rpSETDTE),
+      .rpSETIAE    (rpSETIAE),
       .rpSETOPI    (rpSETOPI),
       .rpSETSKI    (rpSETSKI),
+      .rpSETWLE    (rpSETWLE),
       .rpADRSTRT   (rpADRSTRT),
       .rpADRBUSY   (rpADRBUSY),
       .rpSDOP      (rpSDOP),

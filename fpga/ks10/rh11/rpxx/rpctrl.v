@@ -1,3 +1,4 @@
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
@@ -49,35 +50,37 @@
 
 `define RPXX_SKI                                // Required to pass DSRPA test
 `define RPXX_OPI                                // Required to pass DSRPA test
-`define RPXX_DFE                                // Required to pass DSRPA test
 
 module RPCTRL (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       input  wire         clr,                  // Clr
-      input  wire [35: 0] rpDATAI,              // Data input
-      input  wire         rpcs1WRITE,           // CS1 write
+      input  wire         rpGO,                 // Go bit
+      input  wire [ 5: 1] rpFUN,                // Function
       input  wire [ 9: 0] rpCYLNUM,             // Number of cylinders
-      input  wire [15: 0] rpLA,                 // Lookahead register
+      output reg  [15: 0] rpCC,                 // Current cylinder
       input  wire [15: 0] rpDA,                 // Disk address
       input  wire [15: 0] rpDC,                 // Desired cylinder
-      output reg  [15: 0] rpCC,                 // Current cylinder
+      input  wire [15: 0] rpLA,                 // Lookahead register
       input  wire         rpDMD,                // Diagnostic Mode
       input  wire         rpDSCK,               // Diagnostic sector clock
       input  wire         rpDCLK,               // Diagnostic clock
       input  wire         rpDIND,               // Diagnostic index pulse
+      output reg          rpDFE,                // Data field envelope
+      output reg          rpDRY,                // Drive ready
+      output reg          rpEBL,                // End of block
+      output reg          rpECE,                // ECC envelope
+      input  wire         rpFMT22,              // 22 sector format (16-bit)
       input  wire         rpPAT,                // Parity test
       output reg          rpPIP,                // Positioning-in-progress
-      output reg          rpDRY,                // Drive ready
-      output reg          rpECE,                // ECC envelope
-      output reg          rpDFE,                // Data field envelope
-      input  wire         rpFMT22,              // 22 sector format (16-bit)
+      input  wire         rpCLBERR,             // Class B error (abort)
       input  wire         rpSETAOE,             // Set address overflow error
-      input  wire         rpSETIAE,             // Set invalid address error
-      input  wire         rpSETWLE,             // Set write lock error
       output reg          rpSETATA,             // Set attenation
+      output reg          rpSETDTE,             // Set drive timing error
+      input  wire         rpSETIAE,             // Set invalid address error
       output wire         rpSETOPI,             // Set operation incomplete
       output reg          rpSETSKI,             // Set seek incomplete
+      input  wire         rpSETWLE,             // Set write lock error
       output reg          rpADRSTRT,            // Address calculation start
       input  wire         rpADRBUSY,            // Address calculation busy
       output reg  [ 2: 0] rpSDOP,               // SD operation
@@ -167,7 +170,7 @@ module RPCTRL (
            end
       end
    endfunction
-   
+
    //
    // rpDCA
    //
@@ -209,28 +212,38 @@ module RPCTRL (
    EDGETRIG MAINTCLK(clk, rst, 1'b1, 1'b1, rpDCLK, diag_clken);
 
    //
-   // rpGO
-   //
-   // Commands are ignored with incorrect parity.
+   // Diagnostic index pulse.  Triggered on falling edge of maintenance
+   // register signal.
    //
 
-   wire rpGO = !rpPAT & rpcs1WRITE & `rpCS1_GO(rpDATAI);
+   wire diag_index;
+   EDGETRIG uDIAGIND(clk, rst, 1'b1, 1'b0, rpDIND, diag_index);
+
+   //
+   // go_cmd
+   //
+   // go_cmd must be asserted after rpGO is negated otherwise it will
+   // create an RHCS2[PGE] error
+   //
+
+   wire go_cmd;
+   EDGETRIG GOEDGE(clk, rst, 1'b1, 1'b0, rpGO, go_cmd);
 
    //
    // State Definition
    //
 
    localparam [3:0] stateIDLE       =  0,       // Idle
-                    stateOFFSET     =  1,	// Offset/center command
-                    stateUNLOAD     =  2,	// Unload command
-                    stateRECAL      =  3,	// Recalibrate command
+                    stateOFFSET     =  1,       // Offset/center command
+                    stateUNLOAD     =  2,       // Unload command
+                    stateRECAL      =  3,       // Recalibrate command
                     stateSEEK       =  4,       // Seek
                     stateSEEKSEARCH =  5,       // Seek then search
                     stateSEARCH     =  6,       // Searching for sector
                     stateXFERHEADER =  7,       // Diagnostic transfer header
                     stateXFERDATA   =  8,       // Diagnostic transfer data
                     stateXFERECC    =  9,       // Diagnostic transfer ECC
-                    stateXFERGAP    = 10,	// Diagnostic transfer data gap
+                    stateXFERGAP    = 10,       // Diagnostic transfer data gap
                     stateDATA       = 11,       // Reading/writing data
                     stateDONE       = 12;       // Done
 
@@ -238,52 +251,54 @@ module RPCTRL (
    // Disk Motion Simlation State Machine
    //
 
-   reg ata;                                     // Do ATA at end
-   reg busy;                                    // Drive busy
    reg [24: 0] delay;                           // RPxx Delay Simulation
    reg [15: 0] tmpCC;                           // rpCC value when command completes
    reg [12: 0] bit_cnt;                         // Data bit counter
+   reg         tmpATA;                          // Do ATA at end
    reg [ 3: 0] state;                           // State
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
           begin
-             ata      <= 0;
-             busy     <= 0;
              rpCC     <= 0;
-             head_pos <= 0;
-             rpPIP    <= 0;
              rpDFE    <= 0;
+             rpDRY    <= 1;
+             rpEBL    <= 0;
              rpECE    <= 0;
+             rpPIP    <= 0;
              rpSETATA <= 0;
              rpSETSKI <= 0;
              rpSDOP   <= `sdopNOP;
+             tmpATA   <= 0;
+             tmpCC    <= 0;
              bit_cnt  <= 0;
              delay    <= 0;
-             tmpCC    <= 0;
+             head_pos <= 0;
              state    <= stateIDLE;
           end
         else
           begin
              if (clr)
                begin
-                  ata      <= 0;
-                  busy     <= 0;
                   rpCC     <= rpDC;
-                  rpPIP    <= 0;
                   rpDFE    <= 0;
+                  rpDRY    <= 1;
+                  rpEBL    <= 0;
                   rpECE    <= 0;
+                  rpPIP    <= 0;
                   rpSETATA <= 0;
                   rpSETSKI <= 0;
                   rpSDOP   <= `sdopNOP;
+                  tmpATA   <= 0;
+                  tmpCC    <= 0;
                   bit_cnt  <= 0;
                   delay    <= 0;
-                  tmpCC    <= 0;
                   state    <= stateIDLE;
                end
              else
                begin
+                  rpEBL     <= 0;
                   rpADRSTRT <= 0;
                   rpSETSKI  <= 0;
                   case (state)
@@ -296,23 +311,23 @@ module RPCTRL (
 
                     stateIDLE:
                       begin
-                         ata      <= 0;
-                         busy     <= 0;
+                         rpDRY    <= 1;
                          rpPIP    <= 0;
                          rpSETATA <= 0;
+                         tmpATA   <= 0;
                          tmpCC    <= 0;
 
                          //
                          // Wait for a GO command
                          //
 
-                         if (rpGO)
+                         if (go_cmd)
 
                            //
                            // Decode Command (Function)
                            //
 
-                           case (`rpCS1_FUN(rpDATAI))
+                           case (rpFUN)
 
                              //
                              // Unload Command
@@ -326,9 +341,9 @@ module RPCTRL (
 
                              `funUNLOAD:
                                begin
-                                  ata    <= 1;
-                                  busy   <= 1;
+                                  rpDRY  <= 0;
                                   rpPIP  <= 1;
+                                  tmpATA <= 1;
                                   rpSDOP <= `sdopNOP;
                                   delay  <= seekDELAY(0, rpCCA);
                                   state  <= stateUNLOAD;
@@ -349,11 +364,13 @@ module RPCTRL (
 
                              `funSEEK:
                                begin
-                                  if (!rpSETIAE & (rpDCA != rpCCA))
+                                  rpDRY  <= 0;
+                                  tmpATA <= 1;
+                                  rpPIP  <= 1;
+                                  if (rpDCA == rpCCA)
+                                    state  <= stateDONE;
+                                  else if (!rpSETIAE)
                                     begin
-                                       ata    <= 1;
-                                       busy   <= 1;
-                                       rpPIP  <= 1;
                                        rpSDOP <= `sdopNOP;
                                        tmpCC  <= rpDC;
                                        delay  <= seekDELAY(rpDCA, rpCCA);
@@ -371,9 +388,9 @@ module RPCTRL (
 
                              `funRECAL:
                                begin
-                                  ata    <= 1;
-                                  busy   <= 1;
+                                  rpDRY  <= 0;
                                   rpPIP  <= 1;
+                                  tmpATA <= 1;
                                   rpSDOP <= `sdopNOP;
                                   delay  <= seekDELAY(0, rpCCA);
                                   state  <= stateRECAL;
@@ -396,9 +413,9 @@ module RPCTRL (
                                begin
                                   if (!rpSETIAE)
                                     begin
-                                       ata    <= 1;
-                                       busy   <= 1;
+                                       rpDRY  <= 0;
                                        rpPIP  <= 0;
+                                       tmpATA <= 1;
                                        rpSDOP <= `sdopNOP;
                                        if (rpDCA == rpCCA)
                                          begin
@@ -423,9 +440,9 @@ module RPCTRL (
 
                              `funOFFSET:
                                begin
-                                  ata    <= 1;
-                                  busy   <= 1;
+                                  rpDRY  <= 0;
                                   rpPIP  <= 1;
+                                  tmpATA <= 1;
                                   rpSDOP <= `sdopNOP;
                                   if (simSEEK)
                                     delay <= $rtoi(OFFDELAY);
@@ -443,9 +460,9 @@ module RPCTRL (
 
                              `funCENTER:
                                begin
-                                  ata    <= 1;
-                                  busy   <= 1;
+                                  rpDRY  <= 0;
                                   rpPIP  <= 1;
+                                  tmpATA <= 1;
                                   rpSDOP <= `sdopNOP;
                                   if (simSEEK)
                                     delay <= $rtoi(OFFDELAY);
@@ -471,9 +488,9 @@ module RPCTRL (
                                begin
                                   if (!rpSETIAE)
                                     begin
-                                       ata    <= 0;
-                                       busy   <= 1;
+                                       rpDRY  <= 0;
                                        rpPIP  <= 0;
+                                       tmpATA <= 0;
                                        rpSDOP <= `sdopWRCHK;
                                        rpADRSTRT <= 1;
                                        if (rpDCA == rpCCA)
@@ -501,9 +518,9 @@ module RPCTRL (
                                begin
                                   if (!rpSETIAE)
                                     begin
-                                       ata    <= 0;
-                                       busy   <= 1;
+                                       rpDRY  <= 0;
                                        rpPIP  <= 0;
+                                       tmpATA <= 0;
                                        rpSDOP <= `sdopWRCHKH;
                                        rpADRSTRT <= 1;
                                        if (rpDCA == rpCCA)
@@ -538,9 +555,9 @@ module RPCTRL (
                                begin
                                   if (!rpSETIAE & !rpSETWLE)
                                     begin
-                                       ata    <= 0;
-                                       busy   <= 1;
+                                       rpDRY  <= 0;
                                        rpPIP  <= 0;
+                                       tmpATA <= 0;
                                        rpSDOP <= `sdopWR;
                                        rpADRSTRT <= 1;
                                        if (rpDCA == rpCCA)
@@ -569,10 +586,10 @@ module RPCTRL (
                                begin
                                   if (!rpSETIAE & !rpSETWLE)
                                     begin
-                                       ata    <= 0;
-                                       busy   <= 1;
+                                       rpDRY  <= 0;
                                        rpPIP  <= 0;
                                        rpSDOP <= `sdopWRH;
+                                       tmpATA <= 0;
                                        rpADRSTRT <= 1;
                                        if (rpDCA == rpCCA)
                                          begin
@@ -606,9 +623,9 @@ module RPCTRL (
                                begin
                                   if (!rpSETIAE)
                                     begin
-                                       ata    <= 0;
-                                       busy   <= 1;
+                                       rpDRY  <= 0;
                                        rpPIP  <= 0;
+                                       tmpATA <= 0;
                                        rpSDOP <= `sdopRD;
                                        rpADRSTRT <= 1;
                                        if (rpDCA == rpCCA)
@@ -637,9 +654,9 @@ module RPCTRL (
                                begin
                                   if (!rpSETIAE)
                                     begin
-                                       ata    <= 0;
-                                       busy   <= 1;
+                                       rpDRY  <= 0;
                                        rpPIP  <= 0;
+                                       tmpATA <= 0;
                                        rpSDOP <= `sdopRDH;
                                        rpADRSTRT <= 1;
                                        if (rpDCA == rpCCA)
@@ -702,22 +719,22 @@ module RPCTRL (
                     //
                     // Heads move cylinder zero and RPCC changes to zero
                     //
-                    
+
                     stateRECAL:
                       begin
                          if (delay == 0)
                            begin
                               if (!rpDMD)
                                 begin
-                                   head_pos <= 0;
                                    rpCC     <= 0;
+                                   head_pos <= 0;
                                    state    <= stateDONE;
                                 end
                            end
                          else
                            delay <= delay - 1'b1;
                       end
-                    
+
                     //
                     // stateSEEK
                     //
@@ -735,8 +752,8 @@ module RPCTRL (
                            begin
                               if (!rpDMD)
                                 begin
-                                   head_pos <= tmpCC;
                                    rpCC     <= tmpCC;
+                                   head_pos <= tmpCC;
                                    state    <= stateDONE;
                                 end
                            end
@@ -790,7 +807,6 @@ module RPCTRL (
 
                     stateSEARCH:
                       begin
-
                          if (rpDMD)
 
                            //
@@ -801,7 +817,7 @@ module RPCTRL (
                            //
 
                            begin
-                              if (rpDIND)
+                              if (diag_index)
                                 begin
                                    if (rpSDOP == `sdopNOP)
                                      state <= stateDONE;
@@ -852,17 +868,22 @@ module RPCTRL (
 
                     stateXFERHEADER:
                       begin
-                         if (diag_clken)
+                         if (rpCLBERR)
+                           state <= stateDONE;
+                         else
                            begin
-                              if (bit_cnt == 495)
+                              if (diag_clken)
                                 begin
-                                   rpDFE   <= 1;
-                                   rpECE   <= 0;
-                                   bit_cnt <= 0;
-                                   state   <= stateXFERDATA;
+                                   if (bit_cnt == 495)
+                                     begin
+                                        rpDFE   <= 1;
+                                        rpECE   <= 0;
+                                        bit_cnt <= 0;
+                                        state   <= stateXFERDATA;
+                                     end
+                                   else
+                                     bit_cnt <= bit_cnt + 1;
                                 end
-                              else
-                                bit_cnt <= bit_cnt + 1;
                            end
                       end
 
@@ -877,18 +898,23 @@ module RPCTRL (
 
                     stateXFERDATA:
                       begin
-                         if (diag_clken)
+                         if (rpCLBERR)
+                           state <= stateDONE;
+                         else
                            begin
-                              if (( rpFMT22 & (bit_cnt == 4095)) |
-                                  (!rpFMT22 & (bit_cnt == 4607)))
+                              if (diag_clken)
                                 begin
-                                   rpDFE   <= 0;
-                                   rpECE   <= 1;
-                                   bit_cnt <= 0;
-                                   state   <= stateXFERECC;
+                                   if (( rpFMT22 & (bit_cnt == 4095)) |
+                                       (!rpFMT22 & (bit_cnt == 4607)))
+                                     begin
+                                        rpDFE   <= 0;
+                                        rpECE   <= 1;
+                                        bit_cnt <= 0;
+                                        state   <= stateXFERECC;
+                                     end
+                                   else
+                                     bit_cnt <= bit_cnt + 1;
                                 end
-                              else
-                                bit_cnt <= bit_cnt + 1;
                            end
                       end
 
@@ -902,17 +928,22 @@ module RPCTRL (
 
                     stateXFERECC:
                       begin
-                         if (diag_clken)
+                         if (rpCLBERR)
+                           state <= stateDONE;
+                         else
                            begin
-                              if (bit_cnt == 31)
+                              if (diag_clken)
                                 begin
-                                   rpDFE   <= 0;
-                                   rpECE   <= 0;
-                                   bit_cnt <= 0;
-                                   state   <= stateXFERGAP;
+                                   if (bit_cnt == 31)
+                                     begin
+                                        rpDFE   <= 0;
+                                        rpECE   <= 0;
+                                        bit_cnt <= 0;
+                                        state   <= stateXFERGAP;
+                                     end
+                                   else
+                                     bit_cnt <= bit_cnt + 1;
                                 end
-                              else
-                                bit_cnt <= bit_cnt + 1;
                            end
                       end
 
@@ -926,17 +957,22 @@ module RPCTRL (
 
                     stateXFERGAP:
                       begin
-                         if (diag_clken)
+                         if (rpCLBERR)
+                           state <= stateDONE;
+                         else
                            begin
-                              if (bit_cnt == 15)
+                              if (diag_clken)
                                 begin
-                                   rpDFE   <= 0;
-                                   rpECE   <= 0;
-                                   bit_cnt <= 0;
-                                   state   <= stateDONE;
+                                   if (bit_cnt == 15)
+                                     begin
+                                        rpDFE   <= 0;
+                                        rpECE   <= 0;
+                                        bit_cnt <= 0;
+                                        state   <= stateDONE;
+                                     end
+                                   else
+                                     bit_cnt <= bit_cnt + 1;
                                 end
-                              else
-                                bit_cnt <= bit_cnt + 1;
                            end
                       end
 
@@ -954,7 +990,7 @@ module RPCTRL (
 
                     stateDATA:
                       begin
-                         if (rpSETAOE | rpSDACK)
+                         if (rpSETAOE | rpSDACK | rpCLBERR)
                            state <= stateDONE;
                          else
                            rpCC <= rpDC;
@@ -968,10 +1004,11 @@ module RPCTRL (
 
                     stateDONE:
                       begin
-                         ata      <= 0;
-                         busy     <= 0;
+                         rpDRY    <= 1;
+                         rpEBL    <= 1;
                          rpPIP    <= 0;
-                         rpSETATA <= ata;
+                         tmpATA   <= 0;
+                         rpSETATA <= tmpATA;
                          rpSDOP   <= `sdopNOP;
                          state    <= stateIDLE;
                       end
@@ -989,28 +1026,29 @@ module RPCTRL (
      end
 
    //
-   // rpDRY
-   //  Don't negate rpDRY while rpGO is asserted otherwise it will create a
-   //  RHCS1[PGE] error.
+   // Drive Timing Error (DTE)
+   //
+   // Asserted in Diagnostic Mode when an Sector Pulse is detected while the
+   // drive is performing a data transfer.
+   //
+   // Trace
+   //  M7773/SN0/E35
+   //  M7773/SN0/E45
+   //  M7773/SN0/E48
    //
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          rpDRY <= 1;
+          rpSETDTE <= 0;
         else
-          rpDRY <= !busy | rpGO;
+          rpSETDTE <= ((rpDMD & rpDIND & (state == stateXFERHEADER)) |
+                       (rpDMD & rpDIND & (state == stateXFERDATA  )) |
+                       (rpDMD & rpDIND & (state == stateXFERECC   )) |
+                       (rpDMD & rpDIND & (state == stateXFERGAP   )));
      end
 
 `ifdef RPXX_OPI
-
-   //
-   // Diagnostic index pulse.  Triggerd on falling edge of maintenance
-   // register signal.
-   //
-
-   wire diag_index;
-   EDGETRIG uDIAGIND(clk, rst, 1'b1, 1'b0, rpDIND, diag_index);
 
    //
    // Index pulse counter for testing OPI
@@ -1033,7 +1071,15 @@ module RPCTRL (
         else
           if (rpDMD)
             begin
-               if (diag_index)
+               if ((rpFUN != `funSEARCH) &
+                   (rpFUN != `funWRCHK ) &
+                   (rpFUN != `funWRCHKH) &
+                   (rpFUN != `funWRITE ) &
+                   (rpFUN != `funWRITEH) &
+                   (rpFUN != `funREAD  ) &
+                   (rpFUN != `funREADH ))
+                 index_cnt <= 0;
+               else if (diag_index)
                  index_cnt <= {index_cnt[0], 1'b1};
             end
           else

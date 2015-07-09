@@ -152,6 +152,12 @@ module RPMR (
    //
    // Build RPMR
    //
+   // Trace
+   //   M7774/RG2/E11
+   //   M7774/RG2/E12
+   //   M7774/RG2/E13
+   //   M7774/RG2/E19
+   //
 
    assign rpMR = {8'b0, rpDFE, rpECE, 1'b0, rpDDAT, rpDSCK, rpDIND, rpDCLK, rpDMD};
 

@@ -143,7 +143,7 @@ module RPLA (
    wire sect_clk = carry;
 
    //
-   // Create "Maintenance Mode" Sector Extension Counter Clock.
+   // Diagnostic sector clock
    //
 
    wire diag_clk;
