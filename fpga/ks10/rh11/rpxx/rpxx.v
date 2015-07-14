@@ -390,7 +390,10 @@ module RPXX (
                       (rpPAT & rper3WRITE));
 
    //
-   // Class B error
+   // Class B errors
+   //
+   // Note: The header errors are only asserted when performing an operation
+   //  that reads the sector header.
    //
    // Trace
    //  M7774/RG0/E4
@@ -413,14 +416,11 @@ module RPXX (
                     (`rpER1_WLE(rpER1)) |
                     (`rpER1_IAE(rpER1)) |
                     (`rpER1_AOE(rpER1)) |
-                    (`rpER1_HCRC(rpER1) & (rpFUN == `funREADH )) |
-                    (`rpER1_HCRC(rpER1) & (rpFUN == `funWRCHKH)) |
-                    (`rpER1_HCE(rpER1)  & (rpFUN == `funREADH )) |
-                    (`rpER1_HCE(rpER1)  & (rpFUN == `funWRCHKH)) |
+                    (`rpER1_HCRC(rpER1) & ((rpFUN == `funREADH ) | (rpFUN == `funWRCHKH))) |
+                    (`rpER1_HCE(rpER1)  & ((rpFUN == `funREADH ) | (rpFUN == `funWRCHKH))) |
                     (`rpER1_ECH(rpER1)) |
                     (`rpER1_WCF(rpER1)) |
-                    (`rpER1_FER(rpER1)  & (rpFUN == `funREADH )) |
-                    (`rpER1_FER(rpER1)  & (rpFUN == `funWRCHKH)) |
+                    (`rpER1_FER(rpER1)  & ((rpFUN == `funREADH ) | (rpFUN == `funWRCHKH))) |
                     (`rpER1_ILF(rpER1)) |
                     (rpER2 != 0) |
                     (rpER3 != 0));
@@ -650,7 +650,6 @@ module RPXX (
       .rpSETAOE    (rpSETAOE),
       .rpSETATA    (rpSETATA),
       .rpSETDTE    (rpSETDTE),
-      .rpSETIAE    (rpSETIAE),
       .rpSETOPI    (rpSETOPI),
       .rpSETSKI    (rpSETSKI),
       .rpSETWLE    (rpSETWLE),

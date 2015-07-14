@@ -77,7 +77,6 @@ module RPCTRL (
       input  wire         rpSETAOE,             // Set address overflow error
       output reg          rpSETATA,             // Set attenation
       output reg          rpSETDTE,             // Set drive timing error
-      input  wire         rpSETIAE,             // Set invalid address error
       output wire         rpSETOPI,             // Set operation incomplete
       output reg          rpSETSKI,             // Set seek incomplete
       input  wire         rpSETWLE,             // Set write lock error
@@ -369,7 +368,7 @@ module RPCTRL (
                                   rpPIP  <= 1;
                                   if (rpDCA == rpCCA)
                                     state  <= stateDONE;
-                                  else if (!rpSETIAE)
+                                  else
                                     begin
                                        rpSDOP <= `sdopNOP;
                                        tmpCC  <= rpDC;
@@ -411,23 +410,20 @@ module RPCTRL (
 
                              `funSEARCH:
                                begin
-                                  if (!rpSETIAE)
+                                  rpDRY  <= 0;
+                                  rpPIP  <= 0;
+                                  tmpATA <= 1;
+                                  rpSDOP <= `sdopNOP;
+                                  if (rpDCA == rpCCA)
                                     begin
-                                       rpDRY  <= 0;
-                                       rpPIP  <= 0;
-                                       tmpATA <= 1;
-                                       rpSDOP <= `sdopNOP;
-                                       if (rpDCA == rpCCA)
-                                         begin
-                                            delay <= $rtoi(FIXDELAY);
-                                            state <= stateSEARCH;
-                                         end
-                                       else
-                                         begin
-                                            tmpCC <= rpDC;
-                                            delay <= seekDELAY(rpDCA, rpCCA);
-                                            state <= stateSEEKSEARCH;
-                                         end
+                                       delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEARCH;
+                                    end
+                                  else
+                                    begin
+                                       tmpCC <= rpDC;
+                                       delay <= seekDELAY(rpDCA, rpCCA);
+                                       state <= stateSEEKSEARCH;
                                     end
                                end
 
@@ -486,24 +482,21 @@ module RPCTRL (
 
                              `funWRCHK:
                                begin
-                                  if (!rpSETIAE)
+                                  rpDRY  <= 0;
+                                  rpPIP  <= 0;
+                                  tmpATA <= 0;
+                                  rpSDOP <= `sdopWRCHK;
+                                  rpADRSTRT <= 1;
+                                  if (rpDCA == rpCCA)
                                     begin
-                                       rpDRY  <= 0;
-                                       rpPIP  <= 0;
-                                       tmpATA <= 0;
-                                       rpSDOP <= `sdopWRCHK;
-                                       rpADRSTRT <= 1;
-                                       if (rpDCA == rpCCA)
-                                         begin
-                                            delay <= $rtoi(FIXDELAY);
-                                            state <= stateSEARCH;
-                                         end
-                                       else
-                                         begin
-                                            tmpCC <= rpDC;
-                                            delay <= seekDELAY(rpDCA, rpCCA);
-                                            state <= stateSEEKSEARCH;
-                                         end
+                                       delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEARCH;
+                                    end
+                                  else
+                                    begin
+                                       tmpCC <= rpDC;
+                                       delay <= seekDELAY(rpDCA, rpCCA);
+                                       state <= stateSEEKSEARCH;
                                     end
                                end
 
@@ -516,25 +509,22 @@ module RPCTRL (
 
                              `funWRCHKH:
                                begin
-                                  if (!rpSETIAE)
+                                  rpDRY  <= 0;
+                                  rpPIP  <= 0;
+                                  tmpATA <= 0;
+                                  rpSDOP <= `sdopWRCHKH;
+                                  rpADRSTRT <= 1;
+                                  if (rpDCA == rpCCA)
                                     begin
-                                       rpDRY  <= 0;
-                                       rpPIP  <= 0;
-                                       tmpATA <= 0;
-                                       rpSDOP <= `sdopWRCHKH;
-                                       rpADRSTRT <= 1;
-                                       if (rpDCA == rpCCA)
-                                         begin
-                                            delay <= $rtoi(FIXDELAY);
-                                            state <= stateSEARCH;
-                                         end
-                                       else
-                                         begin
-                                            tmpCC <= rpDC;
-                                            delay <= seekDELAY(rpDCA, rpCCA);
-                                            check_ski();
-                                            state <= stateSEEKSEARCH;
-                                         end
+                                       delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEARCH;
+                                    end
+                                  else
+                                    begin
+                                       tmpCC <= rpDC;
+                                       delay <= seekDELAY(rpDCA, rpCCA);
+                                       check_ski();
+                                       state <= stateSEEKSEARCH;
                                     end
                                end
 
@@ -553,25 +543,22 @@ module RPCTRL (
 
                              `funWRITE:
                                begin
-                                  if (!rpSETIAE & !rpSETWLE)
+                                  rpDRY  <= 0;
+                                  rpPIP  <= 0;
+                                  tmpATA <= 0;
+                                  rpSDOP <= `sdopWR;
+                                  rpADRSTRT <= 1;
+                                  if (rpDCA == rpCCA)
                                     begin
-                                       rpDRY  <= 0;
-                                       rpPIP  <= 0;
-                                       tmpATA <= 0;
-                                       rpSDOP <= `sdopWR;
-                                       rpADRSTRT <= 1;
-                                       if (rpDCA == rpCCA)
-                                         begin
-                                            delay <= $rtoi(FIXDELAY);
-                                            state <= stateSEARCH;
-                                         end
-                                       else
-                                         begin
-                                            tmpCC <= rpDC;
-                                            delay <= seekDELAY(rpDCA, rpCCA);
-                                            check_ski();
-                                            state <= stateSEEKSEARCH;
-                                         end
+                                       delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEARCH;
+                                    end
+                                  else
+                                    begin
+                                       tmpCC <= rpDC;
+                                       delay <= seekDELAY(rpDCA, rpCCA);
+                                       check_ski();
+                                       state <= stateSEEKSEARCH;
                                     end
                                end
 
@@ -584,25 +571,22 @@ module RPCTRL (
 
                              `funWRITEH:
                                begin
-                                  if (!rpSETIAE & !rpSETWLE)
+                                  rpDRY  <= 0;
+                                  rpPIP  <= 0;
+                                  rpSDOP <= `sdopWRH;
+                                  tmpATA <= 0;
+                                  rpADRSTRT <= 1;
+                                  if (rpDCA == rpCCA)
                                     begin
-                                       rpDRY  <= 0;
-                                       rpPIP  <= 0;
-                                       rpSDOP <= `sdopWRH;
-                                       tmpATA <= 0;
-                                       rpADRSTRT <= 1;
-                                       if (rpDCA == rpCCA)
-                                         begin
-                                            delay <= $rtoi(FIXDELAY);
-                                            state <= stateSEARCH;
-                                         end
-                                       else
-                                         begin
-                                            tmpCC <= rpDC;
-                                            delay <= seekDELAY(rpDCA, rpCCA);
-                                            check_ski();
-                                            state <= stateSEEKSEARCH;
-                                         end
+                                       delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEARCH;
+                                    end
+                                  else
+                                    begin
+                                       tmpCC <= rpDC;
+                                       delay <= seekDELAY(rpDCA, rpCCA);
+                                       check_ski();
+                                       state <= stateSEEKSEARCH;
                                     end
                                end
 
@@ -621,25 +605,22 @@ module RPCTRL (
 
                              `funREAD:
                                begin
-                                  if (!rpSETIAE)
+                                  rpDRY  <= 0;
+                                  rpPIP  <= 0;
+                                  tmpATA <= 0;
+                                  rpSDOP <= `sdopRD;
+                                  rpADRSTRT <= 1;
+                                  if (rpDCA == rpCCA)
                                     begin
-                                       rpDRY  <= 0;
-                                       rpPIP  <= 0;
-                                       tmpATA <= 0;
-                                       rpSDOP <= `sdopRD;
-                                       rpADRSTRT <= 1;
-                                       if (rpDCA == rpCCA)
-                                         begin
-                                            delay <= $rtoi(FIXDELAY);
-                                            state <= stateSEARCH;
-                                         end
-                                       else
-                                         begin
-                                            tmpCC <= rpDC;
-                                            delay <= seekDELAY(rpDCA, rpCCA);
-                                            check_ski();
-                                            state <= stateSEEKSEARCH;
-                                         end
+                                       delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEARCH;
+                                    end
+                                  else
+                                    begin
+                                       tmpCC <= rpDC;
+                                       delay <= seekDELAY(rpDCA, rpCCA);
+                                       check_ski();
+                                       state <= stateSEEKSEARCH;
                                     end
                                end
 
@@ -652,25 +633,22 @@ module RPCTRL (
 
                              `funREADH:
                                begin
-                                  if (!rpSETIAE)
+                                  rpDRY  <= 0;
+                                  rpPIP  <= 0;
+                                  tmpATA <= 0;
+                                  rpSDOP <= `sdopRDH;
+                                  rpADRSTRT <= 1;
+                                  if (rpDCA == rpCCA)
                                     begin
-                                       rpDRY  <= 0;
-                                       rpPIP  <= 0;
-                                       tmpATA <= 0;
-                                       rpSDOP <= `sdopRDH;
-                                       rpADRSTRT <= 1;
-                                       if (rpDCA == rpCCA)
-                                         begin
-                                            delay <= $rtoi(FIXDELAY);
-                                            state <= stateSEARCH;
-                                         end
-                                       else
-                                         begin
-                                            tmpCC <= rpDC;
-                                            delay <= seekDELAY(rpDCA, rpCCA);
-                                            check_ski();
-                                            state <= stateSEEKSEARCH;
-                                         end
+                                       delay <= $rtoi(FIXDELAY);
+                                       state <= stateSEARCH;
+                                    end
+                                  else
+                                    begin
+                                       tmpCC <= rpDC;
+                                       delay <= seekDELAY(rpDCA, rpCCA);
+                                       check_ski();
+                                       state <= stateSEEKSEARCH;
                                     end
                                end
                            endcase
@@ -807,54 +785,60 @@ module RPCTRL (
 
                     stateSEARCH:
                       begin
-                         if (rpDMD)
-
-                           //
-                           // In diagnostic mode.
-                           //
-                           // The search completes when a diagnostic index pulse
-                           // is detected.
-                           //
-
+                         if (rpCLBERR)
+                           state <= stateDONE;
+                         else
                            begin
-                              if (diag_index)
+                              if (rpDMD)
+                                
+                                //
+                                // In diagnostic mode.
+                                //
+                                // The search completes when a diagnostic index
+                                // pulse is detected.
+                                //
+                                
                                 begin
-                                   if (rpSDOP == `sdopNOP)
-                                     state <= stateDONE;
-                                   else
+                                   if (diag_index)
                                      begin
-                                        bit_cnt <= 0;
-                                        state   <= stateXFERHEADER;
+                                        if (rpSDOP == `sdopNOP)
+                                          state <= stateDONE;
+                                        else
+                                          begin
+                                             bit_cnt <= 0;
+                                             state   <= stateXFERHEADER;
+                                          end
                                      end
                                 end
-                           end
-
-                         else
-
-                           //
-                           // Not in diagnostic mode.
-                           //
-                           // If accurate search is required for diagnostics
-                           // (see DSRPA TEST-302), the search completes when
-                           // the sector under the head (visbile in the RPLA
-                           // register) is the same as the desired sector.  This
-                           // is slow but is very accurate.
-                           //
-                           // If accurate search is not required, the search
-                           // completes after a fixed period of time.   This is
-                           // much faster but fails some diagnostic tests.
-                           //
-
-                           begin
-                              if (simSEARCH ? (rpSA  == rpLAS) : (delay == 0))
-                                begin
-                                   if (rpSDOP == `sdopNOP)
-                                     state <= stateDONE;
-                                   else if (!rpADRBUSY)
-                                     state <= stateDATA;
-                                end
+                              
                               else
-                                delay <= delay - 1'b1;
+                                
+                                //
+                                // Not in diagnostic mode.
+                                //
+                                // If accurate search is required for diagnostics
+                                // (see DSRPA TEST-302), the search completes
+                                // when the sector under the head (visbile in the
+                                // RPLA register) is the same as the desired
+                                // sector.  This is slow but is very accurate.
+                                //
+                                // If accurate search is not required, the search
+                                // completes after a fixed period of time.  This
+                                // is much faster but fails some diagnostic
+                                // tests.
+                                //
+                                
+                                begin
+                                   if (simSEARCH ? (rpSA  == rpLAS) : (delay == 0))
+                                     begin
+                                        if (rpSDOP == `sdopNOP)
+                                          state <= stateDONE;
+                                        else if (!rpADRBUSY)
+                                          state <= stateDATA;
+                                     end
+                                   else
+                                     delay <= delay - 1'b1;
+                                end
                            end
                       end
 
