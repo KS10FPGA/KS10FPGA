@@ -78,7 +78,7 @@ module DZ11 (
       input  wire [ 7: 4] devINTA,              // Interrupt Acknowledge
       // Target
       input  wire         devREQI,              // Device Request In
-      output reg          devACKO,              // Device Acknowledge Out
+      output wire         devACKO,              // Device Acknowledge Out
       input  wire [ 0:35] devADDRI,             // Device Address In
       // Initiator
       output wire         devREQO,              // Device Request Out
@@ -375,38 +375,32 @@ module DZ11 (
    );
 
    //
+   // Generate Bus ACK
+   //
+
+   assign devACKO = (csrREAD  | csrWRITE |
+                     rbufREAD | lprWRITE |
+                     tcrREAD  | tcrWRITE |
+                     msrREAD  | tdrWRITE |
+                     vectREAD);
+
+   //
    // Bus Mux and little-endian to big-endian bus swap.
    //
 
    always @*
      begin
-        devACKO  = 0;
         devDATAO = 36'bx;
         if (csrREAD | csrWRITE)
-          begin
-             devACKO  = 1;
-             devDATAO = {20'b0, regCSR};
-          end
+          devDATAO = {20'b0, regCSR};
         if (rbufREAD | lprWRITE)
-          begin
-             devACKO  = 1;
-             devDATAO = {20'b0, regRBUF};
-          end
+          devDATAO = {20'b0, regRBUF};
         if (tcrREAD | tcrWRITE)
-          begin
-             devACKO  = 1;
-             devDATAO = {20'b0, regTCR};
-          end
+          devDATAO = {20'b0, regTCR};
         if (msrREAD | tdrWRITE)
-          begin
-             devACKO  = 1;
-             devDATAO = {20'b0, regMSR};
-          end
+          devDATAO = {20'b0, regMSR};
         if (vectREAD)
-          begin
-             devACKO  = 1;
-             devDATAO = rxVECTOR ? rxVECT : txVECT;
-          end
+          devDATAO = rxVECTOR ? rxVECT : txVECT;
      end
 
    //
