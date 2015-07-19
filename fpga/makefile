@@ -379,12 +379,12 @@ INC_FILES := \
 	ks10/dz11/dztcr.vh \
 	ks10/dz11/dztdr.vh \
 	ks10/dz11/dzuart.vh \
-	ks10/rh11/rhas.vh \
 	ks10/rh11/rhba.vh \
 	ks10/rh11/rhdb.vh \
 	ks10/rh11/rhwc.vh \
 	ks10/rh11/rhcs1.vh \
 	ks10/rh11/rhcs2.vh \
+	ks10/rh11/rpxx/rpas.vh \
 	ks10/rh11/rpxx/rpcs1.vh \
 	ks10/rh11/rpxx/rpda.vh \
 	ks10/rh11/rpxx/rpcc.vh \
