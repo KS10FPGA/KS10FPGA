@@ -95,104 +95,121 @@ module SD (
    // States
    //
 
-   localparam [7:0] stateRESET   =  0,
+   localparam [7:0] stateRESET    =  0,
                     // Init States
-                    stateINIT00  =  1,
-                    stateINIT01  =  2,
-                    stateINIT02  =  3,
-                    stateINIT03  =  4,
-                    stateINIT04  =  5,
-                    stateINIT05  =  6,
-                    stateINIT06  =  7,
-                    stateINIT07  =  8,
-                    stateINIT08  =  9,
-                    stateINIT09  = 10,
-                    stateINIT10  = 11,
-                    stateINIT11  = 12,
-                    stateINIT12  = 13,
-                    stateINIT13  = 14,
-                    stateINIT14  = 15,
-                    stateINIT15  = 16,
-                    stateINIT16  = 17,
-                    stateINIT17  = 18,
+                    stateINIT00   =  1,
+                    stateINIT01   =  2,
+                    stateINIT02   =  3,
+                    stateINIT03   =  4,
+                    stateINIT04   =  5,
+                    stateINIT05   =  6,
+                    stateINIT06   =  7,
+                    stateINIT07   =  8,
+                    stateINIT08   =  9,
+                    stateINIT09   = 10,
+                    stateINIT10   = 11,
+                    stateINIT11   = 12,
+                    stateINIT12   = 13,
+                    stateINIT13   = 14,
+                    stateINIT14   = 15,
+                    stateINIT15   = 16,
+                    stateINIT16   = 17,
+                    stateINIT17   = 18,
+                    // Read Header States
+                    stateREADH00  = 19,
+                    stateREADH01  = 20,
+                    stateREADH02  = 21,
+                    stateREADH03  = 22,
                     // Read States
-                    stateREAD00  = 19,
-                    stateREAD01  = 20,
-                    stateREAD02  = 21,
-                    stateREAD03  = 22,
-                    stateREAD04  = 23,
-                    stateREAD05  = 24,
-                    stateREAD06  = 25,
-                    stateREAD07  = 26,
-                    stateREAD08  = 27,
-                    stateREAD09  = 28,
-                    stateREAD10  = 29,
-                    stateREAD11  = 30,
-                    stateREAD12  = 31,
-                    stateREAD13  = 32,
-                    stateREAD14  = 33,
-                    stateREAD15  = 34,
-                    stateREAD16  = 35,
-                    stateREAD17  = 36,
+                    stateREAD00   = 23,
+                    stateREAD01   = 24,
+                    stateREAD02   = 25,
+                    stateREAD03   = 26,
+                    stateREAD04   = 27,
+                    stateREAD05   = 28,
+                    stateREAD06   = 29,
+                    stateREAD07   = 30,
+                    stateREAD08   = 31,
+                    stateREAD09   = 32,
+                    stateREAD10   = 33,
+                    stateREAD11   = 34,
+                    stateREAD12   = 35,
+                    stateREAD13   = 36,
+                    stateREAD14   = 37,
+                    stateREAD15   = 38,
+                    stateREAD16   = 39,
+                    stateREAD17   = 40,
+                    // Write header states
+                    stateWRITEH00 = 41,
+                    stateWRITEH01 = 42,
+                    stateWRITEH02 = 43,
+                    stateWRITEH03 = 44,
                     // Write States
-                    stateWRITE00 = 37,
-                    stateWRITE01 = 38,
-                    stateWRITE02 = 39,
-                    stateWRITE03 = 40,
-                    stateWRITE04 = 41,
-                    stateWRITE05 = 42,
-                    stateWRITE06 = 43,
-                    stateWRITE07 = 44,
-                    stateWRITE08 = 45,
-                    stateWRITE09 = 46,
-                    stateWRITE10 = 47,
-                    stateWRITE11 = 48,
-                    stateWRITE12 = 49,
-                    stateWRITE13 = 50,
-                    stateWRITE14 = 51,
-                    stateWRITE15 = 52,
-                    stateWRITE16 = 53,
-                    stateWRITE17 = 54,
-                    stateWRITE18 = 55,
-                    stateWRITE19 = 56,
-                    stateWRITE20 = 57,
-                    stateWRITE21 = 58,
-                    stateWRITE22 = 59,
-                    stateWRITE23 = 60,
-                    stateWRITE24 = 61,
-                    stateWRITE25 = 62,
+                    stateWRITE00  = 45,
+                    stateWRITE01  = 46,
+                    stateWRITE02  = 47,
+                    stateWRITE03  = 48,
+                    stateWRITE04  = 49,
+                    stateWRITE05  = 50,
+                    stateWRITE06  = 51,
+                    stateWRITE07  = 52,
+                    stateWRITE08  = 53,
+                    stateWRITE09  = 54,
+                    stateWRITE10  = 55,
+                    stateWRITE11  = 56,
+                    stateWRITE12  = 57,
+                    stateWRITE13  = 58,
+                    stateWRITE14  = 59,
+                    stateWRITE15  = 60,
+                    stateWRITE16  = 61,
+                    stateWRITE17  = 62,
+                    stateWRITE18  = 63,
+                    stateWRITE19  = 64,
+                    stateWRITE20  = 65,
+                    stateWRITE21  = 66,
+                    stateWRITE22  = 67,
+                    stateWRITE23  = 68,
+                    stateWRITE24  = 69,
+                    stateWRITE25  = 70,
+                    // Write Check Header States
+                    stateWRCHKH00 = 71,
+                    stateWRCHKH01 = 72,
+                    stateWRCHKH02 = 73,
+                    stateWRCHKH03 = 74,
                     // Write Check States
-                    stateWRCHK00 = 63,
-                    stateWRCHK01 = 64,
-                    stateWRCHK02 = 65,
-                    stateWRCHK03 = 66,
-                    stateWRCHK04 = 67,
-                    stateWRCHK05 = 68,
-                    stateWRCHK06 = 69,
-                    stateWRCHK07 = 70,
-                    stateWRCHK08 = 71,
-                    stateWRCHK09 = 72,
-                    stateWRCHK10 = 73,
-                    stateWRCHK11 = 74,
-                    stateWRCHK12 = 75,
-                    stateWRCHK13 = 76,
-                    stateWRCHK14 = 77,
-                    stateWRCHK15 = 78,
-                    stateWRCHK16 = 79,
-                    stateWRCHK17 = 80,
+                    stateWRCHK00  = 75,
+                    stateWRCHK01  = 76,
+                    stateWRCHK02  = 77,
+                    stateWRCHK03  = 78,
+                    stateWRCHK04  = 79,
+                    stateWRCHK05  = 80,
+                    stateWRCHK06  = 81,
+                    stateWRCHK07  = 82,
+                    stateWRCHK08  = 83,
+                    stateWRCHK09  = 84,
+                    stateWRCHK10  = 85,
+                    stateWRCHK11  = 86,
+                    stateWRCHK12  = 87,
+                    stateWRCHK13  = 88,
+                    stateWRCHK14  = 89,
+                    stateWRCHK15  = 90,
+                    stateWRCHK16  = 91,
+                    stateWRCHK17  = 92,
                     // Other States
-                    stateFINI    = 122,
-                    stateACKRP   = 123,
-                    stateIDLE    = 124,
-                    stateDONE    = 125,
-                    stateINFAIL  = 126,
-                    stateRWFAIL  = 127;
+                    stateFINI     = 122,
+                    stateACKRP    = 123,
+                    stateIDLE     = 124,
+                    stateDONE     = 125,
+                    stateINFAIL   = 126,
+                    stateRWFAIL   = 127;
 
    //
    // Temporary read/write data
    //
 
-   reg [0:35] tempDATA;
+   reg [ 0:35] tempDATA;                // Temporary
+   reg [ 0:35] header1;                 // Header word 1
+   reg [ 0:35] header2;                 // Header word 2
 
    //
    // Input from SPI machine
@@ -205,18 +222,18 @@ module SD (
    // State Machine
    //
 
-   reg [ 7:0] sdERR;                    // Error state
-   reg [ 7:0] sdVAL;                    // Error value
-   reg [ 7:0] sdWRCNT;                  // Write counter
-   reg [ 7:0] sdRDCNT;                  // Read counter
-   reg [ 7:0] sdCMD [0:5];              // SD command (6 byte)
-   reg [ 2:0] spiOP;                    // SPI OP
-   reg [ 7:0] spiTXD;                   // SPI transmit data
-   reg [15:0] loopCNT;                  // Byte counter
-   reg        sectCNT;                  // Sector counter (modulo 2)
-   reg [31:0] sectADDR;                 // Sector address
-   reg [23:0] timeout;                  // Timeout
-   reg [ 7:0] state;                    // State
+   reg [ 7: 0] sdERR;                   // Error state
+   reg [ 7: 0] sdVAL;                   // Error value
+   reg [ 7: 0] sdWRCNT;                 // Write counter
+   reg [ 7: 0] sdRDCNT;                 // Read counter
+   reg [ 7: 0] sdCMD [0:5];             // SD command (6 byte)
+   reg [ 2: 0] spiOP;                   // SPI OP
+   reg [ 7: 0] spiTXD;                  // SPI transmit data
+   reg [15: 0] loopCNT;                 // Byte counter
+   reg         sectCNT;                 // Sector counter (modulo 2)
+   reg [31: 0] sectADDR;                // Sector address
+   reg [23: 0] timeout;                 // Timeout
+   reg [ 7: 0] state;                   // State
 
    always @(posedge clk or posedge rst)
      begin
@@ -246,6 +263,9 @@ module SD (
              sectCNT   <= 0;
              sectADDR  <= 0;
              loopCNT   <= 0;
+             tempDATA  <= 0;
+             header1   <= 0;
+             header2   <= 0;
              timeout   <= nTIM;
              state     <= stateRESET;
           end
@@ -277,6 +297,8 @@ module SD (
                sectADDR  <= 0;
                loopCNT   <= 0;
                tempDATA  <= 0;
+               header1   <= 0;
+               header2   <= 0;
                timeout   <= nTIM;
                state     <= stateRESET;
             end
@@ -317,6 +339,8 @@ module SD (
                  stateRESET:
                    begin
                       tempDATA <= 0;
+                      header1  <= 0;
+                      header2  <= 0;
                       timeout  <= nTIM;
                       loopCNT  <= 0;
                       state    <= stateINIT00;
@@ -352,7 +376,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT01:
+                 // stateINIT01
                  //  Send GO_IDLE_STATE command (CMD0)
                  //
 
@@ -374,7 +398,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT02:
+                 // stateINIT02
                  //  Read R1 Response from CMD0
                  //  Response should be 8'h01
                  //
@@ -417,7 +441,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT03:
+                 // stateINIT03
                  //  Send 8 clock cycles
                  //
 
@@ -445,7 +469,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT04:
+                 // stateINIT04
                  //   Send SEND_IF_COND (CMD8)
                  //
 
@@ -596,7 +620,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT07:
+                 // stateINIT07
                  //  Send 8 clock cycles
                  //
 
@@ -624,7 +648,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT08:
+                 // stateINIT08
                  //   Send APP_CMD (CMD55)
                  //
 
@@ -648,7 +672,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT09:
+                 // stateINIT09
                  //  Read R1 response from CMD55.
                  //  Response should be 8'h01
                  //
@@ -690,7 +714,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT10:
+                 // stateINIT10
                  //  Send 8 clock cycles
                  //
 
@@ -718,7 +742,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT11:
+                 // stateINIT11
                  //  Send SD_SEND_OP_COND (ACMD41)
                  //
 
@@ -740,7 +764,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT12:
+                 // stateINIT12
                  //  Read R1 response from ACMD41.
                  //  Response should be 8'h00
                  //
@@ -818,7 +842,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT14:
+                 // stateINIT14
                  //  Send READ_OCR (CMD58)
                  //
 
@@ -936,7 +960,7 @@ module SD (
                    end
 
                  //
-                 // stateINIT17:
+                 // stateINIT17
                  //  Send 8 clock cycles
                  //
 
@@ -964,7 +988,7 @@ module SD (
                    end
 
                  //
-                 // stateIDLE:
+                 // stateIDLE
                  //  Wait for a command to process.
                  //  Once the SD card is initialized, it waits in this state
                  //  for either a read (sdopRD) or a write (sdopWR) command.
@@ -1012,11 +1036,10 @@ module SD (
                                sectCNT  <= 0;
                                sectADDR <= {8'b0, sdSCAN, rpSDLSA};
                                sdRDCNT  <= sdRDCNT + 1'b1;
-                               state    <= stateREAD00;
+                               state    <= stateREADH00;
 `ifndef SYNTHESIS
                                $fwrite(file, "[%11.3f] RH11: SD Controller received a Read Header Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
                                $fwrite(file, "[%11.3f] RH11: SD Sector Address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
-                               $fwrite(file, "[%11.3f] RH11: Read Header command is not implemented.\n", $time/1.0e3);
                                $fflush(file);
 `endif
                             end
@@ -1049,11 +1072,10 @@ module SD (
                                sectCNT  <= 0;
                                sectADDR <= {8'b0, sdSCAN, rpSDLSA};
                                sdWRCNT  <= sdWRCNT + 1'b1;
-                               state    <= stateWRITE00;
+                               state    <= stateWRITEH00;
 `ifndef SYNTHESIS
                                $fwrite(file, "[%11.3f] RH11: SD Controller received a Write Header Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
                                $fwrite(file, "[%11.3f] RH11: SD Sector Address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
-                               $fwrite(file, "[%11.3f] RH11: Write Header Command is not implemented.\n", $time/1.0e3);
                                $fflush(file);
 `endif
                             end
@@ -1086,11 +1108,10 @@ module SD (
                                sectCNT  <= 0;
                                sectADDR <= {8'b0, sdSCAN, rpSDLSA};
                                sdRDCNT  <= sdRDCNT + 1'b1;
-                               state    <= stateWRCHK00;
+                               state    <= stateWRCHKH00;
 `ifndef SYNTHESIS
                                $fwrite(file, "[%11.3f] RH11: SD Controller received a Write Check Header Command from RPXX[%d].\n", $time/1.0e3, sdSCAN);
                                $fwrite(file, "[%11.3f] RH11: SD Sector Address is 0x%08x\n", $time/1.0e3, {8'b0, sdSCAN, rpSDLSA});
-                               $fwrite(file, "[%11.3f] RH11: Write Check Header command is not implemented.\n", $time/1.0e3);
                                $fflush(file);
 `endif
                             end
@@ -1103,7 +1124,65 @@ module SD (
                    end
 
                  //
-                 // stateREAD00:
+                 // stateREADH00
+                 //  Read the first word of the sector header
+                 //
+
+                 stateREADH00:
+                   begin
+                      devREQO  <= 1;
+                      devDATAO <= header1;
+                      state    <= stateREADH01;
+                   end
+
+                 //
+                 // stateREADH01
+                 //  Store the first word of the sector header
+                 //
+
+                 stateREADH01:
+                   begin
+                      if (devACKI)
+                        begin
+                           sdINCBA <= 1;
+                           sdINCWC <= (rhWC != 0);
+                           state   <= stateREADH02;
+                        end
+                      else
+                        devREQO <= 1;
+                   end
+
+                 //
+                 // stateREADH02
+                 //  Read the second word of the sector header
+                 //
+
+                 stateREADH02:
+                   begin
+                      devREQO  <= 1;
+                      devDATAO <= header2;
+                      state    <= stateREADH03;
+                   end
+
+                 //
+                 // stateREADH03
+                 //  Store the second word of the sector header
+                 //
+
+                 stateREADH03:
+                   begin
+                      if (devACKI)
+                        begin
+                           sdINCBA <= 1;
+                           sdINCWC <= (rhWC != 0);
+                           state   <= stateREAD00;
+                        end
+                      else
+                        devREQO <= 1;
+                   end
+
+                 //
+                 // stateREAD00
                  //  Setup Read Single Block (CMD17)
                  //  This is a loop destination
                  //
@@ -1122,7 +1201,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD01:
+                 // stateREAD01
                  //  Send Read Single Block (CMD17)
                  //
 
@@ -1143,7 +1222,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD02:
+                 // stateREAD02
                  //  Read R1 response from CMD17
                  //  Response should be 8'h00
                  //
@@ -1189,7 +1268,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD03:
+                 // stateREAD03
                  //  Find 'Read Start token' which should be 8'hfe
                  //
 
@@ -1240,7 +1319,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD04:
+                 // stateREAD04
                  //  Read byte[0] of data from disk. (LS Byte)
                  //  This is a loop destination
                  //
@@ -1257,7 +1336,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD05:
+                 // stateREAD05
                  //  Read byte[1] of data from disk.
                  //
 
@@ -1273,7 +1352,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD06:
+                 // stateREAD06
                  //  Read byte[2] of data from disk.
                  //
 
@@ -1289,7 +1368,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD07:
+                 // stateREAD07
                  //  Read byte[3] of data from disk.
                  //
 
@@ -1305,7 +1384,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD08:
+                 // stateREAD08
                  //  Read byte[4] of data from disk.  (MS Nibble)
                  //  The MS bits are discarded.
                  //
@@ -1322,7 +1401,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD09:
+                 // stateREAD09
                  //  Read byte[5] of data from disk.
                  //  This byte is discarded.
                  //
@@ -1338,7 +1417,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD10:
+                 // stateREAD10
                  //  Read byte[6] of data from disk.
                  //  This byte is discarded.
                  //
@@ -1347,14 +1426,14 @@ module SD (
                    begin
                       if (spiDONE)
                         begin
-                           spiOP    <= `spiTR;
-                           spiTXD   <= 8'hff;
-                           state    <= stateREAD11;
+                           spiOP  <= `spiTR;
+                           spiTXD <= 8'hff;
+                           state  <= stateREAD11;
                         end
                    end
 
                  //
-                 // stateREAD11:
+                 // stateREAD11
                  //  Read byte[7] of data from disk.  This byte is discarded.
                  //
 
@@ -1369,7 +1448,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD12:
+                 // stateREAD12
                  //  Write disk data to memory.
                  //
 
@@ -1386,7 +1465,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD13:
+                 // stateREAD13
                  //  Determine if we are done reading the SD Sector.
                  //
 
@@ -1408,7 +1487,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD14:
+                 // stateREAD14
                  //  Read and discard first byte of CRC.
                  //
 
@@ -1423,7 +1502,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD15:
+                 // stateREAD15
                  //  Read and discard second byte of CRC
                  //  Determine if we are done reading from the device.
                  //
@@ -1435,9 +1514,10 @@ module SD (
                            spiOP <= `spiCSH;
                            if (sectCNT & (rhWC == 0))
                              begin
-                                loopCNT <= 0;
-                                sectCNT <= 0;
-                                state   <= stateFINI;
+                                sdINCSECT <= sectCNT;
+                                sectCNT   <= 0;
+                                loopCNT   <= 0;
+                                state     <= stateFINI;
                              end
                            else
                              begin
@@ -1450,7 +1530,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD16:
+                 // stateREAD16
                  //
                  // Negate sdINCSECT
                  //
@@ -1461,7 +1541,7 @@ module SD (
                    end
 
                  //
-                 // stateREAD17:
+                 // stateREAD17
                  //
                  // Abort if RPXX has errors.   Specifically RPER1[AOE].
                  //
@@ -1478,7 +1558,66 @@ module SD (
                         end
                    end
 
-                 // stateWRITE00:
+                 //
+                 // stateWRITEH00
+                 //  Read first word of sector header from memory
+                 //
+
+                 stateWRITEH00:
+                   begin
+                      devREQO <= 1;
+                      state   <= stateWRITEH01;
+                   end
+
+                 //
+                 // stateWRITEH01
+                 //  Save the first word of the sector header
+                 //
+
+                 stateWRITEH01:
+                   begin
+                      if (devACKI)
+                        begin
+                           sdINCBA <= 1;
+                           sdINCWC <= (rhWC != 0);
+                           header1 <= devDATAI;
+                           state   <= stateWRITEH02;
+                        end
+                      else
+                        devREQO <= 1;
+                   end
+
+                 //
+                 // stateWRITEH02
+                 //  Read second word of sector header from memory
+                 //
+
+                 stateWRITEH02:
+                   begin
+                      devREQO <= 1;
+                      state   <= stateWRITEH03;
+                   end
+
+                 //
+                 // stateWRITEH03
+                 //  Save the second word of the sector header
+                 //
+
+                 stateWRITEH03:
+                   begin
+                      if (devACKI)
+                        begin
+                           sdINCBA <= 1;
+                           sdINCWC <= (rhWC != 0);
+                           header2 <= devDATAI;
+                           state   <= stateWRITE00;
+                        end
+                      else
+                        devREQO <= 1;
+                   end
+
+                 //
+                 // stateWRITE00
                  //  Setup Write Single Block (CMD24)
                  //  This is a loop destination
                  //
@@ -1497,7 +1636,7 @@ module SD (
                    end
 
                  //
-                 // stateWRITE01:
+                 // stateWRITE01
                  //  Send Write Single Block (CMD24)
                  //
 
@@ -1518,7 +1657,7 @@ module SD (
                    end
 
                  //
-                 // stateWRITE02:
+                 // stateWRITE02
                  //  Read R1 response from CMD24
                  //  Response should be 8'h00
                  //
@@ -1566,7 +1705,7 @@ module SD (
                    end
 
                  //
-                 // stateWRITE03:
+                 // stateWRITE03
                  //  Send 8 clock cycles
                  //
 
@@ -1586,7 +1725,7 @@ module SD (
                    end
 
                  //
-                 // stateWRITE04:
+                 // stateWRITE04
                  //  Send Write Start Token.  The write start token is 8'hfe.
                  //
 
@@ -1606,7 +1745,7 @@ module SD (
                    end
 
                  //
-                 // stateWRITE05:
+                 // stateWRITE05
                  //  If RHWC is zero, we are done reading data - just write zero
                  //  to the disk.  Otherwise begin a DMA read cycle.
                  //  This is a loop destination
@@ -1627,7 +1766,7 @@ module SD (
                    end
 
                  //
-                 // stateWRITE06:
+                 // stateWRITE06
                  //  Read data from memory.
                  //
 
@@ -1643,7 +1782,7 @@ module SD (
                    end
 
                  //
-                 // stateWRITE07:
+                 // stateWRITE07
                  //  Write byte[0] of data to disk.  (LS Byte)
                  //
 
@@ -1657,99 +1796,113 @@ module SD (
                    end
 
                  //
-                 // stateWRITE08:
+                 // stateWRITE08
                  //  Write byte[1] of data to disk.
                  //
 
                  stateWRITE08:
-                   if (spiDONE)
-                     begin
-                        spiOP  <= `spiTR;
-                        spiTXD <= tempDATA[20:27];
-                        state  <= stateWRITE09;
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP  <= `spiTR;
+                           spiTXD <= tempDATA[20:27];
+                           state  <= stateWRITE09;
+                        end
+                   end
 
                  //
-                 // stateWRITE09:
+                 // stateWRITE09
                  //  Write byte[2] of data to disk.
                  //
 
                  stateWRITE09:
-                   if (spiDONE)
-                     begin
-                        spiOP  <= `spiTR;
-                        spiTXD <= tempDATA[12:19];
-                        state  <= stateWRITE10;
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP  <= `spiTR;
+                           spiTXD <= tempDATA[12:19];
+                           state  <= stateWRITE10;
+                        end
+                   end
 
                  //
-                 // stateWRITE10:
+                 // stateWRITE10
                  //  Write byte[3] of data to disk.
                  //
 
                  stateWRITE10:
-                   if (spiDONE)
-                     begin
-                        spiOP  <= `spiTR;
-                        spiTXD <= tempDATA[4:11];
-                        state  <= stateWRITE11;
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP  <= `spiTR;
+                           spiTXD <= tempDATA[4:11];
+                           state  <= stateWRITE11;
+                        end
+                   end
 
                  //
-                 // stateWRITE11:
+                 // stateWRITE11
                  //  Write byte[4] of data to disk.  (MS Nibble)
                  //  The MS bits are zero.
                  //
 
                  stateWRITE11:
-                   if (spiDONE)
-                     begin
-                        spiOP  <= `spiTR;
-                        spiTXD <= {4'b0, tempDATA[0:3]};
-                        state  <= stateWRITE12;
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP  <= `spiTR;
+                           spiTXD <= {4'b0, tempDATA[0:3]};
+                           state  <= stateWRITE12;
+                        end
+                   end
 
                  //
-                 // stateWRITE12:
+                 // stateWRITE12
                  //  Write byte[5] of data to disk.  (Always zero)
                  //
 
                  stateWRITE12:
-                   if (spiDONE)
-                     begin
-                        spiOP  <= `spiTR;
-                        spiTXD <= 0;
-                        state  <= stateWRITE13;
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP  <= `spiTR;
+                           spiTXD <= 0;
+                           state  <= stateWRITE13;
+                        end
+                   end
 
                  //
-                 // stateWRITE13:
+                 // stateWRITE13
                  //  Write byte[6] of data to disk.  (Always zero)
                  //
 
                  stateWRITE13:
-                   if (spiDONE)
-                     begin
-                        spiOP  <= `spiTR;
-                        spiTXD <= 0;
-                        state  <= stateWRITE14;
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP  <= `spiTR;
+                           spiTXD <= 0;
+                           state  <= stateWRITE14;
+                        end
+                   end
 
                  //
-                 // stateWRITE14:
+                 // stateWRITE14
                  //  Write byte[7] of data to disk.  (Always zero)
                  //
 
                  stateWRITE14:
-                   if (spiDONE)
-                     begin
-                        spiOP  <= `spiTR;
-                        spiTXD <= 0;
-                        state <= stateWRITE15;
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP  <= `spiTR;
+                           spiTXD <= 0;
+                           state <= stateWRITE15;
+                        end
+                   end
 
                  //
-                 // stateWRITE15:
+                 // stateWRITE15
                  //  Determine if we are done writing the SD Sector.
                  //
 
@@ -1772,33 +1925,37 @@ module SD (
                    end
 
                  //
-                 // stateWRITE16:
+                 // stateWRITE16
                  //  Write first CRC byte
                  //
 
                  stateWRITE16:
-                   if (spiDONE)
-                     begin
-                        spiOP   <= `spiTR;
-                        spiTXD  <= 8'hff;
-                        state   <= stateWRITE17;
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP  <= `spiTR;
+                           spiTXD <= 8'hff;
+                           state  <= stateWRITE17;
+                        end
+                   end
 
                  //
-                 // stateWRITE17:
+                 // stateWRITE17
                  //  Write second CRC byte
                  //
 
                  stateWRITE17:
-                   if (spiDONE)
-                     begin
-                        spiOP   <= `spiTR;
-                        spiTXD  <= 8'hff;
-                        state   <= stateWRITE18;
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP  <= `spiTR;
+                           spiTXD <= 8'hff;
+                           state  <= stateWRITE18;
+                        end
+                   end
 
                  //
-                 // stateWRITE18:
+                 // stateWRITE18
                  //  Read Data Response.  The response is is one byte long
                  //   and has the following format:
                  //
@@ -1811,27 +1968,29 @@ module SD (
                  //
 
                  stateWRITE18:
-                   if (spiDONE)
-                     begin
-                        if (spiRXD[4:0] == 5'b0_010_1)
-                          begin
-                             spiOP   <= `spiTR;
-                             spiTXD  <= 8'hff;
-                             loopCNT <= 0;
-                             state   <= stateWRITE19;
-                          end
-                        else
-                          begin
-                             spiOP   <= `spiCSH;
-                             sdVAL   <= spiRXD;
-                             sdERR   <= 18;
-                             loopCNT <= 0;
-                             state   <= stateRWFAIL;
-                          end
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           if (spiRXD[4:0] == 5'b0_010_1)
+                             begin
+                                spiOP   <= `spiTR;
+                                spiTXD  <= 8'hff;
+                                loopCNT <= 0;
+                                state   <= stateWRITE19;
+                             end
+                           else
+                             begin
+                                spiOP   <= `spiCSH;
+                                sdVAL   <= spiRXD;
+                                sdERR   <= 18;
+                                loopCNT <= 0;
+                                state   <= stateRWFAIL;
+                             end
+                        end
+                   end
 
                  //
-                 // stateWRITE19:
+                 // stateWRITE19
                  //  Wait for busy token to clear.   The disk reports
                  //  all zeros while the write is occurring.
                  //
@@ -1867,7 +2026,7 @@ module SD (
                    end
 
                  //
-                 // stateWRITE20:
+                 // stateWRITE20
                  //  Send Send Status Command (CMD13)
                  //
 
@@ -1890,7 +2049,7 @@ module SD (
                    end
 
                  //
-                 // stateWRITE21:
+                 // stateWRITE21
                  //  Check first byte of CMD13 response
                  //  Status:
                  //   Bit 0: Zero
@@ -1938,7 +2097,7 @@ module SD (
                    end
 
                  //
-                 // stateWRITE22:
+                 // stateWRITE22
                  //  Check second byte of CMD13 response
                  //  Status:
                  //   Bit 0: Out of range
@@ -1971,32 +2130,35 @@ module SD (
                    end
 
                  //
-                 // stateWRITE23:
+                 // stateWRITE23
                  //  Send 8 clock cycles.   Pull CS High.
                  //  Determine if we are done writing to the device.
                  //
 
                  stateWRITE23:
-                   if (spiDONE)
-                     begin
-                        spiOP <= `spiCSH;
-                        if (sectCNT & (rhWC == 0))
-                          begin
-                             loopCNT <= 0;
-                             sectCNT <= 0;
-                             state   <= stateFINI;
-                          end
-                        else
-                          begin
-                             sdINCSECT <= sectCNT;
-                             sectCNT   <= !sectCNT;
-                             sectADDR  <= sectADDR + 1'b1;
-                             state     <= stateWRITE24;
-                          end
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP <= `spiCSH;
+                           if (sectCNT & (rhWC == 0))
+                             begin
+                                sdINCSECT <= sectCNT;
+                                sectCNT   <= 0;
+                                loopCNT   <= 0;
+                                state     <= stateFINI;
+                             end
+                           else
+                             begin
+                                sdINCSECT <= sectCNT;
+                                sectCNT   <= !sectCNT;
+                                sectADDR  <= sectADDR + 1'b1;
+                                state     <= stateWRITE24;
+                             end
+                        end
+                   end
 
                  //
-                 // stateWRITE24:
+                 // stateWRITE24
                  //
                  // Negate sdINCSECT
                  //
@@ -2007,7 +2169,7 @@ module SD (
                    end
 
                  //
-                 // stateWRITE25:
+                 // stateWRITE25
                  //
                  // Abort if RPXX has errors.   Specifically RPER1[AOE].
                  //
@@ -2025,7 +2187,67 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK00:
+                 // stateWRCHKH00
+                 //  Read the first word of the sector header
+                 //
+
+                 stateWRCHKH00:
+                   begin
+                      devREQO  <= 1;
+                      devDATAO <= header1;
+                      state    <= stateWRCHKH01;
+                   end
+
+                 //
+                 // stateWRCHKH01
+                 //  Check the first word of the sector header
+                 //
+
+                 stateWRCHKH01:
+                   begin
+                      if (devACKI)
+                        begin
+                           sdINCBA  <= 1;
+                           sdINCWC  <= (rhWC != 0);
+                           sdSETWCE <= (header1 != devDATAI);
+                           state    <= stateWRCHKH02;
+                        end
+                      else
+                        devREQO <= 1;
+                   end
+
+                 //
+                 // stateWRCHKH02
+                 //  Read the second word of the sector header
+                 //
+
+                 stateWRCHKH02:
+                   begin
+                      devREQO  <= 1;
+                      devDATAO <= header1;
+                      state    <= stateWRCHKH03;
+                   end
+
+                 //
+                 // stateWRCHKH03
+                 //  Check the second word of the sector header
+                 //
+
+                 stateWRCHKH03:
+                   begin
+                      if (devACKI)
+                        begin
+                           sdINCBA  <= 1;
+                           sdINCWC  <= (rhWC != 0);
+                           sdSETWCE <= (header1 != devDATAI);
+                           state    <= stateWRCHK00;
+                        end
+                      else
+                        devREQO <= 1;
+                   end
+
+                 //
+                 // stateWRCHK00
                  //  Setup Read Single Block (CMD17) - (same as stateRD00)
                  //
 
@@ -2043,7 +2265,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK01:
+                 // stateWRCHK01
                  //  Send Read Single Block (CMD17)
                  //
 
@@ -2064,7 +2286,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK02:
+                 // stateWRCHK02
                  //  Read R1 response from CMD17
                  //  Response should be 8'h00
                  //
@@ -2110,7 +2332,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK03:
+                 // stateWRCHK03
                  //  Find 'Read Start token' which should be 8'hfe
                  //
 
@@ -2161,7 +2383,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK04:
+                 // stateWRCHK04
                  //  Read byte[0] of data from disk. (LS Byte)
                  //  This is a loop destination
                  //
@@ -2178,7 +2400,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK05:
+                 // stateWRCHK05
                  //  Read byte[1] of data from disk.
                  //
 
@@ -2194,7 +2416,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK06:
+                 // stateWRCHK06
                  //  Read byte[2] of data from disk.
                  //
 
@@ -2210,7 +2432,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK07:
+                 // stateWRCHK07
                  //  Read byte[3] of data from disk.
                  //
 
@@ -2226,7 +2448,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK08:
+                 // stateWRCHK08
                  //  Read byte[4] of data from disk.  (MS Nibble)
                  //  The MS bits are discarded.
                  //
@@ -2243,7 +2465,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK09:
+                 // stateWRCHK09
                  //  Read byte[5] of data from disk.
                  //  This byte is discarded.
                  //
@@ -2259,7 +2481,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK10:
+                 // stateWRCHK10
                  //  Read byte[6] of data from disk.
                  //  This byte is discarded.
                  //
@@ -2275,7 +2497,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK11:
+                 // stateWRCHK11
                  //  Read byte[7] of data from disk.  This byte is discarded.
                  //  Determine if we will be doing a write check comparison.
                  //
@@ -2295,7 +2517,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK12:
+                 // stateWRCHK12
                  //  Read data from memory.  Check the data against the disk.
                  //
 
@@ -2311,7 +2533,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK13:
+                 // stateWRCHK13
                  //  Determine if we are done reading the SD Sector.
                  //
 
@@ -2335,45 +2557,50 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK14:
+                 // stateWRCHK14
                  //  Read and discard first byte of CRC.
                  //
 
                  stateWRCHK14:
-                   if (spiDONE)
-                     begin
-                        spiOP  <= `spiTR;
-                        spiTXD <= 8'hff;
-                        state  <= stateWRCHK15;
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP  <= `spiTR;
+                           spiTXD <= 8'hff;
+                           state  <= stateWRCHK15;
+                        end
+                   end
 
                  //
-                 // stateWRCHK15:
+                 // stateWRCHK15
                  //  Read and discard second byte of CRC
                  //  Determine if we are done reading from the device.
                  //
 
                  stateWRCHK15:
-                   if (spiDONE)
-                     begin
-                        spiOP <= `spiCSH;
-                        if (sectCNT & (rhWC == 0))
-                          begin
-                             loopCNT <= 0;
-                             sectCNT <= 0;
-                             state   <= stateFINI;
-                          end
-                        else
-                          begin
-                             sdINCSECT <= sectCNT;
-                             sectCNT   <= !sectCNT;
-                             sectADDR  <= sectADDR + 1'b1;
-                             state     <= stateWRCHK16;
-                          end
-                     end
+                   begin
+                      if (spiDONE)
+                        begin
+                           spiOP <= `spiCSH;
+                           if (sectCNT & (rhWC == 0))
+                             begin
+                                sdINCSECT <= sectCNT;
+                                sectCNT   <= 0;
+                                loopCNT   <= 0;
+                                state     <= stateFINI;
+                             end
+                           else
+                             begin
+                                sdINCSECT <= sectCNT;
+                                sectCNT   <= !sectCNT;
+                                sectADDR  <= sectADDR + 1'b1;
+                                state     <= stateWRCHK16;
+                             end
+                        end
+                   end
 
                  //
-                 // stateWRCHK16:
+                 // stateWRCHK16
                  //
                  // Negate sdINCSECT
                  //
@@ -2384,7 +2611,7 @@ module SD (
                    end
 
                  //
-                 // stateWRCHK17:
+                 // stateWRCHK17
                  //
                  // Abort if RPXX has errors.   Specifically RPER1[AOE].
                  //
@@ -2402,7 +2629,7 @@ module SD (
                    end
 
                  //
-                 // stateFINI:
+                 // stateFINI
                  //  Send 8 clock cycles
                  //
 
@@ -2422,7 +2649,7 @@ module SD (
                    end
 
                  //
-                 // stateDONE:
+                 // stateDONE
                  //  Acknowledge the RPxx that just completed.
                  //
 
@@ -2451,7 +2678,7 @@ module SD (
                    end
 
                  //
-                 // stateINFAIL:
+                 // stateINFAIL
                  //  Initialization failed somehow.
                  //
 
@@ -2461,7 +2688,7 @@ module SD (
                    end
 
                  //
-                 // stateRWFAIL:
+                 // stateRWFAIL
                  //  Read or Write failed somehow.
                  //
 

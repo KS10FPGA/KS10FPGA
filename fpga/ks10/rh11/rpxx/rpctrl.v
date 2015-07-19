@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
@@ -125,7 +124,7 @@ module RPCTRL (
            end
 `endif
       end
-   endtask;
+   endtask
 
    //
    // Function to calculate disk seek delay.  This is psudeo exponential.
@@ -790,14 +789,14 @@ module RPCTRL (
                          else
                            begin
                               if (rpDMD)
-                                
+
                                 //
                                 // In diagnostic mode.
                                 //
                                 // The search completes when a diagnostic index
                                 // pulse is detected.
                                 //
-                                
+
                                 begin
                                    if (diag_index)
                                      begin
@@ -810,9 +809,9 @@ module RPCTRL (
                                           end
                                      end
                                 end
-                              
+
                               else
-                                
+
                                 //
                                 // Not in diagnostic mode.
                                 //
@@ -827,7 +826,7 @@ module RPCTRL (
                                 // is much faster but fails some diagnostic
                                 // tests.
                                 //
-                                
+
                                 begin
                                    if (simSEARCH ? (rpSA  == rpLAS) : (delay == 0))
                                      begin

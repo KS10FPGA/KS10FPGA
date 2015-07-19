@@ -3,10 +3,10 @@
 // KS-10 Processor
 //
 // Brief
-//   RHAS definitions
+//   RPAS definitions
 //
 // File
-//   rhas.vh
+//   rpas.vh
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -35,13 +35,21 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifndef __RHAS_VH
-`define __RHAS_VH
+`ifndef __RPAS_VH
+`define __RPAS_VH
 
 //
-// RHAS Register Bits
+// RPAS Register Bits
 //
 
-`define rhAS_AS(reg)  (reg[ 7:0])       // Attention Summary
+`define rpAS_AS(reg)   (reg[7:0])      // Attention Summary
+`define rpAS_ATA7(reg) (reg[7])        // ATA 7
+`define rpAS_ATA6(reg) (reg[6])        // ATA 6
+`define rpAS_ATA5(reg) (reg[5])        // ATA 5
+`define rpAS_ATA4(reg) (reg[4])        // ATA 4
+`define rpAS_ATA3(reg) (reg[3])        // ATA 3
+`define rpAS_ATA2(reg) (reg[2])        // ATA 2
+`define rpAS_ATA1(reg) (reg[1])        // ATA 1
+`define rpAS_ATA0(reg) (reg[0])        // ATA 0
 
 `endif

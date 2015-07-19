@@ -46,7 +46,7 @@ module RPDS (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       input  wire         clr,                  // Clr
-      input  wire         rhATACLR,             // ATA clr
+      input  wire         rpCLRATA,             // ATA clr
       input  wire         rpSETLST,             // Last sector transferred
       input  wire         rpSETATA,             // Set ATA
       input  wire         rpGO,                 // Go command
@@ -63,6 +63,34 @@ module RPDS (
       input  wire [15: 0] rpER3,                // rpER3 register
       output wire [15: 0] rpDS                  // rpDS register
    );
+
+   //
+   // Watch for transitions of rpCD
+   //
+
+   reg lastCD;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          lastCD <= 0;
+        else
+          lastCD <= rpCD;
+     end
+
+   //
+   // MOL is asserted when disk transitions to on-line or
+   // transitions to off-line
+   //
+
+   wire rpSETMOL = (rpCD != lastCD);
+
+   //
+   // VV is cleared when the disk transitions to online
+   // from off-line
+   //
+
+   wire rpCLRVV  = rpCD & !lastCD;
 
    //
    // RPDS Attention (rpATA)
@@ -89,7 +117,7 @@ module RPDS (
         if (rst)
           dsATA <= 0;
         else
-          if (clr | rhATACLR | rpDRVCLR)
+          if (clr | rpCLRATA | rpDRVCLR)
             dsATA <= 0;
           else if (rpSETATA | rpSETMOL | (rpGO & dsERR))
             dsATA <= 1;
@@ -134,18 +162,7 @@ module RPDS (
    //  M7774/RG6/E23
    //
 
-   reg lastMOL;
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          lastMOL <= 0;
-        else
-          lastMOL <= rpCD;
-     end
-
    wire dsMOL = rpCD;
-   wire rpSETMOL = dsMOL & !lastMOL;
 
    //
    // RPDS Write Lock (rpWRL)
@@ -224,14 +241,20 @@ module RPDS (
         if (rst)
           dsVV <= 0;
         else
-          if (clr | !rpCD)
+          if (rpCLRVV)
             dsVV <= 0;
-          else if (rpCD & (rpPRESET | rpPAKACK))
+          else if (rpPRESET | rpPAKACK)
             dsVV <= 1;
      end
 
    //
    // Build RPDS
+   //
+   // Trace
+   //  M7774/RG6/E16
+   //  M7774/RG6/E22
+   //  M7774/RG6/E23
+   //  M7774/RG6/E27
    //
 
    assign rpDS = {dsATA, dsERR, dsPIP, dsMOL, dsWRL, dsLST,

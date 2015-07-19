@@ -50,7 +50,6 @@
 `timescale 1ns/1ps
 
 `include "rh11.vh"
-`include "rhas.vh"
 `include "rhcs1.vh"
 `include "rhcs2.vh"
 `include "rpxx/rpcs1.vh"
@@ -199,8 +198,8 @@ module RH11 (
    wire rpdsWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dsADDR[18:34]);
    wire rper1READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
    wire rper1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
-   wire rhasREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
-   wire rhasWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
+   wire rpasREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
+   wire rpasWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
 
    wire rplaREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
    wire rplaWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
@@ -329,16 +328,10 @@ module RH11 (
    wire [2:0] rhUNIT = `rhCS2_UNIT(rhCS2);
 
    //
-   // Attention Clear
+   // RH11 Attention Summary (RPAS) Register
    //
 
-   wire [ 7:0] rhATACLR = (rhasWRITE) ? `rhAS_AS(rhDATAI) : 8'b0;
-
-   //
-   // RH11 Attention Summary (RHAS) Register
-   //
-
-   wire [15:0] rhAS = {8'b0,
+   wire [15:0] rpAS = {8'b0,
                        `rpDS_ATA(rpDS[7]), `rpDS_ATA(rpDS[6]),
                        `rpDS_ATA(rpDS[5]), `rpDS_ATA(rpDS[4]),
                        `rpDS_ATA(rpDS[3]), `rpDS_ATA(rpDS[2]),
@@ -366,10 +359,10 @@ module RH11 (
    // RPXX Status
    //
 
-   wire       rpERR = rpDS [rhUNIT][14];
-   wire       rpDVA = rpCS1[rhUNIT][11];
-   wire [5:1] rpFUN = rpCS1[rhUNIT][5:1];
-   wire       rpGO  = rpCS1[rhUNIT][0];
+   wire       rpERR = `rpDS_ERR(rpDS[rhUNIT]);
+   wire       rpDVA = `rpCS1_DVA(rpCS1[rhUNIT]);
+   wire [5:1] rpFUN = `rpCS1_FUN(rpCS1[rhUNIT]);
+   wire       rpGO  = `rpCS1_GO(rpCS1[rhUNIT]);
 
    //
    // RPXX Serial Number Registes
@@ -618,10 +611,10 @@ module RH11 (
               .rst      (rst),
               .clr      (rhCLR | devRESET),
               .rhINCSECT(sdINCSECT),
-              .rhATACLR (rhATACLR[i]),
               .devADDRI (devADDRI),
               .devDATAI (devDATAI),
-              .rpSELECT (rhUNIT == i[2:0]),
+              .rhUNIT   (rhUNIT),
+              .rpNUM    (i[2:0]),
               .rpPAT    (rhPAT),
               .rpCD     (rhCD[i]),
               .rpWP     (rhWP[i]),
@@ -695,7 +688,7 @@ module RH11 (
                      rhcs2WRITE | rhcs2READ |
                      rpdsWRITE  | rpdsREAD  |
                      rper1WRITE | rper1READ |
-                     rhasWRITE  | rhasREAD  |
+                     rpasWRITE  | rpasREAD  |
                      //
                      rplaWRITE  | rplaREAD  |
                      rhdbWRITE  | rhdbREAD  |
@@ -751,8 +744,8 @@ module RH11 (
           devDATAO = {20'b0, rpdsUNIT};
         if (rper1WRITE | rper1READ)
           devDATAO = {20'b0, rper1UNIT};
-        if (rhasWRITE | rhasREAD)
-          devDATAO = {20'b0, rhAS};
+        if (rpasWRITE | rpasREAD)
+          devDATAO = {20'b0, rpAS};
         if (rplaWRITE | rplaREAD)
           devDATAO = {20'b0, rplaUNIT};
         if (rhdbWRITE | rhdbREAD)

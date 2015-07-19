@@ -50,6 +50,7 @@
 `timescale 1ns/1ps
 
 `include "rpxx.vh"
+`include "rpas.vh"
 `include "rpda.vh"
 `include "rpcc.vh"
 `include "rpdc.vh"
@@ -67,10 +68,10 @@ module RPXX (
       input  wire         rst,                  // Reset
       input  wire         clr,                  // Clear
       input  wire         rhINCSECT,            // Increment Sector
-      input  wire         rhATACLR,             // Clear RPDS[ATA]
       input  wire [ 0:35] devADDRI,             // Device Address In
       input  wire [ 0:35] devDATAI,             // Device Data In
-      input  wire         rpSELECT,             // Unit Select
+      input  wire [ 2: 0] rhUNIT,               // Unit select
+      input  wire [ 2: 0] rpNUM,                // Unit number
       input  wire         rpCD,                 // Card Detect from SD Card
       input  wire         rpPAT,                // Parity Test
       input  wire         rpWP,                 // Write Protect from SD Card
@@ -152,6 +153,12 @@ module RPXX (
    wire [18:34] devADDR  = `devADDR(devADDRI);                  // Device Address
 
    //
+   // Unit select
+   //
+
+   wire rpSELECT = (rhUNIT == rpNUM);
+
+   //
    // Register Decode
    //
    // Trace
@@ -160,6 +167,7 @@ module RPXX (
 
    wire rpcs1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & rpSELECT;
    wire rper1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]) & rpSELECT;
+   wire rpasWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
    wire rpmrWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]) & rpSELECT;
    wire rpofWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]) & rpSELECT;
    wire rpdaWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]) & rpSELECT;
@@ -426,6 +434,29 @@ module RPXX (
                     (rpER3 != 0));
 
    //
+   // Clear attention
+   //
+   // Trace
+   //  M7774/RG3/E41
+   //  M7774/RG3/E44
+   //  M7774/RG3/E49
+   //  M7774/RG3/E54
+   //  M7774/RG3/E68
+   //  M7787/DP2/E14
+   //  M7787/DP2/E57
+   //
+
+   wire rpCLRATA = ((rpasWRITE & `rpAS_ATA7(rpDATAI) & (rpNUM == 7)) |
+                    (rpasWRITE & `rpAS_ATA6(rpDATAI) & (rpNUM == 6)) |
+                    (rpasWRITE & `rpAS_ATA5(rpDATAI) & (rpNUM == 5)) |
+                    (rpasWRITE & `rpAS_ATA4(rpDATAI) & (rpNUM == 4)) |
+                    (rpasWRITE & `rpAS_ATA3(rpDATAI) & (rpNUM == 3)) |
+                    (rpasWRITE & `rpAS_ATA2(rpDATAI) & (rpNUM == 2)) |
+                    (rpasWRITE & `rpAS_ATA1(rpDATAI) & (rpNUM == 1)) |
+                    (rpasWRITE & `rpAS_ATA0(rpDATAI) & (rpNUM == 0)) |
+                    (rpGO & !rpERR));
+
+   //
    // RPxx Control/Status Register (RPCS1)
    //
 
@@ -464,7 +495,7 @@ module RPXX (
       .clk         (clk),
       .rst         (rst),
       .clr         (clr),
-      .rhATACLR    (rhATACLR),
+      .rpCLRATA    (rpCLRATA),
       .rpSETLST    (rpSETLST),
       .rpSETATA    (rpSETATA),
       .rpGO        (rpGO),
