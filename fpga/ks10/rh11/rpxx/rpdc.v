@@ -45,6 +45,7 @@
       input  wire         rst,                  // Reset
       input  wire [35: 0] rpDATAI,              // Data in
       input  wire         rpPRESET,             // Preset command
+      input  wire         rpRECAL,              // Recalibrate command
       input  wire         rpdcWRITE,            // Write RPDC
       input  wire         rpINCCYL,             // Increment cylinder
       input  wire         rpDRY,                // Drive ready
@@ -66,7 +67,7 @@
         if (rst)
           rpDCA <= 0;
         else
-          if (rpPRESET)
+          if (rpPRESET | rpRECAL)
             rpDCA <= 0;
           else if (rpdcWRITE & rpDRY)
             rpDCA <= `rpDC_DCA(rpDATAI);

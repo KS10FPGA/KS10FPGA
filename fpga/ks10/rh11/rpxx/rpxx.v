@@ -580,6 +580,7 @@ module RPXX (
       .rst         (rst),
       .rpDATAI     (rpDATAI),
       .rpPRESET    (rpPRESET),
+      .rpRECAL     (rpRECAL),
       .rpdcWRITE   (rpdcWRITE),
       .rpINCCYL    (rpINCCYL),
       .rpDRY       (rpDRY),

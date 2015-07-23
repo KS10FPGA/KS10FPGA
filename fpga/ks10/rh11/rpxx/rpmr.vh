@@ -42,6 +42,7 @@
 // RPMR Register Bits
 //
 
+`define rpMR_DRWD(bus)  (bus[5])        // Diagnostic data
 `define rpMR_DDAT(bus)  (bus[4])        // Diagnostic data
 `define rpMR_DSCK(bus)  (bus[3])        // Diagnostic sector clock
 `define rpMR_DIND(bus)  (bus[2])        // Diagnostic index pulse
