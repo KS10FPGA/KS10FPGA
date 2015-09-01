@@ -48,6 +48,7 @@ module RPER1 (
       input  wire         rst,                  // Reset
       input  wire         clr,                  // Clear
       input  wire         rpDRVCLR,             // Drive clear command
+      input  wire         rpSETDCK,             // Set data check error
       input  wire         rpSETOPI,             // Set operation incomplete
       input  wire         rpSETDTE,             // Set drive timing error
       input  wire         rpSETWLE,             // Set write lock error
@@ -56,8 +57,10 @@ module RPER1 (
       input  wire         rpSETPAR,             // Set parity error
       input  wire         rpSETRMR,             // Set register modification refused
       input  wire         rpSETILF,             // Set illegal function
+      input  wire         rpSETHCRC,            // Set header CRC error
       input  wire [35: 0] rpDATAI,              // Data in
       input  wire         rper1WRITE,           // Write ER1
+      input  wire         rpHCI,                // Header compare inhibit
       input  wire         rpDRY,                // Drive ready
       output wire [15: 0] rpER1                 // rpER1 register
    );
@@ -77,6 +80,8 @@ module RPER1 (
         else
           if (clr | rpDRVCLR)
             rpDCK <= 0;
+          else if (rpSETDCK)
+            rpDCK <= 1;
           else if (rper1WRITE & rpDRY)
             rpDCK <= `rpER1_DCK(rpDATAI);
      end
@@ -220,6 +225,8 @@ module RPER1 (
         else
           if (clr | rpDRVCLR)
             rpHCRC <= 0;
+          else if (rpSETHCRC & !rpHCI)
+            rpHCRC <= 1;
           else if (rper1WRITE & rpDRY)
             rpHCRC <= `rpER1_HCRC(rpDATAI);
      end

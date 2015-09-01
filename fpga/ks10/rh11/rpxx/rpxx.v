@@ -259,6 +259,8 @@ module RPXX (
    //
 
    wire rpFMT22 = `rpOF_FMT22(rpOF);
+   wire rpECI   = `rpOF_ECI(rpOF);
+   wire rpHCI   = `rpOF_HCI(rpOF);
 
    //
    // RPxx Desired Cylinder (RPDC) Register
@@ -270,6 +272,10 @@ module RPXX (
    // RPxx Maintenance (RPMR) Register
    //
 
+   wire rpSBD;                                  // Sync byte detected
+   wire rpZD;                                   // Zero detect
+   wire rpDWRD;                                 // Diagnostic write data
+   wire rpDRDD = `rpMR_DRDD(rpMR);              // Diagnostic read data
    wire rpDSCK = `rpMR_DSCK(rpMR);              // Diagnostic sector clock
    wire rpDIND = `rpMR_DIND(rpMR);              // Diagnostic index pulse
    wire rpDCLK = `rpMR_DCLK(rpMR);              // Diagnostic clock
@@ -295,8 +301,10 @@ module RPXX (
    wire rpADRBUSY;                              // Busy calculation sector address
    wire rpSETATA;                               // Set attention
    wire rpSETOPI;                               // Set operation incomplete
+   wire rpSETDCK;                               // Set data check error
    wire rpSETDTE;                               // Set drive timing error
    wire rpSETSKI;                               // Set seek incomplete
+   wire rpSETHCRC;                              // Set header CRC error
    wire rpEBL;                                  // End of block
 
    //
@@ -522,6 +530,7 @@ module RPXX (
       .rst         (rst),
       .clr         (clr),
       .rpDRVCLR    (rpDRVCLR),
+      .rpSETDCK    (rpSETDCK),
       .rpSETOPI    (rpSETOPI),
       .rpSETDTE    (rpSETDTE),
       .rpSETWLE    (rpSETWLE),
@@ -530,8 +539,10 @@ module RPXX (
       .rpSETPAR    (rpSETPAR),
       .rpSETRMR    (rpSETRMR),
       .rpSETILF    (rpSETILF),
+      .rpSETHCRC   (rpSETHCRC),
       .rpDATAI     (rpDATAI),
       .rper1WRITE  (rper1WRITE),
+      .rpHCI       (rpHCI),
       .rpDRY       (rpDRY),
       .rpER1       (rpER1)
    );
@@ -599,8 +610,11 @@ module RPXX (
       .rpDATAI     (rpDATAI),
       .rpmrWRITE   (rpmrWRITE),
       .rpDRY       (rpDRY),
+      .rpSBD       (rpSBD),
+      .rpZD        (rpZD),
       .rpDFE       (rpDFE),
       .rpECE       (rpECE),
+      .rpDWRD      (rpDWRD),
       .rpMR        (rpMR)
    );
 
@@ -671,20 +685,27 @@ module RPXX (
       .rpDCLK      (rpDCLK),
       .rpDSCK      (rpDSCK),
       .rpDIND      (rpDIND),
+      .rpDRDD      (rpDRDD),
+      .rpDWRD      (rpDWRD),
       .rpDFE       (rpDFE),
+      .rpSBD       (rpSBD),
+      .rpZD        (rpZD),
       .rpDRY       (rpDRY),
       .rpEBL       (rpEBL),
       .rpECE       (rpECE),
+      .rpECI       (rpECI),
       .rpFMT22     (rpFMT22),
       .rpPAT       (rpPAT),
       .rpPIP       (rpPIP),
       .rpCLBERR    (rpCLBERR),
       .rpSETAOE    (rpSETAOE),
       .rpSETATA    (rpSETATA),
+      .rpSETDCK    (rpSETDCK),
       .rpSETDTE    (rpSETDTE),
       .rpSETOPI    (rpSETOPI),
       .rpSETSKI    (rpSETSKI),
       .rpSETWLE    (rpSETWLE),
+      .rpSETHCRC   (rpSETHCRC),
       .rpADRSTRT   (rpADRSTRT),
       .rpADRBUSY   (rpADRBUSY),
       .rpSDOP      (rpSDOP),

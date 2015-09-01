@@ -48,8 +48,11 @@ module RPMR (
       input  wire [35: 0] rpDATAI,              // Data In
       input  wire         rpmrWRITE,            // Write
       input  wire         rpDRY,                // Drive ready
+      input  wire         rpSBD,                // Sync byte detected
+      input  wire         rpZD,                 // Zero detect
       input  wire         rpDFE,                // Data field envelope
       input  wire         rpECE,                // ECC field envelope
+      input  wire         rpDWRD,               // Diagnostic mode data
       output wire [15: 0] rpMR                  // MR Output
    );
 
@@ -60,16 +63,16 @@ module RPMR (
    //   M7774/RG6/E20
    //
 
-   reg rpDDAT;
+   reg rpDRDD;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          rpDDAT <= 0;
+          rpDRDD <= 0;
         else
           if (!rpDMD)
-            rpDDAT <= 0;
+            rpDRDD <= 0;
           else if (rpmrWRITE)
-            rpDDAT <= `rpMR_DDAT(rpDATAI);
+            rpDRDD <= `rpMR_DRDD(rpDATAI);
      end
 
    //
@@ -159,6 +162,7 @@ module RPMR (
    //   M7774/RG2/E19
    //
 
-   assign rpMR = {8'b0, rpDFE, rpECE, 1'b0, rpDDAT, rpDSCK, rpDIND, rpDCLK, rpDMD};
+   assign rpMR = { 1'b0, 1'b0,  1'b0,   1'b0,   1'b0,   1'b0,   rpSBD,  rpZD,
+                  rpDFE, rpECE, rpDWRD, rpDRDD, rpDSCK, rpDIND, rpDCLK, rpDMD};
 
 endmodule

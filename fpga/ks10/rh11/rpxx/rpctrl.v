@@ -37,18 +37,46 @@
 
 `default_nettype none
 `timescale 1ns/1ps
-
+  
 `include "rpda.vh"
 `include "rpla.vh"
 `include "rpmr.vh"
 `include "rpcc.vh"
 `include "rpdc.vh"
 `include "rpcs1.vh"
+`include "rphcrc.vh"
 `include "../sd/sd.vh"
 `include "../../ks10.vh"
 
-`define RPXX_SKI                                // Required to pass DSRPA test
-`define RPXX_OPI                                // Required to pass DSRPA test
+//
+// Simulate seek accurately
+//
+  
+`ifdef RPXX_SIMSEEK
+ `define simSEEK 1'b1
+`else
+ `define simSEEK 1'b0
+`endif
+
+//
+// Simulate search accurately
+//
+
+`ifdef RPXX_SIMSEARCH
+ `define simSEARCH 1'b1
+`else
+ `define simSEARCH 1'b0
+`endif
+
+//
+// Simulate diagnostic mode
+//
+
+`ifdef RPXX_SIMDMD
+ `define simDMD 1'b1
+`else
+ `define simDMD 1'b0
+`endif
 
 module RPCTRL (
       input  wire         clk,                  // Clock
@@ -65,20 +93,27 @@ module RPCTRL (
       input  wire         rpDSCK,               // Diagnostic sector clock
       input  wire         rpDCLK,               // Diagnostic clock
       input  wire         rpDIND,               // Diagnostic index pulse
+      input  wire         rpDRDD,               // Diagnostic read data
+      output reg          rpDWRD,               // Dianostic write data
       output reg          rpDFE,                // Data field envelope
+      output wire         rpSBD,                // Sync byte detected
+      output wire         rpZD,                 // ECC zero detect
       output reg          rpDRY,                // Drive ready
       output reg          rpEBL,                // End of block
       output reg          rpECE,                // ECC envelope
+      input  wire         rpECI,                // Error correct inhibit
       input  wire         rpFMT22,              // 22 sector format (16-bit)
       input  wire         rpPAT,                // Parity test
       output reg          rpPIP,                // Positioning-in-progress
       input  wire         rpCLBERR,             // Class B error (abort)
       input  wire         rpSETAOE,             // Set address overflow error
       output reg          rpSETATA,             // Set attenation
+      output wire         rpSETDCK,             // Set data check error
       output reg          rpSETDTE,             // Set drive timing error
       output wire         rpSETOPI,             // Set operation incomplete
       output reg          rpSETSKI,             // Set seek incomplete
       input  wire         rpSETWLE,             // Set write lock error
+      output wire         rpSETHCRC,            // Set header CRC error
       output reg          rpADRSTRT,            // Address calculation start
       input  wire         rpADRBUSY,            // Address calculation busy
       output reg  [ 2: 0] rpSDOP,               // SD operation
@@ -90,8 +125,9 @@ module RPCTRL (
    // Timing Parameters
    //
 
-   parameter  simSEEK   = 1'b0;                 // Simulate seek accurately
-   parameter  simSEARCH = 1'b1;                 // Simulate search accurately
+   localparam simSEEK   = `simSEEK;             // Simulate seek accurately
+   localparam simSEARCH = `simSEARCH;           // Simulate search accurately
+   localparam simDMD    = `simDMD;              // Simulate diagnostic mode
    localparam CLKFRQ    = `CLKFRQ;              // Clock frequency
    localparam OFFDELAY  = 0.005000 * `CLKFRQ;   // Offset delay (5 ms)
    localparam FIXDELAY  = 0.000100 * `CLKFRQ;   // Fixed delay (100 us)
@@ -105,24 +141,23 @@ module RPCTRL (
 
    task check_ski;
       begin
-`ifdef RPXX_SKI
-         if (rpDCA > rpCCA)
-           begin
-              if (rpDCA - rpCCA > rpCYLNUM - head_pos)
-                begin
-                   tmpCC    <= 0;
-                   rpSETSKI <= 1;
-                end
-           end
-         else
-           begin
-              if (rpCCA - rpDCA > head_pos)
-                begin
-                   tmpCC    <= 0;
-                   rpSETSKI <= 1;
-                end
-           end
-`endif
+         if (simDMD)
+           if (rpDCA > rpCCA)
+             begin
+                if (rpDCA - rpCCA > rpCYLNUM - head_pos)
+                  begin
+                     tmpCC    <= 0;
+                     rpSETSKI <= 1;
+                  end
+             end
+           else
+             begin
+                if (rpCCA - rpDCA > head_pos)
+                  begin
+                     tmpCC    <= 0;
+                     rpSETSKI <= 1;
+                  end
+             end
       end
    endtask
 
@@ -188,7 +223,7 @@ module RPCTRL (
    // performed in maintenance mode: the DCA/CCA moves but the head does not.
    //
 
-   reg  [9:0] head_pos;
+   reg [15:0] head_pos;
 
    //
    // Desired Sector
@@ -203,11 +238,14 @@ module RPCTRL (
    wire [5:0] rpLAS = `rpLA_LAS(rpLA);
 
    //
-   // Diagnostic clock
+   // Diagnostic clock.  Triggered on falling edge of maintenance
+   // register signal.  FIXME.
    //
 
    wire diag_clken;
-   EDGETRIG MAINTCLK(clk, rst, 1'b1, 1'b1, rpDCLK, diag_clken);
+   wire diag_clken_p;
+   EDGETRIG MAINTCLKN(clk, rst, 1'b1, 1'b0, rpDCLK, diag_clken);
+   EDGETRIG MAINTCLKP(clk, rst, 1'b1, 1'b1, rpDCLK, diag_clken_p);
 
    //
    // Diagnostic index pulse.  Triggered on falling edge of maintenance
@@ -231,19 +269,25 @@ module RPCTRL (
    // State Definition
    //
 
-   localparam [3:0] stateIDLE       =  0,       // Idle
+   localparam [4:0] stateIDLE       =  0,       // Idle
                     stateOFFSET     =  1,       // Offset/center command
                     stateUNLOAD     =  2,       // Unload command
                     stateRECAL      =  3,       // Recalibrate command
                     stateSEEK       =  4,       // Seek
                     stateSEEKSEARCH =  5,       // Seek then search
                     stateSEARCH     =  6,       // Searching for sector
-                    stateXFERHEADER =  7,       // Diagnostic transfer header
-                    stateXFERDATA   =  8,       // Diagnostic transfer data
-                    stateXFERECC    =  9,       // Diagnostic transfer ECC
-                    stateXFERGAP    = 10,       // Diagnostic transfer data gap
-                    stateDATA       = 11,       // Reading/writing data
-                    stateDONE       = 12;       // Done
+                    stateWRHDR      =  7,       // Diagnostic write pre-header, header, header gap
+                    stateWRDATA     =  8,       // Diagnostic write data
+                    stateWRECC      =  9,       // Diagnostic write ECC
+                    stateWRDATAGAP  = 10,       // Diagnostic write data gap
+                    stateRDPREHDR   = 11,       // Diagnostic read pre-header
+                    stateRDHDR      = 12,       // Diagnostic read header
+                    stateRDHDRGAP   = 13,       // Diagnostic read header gap
+                    stateRDDATA     = 14,       // Diagnostic read data
+                    stateRDECC      = 15,       // Diagnostic read ECC
+                    stateRDFIXECC   = 16,       // Diagnostic fix ECC
+                    stateDATA       = 17,       // Non-diagnostic read/write data
+                    stateDONE       = 18;       // Done
 
    //
    // Disk Motion Simlation State Machine
@@ -251,9 +295,10 @@ module RPCTRL (
 
    reg [24: 0] delay;                           // RPxx Delay Simulation
    reg [15: 0] tmpCC;                           // rpCC value when command completes
-   reg [12: 0] bit_cnt;                         // Data bit counter
+   reg [ 5: 0] bit_cnt;                         // Bit counter (0 - 17)
+   reg [ 7: 0] word_cnt;                        // Word counter (0 - 255)
    reg         tmpATA;                          // Do ATA at end
-   reg [ 3: 0] state;                           // State
+   reg [ 4: 0] state;                           // State
 
    always @(posedge clk or posedge rst)
      begin
@@ -271,6 +316,7 @@ module RPCTRL (
              tmpATA   <= 0;
              tmpCC    <= 0;
              bit_cnt  <= 0;
+             word_cnt <= 0;
              delay    <= 0;
              head_pos <= 0;
              state    <= stateIDLE;
@@ -291,6 +337,7 @@ module RPCTRL (
                   tmpATA   <= 0;
                   tmpCC    <= 0;
                   bit_cnt  <= 0;
+                  word_cnt <= 0;
                   delay    <= 0;
                   state    <= stateIDLE;
                end
@@ -665,7 +712,10 @@ module RPCTRL (
                       begin
                          if (delay == 0)
                            begin
-                              if (!rpDMD)
+                              if (simDMD & rpDMD)
+                                begin
+                                end
+                              else
                                 state <= stateDONE;
                            end
                          else
@@ -701,7 +751,10 @@ module RPCTRL (
                       begin
                          if (delay == 0)
                            begin
-                              if (!rpDMD)
+                              if (simDMD & rpDMD)
+                                begin
+                                end
+                              else
                                 begin
                                    rpCC     <= 0;
                                    head_pos <= 0;
@@ -727,7 +780,10 @@ module RPCTRL (
                       begin
                          if (delay == 0)
                            begin
-                              if (!rpDMD)
+                              if (simDMD & rpDMD)
+                                begin
+                                end
+                              else
                                 begin
                                    rpCC     <= tmpCC;
                                    head_pos <= tmpCC;
@@ -757,7 +813,10 @@ module RPCTRL (
                       begin
                          if (delay == 0)
                            begin
-                              if (!rpDMD)
+                              if (simDMD & rpDMD)
+                                begin
+                                end
+                              else
                                 begin
                                    head_pos <= tmpCC;
                                    rpCC     <= tmpCC;
@@ -784,11 +843,13 @@ module RPCTRL (
 
                     stateSEARCH:
                       begin
+                         bit_cnt  <= 0;
+                         word_cnt <= 0;
                          if (rpCLBERR)
                            state <= stateDONE;
                          else
                            begin
-                              if (rpDMD)
+                              if (simDMD & rpDMD)
 
                                 //
                                 // In diagnostic mode.
@@ -796,18 +857,25 @@ module RPCTRL (
                                 // The search completes when a diagnostic index
                                 // pulse is detected.
                                 //
+                                // The dianostics only do Read Header and Write
+                                // Header operations.  The others probably don't
+                                // work.
+                                //
 
                                 begin
                                    if (diag_index)
-                                     begin
-                                        if (rpSDOP == `sdopNOP)
-                                          state <= stateDONE;
-                                        else
-                                          begin
-                                             bit_cnt <= 0;
-                                             state   <= stateXFERHEADER;
-                                          end
-                                     end
+                                     case (rpSDOP)
+                                       `sdopNOP:
+                                         state <= stateDONE;
+                                       `sdopWRCHKH, `sdopRDH:
+                                         state <= stateRDPREHDR;
+                                       `sdopWRH:
+                                         state <= stateWRHDR;
+                                       `sdopWRCHK, `sdopRD:
+                                         state <= stateRDDATA;
+                                       `sdopWR:
+                                         state <= stateWRDATA;
+                                     endcase
                                 end
 
                               else
@@ -817,14 +885,14 @@ module RPCTRL (
                                 //
                                 // If accurate search is required for diagnostics
                                 // (see DSRPA TEST-302), the search completes
-                                // when the sector under the head (visbile in the
-                                // RPLA register) is the same as the desired
+                                // when the sector under the head (visbile in
+                                // the RPLA register) is the same as the desired
                                 // sector.  This is slow but is very accurate.
                                 //
-                                // If accurate search is not required, the search
-                                // completes after a fixed period of time.  This
-                                // is much faster but fails some diagnostic
-                                // tests.
+                                // If accurate search is not required, the
+                                // search completes after a fixed period of
+                                // time.  This is much faster but fails some of
+                                // the diagnostic tests.
                                 //
 
                                 begin
@@ -842,127 +910,328 @@ module RPCTRL (
                       end
 
                     //
-                    // stateXFERHEADER
+                    // stateWRHDR
                     //
-                    // Diagnostic Mode only
+                    // Write Header (Diagnostic Mode only)
                     //
-                    // Header: 31 words (496 bits)
+                    // The pre-header, header, and header-gap fields are a
+                    // total of 31 16-bit words (496 bits).  This state
+                    // transitions to the next state when all of the bits in
+                    // the header have been written.
                     //
 
-                    stateXFERHEADER:
+                    stateWRHDR:
+                     begin
+                         if (rpCLBERR)
+                           state <= stateDONE;
+                         else
+                           if (diag_clken)
+                             begin
+                                if (bit_cnt == 15)
+                                  if (word_cnt == 30)
+                                    begin
+                                       rpDFE    <= 1;
+                                       rpECE    <= 0;
+                                       bit_cnt  <= 0;
+                                       word_cnt <= 0;
+                                       state    <= stateWRDATA;
+                                    end
+                                  else
+                                    begin
+                                       bit_cnt  <= 0;
+                                       word_cnt <= word_cnt + 1'b1;
+                                    end
+                                else
+                                  bit_cnt <= bit_cnt + 1'b1;
+                             end
+                     end
+
+                    //
+                    // stateWRDATA
+                    //
+                    // Write Data Field (Diagnostic Mode only)
+                    //
+                    // The data field is 256 words.  In the data field, the
+                    // word length can be either 16-bits of 18-bits.
+                    //
+
+                    stateWRDATA:
                       begin
                          if (rpCLBERR)
                            state <= stateDONE;
                          else
-                           begin
-                              if (diag_clken)
-                                begin
-                                   if (bit_cnt == 495)
-                                     begin
-                                        rpDFE   <= 1;
-                                        rpECE   <= 0;
-                                        bit_cnt <= 0;
-                                        state   <= stateXFERDATA;
-                                     end
-                                   else
-                                     bit_cnt <= bit_cnt + 1;
-                                end
-                           end
+                           if (diag_clken)
+                             begin
+                                if ((rpFMT22 & (bit_cnt == 15)) | (bit_cnt == 17))
+                                  if (word_cnt == 255)
+                                    begin
+                                       rpDFE    <= 0;
+                                       rpECE    <= 1;
+                                       bit_cnt  <= 0;
+                                       word_cnt <= 0;
+                                       state    <= stateWRECC;
+                                    end
+                                  else
+                                    begin
+                                       bit_cnt  <= 0;
+                                       word_cnt <= word_cnt + 1'b1;
+                                    end
+                                else
+                                  bit_cnt <= bit_cnt + 1'b1;
+                             end
                       end
 
                     //
-                    // stateXFERDATA
+                    // stateWRECC
                     //
-                    // Diagnostic Mode only
+                    // Write ECC field (Diagnostic Mode only)
                     //
-                    // Data: 256 words (4608 bits 18-bit mode)
-                    //       256 words (4096 bits 16-bit mode)
+                    // The ECC field is two 16-bit words (32 bits).
                     //
 
-                    stateXFERDATA:
+                    stateWRECC:
                       begin
                          if (rpCLBERR)
                            state <= stateDONE;
                          else
-                           begin
-                              if (diag_clken)
-                                begin
-                                   if (( rpFMT22 & (bit_cnt == 4095)) |
-                                       (!rpFMT22 & (bit_cnt == 4607)))
-                                     begin
-                                        rpDFE   <= 0;
-                                        rpECE   <= 1;
-                                        bit_cnt <= 0;
-                                        state   <= stateXFERECC;
-                                     end
-                                   else
-                                     bit_cnt <= bit_cnt + 1;
-                                end
-                           end
+                           if (diag_clken)
+                             begin
+                                if (bit_cnt == 15)
+                                  if (word_cnt == 1)
+                                    begin
+                                       rpDFE    <= 0;
+                                       rpECE    <= 0;
+                                       bit_cnt  <= 0;
+                                       word_cnt <= 0;
+                                       state    <= stateWRDATAGAP;
+                                    end
+                                  else
+                                    begin
+                                       bit_cnt  <= 0;
+                                       word_cnt <= word_cnt + 1'b1;
+                                    end
+                                else
+                                  bit_cnt <= bit_cnt + 1'b1;
+                             end
                       end
 
                     //
-                    // stateXFERECC
+                    // stateWRDATAGAP
                     //
                     // Diagnostic Mode only
                     //
-                    // ECC: 2 words (32 bits)
+                    // The data gap field is one 16-bit word.
                     //
 
-                    stateXFERECC:
+                    stateWRDATAGAP:
                       begin
                          if (rpCLBERR)
                            state <= stateDONE;
                          else
-                           begin
-                              if (diag_clken)
-                                begin
-                                   if (bit_cnt == 31)
-                                     begin
-                                        rpDFE   <= 0;
-                                        rpECE   <= 0;
-                                        bit_cnt <= 0;
-                                        state   <= stateXFERGAP;
-                                     end
-                                   else
-                                     bit_cnt <= bit_cnt + 1;
-                                end
-                           end
+                           if (diag_clken)
+                             begin
+                                if (bit_cnt == 15)
+                                  begin
+                                     rpDFE    <= 0;
+                                     rpECE    <= 0;
+                                     bit_cnt  <= 0;
+                                     word_cnt <= 0;
+                                     state    <= stateDONE;
+                                  end
+                                else
+                                  bit_cnt <= bit_cnt + 1'b1;
+                             end
                       end
 
                     //
-                    // stateXFERGAP
+                    // stateRDPREHDR
                     //
-                    // Diagnostic Mode only
+                    // Read Pre-Header (Diagnostic Mode only)
                     //
-                    // Data Gap: 1 word (16 bits)
+                    // This state just waits unit a pre-header sync is detected.
                     //
 
-                    stateXFERGAP:
+                    stateRDPREHDR:
+                     begin
+                         if (rpCLBERR)
+                           state <= stateDONE;
+                         else
+                           if (diag_clken)
+                             begin
+                                if (rpSBD)
+                                  begin
+                                     bit_cnt  <= 0;
+                                     word_cnt <= 0;
+                                     state    <= stateRDHDR;
+                                  end
+                                else
+                                  begin
+                                     if (bit_cnt == 15)
+                                       begin
+                                          bit_cnt  <= 0;
+                                          word_cnt <= word_cnt + 1'b1;
+                                       end
+                                     else
+                                       bit_cnt <= bit_cnt + 1'b1;
+                                  end
+                             end
+                     end
+
+                    //
+                    // stateRDHDR
+                    //
+                    // Read Header (Diagnostic Mode only)
+                    //
+                    // The header data is read in this state.  The header
+                    // field is 5 16-bit words long.
+                    //
+
+                    stateRDHDR:
                       begin
                          if (rpCLBERR)
                            state <= stateDONE;
                          else
-                           begin
-                              if (diag_clken)
-                                begin
-                                   if (bit_cnt == 15)
-                                     begin
-                                        rpDFE   <= 0;
-                                        rpECE   <= 0;
-                                        bit_cnt <= 0;
-                                        state   <= stateDONE;
-                                     end
-                                   else
-                                     bit_cnt <= bit_cnt + 1;
-                                end
-                           end
+                           if (diag_clken)
+                             begin
+                                if (bit_cnt == 15)
+                                  if (word_cnt == 4)
+                                    begin
+                                       bit_cnt  <= 0;
+                                       word_cnt <= 0;
+                                       state    <= stateRDHDRGAP;
+                                    end
+                                  else
+                                    begin
+                                       bit_cnt  <= 0;
+                                       word_cnt <= word_cnt + 1'b1;
+                                    end
+                                else
+                                  bit_cnt <= bit_cnt + 1'b1;
+                             end
+                     end
+
+                    //
+                    // stateRDHDRGAP
+                    //
+                    // Read Header Gap (Diagnostic Mode only)
+                    //
+                    // This state just waits unit a post-header sync is
+                    // detected.
+                    //
+
+                    stateRDHDRGAP:
+                     begin
+                         if (rpCLBERR)
+                           state <= stateDONE;
+                         else
+                           if (diag_clken)
+                             begin
+                                if (rpSBD)
+                                  begin
+                                     rpDFE    <= 1;
+                                     rpECE    <= 0;
+                                     bit_cnt  <= 0;
+                                     word_cnt <= 0;
+                                     state    <= stateRDDATA;
+                                  end
+                                else
+                                  begin
+                                     if (bit_cnt == 15)
+                                       begin
+                                          bit_cnt  <= 0;
+                                          word_cnt <= word_cnt + 1'b1;
+                                       end
+                                     else
+                                       bit_cnt <= bit_cnt + 1'b1;
+                                  end
+                             end
+                     end
+
+                    //
+                    // Read Data Field (Diagnostic Mode only)
+                    //
+                    // The data field is 256 words.  In the data field, the
+                    // word length can be either 16-bits of 18-bits.
+                    //
+
+                    stateRDDATA:
+                     begin
+                         if (rpCLBERR)
+                           state <= stateDONE;
+                         else
+                           if (diag_clken)
+                             begin
+                                if ((rpFMT22 & (bit_cnt == 15)) | (bit_cnt == 17))
+                                  if (word_cnt == 255)
+                                    begin
+                                       rpDFE    <= 0;
+                                       rpECE    <= 1;
+                                       bit_cnt  <= 0;
+                                       word_cnt <= 0;
+                                       state    <= stateRDECC;
+                                    end
+                                  else
+                                    begin
+                                       bit_cnt  <= 0;
+                                       word_cnt <= word_cnt + 1'b1;
+                                    end
+                                else
+                                  bit_cnt <= bit_cnt + 1'b1;
+                             end
+                     end
+
+                    //
+                    // stateRDECC
+                    //
+                    // Read ECC field (Diagnostic Mode only)
+                    //
+                    // The ECC field is two 16-bit words (32 bits).
+                    //
+
+                    stateRDECC:
+                      begin
+                         if (rpCLBERR)
+                           state <= stateDONE;
+                         else
+                           if (diag_clken)
+                             begin
+                                if (bit_cnt == 15)
+                                  if (word_cnt == 1)
+                                    begin
+                                       rpDFE    <= 0;
+                                       rpECE    <= 0;
+                                       bit_cnt  <= 0;
+                                       word_cnt <= 0;
+                                       if (rpZD)
+                                         state  <= stateDONE;
+                                       else
+                                         state  <= stateRDFIXECC;
+                                    end
+                                  else
+                                    begin
+                                       bit_cnt  <= 0;
+                                       word_cnt <= word_cnt + 1'b1;
+                                    end
+                                else
+                                  bit_cnt <= bit_cnt + 1'b1;
+                             end
+                      end
+
+                    //
+                    // stateRDFIXECC:
+                    //
+                    // This state fixes ECC errors, if possible.
+                    //
+
+                    stateRDFIXECC:
+                      begin
+                         state <= stateDONE;
                       end
 
                     //
                     // stateDATA:
                     //
-                    // Not Diagnostic Mode
+                    // Read/Write Data to SD Card (Not Diagnostic Mode)
                     //
                     // Wait for SD to complete Read/Write operaton
                     //
@@ -1009,7 +1278,288 @@ module RPCTRL (
      end
 
    //
-   // Drive Timing Error (DTE)
+   // Load data from memory.  Store data to memory
+   //
+   
+`ifdef NOT_IMPLEMENTED
+   
+   localparam [2:0] busIDLE  = 0,
+                    busRDREQ = 1,
+                    busRDACK = 2,
+                    busWRREQ = 3,
+                    busWRACK = 4;
+   
+   //
+   // The first word of a disk write is read from memory during the header.
+   // The last word of a disk read is written to memory during the ecc.
+   //
+         
+   reg rpINCBA;
+   reg rpINCWC
+   reg rpDEVREQO;
+   reg [0:31] tempDATAI;
+   reg [2: 0] busState;
+   
+   devDATAI
+   devDATAO
+     
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          begin
+             rpINCBA   <= 0;
+             rpINCWC   <= 0;
+             rpDEVREQO <= 0;
+             busState  <= busIDLE;
+          end
+        else
+          begin
+             rpINCBA   <= 0;
+             rpINCWC   <= 0;
+             rpDEVREQO <= 0;
+             case (busState)
+               busIDLE:
+                 begin
+                    if (((state == stateWRHDR ) & (word_cnt == 30) & (bit_cnt == 8)) |
+                        ((state == stateWRDATA) & (bit_cnt == 8)))
+                      begin
+                         rpDEVREQO <= 1;
+                         busState  <= busRDREQ;
+                      end
+                    else (((state == stateRDDATA) & (bit_cnt == 8)) |
+                          ((state == stateRDECC ) & (word_cnt == 1) & (bit_cnt == 1)))
+                      begin
+                         rpDEVREQO <= 1;
+                         busState  <= busWRREQ;
+                      end
+                 end
+               busRDREQ:
+                 begin
+                    if (rpDEVACKI)
+                      begin
+                         rpINCBA  <= 1;
+                         rpINCWC  <= (rhWC != 0);
+                         busState <= busRDACK;
+                      end
+                    else
+                      rpDEVREQO <= 1;
+                 end
+               busRDACK:
+                 begin
+                 end
+               busWRREQ:
+                 begin
+                    if (rpDEVACKI)
+                      begin
+                         tempDATA <= devDATAI;
+                         state    <= stateWRACK;
+                      end
+                    else
+                      rpDEVREQO <= 1;
+                 end
+               busWRACK:
+                 begin
+                 end
+             endcase
+          end
+     end
+                     
+`endif
+   
+`define asdf
+`ifdef asdf
+
+
+   //
+   // rpDWRD
+   //
+
+   always @*
+     begin
+        rpDWRD <= 0;
+        if (((state == stateWRHDR)  & (word_cnt == 19) & (bit_cnt ==  8)) | // Pre header sync byte
+            ((state == stateWRHDR)  & (word_cnt == 19) & (bit_cnt == 11)) | // Pre header sync byte
+            ((state == stateWRHDR)  & (word_cnt == 19) & (bit_cnt == 12)) | // Pre header sync byte
+            ((state == stateWRHDR)  & (word_cnt == 30) & (bit_cnt ==  8)) | // Post header sync byte
+            ((state == stateWRHDR)  & (word_cnt == 30) & (bit_cnt == 11)) | // Post header sync byte
+            ((state == stateWRHDR)  & (word_cnt == 30) & (bit_cnt == 12)) | // Post header sync byte
+            ((state == stateWRDATA) & (word_cnt ==  1)))                    // FIXME test
+          rpDWRD <= 1;
+     end
+
+`else
+
+   //
+   //
+   //
+
+   RPDCLRW DCLRW (
+      .clk         (clk),
+      .rst         (rst),
+      .clr         (clr),
+      .trig        (1'b0),
+
+   );
+
+   //
+   // ShiftWR Register
+   //
+   // Data is transferred LSB first
+   //
+   // Trace
+   //  M7773/SN3/E8
+   //  M7773/SN3/E13
+   //  M7773/SN3/E17
+   //  M7773/SN3/E20
+   //  M7773/SN3/E29
+   //
+
+   reg [17:0] shiftWR;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          shiftWR <= 0;
+        else
+          if (simDMD & diag_clken_p)
+            begin
+
+               //
+               // Pre-header sync
+               //
+
+               if ((state == stateWRHDR) & (word_cnt == 19))
+                 shiftWR <= 18'o000031;
+
+               //
+               // Header Word 1 (Desired Cylinder Address and Format)
+               //
+
+               else if ((state == stateWRHDR) & (word_cnt == 20))
+                 ;//shiftWR <= header1[2:17];
+
+               //
+               // Header Word 2 (Desired Sector and Track Address)
+               //
+
+               else if ((state == stateWRHDR) & (word_cnt == 21))
+                 ;//shiftWR <= header1[20:35];
+
+               //
+               // Header Word 3 (Key Field #1)
+               //
+
+               else if ((state == stateWRHDR) & (word_cnt == 22))
+                 ;//shiftWR <= header2[2:17];
+
+               //
+               // Header Word 4 (Key Field #2)
+               //
+
+               else if ((state == stateWRHDR) & (word_cnt == 23))
+                 ;//shiftWR <= header1[20:35];
+
+               //
+               // Header Word 5 (Header CRC)
+               //
+
+               else if ((state == stateWRHDR) & (word_cnt == 24))
+                 ;//shiftWR <= hcrc;
+
+               //
+               // Post-header sync
+               //
+
+               else if ((state == stateWRHDR) & (word_cnt == 30))
+                 shiftWR <= 18'o000031;
+
+               //
+               // Shift out data
+               //
+
+               else
+                  shiftWR <= {0, shiftWR[17:1]};
+            end
+     end
+
+   assign rpDWRD = shiftWR[0];
+
+`endif
+
+   //
+   // ShiftRD Register
+   //
+   // Data is transferred LSB first
+   //
+
+   reg [17:0] shiftRD;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          shiftRD <= 0;
+        else
+          if (simDMD & diag_clken_p)
+            shiftRD <= {rpDRDD, shiftRD[17:1]};
+     end
+
+   //
+   // Sync byte detector
+   //
+   // Trace
+   //  M7773/SN7/E26
+   //  M7773/SN7/E30
+   //  M7773/SN7/E33
+   //  M7773/SN7/E55
+   //
+
+   assign rpSBD = (shiftRD[17:10] == 8'o031);
+
+   //
+   // Header CRC
+   //
+
+   wire crc_ok;
+   wire crc_out;
+
+   reg [1:0] opHCRC;
+
+   always @*
+     begin
+        if (state == stateRDHDR)
+          opHCRC <= `opHCRC_IN;
+        else
+          opHCRC <= `opHCRC_RST;
+     end
+
+   wire [15:0] hcrc;
+
+   RPHCRC HCRC (
+      .clk         (clk),
+      .rst         (rst),
+      .clken       (diag_clken_p),
+      .opHCRC      (opHCRC),
+      .in          (rpDRDD),
+      .crc         (hcrc)
+   );
+
+   //
+   // Header CRC Error - RPER1[HCRC]
+   //
+   // Asserted after peforming the CRC on the header (including the header CRC
+   // itself) is not zero.
+   //
+   // Trace
+   //  M7786/SS7/E68
+   //  M7786/SS7/E78
+   //  M7786/SS7/E82
+   //  M7786/SS7/E90
+   //
+
+   assign rpSETHCRC = simDMD & diag_clken_p & (hcrc != 0) & (state == stateRDHDR) & (word_cnt == 4) & (bit_cnt == 15);
+
+   //
+   // Drive Timing Error - RPER1[DTE]
    //
    // Asserted in Diagnostic Mode when an Sector Pulse is detected while the
    // drive is performing a data transfer.
@@ -1025,13 +1575,16 @@ module RPCTRL (
         if (rst)
           rpSETDTE <= 0;
         else
-          rpSETDTE <= ((rpDMD & rpDIND & (state == stateXFERHEADER)) |
-                       (rpDMD & rpDIND & (state == stateXFERDATA  )) |
-                       (rpDMD & rpDIND & (state == stateXFERECC   )) |
-                       (rpDMD & rpDIND & (state == stateXFERGAP   )));
+          rpSETDTE <= ((simDMD & rpDMD & rpDIND & (state == stateWRHDR    )) |
+                       (simDMD & rpDMD & rpDIND & (state == stateWRDATA   )) |
+                       (simDMD & rpDMD & rpDIND & (state == stateWRECC    )) |
+                       (simDMD & rpDMD & rpDIND & (state == stateWRDATAGAP)) |
+                       (simDMD & rpDMD & rpDIND & (state == stateRDPREHDR )) |
+                       (simDMD & rpDMD & rpDIND & (state == stateRDHDR    )) |
+                       (simDMD & rpDMD & rpDIND & (state == stateRDHDRGAP )) |
+                       (simDMD & rpDMD & rpDIND & (state == stateRDDATA   )) |
+                       (simDMD & rpDMD & rpDIND & (state == stateRDECC    )));
      end
-
-`ifdef RPXX_OPI
 
    //
    // Index pulse counter for testing OPI
@@ -1052,7 +1605,7 @@ module RPCTRL (
         if (rst)
           index_cnt <= 0;
         else
-          if (rpDMD)
+          if (simDMD & rpDMD)
             begin
                if ((rpFUN != `funSEARCH) &
                    (rpFUN != `funWRCHK ) &
@@ -1069,22 +1622,15 @@ module RPCTRL (
             index_cnt <= 0;
      end
 
-   assign rpSETOPI = rpDMD & rpDIND & index_cnt[1];
-
-`else
-
-   //
-   // Tie off rpSETOPI
-   //
-
-   assign rpSETOPI = 0;
-
-`endif
+   assign rpSETOPI = simDMD & rpDMD & rpDIND & index_cnt[1];
 
    //
    // State decode
    //
 
    assign rpSDREQ = (state == stateDATA);
+
+   assign rpSETDCK = 0;         // FIXME
+   assign rpZD     = 0;         // FIXME
 
 endmodule
