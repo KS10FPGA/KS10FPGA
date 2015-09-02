@@ -69,25 +69,17 @@ module UBA (
       output reg  [ 0:35] busDATAO,             // Backplane Bus Data Out
       output wire [ 1: 7] busINTR,              // Backplane Bus Interrupt Request
       // Device Interface
-      output reg          devREQO,              // IO Device Request Out
-      output reg  [ 0:35] devADDRO,             // IO Device Address Out
-      output reg  [ 0:35] devDATAO,             // IO Device Data Out
+      output wire         devREQO,              // IO Device Request Out
+      input  wire         devACKI,              // IO Device Acknowledge In
+      input  wire         devREQI,              // IO Device Request In
+      output wire         devACKO,              // IO Device Acknowledge Out
+      output wire [ 0:35] devADDRO,             // IO Device Address Out
+      input  wire [ 0:35] devADDRI,             // IO Device Address In
+      output wire [ 0:35] devDATAO,             // IO Device Data Out
+      input  wire [ 0:35] devDATAI,             // IO Device Data In
+      input  wire [ 7: 4] devINTR,              // IO Device Interrupt Request
       output wire [ 7: 4] devINTA,              // IO Device Interrupt Acknowledge
-      output wire         devRESET,             // IO Device Reset
-      // Device #1 Interface
-      input  wire         dev1REQI,             // IO Device #1 Request In
-      input  wire         dev1ACKI,             // IO Device #1 Acknowledge In
-      input  wire [ 0:35] dev1ADDRI,            // IO Device #1 Address In
-      input  wire [ 0:35] dev1DATAI,            // IO Device #1 Data In
-      input  wire [ 7: 4] dev1INTR,             // IO Device #1 Interrupt Request
-      output wire         dev1ACKO,             // IO Device #1 Acknowledge Out
-      // Device #2 Interface
-      input  wire         dev2REQI,             // IO Device #2 Request In
-      input  wire         dev2ACKI,             // IO Device #2 Acknowledge In
-      input  wire [ 0:35] dev2ADDRI,            // IO Device #2 Address In
-      input  wire [ 0:35] dev2DATAI,            // IO Device #2 Data In
-      input  wire [ 7: 4] dev2INTR,             // IO Device #2 Interrupt Request
-      output wire         dev2ACKO              // IO Device #2 Acknowledge Out
+      output wire         devRESET              // IO Device Reset
    );
 
    //
@@ -169,8 +161,6 @@ module UBA (
       .regUBASR   (regUBASR)
    );
 
-   assign devRESET = statINI;
-
    //
    // Maintenance Register
    //
@@ -200,7 +190,7 @@ module UBA (
       .ubaREQ     (ubaREAD  | ubaWRITE | loopREAD | loopWRITE),
       .ubaACK     (ubaREAD  | ubaWRITE | loopREAD | loopWRITE),
       .devREQ     (devREAD  | devWRITE | vectREAD),
-      .devACK     (dev1ACKI | dev2ACKI),
+      .devACK     (devACKI),
       .wruREQ     (wruREAD),
       .wruACK     (wruREAD & ((busPI == statPIH) | (busPI == statPIL))),
       .setNXD     (setNXD)
@@ -234,75 +224,15 @@ module UBA (
       .statPIL    (statPIL),
       .statINTHI  (statINTHI),
       .statINTLO  (statINTLO),
-      .dev1INTR   (dev1INTR),
-      .dev2INTR   (dev2INTR),
+      .devINTR    (devINTR),
       .devINTA    (devINTA)
-   );
-
-   //
-   // KS10 to Device Buffer
-   //
-
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          begin
-             devREQO  <= 0;
-             devDATAO <= 0;
-             devADDRO <= 0;
-          end
-        else
-          begin
-             devREQO  <= busREQI;
-             devDATAO <= busDATAI;
-             devADDRO <= busADDRI;
-          end
-     end
-
-   //
-   // UBA Non Processor (DMA) Request
-   //
-
-   wire [0:35] nprDATAO;
-   wire [0:35] nprADDRO;
-   wire [0: 3] pageFLAGS;
-
-   UBANPR NPR (
-      .rst        (rst),
-      .clk        (clk),
-      // Control
-      .regUBAMR   (regUBAMR),
-      .pageADDR   (busADDRO),
-      .pageFLAGS  (pageFLAGS),
-      // Bus Interface
-      .busADDRI   (busADDRI),
-      .busADDRO   (nprADDRO),
-      .busDATAI   (busDATAI),
-      .busDATAO   (nprDATAO),
-      .busACKI    (busACKI),
-      .busREQO    (busREQO),
-      // Loopback Interface
-      .loopREAD   (loopREAD),
-      .loopWRITE  (loopWRITE),
-      .loopACKO   (loopACKO),   // FIXME
-      // Device #1 Interface
-      .dev1REQI   (dev1REQI),
-      .dev1ACKI   (dev1ACKI),
-      .dev1ACKO   (dev1ACKO),
-      .dev1ADDRI  (dev1ADDRI),
-      .dev1DATAI  (dev1DATAI),
-      // Device #2 Interface
-      .dev2REQI   (dev2REQI),
-      .dev2ACKI   (dev2ACKI),
-      .dev2ACKO   (dev2ACKO),
-      .dev2ADDRI  (dev2ADDRI),
-      .dev2DATAI  (dev2DATAI)
    );
 
    //
    // IO Bus Paging
    //
 
+   wire [0: 3] pageFLAGS;
    wire [0:35] pageDATAO;
 
    UBAPAGE PAGE (
@@ -315,10 +245,26 @@ module UBA (
       .busADDRO   (busADDRO),
       .pageWRITE  (pageWRITE),
       .pageDATAO  (pageDATAO),
-      .pageADDRI  (nprADDRO),
+      .pageADDRI  (devADDRI),
       .pageFLAGS  (pageFLAGS),
       .pageFAIL   (pageFAIL)
    );
+
+   //
+   // KS10 to Device Interface
+   //
+
+   assign devREQO  = busREQI;
+   assign devACKO  = busACKI;
+   assign devDATAO = busDATAI;
+   assign devADDRO = busADDRI;
+   assign devRESET = statINI;
+
+   //
+   // Device to KS10 Interface
+   //
+
+   assign busREQO  = devREQI;
 
    //
    // KS10 Bus Data Multiplexer
@@ -326,20 +272,13 @@ module UBA (
 
    always @*
      begin
-        busDATAO = 36'b0;
+        busDATAO = devDATAI;
         if (pageREAD)
           busDATAO = pageDATAO;
         if (statREAD)
           busDATAO = regUBASR;
-        if (devREAD | vectREAD)
-          if (dev1ACKI)
-            busDATAO = dev1DATAI;
-          else if (dev2ACKI)
-            busDATAO = dev2DATAI;
         if (wruREAD)
           busDATAO = wruRESP;
-        if (busREQO & busACKI)
-          busDATAO = nprDATAO;
      end
 
    //
@@ -364,8 +303,8 @@ module UBA (
    //
 
    wire [151:0] TRIG0 = {
-       dev1ADDRI,               // dataport[116:151]
-       dev1DATAI,               // dataport[ 80:115]
+       devADDRI,               // dataport[116:151]
+       devDATAI,               // dataport[ 80:115]
        busADDRO,                // dataport[ 44: 79]
        busDATAO,                // dataport[  8: 43]
        pageFAIL,                // dataport[      7]
@@ -397,10 +336,8 @@ module UBA (
           begin
              if (busREQI)
                addr <= busADDRI;
-             if (dev1REQI)
-               addr <= dev1ADDRI;
-             if (dev2REQI)
-               addr <= dev2ADDRI;
+             if (devREQI)
+               addr <= devADDRI;
              if (setNXD)
                $display("[%11.3f] UBA%d: Nonexistent device (NXD).  Addr = %012o.",
                         $time/1.0e3, ubaNUM, addr);

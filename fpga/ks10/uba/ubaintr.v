@@ -45,14 +45,13 @@ module UBAINTR (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       input  wire [15:17] busPI,                // IO Bridge PI Request
+      output wire [ 1: 7] busINTR,              // Interrupt to CPU
       input  wire         wruREAD,              // Who are you?
-      input  wire [ 7: 4] dev1INTR,             // IO Device #1 Interrupt Request
-      input  wire [ 7: 4] dev2INTR,             // IO Device #2 Interrupt Request
       input  wire [ 0: 2] statPIH,              // Interrupt priority high
       input  wire [ 0: 2] statPIL,              // Interrupt priority low
       output wire         statINTHI,            // Interrupt status low
       output wire         statINTLO,            // Interrupt status high
-      output wire [ 1: 7] busINTR,              // Interrupt to CPU
+      input  wire [ 7: 4] devINTR,              // IO Device Interrupt Request
       output reg  [ 7: 4] devINTA               // IO Device Interrupt Acknowledge
    );
 
@@ -60,9 +59,8 @@ module UBAINTR (
    // IO Bridge Interrupt Request
    //
 
-   wire [7:4] intREQ = dev1INTR  | dev2INTR;
-   assign statINTHI = intREQ[7] | intREQ[6];
-   assign statINTLO = intREQ[5] | intREQ[4];
+   assign statINTHI = devINTR[7] | devINTR[6];
+   assign statINTLO = devINTR[5] | devINTR[4];
 
    //
    // High Priority Interrupt
@@ -146,18 +144,18 @@ module UBAINTR (
           begin
              if (wruREAD & (busPI == statPIH))
                begin
-                  if (intREQ[7])
+                  if (devINTR[7])
                     devINTA = `ubaINTR7;
-                  else if (intREQ[6])
+                  else if (devINTR[6])
                     devINTA = `ubaINTR6;
                   else
                     devINTA = `ubaINTNUL;
                end
              else if (wruREAD & (busPI == statPIL))
                begin
-                  if (intREQ[5])
+                  if (devINTR[5])
                     devINTA = `ubaINTR5;
-                  else if (intREQ[4])
+                  else if (devINTR[4])
                     devINTA = `ubaINTR4;
                   else
                     devINTA = `ubaINTNUL;

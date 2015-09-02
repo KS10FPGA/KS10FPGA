@@ -334,16 +334,6 @@ module KS10 (
    wire [ 0:35] rh1DATAO;
    wire [ 7: 4] rh1INTR;
 
-   //
-   // Stub Connected to IO Bridge 1 Device 2
-   //
-
-   wire         ctl1dev2REQI    = 0;
-   wire         ctl1dev2ACKI    = 0;
-   wire [ 0:35] ctl1dev2ADDRI   = 36'b0;
-   wire [ 0:35] ctl1dev2DATAI   = 36'b0;
-   wire [ 7: 4] ctl1dev2INTR    =  4'b0;
-
    UBA #(
       .ubaNUM           (`devUBA1),
       .ubaADDR          (`ubaADDR)
@@ -361,23 +351,17 @@ module KS10 (
       .busDATAO         (ubaDATAO[1]),
       .busINTR          (ubaINTRO[1]),
       .devREQO          (ctl1REQO),
+      .devACKI          (rh1ACKO),
+      .devREQI          (rh1REQO),
+      .devACKO          (ctl1rh1ACKO),
       .devADDRO         (ctl1ADDRO),
+      .devADDRI         (rh1ADDRO),
       .devDATAO         (ctl1DATAO),
+      .devDATAI         (rh1DATAO),
+      .devINTR          (rh1INTR),
       .devINTA          (ctl1INTA),
-      .devRESET         (ctl1RESET),
-      .dev1REQI         (rh1REQO),
-      .dev1ACKI         (rh1ACKO),
-      .dev1ADDRI        (rh1ADDRO),
-      .dev1DATAI        (rh1DATAO),
-      .dev1INTR         (rh1INTR),
-      .dev1ACKO         (ctl1rh1ACKO),
-      .dev2REQI         (ctl1dev2REQI),
-      .dev2ACKI         (ctl1dev2ACKI),
-      .dev2ADDRI        (ctl1dev2ADDRI),
-      .dev2DATAI        (ctl1dev2DATAI),
-      .dev2INTR         (ctl1dev2INTR),
-      .dev2ACKO         ()
-      );
+      .devRESET         (ctl1RESET)
+   );
 
    //
    // RH11 #1 Connected to IO Bridge 1 Device 1
@@ -435,16 +419,6 @@ module KS10 (
    wire [ 0:35] dz1DATAO;
    wire [ 7: 4] dz1INTR;
 
-   //
-   // Stub Connected to IO Bridge 3 Device 2
-   //
-
-   wire         ctl3dev2REQI    = 0;
-   wire         ctl3dev2ACKI    = 0;
-   wire [ 0:35] ctl3dev2ADDRI   = 36'b0;
-   wire [ 0:35] ctl3dev2DATAI   = 36'b0;
-   wire [ 7: 4] ctl3dev2INTR    =  4'b0;
-
    UBA #(
       .ubaNUM           (`devUBA3),
       .ubaADDR          (`ubaADDR)
@@ -462,22 +436,16 @@ module KS10 (
       .busDATAO         (ubaDATAO[3]),
       .busINTR          (ubaINTRO[3]),
       .devREQO          (ctl3REQO),
+      .devACKI          (dz1ACKO),
+      .devREQI          (dz1REQO),
+      .devACKO          (ctl3dz1ACKO),
       .devADDRO         (ctl3ADDRO),
+      .devADDRI         (dz1ADDRO),
       .devDATAO         (ctl3DATAO),
+      .devDATAI         (dz1DATAO),
+      .devINTR          (dz1INTR),
       .devINTA          (ctl3INTA),
-      .devRESET         (ctl3RESET),
-      .dev1REQI         (dz1REQO),
-      .dev1ACKI         (dz1ACKO),
-      .dev1ADDRI        (dz1ADDRO),
-      .dev1DATAI        (dz1DATAO),
-      .dev1INTR         (dz1INTR),
-      .dev1ACKO         (ctl3dz1ACKO),
-      .dev2REQI         (ctl3dev2REQI),
-      .dev2ACKI         (ctl3dev2ACKI),
-      .dev2ADDRI        (ctl3dev2ADDRI),
-      .dev2DATAI        (ctl3dev2DATAI),
-      .dev2INTR         (ctl3dev2INTR),
-      .dev2ACKO         ()
+      .devRESET         (ctl3RESET)
    );
 
    //
