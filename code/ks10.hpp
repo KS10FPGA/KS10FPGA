@@ -83,7 +83,6 @@ class ks10_t {
             data_t t0;                                  //!< T0 Register
             data_t t1;                                  //!< T1 Register
             data_t vma;                                 //!< VMA Register
-            data_t fe;                                  //!< FE Register
         };
 
         //
@@ -137,50 +136,50 @@ class ks10_t {
         // Functions
         //
 
-                                           ks10_t(void (*)(void));
-        static          uint32_t           lh(data_t data);
-        static          uint32_t           rh(data_t data);
-        static          data_t             readRegStat(void);
-        static          void               writeRegStat(data_t data);
-        static          data_t             readRegAddr(void);
-        static          void               writeRegAddr(data_t data);
-        static          data_t             readRegData(void);
-        static          void               writeRegData(data_t data);
-        static          data_t             readRegCIR(void);
-        static          void               writeRegCIR(data_t data);
-        static          data_t             readMem(addr_t addr);
-        static          void               writeMem(addr_t addr, data_t data);
-        static          data_t             readIO(addr_t addr);
-        static          void               writeIO(addr_t addr, data_t data);
-        static          uint16_t           readIObyte(addr_t addr);
-        static          void               writeIObyte(addr_t addr, uint16_t data);
-        static          bool               run(void);
-        static          void               run(bool);
-        static          bool               cont(void);
-        static          bool               exec(void);
-        static          bool               halt(void);
-        static          void               execute(void);
-        static          void               step(void);
-        static          void               contin(void);
-        static          void               begin(void);
-        static          void               boot(void);
-        static          bool               waitHalt(void);
-        static          bool               timerEnable(void);
-        static          void               timerEnable(bool enable);
-        static          bool               trapEnable(void);
-        static          void               trapEnable(bool enable);
-        static          bool               cacheEnable(void);
-        static          void               cacheEnable(bool enable);
-        static          bool               cpuReset(void);
-        static          void               cpuReset(bool enable);
-        static          void               cpuIntr(void);
-        static          bool               nxmnxd(void);
-        static          bool               testRegs(bool verbose);
-        static          haltStatusWord_t  &getHaltStatusWord(void);
-        static          haltStatusBlock_t &getHaltStatusBlock(addr_t addr);
-        static volatile rh11debug_t       *getRH11debug(void);
-        static          bool               printFirmwareRev(void);
-        static          void              (*consIntrHandler)(void);
+        ks10_t(void (*)(void));
+        static uint32_t lh(data_t data);
+        static uint32_t rh(data_t data);
+        static data_t readRegStat(void);
+        static void writeRegStat(data_t data);
+        static data_t readRegAddr(void);
+        static void writeRegAddr(data_t data);
+        static data_t readRegData(void);
+        static void writeRegData(data_t data);
+        static data_t readRegCIR(void);
+        static void writeRegCIR(data_t data);
+        static data_t readMem(addr_t addr);
+        static void writeMem(addr_t addr, data_t data);
+        static data_t readIO(addr_t addr);
+        static void writeIO(addr_t addr, data_t data);
+        static uint16_t readIObyte(addr_t addr);
+        static void writeIObyte(addr_t addr, uint16_t data);
+        static bool run(void);
+        static void run(bool);
+        static bool cont(void);
+        static bool exec(void);
+        static bool halt(void);
+        static void execute(void);
+        static void step(void);
+        static void contin(void);
+        static void begin(void);
+        static void boot(void);
+        static bool waitHalt(void);
+        static bool timerEnable(void);
+        static void timerEnable(bool enable);
+        static bool trapEnable(void);
+        static void trapEnable(bool enable);
+        static bool cacheEnable(void);
+        static void cacheEnable(bool enable);
+        static bool cpuReset(void);
+        static void cpuReset(bool enable);
+        static void cpuIntr(void);
+        static bool nxmnxd(void);
+        static bool testRegs(bool verbose);
+        static haltStatusWord_t &getHaltStatusWord(void);
+        static haltStatusBlock_t &getHaltStatusBlock(addr_t addr);
+        static volatile rh11debug_t *getRH11debug(void);
+        static bool printFirmwareRev(void);
+        static void (*consIntrHandler)(void);
 
     private:
 
@@ -232,11 +231,11 @@ class ks10_t {
         //
 
         static data_t readReg(volatile void * reg);
-        static void   writeReg(volatile void * reg, data_t data);
-        static void   go(void);
-        static bool   testReg08(volatile void * addr, const char *name, bool verbose, uint64_t mask);
-        static bool   testReg64(volatile void * addr, const char *name, bool verbose, uint64_t mask);
-        static bool   testRegister(volatile void * addr, const char *name, bool verbose, uint64_t mask = 0xffffffffffffffffull);
+        static void writeReg(volatile void * reg, data_t data);
+        static void go(void);
+        static bool testReg08(volatile void * addr, const char *name, bool verbose, uint64_t mask);
+        static bool testReg64(volatile void * addr, const char *name, bool verbose, uint64_t mask);
+        static bool testRegister(volatile void * addr, const char *name, bool verbose, uint64_t mask = 0xffffffffffffffffull);
 
         //
         // Control/Status Register Bits

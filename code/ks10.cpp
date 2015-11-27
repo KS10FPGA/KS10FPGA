@@ -73,34 +73,38 @@ ks10_t::ks10_t(void (*consIntrHandler)(void)) {
     ks10_t::consIntrHandler = consIntrHandler;
 
     EPIInitialize();
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+    
+    // Enable GPIOD
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
 
     // Configure the HALT LED input
     ROM_GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, GPIO_HALT_LED);
 
+    // Enable GPIOB
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+
     // Unlock and change PB7 behavior - default is NMI
-    HWREG(GPIO_PORTB_BASE + GPIO_O_LOCK) = GPIO_LOCK_KEY;
+    HWREG(GPIO_PORTB_BASE + GPIO_O_LOCK) = GPIO_LOCK_KEY_DD;
 
     // Change commit register
-    HWREG(GPIO_PORTB_BASE + GPIO_O_CR) = 0x000000ff;
+    HWREG(GPIO_PORTB_BASE + GPIO_O_CR) |= 0x00000080;
 
     // Configure PD7 as an input
     ROM_GPIODirModeSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_DIR_MODE_IN);
 
-    // Set max current 2mA and connect weak pull-up resistor
+    //Set max current 2mA and connect weak pull-up resistor
     ROM_GPIOPadConfigSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_STRENGTH_2MA,
                          GPIO_PIN_TYPE_STD_WPU);
 
     // Set the interrupt type for each pin
     ROM_GPIOIntTypeSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_FALLING_EDGE);
-    // (GPIO_FALLING_EDGE | GPIO_DISCRETE_INT)
 
     // Enable interrupt
     ROM_GPIOPinIntEnable(GPIO_PORTB_BASE, GPIO_PIN_7);
 
     // Enable interrupts on Port B
     ROM_IntEnable(INT_GPIOB);
+
 }
 
 //
@@ -108,8 +112,8 @@ ks10_t::ks10_t(void (*consIntrHandler)(void)) {
 //
 
 extern "C" void gpiobIntHandler(void) {
-    (*ks10_t::consIntrHandler)();
     ROM_GPIOPinIntClear(GPIO_PORTB_BASE, GPIO_PIN_7);
+    (*ks10_t::consIntrHandler)();
 }
 
 //
@@ -838,9 +842,9 @@ bool ks10_t::testRegs(bool verbose) {
 //! \returns
 //!     Contents of the Halt Status Block.
 //!
-//! \todo
-//!     The microcode doesn't seem to dump the FE or SC registers.  Are the
-//!     documents wrong?
+//! \note
+//!     The KS10 Technical Manual shows that the Halt Status Block include the
+//!     FE and SC register.  This is incorrect.   See ksrefRev2 document.
 //
 
 ks10_t::haltStatusBlock_t &ks10_t::getHaltStatusBlock(addr_t addr) {
@@ -863,13 +867,6 @@ ks10_t::haltStatusBlock_t &ks10_t::getHaltStatusBlock(addr_t addr) {
     haltStatusBlock.t0   = readMem(addr + 14);
     haltStatusBlock.t1   = readMem(addr + 15);
     haltStatusBlock.vma  = readMem(addr + 16);
-
-#if 0
-    haltStatusBlock.fe   = readMem(addr + 17);
-#else
-    haltStatusBlock.fe   = 0;
-#endif
-
     return haltStatusBlock;
 }
 
