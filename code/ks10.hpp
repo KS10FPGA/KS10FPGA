@@ -132,7 +132,7 @@ class ks10_t {
         static const addr_t rhunit_addr = 000037;       //!< RH11 unit number
         static const addr_t mtparm_addr = 000040;       //!< Magtape parameters
 
-        static const data_t cty_valid   = 0x100;	//!< Input/Output character valid
+        static const data_t cty_valid   = 0x100;        //!< Input/Output character valid
 
         //
         // Functions

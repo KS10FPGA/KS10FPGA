@@ -859,7 +859,7 @@ static void cmdGO(int argc, char *argv[]) {
     const char *usage =
         "Usage: GO diagname.sav address\n"
         "Run a diagnostic program\n";
-        
+
     if (argc == 1) {
 
         //
@@ -914,7 +914,7 @@ static void cmdGO(int argc, char *argv[]) {
             printf("Failed to load diag/smddt.sav\n");
             return;
         }
-                
+
         //
         // Load the diagnostic monitor into memory
         //
@@ -951,7 +951,7 @@ static void cmdGO(int argc, char *argv[]) {
         //
         //
         //
-        
+
         if (ks10_t::cpuReset()) {
             printf("????? KS10 should not be reset.\n");
         }
@@ -967,7 +967,7 @@ static void cmdGO(int argc, char *argv[]) {
         //
         // Write character to KS10
         //
-        
+
         while (!ks10_t::halt()) {
             int ch = getchar();
             if (ch != -1) {

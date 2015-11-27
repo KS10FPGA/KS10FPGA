@@ -73,7 +73,7 @@ ks10_t::ks10_t(void (*consIntrHandler)(void)) {
     ks10_t::consIntrHandler = consIntrHandler;
 
     EPIInitialize();
-    
+
     // Enable GPIOD
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
 
