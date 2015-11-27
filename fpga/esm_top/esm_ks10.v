@@ -42,6 +42,14 @@
 `default_nettype none
 `timescale 1ns/1ps
 
+`ifndef RPXX_ENABLE
+ `define RPXX_ENABLE    8'b00000001
+`endif
+
+`ifndef RPXX_WP
+ `define RPXX_WP        8'b00000000
+`endif  
+  
 module ESM_KS10 (
       // Clock/Reset
       input  wire         RESET_N,      // Reset
@@ -83,8 +91,8 @@ module ESM_KS10 (
    // RH-11 Stubs
    //
 
-   wire [ 7: 0] rh11WP = 8'b0;                  // RH11 Write Protect (stubbed)
-   wire [ 7: 0] rh11CD = {7'b0, !rh11CD_N};     // RH11 Card Detect (only drive 0 is enabled, for now)
+   wire [ 7: 0] rh11WP = `RPXX_WP;                      // RH11 Write Protect
+   wire [ 7: 0] rh11CD = {8{!rh11CD_N}} & `RPXX_ENABLE; // RH11 Card Detect 
 
    //
    // DZ-11 Interface Stubs

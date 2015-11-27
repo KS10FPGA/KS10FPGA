@@ -106,7 +106,7 @@ DSRPA.PATCH : makefile
 #  This assumes that a 8GB card is installed.
 #
 
-DEV := sdg
+DEV := sdf
 
 check :
 	cat /proc/partitions
@@ -142,3 +142,6 @@ write_rp06unit0 :
 
 write_rp06unit1 :
 	dd if=dskc.dsk of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
+
+write_rp06unit2 :
+	dd if=red405a2.rp06 of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G
