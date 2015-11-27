@@ -205,7 +205,7 @@ ks10_t::data_t getdata(FIL *fp) {
 
     FRESULT status = f_read(fp, buffer, sizeof(buffer), &numbytes);
     if (status != FR_OK) {
-        debug("f_read() returned %d\n", status);
+        debug("KS10: f_read() returned %d\n", status);
     }
 
     return rdword(buffer);
@@ -227,7 +227,7 @@ static bool loadCode(const char * filename) {
     FIL fp;
     FRESULT status = f_open(&fp, filename, FA_READ);
     if (status != FR_OK) {
-        debug("f_open() returned %d\n", status);
+        debug("KS10: f_open() returned %d\n", status);
         return false;
     }
 
@@ -255,12 +255,12 @@ static bool loadCode(const char * filename) {
                 // Create JRST to starting address.
                 //
 
-                debug("Starting Address: %06lo,,%06lo\n", ks10_t::lh(data36), ks10_t::rh(data36));
+                debug("KS10: Starting Address: %06lo,,%06lo\n", ks10_t::lh(data36), ks10_t::rh(data36));
                 ks10_t::writeRegCIR(data36);
             }
             FRESULT status = f_close(&fp);
             if (status != FR_OK) {
-                debug("f_close() returned %d\n", status);
+                debug("KS10: f_close() returned %d\n", status);
             }
             return true;
         }
@@ -280,155 +280,6 @@ static bool loadCode(const char * filename) {
         }
     }
 }
-
-#if 0
-
-//
-//! Load code into the KS10 from a DAT file
-//!
-//! This function reads the .DAT file and writes the contents to to the KS10.
-//!
-//! \param [in] filename
-//!     filename of the .DAT file
-//!
-//! \note
-//!     The DAT file is in the same format as a verilog file
-//
-
-static int fgetc(FIL *fp) {
-    char ch;
-    unsigned int numbytes;
-
-    FRESULT status = f_read(fp, &ch, 1, &numbytes);
-    if (status != FR_OK || numbytes == 0) {
-        debug("f_read() returned %d\n", status);
-        return -1;
-    }
-    return ch;
-}
-
-static int gettoken(FIL *fp, ks10_t::data_t& data) {
-
-    data = 0;
-    int ch = 0;
-    int prevch = 0;
-    bool addrFlag = false;
-
-    do {
-
-        ch = fgetc(fp);
-
-        //fprintf(stdout, "Read1 %c\n", ch);
-
-        switch (ch) {
-            case '0' ... '9':
-            case 'a' ... 'f':
-            case 'A' ... 'F':
-                //printf("BEGIN HEX NUMBER\n");
-                for (;;) {
-                    switch(ch) {
-                        case '0' ... '9':
-                            data = (data << 4) + ch - '0';
-                            break;
-                        case 'A' ... 'F':
-                            data = (data << 4) + ch - 'A' + 10;
-                            break;
-                        case 'a' ... 'f':
-                            data = (data << 4) + ch - 'a' + 10;
-                            break;
-                        default:
-                            //printf("END HEX NUMBER - %09llx\n", data);
-                            return addrFlag ? 1 : 2;
-                    }
-                    ch = fgetc(fp);
-                    //fprintf(stdout, "Read4 %c\n", ch);
-                }
-                break;
-            case '@':
-                //printf("FOUND ADDRFLAG\n");
-                addrFlag = true;
-                break;
-            case '\n':
-                addrFlag = false;
-                ch = 0;
-                break;
-            case '/':
-                if (prevch == '/') {
-                    //printf("BEGIN EOL COMMENT\n");
-                    for (;;) {
-                        prevch = ch;
-                        ch = fgetc(fp);
-                        //fprintf(stdout, "Read3 %c\n", ch);
-                        if (ch == '\n') {
-                            break;
-                        }
-                    }
-                    //printf("END EOL COMMENT\n");
-                    return 0;
-                }
-                break;
-            case '*':
-                if (prevch == '/') {
-                    //printf("BEGIN COMMENT\n");
-                    for (;;) {
-                        prevch = ch;
-                        ch = fgetc(fp);
-                        //fprintf(stdout, "Read2 %c\n", ch);
-                        if (ch == '/' && prevch == '*') {
-                            break;
-                        }
-                    }
-                    //printf("END COMMENT\n");
-                    return 0;
-                }
-                break;
-            case -1:
-                return -1;
-            default:
-                break;
-        }
-        prevch = ch;
-    } while (ch != 0);
-
-    return 0;
-}
-
-static bool readDatFile(const char * filename) {
-
-    FIL fp;
-    FRESULT status = f_open(&fp, filename, FA_READ);
-    if (status != FR_OK) {
-        debug("f_open() returned %d\n", status);
-        return false;
-    }
-
-    ks10_t::addr_t addr = 0;
-
-    for (;;) {
-        ks10_t::data_t data;
-        int status = gettoken(&fp, data);
-
-        //printf("gettoken() returned %012llo\n", data);
-
-        switch (status) {
-            case -1:
-                return true;
-            case 0:
-                break;
-            case 1:
-                addr = data;
-                //debug("addr set to %06o\n", addr);
-                break;
-            case 2:
-                if (addr > 035122) {
-                    //    debug("%06llo: %06lo,,%06lo\n", addr, ks10_t::lh(data), ks10_t::rh(data));
-                }
-                ks10_t::writeMem(addr++, data);
-                break;
-        }
-    }
-}
-#endif
 
 //
 //! Print RH11 Debug Word
@@ -542,7 +393,7 @@ void printHaltStatus(void) {
                "  MSK is %012llo     FLG is %012llo\n"
                "  PI  is %012llo     X1  is %012llo\n"
                "  TO  is %012llo     T1  is %012llo \n"
-               "  VMA is %012llo     FE  is %012llo\n"
+               "  VMA is %012llo\n"
                "KS10> ",
                haltStatusBlock.pc,
                haltStatusBlock.hr,
@@ -560,8 +411,7 @@ void printHaltStatus(void) {
                haltStatusBlock.x1,
                haltStatusBlock.t0,
                haltStatusBlock.t1,
-               haltStatusBlock.vma,
-               haltStatusBlock.fe);
+               haltStatusBlock.vma);
     }
 }
 
@@ -1001,58 +851,107 @@ static void cmdEX(int argc, char *argv[]) {
     }
 }
 
+#if 1
+
 bool running = false;
 
-#if 1
 static void cmdGO(int argc, char *argv[]) {
     const char *usage =
-        "Usage: GO\n"
-        "Set the RUN, EXEC, and CONT bits\n";
+        "Usage: GO diagname.sav address\n"
+        "Run a diagnostic program\n";
+        
+    if (argc == 1) {
 
-    if (argc == 3) {
+        //
+        // Load the diagnostic monitor into memory
+        //
+
+        printf("KS10: Loading SMMON.\n");
+        if (!loadCode("diag/smmon.sav")) {
+            printf("Failed to load DIAG/SMMON.SAV\n");
+            return;
+        }
+
+        //
+        // Start the KS10 running
+        //
+
+        running = true;
+        ks10_t::begin();
+
+        //
+        // Write character to KS10
+        //
+
+        while (!ks10_t::halt()) {
+            int ch = getchar();
+            if (ch != -1) {
+                ks10_t::putchar(ch);
+            }
+        }
+
+        running = false;
+
+    } else if (argc == 3) {
 
         ks10_t::trapEnable(true);
         ks10_t::timerEnable(false);
 
-        loadCode("diag/subsm.sav");
-        printf("Loaded diag/subsm.sav\n");
-        loadCode("diag/smddt.sav");
-        printf("Loaded diag/smddt.sav\n");
-        loadCode("diag/smmon.sav");
-        printf("Loaded diag/smmon.sav\n");
-        loadCode(argv[1]);
-        //readDatFile(argv[1]);
-        printf  ("Loaded %s\n", argv[1]);
+        //
+        // Read the diagnostic subroutines into memory
+        //
 
-#if 0
-        loadCode("diag/dskea.sav");
-        printf  ("Loaded diag/dskea.sav\n");
-#endif
-#if 0
-        loadCode("diag/dsrpa.sav");
-        printf  ("Loaded diag/dsrpa.sav\n");
-#endif
-#if 0
-        loadCode("diag/dsmmc.sav");
-        printf  ("Loaded diag/dsmmc.sav\n");
-#endif
-#if 0
-        loadCode("diag/dskaa.sav");
-        printf("Loaded diag/dskaa.sav\n");
-#endif
+        if (!loadCode("diag/subsm.sav")) {
+            printf("Failed to load diag/subsm.sav\n");
+            return;
+        }
+
+        //
+        // Load DDT into memory
+        //
+
+        if (!loadCode("diag/smddt.sav")) {
+            printf("Failed to load diag/smddt.sav\n");
+            return;
+        }
+                
+        //
+        // Load the diagnostic monitor into memory
+        //
+
+        if (!loadCode("diag/smmon.sav")) {
+            printf("Failed to load diag/smmon.sav\n");
+            return;
+        }
+
+        //
+        // Read the diagnostic program into memory
+        //
+
+        if (!loadCode(argv[1])) {
+            printf("Failed to load %s\n", argv[1]);
+            return;
+        }
+
+        //
+        // Set the starting address
+        //
+
         ks10_t::data_t start = parseOctal(argv[2]);
-
-        ks10_t::writeRegCIR(0254000000000 | start);
-        //ks10_t::writeRegCIR(0254000030010);
+        ks10_t::writeRegCIR(ks10_t::opJRST << 18 | start);
         printf("Wrote CIR\n");
-        ks10_t::writeMem(030057, 0254200030060);        // Halt
-        ks10_t::writeMem(025163, 0254000025172);        // Skip disk
 
-        //ks10_t::writeMem(007304, 000000000600);
-        //ks10_t::writeMem(007366, 000000000100);
+        //
+        // Patch the code
+        //
 
+        ks10_t::writeMem(030057, 0254200030060);        // Halt at end of diagnostic
         printf("Patched code\n");
-        //intf("Starting up...\n");
+
+        //
+        //
+        //
+        
         if (ks10_t::cpuReset()) {
             printf("????? KS10 should not be reset.\n");
         }
@@ -1064,22 +963,20 @@ static void cmdGO(int argc, char *argv[]) {
         if (!ks10_t::run()) {
             printf("????? KS10 should be running.\n");
         }
+
+        //
+        // Write character to KS10
+        //
+        
         while (!ks10_t::halt()) {
-            ks10_t::data_t cty_out = ks10_t::readMem(000033);
-            if ((cty_out & 0x0100) != 0) {
-                printf("%c", ((unsigned char)(cty_out & 0x7f)));
-                ks10_t::writeMem(000033, 0000000000000);
-            }
             int ch = getchar();
             if (ch != -1) {
-                ks10_t::data_t cty_in = ks10_t::readMem(000032);
-                if ((cty_in & 0x0100) == 0) {
-                    ks10_t::writeMem(000032, 0x0100 | (ch & 0xff));
-                    ks10_t::cpuIntr();
-                }
+                ks10_t::putchar(ch);
             }
         }
+
         running = false;
+
     } else {
         printf(usage);
     }
@@ -1868,11 +1765,10 @@ void taskCommand(void * param) {
 //
 
 void startCommandTask(char *lineBuffer, xTaskHandle &taskHandle) {
-
-    static char __align64 stack[4096-4];
-    portBASE_TYPE status = xTaskCreate(taskCommand, "Command", stack, sizeof(stack), lineBuffer, taskCommandPriority, &taskHandle);
+    static signed char __align64 stack[4096-4];
+    portBASE_TYPE status = xTaskCreate(taskCommand, reinterpret_cast<const signed char *>("Command"),
+                                       stack, sizeof(stack), lineBuffer, taskCommandPriority, &taskHandle);
     if (status != pdPASS) {
         debug("RTOS: Failed to create Command task.  Status was %s.\n", taskError(status));
     }
-
 }
