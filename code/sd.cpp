@@ -749,12 +749,10 @@ static void sdTask(void * /* param */) {
 //
 
 void startSdTask(void) {
-
-    static char __align64 stack[5120-4];
-
-    portBASE_TYPE status = xTaskCreate(sdTask, "SD", stack, sizeof(stack), 0, taskSDPriority, NULL);
+    static signed char __align64 stack[5120-4];
+    portBASE_TYPE status = xTaskCreate(sdTask, reinterpret_cast<const signed char *>("SD"),
+                                       stack, sizeof(stack), 0, taskSDPriority, NULL);
     if (status != pdPASS) {
         fatal("SDHC: Failed to create SD task.  Status was %s.\n", taskError(status));
     }
-
 }

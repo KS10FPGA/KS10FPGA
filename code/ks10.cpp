@@ -884,5 +884,31 @@ volatile ks10_t::rh11debug_t * ks10_t::getRH11debug(void) {
 }
 
 //
+// Write a character to the KS10
+//
+
+void ks10_t::putchar(int ch) {
+    data_t cty_in = readMem(ctyin_addr);
+    if ((cty_in & cty_valid) == 0) {
+        ks10_t::writeMem(ctyin_addr, cty_valid | (ch & 0xff));
+        ks10_t::cpuIntr();
+    }
+}
+
+//
+// Read a character from the KS10
+//
+
+int ks10_t::getchar(void) {
+    data_t cty_out = readMem(ctyout_addr);
+    if ((cty_out & cty_valid) != 0) {
+        writeMem(ctyout_addr, 0);
+        return cty_out & 0x7f;
+    } else {
+        return -1;
+    }
+}
+
+//
 //! @}
 //

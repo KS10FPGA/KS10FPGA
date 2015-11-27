@@ -68,11 +68,10 @@ static void taskHalt(void * /*param*/) {
 //
 
 void startHaltTask(void) {
-
-    static char __align64 taskHaltStack[4096-4];
-    portBASE_TYPE status = xTaskCreate(taskHalt, "Halt", taskHaltStack, sizeof(taskHaltStack), 0, taskHaltPriority, NULL);
+    static signed char __align64 stack[4096-4];
+    portBASE_TYPE status = xTaskCreate(taskHalt, reinterpret_cast<const signed char *>("Halt"),
+                                       stack, sizeof(stack), 0, taskHaltPriority, NULL);
     if (status != pdPASS) {
         fatal("RTOS: Failed to create Halt task.  Status was %s.\n", taskError(status));
     }
-
 }

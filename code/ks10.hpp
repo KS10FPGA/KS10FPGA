@@ -132,6 +132,8 @@ class ks10_t {
         static const addr_t rhunit_addr = 000037;       //!< RH11 unit number
         static const addr_t mtparm_addr = 000040;       //!< Magtape parameters
 
+        static const data_t cty_valid   = 0x100;	//!< Input/Output character valid
+
         //
         // Functions
         //
@@ -180,6 +182,8 @@ class ks10_t {
         static volatile rh11debug_t *getRH11debug(void);
         static bool printFirmwareRev(void);
         static void (*consIntrHandler)(void);
+        static void putchar(int ch);
+        static int getchar(void);
 
     private:
 

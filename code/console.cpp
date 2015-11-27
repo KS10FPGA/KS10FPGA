@@ -93,6 +93,17 @@ void createSerialQueue(void) {
 }
 
 //
+// Read and print character from KS10
+//
+
+void ks10Interrupt(void) {
+    int ch = ks10_t::getchar();
+    if (ch != -1) {
+        printf("%c", ch);
+    }
+}
+
+//
 //! Initialize console communcations area
 //
 
@@ -238,12 +249,18 @@ void taskConsole(void * /*param*/) {
     printf("CPU : EPI interface initialized.\n");
 
     //
+    // Initialize KS10 object
+    //
+
+    ks10_t ks10(ks10Interrupt);
+
+    //
     // Print the firmware revsion.  If this fails, the FPGA is not programmed
     // or the bus connection is broken.  Either way, there is no reason to
     // continue.
     //
 
-    success = ks10_t::printFirmwareRev();
+    success = ks10.printFirmwareRev();
     if (!success) {
         fatal("FPGA: Unable to communicate with the KS10 FPGA.\n");
     }
@@ -252,7 +269,7 @@ void taskConsole(void * /*param*/) {
     // Test the FPGA register interface
     //
 
-    success = ks10_t::testRegs(false);
+    success = ks10.testRegs(false);
     if (!success) {
         fatal("FPGA: Problem accessing KS10 control registers.\n");
     }
@@ -267,7 +284,7 @@ void taskConsole(void * /*param*/) {
     // Boot the KS10
     //
 
-    ks10_t::boot();
+    ks10.boot();
 
     //
     // Create the Halt Task
@@ -281,7 +298,7 @@ void taskConsole(void * /*param*/) {
     // state.  Wait for that to occur.   Timeout if there is a problem.
     //
 
-    success = ks10_t::waitHalt();
+    success = ks10.waitHalt();
     if (!success) {
         fatal("KS10: Timeout waiting for KS10 to initialize.\n");
     }
@@ -332,8 +349,9 @@ void taskConsole(void * /*param*/) {
 //
 
 void startConsoleTask(void) {
-    static char __align64 stack[4096-4];
-    portBASE_TYPE status = xTaskCreate(taskConsole, "console", stack, sizeof(stack), 0, taskConsolePriority, NULL);
+    static signed char __align64 stack[4096-4];
+    portBASE_TYPE status = xTaskCreate(taskConsole, reinterpret_cast<const signed char *>("console"),
+                                       stack, sizeof(stack), 0, taskConsolePriority, NULL);
     if (status != pdPASS) {
         fatal("RTOS: Failed to create console task.  Status was %s.\n", taskError(status));
     }
@@ -365,7 +383,7 @@ void startConsole(void) {
     // Initialize the scheduler.
     //
 
-    static char __align64 idleTaskStack[512-4];
+    static signed char __align64 idleTaskStack[512-4];
     vTaskInitializeScheduler(idleTaskStack, sizeof(idleTaskStack), 0, &initParams);
 
     //
