@@ -37,7 +37,7 @@
 
 `default_nettype none
 `timescale 1ns/1ps
-  
+
 `include "rpda.vh"
 `include "rpla.vh"
 `include "rpmr.vh"
@@ -51,7 +51,7 @@
 //
 // Simulate seek accurately
 //
-  
+
 `ifdef RPXX_SIMSEEK
  `define simSEEK 1'b1
 `else
@@ -239,21 +239,30 @@ module RPCTRL (
 
    //
    // Diagnostic clock.  Triggered on falling edge of maintenance
-   // register signal.  FIXME.
+   // register signal.
    //
 
+`ifdef RPXX_SIMDMD
    wire diag_clken;
    wire diag_clken_p;
-   EDGETRIG MAINTCLKN(clk, rst, 1'b1, 1'b0, rpDCLK, diag_clken);
    EDGETRIG MAINTCLKP(clk, rst, 1'b1, 1'b1, rpDCLK, diag_clken_p);
+   EDGETRIG MAINTCLKN(clk, rst, 1'b1, 1'b0, rpDCLK, diag_clken);
+`else
+   wire diag_clken = 0;
+   wire diag_clken_p = 0;
+`endif
 
    //
    // Diagnostic index pulse.  Triggered on falling edge of maintenance
    // register signal.
    //
 
+`ifdef RPXX_SIMDMD
    wire diag_index;
    EDGETRIG uDIAGIND(clk, rst, 1'b1, 1'b0, rpDIND, diag_index);
+`else
+   wire diag_index = 0;
+`endif
 
    //
    // go_cmd
@@ -920,6 +929,7 @@ module RPCTRL (
                     // the header have been written.
                     //
 
+`ifdef RPXX_SIMDMD
                     stateWRHDR:
                      begin
                          if (rpCLBERR)
@@ -1109,7 +1119,7 @@ module RPCTRL (
                                   bit_cnt <= bit_cnt + 1'b1;
                              end
                      end
-
+-
                     //
                     // stateRDHDRGAP
                     //
@@ -1220,6 +1230,8 @@ module RPCTRL (
                     //
                     // stateRDFIXECC:
                     //
+                    // Fix data (Diagnostic Mode only)
+                    //
                     // This state fixes ECC errors, if possible.
                     //
 
@@ -1227,6 +1239,7 @@ module RPCTRL (
                       begin
                          state <= stateDONE;
                       end
+`endif
 
                     //
                     // stateDATA:
@@ -1280,29 +1293,29 @@ module RPCTRL (
    //
    // Load data from memory.  Store data to memory
    //
-   
+
 `ifdef NOT_IMPLEMENTED
-   
+
    localparam [2:0] busIDLE  = 0,
                     busRDREQ = 1,
                     busRDACK = 2,
                     busWRREQ = 3,
                     busWRACK = 4;
-   
+
    //
    // The first word of a disk write is read from memory during the header.
    // The last word of a disk read is written to memory during the ecc.
    //
-         
+
    reg rpINCBA;
    reg rpINCWC
    reg rpDEVREQO;
    reg [0:31] tempDATAI;
    reg [2: 0] busState;
-   
+
    devDATAI
    devDATAO
-     
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -1363,9 +1376,9 @@ module RPCTRL (
              endcase
           end
      end
-                     
+
 `endif
-   
+
 `define asdf
 `ifdef asdf
 

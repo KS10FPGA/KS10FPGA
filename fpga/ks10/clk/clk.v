@@ -6,8 +6,8 @@
 //   Clock Divider
 //
 // Details
-//   This divides the input clock frequency and synchronizes the reset input
-//   to that clock.
+//   This divides the input clock frequency and synchronizes the reset input to
+//   that clock.
 //
 //   This file contains two implementations of the clock generator.  The first
 //   one is totally generic.   The second is Xilinx specific and uses a PLL
@@ -46,19 +46,19 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module CLK(RESET_N, CLK50MHZ, cpuCLK, memCLK, rst, clkPHS);
-
-   input        RESET_N;
-   input        CLK50MHZ;
-   output       cpuCLK;
-   output       memCLK;
-   output       rst;
-   output [1:4] clkPHS;
+module CLK (
+      input  wire       RESET_N,
+      input  wire       CLK50MHZ,
+      output wire       cpuCLK,
+      output wire       memCLK,
+      output wire       rst,
+      output wire [1:4] clkPHS
+   );
 
    wire locked;
    wire RESET = !RESET_N;
 
-`ifdef __XILINX
+`ifdef XILINX
 
    //
    // The following code is Xilinx Spartan 6 specific.
@@ -142,59 +142,56 @@ module CLK(RESET_N, CLK50MHZ, cpuCLK, memCLK, rst, clkPHS);
    // State Machine
    //
 
-   reg       cpuCLK;
-   reg [1:4] clkPHS;
+   reg cpuCLKb;
+   reg [1:4] clkPHSb;
 
    always @(posedge CLK50MHZ or posedge RESET)
      begin
         if (RESET)
           begin
-             clkPHS <= clkT1;
-             cpuCLK <= 0;
+             clkPHSb <= clkT1;
+             cpuCLKb <= 0;
           end
         else
           begin
-             case (clkPHS)
+             case (clkPHSb)
                clkT1:
                  begin
-                    clkPHS <= clkT2;
-                    cpuCLK <= 1;
+                    clkPHSb <= clkT2;
+                    cpuCLKb <= 1;
                  end
                clkT2:
                  begin
-                    clkPHS <= clkT3;
-                    cpuCLK <= 1;
+                    clkPHSb <= clkT3;
+                    cpuCLKb <= 1;
                  end
                clkT3:
                  begin
-                    clkPHS <= clkT4;
-                    cpuCLK <= 0;
+                    clkPHSb <= clkT4;
+                    cpuCLKb <= 0;
                  end
                clkT4:
                  begin
-                    clkPHS <= clkT1;
-                    cpuCLK <= 0;
+                    clkPHSb <= clkT1;
+                    cpuCLKb <= 0;
                  end
                default:
                  begin
-                    clkPHS <= clkT1;
-                    cpuCLK <= 0;
+                    clkPHSb <= clkT1;
+                    cpuCLKb <= 0;
                  end
              endcase
           end
      end
 
    //
-   // No phase-locked loop here
+   // Fixup Outputs
    //
 
    assign locked = 1'b1;
-
-   //
-   // RAM Clock Output
-   //
-
    assign memCLK = CLK50MHZ;
+   assign cpuCLK = cpuCLKb;
+   assign clkPHS = clkPHSb;
 
 `endif
 

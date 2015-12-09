@@ -85,7 +85,7 @@ module KS10 (
       output wire [ 0:22] ssramADDR,    // SSRAM Address Bus
       inout  wire [ 0:35] ssramDATA,    // SSRAM Data Bus
       output wire         haltLED,      // Halt LED
-      output wire [ 0: 7] test          // Test signals
+      output wire [ 0:27] test          // Test signals
    );
 
    //
@@ -315,7 +315,8 @@ module KS10 (
       .ssramWE_N        (ssramWE_N),
       .ssramCE          (ssramCE),
       .ssramADDR        (ssramADDR),
-      .ssramDATA        (ssramDATA)
+      .ssramDATA        (ssramDATA),
+      .test             (test)
    );
 
    //
@@ -511,19 +512,6 @@ module KS10 (
    assign ubaDATAO[2] = 0;
    assign ubaINTRO[0] = 0;
    assign ubaINTRO[2] = 0;
-
-   //
-   // Test Signals
-   //
-
-   assign test[0] = RESET_N;
-   assign test[1] = rst;
-   assign test[2] = 0;
-   assign test[3] = 0;
-   assign test[4] = 0;
-   assign test[5] = 0;
-   assign test[6] = 0;
-   assign test[7] = 0;
 
    //
    // Halt LED
