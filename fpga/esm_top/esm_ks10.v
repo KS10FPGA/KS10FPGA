@@ -84,7 +84,7 @@ module ESM_KS10 (
       output wire [ 0:22] ssramADDR,    // SSRAM Address Bus
       inout  wire [ 0:35] ssramDATA,    // SSRAM Data Bus
       output wire         haltLED,      // Halt LED
-      output wire [ 0: 7] test          // Test signals
+      output wire [ 0:27] test          // Test signals
    );
 
    //
