@@ -63,7 +63,8 @@ module MEM (
       output wire         ssramWE_N,    // SSRAM WE#
       output wire         ssramCE,      // SSRAM CE
       output wire [ 0:22] ssramADDR,    // SSRAM Address Bus
-      inout  wire [ 0:35] ssramDATA     // SSRAM Data Bus
+      inout  wire [ 0:35] ssramDATA,    // SSRAM Data Bus
+      output wire [ 0:27] test          // Test signals
    );
 
    //
@@ -184,8 +185,6 @@ module MEM (
    //  MMC7/E157
    //
 
-// assign busDATAO = busIO ? regSTAT : mem[rd_addr];
-
    always @*
      begin
         if (busIO)
@@ -203,7 +202,21 @@ module MEM (
    assign busACKO = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
 
    //
-   // Syncrhonous SRAM for test
+   // Delay clkPHS[1] to create memory access strobe
+   //
+
+   reg memSTB;
+
+   always @(negedge memCLK or posedge rst)
+     begin
+        if (rst)
+          memSTB <= 0;
+        else
+          memSTB <= clkPHS[1];
+     end
+
+   //
+   // Synchronous SRAM for test
    //
 
    reg  [0:35] mem[0:32767];
@@ -215,25 +228,32 @@ module MEM (
      $readmemh(`SSRAM_DAT, mem);
 `endif
 
-   always @(negedge cpuCLK)
+   always @(posedge memCLK)
      begin
-        if (memWRITE)
-          mem[wr_addr] <= busDATAI;
-        rd_addr <= wr_addr;
+        if (memSTB)
+          begin
+             if (memWRITE)
+               mem[wr_addr] <= busDATAI;
+             rd_addr <= wr_addr;
+          end
      end
 
    //
-   // Syncrhonous SRAM for HSB
+   // Synchronous SRAM for HSB
    //
 
    reg  [0:35] hsb[0:31];
    reg  [0: 4] rd_hsb_addr;
    wire [0: 4] wr_hsb_addr = busMEMADDR[30:35];
-   always @(negedge cpuCLK)
+
+   always @(posedge memCLK)
      begin
-        if (memWRITE & (busMEMADDR[16:30] == addrHSB[16:30]))
-          hsb[wr_hsb_addr] <= busDATAI;
-        rd_hsb_addr <= wr_hsb_addr;
+        if (memSTB & (busMEMADDR[16:30] == addrHSB[16:30]))
+          begin
+             if (memWRITE)
+               hsb[wr_hsb_addr] <= busDATAI;
+             rd_hsb_addr <= wr_hsb_addr;
+          end
      end
 
    //
@@ -249,6 +269,39 @@ module MEM (
    assign ssramCE      = 1;
    assign ssramADDR    = 0;
    assign ssramDATA    = 0;
+
+   //
+   // Test Signals
+   //
+
+   assign test[ 0] = 0;                 // VB31
+   assign test[ 1] = 0;                 // VB30
+   assign test[ 2] = 0;                 // VB29
+   assign test[ 3] = 0;                 // VB28
+   assign test[ 4] = 0;                 // VB27
+   assign test[ 5] = 0;                 // VB26
+   assign test[ 6] = 0;                 // VB25
+   assign test[ 7] = 0;                 // VB24
+   assign test[ 8] = 0;                 // VB23
+   assign test[ 9] = 0;                 // VB22
+   assign test[10] = 0;                 // VB21
+   assign test[11] = 0;                 // VB20
+   assign test[12] = 0;                 // VB19
+   assign test[13] = 0;                 // VB18
+   assign test[14] = 0;                 // VB15
+   assign test[15] = 0;                 // VB14
+   assign test[16] = 0;                 // VB13
+   assign test[17] = 0;                 // VB12
+   assign test[18] = 0;                 // VB11
+   assign test[19] = 0;                 // VB10
+   assign test[20] = 0;                 // VB9
+   assign test[21] = 0;                 // VB8
+   assign test[22] = 0;                 // VB7
+   assign test[23] = 0;                 // VB6
+   assign test[24] = 0;                 // VB5
+   assign test[25] = 0;                 // VB4
+   assign test[26] = 0;                 // VB3
+   assign test[27] = 0;                 // VB2
 
    //
    // Simulation/Debug
