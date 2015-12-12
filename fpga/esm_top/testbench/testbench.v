@@ -54,99 +54,99 @@ module testbench;
    // Console Interfaces
    //
 
-   wire [15:0] conDATA;         // Data bus
-   reg  [ 5:1] conADDR;         // Address Bus
-   reg  [15:0] conDATO;         // Data Bus Out
-   reg         conBLE_N;        // Low Byte Lane
-   reg         conBHE_N;        // High Byte Lane
-   reg         conRD_N;         // Read Strobe
-   reg         conWR_N;         // Write Strobe
-   wire        conINTR_N;       // Console Interrupt
-   wire        conINTR = ~conINTR_N;
-   wire        haltLED;         // Halt LED
-   wire [0 :7] test;            // Test port
+   wire [15: 0] conDATA;        // Data bus
+   reg  [ 5: 1] conADDR;        // Address Bus
+   reg  [15: 0] conDATO;        // Data Bus Out
+   reg          conBLE_N;       // Low Byte Lane
+   reg          conBHE_N;       // High Byte Lane
+   reg          conRD_N;        // Read Strobe
+   reg          conWR_N;        // Write Strobe
+   wire         conINTR_N;      // Console Interrupt
+   wire         conINTR = ~conINTR_N;
+   wire         haltLED;        // Halt LED
+   wire [0 :27] test;           // Test port
 
    //
    // DZ11 Serial Interface
    //
 
-   wire [1:2]  TXD = 2'b11;     // DZ11 RS-232 Received Data
-   wire [1:2]  RXD;             // DZ11 RS-232 Transmitted Data
+   wire [ 1: 2] TXD = 2'b11;    // DZ11 RS-232 Received Data
+   wire [ 1: 2] RXD;            // DZ11 RS-232 Transmitted Data
 
    //
    // RH11 Secure Digital Interface
    //
 
 `ifdef SIM_SDHC_OFFLINE
-   wire        rh11CD_N = 1;    // RH11 Card not present
+   wire         rh11CD_N = 1;   // RH11 Card not present
 `else
-   wire        rh11CD_N = 0;    // RH11 Card present
+   wire         rh11CD_N = 0;   // RH11 Card present
 `endif
-   wire        rh11MISO;        // RH11 Data In
-   wire        rh11MOSI;        // RH11 Data Out
-   wire        rh11SCLK;        // RH11 Clock
-   wire        rh11CS;          // SD11 Chip Select
+   wire         rh11MISO;       // RH11 Data In
+   wire         rh11MOSI;       // RH11 Data Out
+   wire         rh11SCLK;       // RH11 Clock
+   wire         rh11CS;         // SD11 Chip Select
 
    //
    // SSRAM
    //
 
-   wire        ssramCLK;        // SSRAM Clock
-   wire [0:22] ssramADDR;       // SSRAM Address Bus
-   wire [0:35] ssramDATA;       // SSRAM Data Bus
-   wire        ssramADV;        // SSRAM Advance
-   wire        ssramWE_N;       // SSRAM Write
-   wire        ssramOE_N;       // SSRAM OE#
-   wire        ssramCE;         // SSRAM CE
-   wire        ssramCLKEN_N;    // SSRAM CLKEN#
-   wire [1: 4] ssramBW_N;       // SSRAM BW#
+   wire         ssramCLK;       // SSRAM Clock
+   wire [ 0:19] ssramADDR;      // SSRAM Address Bus
+   wire [ 0:35] ssramDATA;      // SSRAM Data Bus
+   wire         ssramADV;       // SSRAM Advance
+   wire         ssramWE_N;      // SSRAM Write
+   wire         ssramOE_N;      // SSRAM OE#
+   wire         ssramCE;        // SSRAM CE
+   wire         ssramCLKEN_N;   // SSRAM CLKEN#
+   wire [ 1: 4] ssramBW_N;      // SSRAM BW#
 
    //
    // Control/Status Register Definitions
    //
 
-   localparam [0:15] statRESET    = 16'h0001;
-   localparam [0:15] statINTR     = 16'h0002;
-   localparam [0:15] statCACHEEN  = 16'h0004;
-   localparam [0:15] statTRAPEN   = 16'h0008;
-   localparam [0:15] statTIMEREN  = 16'h0010;
-   localparam [0:15] statEXEC     = 16'h0020;
-   localparam [0:15] statCONT     = 16'h0040;
-   localparam [0:15] statRUN      = 16'h0080;
-   localparam [0:15] statHALT     = 16'h0100;
-   localparam [0:15] statNXMNXD   = 16'h0200;
-   localparam [0:15] statGO       = 16'h0001;
+   localparam [ 0:15] statRESET     = 16'h0001;
+   localparam [ 0:15] statINTR      = 16'h0002;
+   localparam [ 0:15] statCACHEEN   = 16'h0004;
+   localparam [ 0:15] statTRAPEN    = 16'h0008;
+   localparam [ 0:15] statTIMEREN   = 16'h0010;
+   localparam [ 0:15] statEXEC      = 16'h0020;
+   localparam [ 0:15] statCONT      = 16'h0040;
+   localparam [ 0:15] statRUN       = 16'h0080;
+   localparam [ 0:15] statHALT      = 16'h0100;
+   localparam [ 0:15] statNXMNXD    = 16'h0200;
+   localparam [ 0:15] statGO        = 16'h0001;
 
 `ifdef SIM_SMMON
-   localparam [0:35] valREGCIR    = 36'o254000_020000;  // SMMON
+   localparam [ 0:35] valREGCIR     = 36'o254000_020000;  // SMMON
 `else
-   localparam [0:35] valREGCIR    = 36'o254000_030010;  // Basic diagnostics
+   localparam [ 0:35] valREGCIR     = 36'o254000_030010;  // Basic diagnostics
 `endif
 
    //
    // Register Addresses from Console Interface
    //
 
-   localparam [7:0] addrREGADDR   = 8'h00;
-   localparam [7:0] addrREGDATA   = 8'h08;
-   localparam [7:0] addrREGSTATUS = 8'h10;
-   localparam [7:0] addrREGCIR    = 8'h18;
-   localparam [7:0] addrRH11DEB   = 8'h30;
-   localparam [7:0] addrVersion   = 8'h38;
+   localparam [ 7: 0] addrREGADDR   = 8'h00;
+   localparam [ 7: 0] addrREGDATA   = 8'h08;
+   localparam [ 7: 0] addrREGSTATUS = 8'h10;
+   localparam [ 7: 0] addrREGCIR    = 8'h18;
+   localparam [ 7: 0] addrRH11DEB   = 8'h30;
+   localparam [ 7: 0] addrVersion   = 8'h38;
 
    //
    // KS10 Addresses
    //
 
-   localparam [18:35] addrSWITCH  = 18'o000030;
-   localparam [18:35] addrSTAT    = 18'o000031;
-   localparam [18:35] addrCIN     = 18'o000032;
-   localparam [18:35] addrCOUT    = 18'o000033;
-   localparam [18:35] addrKIN     = 18'o000034;
-   localparam [18:35] addrKOUT    = 18'o000035;
-   localparam [18:35] addrRHBASE  = 18'o000036;
-   localparam [18:35] addrBOOTDSK = 18'o000037;
-   localparam [18:35] addrBOOTMAG = 18'o000040;
+   localparam [18:35] addrSWITCH    = 18'o000030;
+   localparam [18:35] addrSTAT      = 18'o000031;
+   localparam [18:35] addrCIN       = 18'o000032;
+   localparam [18:35] addrCOUT      = 18'o000033;
+   localparam [18:35] addrKIN       = 18'o000034;
+   localparam [18:35] addrKOUT      = 18'o000035;
+   localparam [18:35] addrRHBASE    = 18'o000036;
+   localparam [18:35] addrBOOTDSK   = 18'o000037;
+   localparam [18:35] addrBOOTMAG   = 18'o000040;
 
    //
    // Line buffer for expect()
@@ -783,8 +783,8 @@ module testbench;
       .ce2              (ssramCE),
       .ce3b             (1'b0),
       .mode             (1'b0),
-      .a                (ssramADDR[3:22]),
-      .d                (ssramDATA[0:35])
+      .a                (ssramADDR[0:19]),      // Endian Swap
+      .d                (ssramDATA[0:35])       // Endian Swap
    );
 
 `ifdef SIM_SDHC
