@@ -62,7 +62,7 @@ module MEM (
       output wire         ssramOE_N,    // SSRAM OE#
       output wire         ssramWE_N,    // SSRAM WE#
       output wire         ssramCE,      // SSRAM CE
-      output wire [ 0:22] ssramADDR,    // SSRAM Address Bus
+      output wire [ 0:19] ssramADDR,    // SSRAM Address Bus
       inout  wire [ 0:35] ssramDATA,    // SSRAM Data Bus
       output wire [ 0:27] test          // Test signals
    );
