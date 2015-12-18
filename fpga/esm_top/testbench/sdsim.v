@@ -184,6 +184,8 @@
 
                          sector = spiRX[16:39];
                          position = sector * 512;
+                         $display("[%11.3f] KS10: SDSIM - Seek to SD Sector 0x%08x for read. (Byte = %d).\n",
+                                  $time/1.0e3, sector, position);
 
                          status = $fseek(fd, position, `SEEK_SET);
                          if (status == `EOF)
@@ -191,7 +193,6 @@
                               $display("[%11.3f] KS10: SDSIM - $fseek() returned EOF.\n", $time/1.0e3);
                               $stop();
                            end
-                         $display("[%11.3f] KS10: SDSIM - Seek to SD Sector %d. (Position = %d).\n", $time/1.0e3, sector, position);
 
                          bitcnt <= 47;
                          spiTX  <= 56'hff_ff_00_ff_ff_fe_ff;
@@ -208,14 +209,15 @@
 
                          sector = spiRX[16:39];
                          position = sector * 512;
-
+                         $display("[%11.3f] KS10: SDSIM - Seek to SD Sector 0x%08x for write. (Byte = %d).\n",
+                                  $time/1.0e3, sector, position);
+                         
                          status = $fseek(fd, position, `SEEK_SET);
                          if (status == `EOF)
                            begin
                               $display("[%11.3f] KS10: SDSIM - $fseek() returned EOF.\n", $time/1.0e3);
                               $stop();
                            end
-                         $display("[%11.3f] KS10: SDSIM - Seek to SD Sector %d.\n", $time/1.0e3, sector);
 
                          bitcnt <= 47;
                          spiTX  <= 56'hff_ff_00_ff_ff_fe_ff;

@@ -56,7 +56,9 @@ static void taskHalt(void * /*param*/) {
             printf("KS10: %sHalted.%s\n", "\e[0;31m", "\e[0m");
             printHaltStatus();
         } else if (!halt && lastHalt) {
+#if 0
             printf("KS10: %sRunning.%s\n", "\e[0;32m", "\e[0m");
+#endif
         }
         lastHalt = halt;
         xTaskDelay(1);

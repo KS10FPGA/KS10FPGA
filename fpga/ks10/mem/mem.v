@@ -62,8 +62,9 @@ module MEM(
       output wire         ssramOE_N,    // SSRAM OE#
       output wire         ssramWE_N,    // SSRAM WE#
       output wire         ssramCE,      // SSRAM CE
-      output wire [ 0:22] ssramADDR,    // SSRAM Address Bus
-      inout  wire [ 0:35] ssramDATA     // SSRAM Data Bus
+      output wire [ 0:19] ssramADDR,    // SSRAM Address Bus
+      inout  wire [ 0:35] ssramDATA,    // SSRAM Data Bus
+      output wire [ 0:27] test          // Test signals
    );
 
    //
@@ -141,8 +142,9 @@ module MEM(
        busDATAI[0:35],          // dataport[219:254]
        busDATAO[0:35],          // dataport[183:218]
        busADDRI[0:35],          // dataport[147:182]
-       ssramDATA[0:35],         // dataport[111:146]
-       ssramADDR[0:22],         // dataport[ 88:110]
+       ssramDATAIN[0:35],       // dataport[111:146]
+       ssramADDR[0:19],         // dataport[ 91:110]
+       3'b0,,                   // dataport[ 88: 90]
        clkPHS[1:4],             // dataport[ 84: 87]
        ssramOE_N,               // dataport[     83]
        ssramWE_N,               // dataport[     82]
@@ -165,22 +167,22 @@ module MEM(
 `endif
 
    //
-   // Data is written to the SSRAM on clkPHS[4] which is
-   // two clock cycles after the WE signal is asserted.
+   // Address Cycle
    //
-/*
 
-   reg dir;
+   reg ac;
    always @(negedge memCLK or posedge rst)
      begin
         if (rst)
-          dir <= 0;
+          ac <= 0;
         else
-          dir <= memWrite & clkPHS[3];
+          ac <= !clkPHS[4];
      end
-
+   
    //
-   // ssramWE is asserted on clkPHS[2] during a write cycle
+   // SSRAM Write Enable
+   //  This synchronizes the SSRAM Write Enable to the falling edge of the
+   //  SSRAM Clock.
    //
 
    reg ssramWE;
@@ -189,40 +191,22 @@ module MEM(
         if (rst)
           ssramWE <= 0;
         else
-          ssramWE <= memWrite & clkPHS[1];
+          ssramWE <= memWRITE & clkPHS[1];
      end
-*/
 
    //
-   // Register the Bus Data In
+   // SSRAM Output Enable
    //
 
-/*
-   reg [0:35] writeReg;
-   always @(posedge memCLK or posedge rst)
+   reg ssramOE;
+   always @(negedge memCLK or posedge rst)
      begin
         if (rst)
-          writeReg <= 0;
+          ssramOE <= 0;
         else
-          if (clkPHS[1])
-            writeReg <= busDATAI;
+          ssramOE <= clkPHS[3];
      end
-
-   //
-   // Register the Bus Data Out
-   //
-
-   reg [0:35] readReg;
-   always @(posedge memCLK or posedge rst)
-     begin
-        if (rst)
-          readReg <= 0;
-        else
-          if (clkPHS[4])
-            readReg <= ssramDATA;
-     end
-*/
-
+ 
    //
    // SSRAM Interface
    //  The OE# pin is tied low.  This is permitted per the CY7C1460AV33 data
@@ -230,25 +214,28 @@ module MEM(
    //  that "... on the subsequent clock rise the data lines are automatically
    //  tri-stated regardless of the state of the OE input signal."
    //
-   //  The the eval board has 23 address lines connected between the FPGA and
-   //  the SSRAM chip.  However the 1MW CY7C1460AV33 SSRAM chip that is on the
-   //  board only has 20-bit addressing.  Therefore the upper 3 address lines
-   //  are not used and are always set to zero.
-   //
 
-// assign ssramCLK     = !memCLK;
    assign ssramCLKEN_N = 0;
    assign ssramADV     = 0;
    assign ssramBW_N    = 0;
-   assign ssramWE_N    = !(memWRITE & clkPHS[2]);
-// assign ssramWE_N    = !ssramWE;
-   assign ssramOE_N    = 0;
-// assign ssramOE_N    = !(memRead  & clkPHS[4]);
-   assign ssramCE      = 1;
-   assign ssramADDR    = {3'b0, busMEMADDR};
-// assign ssramDATA    = memWRITE & clkPHS[4] ? writeReg : 36'bz;
-   assign ssramDATA    = memWRITE & clkPHS[4] ? busDATAI : 36'bz;
-// assign ssramDATA    = dir ? busDATAI : 36'bz;
+   assign ssramWE_N    = !ssramWE;
+   assign ssramOE_N    = 0;//!ssramOE;
+   assign ssramCE      = ac;
+   assign ssramADDR    = busMEMADDR;
+   assign ssramDATA    = memWRITE ? busDATAI : 36'bz;
+   
+   //
+   // SSRAM Read Latch
+   //
+
+   reg [0:35] regREAD;
+   always @*
+     begin
+        if (ssramOE)
+          regREAD <= ssramDATA;
+        else
+          regREAD <= regREAD;
+     end
 
    //
    // Bus Multiplexer
@@ -268,7 +255,7 @@ module MEM(
    //  MMC7/E157
    //
 
-   assign busDATAO = busIO ? regSTAT : ssramDATA;
+   assign busDATAO = busIO ? regSTAT : regREAD;
 
    //
    // Create the busACKO signal
@@ -276,35 +263,120 @@ module MEM(
 
    assign busACKO = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
 
+   //
+   // Test outputs
+   //
+
+   wire testRAMCLK;
+   wire testCPUCLK;
+   wire clkPHS1;
+   wire clkPHS2;
+   wire clkPHS3;
+   wire clkPHS4;
+
 `ifdef XILINX
 
-   //
-   // Xilinx calls this 'clock forwarding'.  The synthesis tools will give
-   // errors/warning if you attempt to drive a clock output off-chip without
-   // this.
-   //
+   wire clkPHSb[1:4];
 
-   ODDR2 #(
-       .DDR_ALIGNMENT      ("NONE"),    // Sets output alignment
-       .INIT               (1'b0),      // Initial state of the Q output
-       .SRTYPE             ("SYNC")     // Reset type: "SYNC" or "ASYNC"
-   )
-   iODDR2 (
-       .Q                  (ssramCLK),  // 1-bit DDR output data
-       .C0                 (!memCLK),   // 1-bit clock input
-       .C1                 (memCLK),    // 1-bit clock input
-       .CE                 (1'b1),      // 1-bit clock enable input
-       .D0                 (1'b1),      // 1-bit data input (associated with C0)
-       .D1                 (1'b0),      // 1-bit data input (associated with C1)
-       .R                  (1'b0),      // 1-bit reset input
-       .S                  (1'b0)       // 1-bit set input
+   CLKFWD fwdCPUCLK (
+      .I (cpuCLK),
+      .O (testCPUCLK)
+   );
+
+   CLKFWD fwdSSRAMCLK (
+      .I (memCLK),
+      .O (ssramCLK)
+   );
+
+   CLKFWD fwdRAMCLK (
+      .I (memCLK),
+      .O (testRAMCLK)
+   );
+
+   BUFG bufCLKPHS1 (
+      .I (clkPHS[1]),
+      .O (clkPHSb[1])
+   );
+
+   CLKFWD fwdCLKPHS1 (
+      .I (clkPHSb[1]),
+      .O (clkPHS1)
+   );
+
+   BUFG bufCLKPHS2 (
+      .I (clkPHS[2]),
+      .O (clkPHSb[2])
+   );
+
+   CLKFWD fwdCLKPHS2 (
+      .I (clkPHSb[2]),
+      .O (clkPHS2)
+   );
+
+   BUFG bufCLKPHS3 (
+      .I (clkPHS[3]),
+      .O (clkPHSb[3])
+   );
+
+   CLKFWD fwdCLKPHS3 (
+      .I (clkPHSb[3]),
+      .O (clkPHS3)
+   );
+
+   BUFG bufCLKPHS4 (
+      .I (clkPHS[4]),
+      .O (clkPHSb[4])
+   );
+
+   CLKFWD fwdCLKPHS4 (
+      .I (clkPHSb[4]),
+      .O (clkPHS4)
    );
 
 `else
 
-   assign ssramCLK = !memCLK;
+   assign testCPUCLK = cpuCLK;
+   assign testRAMCLK = memCLK;
+   assign ssramCLK   = memCLK;
+   assign clkPHS1    = clkPHS[1];
+   assign clkPHS2    = clkPHS[2];
+   assign clkPHS3    = clkPHS[3];
+   assign clkPHS4    = clkPHS[4];
 
 `endif
+
+   //
+   // Test Signals
+   //
+
+   assign test[ 0] = testCPUCLK;        // VB31
+   assign test[ 1] = testRAMCLK;        // VB30
+   assign test[ 2] = busADDRI[35];      // VB29
+   assign test[ 3] = busADDRI[34];      // VB28
+   assign test[ 4] = busADDRI[33];      // VB27
+   assign test[ 5] = busADDRI[32];      // VB26
+   assign test[ 6] = busDATAI[35];      // VB25
+   assign test[ 7] = busDATAI[34];      // VB24
+   assign test[ 8] = busDATAI[33];      // VB23
+   assign test[ 9] = busDATAI[32];      // VB22
+   assign test[10] = memREAD;           // VB21
+   assign test[11] = memWRITE;          // VB20
+   assign test[12] = clkPHS1;           // VB19
+   assign test[13] = clkPHS2;           // VB18
+   assign test[14] = clkPHS3;           // VB15
+   assign test[15] = clkPHS4;           // VB14
+   assign test[16] = ssramWE_N;         // VB13
+   assign test[17] = ssramOE_N;         // VB12
+   assign test[18] = 0;                 // VB11
+   assign test[19] = 0;                 // VB10
+   assign test[20] = 0;                 // VB9
+   assign test[21] = 0;                 // VB8
+   assign test[22] = 0;                 // VB7
+   assign test[23] = 0;                 // VB6
+   assign test[24] = regREAD[35];       // VB5
+   assign test[25] = regREAD[34];       // VB4
+   assign test[26] = regREAD[33];       // VB3
+   assign test[27] = regREAD[32];       // VB2
 
    //
    // Simulation/Debug

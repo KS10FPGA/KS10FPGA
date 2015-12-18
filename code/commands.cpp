@@ -860,7 +860,19 @@ static void cmdGO(int argc, char *argv[]) {
         "Usage: GO diagname.sav address\n"
         "Run a diagnostic program\n";
 
+    static const char cntl_e = 0x05;
+    static const ks10_t::addr_t memSize = 32 * 1024;
+
     if (argc == 1) {
+
+        //
+        // Clear memory
+        //
+
+        printf("KS10: Clearing Memory.\n");
+        for (ks10_t::addr_t i = 0; i < memSize; i++) {
+            ks10_t::writeMem(i, 0);
+        }
 
         //
         // Load the diagnostic monitor into memory
@@ -871,6 +883,14 @@ static void cmdGO(int argc, char *argv[]) {
             printf("Failed to load DIAG/SMMON.SAV\n");
             return;
         }
+
+        //
+        // Configure the CPU
+        //
+
+        ks10_t::cacheEnable(true);
+        ks10_t::trapEnable(true);
+        ks10_t::timerEnable(true);
 
         //
         // Start the KS10 running
@@ -885,7 +905,9 @@ static void cmdGO(int argc, char *argv[]) {
 
         while (!ks10_t::halt()) {
             int ch = getchar();
-            if (ch != -1) {
+            if (ch == cntl_e) {
+                break;
+            } else if (ch != -1) {
                 ks10_t::putchar(ch);
             }
         }
@@ -896,6 +918,15 @@ static void cmdGO(int argc, char *argv[]) {
 
         ks10_t::trapEnable(true);
         ks10_t::timerEnable(false);
+
+        //
+        // Clear memory
+        //
+
+        printf("KS10: Clearing Memory.\n");
+        for (ks10_t::addr_t i = 0; i < memSize; i++) {
+            ks10_t::writeMem(i, 0);
+        }
 
         //
         // Read the diagnostic subroutines into memory
@@ -949,8 +980,12 @@ static void cmdGO(int argc, char *argv[]) {
         printf("Patched code\n");
 
         //
+        // Configure the CPU
         //
-        //
+
+        ks10_t::cacheEnable(true);
+        ks10_t::trapEnable(true);
+        ks10_t::timerEnable(true);
 
         if (ks10_t::cpuReset()) {
             printf("????? KS10 should not be reset.\n");
@@ -970,7 +1005,9 @@ static void cmdGO(int argc, char *argv[]) {
 
         while (!ks10_t::halt()) {
             int ch = getchar();
-            if (ch != -1) {
+            if (ch == cntl_e) {
+                break;
+            } else if (ch != -1) {
                 ks10_t::putchar(ch);
             }
         }
@@ -1112,6 +1149,25 @@ static void cmdLI(int argc, char *argv[]) {
 }
 
 //
+//! Memory clear
+//
+
+static void cmdMC(int argc, char */*argv*/[]) {
+    const char *usage =
+        "Usage: MC\n"
+        "Clear KS10 Memory.\n";
+
+    if (argc == 1) {
+        const ks10_t::addr_t memSize = 32 * 1024;
+        for (ks10_t::addr_t i = 0; i < memSize; i++) {
+            ks10_t::writeMem(i, 0);
+        }
+    } else {
+        printf(usage);
+    }
+}
+
+//
 //! Master Reset
 //!
 //! The <b>MR</b> (Master Reset) command hard resets the KS10 CPU.
@@ -1151,6 +1207,29 @@ static void cmdMR(int argc, char *argv[]) {
         printf(usage);
     }
 }
+
+#if 1
+static void cmdMT(int /*argc*/, char */*argv*/[]) {
+    for (;;) {
+        /*
+        ks10_t::writeMem(1, 1);
+        ks10_t::writeMem(2, 2);
+        ks10_t::writeMem(4, 4);
+        ks10_t::writeMem(8, 8);
+        */
+        ks10_t::readMem(0);
+        /*
+        ks10_t::readMem(4);
+        ks10_t::readMem(8);
+        ks10_t::readMem(12);
+        ks10_t::readMem(16);
+        ks10_t::readMem(20);
+        ks10_t::readMem(24);
+        */
+    }
+
+}
+#endif
 
 #if 1
 
@@ -1654,11 +1733,18 @@ static void parseCommand(char * buf) {
         {"LR", cmdXX},          // Not implemented.
         {"LT", cmdXX},          // Not implemented.
         {"MB", cmdXX},          // Not implemented.
+#if 1
+        {"MC", cmdMC},          // Memory clear
+#endif
         {"MK", cmdXX},          // Not implemented.
         {"MM", cmdXX},          // Not implemented.
         {"MR", cmdMR},
         {"MS", cmdXX},          // Not implemented.
+#if 0
         {"MT", cmdXX},          // Not implemented.
+#else
+        {"MT", cmdMT},          // Memory Test
+#endif
         {"PE", cmdXX},          // Not implemented.
         {"PM", cmdXX},          // Not implemented.
         {"PW", cmdXX},          // Not implemented.
