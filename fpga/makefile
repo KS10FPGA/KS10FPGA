@@ -58,6 +58,7 @@ IVERILOG := iverilog
 VVP      := vvp
 CLOC     := ./cloc-1.62.exe
 
+#
 # Fix pipelining (the tee command)
 #
 # Quoting the bash manual -
@@ -108,42 +109,56 @@ CLOC     := ./cloc-1.62.exe
 #DIAG     := DSDZA-RD00		# 2411.8 ms
 #DIAG     := DSRPA-RD00		#  ???.? ms FAIL
 
-DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the RD00-XXXX suffix
+DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the -RD00-XXXX suffix
 
 #
 # Macro Definitions
 #
-#   -D ENABLE_TIMER	Enable 1 ms timer.  Slows simulation.  (See testbench)
-#   -D SIM_SMMON	Boot to SMMON instead of diagnostic app (See testbench)
-#   -D SIM_CTY		Simulate the CTY (See testbench)
-#   -D SIM_SDHC		Simulate the SDHC Card
+#   -D ENABLE_TIMER     Enable 1 ms timer.  Slows simulation.  (See testbench)
+#   -D SIM_SMMON        Boot to SMMON instead of diagnostic app (See testbench)
+#   -D SIM_CTY          Simulate the CTY (See testbench)
+#   -D SIM_SDHC         Simulate the SDHC Card
 #   -D SIM_SDHC_OFFLINE Simulate the SDHC as offline
 #   -D STOP_ON_COMPLETE Stop simulation when test is complete (See debug.v)
 #   -D STOP_ON_STUCK_PC Stop simulating when PC gets stuck.
-#   -D DEBUG_DSKAA	Diagnostic information (See debug.v)
-#   -D DEBUG=DSKAA	Diagnostic information (See debug.v)
+#   -D DEBUG_DSKAA      Diagnostic information (See debug.v)
+#   -D DEBUG=DSKAA      Diagnostic information (See debug.v)
+#
+
+SIM_ARGS := \
+        -D SIM_CTY \
+        -D SIM_SMMON \
+        -D SIM_SDHC \
+        -D ENABLE_TIMER \
+        -D STOP_ON_COMPLETE \
+        -D STOP_ON_STUCK_PC \
+        -D DEBUG_$(DIAGBASE) \
+        -D DEBUG=$(DIAGBASE) \
+        -D DIAG=$(DIAG)
+
+#
+# Synthesis Control Macros
+#
+# Macro Definitions
+#   -D RPXX_ENABLE      RPXX Card Detect Mask [7:0]
+#   -D RPXX_WP		RPXX Write Protect [7:0]
+#   -D RPXX_SIMSEEK	Simulate RPXX seek accurately but slowly
+#   -D RPXX_SIMSEARCH	Simulate RPXX search accurately bus slowly
+#   -D RPXX_SIMDMD	Simulate RPXX diagnostic mode
 #   -D CHIPSCOPE_CPU    Instrument the CPU
 #   -D CHIPSCOPE_UBA    Instrument the UBA
 #   -D CHIPSCOPE_SD     Instrument the SD Controller
 #   -D CHIPSCOPE_MEM    Instrument the Memory Controller
 #   -D CHIPSCOPE_CSL    Instrument the Console Interface
+#
 
-
-
-DEBUG_ARGS := \
-	-D SIM_CTY \
-	-D SIM_SMMON \
-	-D SIM_SDHC \
+SYN_ARGS := \
 	-D CHIPSCOPE_CPU \
-	-D ENABLE_TIMER \
-	-D STOP_ON_COMPLETE \
-	-D STOP_ON_STUCK_PC \
-	-D DEBUG_$(DIAGBASE) \
-	-D DEBUG=$(DIAGBASE) \
-	-D DIAG=$(DIAG)
+	-D RPXX_WP=8\'b00000000 \
+        -D RPXX_ENABLE=8\'b00000111
 
 #
-# Diagnostic Prefix for all DSxxx files
+# Diagnostic Prefix
 #
 
 PREFIX := MAINDEC-10-
@@ -257,6 +272,7 @@ RTL_FILES := \
 	ks10/rh11/rpxx/rper1.v \
 	ks10/rh11/rpxx/rper2.v \
 	ks10/rh11/rpxx/rper3.v \
+	ks10/rh11/rpxx/rphcrc.v \
 	ks10/rh11/rpxx/rpla.v \
 	ks10/rh11/rpxx/rpmr.v \
 	ks10/rh11/rpxx/rpof.v \
@@ -266,12 +282,12 @@ RTL_FILES := \
 	ks10/uba/uba.v \
 	ks10/uba/ubamr.v \
 	ks10/uba/ubasr.v \
-	ks10/uba/ubanpr.v \
 	ks10/uba/ubanxd.v \
 	ks10/uba/ubapage.v \
 	ks10/uba/ubatmo.v \
 	ks10/uba/ubaintr.v \
 	ks10/utils/sync.v \
+	ks10/utils/clkfwd.v \
 	ks10/utils/edgetrig.v
 
 #
@@ -281,7 +297,7 @@ RTL_FILES := \
 
 CGN_FILES =
 
-ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_CPU, $(SYN_ARGS)))
 RTL_FILES += \
 	ks10/xilinx/chipscope_cpu_ila/chipscope_cpu_ila.v \
 	ks10/xilinx/chipscope_cpu_icon/chipscope_cpu_icon.v \
@@ -292,34 +308,46 @@ CGN_FILES += \
 	ks10/xilinx/chipscope_cpu_vio/chipscope_cpu_vio.ngc
 endif
 
-ifneq (, $(findstring CHIPSCOPE_CSL, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_CSL, $(SYN_ARGS)))
 RTL_FILES += \
 	ks10/xilinx/chipscope_csl_ila/chipscope_csl_ila.v \
 	ks10/xilinx/chipscope_csl_icon/chipscope_csl_icon.v
+CGN_FILES += \
+	ks10/xilinx/chipscope_csl_ila/chipscope_csl_ila.ngc \
+	ks10/xilinx/chipscope_csl_icon/chipscope_csl_icon.ngc
 endif
 
-ifneq (, $(findstring CHIPSCOPE_MEM, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_MEM, $(SYN_ARGS)))
 RTL_FILES += \
 	ks10/xilinx/chipscope_mem_ila/chipscope_mem_ila.v \
 	ks10/xilinx/chipscope_mem_icon/chipscope_mem_icon.v
+CGN_FILES += \
+	ks10/xilinx/chipscope_mem_ila/chipscope_mem_ila.ngc \
+	ks10/xilinx/chipscope_mem_icon/chipscope_mem_icon.ngc
 endif
 
-ifneq (, $(findstring CHIPSCOPE_SD, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_SD, $(SYN_ARGS)))
 RTL_FILES += \
 	ks10/xilinx/chipscope_sd_ila/chipscope_sd_ila.v \
 	ks10/xilinx/chipscope_sd_icon/chipscope_sd_icon.v
+CGN_FILES += \
+	ks10/xilinx/chipscope_sd_ila/chipscope_sd_ila.ngc \
+	ks10/xilinx/chipscope_sd_icon/chipscope_sd_icon.ngc
 endif
 
-ifneq (, $(findstring CHIPSCOPE_UBA, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_UBA, $(SYN_ARGS)))
 RTL_FILES += \
 	ks10/xilinx/chipscope_uba_ila/chipscope_uba_ila.v \
 	ks10/xilinx/chipscope_uba_icon/chipscope_uba_icon.v 
+CGN_FILES += \
+	ks10/xilinx/chipscope_uba_ila/chipscope_uba_ila.ngc \
+	ks10/xilinx/chipscope_uba_icon/chipscope_uba_icon.ngc
 endif
 
 #
 # Simulation testbench files
 #
- 
+
 SIM_DISK := \
 	$(TESTBENCH)/sdsim.dsk
 
@@ -337,7 +365,7 @@ SSRAM_DAT := \
 
 MON_FILES := 
 
-ifneq (, $(findstring SIM_SMMON, $(DEBUG_ARGS)))
+ifneq (, $(findstring SIM_SMMON, $(SIM_ARGS)))
 
 MON_FILES += \
 	$(MAINDEC)/MAINDEC-10-DSQDA-RD00.SEQ \
@@ -393,6 +421,7 @@ INC_FILES := \
 	ks10/rh11/rpxx/rper1.vh \
 	ks10/rh11/rpxx/rper2.vh \
 	ks10/rh11/rpxx/rper3.vh \
+	ks10/rh11/rpxx/rphcrc.vh \
 	ks10/rh11/rpxx/rpof.vh \
 	ks10/rh11/rpxx/rpla.vh \
 	ks10/rh11/rpxx/rpmr.vh \
@@ -558,11 +587,10 @@ $(ISE)/$(PROJECT)_impact.cmd: makefile
 #
 # FUSE
 #  The Xilinx simulator has a different switch for defining macros.
-#  Pipe DEBUG_ARGS though sed
 #
 
 FUSE_ARGS := \
-	$(shell echo "$(DEBUG_ARGS)" | sed -e 's/-D/-d/g') \
+	$(subst -D,-d,$(SIM_ARGS) $(SYN_ARGS)) \
 	-d XILINX \
 	-d SSRAM_DAT=\"\"../../$(TESTBENCH)/$(DIAG).dat\"\" \
 	-d RAMFILE_DAT=\"\"../../$(RAMFILE_DAT)\"\" \
@@ -596,15 +624,15 @@ ISIM_ARGS := \
 	-intstyle $(INTSTYLE) \
 	-gui \
 	-tclbatch $(PROJECT)_isim.cmd \
-	-view $(PROJECT)_rpxx.wcfg \
+	-view $(PROJECT).wcfg \
 	-wdb c:/temp/$(PROJECT).wdb
 
-isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT)_rpxx.wcfg $(TESTBENCH)/$(DIAG).dat makefile
+isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg $(TESTBENCH)/$(DIAG).dat makefile
 	@cd $(ISE); \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe $(ISIM_ARGS) &
 
-isim_bat : $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT)_rpxx.wcfg $(TESTBENCH)/$(DIAG).dat makefile
+isim_bat : $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg $(TESTBENCH)/$(DIAG).dat makefile
 	@cd $(ISE); \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe -gui &
@@ -626,32 +654,8 @@ XST_OPTS := \
 
 XST_DEFS := \
 	XILINX \
-	SYNTHESIS
-
-ifneq (, $(findstring CHIPSCOPE_SD, $(DEBUG_ARGS)))
-XST_DEFS += \
-	CHIPSCOPE_SD
-endif
-
-ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
-XST_DEFS += \
-	CHIPSCOPE_CPU
-endif
-
-ifneq (, $(findstring CHIPSCOPE_MEM, $(DEBUG_ARGS)))
-XST_DEFS += \
-	CHIPSCOPE_MEM
-endif
-
-ifneq (, $(findstring CHIPSCOPE_CSL, $(DEBUG_ARGS)))
-XST_DEFS += \
-	CHIPSCOPE_CSL
-endif
-
-ifneq (, $(findstring CHIPSCOPE_UBA, $(DEBUG_ARGS)))
-XST_DEFS += \
-	CHIPSCOPE_UBA
-endif
+	SYNTHESIS \
+	$(subst \','\'', $(subst -D ,,$(SYN_ARGS)))
 
 XST_CMDS := \
 	'set -xsthdpdir "xst"' \
@@ -706,31 +710,31 @@ XST_CMDS := \
 	'-use_clock_enable Auto' \
 	'-use_sync_set Auto' \
 	'-use_sync_reset Auto' \
-	'-iob Auto' \
+	'-iob True' \
 	'-equivalent_register_removal YES' \
 	'-slice_utilization_ratio_maxmargin 5'
 
-ifneq (, $(findstring CHIPSCOPE_SD, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_SD, $(SYN_ARGS)))
 XST_CMDS += \
 	'-sd {"../../ks10/xilinx/chipscope_sd_ila" "../../ks10/xilinx/chipscope_sd_icon"}'
 endif
 
-ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_CPU, $(SYN_ARGS)))
 XST_CMDS += \
 	'-sd {"../../ks10//xilinx/chipscope_cpu_ila" "../../ks10//xilinx/chipscope_cpu_icon" "../../ks10//xilinx/chipscope_cpu_vio"}'
 endif
 
-ifneq (, $(findstring CHIPSCOPE_MEM, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_MEM, $(SYN_ARGS)))
 XST_CMDS += \
 	'-sd {"../../ks10//xilinx/chipscope_mem_ila" "../../ks10//xilinx/chipscope_mem_icon"}'
 endif
 
-ifneq (, $(findstring CHIPSCOPE_CSL, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_CSL, $(SYN_ARGS)))
 XST_CMDS += \
 	'-sd {"../../ks10//xilinx/chipscope_csl_ila" "../../ks10//xilinx/chipscope_csl_icon"}'
 endif
 
-ifneq (, $(findstring CHIPSCOPE_UBA, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_UBA, $(SYN_ARGS)))
 XST_CMDS += \
 	'-sd {"../../ks10//xilinx/chipscope_uba_ila" "../../ks10//xilinx/chipscope_uba_icon"}'
 endif
@@ -772,32 +776,32 @@ NGD_OPTS := \
 	-p $(PART) \
 	-uc ../../$(UCF_FILE)
 
-ifneq (, $(findstring CHIPSCOPE_SD, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_SD, $(SYN_ARGS)))
 NGD_OPTS += \
 	-sd ../../ks10/xilinx/chipscope_sd_ila \
 	-sd ../../ks10/xilinx/chipscope_sd_icon
 endif
 
-ifneq (, $(findstring CHIPSCOPE_CPU, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_CPU, $(SYN_ARGS)))
 NGD_OPTS += \
 	-sd ../../ks10/xilinx/chipscope_cpu_ila \
 	-sd ../../ks10/xilinx/chipscope_cpu_icon \
 	-sd ../../ks10/xilinx/chipscope_cpu_vio
 endif
 
-ifneq (, $(findstring CHIPSCOPE_MEM, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_MEM, $(SYN_ARGS)))
 NGD_OPTS += \
 	-sd ../../ks10/xilinx/chipscope_mem_ila \
 	-sd ../../ks10/xilinx/chipscope_mem_icon
 endif
 
-ifneq (, $(findstring CHIPSCOPE_CSL, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_CSL, $(SYN_ARGS)))
 NGD_OPTS += \
 	-sd ../../ks10/ilinx/chipscope_csl_ila \
 	-sd ../../ks10/xilinx/chipscope_csl_icon
 endif
 
-ifneq (, $(findstring CHIPSCOPE_UBA, $(DEBUG_ARGS)))
+ifneq (, $(findstring CHIPSCOPE_UBA, $(SYN_ARGS)))
 NGD_OPTS += \
 	-sd ../../ks10/xilinx/chipscope_uba_ila \
 	-sd ../../ks10/xilinx/chipscope_uba_icon
@@ -1048,7 +1052,8 @@ trce :
 
 testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(SSRAM_DAT) makefile
 	$(IVERILOG) -W all -s testbench -o $@ $(SIM_FILES) $(RTL_FILES) \
-	$(DEBUG_ARGS) \
+	$(SIM_ARGS) \
+	$(SYN_ARGS) \
 	-D SSRAM_DAT=\"$(SSRAM_DAT)\" \
 	-D RAMFILE_DAT=\"$(RAMFILE_DAT)\" \
 	-D CROM_DAT=\"$(CROM_DAT)\" \

@@ -145,3 +145,14 @@ write_rp06unit1 :
 
 write_rp06unit2 :
 	dd if=red405a2.rp06 of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G
+
+sdsim.dsk : makefile
+	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G
+	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
+#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G
+#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=3G
+#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=4G
+#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=5G
+#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=6G
+#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=7G
+#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=8G

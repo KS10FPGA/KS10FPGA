@@ -190,9 +190,11 @@ module MEM (
         if (busIO)
           busDATAO <= regSTAT;
         else if (busMEMADDR[16:20] == 0)
-          busDATAO <= mem[rd_addr];
+          //busDATAO <= mem[rd_addr];
+          busDATAO <= mem_read;
         else
-          busDATAO <= hsb[rd_hsb_addr];
+          //busDATAO <= hsb[rd_hsb_addr];
+          busDATAO <= hsb_read;
      end
 
    //
@@ -202,26 +204,62 @@ module MEM (
    assign busACKO = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
 
    //
-   // Delay clkPHS[1] to create memory access strobe
+   // Memory Strobes
    //
-
-   reg memSTB;
-
+   
+   reg [1:4] memSTB;
+   
    always @(negedge memCLK or posedge rst)
      begin
         if (rst)
           memSTB <= 0;
         else
-          memSTB <= clkPHS[1];
+          memSTB <= clkPHS;
      end
+   
+   //
+   // Delay clkPHS[1] to create memory access strobe
+   //
 
+`define asdf
+`ifdef asdf
+   
+   reg wr;
+   reg [16:35] addr;
+   reg [ 0:35] data;
+
+   always @(posedge memCLK or posedge rst)
+     begin
+        if (rst)
+          begin
+             wr   <= 0;
+             addr <= 0;
+             data <= 0;
+          end
+        else
+          if (memSTB[1])
+            begin
+               wr   <= memWRITE;
+               addr <= busMEMADDR;
+               data <= busDATAI;
+            end
+     end
+   
+`else
+
+   wire         wr   = memWRITE;
+   wire [16:35] addr = busMEMADDR;
+   wire [ 0:35] data = busDATAI;
+   
+`endif
+   
    //
    // Synchronous SRAM for test
    //
 
    reg  [0:35] mem[0:32767];
    reg  [0:14] rd_addr;
-   wire [0:14] wr_addr = busMEMADDR[21:35];
+   wire [0:14] wr_addr = addr[21:35];
 
 `ifndef SYNTHESIS
    initial
@@ -230,10 +268,10 @@ module MEM (
 
    always @(posedge memCLK)
      begin
-        if (memSTB)
+        if (memSTB[3])
           begin
-             if (memWRITE)
-               mem[wr_addr] <= busDATAI;
+             if (wr)
+               mem[wr_addr] <= data;
              rd_addr <= wr_addr;
           end
      end
@@ -244,18 +282,72 @@ module MEM (
 
    reg  [0:35] hsb[0:31];
    reg  [0: 4] rd_hsb_addr;
-   wire [0: 4] wr_hsb_addr = busMEMADDR[30:35];
+   wire [0: 4] wr_hsb_addr = addr[31:35];
 
    always @(posedge memCLK)
      begin
-        if (memSTB & (busMEMADDR[16:30] == addrHSB[16:30]))
+        if (memSTB[3] & (addr[16:30] == addrHSB[16:30]))
           begin
-             if (memWRITE)
-               hsb[wr_hsb_addr] <= busDATAI;
+             if (wr)
+               hsb[wr_hsb_addr] <= data;
              rd_hsb_addr <= wr_hsb_addr;
           end
      end
 
+   //
+   //
+   //
+
+`ifdef qwer
+   
+   reg [ 0:35] mem_read;
+   reg [ 0:35] hsb_read;
+   
+   always @(posedge memCLK)
+     begin
+        if (rst)
+          begin
+             mem_read <= 0;
+             hsb_read <= 0;
+          end
+        else
+          if (memSTB[3])
+            begin
+               mem_read <= mem[rd_addr];
+               hsb_read <= hsb[rd_hsb_addr];
+            end
+     end
+`else
+   
+   wire [ 0:35] mem_read = mem[rd_addr];
+   wire [ 0:35] hsb_read = hsb[rd_hsb_addr];
+   
+`endif
+
+   //
+   //
+   //
+   
+`ifndef SYNTHESIS
+   
+   always @(posedge memCLK)
+     begin
+        if (memSTB[2] & (addr != busMEMADDR))
+          $display("[%11.3f] MEM: Phase 2 address change.", $time/1.0e3);
+        if (memSTB[3] & (addr != busMEMADDR))
+          $display("[%11.3f] MEM: Phase 3 address change.", $time/1.0e3);
+        if (memSTB[4] & (addr != busMEMADDR))
+          $display("[%11.3f] MEM: Phase 4 address change.", $time/1.0e3);
+        if (memWRITE & memSTB[2] & (data != busDATAI))
+          $display("[%11.3f] MEM: Phase 2 data change.", $time/1.0e3);
+        if (memWRITE & memSTB[3] & (data != busDATAI))
+          $display("[%11.3f] MEM: Phase 3 data change.", $time/1.0e3);
+        if (memWRITE & memSTB[4] & (data != busDATAI))
+          $display("[%11.3f] MEM: Phase 4 data change.", $time/1.0e3);
+     end
+
+`endif
+                   
    //
    // Stub
    //
