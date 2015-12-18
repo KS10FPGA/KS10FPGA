@@ -45,7 +45,7 @@
 `include "../cpu/bus.vh"
 `include "../ks10.vh"
 
-module MEM(
+module MEM (
       input  wire         rst,          // Reset
       input  wire         cpuCLK,       // Clock
       input  wire         memCLK,       // Memory clock
@@ -167,19 +167,6 @@ module MEM(
 `endif
 
    //
-   // Address Cycle
-   //
-
-   reg ac;
-   always @(negedge memCLK or posedge rst)
-     begin
-        if (rst)
-          ac <= 0;
-        else
-          ac <= !clkPHS[4];
-     end
-   
-   //
    // SSRAM Write Enable
    //  This synchronizes the SSRAM Write Enable to the falling edge of the
    //  SSRAM Clock.
@@ -192,19 +179,6 @@ module MEM(
           ssramWE <= 0;
         else
           ssramWE <= memWRITE & clkPHS[1];
-     end
-
-   //
-   // SSRAM Output Enable
-   //
-
-   reg ssramOE;
-   always @(negedge memCLK or posedge rst)
-     begin
-        if (rst)
-          ssramOE <= 0;
-        else
-          ssramOE <= clkPHS[3];
      end
  
    //
@@ -219,24 +193,11 @@ module MEM(
    assign ssramADV     = 0;
    assign ssramBW_N    = 0;
    assign ssramWE_N    = !ssramWE;
-   assign ssramOE_N    = 0;//!ssramOE;
-   assign ssramCE      = ac;
+   assign ssramOE_N    = 0;
+   assign ssramCE      = 1;
    assign ssramADDR    = busMEMADDR;
    assign ssramDATA    = memWRITE ? busDATAI : 36'bz;
    
-   //
-   // SSRAM Read Latch
-   //
-
-   reg [0:35] regREAD;
-   always @*
-     begin
-        if (ssramOE)
-          regREAD <= ssramDATA;
-        else
-          regREAD <= regREAD;
-     end
-
    //
    // Bus Multiplexer
    //
@@ -255,7 +216,7 @@ module MEM(
    //  MMC7/E157
    //
 
-   assign busDATAO = busIO ? regSTAT : regREAD;
+   assign busDATAO = busIO ? regSTAT : ssramDATA;
 
    //
    // Create the busACKO signal
@@ -373,10 +334,10 @@ module MEM(
    assign test[21] = 0;                 // VB8
    assign test[22] = 0;                 // VB7
    assign test[23] = 0;                 // VB6
-   assign test[24] = regREAD[35];       // VB5
-   assign test[25] = regREAD[34];       // VB4
-   assign test[26] = regREAD[33];       // VB3
-   assign test[27] = regREAD[32];       // VB2
+   assign test[24] = busDATAO[35];      // VB5
+   assign test[25] = busDATAO[34];      // VB4
+   assign test[26] = busDATAO[33];      // VB3
+   assign test[27] = busDATAO[32];      // VB2
 
    //
    // Simulation/Debug
