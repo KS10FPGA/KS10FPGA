@@ -63,8 +63,7 @@ module MEM (
       output wire         ssramWE_N,    // SSRAM WE#
       output wire         ssramCE,      // SSRAM CE
       output wire [ 0:19] ssramADDR,    // SSRAM Address Bus
-      inout  wire [ 0:35] ssramDATA,    // SSRAM Data Bus
-      output wire [ 0:27] test          // Test signals
+      inout  wire [ 0:35] ssramDATA     // SSRAM Data Bus
    );
 
    //
@@ -180,7 +179,7 @@ module MEM (
         else
           ssramWE <= memWRITE & clkPHS[1];
      end
- 
+
    //
    // SSRAM Interface
    //  The OE# pin is tied low.  This is permitted per the CY7C1460AV33 data
@@ -197,7 +196,7 @@ module MEM (
    assign ssramCE      = 1;
    assign ssramADDR    = busMEMADDR;
    assign ssramDATA    = memWRITE ? busDATAI : 36'bz;
-   
+
    //
    // Bus Multiplexer
    //
@@ -224,120 +223,18 @@ module MEM (
 
    assign busACKO = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
 
-   //
-   // Test outputs
-   //
-
-   wire testRAMCLK;
-   wire testCPUCLK;
-   wire clkPHS1;
-   wire clkPHS2;
-   wire clkPHS3;
-   wire clkPHS4;
-
 `ifdef XILINX
-
-   wire clkPHSb[1:4];
-
-   CLKFWD fwdCPUCLK (
-      .I (cpuCLK),
-      .O (testCPUCLK)
-   );
 
    CLKFWD fwdSSRAMCLK (
       .I (memCLK),
       .O (ssramCLK)
    );
 
-   CLKFWD fwdRAMCLK (
-      .I (memCLK),
-      .O (testRAMCLK)
-   );
-
-   BUFG bufCLKPHS1 (
-      .I (clkPHS[1]),
-      .O (clkPHSb[1])
-   );
-
-   CLKFWD fwdCLKPHS1 (
-      .I (clkPHSb[1]),
-      .O (clkPHS1)
-   );
-
-   BUFG bufCLKPHS2 (
-      .I (clkPHS[2]),
-      .O (clkPHSb[2])
-   );
-
-   CLKFWD fwdCLKPHS2 (
-      .I (clkPHSb[2]),
-      .O (clkPHS2)
-   );
-
-   BUFG bufCLKPHS3 (
-      .I (clkPHS[3]),
-      .O (clkPHSb[3])
-   );
-
-   CLKFWD fwdCLKPHS3 (
-      .I (clkPHSb[3]),
-      .O (clkPHS3)
-   );
-
-   BUFG bufCLKPHS4 (
-      .I (clkPHS[4]),
-      .O (clkPHSb[4])
-   );
-
-   CLKFWD fwdCLKPHS4 (
-      .I (clkPHSb[4]),
-      .O (clkPHS4)
-   );
-
 `else
 
-   assign testCPUCLK = cpuCLK;
-   assign testRAMCLK = memCLK;
-   assign ssramCLK   = memCLK;
-   assign clkPHS1    = clkPHS[1];
-   assign clkPHS2    = clkPHS[2];
-   assign clkPHS3    = clkPHS[3];
-   assign clkPHS4    = clkPHS[4];
+   assign ssramCLK = memCLK;
 
 `endif
-
-   //
-   // Test Signals
-   //
-
-   assign test[ 0] = testCPUCLK;        // VB31
-   assign test[ 1] = testRAMCLK;        // VB30
-   assign test[ 2] = busADDRI[35];      // VB29
-   assign test[ 3] = busADDRI[34];      // VB28
-   assign test[ 4] = busADDRI[33];      // VB27
-   assign test[ 5] = busADDRI[32];      // VB26
-   assign test[ 6] = busDATAI[35];      // VB25
-   assign test[ 7] = busDATAI[34];      // VB24
-   assign test[ 8] = busDATAI[33];      // VB23
-   assign test[ 9] = busDATAI[32];      // VB22
-   assign test[10] = memREAD;           // VB21
-   assign test[11] = memWRITE;          // VB20
-   assign test[12] = clkPHS1;           // VB19
-   assign test[13] = clkPHS2;           // VB18
-   assign test[14] = clkPHS3;           // VB15
-   assign test[15] = clkPHS4;           // VB14
-   assign test[16] = ssramWE_N;         // VB13
-   assign test[17] = ssramOE_N;         // VB12
-   assign test[18] = 0;                 // VB11
-   assign test[19] = 0;                 // VB10
-   assign test[20] = 0;                 // VB9
-   assign test[21] = 0;                 // VB8
-   assign test[22] = 0;                 // VB7
-   assign test[23] = 0;                 // VB6
-   assign test[24] = busDATAO[35];      // VB5
-   assign test[25] = busDATAO[34];      // VB4
-   assign test[26] = busDATAO[33];      // VB3
-   assign test[27] = busDATAO[32];      // VB2
 
    //
    // Simulation/Debug

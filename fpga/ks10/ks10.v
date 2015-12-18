@@ -315,8 +315,7 @@ module KS10 (
       .ssramWE_N        (ssramWE_N),
       .ssramCE          (ssramCE),
       .ssramADDR        (ssramADDR),
-      .ssramDATA        (ssramDATA),
-      .test             (test)
+      .ssramDATA        (ssramDATA)
    );
 
    //
@@ -519,4 +518,10 @@ module KS10 (
 
    assign haltLED = cpuHALT;
 
+   //
+   // Test
+   //
+
+   assign test = 0;
+   
 endmodule
