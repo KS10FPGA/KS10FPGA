@@ -70,8 +70,8 @@ module testbench;
    // DZ11 Serial Interface
    //
 
-   wire [ 1: 2] TXD = 2'b11;    // DZ11 RS-232 Received Data
-   wire [ 1: 2] RXD;            // DZ11 RS-232 Transmitted Data
+   wire [ 1: 2] ttyTXD = 2'b11; // DZ11 RS-232 Received Data
+   wire [ 1: 2] ttyRXD;         // DZ11 RS-232 Transmitted Data
 
    //
    // RH11 Secure Digital Interface
@@ -131,6 +131,8 @@ module testbench;
    localparam [ 7: 0] addrREGDATA   = 8'h08;
    localparam [ 7: 0] addrREGSTATUS = 8'h10;
    localparam [ 7: 0] addrREGCIR    = 8'h18;
+   localparam [ 7: 0] addrREGDZCCR  = 8'h20;
+   localparam [ 7: 0] addrREGRHCCR  = 8'h28;
    localparam [ 7: 0] addrRH11DEB   = 8'h30;
    localparam [ 7: 0] addrVersion   = 8'h38;
 
@@ -233,6 +235,44 @@ module testbench;
          conREADw(addr+0, data[20:35]);
          conREADw(addr+2, data[ 4:19]);
          conREADw(addr+4, data[ 0: 3]);
+         #100;
+      end
+   endtask
+
+   //
+   // Task to write a 64-bit word to console register
+   //
+   // Note:
+   //  A 64-bit write requires 4 16-bit word operations.
+   //
+
+   task conWRITE64;
+      input [7: 0] addr;
+      input [0:63] data;
+      begin
+         conWRITEw(addr+0, data[48:63]);
+         conWRITEw(addr+2, data[32:47]);
+         conWRITEw(addr+4, data[16:31]);
+         conWRITEw(addr+6, data[ 0:15]);
+         #100;
+      end
+   endtask
+
+   //
+   // Task to read a 64-bit word from console register
+   //
+   // Note:
+   //  A 64-bit read requires 4 16-bit word operations.
+   //
+
+   task conREAD64;
+      input [7:0] addr;
+      output reg [0:63] data;
+      begin
+         conREADw(addr+0, data[48:63]);
+         conREADw(addr+2, data[32:47]);
+         conREADw(addr+4, data[16:31]);
+         conREADw(addr+6, data[ 0:15]);
          #100;
       end
    endtask
@@ -356,8 +396,6 @@ module testbench;
          $display("[%11.3f] KS10:   T1  is %012o", $time/1.0e3, temp);
          conREADMEMP(address + 16, temp);
          $display("[%11.3f] KS10:   VMA is %012o", $time/1.0e3, temp);
-         //conREADMEMP(address + 17, temp);
-         //$display("[%11.3f] KS10:   FE  is %012o", $time/1.0e3, temp);
       end
    endtask
 
@@ -593,6 +631,13 @@ module testbench;
         conWRITE(addrREGCIR, valREGCIR);
 
         //
+        // Set DZ11 Console Control Register and RH11 Console Control Register
+        //
+
+        conWRITE64(addrREGDZCCR, 64'h0123456789abcdef);
+        conWRITE64(addrREGRHCCR, 64'hfedcba9876543210);
+        
+        //
         // Write to Control/Status Register
         // Release RESET and set RUN.
         //
@@ -737,8 +782,8 @@ module testbench;
       .MR_N             (1'b0),
       .MR               (),
       // DZ11 Interfaces
-      .TXD              (TXD),
-      .RXD              (RXD),
+      .ttyTXD           (ttyTXD),
+      .ttyRXD           (ttyRXD),
       // RH11 Interfaces
       .rh11CD_N         (rh11CD_N),
       .rh11MISO         (rh11MISO),

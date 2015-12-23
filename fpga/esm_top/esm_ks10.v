@@ -41,14 +41,6 @@
 
 `default_nettype none
 `timescale 1ns/1ps
-
-`ifndef RPXX_ENABLE
- `define RPXX_ENABLE    8'b00000001
-`endif
-
-`ifndef RPXX_WP
- `define RPXX_WP        8'b00000000
-`endif  
   
 module ESM_KS10 (
       // Clock/Reset
@@ -57,8 +49,8 @@ module ESM_KS10 (
       input  wire         MR_N,         // Master Reset push button
       output wire         MR,           // Master Reset out
       // DZ11 Interfaces
-      input  wire [ 1: 2] TXD,          // DZ11 RS-232 Transmitted Data
-      output wire [ 1: 2] RXD,          // DZ11 RS-232 Received Data
+      input  wire [ 1: 0] ttyTXD,       // DZ11 RS-232 Transmitted Data
+      output wire [ 1: 0] ttyRXD,       // DZ11 RS-232 Received Data
       // RH11 Interfaces
       input  wire         rh11CD_N,     // RH11 Card Detect
       input  wire         rh11MISO,     // RH11 Data In
@@ -88,21 +80,12 @@ module ESM_KS10 (
    );
 
    //
-   // RH-11 Stubs
+   // DZ-11 Interfaces
    //
 
-   wire [ 7: 0] rh11WP = `RPXX_WP;                      // RH11 Write Protect
-   wire [ 7: 0] rh11CD = {8{!rh11CD_N}} & `RPXX_ENABLE; // RH11 Card Detect 
-
-   //
-   // DZ-11 Interface Stubs
-   //
-
-   wire [ 7: 0] dz11CO = 8'hff;         // DZ11 Carrier Input (stubbed)
-   wire [ 7: 0] dz11RI = 8'h00;         // DZ11 Ring Input (stubbed)
-   wire [ 7: 0] dz11DTR;                // DZ11 DTR Output (stubbed)
-   wire [ 7: 0] dz11TXD;                // DZ11 TXD
-   wire [ 7: 0] dz11RXD;                // DZ11 RXD
+   wire [7:0] dz11TXD;                	// DZ11 TXD
+   wire [7:0] dz11RXD;                	// DZ11 RXD
+   wire dz11LOOP;			// DZ11 Loopback
 
    //
    // KS10 Processor
@@ -114,12 +97,9 @@ module ESM_KS10 (
       // DZ11
       .dz11TXD          (dz11TXD),
       .dz11RXD          (dz11RXD),
-      .dz11DTR          (dz11DTR),
-      .dz11CO           (dz11CO),
-      .dz11RI           (dz11RI),
+      .dz11LOOP         (dz11LOOP),
       // RH11
-      .rh11CD           (rh11CD),
-      .rh11WP           (rh11WP),
+      .rh11CD_N         (rh11CD_N),
       .rh11MISO         (rh11MISO),
       .rh11MOSI         (rh11MOSI),
       .rh11SCLK         (rh11SCLK),
@@ -146,25 +126,19 @@ module ESM_KS10 (
       .haltLED          (haltLED)
    );
 
+   //   
+   // TXD is an output from the FT4232.  RXD is an input to the FT4232.
+   // Therefore TXD and RXD must get twisted here.
    //
-   // DZ11 Fixup
-   //  TXD is an output of the FT4232.  RXD is an input to the
-   //  FT4232.  Therefore TXD and RXD must get twisted here.
-   //
-
-   assign dz11RXD[0]   = TXD[1];
-   assign dz11RXD[1]   = TXD[2];
-   assign RXD[1]       = dz11TXD[0];
-   assign RXD[2]       = dz11TXD[1];
-
-   //
-   // Wrap back unused ports
+   // Route TTY0, TTY1 to pins.  Conditionally loopback everything else.
    //
 
-   assign dz11RXD[7:2] = dz11TXD[7:2];
-
+   assign ttyRXD[1:0]  = dz11TXD[1:0];
+   assign dz11RXD[7:0] = dz11LOOP ? dz11TXD[7:0] : {dz11TXD[7:2], ttyTXD[1:0]};
+   
    //
-   // MR out.  This is done to quiet the tool.
+   // MR needs to be an input for the system to work.  We assign it to an
+   // output so that the tool doesn't whine about the unused input.
    //
 
    assign MR = !MR_N;

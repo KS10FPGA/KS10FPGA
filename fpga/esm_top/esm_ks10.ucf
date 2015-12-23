@@ -135,10 +135,10 @@ NET "conINTR_N"         LOC = "R26"  | IOSTANDARD = LVCMOS33;   // PB7/NMI
 # RS232 Interfaces
 #
 
-NET "TXD<1>"            LOC = "D24"  | IOSTANDARD = LVCMOS33;
-NET "TXD<2>"            LOC = "L25"  | IOSTANDARD = LVCMOS33;
-NET "RXD<1>"            LOC = "J26"  | IOSTANDARD = LVCMOS33;
-NET "RXD<2>"            LOC = "K26"  | IOSTANDARD = LVCMOS33;
+NET "ttyTXD<0>"         LOC = "D24"  | IOSTANDARD = LVCMOS33;
+NET "ttyTXD<1>"         LOC = "L25"  | IOSTANDARD = LVCMOS33;
+NET "ttyRXD<0>"         LOC = "J26"  | IOSTANDARD = LVCMOS33;
+NET "ttyRXD<1>"         LOC = "K26"  | IOSTANDARD = LVCMOS33;
 
 #
 # SD Card Interfaces

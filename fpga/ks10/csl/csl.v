@@ -228,7 +228,10 @@ module CSL (
       output wire         cslCACHEEN,   // Cache Enable
       output wire         cslINTR,      // Interrupt KS10
       output wire         cslRESET,     // Reset KS10
+      // DZ11 Interfaces
+      output reg  [0 :63] dz11CCR,      // DZ11 Console Control Register
       // RH11 Interfaces
+      output reg  [0 :63] rh11CCR,      // RH11 Console Control Register
       input  wire [0 :63] rh11DEBUG     // RH11 Debug Info
    );
 
@@ -317,7 +320,6 @@ module CSL (
    reg [0:35] regCIR;
    reg [0:35] regDATA;
    reg [0:35] regADDR;
-   reg [0:63] regTEST;
    reg        regCTRL_NXMNXD;
    reg        regCTRL_TIMEREN;
    reg        regCTRL_TRAPEN;
@@ -331,7 +333,8 @@ module CSL (
              regCIR          <= 0;
              regDATA         <= 0;
              regADDR         <= 0;
-             regTEST         <= 0;
+             dz11CCR         <= 0;
+             rh11CCR         <= 0;
              regCTRL_NXMNXD  <= 0;
              regCTRL_TIMEREN <= 0;
              regCTRL_TRAPEN  <= 0;
@@ -374,13 +377,22 @@ module CSL (
                  6'h1a : regCIR[ 4:11]  <= conDATA[15:8];
 
                  //
-                 // Test Register
+                 // DZ11 Console Control Register
                  //
 
-                 6'h20 : regTEST[48:55] <= conDATA[15:8];
-                 6'h22 : regTEST[32:39] <= conDATA[15:8];
-                 6'h24 : regTEST[16:23] <= conDATA[15:8];
-                 6'h26 : regTEST[ 0: 7] <= conDATA[15:8];
+                 6'h20 : dz11CCR[48:55] <= conDATA[15:8];
+                 6'h22 : dz11CCR[32:39] <= conDATA[15:8];
+                 6'h24 : dz11CCR[16:23] <= conDATA[15:8];
+                 6'h26 : dz11CCR[ 0: 7] <= conDATA[15:8];
+
+                 //
+                 // RH11 Console Control Register
+                 //
+
+                 6'h28 : rh11CCR[48:55] <= conDATA[15:8];
+                 6'h2a : rh11CCR[32:39] <= conDATA[15:8];
+                 6'h2c : rh11CCR[16:23] <= conDATA[15:8];
+                 6'h2e : rh11CCR[ 0: 7] <= conDATA[15:8];
 
                endcase // case (cslADDR)
 
@@ -425,13 +437,22 @@ module CSL (
                  6'h1c : regCIR[ 0: 3]  <= conDATA[3:0];
 
                  //
-                 // Test Register
+                 // DZ11 Console Control Register
                  //
 
-                 6'h20 : regTEST[56:63] <= conDATA[7:0];
-                 6'h22 : regTEST[40:47] <= conDATA[7:0];
-                 6'h24 : regTEST[24:31] <= conDATA[7:0];
-                 6'h26 : regTEST[ 8:15] <= conDATA[7:0];
+                 6'h20 : dz11CCR[56:63] <= conDATA[7:0];
+                 6'h22 : dz11CCR[40:47] <= conDATA[7:0];
+                 6'h24 : dz11CCR[24:31] <= conDATA[7:0];
+                 6'h26 : dz11CCR[ 8:15] <= conDATA[7:0];
+
+                 //
+                 // RH11 Console Control Register
+                 //
+
+                 6'h28 : rh11CCR[56:63] <= conDATA[7:0];
+                 6'h2a : rh11CCR[40:47] <= conDATA[7:0];
+                 6'h2c : rh11CCR[24:31] <= conDATA[7:0];
+                 6'h2e : rh11CCR[ 8:15] <= conDATA[7:0];
 
                endcase
           end
@@ -511,13 +532,22 @@ module CSL (
           6'h1e : dout <= 0;
 
           //
-          // Test Register
+          // DZ11 Console Control Register
           //
 
-          6'h20 : dout <= regTEST[48:63];
-          6'h22 : dout <= regTEST[32:47];
-          6'h24 : dout <= regTEST[16:31];
-          6'h26 : dout <= regTEST[ 0:15];
+          6'h20 : dout <= dz11CCR[48:63];
+          6'h22 : dout <= dz11CCR[32:47];
+          6'h24 : dout <= dz11CCR[16:31];
+          6'h26 : dout <= dz11CCR[ 0:15];
+
+          //
+          // RH11 Console Control Register
+          //
+
+          6'h28 : dout <= rh11CCR[48:63];
+          6'h2a : dout <= rh11CCR[32:47];
+          6'h2c : dout <= rh11CCR[16:31];
+          6'h2e : dout <= rh11CCR[ 0:15];
 
           //
           // RH11 Debug Register

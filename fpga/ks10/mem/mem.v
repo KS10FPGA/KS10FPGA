@@ -141,7 +141,7 @@ module MEM (
        busDATAI[0:35],          // dataport[219:254]
        busDATAO[0:35],          // dataport[183:218]
        busADDRI[0:35],          // dataport[147:182]
-       ssramDATAIN[0:35],       // dataport[111:146]
+       ssramDATA[0:35],         // dataport[111:146]
        ssramADDR[0:19],         // dataport[ 91:110]
        3'b0,,                   // dataport[ 88: 90]
        clkPHS[1:4],             // dataport[ 84: 87]
@@ -164,38 +164,6 @@ module MEM (
 
 `endif
 `endif
-
-   //
-   // SSRAM Write Enable
-   //  This synchronizes the SSRAM Write Enable to the falling edge of the
-   //  SSRAM Clock.
-   //
-
-   reg ssramWE;
-   always @(negedge memCLK or posedge rst)
-     begin
-        if (rst)
-          ssramWE <= 0;
-        else
-          ssramWE <= memWRITE & clkPHS[1];
-     end
-
-   //
-   // SSRAM Interface
-   //  The OE# pin is tied low.  This is permitted per the CY7C1460AV33 data
-   //  sheet.   Quoting the section entitled "Single Write Accesses" it states
-   //  that "... on the subsequent clock rise the data lines are automatically
-   //  tri-stated regardless of the state of the OE input signal."
-   //
-
-   assign ssramCLKEN_N = 0;
-   assign ssramADV     = 0;
-   assign ssramBW_N    = 0;
-   assign ssramWE_N    = !ssramWE;
-   assign ssramOE_N    = 0;
-   assign ssramCE      = 1;
-   assign ssramADDR    = busMEMADDR;
-   assign ssramDATA    = memWRITE ? busDATAI : 36'bz;
 
    //
    // Bus Multiplexer
@@ -223,11 +191,17 @@ module MEM (
 
    assign busACKO = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
 
+   //
+   // SSRAM Clock
+   //  The Xilinx device requires 'clock forwarding' to drive the SSRAM clock
+   //  off-chip.
+   //
+
 `ifdef XILINX
 
    CLKFWD fwdSSRAMCLK (
-      .I (memCLK),
-      .O (ssramCLK)
+      .I         (memCLK),
+      .O         (ssramCLK)
    );
 
 `else
@@ -235,6 +209,62 @@ module MEM (
    assign ssramCLK = memCLK;
 
 `endif
+
+   //
+   // SSRAM chip enable
+   //  The SSRAM isn't enabled during T1 because the SSRAM simulation model
+   //  will whine about address setup time failures.  We don't care during
+   //  synthesis because we don't use the data from T1.
+   //
+
+`ifdef SYNTHESIS
+
+   wire enable = 1'b1;
+
+`else
+
+   reg enable;
+   always @(negedge memCLK or posedge rst)
+     begin
+        if (rst)
+          enable <= 0;
+        else
+          enable <= !clkPHS[4];
+     end
+
+`endif
+
+   //
+   // SSRAM Write Enable
+   //  This synchronizes the SSRAM Write Enable to the falling edge of the
+   //  SSRAM Clock.
+   //
+
+   reg ssramWE;
+   always @(negedge memCLK or posedge rst)
+     begin
+        if (rst)
+          ssramWE <= 0;
+        else
+          ssramWE <= memWRITE & clkPHS[1];
+     end
+
+   //
+   // SSRAM Interface
+   //  The OE# pin is tied low.  This is permitted per the CY7C1460AV33 data
+   //  sheet.   Quoting the section entitled "Single Write Accesses" it states
+   //  that "On the subsequent clock rise the data lines are automatically
+   //  tri-stated regardless of the state of the OE input signal."
+   //
+
+   assign ssramCLKEN_N = 0;
+   assign ssramADV     = 0;
+   assign ssramBW_N    = 0;
+   assign ssramOE_N    = 0;
+   assign ssramWE_N    = !ssramWE;
+   assign ssramCE      = enable;
+   assign ssramADDR    = busMEMADDR;
+   assign ssramDATA    = memWRITE ? busDATAI : 36'bz;
 
    //
    // Simulation/Debug

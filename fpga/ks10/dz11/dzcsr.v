@@ -62,6 +62,18 @@ module DZCSR (
    );
 
    //
+   // CSRPER parameter
+   //
+   // Details
+   //  The CSR[CLR] is a 15us one-shot in the KS10.  Because the KS10 FPGA runs
+   //  faster than DEC KS10, the CLR timing needs to be adjusted or the DSDZA
+   //  diagnostic will fail when it measures this period.  The DZ11 doesn't
+   //  care.  The clear only takes a single clock cycle.
+   //
+
+   localparam CSRPER = 1.0;                     // 1.0 microseconds
+
+   //
    // Big-endian to little-endian data bus swap
    //
 
@@ -74,10 +86,10 @@ module DZCSR (
    wire [ 7:0] tcrLIN  = `dzTCR_LIN(regTCR);
 
    //
-   // Clear
+   // CSR[CLR]
    //
    // Details
-   //  The CSR[CLR] is a 15us one-shot in the KS10
+   //  See note associated with CSRPER parameter
    //
 
    reg [9:0] clrCOUNT;
@@ -90,7 +102,7 @@ module DZCSR (
              if (devRESET)
                clrCOUNT <= 0;
              if (csrWRITE & devLOBYTE & `dzCSR_CLR(dzDATAI))
-               clrCOUNT <= 15 * `CLKFRQ / 1000000;
+               clrCOUNT <= CSRPER * `CLKFRQ / 1000000;
              else if (clrCOUNT != 0)
                clrCOUNT <= clrCOUNT - 1'b1;
           end

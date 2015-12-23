@@ -56,12 +56,9 @@ module KS10 (
       // DZ11 Interfaces
       output wire [ 7: 0] dz11TXD,      // DZ11 Transmitter Serial Data
       input  wire [ 7: 0] dz11RXD,      // DZ11 Receiver Serial Data
-      input  wire [ 7: 0] dz11CO,       // DZ11 Carrier Detect Input
-      input  wire [ 7: 0] dz11RI,       // DZ11 Ring Indicator Input
-      output wire [ 7: 0] dz11DTR,      // DZ11 Data Terminal Ready Output
+      output wire         dz11LOOP,	// DZ11 Loopback enable
       // RH11 Interfaces
-      input  wire [ 7: 0] rh11CD,       // RH11 Card Detect
-      input  wire [ 7: 0] rh11WP,       // RH11 Write Protect
+      input  wire         rh11CD_N,     // RH11 Card Detect
       input  wire         rh11MISO,     // RH11 Data In
       output wire         rh11MOSI,     // RH11 Data Out
       output wire         rh11SCLK,     // RH11 Clock
@@ -92,73 +89,86 @@ module KS10 (
    // Bus Arbiter Outputs
    //
 
-   wire [0:35] arbADDRO;        // Arbiter Address Out
+   wire [0:35] arbADDRO;                // Arbiter Address Out
 
    //
    // Console Interfaces
    //
 
-   wire        cslREQI;         // Console Bus Request In
-   wire        cslREQO;         // Console Bus Request Out
-   wire        cslACKI;         // Console Bus Acknowledge In
-   wire        cslACKO;         // Console Bus Acknowledge Out
-   wire [0:35] cslADDRI;        // Console Address In
-   wire [0:35] cslADDRO;        // Console Address Out
-   wire [0:35] cslDATAI;        // Console Data In
-   wire [0:35] cslDATAO;        // Console Data Out
-   wire        cslSET;          // Console Set State
-   wire        cslRUN;          // Console Run Switch
-   wire        cslCONT;         // Console Continue Switch
-   wire        cslEXEC;         // Console Exec Switch
-   wire        cslTRAPEN;       // Console Trap Enable
-   wire        cslTIMEREN;      // Console Timer Enable
-   wire        cslCACHEEN;      // Console Cache Enable
-   wire        cslINTR;         // Console Interrupt to KS10
-   wire        cslINTRO;        // KS10 Interrupt to Console
-   wire        cpuRST;          // KS10 Reset
+   wire        cslREQI;                 // Console Bus Request In
+   wire        cslREQO;                 // Console Bus Request Out
+   wire        cslACKI;                 // Console Bus Acknowledge In
+   wire        cslACKO;                 // Console Bus Acknowledge Out
+   wire [0:35] cslADDRI;                // Console Address In
+   wire [0:35] cslADDRO;                // Console Address Out
+   wire [0:35] cslDATAI;                // Console Data In
+   wire [0:35] cslDATAO;                // Console Data Out
+   wire        cslSET;                  // Console Set State
+   wire        cslRUN;                  // Console Run Switch
+   wire        cslCONT;                 // Console Continue Switch
+   wire        cslEXEC;                 // Console Exec Switch
+   wire        cslTRAPEN;               // Console Trap Enable
+   wire        cslTIMEREN;              // Console Timer Enable
+   wire        cslCACHEEN;              // Console Cache Enable
+   wire        cslINTR;                 // Console Interrupt to KS10
+   wire        cslINTRO;                // KS10 Interrupt to Console
+   wire        cpuRST;                  // KS10 Reset
 
    //
    // CPU Interfaces
    //
 
-   wire        cpuREQO;         // CPU Bus Request
-   wire        cpuACKI;         // CPU Bus Acknowledge
-   wire [0:35] cpuADDRO;        // CPU Address Out
-   wire [0:35] cpuDATAI;        // CPU Data In
-   wire [0:35] cpuDATAO;        // CPU Data Out
-   wire        cpuHALT;         // CPU Halt Status
-   wire        cpuRUN;          // CPU Run Status
-   wire        cpuEXEC;         // CPU Exec Status
-   wire        cpuCONT;         // CPU Cont Status
+   wire        cpuREQO;                 // CPU Bus Request
+   wire        cpuACKI;                 // CPU Bus Acknowledge
+   wire [0:35] cpuADDRO;                // CPU Address Out
+   wire [0:35] cpuDATAI;                // CPU Data In
+   wire [0:35] cpuDATAO;                // CPU Data Out
+   wire        cpuHALT;                 // CPU Halt Status
+   wire        cpuRUN;                  // CPU Run Status
+   wire        cpuEXEC;                 // CPU Exec Status
+   wire        cpuCONT;                 // CPU Cont Status
 
    //
    // DZ11 Interfaces
    //
 
-   wire [0:63] rh11DEBUG;       // RH11 Debug
+   wire [0: 7] dz11DTR;                 // DZ11 Data Terminal Ready
+   wire [0:63] dz11CCR;                 // DZ11 Console Control Register
+   wire [0: 7] dz11RI = dz11CCR[56:63]; // DZ11 Ring Indicator
+   wire [0: 7] dz11CO = dz11CCR[48:55]; // DZ11 Carrier Sense
+   assign dz11LOOP    = dz11CCR[47];	// DZ11 Loopback
+
+   //
+   // RH11 Interfaces
+   //
+
+   wire [0:63] rh11CCR;                 // RH11 Console Control Register
+   wire [0:63] rh11DEBUG;               // RH11 Debug
+   wire [7: 0] rh11WP = rh11CCR[56:63]; // RH11 Write Protect
+   wire [7: 0] rh11CD = rh11CCR[48:55]; // RH11 Card Detect
 
    //
    // Memory Interfaces
    //
 
-   wire [0:35] memDATAI;        // Memory Data In
-   wire [0:35] memDATAO;        // Memory Data Out
-   wire        memREQ;          // Memory REQ
-   wire        memACK;          // Memory ACK
+   wire [0:35] memDATAI;                // Memory Data In
+   wire [0:35] memDATAO;                // Memory Data Out
+   wire        memREQ;                  // Memory REQ
+   wire        memACK;                  // Memory ACK
 
    //
    // Unibus Interfaces (x4)
    //
 
-   wire [1: 7] ubaINTR;         // Unibus Interrupt Request
-   wire        ubaREQI;         // Unibus Bus Request In
-   wire [0: 3] ubaREQO;         // Unibus Bus Request Out
-   wire [0: 3] ubaACKI;         // Unibus Bus Acknowledge In
-   wire [0: 3] ubaACKO;         // Unibus Bus Acknowledge Out
-   wire [0:35] ubaADDRO[0:3];   // Unibus Address Out
-   wire [0:35] ubaDATAI;        // Unibus Data In
-   wire [0:35] ubaDATAO[0:3];   // Unibus Data Out
-   wire [1: 7] ubaINTRO[0:3];   // Unibus Interrupt
+   wire [1: 7] ubaINTR;                 // Unibus Interrupt Request
+   wire        ubaREQI;                 // Unibus Bus Request In
+   wire [0: 3] ubaREQO;                 // Unibus Bus Request Out
+   wire [0: 3] ubaACKI;                 // Unibus Bus Acknowledge In
+   wire [0: 3] ubaACKO;                 // Unibus Bus Acknowledge Out
+   wire [0:35] ubaADDRO[0:3];           // Unibus Address Out
+   wire [0:35] ubaDATAI;                // Unibus Data In
+   wire [0:35] ubaDATAO[0:3];           // Unibus Data Out
+   wire [1: 7] ubaINTRO[0:3];           // Unibus Interrupt
 
    //
    // Clock Generator and Reset Synchronization
@@ -289,7 +299,10 @@ module KS10 (
       .cslCACHEEN       (cslCACHEEN),
       .cslINTR          (cslINTR),
       .cslRESET         (cpuRST),
+      // DZ11
+      .dz11CCR          (dz11CCR),
       // RH11 Interfaces
+      .rh11CCR          (rh11CCR),
       .rh11DEBUG        (rh11DEBUG)
    );
 
@@ -523,5 +536,5 @@ module KS10 (
    //
 
    assign test = 0;
-   
+
 endmodule

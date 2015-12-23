@@ -113,43 +113,16 @@ check :
 	@echo
 	@echo Device is currently /dev/$(DEV)
 
-read_rp06unit0 :
-	dd if=/dev/$(DEV) of=rp06unit0 bs=512 iflag=count_bytes,skip_bytes count=309700K skip=0G
-
-read_rp06unit1 :
-	dd if=/dev/$(DEV) of=rp06unit1 bs=512 iflag=count_bytes,skip_bytes count=309700K skip=1G
-
-read_rp06unit2 :
-	dd if=/dev/$(DEV) of=rp06unit2 bs=512 iflag=count_bytes,skip_bytes count=309700K skip=2G
-
-read_rp06unit3 :
-	dd if=/dev/$(DEV) of=rp06unit3 bs=512 iflag=count_bytes,skip_bytes count=309700K skip=3G
-
-read_rp06unit4 :
-	dd if=/dev/$(DEV) of=rp06unit4 bs=512 iflag=count_bytes,skip_bytes count=309700K skip=4G
-
-read_rp06unit5 :
-	dd if=/dev/$(DEV) of=rp06unit5 bs=512 iflag=count_bytes,skip_bytes count=309700K skip=5G
-
-read_rp06unit6 :
-	dd if=/dev/$(DEV) of=rp06unit6 bs=512 iflag=count_bytes,skip_bytes count=309700K skip=6G
-
-read_rp06unit7 :
-	dd if=/dev/$(DEV) of=rp06unit7 bs=512 iflag=count_bytes,skip_bytes count=309700K skip=7G
-
-write_rp06unit0 :
-	dd if=dskb.dsk of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G
-
-write_rp06unit1 :
-	dd if=dskc.dsk of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
-
-write_rp06unit2 :
+rp06_disk : makefile red405a2.rp06 dskb.dsk dskc.dsk
+	dd if=dskb.dsk      of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G
+	dd if=dskc.dsk      of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
 	dd if=red405a2.rp06 of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G
 
-sdsim.dsk : makefile
-	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G
-	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
-#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G
+sdsim.dsk : makefile red405a2.rp06 dskb.dsk dskc.dsk 
+	dd if=dskb.dsk      of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G
+	dd if=dskc.dsk      of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
+	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G
+
 #	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=3G
 #	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=4G
 #	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=5G
