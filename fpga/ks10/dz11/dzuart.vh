@@ -63,7 +63,7 @@
 `define UARTBR_4800   (4'd12)
 `define UARTBR_7200   (4'd13)
 `define UARTBR_9600   (4'd14)
-`define UARTBR_115200 (4'd15)
+`define UARTBR_19200  (4'd15)
 
 //
 // Character Size

@@ -71,7 +71,7 @@ module DZCSR (
    //  care.  The clear only takes a single clock cycle.
    //
 
-   localparam CSRPER = 1.0;                     // 1.0 microseconds
+   localparam CSRPER = 3.0;                     // 3.0 microseconds
 
    //
    // Big-endian to little-endian data bus swap
