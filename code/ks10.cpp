@@ -352,7 +352,7 @@ void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
 //! This function reads a 64-bit value from the DZCCR
 //
 
-void uint64_t ks10_t::readDZCCR(void) {
+uint64_t ks10_t::readDZCCR(void) {
     return *regDZCCR;
 }
 
@@ -371,7 +371,7 @@ void ks10_t::writeDZCCR(uint64_t data) {
 //! This function reads a 64-bit value from the RHCCR
 //
 
-void uint64_t ks10_t::readRHCCR(void) {
+uint64_t ks10_t::readRHCCR(void) {
     return *regDZCCR;
 }
 
