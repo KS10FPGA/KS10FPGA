@@ -17,19 +17,19 @@
 //
 // Copyright (C) 2013-2015 Rob Doyle
 //
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+// more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+// Place - Suite 330, Boston, MA 02111-1307, USA.
 //
 //******************************************************************************
 //
@@ -346,6 +346,44 @@ void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
     writeReg(regAddr, (addr & ioAddrMask) | flagWrite | flagPhys | flagIO | flagByte);
     writeReg(regData, data);
     go();
+}
+
+//
+//! This function reads a 64-bit value from the DZCCR
+//
+
+void uint64_t ks10_t::readDZCCR(void) {
+    return *regDZCCR;
+}
+
+//
+//! This function writes a 64-bit value to the DZCCR
+//!
+//! \param
+//!     data is the data to be written to the DZCCR
+//
+
+void ks10_t::writeDZCCR(uint64_t data) {
+    *regDZCCR = data;
+}
+
+//
+//! This function reads a 64-bit value from the RHCCR
+//
+
+void uint64_t ks10_t::readRHCCR(void) {
+    return *regDZCCR;
+}
+
+//
+//! This function writes a 64-bit value to the RHCCR
+//!
+//! \param
+//!     data is the data to be written to the RHCCR
+//
+
+void ks10_t::writeRHCCR(uint64_t data) {
+    *regRHCCR = data;
 }
 
 //
@@ -824,10 +862,11 @@ bool ks10_t::testRegs(bool verbose) {
     if (verbose) {
         printf("FPGA: Testing KS10 Interface Registers.\n");
     }
-    success &= testRegister(regAddr, "regADDR", verbose, 0xfffffffff);
-    success &= testRegister(regData, "regDATA", verbose, 0xfffffffff);
-    success &= testRegister(regCIR,  "regCIR ", verbose, 0xfffffffff);
-    success &= testRegister(regTest, "regTEST", verbose);
+    success &= testRegister(regAddr,  "regADDR",  verbose, 0xfffffffff);
+    success &= testRegister(regData,  "regDATA",  verbose, 0xfffffffff);
+    success &= testRegister(regCIR,   "regCIR ",  verbose, 0xfffffffff);
+    success &= testRegister(regDZCCR, "regDZCCR", verbose);
+    success &= testRegister(regRHCCR, "regRHCCR", verbose);
     if (success) {
         printf("FPGA: Registers tested completed successfully.\n");
     }

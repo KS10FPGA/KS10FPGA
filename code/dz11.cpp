@@ -108,7 +108,7 @@ void dz11_t::testTX(char line) {
         // Wait for Transmitter Ready (TRDY) to be asserted.
         //
 
-        while (!(ks10_t::readIO(csr_addr) & csr_trdy)) {
+        while ((ks10_t::readIO(csr_addr) & csr_trdy) == 0) {
             ;
         }
 

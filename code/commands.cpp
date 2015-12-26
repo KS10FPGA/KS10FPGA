@@ -16,19 +16,19 @@
 //
 // Copyright (C) 2013-2015 Rob Doyle
 //
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+// more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+// Place - Suite 330, Boston, MA 02111-1307, USA.
 //
 //******************************************************************************
 
@@ -77,6 +77,12 @@ static enum access_t {
 } access;
 
 //
+//
+//
+
+bool running = false;
+
+//
 //! Parses an octal number
 //!
 //! \param [in] buf
@@ -105,44 +111,6 @@ static ks10_t::data_t parseOctal(const char *buf) {
 
     return num;
 }
-
-#if 0
-//
-//! Parses a hex number
-//!
-//! \param [in] buf
-//!     Pointer to line buffer.
-//!
-//! \returns
-//!     Number
-//
-
-static ks10_t::data_t parseHex(const char *buf) {
-
-    ks10_t::data_t num = 0;
-
-    for (int i = 0; i < 64; i += 4) {
-        if (*buf >= '0' && *buf <= '7') {
-            num += *buf++ - '0';
-            num <<= 4;
-        } else if (*buf >= 'A' && *buf <= 'F') {
-            num += *buf++ - 0x37;
-            num <<= 4;
-        } else if (*buf >= 'a' && *buf <= 'f') {
-            num += *buf++ - 0x57;
-            num <<= 4;
-        } else {
-            if (*buf != 0) {
-                printf("Parsed invalid character.\n");
-            }
-            break;
-        }
-    }
-    num >>= 4;
-
-    return num;
-}
-#endif
 
 //
 //! This function builds a 36-bit data word from the contents of the .SAV file.
@@ -241,7 +209,7 @@ static bool loadCode(const char * filename) {
         unsigned int words    = ks10_t::lh(data36);
         unsigned int addr     = ks10_t::rh(data36);
 #if 0
-        printf("addr is %06o, words is %06o\n", addr, words);
+        debug("addr is %06o, words is %06o\n", addr, words);
 #endif
 
         //
@@ -314,19 +282,15 @@ void printRH11Debug(void) {
 //! This function prints the Halt Status Word and the Halt Status Block.
 //!
 //! \details
-//!     The code executes a RDHSB instruction in the Console Instruction
-//!     Register to get the address of the Halt Status Block from the CPU.
+//!    The code executes a RDHSB instruction in the Console Instruction
+//!    Register to get the address of the Halt Status Block from the CPU.
 //!
 //! \todo
-//!     The microcode doesn't seem to store the FE/SC registers like the
-//!     documents describe.   Delete it?
+//!    The microcode doesn't seem to store the FE/SC registers like the
+//!    documents describe.   Delete it?
 //
 
 void printHaltStatus(void) {
-
-    //
-    // Retreive and print the Halt Status Word
-    //
 
     const ks10_t::haltStatusWord_t haltStatusWord = ks10_t::getHaltStatusWord();
 
@@ -371,7 +335,7 @@ void printHaltStatus(void) {
         while (!ks10_t::halt()) {
             ;
         }
-
+ 
         //
         // Read the address of the Halt Status Block from the temporary location
         // then restore the data at the temporary location.
@@ -436,18 +400,17 @@ static void cmdBT(int argc, char *argv[]) {
         "Usage: BT [filename]\n"
         "Load boot software into the KS10 processor.\n";
 
-    if (argc == 2) {
-        ks10_t::cacheEnable(true);
-        ks10_t::trapEnable(true);
-        ks10_t::timerEnable(true);
-        if (!loadCode(argv[1])) {
-            printf("Unable to open file \"%s\".\n", argv[1]);
-        }
-#if 0
-        ks10_t::run(true);
-#endif
-    } else {
-        printf(usage);
+    switch (argc) {
+        case 1:
+
+            break;
+        case 2:
+            if (!loadCode(argv[1])) {
+                printf("Unable to open file \"%s\".\n", argv[1]);
+            }
+            break;
+        default:
+            printf(usage);
     }
 }
 
@@ -510,8 +473,20 @@ static void cmdCO(int argc, char *[]) {
         "Usage: CO\n"
         "Continue the KS10 from the HALT state.\n";
 
+    const char cntl_e = 0x05;
+
     if (argc == 1) {
+        running = true;
         ks10_t::contin();
+        while (!ks10_t::halt()) {
+            int ch = getchar();
+            if (ch == cntl_e) {
+                break;
+            } else if (ch != -1) {
+                ks10_t::putchar(ch);
+            }
+        }
+        running = false;
     } else {
         printf(usage);
     }
@@ -853,8 +828,6 @@ static void cmdEX(int argc, char *argv[]) {
 
 #if 1
 
-bool running = false;
-
 static void cmdGO(int argc, char *argv[]) {
     const char *usage =
         "Usage: GO diagname.sav address\n"
@@ -863,17 +836,17 @@ static void cmdGO(int argc, char *argv[]) {
     static const char cntl_e = 0x05;
     static const ks10_t::addr_t memSize = 32 * 1024;
 
+    //
+    // Clear memory
+    //
+    
+    printf("KS10: Clearing Memory.\n");
+    for (ks10_t::addr_t i = 0; i < memSize; i++) {
+        ks10_t::writeMem(i, 0);
+    }
+
     if (argc == 1) {
-
-        //
-        // Clear memory
-        //
-
-        printf("KS10: Clearing Memory.\n");
-        for (ks10_t::addr_t i = 0; i < memSize; i++) {
-            ks10_t::writeMem(i, 0);
-        }
-
+        
         //
         // Load the diagnostic monitor into memory
         //
@@ -883,64 +856,29 @@ static void cmdGO(int argc, char *argv[]) {
             printf("Failed to load DIAG/SMMON.SAV\n");
             return;
         }
-
-        //
-        // Configure the CPU
-        //
-
-        ks10_t::cacheEnable(true);
-        ks10_t::trapEnable(true);
-        ks10_t::timerEnable(true);
-
-        //
-        // Start the KS10 running
-        //
-
-        running = true;
-        ks10_t::begin();
-
-        //
-        // Write character to KS10
-        //
-
-        while (!ks10_t::halt()) {
-            int ch = getchar();
-            if (ch == cntl_e) {
-                break;
-            } else if (ch != -1) {
-                ks10_t::putchar(ch);
-            }
-        }
-
-        running = false;
-
+        
     } else if (argc == 3) {
-
-        ks10_t::trapEnable(true);
-        ks10_t::timerEnable(false);
-
-        //
-        // Clear memory
-        //
-
-        printf("KS10: Clearing Memory.\n");
-        for (ks10_t::addr_t i = 0; i < memSize; i++) {
-            ks10_t::writeMem(i, 0);
-        }
 
         //
         // Read the diagnostic subroutines into memory
         //
 
+#if 1
         if (!loadCode("diag/subsm.sav")) {
             printf("Failed to load diag/subsm.sav\n");
             return;
         }
+#else
+        if (!loadCode("diag/subusr.sav")) {
+            printf("Failed to load diag/subusr.sav\n");
+            return;
+        }
+#endif
 
         //
         // Load DDT into memory
         //
-
+        
         if (!loadCode("diag/smddt.sav")) {
             printf("Failed to load diag/smddt.sav\n");
             return;
@@ -949,7 +887,7 @@ static void cmdGO(int argc, char *argv[]) {
         //
         // Load the diagnostic monitor into memory
         //
-
+            
         if (!loadCode("diag/smmon.sav")) {
             printf("Failed to load diag/smmon.sav\n");
             return;
@@ -958,7 +896,7 @@ static void cmdGO(int argc, char *argv[]) {
         //
         // Read the diagnostic program into memory
         //
-
+            
         if (!loadCode(argv[1])) {
             printf("Failed to load %s\n", argv[1]);
             return;
@@ -973,50 +911,90 @@ static void cmdGO(int argc, char *argv[]) {
         printf("Wrote CIR\n");
 
         //
-        // Patch the code
+        // Fix timing for DSDZA diagnostic
+        //
+        
+        if (strnicmp("diag/dsdza.sav", argv[1], 10) == 0) {
+            ks10_t::writeMem(035650, 60000);	// 50
+            ks10_t::writeMem(035651, 60000);	// 75
+            ks10_t::writeMem(035652, 60000);	// 110
+            ks10_t::writeMem(035653, 60000);	// 134`
+            ks10_t::writeMem(035654, 60000);	// 150
+            ks10_t::writeMem(035655, 60000);	// 300
+            ks10_t::writeMem(035656, 60000);	// 600
+            ks10_t::writeMem(035657, 60000);	// 1200
+            ks10_t::writeMem(035660, 60000);	// 1800
+            ks10_t::writeMem(035661, 60000);	// 2000
+            ks10_t::writeMem(035662, 60000);	// 2400
+            ks10_t::writeMem(035663, 60000);	// 3600
+            ks10_t::writeMem(035664, 60000);	// 4800
+            ks10_t::writeMem(035665, 60000);	// 7200
+            ks10_t::writeMem(035666, 60000);	// 9600
+            ks10_t::writeMem(035667, 60000);	// 19.2K
+            printf("Patched DSDZA diagnostic\n");
+        }
+
+        //
+        // Other patches for the code
         //
 
+#if 0
         ks10_t::writeMem(030057, 0254200030060);        // Halt at end of diagnostic
         printf("Patched code\n");
-
-        //
-        // Configure the CPU
-        //
-
-        ks10_t::cacheEnable(true);
-        ks10_t::trapEnable(true);
-        ks10_t::timerEnable(true);
-
-        if (ks10_t::cpuReset()) {
-            printf("????? KS10 should not be reset.\n");
-        }
-        if (!ks10_t::halt()) {
-            printf("????? KS10 should be halted.\n");
-        }
-        running = true;
-        ks10_t::begin();
-        if (!ks10_t::run()) {
-            printf("????? KS10 should be running.\n");
-        }
-
-        //
-        // Write character to KS10
-        //
-
-        while (!ks10_t::halt()) {
-            int ch = getchar();
-            if (ch == cntl_e) {
-                break;
-            } else if (ch != -1) {
-                ks10_t::putchar(ch);
-            }
-        }
-
-        running = false;
+#endif
 
     } else {
         printf(usage);
+        return;
     }
+
+    //
+    // Configure the DZ11 Console Control Register
+    //
+        
+    ks10_t::writeDZCCR(0x0000000000000000ull);
+
+    //
+    // Configure the RH11 Console Control Registrer
+    //
+
+    ks10_t::writeRHCCR(0x0000000000000400ull);
+    
+    //
+    // Set the keep-alive and status word (KASW)
+    //
+    
+    ks10_t::writeMem(000031, 003740000000);
+    
+    //
+    // Configure the CPU
+    //
+    
+    ks10_t::cacheEnable(true);
+    ks10_t::trapEnable(true);
+    ks10_t::timerEnable(true);
+
+    //
+    // Start the KS10 running
+    //
+    
+    running = true;
+    ks10_t::begin();
+    
+    //
+    // Write character to KS10
+    //
+
+    while (!ks10_t::halt()) {
+        int ch = getchar();
+        if (ch == cntl_e) {
+            break;
+        } else if (ch != -1) {
+            ks10_t::putchar(ch);
+        }
+    }
+    
+    running = false;
 }
 
 #endif
