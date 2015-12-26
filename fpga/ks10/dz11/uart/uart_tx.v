@@ -187,7 +187,7 @@ module UART_TX (
                     begin
                        brdiv <= 15;
                        state <= stateBIT1;
-                  end
+                    end
                   else
                     brdiv <= brdiv - 1'b1;
 
