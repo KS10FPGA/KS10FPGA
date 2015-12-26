@@ -155,7 +155,9 @@ class ks10_t {
         static void writeIO(addr_t addr, data_t data);
         static uint16_t readIObyte(addr_t addr);
         static void writeIObyte(addr_t addr, uint16_t data);
+        static uint64_t readDZCCR(void);
         static void writeDZCCR(uint64_t data);
+        static uint64_t readRHCCR(void);
         static void writeRHCCR(uint64_t data);
         static bool run(void);
         static void run(bool);
