@@ -17,19 +17,19 @@
 //
 // Copyright (C) 2013-2015 Rob Doyle
 //
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation; either version 2 of the License, or (at your option)
+// any later version.
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+// more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+// You should have received a copy of the GNU General Public License along with
+// this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+// Place - Suite 330, Boston, MA 02111-1307, USA.
 //
 //******************************************************************************
 
@@ -155,6 +155,8 @@ class ks10_t {
         static void writeIO(addr_t addr, data_t data);
         static uint16_t readIObyte(addr_t addr);
         static void writeIObyte(addr_t addr, uint16_t data);
+        static void writeDZCCR(uint64_t data);
+        static void writeRHCCR(uint64_t data);
         static bool run(void);
         static void run(bool);
         static bool cont(void);
@@ -191,7 +193,7 @@ class ks10_t {
         // Misc constants
         //
 
-        static const uint32_t epiOffset = 0x60000000;           //!< EPI Address Offset
+        static const uint32_t epiOffset   = 0x60000000;         //!< EPI Address Offset
         static const addr_t   memAddrMask = 003777777ULL;       //!< KS10 20-bit Address Mask
         static const addr_t   ioAddrMask  = 017777777ULL;       //!< KS10 22-bit Address Mask
 
@@ -221,8 +223,11 @@ class ks10_t {
         //!< KS10 Console Instruction Register
         static constexpr volatile void * regCIR  = reinterpret_cast<void *>(epiOffset + 0x18);
 
-        //!< KS10 Test Register
-        static constexpr volatile void * regTest = reinterpret_cast<void *>(0x60000000 + 0x20);
+        //!< DZ11 Console Control Register
+        static constexpr volatile uint64_t * regDZCCR = reinterpret_cast<uint64_t *>(epiOffset + 0x20);
+
+        //!< RH11 Console Control Register
+        static constexpr volatile uint64_t * regRHCCR = reinterpret_cast<uint64_t *>(epiOffset + 0x28);
 
         //!< RH11 Debug Register
         static constexpr volatile rh11debug_t * regRH11Debug = reinterpret_cast<volatile rh11debug_t *>(epiOffset + 0x30);
