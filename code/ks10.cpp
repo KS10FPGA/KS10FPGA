@@ -372,7 +372,7 @@ void ks10_t::writeDZCCR(uint64_t data) {
 //
 
 uint64_t ks10_t::readRHCCR(void) {
-    return *regDZCCR;
+    return *regRHCCR;
 }
 
 //

@@ -34,8 +34,11 @@
 //******************************************************************************
 
 #include "stdio.h"
+#include "fatal.hpp"
 #include "console.hpp"
 #include "driverlib/rom.h"
+#include "driverlib/gpio.h"
+#include "driverlib/sysctl.h"
 #include "driverlib/inc/hw_types.h"
 #include "driverlib/inc/hw_memmap.h"
 #include "driverlib/inc/hw_sysctl.h"
@@ -56,7 +59,21 @@ int main(void) {
     // Set the clocking to run at 80 MHz from the PLL.
     //
 
-    //ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_8MHZ | SYSCTL_OSC_MAIN);
+#if 0
+    ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_8MHZ | SYSCTL_OSC_MAIN);
+#endif
+
+    //
+    // Configure the Ethernet Blinky Lights
+    //
+
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2 | GPIO_PIN_3);
+    ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2 | GPIO_PIN_3, 0);
+
+    //
+    // Print startup message
+    //
 
     printf("\x1b[H\x1b[2J");
     printf("CPU : Console alive.\n");
@@ -67,10 +84,7 @@ int main(void) {
     //
 
     if (!REVISION_IS_C3) {
-        printf("CPU : Unsupported processor revision.\n");
-        for (;;) {
-            ;
-        }
+        fatal("CPU : Unsupported processor revision.\n");
     }
 
     //

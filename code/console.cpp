@@ -104,22 +104,6 @@ void ks10Interrupt(void) {
 }
 
 //
-//! Initialize console communcations area
-//
-
-void initConsoleCommunications(void) {
-    ks10_t::writeMem(ks10_t::switch_addr, 000000000000);        // Initialize switch register
-    ks10_t::writeMem(ks10_t::keepa_addr,  000000000000);        // Initialize keep-alive
-    ks10_t::writeMem(ks10_t::ctyin_addr,  000000000000);        // Initialize CTY input word
-    ks10_t::writeMem(ks10_t::ctyout_addr, 000000000000);        // Initialize CTY output word
-    ks10_t::writeMem(ks10_t::klnin_addr,  000000000000);        // Initialize KLINIK input word
-    ks10_t::writeMem(ks10_t::klnout_addr, 000000000000);        // Initialize KLINIK output word
-    ks10_t::writeMem(ks10_t::rhbase_addr, 000001776700);        // Initialize RH11 base address
-    ks10_t::writeMem(ks10_t::rhunit_addr, 000000000000);        // Initialize UNIT number
-    ks10_t::writeMem(ks10_t::mtparm_addr, 000000000000);        // Initialize magtape params.
-}
-
-//
 //! Read characters from the input and create a command line
 //!
 //! \param buf
@@ -320,7 +304,27 @@ void taskConsole(void * /*param*/) {
     // Initialize the Console Communications memory area
     //
 
-    initConsoleCommunications();
+    ks10_t::writeMem(ks10_t::switch_addr, 000000000000);        // Initialize switch register
+    ks10_t::writeMem(ks10_t::kasw_addr,   003740000000);        // Initialize keep-alive and status word (KASW)
+    ks10_t::writeMem(ks10_t::ctyin_addr,  000000000000);        // Initialize CTY input word
+    ks10_t::writeMem(ks10_t::ctyout_addr, 000000000000);        // Initialize CTY output word
+    ks10_t::writeMem(ks10_t::klnin_addr,  000000000000);        // Initialize KLINIK input word
+    ks10_t::writeMem(ks10_t::klnout_addr, 000000000000);        // Initialize KLINIK output word
+    ks10_t::writeMem(ks10_t::rhbase_addr, 000001776700);        // Initialize RH11 base address
+    ks10_t::writeMem(ks10_t::rhunit_addr, 000000000000);        // Initialize UNIT number
+    ks10_t::writeMem(ks10_t::mtparm_addr, 000000000000);        // Initialize magtape params.
+
+    //
+    // Configure the DZ11 Console Control Register
+    //
+        
+    ks10_t::writeDZCCR(0x000000000000ff00ull);
+
+    //
+    // Configure the RH11 Console Control Registrer
+    //
+
+    ks10_t::writeRHCCR(0x00000000070707f8ull);
 
     //
     // Process commands
@@ -403,7 +407,5 @@ void startConsole(void) {
     //
 
     portBASE_TYPE status = xTaskStartScheduler(pdTRUE);
-    if (status != pdPASS) {
-        fatal("RTOS: Scheduler returned.  Status was %s.\n", taskError(status));
-    }
+    fatal("RTOS: Scheduler returned.  Status was %s.\n", taskError(status));
 }

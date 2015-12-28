@@ -123,7 +123,7 @@ class ks10_t {
         //
 
         static const addr_t switch_addr = 000030;       //!< Switch address
-        static const addr_t keepa_addr  = 000031;       //!< Keep alive address
+        static const addr_t kasw_addr   = 000031;       //!< Keep alive address
         static const addr_t ctyin_addr  = 000032;       //!< CTY input address
         static const addr_t ctyout_addr = 000033;       //!< CTY output address
         static const addr_t klnin_addr  = 000034;       //!< KLINIK input address
