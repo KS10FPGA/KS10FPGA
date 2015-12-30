@@ -6,8 +6,7 @@
 //   Control ROM (CROM) Definitions
 //
 // Details
-//   This file contains the Control ROM microcode field
-//   definitions.
+//   This file contains the Control ROM microcode field definitions.
 //
 //   Include it everywhere you need to access the Control ROM.
 //
@@ -43,7 +42,6 @@
 
 `ifndef __CROM_VH
 `define __CROM_VH
-
 
 `define CROM_WIDTH              108             // CROM Width
 
