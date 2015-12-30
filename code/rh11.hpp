@@ -58,6 +58,7 @@ class rh11_t {
         const ks10_t::addr_t da_addr;
         const ks10_t::addr_t cs2_addr;
         const ks10_t::addr_t ds_addr;
+        const ks10_t::addr_t as_addr;
         const ks10_t::addr_t la_addr;
         const ks10_t::addr_t db_addr;
         const ks10_t::addr_t mr_addr;
@@ -74,6 +75,8 @@ class rh11_t {
         static const ks10_t::addr_t da_offset  = 06;
         static const ks10_t::addr_t cs2_offset = 010;
         static const ks10_t::addr_t ds_offset  = 012;
+        static const ks10_t::addr_t er1_offset = 014;
+        static const ks10_t::addr_t as_offset  = 016;
         static const ks10_t::addr_t la_offset  = 020;
         static const ks10_t::addr_t db_offset  = 022;
         static const ks10_t::addr_t mr_offset  = 024;
@@ -81,27 +84,21 @@ class rh11_t {
         static const ks10_t::addr_t dc_offset  = 034;
 
         //
-        // Unit
-        //
-
-        const unsigned int unit;
-
-        //
         // UBA
         //
 
-        uba_t &uba;
+        uba_t uba;
 
         //
         // Private functions
         //
 
-        void testRPLA20(void);
-        void testRPLA22(void);
+        void testRPLA20(ks10_t::data_t unit);
+        void testRPLA22(ks10_t::data_t unit);
         bool wait(bool verbose = false);
         bool isHomBlock(ks10_t::addr_t addr);
         bool readBlock(ks10_t::addr_t vaddr, ks10_t::data_t block);
-        bool bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr, ks10_t::data_t block, const char *name);
+        bool bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr, ks10_t::data_t block, ks10_t::addr_t offset);
 
     public:
 
@@ -164,31 +161,32 @@ class rh11_t {
 
         void clear(void);
         void testFIFO(void);
-        void testInit(void);
-        void testRPLA(void);
-        void testRead(void);
-        void testWrite(void);
-        void testWrchk(void);
-        void boot(void);
+        void testInit(ks10_t::data_t unit);
+        void testRPLA(ks10_t::data_t unit);
+        void testRead(ks10_t::data_t unit);
+        void testWrite(ks10_t::data_t unit);
+        void testWrchk(ks10_t::data_t unit);
+        void boot(ks10_t::data_t unit);
 
         //
         // Constructor
         //
 
-    rh11_t (ks10_t::addr_t base_addr, unsigned int unit, uba_t &uba) :
+        rh11_t (ks10_t::addr_t base_addr) :
             cs1_addr((base_addr & 07777700) + cs1_offset),
             wc_addr ((base_addr & 07777700) + wc_offset ),
             ba_addr ((base_addr & 07777700) + ba_offset ),
             da_addr ((base_addr & 07777700) + da_offset ),
             cs2_addr((base_addr & 07777700) + cs2_offset),
             ds_addr ((base_addr & 07777700) + ds_offset ),
+            as_addr ((base_addr & 07777700) + as_offset ),
             la_addr ((base_addr & 07777700) + la_offset ),
             db_addr ((base_addr & 07777700) + db_offset ),
             mr_addr ((base_addr & 07777700) + mr_offset ),
             of_addr ((base_addr & 07777700) + of_offset ),
             dc_addr ((base_addr & 07777700) + dc_offset ),
-            unit(unit),
-            uba(uba) {
+            uba(base_addr) {
+            ;
         }
 
         //
@@ -285,6 +283,22 @@ class rh11_t {
 
         ks10_t::data_t ds_read(void) {
             return ks10_t::readIO(ds_addr);
+        }
+
+        //
+        // Write to AS
+        //
+
+        void as_write(ks10_t::data_t data) {
+            ks10_t::writeIO(as_addr, data);
+        }
+
+        //
+        // Read from AS
+        //
+
+        ks10_t::data_t as_read(void) {
+            return ks10_t::readIO(as_addr);
         }
 
         //

@@ -65,6 +65,8 @@ module RH11 (
       // RH11 Interfaces
       input  wire [ 7: 0] rh11CD,               // RH11 Card Detect
       input  wire [ 7: 0] rh11WP,               // RH11 Write Protect
+      input  wire [ 7: 0] rh11DPR,              // RH11 Drive Present
+      input  wire [ 7: 0] rh11EN,               // RH11 Enabled
       input  wire         rh11MISO,             // RH11 Data In
       output wire         rh11MOSI,             // RH11 Data Out
       output wire         rh11SCLK,             // RH11 Clock
@@ -233,6 +235,12 @@ module RH11 (
    //
 
    wire [35:0] rhDATAI = devDATAI[0:35];
+
+   //
+   // Drive Present
+   //
+
+   wire [7:0] rhDPR = rh11DPR;
 
    //
    // Synchronize the SD Card Detect
@@ -618,6 +626,7 @@ module RH11 (
               .rpPAT    (rhPAT),
               .rpCD     (rhCD[i]),
               .rpWP     (rhWP[i]),
+              .rpDPR    (rhDPR[i]),
               .rpCS1    (rpCS1[i]),
               .rpDA     (rpDA[i]),
               .rpDS     (rpDS[i]),
@@ -710,18 +719,18 @@ module RH11 (
    // Unit Selection
    //
 
-   wire [15:0] rpdaUNIT  = rpDA[rhUNIT];
-   wire [15:0] rpdsUNIT  = rpDS[rhUNIT];
-   wire [15:0] rplaUNIT  = rpLA[rhUNIT];
-   wire [15:0] rpmrUNIT  = rpMR[rhUNIT];
-   wire [15:0] rpdtUNIT  = rpDT[rhUNIT];
-   wire [15:0] rpsnUNIT  = rpSN[rhUNIT];
-   wire [15:0] rpofUNIT  = rpOF[rhUNIT];
-   wire [15:0] rpdcUNIT  = rpDC[rhUNIT];
-   wire [15:0] rpccUNIT  = rpCC[rhUNIT];
-   wire [15:0] rper1UNIT = rpER1[rhUNIT];
-   wire [15:0] rper2UNIT = rpER2[rhUNIT];
-   wire [15:0] rper3UNIT = rpER3[rhUNIT];
+   wire [15:0] rpdaUNIT  = rh11EN[rhUNIT] ? rpDA[rhUNIT] : 0;
+   wire [15:0] rpdsUNIT  = rh11EN[rhUNIT] ? rpDS[rhUNIT] : 0;
+   wire [15:0] rplaUNIT  = rh11EN[rhUNIT] ? rpLA[rhUNIT] : 0;
+   wire [15:0] rpmrUNIT  = rh11EN[rhUNIT] ? rpMR[rhUNIT] : 0;
+   wire [15:0] rpdtUNIT  = rh11EN[rhUNIT] ? rpDT[rhUNIT] : 0;
+   wire [15:0] rpsnUNIT  = rh11EN[rhUNIT] ? rpSN[rhUNIT] : 0;
+   wire [15:0] rpofUNIT  = rh11EN[rhUNIT] ? rpOF[rhUNIT] : 0;
+   wire [15:0] rpdcUNIT  = rh11EN[rhUNIT] ? rpDC[rhUNIT] : 0;
+   wire [15:0] rpccUNIT  = rh11EN[rhUNIT] ? rpCC[rhUNIT] : 0;
+   wire [15:0] rper1UNIT = rh11EN[rhUNIT] ? rpER1[rhUNIT] : 0;
+   wire [15:0] rper2UNIT = rh11EN[rhUNIT] ? rpER2[rhUNIT] : 0;
+   wire [15:0] rper3UNIT = rh11EN[rhUNIT] ? rpER3[rhUNIT] : 0;
 
    //
    // Bus Mux and little-endian to big-endian bus swap.

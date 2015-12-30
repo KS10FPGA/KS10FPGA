@@ -317,7 +317,7 @@ void taskConsole(void * /*param*/) {
     //
     // Configure the DZ11 Console Control Register
     //
-        
+
     ks10_t::writeDZCCR(0x000000000000ff00ull);
 
     //

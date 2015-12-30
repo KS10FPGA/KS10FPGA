@@ -634,8 +634,8 @@ module testbench;
         // Set DZ11 Console Control Register and RH11 Console Control Register
         //
 
-        conWRITE64(addrREGDZCCR, 64'h0123456789abcdef);
-        conWRITE64(addrREGRHCCR, 64'hfedcba9876543210);
+        conWRITE64(addrREGDZCCR, 64'h000000000000ff00);
+        conWRITE64(addrREGRHCCR, 64'h00000000000707f8);
         
         //
         // Write to Control/Status Register

@@ -37,6 +37,7 @@
 
 #include "SafeRTOS/SafeRTOS_API.h"
 
+void consoleOutput(void);
 void printHaltStatus(void);
 void startCommandTask(char *lineBuffer, xTaskHandle &taskHandle);
 

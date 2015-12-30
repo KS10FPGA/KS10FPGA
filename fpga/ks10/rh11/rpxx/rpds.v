@@ -52,6 +52,7 @@ module RPDS (
       input  wire         rpGO,                 // Go command
       input  wire         rpCD,                 // SD Card detect
       input  wire         rpWP,                 // SD Write protect
+      input  wire         rpDPR,                // Drive present
       input  wire         rpPIP,                // Positioning in progress
       input  wire         rpDRY,                // Drive ready
       input  wire         rpDRVCLR,             // Drive clear command
@@ -211,7 +212,7 @@ module RPDS (
    //  M7774/RG6/E16
    //
 
-   wire dsDPR = 1;
+   wire dsDPR = rpDPR;
 
    //
    // RPDS Drive Ready (rpDRY)

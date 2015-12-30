@@ -88,10 +88,10 @@ class dz11_t {
         static void setup(unsigned int line);
 
     public:
-        
+
         //
         // DZ11 Base Addresses
-        // 
+        //
 
         static const ks10_t::addr_t base_addr1 = 03760010;
         static const ks10_t::addr_t base_addr2 = 03760020;

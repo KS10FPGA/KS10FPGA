@@ -37,6 +37,7 @@
 #include "stdio.h"
 #include "uba.hpp"
 #include "rh11.hpp"
+#include "commands.hpp"
 #include "SafeRTOS/SafeRTOS_API.h"
 
 //
@@ -297,7 +298,7 @@ bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
 //
 
 bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
-                       ks10_t::data_t daddr, const char *name) {
+                       ks10_t::data_t daddr, ks10_t::addr_t offset) {
 
     //
     // Read the Home Block
@@ -329,8 +330,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                     // Page.
                     //
 
-                    ks10_t::addr_t mon_preboot_offset  = 4;
-                    daddr = ks10_t::readMem(paddr + mon_preboot_offset);
+                    daddr = ks10_t::readMem(paddr + offset);
                     if (daddr != 0) {
 
                         //
@@ -341,36 +341,44 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                         success = readBlock(vaddr, daddr);
                         if (success) {
 #if 1
-                            for (int i = 0; i < 20; i++) {
+                            for (int i = 0; i < 0100; i++) {
                                 printf("data[%o] = %012llo\n", 01000 + i, ks10_t::readMem(paddr + i));
                             }
 #endif
-                            ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
-                            printf("%s Monitor Pre-Boot read successfully.\n", name);
-                            printf("Boot with \"ST 1000\"\n");
-                            return true;
+                            if (ks10_t::readMem(paddr) != 0) {
+                                printf("Monitor Pre-Boot read successfully.\n");
+                                ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
+#if 1
+                                ks10_t::begin();
+                                consoleOutput();
+#endif
+                                return true;
+                            } else {
+                                printf("Monitor Pre-Boot is invalid.\n");
+                                return false;
+                            }
                         } else {
-                            printf("%s Monitor Pre-Boot Page is unreadable.\n", name);
+                            printf("Unable to read Monitor Pre-Boot\n");
                             return false;
                         }
                     } else {
-                        printf("%s Invalid Monitor Pre-Boot disk address.\n", name);
+                        printf("Invalid Monitor Pre-Boot disk address.\n");
                         return false;
                     }
                 } else {
-                    printf("%s Unreadable FE File Page.\n", name);
+                    printf("Unreadable FE File Page.\n");
                     return false;
                 }
             } else {
-                printf("%s Home Block has invalid address of FE File Page.\n", name);
+                printf("Home Block has invalid address of FE File Page.\n");
                 return false;
             }
         } else {
-            printf("%s Home Block not found.\n", name);
+            printf("Home Block not found.\n");
             return false;
         }
     } else {
-        printf("%s Home Block is unreadable.\n", name);
+        printf("Home Block is unreadable.\n");
         return false;
     }
 }
@@ -495,7 +503,7 @@ void rh11_t::testFIFO(void) {
 //! In this mode, there are 20 sectors per track.
 //
 
-void rh11_t::testRPLA20(void) {
+void rh11_t::testRPLA20(ks10_t::data_t unit) {
 
     //
     // Controller Clear
@@ -652,7 +660,7 @@ void rh11_t::testRPLA20(void) {
 //! In this mode, there are 22 sectors per track.
 //
 
-void rh11_t::testRPLA22(void) {
+void rh11_t::testRPLA22(ks10_t::data_t unit) {
 
     //
     // Controller Clear
@@ -813,19 +821,17 @@ void rh11_t::testRPLA22(void) {
 //! 22 sector mode.
 //
 
-void rh11_t::testRPLA(void) {
-    testRPLA20();
-    testRPLA22();
+void rh11_t::testRPLA(ks10_t::data_t unit) {
+    testRPLA20(unit);
+    testRPLA22(unit);
 }
 
 //
 // Test Disk Initialization
 //
 
-void rh11_t::testInit(void) {
+void rh11_t::testInit(ks10_t::data_t unit) {
     bool fail = false;
-
-    printf("RPDS is %012llo\n", ds_read());
 
     //
     // Controller Clear
@@ -834,7 +840,6 @@ void rh11_t::testInit(void) {
 #if 0
     cs2_write(cs2_clr);
 #endif
-    printf("RPDS is %012llo\n", ds_read());
 
     //
     // Select disk (unit)
@@ -850,7 +855,6 @@ void rh11_t::testInit(void) {
         printf("Disk is off-line.\n");
         return;
     }
-    printf("Disk is on-line\n");
 
     //
     // Wait for initialization to complete
@@ -904,7 +908,7 @@ void rh11_t::testInit(void) {
 // Test Disk Read
 //
 
-void rh11_t::testRead(void) {
+void rh11_t::testRead(ks10_t::data_t unit) {
     bool pass = true;
     const unsigned int words     = 128;
     const ks10_t::addr_t vaddr   = 004000;
@@ -1070,7 +1074,7 @@ void rh11_t::testRead(void) {
 // Test Disk Write
 //
 
-void rh11_t::testWrite(void) {
+void rh11_t::testWrite(ks10_t::data_t unit) {
     bool pass = true;
     const unsigned int words     = 128;
     const ks10_t::addr_t vaddr   = 004000;
@@ -1204,7 +1208,7 @@ void rh11_t::testWrite(void) {
 // Test Disk Write Check Command
 //
 
-void rh11_t::testWrchk(void) {
+void rh11_t::testWrchk(ks10_t::data_t unit) {
     bool pass = true;
     const unsigned int words     = 128;
     const unsigned int vaddr     = 004000;
@@ -1397,22 +1401,35 @@ void rh11_t::testWrchk(void) {
 //!     Boot to diagnostic mode.  I.e., SMMON
 //!
 
-void rh11_t::boot(void) {
+void rh11_t::boot(ks10_t::data_t unit) {
 
     const ks10_t::addr_t paddr = 01000;         // KS10 address of disk buffer
     const ks10_t::addr_t vaddr = 04000;         // UBA address of disk buffer
 
-    const unsigned int priHomeBlock =  1;
-    const unsigned int altHomeBlock =  8;
-    const unsigned int secHomeBlock = 10;
+    //
+    // Homeblock numbers (octal)
+    //
+
+    enum homeBlock_t {
+        priHomeBlock = 001,
+        altHomeBlock = 010,
+        secHomeBlock = 012,
+    };
+
+    enum offset_t {
+        microCodeOffset   = 002,
+        monPrebootOffset  = 004,
+        diagPrebootOffset = 006,
+        diagBootOffset    = 016,
+    };
+
+    ks10_t::addr_t offset = monPrebootOffset;
 
     //
     // Controller clear
     //
 
-#if 0
     cs2_write(cs2_clr);
-#endif
 
     //
     // Select disk (unit)
@@ -1437,6 +1454,12 @@ void rh11_t::boot(void) {
     uba.pag_write(1, uba_t::pag_ftm | uba_t::pag_vld | uba_t::addr2page(paddr));
 
     //
+    // Clear Attentions
+    //
+
+    as_write(0x00ff);
+
+    //
     // Execute Read in Preset Command
     //
 
@@ -1446,13 +1469,13 @@ void rh11_t::boot(void) {
     // Attempt to read Monitor Pre-Boot code from one of the Home Blocks
     //
 
-    bool success = bootBlock(paddr, vaddr, priHomeBlock, "Primary");
+    bool success = bootBlock(paddr, vaddr, priHomeBlock, offset);
     if (!success) {
         printf("Trying Alternate Home Block.\n");
-        success = bootBlock(paddr, vaddr, altHomeBlock, "Alternate");
+        success = bootBlock(paddr, vaddr, altHomeBlock, offset);
         if (!success) {
             printf("Trying Secondary Home Block.\n");
-            success = bootBlock(paddr, vaddr, secHomeBlock, "Secondary");
+            success = bootBlock(paddr, vaddr, secHomeBlock, offset);
             if (!success) {
                 printf("Unable to boot from this disk.\n");
             }

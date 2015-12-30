@@ -868,7 +868,7 @@ bool ks10_t::testRegs(bool verbose) {
     success &= testRegister(regDZCCR, "regDZCCR", verbose);
     success &= testRegister(regRHCCR, "regRHCCR", verbose);
     if (success) {
-        printf("FPGA: Registers tested completed successfully.\n");
+        printf("FPGA: Register test completed successfully.\n");
     }
     return success;
 }

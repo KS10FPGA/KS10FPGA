@@ -56,7 +56,7 @@ module KS10 (
       // DZ11 Interfaces
       output wire [ 7: 0] dz11TXD,      // DZ11 Transmitter Serial Data
       input  wire [ 7: 0] dz11RXD,      // DZ11 Receiver Serial Data
-      output wire         dz11LOOP,	// DZ11 Loopback enable
+      output wire         dz11LOOP,     // DZ11 Loopback enable
       // RH11 Interfaces
       input  wire         rh11CD_N,     // RH11 Card Detect
       input  wire         rh11MISO,     // RH11 Data In
@@ -136,7 +136,7 @@ module KS10 (
    wire [0:63] dz11CCR;                 // DZ11 Console Control Register
    wire [0: 7] dz11RI = dz11CCR[56:63]; // DZ11 Ring Indicator
    wire [0: 7] dz11CO = dz11CCR[48:55]; // DZ11 Carrier Sense
-   assign dz11LOOP    = dz11CCR[47];	// DZ11 Loopback
+   assign dz11LOOP    = dz11CCR[47];    // DZ11 Loopback
 
    //
    // RH11 Interfaces
@@ -144,8 +144,10 @@ module KS10 (
 
    wire [0:63] rh11CCR;                 // RH11 Console Control Register
    wire [0:63] rh11DEBUG;               // RH11 Debug
-   wire [7: 0] rh11WP = rh11CCR[56:63]; // RH11 Write Protect
-   wire [7: 0] rh11CD = rh11CCR[48:55]; // RH11 Card Detect
+   wire [7: 0] rh11WP  = rh11CCR[56:63];// RH11 Write Protect
+   wire [7: 0] rh11CD  = rh11CCR[48:55];// RH11 Card Detect
+   wire [7: 0] rh11DPR = rh11CCR[40:47];// RH11 Drive Present
+   wire [7: 0] rh11EN  = rh11CCR[32:39];// RH11 Enabled
 
    //
    // Memory Interfaces
@@ -393,6 +395,8 @@ module KS10 (
       // RH11 IO
       .rh11CD           (rh11CD),
       .rh11WP           (rh11WP),
+      .rh11DPR          (rh11DPR),
+      .rh11EN           (rh11EN),
       .rh11MISO         (rh11MISO),
       .rh11MOSI         (rh11MOSI),
       .rh11SCLK         (rh11SCLK),

@@ -38,7 +38,6 @@
 
 #include "sd.h"
 #include "stdio.h"
-#include "uba.hpp"
 #include "dz11.hpp"
 #include "ks10.hpp"
 #include "rh11.hpp"
@@ -61,6 +60,8 @@
 #define debug(...)
 #endif
 
+#define CUSTOM_CMD
+
 //
 // Current address set by cmdLI or cmdLA
 //
@@ -77,10 +78,25 @@ static enum access_t {
 } access;
 
 //
-//
+// Write characters to the KS10
 //
 
 bool running = false;
+
+void consoleOutput(void) {
+    const char cntl_e = 0x05;
+    running = true;
+    while (!ks10_t::halt()) {
+        int ch = getchar();
+        if (ch == cntl_e) {
+            printf("\n");
+            break;
+        } else if (ch != -1) {
+            ks10_t::putchar(ch);
+        }
+    }
+    running = false;
+}
 
 //
 //! Parses an octal number
@@ -306,77 +322,80 @@ void printHaltStatus(void) {
                    "Unknown.")))))))),
            haltStatusWord.pc);
 
+#if 1
+
     //
-    // Print the Halt Status Block when not at Microcode Startup
+    // Create a temporary memory location to stash the address of the Halt
+    // Status Block.  Save the data in the console.  We'll restore it when
+    // we're done.
     //
 
-    if (haltStatusWord.status != 0) {
+    const ks10_t::addr_t tempAddr = 0100;
+    const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
 
-        //
-        // Create a temporary memory location to stash the address of the Halt
-        // Status Block.  Save the data in the console.  We'll restore it when
-        // we're done.
-        //
+    //
+    // Load an RDHSB instruction into the CIR and execute it.
+    //
 
-        const ks10_t::addr_t tempAddr = 0100;
-        const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
+    ks10_t::writeRegCIR((ks10_t::opRDHSB << 18) | tempAddr);
+    ks10_t::execute();
 
-        //
-        // Load an RDHSB instruction into the CIR and execute it.
-        //
+    //
+    // Wait for the processor to HALT.
+    //
 
-        ks10_t::writeRegCIR((ks10_t::opRDHSB << 18) | tempAddr);
-        ks10_t::execute();
-
-        //
-        // Wait for the processor to HALT.
-        //
-
-        while (!ks10_t::halt()) {
-            ;
-        }
- 
-        //
-        // Read the address of the Halt Status Block from the temporary location
-        // then restore the data at the temporary location.
-        //
-
-        ks10_t::addr_t hsbAddr = ks10_t::readMem(tempAddr);
-        ks10_t::writeMem(tempAddr, tempData);
-
-        //
-        // Retreive and print the Halt Status Block
-        //
-
-        const ks10_t::haltStatusBlock_t haltStatusBlock = ks10_t::getHaltStatusBlock(hsbAddr);
-        printf("  PC  is %012llo     HR  is %012llo\n"
-               "  MAG is %012llo     ONE is %012llo\n"
-               "  AR  is %012llo     ARX is %012llo\n"
-               "  BR  is %012llo     BRX is %012llo\n"
-               "  EBR is %012llo     UBR is %012llo\n"
-               "  MSK is %012llo     FLG is %012llo\n"
-               "  PI  is %012llo     X1  is %012llo\n"
-               "  TO  is %012llo     T1  is %012llo \n"
-               "  VMA is %012llo\n"
-               "KS10> ",
-               haltStatusBlock.pc,
-               haltStatusBlock.hr,
-               haltStatusBlock.mag,
-               haltStatusBlock.one,
-               haltStatusBlock.ar,
-               haltStatusBlock.arx,
-               haltStatusBlock.br,
-               haltStatusBlock.brx,
-               haltStatusBlock.ebr,
-               haltStatusBlock.ubr,
-               haltStatusBlock.mask,
-               haltStatusBlock.flg,
-               haltStatusBlock.pi,
-               haltStatusBlock.x1,
-               haltStatusBlock.t0,
-               haltStatusBlock.t1,
-               haltStatusBlock.vma);
+    while (!ks10_t::halt()) {
+        ;
     }
+
+    //
+    // Read the address of the Halt Status Block from the temporary location
+    // then restore the data at the temporary location.
+    //
+
+    ks10_t::addr_t hsbAddr = ks10_t::readMem(tempAddr);
+    ks10_t::writeMem(tempAddr, tempData);
+
+#else
+
+    ks10_t::addr_t hsbAddr = 0376000ULL;
+
+#endif
+
+    //
+    // Retreive and print the Halt Status Block
+    //
+
+    const ks10_t::haltStatusBlock_t haltStatusBlock = ks10_t::getHaltStatusBlock(hsbAddr);
+    printf("  Halt Status Block Address is %06llo\n"
+           "  PC  is %012llo     HR  is %012llo\n"
+           "  MAG is %012llo     ONE is %012llo\n"
+           "  AR  is %012llo     ARX is %012llo\n"
+           "  BR  is %012llo     BRX is %012llo\n"
+           "  EBR is %012llo     UBR is %012llo\n"
+           "  MSK is %012llo     FLG is %012llo\n"
+           "  PI  is %012llo     X1  is %012llo\n"
+           "  TO  is %012llo     T1  is %012llo \n"
+           "  VMA is %012llo\n"
+           "KS10> ",
+           hsbAddr,
+           haltStatusBlock.pc,
+           haltStatusBlock.hr,
+           haltStatusBlock.mag,
+           haltStatusBlock.one,
+           haltStatusBlock.ar,
+           haltStatusBlock.arx,
+           haltStatusBlock.br,
+           haltStatusBlock.brx,
+           haltStatusBlock.ebr,
+           haltStatusBlock.ubr,
+           haltStatusBlock.mask,
+           haltStatusBlock.flg,
+           haltStatusBlock.pi,
+           haltStatusBlock.x1,
+           haltStatusBlock.t0,
+           haltStatusBlock.t1,
+           haltStatusBlock.vma);
 }
 
 //
@@ -473,20 +492,9 @@ static void cmdCO(int argc, char *[]) {
         "Usage: CO\n"
         "Continue the KS10 from the HALT state.\n";
 
-    const char cntl_e = 0x05;
-
     if (argc == 1) {
-        running = true;
         ks10_t::contin();
-        while (!ks10_t::halt()) {
-            int ch = getchar();
-            if (ch == cntl_e) {
-                break;
-            } else if (ch != -1) {
-                ks10_t::putchar(ch);
-            }
-        }
-        running = false;
+        consoleOutput();
     } else {
         printf(usage);
     }
@@ -656,13 +664,13 @@ static void cmdDS(int argc, char *argv[]) {
    }
 }
 
-#if 1
-
 //!
 //! Test DZ11
 //!
 //! The <b>DZ</b> (DZ11) tests the DZ11 Terminal Multiplexer
 //
+
+#ifdef CUSTOM_CMD
 
 static void cmdDZ(int argc, char *argv[]) {
     const char *usage =
@@ -826,27 +834,15 @@ static void cmdEX(int argc, char *argv[]) {
     }
 }
 
-#if 1
+#ifdef CUSTOM_CMD
 
 static void cmdGO(int argc, char *argv[]) {
     const char *usage =
         "Usage: GO diagname.sav address\n"
         "Run a diagnostic program\n";
 
-    static const char cntl_e = 0x05;
-    static const ks10_t::addr_t memSize = 32 * 1024;
-
-    //
-    // Clear memory
-    //
-    
-    printf("KS10: Clearing Memory.\n");
-    for (ks10_t::addr_t i = 0; i < memSize; i++) {
-        ks10_t::writeMem(i, 0);
-    }
-
     if (argc == 1) {
-        
+
         //
         // Load the diagnostic monitor into memory
         //
@@ -856,7 +852,7 @@ static void cmdGO(int argc, char *argv[]) {
             printf("Failed to load DIAG/SMMON.SAV\n");
             return;
         }
-        
+
     } else if (argc == 3) {
 
         //
@@ -878,7 +874,7 @@ static void cmdGO(int argc, char *argv[]) {
         //
         // Load DDT into memory
         //
-        
+
         if (!loadCode("diag/smddt.sav")) {
             printf("Failed to load diag/smddt.sav\n");
             return;
@@ -887,7 +883,7 @@ static void cmdGO(int argc, char *argv[]) {
         //
         // Load the diagnostic monitor into memory
         //
-            
+
         if (!loadCode("diag/smmon.sav")) {
             printf("Failed to load diag/smmon.sav\n");
             return;
@@ -896,7 +892,7 @@ static void cmdGO(int argc, char *argv[]) {
         //
         // Read the diagnostic program into memory
         //
-            
+
         if (!loadCode(argv[1])) {
             printf("Failed to load %s\n", argv[1]);
             return;
@@ -913,24 +909,24 @@ static void cmdGO(int argc, char *argv[]) {
         //
         // Fix timing for DSDZA diagnostic
         //
-        
+
         if (strnicmp("diag/dsdza.sav", argv[1], 10) == 0) {
-            ks10_t::writeMem(035650, 60000);	// 50
-            ks10_t::writeMem(035651, 60000);	// 75
-            ks10_t::writeMem(035652, 60000);	// 110
-            ks10_t::writeMem(035653, 60000);	// 134`
-            ks10_t::writeMem(035654, 60000);	// 150
-            ks10_t::writeMem(035655, 60000);	// 300
-            ks10_t::writeMem(035656, 60000);	// 600
-            ks10_t::writeMem(035657, 60000);	// 1200
-            ks10_t::writeMem(035660, 60000);	// 1800
-            ks10_t::writeMem(035661, 60000);	// 2000
-            ks10_t::writeMem(035662, 60000);	// 2400
-            ks10_t::writeMem(035663, 60000);	// 3600
-            ks10_t::writeMem(035664, 60000);	// 4800
-            ks10_t::writeMem(035665, 60000);	// 7200
-            ks10_t::writeMem(035666, 60000);	// 9600
-            ks10_t::writeMem(035667, 60000);	// 19.2K
+            ks10_t::writeMem(035650, 60000);    // 50
+            ks10_t::writeMem(035651, 60000);    // 75
+            ks10_t::writeMem(035652, 60000);    // 110
+            ks10_t::writeMem(035653, 60000);    // 134`
+            ks10_t::writeMem(035654, 60000);    // 150
+            ks10_t::writeMem(035655, 60000);    // 300
+            ks10_t::writeMem(035656, 60000);    // 600
+            ks10_t::writeMem(035657, 60000);    // 1200
+            ks10_t::writeMem(035660, 60000);    // 1800
+            ks10_t::writeMem(035661, 60000);    // 2000
+            ks10_t::writeMem(035662, 60000);    // 2400
+            ks10_t::writeMem(035663, 60000);    // 3600
+            ks10_t::writeMem(035664, 60000);    // 4800
+            ks10_t::writeMem(035665, 60000);    // 7200
+            ks10_t::writeMem(035666, 60000);    // 9600
+            ks10_t::writeMem(035667, 60000);    // 19.2K
             printf("Patched DSDZA diagnostic\n");
         }
 
@@ -949,27 +945,9 @@ static void cmdGO(int argc, char *argv[]) {
     }
 
     //
-    // Configure the DZ11 Console Control Register
-    //
-        
-    ks10_t::writeDZCCR(0x0000000000000000ull);
-
-    //
-    // Configure the RH11 Console Control Registrer
-    //
-
-    ks10_t::writeRHCCR(0x0000000000000400ull);
-    
-    //
-    // Set the keep-alive and status word (KASW)
-    //
-    
-    ks10_t::writeMem(000031, 003740000000);
-    
-    //
     // Configure the CPU
     //
-    
+
     ks10_t::cacheEnable(true);
     ks10_t::trapEnable(true);
     ks10_t::timerEnable(true);
@@ -977,24 +955,14 @@ static void cmdGO(int argc, char *argv[]) {
     //
     // Start the KS10 running
     //
-    
-    running = true;
+
     ks10_t::begin();
-    
+
     //
     // Write character to KS10
     //
 
-    while (!ks10_t::halt()) {
-        int ch = getchar();
-        if (ch == cntl_e) {
-            break;
-        } else if (ch != -1) {
-            ks10_t::putchar(ch);
-        }
-    }
-    
-    running = false;
+    consoleOutput();
 }
 
 #endif
@@ -1032,7 +1000,11 @@ static void cmdHA(int argc, char *[]) {
     }
 }
 
-#if 1
+//
+//! Print halt status word
+//
+
+#ifdef CUSTOM_CMD
 
 static void cmdHS(int , char *[]) {
     printHaltStatus();
@@ -1127,25 +1099,6 @@ static void cmdLI(int argc, char *argv[]) {
 }
 
 //
-//! Memory clear
-//
-
-static void cmdMC(int argc, char */*argv*/[]) {
-    const char *usage =
-        "Usage: MC\n"
-        "Clear KS10 Memory.\n";
-
-    if (argc == 1) {
-        const ks10_t::addr_t memSize = 32 * 1024;
-        for (ks10_t::addr_t i = 0; i < memSize; i++) {
-            ks10_t::writeMem(i, 0);
-        }
-    } else {
-        printf(usage);
-    }
-}
-
-//
 //! Master Reset
 //!
 //! The <b>MR</b> (Master Reset) command hard resets the KS10 CPU.
@@ -1186,31 +1139,6 @@ static void cmdMR(int argc, char *argv[]) {
     }
 }
 
-#if 1
-static void cmdMT(int /*argc*/, char */*argv*/[]) {
-    for (;;) {
-        /*
-        ks10_t::writeMem(1, 1);
-        ks10_t::writeMem(2, 2);
-        ks10_t::writeMem(4, 4);
-        ks10_t::writeMem(8, 8);
-        */
-        ks10_t::readMem(0);
-        /*
-        ks10_t::readMem(4);
-        ks10_t::readMem(8);
-        ks10_t::readMem(12);
-        ks10_t::readMem(16);
-        ks10_t::readMem(20);
-        ks10_t::readMem(24);
-        */
-    }
-
-}
-#endif
-
-#if 1
-
 //
 //! Memory Read
 //!
@@ -1222,6 +1150,8 @@ static void cmdMT(int /*argc*/, char */*argv*/[]) {
 //! \param [in] argv
 //!    Array of pointers to the argument.
 //
+
+#ifdef CUSTOM_CMD
 
 static void cmdRD(int argc, char *argv[]) {
     if (argc == 2) {
@@ -1239,52 +1169,53 @@ static void cmdRD(int argc, char *argv[]) {
 
 #endif
 
-#if 1
+//
+//! Test RH11
+//
 
-//
-// Test RH11
-//
+#ifdef CUSTOM_CMD
 
 static void cmdRH(int argc, char *argv[]) {
     const char *usage =
         "Usage: RH {CLR | BOOT | STAT | FIFO | RPLA | READ | WRITE | WRCHK}\n"
         "RH11 Tests.\n"
-        " RH CLR - RH11 Controller Clear\n"
         " RH BOOT - Load Monitor Boot into memory\n"
-        " RH STAT - Print Debug Register\n"
+        " RH CLR  - RH11 Controller Clear\n"
         " RH FIFO - Test RH11 FIFO\n"
         " RH INIT - Test RH11 Initialization\n"
-        " RH RPLA - Test RH11 RPLA\n"
         " RH READ - Test RH11 Disk Read\n"
+        " RH RPLA - Test RH11 RPLA\n"
+        " RH STAT - Print Debug Register\n"
         " RH WRITE - Test RH11 Disk Write\n"
         " RH WRCHK - Test RH11 Disk Write Check\n";
-
-    char *buf = argv[1];
 
     ks10_t::addr_t rhbase = ks10_t::readMem(ks10_t::rhbase_addr);
     ks10_t::data_t rhunit = ks10_t::readMem(ks10_t::rhunit_addr);
 
-    uba_t uba(rhbase);
-    rh11_t rh11(rhbase, rhunit, uba);
+    rh11_t rh11(rhbase);
 
-    if ((argc == 2) && (buf[0] == 'F' && buf[1] == 'I' && buf[2] == 'F' && buf[3] == 'O')) {
-        rh11.testFIFO();
-    } else if ((argc == 2) && (buf[0] == 'I' && buf[1] == 'N' && buf[2] == 'I' && buf[3] == 'T')) {
-        rh11.testInit();
-    } else if ((argc == 2) && (buf[0] == 'R' && buf[1] == 'P' && buf[2] == 'L' && buf[3] == 'A')) {
-        rh11.testRPLA();
-    } else if ((argc == 2) && (buf[0] == 'R' && buf[1] == 'E' && buf[2] == 'A' && buf[3] == 'D')) {
-        rh11.testRead();
-    } else if ((argc == 2) && (buf[0] == 'W' && buf[1] == 'R' && buf[2] == 'I' && buf[3] == 'T')) {
-        rh11.testWrite();
-    } else if ((argc == 2) && (buf[0] == 'W' && buf[1] == 'R' && buf[2] == 'C' && buf[3] == 'H')) {
-        rh11.testWrchk();
-    } else if ((argc == 2) && (buf[0] == 'C' && buf[1] == 'L' && buf[2] == 'R')) {
-        rh11.clear();
-    } else if ((argc == 2) && (buf[0] == 'S' && buf[1] == 'T' && buf[2] == 'A' && buf[3] == 'T')) {
-        printRH11Debug();
-    } else if ((argc == 2) && (buf[0] == 'B' && buf[1] == 'O' && buf[2] == 'O' && buf[3] == 'T')) {
-        rh11.boot();
+    if (argc == 2) {
+        if (strnicmp(argv[1], "boot", 4) == 0) {
+            rh11.boot(rhunit);
+        } else if (strnicmp(argv[1], "clr", 3) == 0) {
+            rh11.clear();
+        } else if (strnicmp(argv[1], "fifo", 4) == 0) {
+            rh11.testFIFO();
+        } else if (strnicmp(argv[1], "init", 4) == 0) {
+            rh11.testInit(rhunit);
+        } else if (strnicmp(argv[1], "read", 4) == 0) {
+            rh11.testRead(rhunit);
+        } else if (strnicmp(argv[1], "rpla", 4) == 0) {
+            rh11.testRPLA(rhunit);
+        } else if (strnicmp(argv[1], "stat", 4) == 0) {
+            printRH11Debug();
+        } else if (strnicmp(argv[1], "wrchk", 5) == 0) {
+            rh11.testWrchk(rhunit);
+        } else if (strnicmp(argv[1], "write", 5) == 0) {
+            rh11.testWrite(rhunit);
+        } else {
+            printf(usage);
+        }
     } else {
         printf(usage);
     }
@@ -1302,55 +1233,26 @@ static void cmdRH(int argc, char *argv[]) {
 //!    Array of pointers to the arguments.
 //
 
+#ifdef CUSTOM_CMD
+
 static void cmdSD(int argc, char *argv[]) {
-    static FATFS fatFS;
+    const char *usage =
+        "Usage: SD DIR\n"
+        "Print directory of SD Card.\n";
 
-    if (argc != 2) {
-        return;
-    }
-    char *buf = argv[1];
-
-    if (buf[0] == 'D' && buf[1] == 'I' && buf[2] == 'R') {
-        FRESULT status = directory("");
-        if (status != FR_OK) {
-            debug("directory status was %d\n", status);
-        }
-    } else if (buf[0] == 'M' && buf[1] == 'O') {
-        FRESULT status = f_mount(0, &fatFS);
-        debug("open status was %d\n", status);
-    } else if (buf[0] == 'I' && buf[1] == 'N') {
-        sdInitialize();
-    } else if (buf[0] == 'O' && buf[1] == 'P') {
-        FIL fp;
-        uint8_t buffer[256];
-        unsigned int numbytes;
-        FRESULT status = f_open(&fp, "asdf.txt", FA_READ);
-        debug("open status was %d\n", status);
-        status = f_read(&fp, &buffer, sizeof(buffer), &numbytes);
-        for (unsigned int i = 0; i < numbytes; i++) {
-            printf("%02x ", buffer[i]);
-            if ((i % 16) == 15) {
-                printf("\n");
+    if (argc == 2) {
+        if (strnicmp(argv[1], "DIR", 3) == 0) {
+            FRESULT status = directory("");
+            if (status != FR_OK) {
+                debug("Directory status was %d\n", status);
             }
         }
-        printf("\n");
-        buffer[numbytes] = 0;
-        printf("###%s###\n", buffer);
-    } else if (buf[0] == 'R' && buf[1] == 'D') {
-        unsigned char buffer[512];
-        bool success = sdReadSector(buffer, 0);
-        if (!success) {
-            printf("SD Card Read Failure...\n");
-            return;
-        }
-        for (int i = 0; i < 512; i++) {
-            printf("%02x ", buffer[i]);
-            if ((i%16) == 15) {
-                printf("\n");
-            }
-        }
+    } else {
+        printf(usage);
     }
 }
+
+#endif
 
 //
 //! Single Step
@@ -1426,7 +1328,9 @@ static void cmdST(int argc, char *argv[]) {
         if (addr <= ks10_t::maxVirtAddr) {
             ks10_t::writeRegCIR((ks10_t::opJRST << 18) | (addr & 0777777));
             ks10_t::begin();
+            consoleOutput();
         } else {
+            printf(usage);
             printf("Invalid Address\n"
                    "Valid addresses are %08o-%08llo\n",
                    ks10_t::memStart, ks10_t::maxVirtAddr);
@@ -1521,8 +1425,6 @@ static void cmdTP(int argc, char *argv[]) {
     }
 }
 
-#if 1
-
 //
 //! Memory Write
 //!
@@ -1534,6 +1436,8 @@ static void cmdTP(int argc, char *argv[]) {
 //! \param [in] argv
 //!    Array of pointers to the arguments.
 //
+
+#ifdef CUSTOM_CMD
 
 static void cmdWR(int argc, char *argv[]) {
     if (argc == 3) {
@@ -1564,6 +1468,26 @@ static void cmdXX(int, char *argv[]) {
 }
 
 //
+//! Zero memory
+//
+
+static void cmdZM(int argc, char */*argv*/[]) {
+    const char *usage =
+        "Usage: ZM\n"
+        "Zero KS10 Memory.\n";
+
+    if (argc == 1) {
+        const ks10_t::addr_t memSize = 1024 * 1024;
+        printf("Zeroing memory (%d kW).  This takes about 30 seconds.\n", 1024);
+        for (ks10_t::addr_t i = 0; i < memSize; i++) {
+            ks10_t::writeMem(i, 0);
+        }
+    } else {
+        printf(usage);
+    }
+}
+
+//
 //! Test function
 //!
 //! This function tests the printf() function.
@@ -1574,6 +1498,8 @@ static void cmdXX(int, char *argv[]) {
 //! \param [in] argv
 //!    Array of pointers to the arguments.
 //
+
+#ifdef CUSTOM_CMD
 
 static void cmdZZ(int argc, char *argv[]) {
 
@@ -1640,6 +1566,8 @@ static void cmdZZ(int argc, char *argv[]) {
     }
 }
 
+#endif
+
 //
 //! Parse Commands
 //!
@@ -1651,9 +1579,6 @@ static void cmdZZ(int argc, char *argv[]) {
 //
 
 static void parseCommand(char * buf) {
-
-//static void taskCommand(void * param) {
-//    char * buf = reinterpret_cast<char *>(param);
 
     //
     // List of Commands
@@ -1680,7 +1605,7 @@ static void parseCommand(char * buf) {
         {"DN", cmdDN},
         {"DR", cmdXX},          // Not implemented.
         {"DS", cmdDS},
-#if 1
+#ifdef CUSTOM_CMD
         {"DZ", cmdDZ},          // DZ11 Test
 #endif
         {"EB", cmdXX},          // Not implemented.
@@ -1694,11 +1619,11 @@ static void parseCommand(char * buf) {
         {"ER", cmdXX},          // Not implemented.
         {"EX", cmdEX},
         {"FI", cmdXX},          // Not implemented.
-#if 1
+#ifdef CUSTOM_CMD
         {"GO", cmdGO},
 #endif
         {"HA", cmdHA},
-#if 1
+#ifdef CUSTOM_CMD
         {"HS", cmdHS},
 #endif
         {"KL", cmdXX},          // Not implemented.
@@ -1711,27 +1636,20 @@ static void parseCommand(char * buf) {
         {"LR", cmdXX},          // Not implemented.
         {"LT", cmdXX},          // Not implemented.
         {"MB", cmdXX},          // Not implemented.
-#if 1
-        {"MC", cmdMC},          // Memory clear
-#endif
         {"MK", cmdXX},          // Not implemented.
         {"MM", cmdXX},          // Not implemented.
         {"MR", cmdMR},
         {"MS", cmdXX},          // Not implemented.
-#if 0
         {"MT", cmdXX},          // Not implemented.
-#else
-        {"MT", cmdMT},          // Memory Test
-#endif
         {"PE", cmdXX},          // Not implemented.
         {"PM", cmdXX},          // Not implemented.
         {"PW", cmdXX},          // Not implemented.
         {"RC", cmdXX},          // Not implemented.
         {"RP", cmdXX},          // Not implemented.
-#if 1
+#ifdef CUSTOM_CMD
         {"RD", cmdRD},          // Simple memory read
 #endif
-#if 1
+#ifdef CUSTOM_CMD
         {"RH", cmdRH},          // RH11 Tests
 #endif
         {"SC", cmdXX},          // Not implemented.
@@ -1746,10 +1664,13 @@ static void parseCommand(char * buf) {
         {"VD", cmdXX},          // Not implemented.
         {"VT", cmdXX},          // Not implemented.
         {"VM", cmdXX},          // Not implemented.
-#if 1
+#ifdef CUSTOM_CMD
         {"WR", cmdWR},          // Simple memory write
 #endif
+        {"ZM", cmdZM},          // Zero memory
+#ifdef CUSTOM_CMD
         {"ZZ", cmdZZ},          // Testing
+#endif
     };
 
     const int numCMD = sizeof(cmdList)/sizeof(cmdList_t);

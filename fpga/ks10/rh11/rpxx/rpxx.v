@@ -72,9 +72,10 @@ module RPXX (
       input  wire [ 0:35] devDATAI,             // Device Data In
       input  wire [ 2: 0] rhUNIT,               // Unit select
       input  wire [ 2: 0] rpNUM,                // Unit number
-      input  wire         rpCD,                 // Card Detect from SD Card
       input  wire         rpPAT,                // Parity Test
+      input  wire         rpCD,                 // Card Detect from SD Card
       input  wire         rpWP,                 // Write Protect from SD Card
+      input  wire         rpDPR,                // Drive Present
       output wire [15: 0] rpCS1,                // CS1 Register
       output wire [15: 0] rpDA,                 // DA  Register
       output wire [15: 0] rpDS,                 // DS  Register
@@ -509,6 +510,7 @@ module RPXX (
       .rpGO        (rpGO),
       .rpCD        (rpCD),
       .rpWP        (rpWP),
+      .rpDPR       (rpDPR),
       .rpPIP       (rpPIP),
       .rpDRY       (rpDRY),
       .rpDRVCLR    (rpDRVCLR),
