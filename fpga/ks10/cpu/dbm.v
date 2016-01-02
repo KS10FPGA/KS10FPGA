@@ -41,6 +41,9 @@
 `include "useq/crom.vh"
 
 module DBM (
+      input  wire          rst,         // Reset
+      input  wire          memCLK,      // Memory Clock
+      input  wire [ 1: 4]  clkPHS,      // Clock Phase
       input  wire [ 0:107] crom,        // Control ROM Data
       input  wire [ 0: 35] dp,          // Datapath
       input  wire [ 0:  9] scad,        // SCAD
@@ -106,47 +109,66 @@ module DBM (
    //   DPM2/E188
    //
 
+   reg [0:35] mux;
    always @*
      begin
         case (`cromDBM_SEL)
           `cromDBM_SEL_SCADPFAPR:
-            dbm = {scad[1:9], 8'b11111111, scad[0], dispPF, aprFLAGS};
+            mux = {scad[1:9], 8'b11111111, scad[0], dispPF, aprFLAGS};
           `cromDBM_SEL_BYTES :
-            dbm = {scad[1:7], scad[1:7], scad[1:7], scad[1:7], scad[1:7], dp[35]};
+            mux = {scad[1:7], scad[1:7], scad[1:7], scad[1:7], scad[1:7], dp[35]};
           `cromDBM_SEL_EXPTIME :
-            dbm = {1'b0, scad[2:9], dp[9:17], timerCOUNT[18:35]};
+            mux = {1'b0, scad[2:9], dp[9:17], timerCOUNT[18:35]};
           `cromDBM_SEL_DP :
             case (`cromSPEC_SELBYTE)
               `cromSPEC_SELBYTE_1 :
-                dbm = {scad[1:7], dp[ 7:13], dp[14:20], dp[21:27], dp[28:34], dp[35]};
+                mux = {scad[1:7], dp[ 7:13], dp[14:20], dp[21:27], dp[28:34], dp[35]};
               `cromSPEC_SELBYTE_2 :
-                dbm = {dp[ 0: 6], scad[1:7], dp[14:20], dp[21:27], dp[28:34], dp[35]};
+                mux = {dp[ 0: 6], scad[1:7], dp[14:20], dp[21:27], dp[28:34], dp[35]};
               `cromSPEC_SELBYTE_3 :
-                dbm = {dp[ 0: 6], dp[ 7:13], scad[1:7], dp[21:27], dp[28:34], dp[35]};
+                mux = {dp[ 0: 6], dp[ 7:13], scad[1:7], dp[21:27], dp[28:34], dp[35]};
               `cromSPEC_SELBYTE_4 :
-                dbm = {dp[ 0: 6], dp[ 7:13], dp[14:20], scad[1:7], dp[28:34], dp[35]};
+                mux = {dp[ 0: 6], dp[ 7:13], dp[14:20], scad[1:7], dp[28:34], dp[35]};
               `cromSPEC_SELBYTE_5 :
-`define NOT_SURE_WHY_DELAY
-`ifdef NOT_SURE_WHY_DELAY
-                begin
-                #10;
-                dbm = {dp[ 0: 6], dp[ 7:13], dp[14:20], dp[21:27], scad[1:7], dp[35]};
-                end
-`else
-                dbm = {28'b0, scad[1:7], 1'b0};
-`endif
+                mux = {dp[ 0: 6], dp[ 7:13], dp[14:20], dp[21:27], scad[1:7], dp[35]};
               default:
-                dbm = dp;
+                mux = dp;
             endcase
           `cromDBM_SEL_DPSWAP :
-            dbm = {dp[18:35], dp[0:17]};
+            mux = {dp[18:35], dp[0:17]};
           `cromDBM_SEL_VMA :
-            dbm = vmaREG;
+            mux = vmaREG;
           `cromDBM_SEL_MEM :
-            dbm = cpuDATAI;
+            mux = cpuDATAI;
           `cromDBM_SEL_NUM :
-            dbm = {`cromNUM, `cromNUM};
+            mux = {`cromNUM, `cromNUM};
         endcase
+     end
+
+   //
+   // Register Enable
+   //
+
+   reg enable;
+   always @(negedge memCLK or posedge rst)
+     begin
+        if (rst)
+          enable <= 0;
+        else
+          enable <= clkPHS[3];
+     end
+
+   //
+   // Register the DBM at rising edge of T3
+   //
+
+   always @(posedge memCLK or posedge rst)
+     begin
+        if (rst)
+          dbm <= 0;
+        else
+          if (enable)
+            dbm <= mux;
      end
 
 endmodule

@@ -239,6 +239,8 @@ module KS10 (
    CPU uCPU (
       .rst              (cpuRST),
       .clk              (cpuCLK),
+      .memCLK           (memCLK),
+      .clkPHS           (clkPHS),
       // Console
       .cslSET           (cslSET),
       .cslRUN           (cslRUN),

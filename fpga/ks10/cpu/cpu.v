@@ -47,6 +47,8 @@
 module CPU (
       input  wire         rst,          // Reset
       input  wire         clk,          // Clock
+      input  wire         memCLK,       // Memory Clock
+      input  wire [ 1: 4] clkPHS,       // Clock Phase
       // Console
       input  wire         cslSET,       // Set Console RUN, EXEC, CONT
       input  wire         cslRUN,       // Run
@@ -312,6 +314,9 @@ module CPU (
    //
 
    DBM uDBM (
+      .rst              (rst),
+      .memCLK           (memCLK),
+      .clkPHS           (clkPHS),
       .crom             (crom),
       .dp               (dp),
       .scad             (scad),
