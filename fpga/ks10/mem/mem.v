@@ -200,54 +200,15 @@ module MEM (
 `ifdef XILINX
 
    CLKFWD fwdSSRAMCLK (
-      .I         (memCLK),
+      .I         (!memCLK),
       .O         (ssramCLK)
    );
 
 `else
 
-   assign ssramCLK = memCLK;
+   assign ssramCLK = !memCLK;
 
 `endif
-
-   //
-   // SSRAM chip enable
-   //  The SSRAM isn't enabled during T1 because the SSRAM simulation model
-   //  will whine about address setup time failures.  We don't care during
-   //  synthesis because we don't use the data from T1.
-   //
-
-`ifdef SYNTHESIS
-
-   wire enable = 1'b1;
-
-`else
-
-   reg enable;
-   always @(negedge memCLK or posedge rst)
-     begin
-        if (rst)
-          enable <= 0;
-        else
-          enable <= !clkPHS[4];
-     end
-
-`endif
-
-   //
-   // SSRAM Write Enable
-   //  This synchronizes the SSRAM Write Enable to the falling edge of the
-   //  SSRAM Clock.
-   //
-
-   reg ssramWE;
-   always @(negedge memCLK or posedge rst)
-     begin
-        if (rst)
-          ssramWE <= 0;
-        else
-          ssramWE <= memWRITE & clkPHS[1];
-     end
 
    //
    // SSRAM Interface
@@ -261,8 +222,8 @@ module MEM (
    assign ssramADV     = 0;
    assign ssramBW_N    = 0;
    assign ssramOE_N    = 0;
-   assign ssramWE_N    = !ssramWE;
-   assign ssramCE      = enable;
+   assign ssramWE_N    = !(memWRITE & clkPHS[2]);
+   assign ssramCE      = 1;
    assign ssramADDR    = busMEMADDR;
    assign ssramDATA    = memWRITE ? busDATAI : 36'bz;
 
