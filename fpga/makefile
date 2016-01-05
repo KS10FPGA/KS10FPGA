@@ -291,6 +291,8 @@ RTL_FILES := \
 	ks10/uba/ubapage.v \
 	ks10/uba/ubatmo.v \
 	ks10/uba/ubaintr.v \
+	ks10/brkpt/brkpt.v \
+	ks10/utils/fifo.v \
 	ks10/utils/sync.v \
 	ks10/utils/clkfwd.v \
 	ks10/utils/edgetrig.v
