@@ -55,7 +55,7 @@ module testbench;
    //
 
    wire [15: 0] conDATA;        // Data bus
-   reg  [ 5: 1] conADDR;        // Address Bus
+   reg  [ 7: 1] conADDR;        // Address Bus
    reg  [15: 0] conDATO;        // Data Bus Out
    reg          conBLE_N;       // Low Byte Lane
    reg          conBHE_N;       // High Byte Lane
@@ -134,7 +134,9 @@ module testbench;
    localparam [ 7: 0] addrREGDZCCR  = 8'h20;
    localparam [ 7: 0] addrREGRHCCR  = 8'h28;
    localparam [ 7: 0] addrRH11DEB   = 8'h30;
-   localparam [ 7: 0] addrVersion   = 8'h38;
+   localparam [ 7: 0] addrBRKPT     = 8'h38;
+   localparam [ 7: 0] addrTRACE     = 8'h40;
+   localparam [ 7: 0] addrVersion   = 8'h48;
 
    //
    // KS10 Addresses
@@ -316,7 +318,7 @@ module testbench;
       begin
          conBLE_N = 0;
          conBHE_N = 0;
-         conADDR  = addr[5:1];
+         conADDR  = addr[7:1];
          conDATO  = data;
          #250
          conWR_N  = 0;
@@ -342,7 +344,7 @@ module testbench;
       begin
          conBLE_N = 0;
          conBHE_N = 0;
-         conADDR  = addr[5:1];
+         conADDR  = addr[7:1];
          #250
          conRD_N  = 0;
          #250
@@ -631,11 +633,18 @@ module testbench;
         conWRITE(addrREGCIR, valREGCIR);
 
         //
-        // Set DZ11 Console Control Register and RH11 Console Control Register
+        // Initialize the DZ11 Console Control Register and RH11 Console Control Register
         //
 
         conWRITE64(addrREGDZCCR, 64'h000000000000ff00);
         conWRITE64(addrREGRHCCR, 64'h00000000000707f8);
+
+        //
+        // Initialize the Breakpoint and Trace registers
+        //
+        
+        conWRITE64(addrBRKPT, 64'h4000c00300000000);
+        conWRITE64(addrTRACE, 64'h0000000000000000);
         
         //
         // Write to Control/Status Register

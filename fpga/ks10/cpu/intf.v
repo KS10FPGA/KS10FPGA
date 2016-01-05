@@ -47,6 +47,7 @@ module INTF (
       input  wire         rst,          // reset
       input  wire         clken,        // clock enable
       input  wire [0:107] crom,         // Control ROM Data
+      input  wire         brkptHALT,    // Breakpoint
       input  wire         cslSET,       // Console modify RUN, CONT, EXEC
       input  wire         cslRUN,       // Console Run Switch
       input  wire         cslCONT,      // Console Continue Switch
@@ -100,7 +101,7 @@ module INTF (
           cpuRUN <= 0;
         else if (clken)
           begin
-             if (specCONS & `cromCONS_CLR_RUN)
+             if ((specCONS & `cromCONS_CLR_RUN) | brkptHALT)
                cpuRUN <= 0;
              else if (cslSET)
                cpuRUN <= cslRUN;

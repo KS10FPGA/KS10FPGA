@@ -18,7 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2015 Rob Doyle
+// Copyright (C) 2012-2016 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -65,7 +65,7 @@ module KS10 (
       output wire         rh11CS,       // SD11 Chip Select
       // Console Interfaces
       inout  wire [15: 0] conDATA,      // Console Data Bus
-      input  wire [ 5: 1] conADDR,      // Console Address Bus
+      input  wire [ 7: 1] conADDR,      // Console Address Bus
       input  wire         conBLE_N,     // Console Bus Lane
       input  wire         conBHE_N,     // Console Bus Lane
       input  wire         conRD_N,      // Console Read Strobe
@@ -173,6 +173,19 @@ module KS10 (
    wire [1: 7] ubaINTRO[0:3];           // Unibus Interrupt
 
    //
+   // Breakpoint
+   //
+
+   wire [0:63] brkptREG;
+   wire        brkptHALT;
+
+   //
+   // Trace system
+   //
+
+   wire [0:63] traceREG;
+
+   //
    // Clock Generator and Reset Synchronization
    //
 
@@ -241,6 +254,8 @@ module KS10 (
       .clk              (cpuCLK),
       .memCLK           (memCLK),
       .clkPHS           (clkPHS),
+      // Breakpoint
+      .brkptHALT        (brkptHALT),
       // Console
       .cslSET           (cslSET),
       .cslRUN           (cslRUN),
@@ -303,6 +318,10 @@ module KS10 (
       .cslCACHEEN       (cslCACHEEN),
       .cslINTR          (cslINTR),
       .cslRESET         (cpuRST),
+      // Trace
+      .traceREG         (traceREG),
+      // Breakpoint
+      .brkptREG         (brkptREG),
       // DZ11
       .dz11CCR          (dz11CCR),
       // RH11 Interfaces
@@ -502,6 +521,18 @@ module KS10 (
       // Data
       .devDATAI         (ctl3DATAO),
       .devDATAO         (dz1DATAO)
+   );
+
+   //
+   // Breakpoint
+   //
+
+   BRKPT uBRKPT (
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
+      .cpuADDR          (cpuADDRO),
+      .brkptREG         (brkptREG),
+      .brkptHALT        (brkptHALT)
    );
 
    //

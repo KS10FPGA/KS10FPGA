@@ -59,7 +59,7 @@ module ESM_KS10 (
       output wire         rh11CS,       // RH11 Chip Select
       // Console Microcontroller Interfaces
       inout  wire [15: 0] conDATA,      // Console Data Bus
-      input  wire [ 5: 1] conADDR,      // Console Address Bus
+      input  wire [ 7: 1] conADDR,      // Console Address Bus
       input  wire         conBLE_N,     // Console Bus Lane
       input  wire         conBHE_N,     // Console Bus Lane
       input  wire         conRD_N,      // Console Read Strobe

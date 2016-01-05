@@ -49,6 +49,8 @@ module CPU (
       input  wire         clk,          // Clock
       input  wire         memCLK,       // Memory Clock
       input  wire [ 1: 4] clkPHS,       // Clock Phase
+      // Breakpoint
+      input  wire         brkptHALT,    // Breakpoint
       // Console
       input  wire         cslSET,       // Set Console RUN, EXEC, CONT
       input  wire         cslRUN,       // Run
@@ -386,6 +388,7 @@ module CPU (
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
+      .brkptHALT        (brkptHALT),
       .cslSET           (cslSET),
       .cslRUN           (cslRUN),
       .cslCONT          (cslCONT),

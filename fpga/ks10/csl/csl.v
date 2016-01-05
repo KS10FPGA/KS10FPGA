@@ -199,7 +199,7 @@ module CSL (
       input  wire         rst,          // Reset
      // Console Microcontroller Intefaces
       inout  wire [15: 0] conDATA,      // Console Address Bus
-      input  wire [ 5: 1] conADDR,      // Console Data Bus
+      input  wire [ 7: 1] conADDR,      // Console Data Bus
       input  wire         conBLE_N,     // Console Bus Lane
       input  wire         conBHE_N,     // Console Bus Lane
       input  wire         conRD_N,      // Console Read Strobe
@@ -228,11 +228,15 @@ module CSL (
       output wire         cslCACHEEN,   // Cache Enable
       output wire         cslINTR,      // Interrupt KS10
       output wire         cslRESET,     // Reset KS10
+      // Instruction Trace Register
+      output reg  [ 0:63] traceREG,     // Trace Register
+      // Breakpoint Register
+      output reg  [ 0:63] brkptREG,     // Breakpoint Register
       // DZ11 Interfaces
-      output reg  [0 :63] dz11CCR,      // DZ11 Console Control Register
+      output reg  [ 0:63] dz11CCR,      // DZ11 Console Control Register
       // RH11 Interfaces
-      output reg  [0 :63] rh11CCR,      // RH11 Console Control Register
-      input  wire [0 :63] rh11DEBUG     // RH11 Debug Info
+      output reg  [ 0:63] rh11CCR,      // RH11 Console Control Register
+      input  wire [ 0:63] rh11DEBUG     // RH11 Debug Info
    );
 
    //
@@ -300,7 +304,7 @@ module CSL (
    // Fixup addresses for byte addressing
    //
 
-   wire [5:0] cslADDR = {conADDR[5:1], 1'b0};
+   wire [7:0] cslADDR = {conADDR[7:1], 1'b0};
 
    //
    // Write Decoder
@@ -333,6 +337,8 @@ module CSL (
              regCIR          <= 0;
              regDATA         <= 0;
              regADDR         <= 0;
+             traceREG        <= 0;
+             brkptREG        <= 0;
              dz11CCR         <= 0;
              rh11CCR         <= 0;
              regCTRL_NXMNXD  <= 0;
@@ -353,48 +359,66 @@ module CSL (
                  // Address Register
                  //
 
-                 6'h00 : regADDR[20:27] <= conDATA[15:8];
-                 6'h02 : regADDR[ 4:11] <= conDATA[15:8];
+                 8'h00 : regADDR[20:27] <= conDATA[15:8];
+                 8'h02 : regADDR[ 4:11] <= conDATA[15:8];
 
                  //
                  // Data Register
                  //
 
-                 6'h08 : regDATA[20:27] <= conDATA[15:8];
-                 6'h0a : regDATA[ 4:11] <= conDATA[15:8];
+                 8'h08 : regDATA[20:27] <= conDATA[15:8];
+                 8'h0a : regDATA[ 4:11] <= conDATA[15:8];
 
                  //
                  // Control Register
                  //
 
-                 6'h10 : regCTRL_NXMNXD <= conDATA[  10];
+                 8'h10 : regCTRL_NXMNXD <= conDATA[  10];
 
                  //
                  // Console Instruction Register
                  //
 
-                 6'h18 : regCIR[20:27]  <= conDATA[15:8];
-                 6'h1a : regCIR[ 4:11]  <= conDATA[15:8];
+                 8'h18 : regCIR[20:27]  <= conDATA[15:8];
+                 8'h1a : regCIR[ 4:11]  <= conDATA[15:8];
 
                  //
                  // DZ11 Console Control Register
                  //
 
-                 6'h20 : dz11CCR[48:55] <= conDATA[15:8];
-                 6'h22 : dz11CCR[32:39] <= conDATA[15:8];
-                 6'h24 : dz11CCR[16:23] <= conDATA[15:8];
-                 6'h26 : dz11CCR[ 0: 7] <= conDATA[15:8];
+                 8'h20 : dz11CCR[48:55] <= conDATA[15:8];
+                 8'h22 : dz11CCR[32:39] <= conDATA[15:8];
+                 8'h24 : dz11CCR[16:23] <= conDATA[15:8];
+                 8'h26 : dz11CCR[ 0: 7] <= conDATA[15:8];
 
                  //
                  // RH11 Console Control Register
                  //
 
-                 6'h28 : rh11CCR[48:55] <= conDATA[15:8];
-                 6'h2a : rh11CCR[32:39] <= conDATA[15:8];
-                 6'h2c : rh11CCR[16:23] <= conDATA[15:8];
-                 6'h2e : rh11CCR[ 0: 7] <= conDATA[15:8];
+                 8'h28 : rh11CCR[48:55] <= conDATA[15:8];
+                 8'h2a : rh11CCR[32:39] <= conDATA[15:8];
+                 8'h2c : rh11CCR[16:23] <= conDATA[15:8];
+                 8'h2e : rh11CCR[ 0: 7] <= conDATA[15:8];
 
-               endcase // case (cslADDR)
+                 //
+                 // Breakpoint Register
+                 //
+
+                 8'h38 : brkptREG[48:55] <= conDATA[15:8];
+                 8'h3a : brkptREG[32:39] <= conDATA[15:8];
+                 8'h3c : brkptREG[16:23] <= conDATA[15:8];
+                 8'h3e : brkptREG[ 0: 7] <= conDATA[15:8];
+
+                 //
+                 // Instruction Trace Register
+                 //
+
+                 8'h40 : traceREG[48:55] <= conDATA[15:8];
+                 8'h42 : traceREG[32:39] <= conDATA[15:8];
+                 8'h44 : traceREG[16:23] <= conDATA[15:8];
+                 8'h46 : traceREG[ 0: 7] <= conDATA[15:8];
+
+               endcase
 
              if (cslBLE)
 
@@ -404,23 +428,23 @@ module CSL (
                  // Address Register
                  //
 
-                 6'h00 : regADDR[28:35] <= conDATA[7:0];
-                 6'h02 : regADDR[12:19] <= conDATA[7:0];
-                 6'h04 : regADDR[ 0: 3] <= conDATA[3:0];
+                 8'h00 : regADDR[28:35] <= conDATA[7:0];
+                 8'h02 : regADDR[12:19] <= conDATA[7:0];
+                 8'h04 : regADDR[ 0: 3] <= conDATA[3:0];
 
                  //
                  // Data Register
                  //
 
-                 6'h08 : regDATA[28:35] <= conDATA[7:0];
-                 6'h0a : regDATA[12:19] <= conDATA[7:0];
-                 6'h0c : regDATA[ 0: 3] <= conDATA[3:0];
+                 8'h08 : regDATA[28:35] <= conDATA[7:0];
+                 8'h0a : regDATA[12:19] <= conDATA[7:0];
+                 8'h0c : regDATA[ 0: 3] <= conDATA[3:0];
 
                  //
                  // Control Register
                  //
 
-                 6'h10 :
+                 8'h10 :
                    begin
                       regCTRL_RESET     <= conDATA[  0];
                       regCTRL_CACHEEN   <= conDATA[  2];
@@ -432,27 +456,45 @@ module CSL (
                  // Console Instruction Register
                  //
 
-                 6'h18 : regCIR[28:35]  <= conDATA[7:0];
-                 6'h1a : regCIR[12:19]  <= conDATA[7:0];
-                 6'h1c : regCIR[ 0: 3]  <= conDATA[3:0];
+                 8'h18 : regCIR[28:35]  <= conDATA[7:0];
+                 8'h1a : regCIR[12:19]  <= conDATA[7:0];
+                 8'h1c : regCIR[ 0: 3]  <= conDATA[3:0];
 
                  //
                  // DZ11 Console Control Register
                  //
 
-                 6'h20 : dz11CCR[56:63] <= conDATA[7:0];
-                 6'h22 : dz11CCR[40:47] <= conDATA[7:0];
-                 6'h24 : dz11CCR[24:31] <= conDATA[7:0];
-                 6'h26 : dz11CCR[ 8:15] <= conDATA[7:0];
+                 8'h20 : dz11CCR[56:63] <= conDATA[7:0];
+                 8'h22 : dz11CCR[40:47] <= conDATA[7:0];
+                 8'h24 : dz11CCR[24:31] <= conDATA[7:0];
+                 8'h26 : dz11CCR[ 8:15] <= conDATA[7:0];
 
                  //
                  // RH11 Console Control Register
                  //
 
-                 6'h28 : rh11CCR[56:63] <= conDATA[7:0];
-                 6'h2a : rh11CCR[40:47] <= conDATA[7:0];
-                 6'h2c : rh11CCR[24:31] <= conDATA[7:0];
-                 6'h2e : rh11CCR[ 8:15] <= conDATA[7:0];
+                 8'h28 : rh11CCR[56:63] <= conDATA[7:0];
+                 8'h2a : rh11CCR[40:47] <= conDATA[7:0];
+                 8'h2c : rh11CCR[24:31] <= conDATA[7:0];
+                 8'h2e : rh11CCR[ 8:15] <= conDATA[7:0];
+
+                 //
+                 // Breakpoint Register
+                 //
+
+                 8'h38 : brkptREG[56:63] <= conDATA[7:0];
+                 8'h3a : brkptREG[40:47] <= conDATA[7:0];
+                 8'h3c : brkptREG[24:31] <= conDATA[7:0];
+                 8'h3e : brkptREG[ 8:15] <= conDATA[7:0];
+
+                 //
+                 // Instruction Trace Register
+                 //
+
+                 8'h40 : traceREG[56:63] <= conDATA[7:0];
+                 8'h42 : traceREG[40:47] <= conDATA[7:0];
+                 8'h44 : traceREG[24:31] <= conDATA[7:0];
+                 8'h46 : traceREG[ 8:15] <= conDATA[7:0];
 
                endcase
           end
@@ -499,73 +541,91 @@ module CSL (
           // Address Register
           //
 
-          6'h00 : dout <= regADDR[20:35];
-          6'h02 : dout <= regADDR[ 4:19];
-          6'h04 : dout <= {12'b0, regADDR[0:3]};
-          6'h06 : dout <= 0;
+          8'h00 : dout <= regADDR[20:35];
+          8'h02 : dout <= regADDR[ 4:19];
+          8'h04 : dout <= {12'b0, regADDR[0:3]};
+          8'h06 : dout <= 0;
 
           //
           // Data Register
           //
 
-          6'h08 : dout <= regDATA[20:35];
-          6'h0a : dout <= regDATA[ 4:19];
-          6'h0c : dout <= {12'b0, regDATA[0:3]};
-          6'h0e : dout <= 0;
+          8'h08 : dout <= regDATA[20:35];
+          8'h0a : dout <= regDATA[ 4:19];
+          8'h0c : dout <= {12'b0, regDATA[0:3]};
+          8'h0e : dout <= 0;
 
           //
           // Status Register
           //
 
-          6'h10 : dout <= regSTAT[20:35];
-          6'h12 : dout <= regSTAT[ 4:19];
-          6'h14 : dout <= {12'b0, regSTAT[0:3]};
-          6'h16 : dout <= 0;
+          8'h10 : dout <= regSTAT[20:35];
+          8'h12 : dout <= regSTAT[ 4:19];
+          8'h14 : dout <= {12'b0, regSTAT[0:3]};
+          8'h16 : dout <= 0;
 
           //
           // Console Instruction Register
           //
 
-          6'h18 : dout <= regCIR[20:35];
-          6'h1a : dout <= regCIR[ 4:19];
-          6'h1c : dout <= {12'b0, regCIR[0:3]};
-          6'h1e : dout <= 0;
+          8'h18 : dout <= regCIR[20:35];
+          8'h1a : dout <= regCIR[ 4:19];
+          8'h1c : dout <= {12'b0, regCIR[0:3]};
+          8'h1e : dout <= 0;
 
           //
           // DZ11 Console Control Register
           //
 
-          6'h20 : dout <= dz11CCR[48:63];
-          6'h22 : dout <= dz11CCR[32:47];
-          6'h24 : dout <= dz11CCR[16:31];
-          6'h26 : dout <= dz11CCR[ 0:15];
+          8'h20 : dout <= dz11CCR[48:63];
+          8'h22 : dout <= dz11CCR[32:47];
+          8'h24 : dout <= dz11CCR[16:31];
+          8'h26 : dout <= dz11CCR[ 0:15];
 
           //
           // RH11 Console Control Register
           //
 
-          6'h28 : dout <= rh11CCR[48:63];
-          6'h2a : dout <= rh11CCR[32:47];
-          6'h2c : dout <= rh11CCR[16:31];
-          6'h2e : dout <= rh11CCR[ 0:15];
+          8'h28 : dout <= rh11CCR[48:63];
+          8'h2a : dout <= rh11CCR[32:47];
+          8'h2c : dout <= rh11CCR[16:31];
+          8'h2e : dout <= rh11CCR[ 0:15];
 
           //
           // RH11 Debug Register
           //
 
-          6'h30 : dout <= rh11DEBUG[48:63];
-          6'h32 : dout <= rh11DEBUG[32:47];
-          6'h34 : dout <= rh11DEBUG[16:31];
-          6'h36 : dout <= rh11DEBUG[ 0:15];
+          8'h30 : dout <= rh11DEBUG[48:63];
+          8'h32 : dout <= rh11DEBUG[32:47];
+          8'h34 : dout <= rh11DEBUG[16:31];
+          8'h36 : dout <= rh11DEBUG[ 0:15];
+
+          //
+          // Breakpoint Register
+          //
+
+          8'h38 : dout <= brkptREG[48:63];
+          8'h3a : dout <= brkptREG[32:47];
+          8'h3c : dout <= brkptREG[16:31];
+          8'h3e : dout <= brkptREG[ 0:15];
+
+          //
+          // Instruction Trace Register
+          //
+
+          8'h40 : dout <= traceREG[48:63];
+          8'h42 : dout <= traceREG[32:47];
+          8'h44 : dout <= traceREG[16:31];
+          8'h46 : dout <= traceREG[ 0:15];
 
           //
           // Firmware Version Register
           //
 
-          6'h38 : dout <= {regREV[ 8:15], regREV[ 0: 7]};
-          6'h3a : dout <= {regREV[24:31], regREV[16:23]};
-          6'h3c : dout <= {regREV[40:47], regREV[32:39]};
-          6'h3e : dout <= {regREV[56:63], regREV[48:55]};
+          8'h48 : dout <= {regREV[ 8:15], regREV[ 0: 7]};
+          8'h4a : dout <= {regREV[24:31], regREV[16:23]};
+          8'h4c : dout <= {regREV[40:47], regREV[32:39]};
+          8'h4e : dout <= {regREV[56:63], regREV[48:55]};
 
           //
           // Everything else
@@ -595,7 +655,7 @@ module CSL (
 
    reg [0:2] state;
    reg [0:9] timer;
-   wire cslGO = cslWR & (cslADDR == 6'h12) & cslBLE & conDATA[0];
+   wire cslGO = cslWR & (cslADDR == 8'h12) & cslBLE & conDATA[0];
 
    localparam [0:9] timeout = 511;
 
@@ -739,14 +799,14 @@ module CSL (
    // Fixups
    //
 
-   assign cslSET     = cslWR & (cslADDR == 6'h10) & cslBLE;
+   assign cslSET     = cslWR & (cslADDR == 8'h10) & cslBLE;
    assign cslRUN     = conDATA[7];
    assign cslCONT    = conDATA[6];
    assign cslEXEC    = conDATA[5];
    assign cslTIMEREN = regCTRL_TIMEREN;
    assign cslTRAPEN  = regCTRL_TRAPEN;
    assign cslCACHEEN = regCTRL_CACHEEN;
-   assign cslINTR    = cslWR & (cslADDR == 6'h10) & cslBLE & conDATA[1];
+   assign cslINTR    = cslWR & (cslADDR == 8'h10) & cslBLE & conDATA[1];
    assign cslRESET   = regCTRL_RESET;
 
 `ifndef SYNTHESIS
