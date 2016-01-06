@@ -341,7 +341,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                         success = readBlock(vaddr, daddr);
                         if (success) {
 #if 1
-                            for (int i = 0; i < 0100; i++) {
+                            for (int i = 0; i < 020; i++) {
                                 printf("data[%o] = %012llo\n", 01000 + i, ks10_t::readMem(paddr + i));
                             }
 #endif

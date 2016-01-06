@@ -74,6 +74,7 @@ extern "C" void nmiIntHandler(void);
 extern "C" void faultIntHandler(void);
 extern "C" void nullIntHandler(void);
 extern "C" void gpiobIntHandler(void);
+extern "C" void gpiodIntHandler(void);
 extern "C" void __naked reset(void);
 
 //
@@ -103,7 +104,6 @@ void __weak __alias pendIntHandler(void);               //!< PendSV vector
 void __weak __alias tickIntHandler(void);               //!< SysTick vector
 void __weak __alias gpioaIntHandler(void);              //!< GPIO Port A interrupt vector
 void __weak __alias gpiocIntHandler(void);              //!< GPIO Port C interrupt vector
-void __weak __alias gpiodIntHandler(void);              //!< GPIO Port D interrupt vector
 void __weak __alias gpioeIntHandler(void);              //!< GPIO Port E interrupt vector
 void __weak __alias uart0IntHandler(void);              //!< UART0 interrupt vector
 void __weak __alias uart1IntHandler(void);              //!< UART1 interrupt vector

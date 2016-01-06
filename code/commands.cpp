@@ -376,8 +376,7 @@ void printHaltStatus(void) {
            "  MSK is %012llo     FLG is %012llo\n"
            "  PI  is %012llo     X1  is %012llo\n"
            "  TO  is %012llo     T1  is %012llo \n"
-           "  VMA is %012llo\n"
-           "KS10> ",
+           "  VMA is %012llo\n",
            hsbAddr,
            haltStatusBlock.pc,
            haltStatusBlock.hr,
@@ -397,6 +396,70 @@ void printHaltStatus(void) {
            haltStatusBlock.t1,
            haltStatusBlock.vma);
 }
+
+//
+//! Breakpoint
+//!
+//! The <b>BR</b> (Breakpoint) command creates a hardware breakpoint.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//
+
+#ifdef CUSTOM_CMD
+
+static void cmdBR(int argc, char *argv[]) {
+    const char *usage =
+        "Usage: BR {FETCH | MEMRD | MEMWR | IORD | IOWR} Address\n"
+        "       BR OFF - disable beakpoint\n"
+        "       BR ON  - re-enable breakpoint\n"
+        "Control the hardware breakpoint facility.\n";
+
+    ks10_t::data_t flags;
+    ks10_t::data_t addr;
+
+    switch (argc) {
+        case 1:
+            printf("Breakpoint register is 0x%016llx\n", ks10_t::readBRKPT());
+            printf(usage);
+            break;
+        case 2:
+            if (strnicmp(argv[1], "off", 3) == 0) {
+                ks10_t::writeBRKPT(ks10_t::readBRKPT() & ~ks10_t::bkptENABLE);
+            } else if (strnicmp(argv[1], "on", 2) == 0) {
+                ks10_t::writeBRKPT(ks10_t::readBRKPT() |  ks10_t::bkptENABLE);
+            } else {
+                printf(usage);
+                return;
+            }
+            break;
+        case 3:
+            addr = parseOctal(argv[2]);
+            if (strnicmp(argv[1], "fetch", 5) == 0) {
+                flags = ks10_t::bkptFETCH;
+            } else if (strnicmp(argv[1], "memrd", 5) == 0) {
+                flags = ks10_t::bkptMEMRD;
+            } else if (strnicmp(argv[1], "memwr", 5) == 0) {
+                flags = ks10_t::bkptMEMWR;
+            } else if (strnicmp(argv[1], "iord", 4) == 0) {
+                flags = ks10_t::bkptIORD;
+            } else if (strnicmp(argv[1], "iowr", 4) == 0) {
+                flags = ks10_t::bkptIOWR;
+            } else {
+                printf(usage);
+                return;
+            }
+            ks10_t::writeBRKPT(flags | addr);
+            break;
+        default:
+            printf(usage);
+    }
+}
+
+#endif
 
 //
 //! Boot System
@@ -929,15 +992,6 @@ static void cmdGO(int argc, char *argv[]) {
             ks10_t::writeMem(035667, 60000);    // 19.2K
             printf("Patched DSDZA diagnostic\n");
         }
-
-        //
-        // Other patches for the code
-        //
-
-#if 0
-        ks10_t::writeMem(030057, 0254200030060);        // Halt at end of diagnostic
-        printf("Patched code\n");
-#endif
 
     } else {
         printf(usage);
@@ -1590,18 +1644,21 @@ static void parseCommand(char * buf) {
     };
 
     static const cmdList_t cmdList[] = {
-        {"BT", cmdBT},
-        {"CE", cmdCE},
+#ifdef CUSTOM_CMD
+        {"BR", cmdBR},          // Breakpoint
+#endif
+        {"BT", cmdBT},          // Boot
+        {"CE", cmdCE},          // Cache enable
         {"CH", cmdXX},          // Not implemented.
-        {"CO", cmdCO},
+        {"CO", cmdCO},          // Continue
         {"CP", cmdXX},          // Not implemented.
         {"CS", cmdXX},          // Not implemented.
         {"DB", cmdXX},          // Not implemented.
         {"DC", cmdXX},          // Not implemented.
         {"DF", cmdXX},          // Not implemented.
         {"DK", cmdXX},          // Not implemented.
-        {"DI", cmdDI},
-        {"DM", cmdDM},
+        {"DI", cmdDI},          // Deposit IO
+        {"DM", cmdDM},          // Deposit Memory
         {"DN", cmdDN},
         {"DR", cmdXX},          // Not implemented.
         {"DS", cmdDS},

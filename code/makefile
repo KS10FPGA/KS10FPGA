@@ -25,7 +25,6 @@ FILES := \
 	sd.o \
 	startup.o \
 	stdio.o \
-	taskhalt.o \
 	taskutil.o \
 	uart.o 
 
@@ -42,7 +41,6 @@ HEADERS := \
 	rh11.hpp \
 	sd.h \
 	stdio.h \
-	taskhalt.hpp \
 	taskutil.hpp \
 	uart.h \
 	uba.hpp

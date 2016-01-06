@@ -56,7 +56,6 @@
 #include "prompt.hpp"
 #include "console.hpp"
 #include "commands.hpp"
-#include "taskhalt.hpp"
 #include "taskutil.hpp"
 #include "driverlib/rom.h"
 #include "telnetlib/telnet.h"
@@ -93,13 +92,27 @@ void createSerialQueue(void) {
 }
 
 //
-// Read and print character from KS10
+// This interrupt is triggered by the KS10 when it wants to receiver a character
+// or send a character.
 //
 
-void ks10Interrupt(void) {
+void consInterrupt(void) {
     int ch = ks10_t::getchar();
     if (ch != -1) {
         printf("%c", ch);
+    }
+}
+
+//
+// This interrupt is triggered when KS10 changes run/halt state
+//
+
+void haltInterrupt(void) {
+    if (ks10_t::halt()) {
+        printf("KS10: %sHalted.%s\n", "\e[0;31m", "\e[0m");
+        printHaltStatus();
+    } else {
+        printf("KS10: %sRunning.%s\n", "\e[0;32m", "\e[0m");
     }
 }
 
@@ -236,7 +249,7 @@ void taskConsole(void * /*param*/) {
     // Initialize KS10 object
     //
 
-    ks10_t ks10(ks10Interrupt);
+    ks10_t ks10(consInterrupt, haltInterrupt);
 
     //
     // Print the firmware revsion.  If this fails, the FPGA is not programmed
@@ -269,12 +282,6 @@ void taskConsole(void * /*param*/) {
     //
 
     ks10.boot();
-
-    //
-    // Create the Halt Task
-    //
-
-    startHaltTask();
 
     //
     // Wait for the KS10 to peform the selftest and initialize the ALU.  When
@@ -318,13 +325,25 @@ void taskConsole(void * /*param*/) {
     // Configure the DZ11 Console Control Register
     //
 
-    ks10_t::writeDZCCR(0x000000000000ff00ull);
+    ks10_t::writeDZCCR(0x000000000000ff00ULL);
 
     //
     // Configure the RH11 Console Control Registrer
     //
 
-    ks10_t::writeRHCCR(0x00000000070707f8ull);
+    ks10_t::writeRHCCR(0x00000000070707f8ULL);
+
+    //
+    // Configure Breakpoint Register
+    //
+
+    ks10_t::writeBRKPT(0x0000000000000000ULL);
+
+    //
+    // Configure the Trace Register
+    //
+
+    ks10_t::writeTRACE(0x0000000000000000ULL);
 
     //
     // Process commands

@@ -138,7 +138,7 @@ class ks10_t {
         // Functions
         //
 
-        ks10_t(void (*)(void));
+        ks10_t(void (*consIntrHandler)(void), void (*haltIntrHandler)(void));
         static uint32_t lh(data_t data);
         static uint32_t rh(data_t data);
         static data_t readRegStat(void);
@@ -159,6 +159,10 @@ class ks10_t {
         static void writeDZCCR(uint64_t data);
         static uint64_t readRHCCR(void);
         static void writeRHCCR(uint64_t data);
+        static uint64_t readBRKPT(void);
+        static void writeBRKPT(uint64_t data);
+        static uint64_t readTRACE(void);
+        static void writeTRACE(uint64_t data);
         static bool run(void);
         static void run(bool);
         static bool cont(void);
@@ -186,6 +190,7 @@ class ks10_t {
         static volatile rh11debug_t *getRH11debug(void);
         static bool printFirmwareRev(void);
         static void (*consIntrHandler)(void);
+        static void (*haltIntrHandler)(void);
         static void putchar(int ch);
         static int getchar(void);
 
@@ -200,14 +205,26 @@ class ks10_t {
         static const addr_t   ioAddrMask  = 017777777ULL;       //!< KS10 22-bit Address Mask
 
         //
+        // KS10 Breakpoint Masks
+        //
+
+        static const addr_t maskFetch = 0x0000800000000000ULL;  //!< Fetch mask
+        static const addr_t maskRead  = 0x0000400000000000ULL;  //!< Read masks
+        static const addr_t maskWrite = 0x0000100000000000ULL;  //!< Write masks
+        static const addr_t maskPhys  = 0x0000020000000000ULL;  //!< Phys
+        static const addr_t maskIO    = 0x0000008000000000ULL;  //!< IO mask
+        static const addr_t maskByte  = 0x0000001000000000ULL;  //!< BYTE IO mask
+
+        //
         // KS10 Read/Write Address Modes
         //
 
-        static const addr_t flagRead  = 0x100000000ULL;         //!< Read flags
-        static const addr_t flagWrite = 0x040000000ULL;         //!< Write flags
-        static const addr_t flagPhys  = 0x008000000ULL;         //!< Phys
-        static const addr_t flagIO    = 0x002000000ULL;         //!< IO flag
-        static const addr_t flagByte  = 0x000400000ULL;         //!< BYTE IO flag
+        static const addr_t flagFetch = 0x0000000200000000ULL;  //!< Fetch flags
+        static const addr_t flagRead  = 0x0000000100000000ULL;  //!< Read flags
+        static const addr_t flagWrite = 0x0000000040000000ULL;  //!< Write flags
+        static const addr_t flagPhys  = 0x0000000008000000ULL;  //!< Phys
+        static const addr_t flagIO    = 0x0000000002000000ULL;  //!< IO flag
+        static const addr_t flagByte  = 0x0000000000400000ULL;  //!< BYTE IO flag
 
         //
         // KS10 FPGA Register Addresses
@@ -220,7 +237,7 @@ class ks10_t {
         static constexpr volatile void * regData = reinterpret_cast<volatile void *>(epiOffset + 0x08);
 
         //!< KS10 Status Register
-        static constexpr volatile void * regStat = reinterpret_cast<volatile void *>(epiOffset + 0x10);
+        static constexpr volatile void * regStat = reinterpret_cast<void *>(epiOffset + 0x10);
 
         //!< KS10 Console Instruction Register
         static constexpr volatile void * regCIR  = reinterpret_cast<void *>(epiOffset + 0x18);
@@ -232,10 +249,16 @@ class ks10_t {
         static constexpr volatile uint64_t * regRHCCR = reinterpret_cast<uint64_t *>(epiOffset + 0x28);
 
         //!< RH11 Debug Register
-        static constexpr volatile rh11debug_t * regRH11Debug = reinterpret_cast<volatile rh11debug_t *>(epiOffset + 0x30);
+        static constexpr volatile rh11debug_t * regRH11Debug = reinterpret_cast<rh11debug_t *>(epiOffset + 0x30);
+
+        //!< Breakpoint Register
+        static constexpr volatile uint64_t * regBRKPT = reinterpret_cast<uint64_t *>(epiOffset + 0x38);
+
+        //!< RH11 Debug Register
+        static constexpr volatile uint64_t * regTRACE = reinterpret_cast<uint64_t *>(epiOffset + 0x40);
 
         //!< Firmware Version Register
-        static constexpr const char * regVers = reinterpret_cast<const char *>(epiOffset + 0x38);
+        static constexpr const char * regVers = reinterpret_cast<const char *>(epiOffset + 0x48);
 
         //
         // Low level interface functions
@@ -263,6 +286,19 @@ class ks10_t {
         static const data_t statCACHEEN = 0x00000004UL;
         static const data_t statINTR    = 0x00000002UL;
         static const data_t statRESET   = 0x00000001UL;
+
+    public:
+
+        //
+        // Breakpoint constants
+        //
+
+        static const addr_t bkptENABLE = 0x8000000000000000ULL;
+        static const addr_t bkptFETCH  = (bkptENABLE | flagFetch | flagRead | maskFetch | maskRead);
+        static const addr_t bkptMEMRD  = (bkptENABLE | flagRead  |            maskRead  | maskIO);
+        static const addr_t bkptMEMWR  = (bkptENABLE | flagWrite |            maskWrite | maskIO);
+        static const addr_t bkptIORD   = (bkptENABLE | flagRead  | flagIO   | maskRead  | maskIO);
+        static const addr_t bkptIOWR   = (bkptENABLE | flagWrite | flagIO   | maskWrite | maskIO);
 };
 
 //

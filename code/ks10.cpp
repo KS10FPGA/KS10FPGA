@@ -53,6 +53,7 @@
 #define GPIO_HALT_LED  GPIO_PIN_7
 
 void (*ks10_t::consIntrHandler)(void);
+void (*ks10_t::haltIntrHandler)(void);
 
 //
 //! Constructor
@@ -62,26 +63,26 @@ void (*ks10_t::consIntrHandler)(void);
 //! For the most part, this function initializes the EPI object and configures
 //! the GPIO for the console interrupt.
 //!
-//! We use PB7 for the interrupt from the KS10.  Normally PB7 is the NMI but
-//! we don't want NMI semantics.  Therefore this code configures PB7 to
-//! be a normal active low GPIO-based interrupt.
+//! We use PB7 for the Console Interrupt from the KS10.  Normally PB7 is the
+//! NMI but we don't want NMI semantics.  Therefore this code configures PB7
+//! to be a normal active low GPIO-based interrupt.
 //!
-//! We use PD7 (EPI0S30) for the haltLED.
+//! We use PD7 for the Halt Interrupt.  It is triggered on both edges to detect
+//! Halt transitions.
 //
 
-ks10_t::ks10_t(void (*consIntrHandler)(void)) {
+ks10_t::ks10_t(void (*consIntrHandler)(void), void (*haltIntrHandler)(void)) {
     ks10_t::consIntrHandler = consIntrHandler;
+    ks10_t::haltIntrHandler = haltIntrHandler;
 
     EPIInitialize();
 
-    // Enable GPIOD
+    // Enable  GPIOB and GPIOD
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
 
     // Configure the HALT LED input
     ROM_GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, GPIO_HALT_LED);
-
-    // Enable GPIOB
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 
     // Unlock and change PB7 behavior - default is NMI
     HWREG(GPIO_PORTB_BASE + GPIO_O_LOCK) = GPIO_LOCK_KEY_DD;
@@ -91,20 +92,32 @@ ks10_t::ks10_t(void (*consIntrHandler)(void)) {
 
     // Configure PD7 as an input
     ROM_GPIODirModeSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_DIR_MODE_IN);
+    ROM_GPIODirModeSet(GPIO_PORTD_BASE, GPIO_PIN_7, GPIO_DIR_MODE_IN);
 
     //Set max current 2mA and connect weak pull-up resistor
-    ROM_GPIOPadConfigSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_STRENGTH_2MA,
-                         GPIO_PIN_TYPE_STD_WPU);
+    ROM_GPIOPadConfigSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
+    ROM_GPIOPadConfigSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
 
-    // Set the interrupt type for each pin
+    // Set the interrupt type for Pin B7 and Pin D7
     ROM_GPIOIntTypeSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_FALLING_EDGE);
+    ROM_GPIOIntTypeSet(GPIO_PORTD_BASE, GPIO_PIN_7, GPIO_BOTH_EDGES);
 
     // Enable interrupt
     ROM_GPIOPinIntEnable(GPIO_PORTB_BASE, GPIO_PIN_7);
+    ROM_GPIOPinIntEnable(GPIO_PORTD_BASE, GPIO_PIN_7);
 
-    // Enable interrupts on Port B
+    // Enable interrupts on Port B and Port D
     ROM_IntEnable(INT_GPIOB);
+    ROM_IntEnable(INT_GPIOD);
+}
 
+//
+//! Halt Interrupt Wrapper
+//
+
+extern "C" void gpiodIntHandler(void) {
+    (*ks10_t::haltIntrHandler)();
+    ROM_GPIOPinIntClear(GPIO_PORTD_BASE, GPIO_PIN_7);
 }
 
 //
@@ -387,6 +400,44 @@ void ks10_t::writeRHCCR(uint64_t data) {
 }
 
 //
+//! This function reads a 64-bit value from the breakpoint register
+//
+
+uint64_t ks10_t::readBRKPT(void) {
+    return *regBRKPT;
+}
+
+//
+//! This function writes a 64-bit value to the breakpoint register
+//!
+//! \param
+//!     data is the data to be written to the breakpoint register
+//
+
+void ks10_t::writeBRKPT(uint64_t data) {
+    *regBRKPT = data;
+}
+
+//
+//! This function reads a 64-bit value from the trace register
+//
+
+uint64_t ks10_t::readTRACE(void) {
+    return *regTRACE;
+}
+
+//
+//! This function writes a 64-bit value to the trace register
+//!
+//! \param
+//!     data is the data to be written to the trace register
+//
+
+void ks10_t::writeTRACE(uint64_t data) {
+    *regTRACE = data;
+}
+
+//
 //! This function controls the <b>RUN</b> mode of the KS10.
 //!
 //! \param enable -
@@ -492,11 +543,7 @@ bool ks10_t::exec(void) {
 //
 
 bool ks10_t::halt(void) {
-#if 0
-    return readReg(regStat) & statHALT;
-#else
     return ROM_GPIOPinRead(GPIO_PORTD_BASE, GPIO_HALT_LED) == GPIO_HALT_LED;
-#endif
 }
 
 //
@@ -867,6 +914,8 @@ bool ks10_t::testRegs(bool verbose) {
     success &= testRegister(regCIR,   "regCIR ",  verbose, 0xfffffffff);
     success &= testRegister(regDZCCR, "regDZCCR", verbose);
     success &= testRegister(regRHCCR, "regRHCCR", verbose);
+    success &= testRegister(regBRKPT, "regBRKPT", verbose);
+    success &= testRegister(regTRACE, "regTRACE", verbose);
     if (success) {
         printf("FPGA: Register test completed successfully.\n");
     }
