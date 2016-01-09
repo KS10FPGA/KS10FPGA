@@ -245,8 +245,8 @@ module RPCTRL (
 `ifdef RPXX_SIMDMD
    wire diag_clken;
    wire diag_clken_p;
-   EDGETRIG MAINTCLKP(clk, rst, 1'b1, 1'b1, rpDCLK, diag_clken_p);
-   EDGETRIG MAINTCLKN(clk, rst, 1'b1, 1'b0, rpDCLK, diag_clken);
+   EDGETRIG #(.POSEDGE(1)) MAINTCLKP(clk, rst, 1'b1, rpDCLK, diag_clken_p);
+   EDGETRIG #(.POSEDGE(0)) MAINTCLKN(clk, rst, 1'b1, rpDCLK, diag_clken);
 `else
    wire diag_clken = 0;
    wire diag_clken_p = 0;
@@ -259,7 +259,7 @@ module RPCTRL (
 
 `ifdef RPXX_SIMDMD
    wire diag_index;
-   EDGETRIG uDIAGIND(clk, rst, 1'b1, 1'b0, rpDIND, diag_index);
+   EDGETRIG #(.POSEDGE(0)) uDIAGIND(clk, rst, 1'b1, rpDIND, diag_index);
 `else
    wire diag_index = 0;
 `endif
@@ -272,7 +272,7 @@ module RPCTRL (
    //
 
    wire go_cmd;
-   EDGETRIG GOEDGE(clk, rst, 1'b1, 1'b0, rpGO, go_cmd);
+   EDGETRIG #(.POSEDGE(0)) GOEDGE(clk, rst, 1'b1, rpGO, go_cmd);
 
    //
    // State Definition

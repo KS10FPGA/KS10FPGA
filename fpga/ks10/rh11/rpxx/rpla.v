@@ -147,7 +147,7 @@ module RPLA (
    //
 
    wire diag_clk;
-   EDGETRIG MAINTCLK(clk, rst, 1'b1, 1'b1, rpDSCK, diag_clk);
+   EDGETRIG #(.POSEDGE(1)) MAINTCLK(clk, rst, 1'b1, rpDSCK, diag_clk);
 
    //
    // Clock Multiplexer.  This switches between "Normal" and "Maintenance" mode

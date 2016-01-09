@@ -103,7 +103,7 @@ module DZRBUF (
    //
 
    wire rd;
-   EDGETRIG uFIFOREAD(clk, rst, 1'b1, 1'b0, rbufREAD, rd);
+   EDGETRIG #(.POSEDGE(0)) uFIFOREAD(clk, rst, 1'b1, rbufREAD, rd);
 
    //
    // Delayed read and write

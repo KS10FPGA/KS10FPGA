@@ -40,15 +40,15 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module SYNC (
+module SYNC #(
+      parameter INIT  = 0,
+      parameter WIDTH = 1
+   ) (
       input  wire             clk,  // Clock
       input  wire             rst,  // Reset
       output reg  [WIDTH-1:0] o,    // Output
       input  wire [WIDTH-1:0] i     // Input
    );
-
-   parameter INIT  = 0;
-   parameter WIDTH = 1;
 
    reg [WIDTH-1:0] d;
 

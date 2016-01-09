@@ -72,8 +72,8 @@ module RHDB (
 
    wire wr;
    wire rd;
-   EDGETRIG FIFORD(clk, rst, 1'b1, 1'b0, rhdbWRITE, wr);
-   EDGETRIG FIFOWR(clk, rst, 1'b1, 1'b0, rhdbREAD,  rd);
+   EDGETRIG #(.POSEDGE(0)) FIFORD(clk, rst, 1'b1, rhdbWRITE, wr);
+   EDGETRIG #(.POSEDGE(0)) FIFOWR(clk, rst, 1'b1, rhdbREAD,  rd);
 
    //
    // FIFO Interface

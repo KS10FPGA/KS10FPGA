@@ -44,11 +44,12 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module EDGETRIG (
+module EDGETRIG #(
+      parameter [0:0] POSEDGE = 1'b1
+   ) (
       input  wire clk,          // Clock
       input  wire rst,          // Reset
       input  wire clken,        // Clock Enable
-      input  wire pol,          // Polarity
       input  wire i,            // Input
       output wire o             // Output
    );
@@ -67,6 +68,6 @@ module EDGETRIG (
           last <= i;
      end
 
-   assign o = (pol) ? (i & ~last) : (~i & last);
+   assign o = (POSEDGE) ? (i & ~last) : (~i & last);
 
 endmodule
