@@ -12,8 +12,13 @@ ALL_LIST := \
 
 ARGS :=\
 	--directory=.. \
-	--exclude ks10/fpga/ise/isim/* \
-	--exclude ks10/fpga/ise/*.wdb
+	--exclude ks10/fpga/esm_top/ise/isim/* \
+	--exclude ks10/fpga/esm_top/ise/*.wdb \
+	--exclude ks10/fpga/esm_top/testbench/*.dsk \
+	--exclude ks10/fpga/esm_top/testbench/*.rp06 \
+	--exclude ks10/fpga/esm_top/testbench/RCS/*.dsk,v \
+	--exclude ks10/fpga/esm_top/testbench/RCS/*.rp06,v \
+	--exclude ks10/fpga/results/*
 
 all:
 	${MAKE} -C code console.bin

@@ -919,34 +919,10 @@ static void cmdGO(int argc, char *argv[]) {
     } else if (argc == 3) {
 
         //
-        // Read the diagnostic subroutines into memory
-        //
-
-#if 1
-        if (!loadCode("diag/subsm.sav")) {
-            printf("Failed to load diag/subsm.sav\n");
-            return;
-        }
-#else
-        if (!loadCode("diag/subusr.sav")) {
-            printf("Failed to load diag/subusr.sav\n");
-            return;
-        }
-#endif
-
-        //
-        // Load DDT into memory
-        //
-
-        if (!loadCode("diag/smddt.sav")) {
-            printf("Failed to load diag/smddt.sav\n");
-            return;
-        }
-
-        //
         // Load the diagnostic monitor into memory
         //
 
+        printf("KS10: Loading SMMON.\n");
         if (!loadCode("diag/smmon.sav")) {
             printf("Failed to load diag/smmon.sav\n");
             return;
