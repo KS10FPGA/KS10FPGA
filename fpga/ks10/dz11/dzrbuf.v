@@ -289,7 +289,7 @@ module DZRBUF (
 `endif
 
    reg [14:0] fifoDATA;
-   reg [14:0] DPRAM[0:`SIZE];
+   reg [14:0] DPRAM[0:127];
 
    always @(posedge clk or posedge rst)
      begin
