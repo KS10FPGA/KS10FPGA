@@ -42,8 +42,6 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`define SIZE 64
-
 module DZRBUF (
       input  wire        clk,                   // Clock
       input  wire        rst,                   // Reset
@@ -62,6 +60,27 @@ module DZRBUF (
       output reg         rbufSA,                // RBUF Silo Alarm
       output wire [15:0] regRBUF                // RBUF output
    );
+
+   //
+   // log2() function
+   //
+
+   function integer log2;
+       input [31:0] val;
+       begin
+          val = val - 1;
+          for(log2 = 0; val > 0; log2 = log2 + 1)
+            val = val >> 1;
+       end
+   endfunction
+
+   //
+   // FIFO Parameters
+   //
+
+   localparam FIFO_SIZE      = 65;
+   localparam BUF_ADDR_WIDTH = log2(FIFO_SIZE);
+   localparam BUF_SIZE       = 2**BUF_ADDR_WIDTH;
 
    //
    // UART Receiver Interface
@@ -134,12 +153,12 @@ module DZRBUF (
    //
    // FIFO State
    //
-   //  Note: FIFOs have a depth of 64 not 63.  Watch the counter sizes.
+   //  Note: FIFOs have a depth of 65 not 64.  Watch the counter sizes.
    //
 
-   reg [0:6] depth;
-   reg [0:6] rd_ptr;
-   reg [0:6] wr_ptr;
+   reg [BUF_ADDR_WIDTH-1:0] depth;
+   reg [BUF_ADDR_WIDTH-1:0] rd_ptr;
+   reg [BUF_ADDR_WIDTH-1:0] wr_ptr;
 
    always @(posedge clk or posedge rst)
      begin
@@ -160,7 +179,7 @@ module DZRBUF (
              else if (rd & !wr & !empty)
                begin
                   depth <= depth - 1'b1;
-                  if (rd_ptr == `SIZE)
+                  if (rd_ptr == FIFO_SIZE - 1)
                     rd_ptr <= 0;
                   else
                     rd_ptr <= rd_ptr + 1'b1;
@@ -168,7 +187,7 @@ module DZRBUF (
              else if (wr & !rd & !full)
                begin
                   depth <= depth + 1'b1;
-                  if (wr_ptr == `SIZE)
+                  if (wr_ptr == FIFO_SIZE - 1)
                     wr_ptr <= 0;
                   else
                     wr_ptr <= wr_ptr + 1'b1;
@@ -177,7 +196,7 @@ module DZRBUF (
      end
 
    wire empty = (depth == 0);
-   wire full  = (depth == `SIZE);
+   wire full  = (depth == FIFO_SIZE - 1);
 
    //
    // RBUF[RDONE]
@@ -289,7 +308,7 @@ module DZRBUF (
 `endif
 
    reg [14:0] fifoDATA;
-   reg [14:0] DPRAM[0:127];
+   reg [14:0] DPRAM[BUF_SIZE-1:0];
 
    always @(posedge clk or posedge rst)
      begin
@@ -297,7 +316,7 @@ module DZRBUF (
 `ifdef SYNTHESIS
           ;
 `else
-          for (i = 0; i <= `SIZE; i = i + 1)
+          for (i = 0; i < BUF_SIZE; i = i + 1)
             DPRAM[i] <= 0;
 `endif
         else
