@@ -53,18 +53,19 @@
 `default_nettype none
 `timescale 1ns/1ps
 
+`include "alu.vh"
 `include "useq/crom.vh"
 
 module ALU (
-      input  wire         clk,          // Clock
-      input  wire         rst,          // Reset
-      input  wire         clken,        // Clock enable
-      input  wire [0:107] crom,         // Control ROM Data
-      input  wire [0: 35] aluIN,        // Bus input
-      output wire [0:  8] aluFLAGS,     // ALU Flags
-      output wire [0: 35] aluOUT,       // ALU Output
-      input  wire [0:  3] debugADDR,    // DEBUG Address
-      output wire [0: 35] debugDATA     // DEBUG Data
+      input  wire          clk,         // Clock
+      input  wire          rst,         // Reset
+      input  wire          clken,       // Clock enable
+      input  wire [ 0:107] crom,        // Control ROM Data
+      input  wire [ 0: 35] aluIN,       // Bus input
+      output wire [ 0:  8] aluFLAGS,    // ALU Flags
+      output wire [ 0: 35] aluOUT,      // ALU Output
+      output wire [18: 35] aluPC,       // Program Counter
+      output wire [ 0: 35] aluHR        // Instruction Register
    );
 
    //
@@ -409,7 +410,6 @@ module ALU (
 
    wire [0:39] ad = aluRAM[aa];
    wire [0:39] bd = aluRAM[ba];
-   wire [0:35] cd = aluRAM[debugADDR][2:37];
 
    //
    // Q Register Shifter
@@ -864,10 +864,11 @@ module ALU (
    assign aluOUT = (dest ==`cromDST_RAMA) ? ad[2:37] : f[2:37];
 
    //
-   // ALU Register Debug Data
+   // Make Program Counter and Instruction Register available
    //
 
-   assign debugDATA = cd;
+   assign aluPC = aluRAM[`aluPC][20:37];
+   assign aluHR = aluRAM[`aluHR][ 2:37];
 
    //
    // ALU Flags

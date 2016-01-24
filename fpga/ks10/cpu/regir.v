@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2015 Rob Doyle
+// Copyright (C) 2012-2016 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -53,7 +53,8 @@ module REGIR (
       input  wire         prevEN,       // Previous Enable
       output reg  [0: 17] regIR,        // Instruction register
       output reg          xrPREV,       // XR Previous
-      output wire         opJRST0       // JRST Instruction
+      output wire         opJRST0,      // JRST Instruction
+      output reg          regsLOAD      // Load Registers
    );
 
    //
@@ -115,4 +116,20 @@ module REGIR (
 
    assign opJRST0 = ((irOPCODE == 9'o254) & (irAC == 0));
 
- endmodule
+   //
+   // regsLOAD is used by the trace facility
+   //
+   // Details
+   //  The Instruction Register is updated according to the microcode.  The
+   //  register may be examined on the next clock cycle.
+   //
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          regsLOAD <= 0;
+        else
+          regsLOAD <= loadIR & loadXR;
+     end
+
+endmodule

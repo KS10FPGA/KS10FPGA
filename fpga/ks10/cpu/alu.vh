@@ -58,4 +58,25 @@
 `define aluSIGN(reg)   (reg[3])
 `define aluZERO(reg)   ((reg[1]) & (reg[2]))
 
+//
+// Register Addresses
+//
+
+`define aluMAG          (4'o00)
+`define aluPC           (4'o01)
+`define aluHR           (4'o02)
+`define aluAR           (4'o03)
+`define aluARX          (4'o04)
+`define aluBR           (4'o05)
+`define aluBRX          (4'o06)
+`define aluONE          (4'o07)
+`define aluEBR          (4'o10)
+`define aluUBR          (4'o11)
+`define aluMASK         (4'o12)
+`define aluFLG          (4'o13)
+`define aluPI           (4'o14)
+`define aluXWD1         (4'o15)
+`define aluT0           (4'o16)
+`define aluT1           (4'o17)
+
 `endif

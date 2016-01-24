@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2015 Rob Doyle
+// Copyright (C) 2012-2016 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -71,8 +71,7 @@ module USEQ (
       input  wire [0: 17] regIR,                // Instruction Register
       input  wire [0: 17] pcFLAGS,              // PC Flags
       input  wire [0: 35] drom,                 // Dispatch ROM Data
-      output wire [0:107] crom,                 // Control ROM Data
-      output wire [0: 11] cromADDR              // Control ROM Address
+      output wire [0:107] crom                  // Control ROM Data
    );
 
    //
@@ -343,11 +342,5 @@ module USEQ (
       .addrIN   (addr),
       .addrOUT  (dispRET)
    );
-
-   //
-   // Fixup
-   //
-
-   assign cromADDR = addr;
 
 endmodule

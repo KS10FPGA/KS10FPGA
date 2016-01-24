@@ -15,7 +15,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2015 Rob Doyle
+// Copyright (C) 2012-2016 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -50,7 +50,7 @@ module CPU (
       input  wire         memCLK,       // Memory Clock
       input  wire [ 1: 4] clkPHS,       // Clock Phase
       // Breakpoint
-      input  wire         brkptHALT,    // Breakpoint
+      input  wire         debugHALT,    // Breakpoint
       // Console
       input  wire         cslSET,       // Set Console RUN, EXEC, CONT
       input  wire         cslRUN,       // Run
@@ -61,9 +61,9 @@ module CPU (
       input  wire         cslCACHEEN,   // Enable Cache
       input  wire         cslINTRI,     // Console Interrupt to CPU
       output wire         cslINTRO,     // CPU Interrupt to Console
-   // UBA
+      // UBA
       input  wire [ 1: 7] ubaINTR,      // Unibus Interrupt Request
-   // CPU
+      // CPU
       output wire         cpuREQO,      // CPU Bus Request
       input  wire         cpuACKI,      // Bus Acknowledge
       output wire [ 0:35] cpuADDRO,     // CPU Addr and Flags
@@ -72,7 +72,12 @@ module CPU (
       output wire         cpuHALT,      // CPU Halt Status
       output wire         cpuRUN,       // CPU Run Status
       output wire         cpuEXEC,      // CPU Exec Status
-      output wire         cpuCONT       // CPU Cont Status
+      output wire         cpuCONT,      // CPU Cont Status
+      // Trace
+      output wire [18:35] cpuPC,        // Program Counter Register
+      output wire [ 0:35] cpuHR,        // Instruction Register
+      output wire         regsLOAD,     // Register update
+      output wire         vmaLOAD       // VMA update
    );
 
    //
@@ -185,14 +190,6 @@ module CPU (
    wire [ 0:11] dispDIAG = 0;   // Diagnostic Dispatch
 
    //
-   // DEBUG
-   //
-
-   wire [ 0: 3] debugADDR;      // DEBUG Address
-   wire [ 0:35] debugDATA;      // DEBUG Data
-   wire [ 0:11] cromADDR;       // Control ROM Address
-
-   //
    // Timing
    //
 
@@ -225,8 +222,8 @@ module CPU (
       .aluIN            (dbus),
       .aluFLAGS         (aluFLAGS),
       .aluOUT           (dp),
-      .debugADDR        (debugADDR),
-      .debugDATA        (debugDATA)
+      .aluPC            (cpuPC),
+      .aluHR            (cpuHR)
    );
 
    //
@@ -331,27 +328,6 @@ module CPU (
    );
 
    //
-   // DEBUG
-   //
-
-   DEBUG uDEBUG (
-      .clk              (clk),
-      .rst              (rst),
-      .clken            (clkenDP),
-      .crom             (crom),
-      .cromADDR         (cromADDR),
-      .dp               (dp),
-      .dbm              (dbm),
-      .dbus             (dbus),
-      .cpuRUN           (cpuRUN),
-      .cpuCONT          (cpuCONT),
-      .cpuEXEC          (cpuEXEC),
-      .cpuHALT          (cpuHALT),
-      .debugDATA        (debugDATA),
-      .debugADDR        (debugADDR)
-   );
-
-   //
    // DBUS MUX
    //
 
@@ -388,7 +364,7 @@ module CPU (
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
-      .brkptHALT        (brkptHALT),
+      .debugHALT        (debugHALT),
       .cslSET           (cslSET),
       .cslRUN           (cslRUN),
       .cslCONT          (cslCONT),
@@ -429,7 +405,8 @@ module CPU (
       .prevEN           (prevEN),
       .regIR            (regIR),
       .xrPREV           (xrPREV),
-      .opJRST0          (opJRST0)
+      .opJRST0          (opJRST0),
+      .regsLOAD         (regsLOAD)
    );
 
    //
@@ -460,8 +437,7 @@ module CPU (
       .regIR            (regIR),
       .pcFLAGS          (pcFLAGS),
       .drom             (drom),
-      .crom             (crom),
-      .cromADDR         (cromADDR)
+      .crom             (crom)
    );
 
    //
@@ -602,7 +578,8 @@ module CPU (
       .prevEN           (prevEN),
       .pcFLAGS          (pcFLAGS),
       .pageFAIL         (pageFAIL),
-      .vmaREG           (vmaREG)
+      .vmaREG           (vmaREG),
+      .vmaLOAD          (vmaLOAD)
    );
 
    //

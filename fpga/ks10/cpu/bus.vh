@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2015 Rob Doyle
+// Copyright (C) 2012-2016 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -65,9 +65,11 @@
 // Addressing
 //
 
+`define busADDR(bus)     (bus[14:35])   // Full Address
 `define busIOADDR(bus)   (bus[18:35])   // IO Address
 `define busMEMADDR(bus)  (bus[16:35])   // Memory Address
 `define busDEVADDR(dev)  (dev[18:34])   // UBA Device Address
+`define busFLAGS(dev)    (dev[ 0:13])   // Address Flags
 
 //
 // This are valid during IOBYTE operations

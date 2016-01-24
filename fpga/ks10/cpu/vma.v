@@ -56,7 +56,8 @@ module VMA (
       input  wire          prevEN,      // Previous enable
       input  wire [ 0: 17] pcFLAGS,     // PC Flags
       input  wire          pageFAIL,    // Page fail
-      output reg  [ 0: 35] vmaREG       // VMA register
+      output reg  [ 0: 35] vmaREG,      // VMA register
+      output reg           vmaLOAD      // VMA load
    );
 
    //
@@ -210,6 +211,20 @@ module VMA (
                     `vmaCACHEINH(vmaREG) <= `cromMEM_CACHEINH;
                  end
           end
+     end
+
+   //
+   // Debug output
+   //
+   //  This is asserted when the VMA has a new value.
+   //
+
+    always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          vmaLOAD <= 0;
+        else
+          vmaLOAD <= vmaEN;
      end
 
 endmodule

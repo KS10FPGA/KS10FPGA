@@ -86,113 +86,122 @@ module KS10 (
    );
 
    //
-   // Bus Arbiter Outputs
+   // Clock Generator Signals
    //
 
-   wire [0:35] arbADDRO;                // Arbiter Address Out
+   wire rst;                            // Reset
+   wire cpuCLK;                         // CPU clock
+   wire memCLK;                         // Memory clock
+   wire [1:4] clkPHS;                   // Clock phase
 
    //
-   // Console Interfaces
+   // Bus Arbiter Signals
    //
 
-   wire        cslREQI;                 // Console Bus Request In
-   wire        cslREQO;                 // Console Bus Request Out
-   wire        cslACKI;                 // Console Bus Acknowledge In
-   wire        cslACKO;                 // Console Bus Acknowledge Out
-   wire [0:35] cslADDRI;                // Console Address In
-   wire [0:35] cslADDRO;                // Console Address Out
-   wire [0:35] cslDATAI;                // Console Data In
-   wire [0:35] cslDATAO;                // Console Data Out
-   wire        cslSET;                  // Console Set State
-   wire        cslRUN;                  // Console Run Switch
-   wire        cslCONT;                 // Console Continue Switch
-   wire        cslEXEC;                 // Console Exec Switch
-   wire        cslTRAPEN;               // Console Trap Enable
-   wire        cslTIMEREN;              // Console Timer Enable
-   wire        cslCACHEEN;              // Console Cache Enable
-   wire        cslINTR;                 // Console Interrupt to KS10
-   wire        cslINTRO;                // KS10 Interrupt to Console
-   wire        cpuRST;                  // KS10 Reset
+   wire [ 0:35] arbADDRO;               // Arbiter Address Out
 
    //
-   // CPU Interfaces
+   // Console Signals
    //
 
-   wire        cpuREQO;                 // CPU Bus Request
-   wire        cpuACKI;                 // CPU Bus Acknowledge
-   wire [0:35] cpuADDRO;                // CPU Address Out
-   wire [0:35] cpuDATAI;                // CPU Data In
-   wire [0:35] cpuDATAO;                // CPU Data Out
-   wire        cpuHALT;                 // CPU Halt Status
-   wire        cpuRUN;                  // CPU Run Status
-   wire        cpuEXEC;                 // CPU Exec Status
-   wire        cpuCONT;                 // CPU Cont Status
+   wire         cslREQI;                // Console Bus Request In
+   wire         cslREQO;                // Console Bus Request Out
+   wire         cslACKI;                // Console Bus Acknowledge In
+   wire         cslACKO;                // Console Bus Acknowledge Out
+   wire [ 0:35] cslADDRI;               // Console Address In
+   wire [ 0:35] cslADDRO;               // Console Address Out
+   wire [ 0:35] cslDATAI;               // Console Data In
+   wire [ 0:35] cslDATAO;               // Console Data Out
+   wire         cslSET;                 // Console Set State
+   wire         cslRUN;                 // Console Run Switch
+   wire         cslCONT;                // Console Continue Switch
+   wire         cslEXEC;                // Console Exec Switch
+   wire         cslTRAPEN;              // Console Trap Enable
+   wire         cslTIMEREN;             // Console Timer Enable
+   wire         cslCACHEEN;             // Console Cache Enable
+   wire         cslINTR;                // Console Interrupt to KS10
+   wire         cslINTRO;               // KS10 Interrupt to Console
+   wire         cpuRST;                 // KS10 Reset
 
    //
-   // DZ11 Interfaces
+   // CPU Signals
    //
 
-   wire [0: 7] dz11DTR;                 // DZ11 Data Terminal Ready
-   wire [0:63] dz11CCR;                 // DZ11 Console Control Register
-   wire [0: 7] dz11RI = dz11CCR[56:63]; // DZ11 Ring Indicator
-   wire [0: 7] dz11CO = dz11CCR[48:55]; // DZ11 Carrier Sense
-   assign dz11LOOP    = dz11CCR[47];    // DZ11 Loopback
+   wire         cpuREQO;                // CPU Bus Request
+   wire         cpuACKI;                // CPU Bus Acknowledge
+   wire [ 0:35] cpuADDRO;               // CPU Address Out
+   wire [ 0:35] cpuDATAI;               // CPU Data In
+   wire [ 0:35] cpuDATAO;               // CPU Data Out
+   wire         cpuHALT;                // CPU Halt Status
+   wire         cpuRUN;                 // CPU Run Status
+   wire         cpuEXEC;                // CPU Exec Status
+   wire         cpuCONT;                // CPU Cont Status
+
+   //
+   // DZ11 Signals
+   //
+
+   wire [ 0: 7] dz11DTR;                // DZ11 Data Terminal Ready
+   wire [ 0:63] dz11CCR;                // DZ11 Console Control Register
+   wire [ 0: 7] dz11RI = dz11CCR[56:63];// DZ11 Ring Indicator
+   wire [ 0: 7] dz11CO = dz11CCR[48:55];// DZ11 Carrier Sense
+   assign dz11LOOP     = dz11CCR[47];   // DZ11 Loopback
 
    //
    // RH11 Interfaces
    //
 
-   wire [0:63] rh11CCR;                 // RH11 Console Control Register
-   wire [0:63] rh11DEBUG;               // RH11 Debug
-   wire [7: 0] rh11WP  = rh11CCR[56:63];// RH11 Write Protect
-   wire [7: 0] rh11CD  = rh11CCR[48:55];// RH11 Card Detect
-   wire [7: 0] rh11DPR = rh11CCR[40:47];// RH11 Drive Present
-   wire [7: 0] rh11EN  = rh11CCR[32:39];// RH11 Enabled
+   wire [ 0:63] rh11CCR;                 // RH11 Console Control Register
+   wire [ 0:63] rh11DEBUG;               // RH11 Debug
+   wire [ 7: 0] rh11WP  = rh11CCR[56:63];// RH11 Write Protect
+   wire [ 7: 0] rh11CD  = rh11CCR[48:55];// RH11 Card Detect
+   wire [ 7: 0] rh11DPR = rh11CCR[40:47];// RH11 Drive Present
+   wire [ 7: 0] rh11EN  = rh11CCR[32:39];// RH11 Enabled
 
    //
-   // Memory Interfaces
+   // Memory Signals
    //
 
-   wire [0:35] memDATAI;                // Memory Data In
-   wire [0:35] memDATAO;                // Memory Data Out
-   wire        memREQ;                  // Memory REQ
-   wire        memACK;                  // Memory ACK
+   wire [ 0:35] memDATAI;               // Memory Data In
+   wire [ 0:35] memDATAO;               // Memory Data Out
+   wire         memREQ;                 // Memory REQ
+   wire         memACK;                 // Memory ACK
 
    //
    // Unibus Interfaces (x4)
    //
 
-   wire [1: 7] ubaINTR;                 // Unibus Interrupt Request
-   wire        ubaREQI;                 // Unibus Bus Request In
-   wire [0: 3] ubaREQO;                 // Unibus Bus Request Out
-   wire [0: 3] ubaACKI;                 // Unibus Bus Acknowledge In
-   wire [0: 3] ubaACKO;                 // Unibus Bus Acknowledge Out
-   wire [0:35] ubaADDRO[0:3];           // Unibus Address Out
-   wire [0:35] ubaDATAI;                // Unibus Data In
-   wire [0:35] ubaDATAO[0:3];           // Unibus Data Out
-   wire [1: 7] ubaINTRO[0:3];           // Unibus Interrupt
+   wire [ 1: 7] ubaINTR;                // Unibus Interrupt Request
+   wire         ubaREQI;                // Unibus Bus Request In
+   wire [ 0: 3] ubaREQO;                // Unibus Bus Request Out
+   wire [ 0: 3] ubaACKI;                // Unibus Bus Acknowledge In
+   wire [ 0: 3] ubaACKO;                // Unibus Bus Acknowledge Out
+   wire [ 0:35] ubaADDRO[0:3];          // Unibus Address Out
+   wire [ 0:35] ubaDATAI;               // Unibus Data In
+   wire [ 0:35] ubaDATAO[0:3];          // Unibus Data Out
+   wire [ 1: 7] ubaINTRO[0:3];          // Unibus Interrupt
 
    //
-   // Breakpoint
+   // Debug Signals
    //
 
-   wire [0:63] brkptREG;
-   wire        brkptHALT;
-
-   //
-   // Trace system
-   //
-
-   wire [0:63] traceREG;
+   wire [18:35] cpuPC;                  // Program Counter
+   wire [ 0:35] cpuHR;                  // Instruction Register
+   wire         regsLOAD;               // Update registers
+   wire         vmaLOAD;                // Update VMA
+   wire         debugHALT;              // Breakpoint the CPU
+   wire [ 0:35] debugCSR;               // Control/Status Register
+   wire [ 0:35] debugBAR;               // Breakpoint Address Register
+   wire [ 0:35] debugBMR;               // Breakpoint Mask Register
+   wire [ 0:63] debugITR;               // Instruction Trace Register
+   wire [ 0: 1] debugBRKEN;             // Breakpoint Enable
+   wire [ 0: 1] debugTREN;              // Trace Enable
+   wire         debugTRRESET;           // Trace Reset
+   wire         debugREADITR;           // Read Instruction Trace Register
 
    //
    // Clock Generator and Reset Synchronization
    //
-
-   wire rst;
-   wire cpuCLK;
-   wire memCLK;
-   wire [1:4] clkPHS;
 
    CLK uCLK (
       .RESET_N          (RESET_N),
@@ -255,7 +264,7 @@ module KS10 (
       .memCLK           (memCLK),
       .clkPHS           (clkPHS),
       // Breakpoint
-      .brkptHALT        (brkptHALT),
+      .debugHALT        (debugHALT),
       // Console
       .cslSET           (cslSET),
       .cslRUN           (cslRUN),
@@ -277,7 +286,12 @@ module KS10 (
       .cpuHALT          (cpuHALT),
       .cpuRUN           (cpuRUN),
       .cpuEXEC          (cpuEXEC),
-      .cpuCONT          (cpuCONT)
+      .cpuCONT          (cpuCONT),
+      // Trace
+      .cpuPC            (cpuPC),
+      .cpuHR            (cpuHR),
+      .regsLOAD         (regsLOAD),
+      .vmaLOAD          (vmaLOAD)
    );
 
    //
@@ -318,15 +332,20 @@ module KS10 (
       .cslCACHEEN       (cslCACHEEN),
       .cslINTR          (cslINTR),
       .cslRESET         (cpuRST),
-      // Trace
-      .traceREG         (traceREG),
-      // Breakpoint
-      .brkptREG         (brkptREG),
       // DZ11
       .dz11CCR          (dz11CCR),
       // RH11 Interfaces
       .rh11CCR          (rh11CCR),
-      .rh11DEBUG        (rh11DEBUG)
+      .rh11DEBUG        (rh11DEBUG),
+      // Debug Interface
+      .debugCSR         (debugCSR),
+      .debugBAR         (debugBAR),
+      .debugBMR         (debugBMR),
+      .debugITR         (debugITR),
+      .debugBRKEN       (debugBRKEN),
+      .debugTREN        (debugTREN),
+      .debugTRRESET     (debugTRRESET),
+      .debugREADITR     (debugREADITR)
    );
 
    //
@@ -524,15 +543,26 @@ module KS10 (
    );
 
    //
-   // Breakpoint
+   // Debug Interface
    //
 
-   BRKPT uBRKPT (
+   DEBUG uDEBUG (
       .rst              (cpuRST),
       .clk              (cpuCLK),
       .cpuADDR          (cpuADDRO),
-      .brkptREG         (brkptREG),
-      .brkptHALT        (brkptHALT)
+      .cpuPC            (cpuPC),
+      .cpuHR            (cpuHR),
+      .regsLOAD         (regsLOAD),
+      .vmaLOAD          (vmaLOAD),
+      .debugCSR         (debugCSR),
+      .debugBAR         (debugBAR),
+      .debugBMR         (debugBMR),
+      .debugITR         (debugITR),
+      .debugBRKEN       (debugBRKEN),
+      .debugTREN        (debugTREN),
+      .debugTRRESET     (debugTRRESET),
+      .debugREADITR     (debugREADITR),
+      .debugHALT        (debugHALT)
    );
 
    //
