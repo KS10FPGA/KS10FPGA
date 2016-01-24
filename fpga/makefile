@@ -125,7 +125,6 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the -RD00-XXX
 #   -D DEBUG=DSKAA      Diagnostic information (See debug.v)
 #
 
-
 SIM_ARGS := \
         -D SIM_CTY \
         -D SIM_SMMON \
@@ -213,15 +212,9 @@ DIAG_FILES := \
 RTL_FILES := \
 	esm_top/esm_ks10.v \
 	ks10/ks10.v \
+	ks10/arb/arb.v \
 	ks10/clk/clk.v \
 	ks10/csl/csl.v \
-	ks10/arb/arb.v \
-	ks10/cpu/useq/crom.v \
-	ks10/cpu/useq/drom.v \
-	ks10/cpu/useq/skip.v \
-	ks10/cpu/useq/stack.v \
-	ks10/cpu/useq/dispatch.v \
-	ks10/cpu/useq/useq.v \
 	ks10/cpu/alu.v \
 	ks10/cpu/apr.v \
 	ks10/cpu/bus.v \
@@ -230,7 +223,6 @@ RTL_FILES := \
 	ks10/cpu/disp_pf.v \
 	ks10/cpu/dbm.v \
 	ks10/cpu/dbus.v \
-	ks10/cpu/debug.v \
 	ks10/cpu/intf.v \
 	ks10/cpu/nxd.v \
 	ks10/cpu/nxm.v \
@@ -245,8 +237,13 @@ RTL_FILES := \
 	ks10/cpu/timing.v \
 	ks10/cpu/vma.v \
 	ks10/cpu/cpu.v \
-	ks10/mem/mem.v \
-	ks10/mem/memstat.v \
+	ks10/cpu/useq/crom.v \
+	ks10/cpu/useq/drom.v \
+	ks10/cpu/useq/skip.v \
+	ks10/cpu/useq/stack.v \
+	ks10/cpu/useq/dispatch.v \
+	ks10/cpu/useq/useq.v \
+	ks10/debug/debug.v \
 	ks10/dz11/uart/uart_brg.v \
 	ks10/dz11/uart/uart_rx.v \
 	ks10/dz11/uart/uart_tx.v \
@@ -259,6 +256,8 @@ RTL_FILES := \
 	ks10/dz11/dzscan.v \
 	ks10/dz11/dzuart.v \
 	ks10/dz11/dz11.v \
+	ks10/mem/mem.v \
+	ks10/mem/memstat.v \
 	ks10/rh11/rh11.v \
 	ks10/rh11/rhintr.v \
 	ks10/rh11/rhnem.v \
@@ -291,7 +290,6 @@ RTL_FILES := \
 	ks10/uba/ubapage.v \
 	ks10/uba/ubatmo.v \
 	ks10/uba/ubaintr.v \
-	ks10/brkpt/brkpt.v \
 	ks10/utils/fifo.v \
 	ks10/utils/sync.v \
 	ks10/utils/clkfwd.v \
@@ -389,16 +387,6 @@ INC_FILES := \
 	ks10/cpu/alu.vh \
 	ks10/cpu/apr.vh \
 	ks10/cpu/bus.vh \
-	ks10/cpu/debug_dskah.vh \
-	ks10/cpu/debug_dskba.vh \
-	ks10/cpu/debug_dskcg.vh \
-	ks10/cpu/debug_dskea.vh \
-	ks10/cpu/debug_dskeb.vh \
-	ks10/cpu/debug_dskec.vh \
-	ks10/cpu/debug_dsuba.vh \
-	ks10/cpu/debug_dsdza.vh \
-	ks10/cpu/debug_smmon.vh \
-	ks10/cpu/debug_default.vh \
 	ks10/cpu/pager.vh \
 	ks10/cpu/pcflags.vh \
 	ks10/cpu/pxct.vh \
@@ -406,7 +394,17 @@ INC_FILES := \
 	ks10/cpu/vma.vh \
 	ks10/cpu/useq/crom.vh  \
 	ks10/cpu/useq/drom.vh  \
-	ks10/mem/memstat.vh \
+	ks10/debug/debug.vh \
+	ks10/debug/debug_dskah.vh \
+	ks10/debug/debug_dskba.vh \
+	ks10/debug/debug_dskcg.vh \
+	ks10/debug/debug_dskea.vh \
+	ks10/debug/debug_dskeb.vh \
+	ks10/debug/debug_dskec.vh \
+	ks10/debug/debug_dsuba.vh \
+	ks10/debug/debug_dsdza.vh \
+	ks10/debug/debug_smmon.vh \
+	ks10/debug/debug_default.vh \
 	ks10/dz11/dz11.vh \
 	ks10/dz11/dzcsr.vh \
 	ks10/dz11/dzlpr.vh \
@@ -414,6 +412,7 @@ INC_FILES := \
 	ks10/dz11/dztcr.vh \
 	ks10/dz11/dztdr.vh \
 	ks10/dz11/dzuart.vh \
+	ks10/mem/memstat.vh \
 	ks10/rh11/rhba.vh \
 	ks10/rh11/rhdb.vh \
 	ks10/rh11/rhwc.vh \
@@ -1069,13 +1068,14 @@ testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SI
 	-I ks10 \
 	-I ks10/cpu \
 	-I ks10/cpu/useq \
-	-I ks10/mem \
-	-I ks10/uba \
+	-I ks10/debug \
 	-I ks10/dz11 \
 	-I ks10/dz11/uart \
+	-I ks10/mem \
 	-I ks10/rh11 \
 	-I ks10/rh11/rpxx \
-	-I ks10/rh11/sd
+	-I ks10/rh11/sd \
+	-I ks10/uba
 
 testsuite/$(DIAG).txt : testsuite/$(DIAG).vvp
 	$(VVP) -n $< > testsuite/$(DIAG).txt
@@ -1194,17 +1194,18 @@ rcsclean_rtl: clean_rtl
 	-rcsclean ks10/*
 	-rcsclean ks10/arb/*
 	-rcsclean ks10/clk/*
-	-rcsclean ks10/csl/*
 	-rcsclean ks10/cpu/*
 	-rcsclean ks10/cpu/useq/*
-	-rcsclean ks10/mem/*
-	-rcsclean ks10/uba/*
-	-rcsclean ks10/utils/*
+	-rcsclean ks10/csl/*
+	-rcsclean ks10/debug/*
 	-rcsclean ks10/dz11/*
 	-rcsclean ks10/dz11/uart/*
+	-rcsclean ks10/mem/*
 	-rcsclean ks10/rh11/*
 	-rcsclean ks10/rh11/sd/*
 	-rcsclean ks10/rh11/rpxx/*
+	-rcsclean ks10/uba/*
+	-rcsclean ks10/utils/*
 	-rcsclean ks10/xilinx/*
 	-rcsclean ks10/xilinx/chipscope_cpu_ila/*
 	-rcsclean ks10/xilinx/chipscope_cpu_iocon/*
