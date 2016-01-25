@@ -6,7 +6,7 @@
 //   UBA Non-existent Device State Machine
 //
 // Details
-//   This module implements the
+//   This module implements the NXD detection timeout timer state machine.
 //
 // File
 //   ubanxd.v
@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2015 Rob Doyle
+// Copyright (C) 2012-2016 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
