@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2015 Rob Doyle
+// Copyright (C) 2012-2016 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -644,7 +644,7 @@ module testbench;
         //
         
         conWRITE64(addrBRKPT, 64'h4000c00300000000);
-        conWRITE64(addrTRACE, 64'h0000000000000000);
+        conWRITE64(addrTRACE, 64'ha000000000000000);
         
         //
         // Write to Control/Status Register
