@@ -97,10 +97,6 @@
 `include "regir.vh"
 `include "useq/crom.vh"
 
-`ifndef RAMFILE_DAT
-`define RAMFILE_DAT "ramfile.dat"
-`endif
-
 module RAMFILE (
       input  wire          clk,                 // Clock
       input  wire          rst,                 // Reset
@@ -273,11 +269,21 @@ module RAMFILE (
 
    reg [0:35] ram [0:1023];
    reg [0: 9] rd_addr;
-
+   
+`ifndef SYNTHESIS
+   integer i;
+   
    initial
      begin
-        $readmemh(`RAMFILE_DAT, ram);
+        for (i = 0; i < 1024; i = i + 1)
+          begin
+             if (i == 15)
+               ram[i] = 777577_030303;      // (Initialize stack pointer)
+             else
+               ram[i] = 0;
+          end
      end
+`endif
 
    always @(negedge clk)
      begin
