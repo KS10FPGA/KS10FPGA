@@ -134,9 +134,11 @@ module testbench;
    localparam [ 7: 0] addrREGDZCCR  = 8'h20;
    localparam [ 7: 0] addrREGRHCCR  = 8'h28;
    localparam [ 7: 0] addrRH11DEB   = 8'h30;
-   localparam [ 7: 0] addrBRKPT     = 8'h38;
-   localparam [ 7: 0] addrTRACE     = 8'h40;
-   localparam [ 7: 0] addrVersion   = 8'h48;
+   localparam [ 7: 0] addrDCSR      = 8'h38;
+   localparam [ 7: 0] addrDBAR      = 8'h40;
+   localparam [ 7: 0] addrDBMR      = 8'h48;
+   localparam [ 7: 0] addrDITR      = 8'h50;
+   localparam [ 7: 0] addrVersion   = 8'h78;
 
    //
    // KS10 Addresses
@@ -633,18 +635,26 @@ module testbench;
         conWRITE(addrREGCIR, valREGCIR);
 
         //
-        // Initialize the DZ11 Console Control Register and RH11 Console Control Register
+        // Initialize the DZ11 Console Control Register and RH11 Console
+        // Control Register
         //
 
         conWRITE64(addrREGDZCCR, 64'h000000000000ff00);
         conWRITE64(addrREGRHCCR, 64'h00000000000707f8);
 
         //
-        // Initialize the Breakpoint and Trace registers
+        // Initialize the Debug Registers
         //
-        
-        conWRITE64(addrBRKPT, 64'h4000c00300000000);
-        conWRITE64(addrTRACE, 64'ha000000000000000);
+
+`ifdef BRKPT
+        conWRITE(addrDCSR, 36'o000000_040000);
+        conWRITE(addrDBAR, 36'o140000_034776);
+        conWRITE(addrDBMR, 36'o140003_777777);
+`else
+        conWRITE(addrDCSR, 36'o000000_000000);
+        conWRITE(addrDBAR, 36'o000000_000000);
+        conWRITE(addrDBMR, 36'o000000_000000);
+`endif
         
         //
         // Write to Control/Status Register
@@ -665,9 +675,9 @@ module testbench;
         // Handle Startup.
         //
         // Details
-        //  The Microcode will always halt at startup.  Catch the halt at startup
-        //  (only).  When this occurs momentarily push the RUN, EXEC, and CONT button
-        //  to continue execution.
+        //  The Microcode will always halt at startup.  Catch the halt at
+        //  startup (only).  When this occurs momentarily push the RUN, EXEC,
+        //  and CONT button to continue execution.
         //
 
         @(posedge haltLED)

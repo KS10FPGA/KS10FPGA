@@ -452,13 +452,9 @@ CROM_DAT := \
 DROM_DAT := \
 	ks10/cpu/useq/drom.dat
 
-RAMFILE_DAT := \
-	ks10/cpu/ramfile.dat
-
 DAT_FILES := \
 	$(CROM_DAT) \
-	$(DROM_DAT) \
-	$(RAMFILE_DAT)
+	$(DROM_DAT)
 
 #
 # Documentation files
@@ -517,13 +513,6 @@ ks10/cpu/useq/crom.dat: ks10/cpu/useq/ks10.mcr ks10/cpu/useq/crom.awk
 
 ks10/cpu/useq/drom.dat: ks10/cpu/useq/ks10.mcr ks10/cpu/useq/drom.awk
 	awk -f ks10/cpu/useq/drom.awk ks10/cpu/useq/ks10.mcr > ks10/cpu/useq/drom.dat
-
-#
-# Create the "RAMFILE" initialization
-#
-
-ks10/cpu/ramfile.dat: ks10/cpu/ramfile.awk
-	awk -f ks10/cpu/ramfile .awk > ks10/cpu/ramfile.dat
 
 #
 # Initialize the SSRAM with MAINDEC (simulation only)
@@ -599,7 +588,6 @@ FUSE_ARGS := \
 	$(subst -D,-d,$(SIM_ARGS) $(SYN_ARGS)) \
 	-d XILINX \
 	-d SSRAM_DAT=\"\"../../$(TESTBENCH)/$(DIAG).dat\"\" \
-	-d RAMFILE_DAT=\"\"../../$(RAMFILE_DAT)\"\" \
 	-d CROM_DAT=\"\"../../$(CROM_DAT)\"\" \
 	-d DROM_DAT=\"\"../../$(DROM_DAT)\"\" \
 	-d SDSIM_DSK=\"\"../../$(SIM_DISK)\"\" \
@@ -1025,6 +1013,16 @@ $(ISE)/$(PROJECT).mcs: $(ISE)/$(PROJECT).bit makefile
 #   With
 #	'setcable -p auto' \
 #
+#   Also.  Some boards have different serial flash memories that store
+#   the firmware.  If you get the error message "The idcode read from
+#   the device does not match the idcode in the bsdl File"
+#
+#   Replace
+#
+#	'attachflash -position 1 -spi S25FL032P' \
+#   With
+#	'attachflash -position 1 -spi S25FL064P' \
+#
 
 IMPACT_CMDS := \
 	'setmode -bscan' \
@@ -1061,7 +1059,6 @@ testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SI
 	$(SIM_ARGS) \
 	$(SYN_ARGS) \
 	-D SSRAM_DAT=\"$(SSRAM_DAT)\" \
-	-D RAMFILE_DAT=\"$(RAMFILE_DAT)\" \
 	-D CROM_DAT=\"$(CROM_DAT)\" \
 	-D DROM_DAT=\"$(DROM_DAT)\" \
 	-D SDSIM_DSK=\"$(SIM_DISK)\" \
@@ -1091,7 +1088,6 @@ clean: clean_rtl clean_ise
 #
 
 clean_rtl:
-	rm -f ks10/cpu/ramfile.dat
 	rm -f ks10/cpu/useq/crom.dat
 	rm -f ks10/cpu/useq/drom.dat
 	rm -f $(TESTBENCH)/*.dat
