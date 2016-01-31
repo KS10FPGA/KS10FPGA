@@ -457,7 +457,8 @@ void ks10_t::writeDBMR(uint64_t data) {
 }
 
 //
-//! This function reads a 36-bit value from the Debug Instrcution Trace Register
+//! This function reads a 36-bit value from the Debug Instrcution Trace Register.
+//! The trace buffer automatically increments when the trace buffer is read.
 //
 //  FIXME:
 //   For some reason, a 64-bit load advances the Trace Buffer FIFO twice.  This
@@ -478,8 +479,8 @@ uint64_t ks10_t::readDITR(void) {
 
 #else
 
-uint64_t ks10_t::readTraceData(void) {
-    return *regTRACE;
+uint64_t ks10_t::readDITR(void) {
+    return *regDITR;
 }
 
 #endif
