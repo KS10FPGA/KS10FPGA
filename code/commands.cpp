@@ -69,6 +69,13 @@
 static ks10_t::addr_t address;
 
 //
+// RH11 Parameters
+//
+
+static unsigned int rhbase = 01776700;          // !< RH11 base address
+static unsigned int rhunit = 0;                 // !< RH11 Unit number
+
+//
 // Memory or IO address
 //
 
@@ -418,19 +425,20 @@ static void cmdBR(int argc, char *argv[]) {
         "       BR ON  - re-enable breakpoint\n"
         "Control the hardware breakpoint facility.\n";
 
-    ks10_t::data_t flags;
     ks10_t::data_t addr;
 
     switch (argc) {
         case 1:
-            printf("Breakpoint register is 0x%016llx\n", ks10_t::readBRKPT());
+            printf("Debug Control/Status Register     : %012llo\n", ks10_t::readDCSR());
+            printf("Debug Breakpoint Address Register : %012llo\n", ks10_t::readDBAR());
+            printf("Debug Breakpoint Mask Register    : %012llo\n", ks10_t::readDBMR());
             printf(usage);
             break;
         case 2:
             if (strnicmp(argv[1], "off", 3) == 0) {
-                ks10_t::writeBRKPT(ks10_t::readBRKPT() & ~ks10_t::bkptENABLE);
+                ks10_t::writeDCSR(ks10_t::readDCSR() & ~ks10_t::dcsrBREN_RES);
             } else if (strnicmp(argv[1], "on", 2) == 0) {
-                ks10_t::writeBRKPT(ks10_t::readBRKPT() |  ks10_t::bkptENABLE);
+                ks10_t::writeDCSR(ks10_t::readDCSR() | ks10_t::dcsrBREN_MAT);
             } else {
                 printf(usage);
                 return;
@@ -439,20 +447,29 @@ static void cmdBR(int argc, char *argv[]) {
         case 3:
             addr = parseOctal(argv[2]);
             if (strnicmp(argv[1], "fetch", 5) == 0) {
-                flags = ks10_t::bkptFETCH;
+                ks10_t::writeDCSR(ks10_t::dcsrBREN_MAT);
+                ks10_t::writeDBAR(ks10_t::dbarFETCH | addr);
+                ks10_t::writeDBMR(ks10_t::dbmrFETCH | ks10_t::dbmrMEM);
             } else if (strnicmp(argv[1], "memrd", 5) == 0) {
-                flags = ks10_t::bkptMEMRD;
+                ks10_t::writeDCSR(ks10_t::dcsrBREN_MAT);
+                ks10_t::writeDBAR(ks10_t::dbarMEMRD | addr);
+                ks10_t::writeDBMR(ks10_t::dbmrMEMRD | ks10_t::dbmrMEM);
             } else if (strnicmp(argv[1], "memwr", 5) == 0) {
-                flags = ks10_t::bkptMEMWR;
+                ks10_t::writeDCSR(ks10_t::dcsrBREN_MAT);
+                ks10_t::writeDBAR(ks10_t::dbarMEMWR | addr);
+                ks10_t::writeDBMR(ks10_t::dbmrMEMWR | ks10_t::dbmrMEM);
             } else if (strnicmp(argv[1], "iord", 4) == 0) {
-                flags = ks10_t::bkptIORD;
+                ks10_t::writeDCSR(ks10_t::dcsrBREN_MAT);
+                ks10_t::writeDBAR(ks10_t::dbarIORD | addr);
+                ks10_t::writeDBMR(ks10_t::dbmrIORD | ks10_t::dbmrIO);
             } else if (strnicmp(argv[1], "iowr", 4) == 0) {
-                flags = ks10_t::bkptIOWR;
-            } else {
+                ks10_t::writeDCSR(ks10_t::dcsrBREN_MAT);
+                ks10_t::writeDBAR(ks10_t::dbarIOWR | addr);
+                ks10_t::writeDBMR(ks10_t::dbmrIOWR | ks10_t::dbmrIO);
+             } else {
                 printf(usage);
                 return;
             }
-            ks10_t::writeBRKPT(flags | addr);
             break;
         default:
             printf(usage);
@@ -481,6 +498,14 @@ static void cmdBT(int argc, char *argv[]) {
     const char *usage =
         "Usage: BT [filename]\n"
         "Load boot software into the KS10 processor.\n";
+
+
+    //
+    // Set RH11 Boot Parameters
+    //
+
+    ks10_t::writeMem(ks10_t::rhbase_addr, rhbase);
+    ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
 
     switch (argc) {
         case 1:
@@ -671,51 +696,21 @@ static void cmdDN(int argc, char *argv[]) {
 
 static void cmdDS(int argc, char *argv[]) {
    const char *usage =
-       "Usage: DS {UBA RHBASE RHUNIT}\n"
-       "       DS UBA RHBASE RHUNIT - Set boot parameters\n"
-       "       DS - Display boot parameters\n"
-       "       Default is DS 1 776700 0\n"
-       "       Valid UBA is 1-4\n"
-       "       Valid RHBASE is 776700\n"
-       "       Valid RHUNIT is 0-7\n";
+       "Usage:\n"
+       "  Set boot parameters:\n"
+       "    DS {UBA=n} {RHBASE=nnnnnn} {RHUNIT=n}\n"
+       "      Valid UBA is 1-4\n"
+       "      Valid RHBASE is 776700\n"
+       "      Valid RHUNIT is 0-7\n"
+       "      Default is DS UBA=1 RHBASE=776700 UNIT=0\n"
+       "  Display boot parameters:\n"
+       "    DS\n";
 
-   if (argc == 4) {
-       bool success = true;
-       unsigned int uba    = parseOctal(argv[1]);
-       unsigned int rhbase = parseOctal(argv[2]);
-       unsigned int rhunit = parseOctal(argv[3]);
-       if (uba > 4) {
-           success = false;
-           printf("Invalid UBA Parameter\n");
-       }
-       if ((rhbase != 0776700) && (rhbase != 0)) {
-           success = false;
-           printf("Invalid RHBASE Parameter\n");
-       }
-       if (rhunit > 7) {
-           success = false;
-           printf("Invalid RHUNIT Parameter\n%s");
-       }
-       if (success) {
-           uba = uba << 18;
-           ks10_t::data_t temp = ks10_t::readMem(ks10_t::rhbase_addr);
-           if (uba == 0) {
-               uba = temp & 03000000;
-           }
-           if (rhbase == 0) {
-               rhbase = temp & 0777777;
-           }
-           ks10_t::writeMem(ks10_t::rhbase_addr, uba | rhbase);
-           ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
-       } else {
-           printf(usage);
-       }
-   } else if (argc == 1) {
-       ks10_t::data_t rhbase = ks10_t::readMem(ks10_t::rhbase_addr);
-       ks10_t::data_t rhunit = ks10_t::readMem(ks10_t::rhunit_addr);
-       printf("UBA = %o\n"
-              "RHBASE = %06o\n"
-              "RHUNIT = %o\n"
+   if (argc == 1 || argc > 4) {
+       printf("Boot Parameters are:\n"
+              "  UBA = %o\n"
+              "  RHBASE = %06o\n"
+              "  RHUNIT = %o\n"
               "\n"
               "%s",
               static_cast<unsigned int>((rhbase >> 18) & 0000007),
@@ -723,7 +718,40 @@ static void cmdDS(int argc, char *argv[]) {
               static_cast<unsigned int>((rhunit >>  0) & 0000007),
               usage);
    } else {
-       printf(usage);
+       for (int i = 1; i < argc; i++) {
+           if (strnicmp(argv[i], "UBA=", 4) == 0) {
+               unsigned int temp = parseOctal(&argv[i][4]);
+               if (temp > 4) {
+                   printf("Parameter out of range: \"%s\".\n", argv[i]);
+                   printf(usage);
+               } else {
+                   if (temp == 0) {
+                       temp = 1;
+                   }
+                   rhbase = (rhbase & 0777777) | (temp << 18);
+               }
+           } else if (strnicmp(argv[i], "RHBASE=", 7) == 0) {
+               unsigned int temp = parseOctal(&argv[i][7]);
+               if (temp != 0776700) {
+                   printf("Parameter must be 776700: \"%s\".\n", argv[i]);
+                   printf(usage);
+               } else {
+                   rhbase = (rhbase & 07000000) | (temp & 0777777);
+               }
+           } else if (strnicmp(argv[i], "RHUNIT=", 7) == 0) {
+               unsigned int temp = parseOctal(&argv[i][7]);
+               if (temp > 7) {
+                   printf("Parameter out of range: \"%s\".\n", argv[i]);
+                   printf(usage);
+               } else {
+                   rhunit = temp;
+               }
+           } else {
+               printf("Unrecognized parameter: \"%s\".\n", argv[i]);
+               printf(usage);
+               break;
+           }
+       }
    }
 }
 
@@ -907,6 +935,13 @@ static void cmdGO(int argc, char *argv[]) {
     if (argc == 1) {
 
         //
+        // Set RH11 Boot Parameters
+        //
+
+        ks10_t::writeMem(ks10_t::rhbase_addr, rhbase);
+        ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
+
+        //
         // Load the diagnostic monitor into memory
         //
 
@@ -917,6 +952,13 @@ static void cmdGO(int argc, char *argv[]) {
         }
 
     } else if (argc == 3) {
+
+        //
+        // Set RH11 Boot Parameters
+        //
+
+        ks10_t::writeMem(ks10_t::rhbase_addr, rhbase);
+        ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
 
         //
         // Load the diagnostic monitor into memory
@@ -1219,8 +1261,12 @@ static void cmdRH(int argc, char *argv[]) {
         " RH WRITE - Test RH11 Disk Write\n"
         " RH WRCHK - Test RH11 Disk Write Check\n";
 
-    ks10_t::addr_t rhbase = ks10_t::readMem(ks10_t::rhbase_addr);
-    ks10_t::data_t rhunit = ks10_t::readMem(ks10_t::rhunit_addr);
+    //
+    // Set RH11 Boot Parameters
+    //
+
+    ks10_t::writeMem(ks10_t::rhbase_addr, rhbase);
+    ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
 
     rh11_t rh11(rhbase);
 
@@ -1436,7 +1482,6 @@ static void cmdTP(int argc, char *argv[]) {
         "TP 0 : disable traps\n"
         "TP 1 : enable traps\n";
 
-
     if (argc == 1) {
         printf("The traps are currently %s.\n",
                ks10_t::trapEnable() ? "enabled" : "disabled");
@@ -1454,6 +1499,55 @@ static void cmdTP(int argc, char *argv[]) {
         printf(usage);
     }
 }
+
+#ifdef CUSTOM_CMD
+static void cmdTR(int argc, char *argv[]) {
+    const char *usage =
+        "Usage: TR {ON RESET TRIG DUMP}\n"
+        "Control the hardware trace facility.\n";
+
+    switch (argc) {
+        case 1:
+            printf("Debug Control/Status Register     : %012llo\n", ks10_t::readDCSR());
+            printf("Debug Instruction Trace Register  : %018llo\n", ks10_t::readDITR());
+            printf(usage);
+            break;
+        case 2:
+            if (strnicmp(argv[1], "on", 2) == 0) {
+               ks10_t::writeDCSR(ks10_t::readDCSR() | ks10_t::dcsrTREN_EN);
+            } else if (strnicmp(argv[1], "off", 3) == 0) {
+               ks10_t::writeDCSR(ks10_t::readDCSR() & ~ks10_t::dcsrTREN_RES);
+            } else if (strnicmp(argv[1], "reset", 5) == 0) {
+                ks10_t::writeDCSR(ks10_t::dcsrRESET);
+                printf("reset\n");
+            } else if (strnicmp(argv[1], "trig", 4) == 0) {
+               ks10_t::writeDCSR(ks10_t::readDCSR() | ks10_t::dcsrTREN_MAT);
+            } else if (strnicmp(argv[1], "dump", 4) == 0) {
+                printf("Trace Dump:\n");
+#if 0
+                for (int i = 0; i < 64; i++) {
+                    uint64_t data = ks10_t::readDITR();
+                    printf(" %4d: %06llo %012llo\n", i, ((data >> 36) & 0777777), (data & 0777777777777));
+                }
+#else
+                int i = 0;
+                while ((ks10_t::readDCSR() & ks10_t::dcsrEMPTY) != ks10_t::dcsrEMPTY) {
+                    uint64_t data = ks10_t::readDITR();
+                    printf(" %4d: %06llo %012llo\n", i++, ((data >> 36) & 0777777), (data & 0777777777777));
+                }
+#endif
+                printf("Trace Finished\n");
+            } else {
+                printf(usage);
+            }
+            break;
+        default:
+            printf(usage);
+            break;
+    }
+}
+
+#endif
 
 //
 //! Memory Write
@@ -1692,6 +1786,9 @@ static void parseCommand(char * buf) {
         {"ST", cmdST},
         {"TE", cmdTE},
         {"TP", cmdTP},
+#ifdef CUSTOM_CMD
+        {"TR", cmdTR},          // Trace
+#endif
         {"TT", cmdXX},          // Not implemented.
         {"UM", cmdXX},          // Not implemented.
         {"VD", cmdXX},          // Not implemented.

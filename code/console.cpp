@@ -334,16 +334,22 @@ void taskConsole(void * /*param*/) {
     ks10_t::writeRHCCR(0x00000000070707f8ULL);
 
     //
-    // Configure Breakpoint Register
+    // Configure Debug Breakpoint Address Register
     //
 
-    ks10_t::writeBRKPT(0x0000000000000000ULL);
+    ks10_t::writeDBAR(0x0000000000000000ULL);
 
     //
-    // Configure the Trace Register
+    // Configure Debug Breakpoint Address Register
     //
 
-    ks10_t::writeTRACE(0x0000000000000000ULL);
+    ks10_t::writeDBAR(0x0000000000000000ULL);
+
+    //
+    // Configure Debug Breakpoint Mask Register
+    //
+
+    ks10_t::writeDBMR(0x0000000000000000ULL);
 
     //
     // Process commands

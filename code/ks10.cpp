@@ -157,7 +157,7 @@ void ks10_t::go(void) {
 //
 
 ks10_t::data_t ks10_t::readRegStat(void) {
-    return readReg(regStat);
+    return readReg64(regStat);
 }
 
 //
@@ -168,7 +168,7 @@ ks10_t::data_t ks10_t::readRegStat(void) {
 //
 
 void ks10_t::writeRegStat(data_t data) {
-    writeReg(regStat, data);
+    writeReg64(regStat, data);
 }
 
 //
@@ -179,7 +179,7 @@ void ks10_t::writeRegStat(data_t data) {
 //
 
 ks10_t::data_t ks10_t::readRegAddr(void) {
-    return readReg(regAddr);
+    return readReg64(regAddr);
 }
 
 //
@@ -190,7 +190,7 @@ ks10_t::data_t ks10_t::readRegAddr(void) {
 //
 
 void ks10_t::writeRegAddr(data_t data) {
-    writeReg(regAddr, data);
+    writeReg64(regAddr, data);
 }
 
 //
@@ -201,7 +201,7 @@ void ks10_t::writeRegAddr(data_t data) {
 //
 
 ks10_t::data_t ks10_t::readRegData(void) {
-    return readReg(regData);
+    return readReg64(regData);
 }
 
 //
@@ -212,7 +212,7 @@ ks10_t::data_t ks10_t::readRegData(void) {
 //
 
 void ks10_t::writeRegData(data_t data) {
-    writeReg(regData, data);
+    writeReg64(regData, data);
 }
 
 //
@@ -223,7 +223,7 @@ void ks10_t::writeRegData(data_t data) {
 //
 
 ks10_t::data_t ks10_t::readRegCIR(void) {
-    return readReg(regCIR);
+    return readReg64(regCIR);
 }
 
 //
@@ -235,7 +235,7 @@ ks10_t::data_t ks10_t::readRegCIR(void) {
 //
 
 void ks10_t::writeRegCIR(data_t data) {
-    writeReg(regCIR, data);
+    writeReg64(regCIR, data);
 }
 
 //
@@ -256,9 +256,9 @@ void ks10_t::writeRegCIR(data_t data) {
 //
 
 ks10_t::data_t ks10_t::readMem(addr_t addr) {
-    writeReg(regAddr, (addr & memAddrMask) | flagRead | flagPhys);
+    writeRegAddr((addr & memAddrMask) | flagRead | flagPhys);
     go();
-    return dataMask & readReg(regData);
+    return dataMask & readRegData();
 }
 
 //
@@ -279,8 +279,8 @@ ks10_t::data_t ks10_t::readMem(addr_t addr) {
 //
 
 void ks10_t::writeMem(addr_t addr, data_t data) {
-    writeReg(regAddr, (addr & memAddrMask) | flagWrite | flagPhys);
-    writeReg(regData, data);
+    writeRegAddr((addr & memAddrMask) | flagWrite | flagPhys);
+    writeRegData(data);
     go();
 }
 
@@ -298,9 +298,9 @@ void ks10_t::writeMem(addr_t addr, data_t data) {
 //
 
 ks10_t::data_t ks10_t::readIO(addr_t addr) {
-    writeReg(regAddr, (addr & ioAddrMask) | flagRead | flagPhys | flagIO);
+    writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO);
     go();
-    return dataMask & readReg(regData);
+    return dataMask & readRegData();
 }
 
 //
@@ -320,8 +320,8 @@ ks10_t::data_t ks10_t::readIO(addr_t addr) {
 //
 
 void ks10_t::writeIO(addr_t addr, data_t data) {
-    writeReg(regAddr, (addr & ioAddrMask) | flagWrite | flagPhys | flagIO);
-    writeReg(regData, data);
+    writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO);
+    writeRegData(data);
     go();
 }
 
@@ -340,9 +340,9 @@ void ks10_t::writeIO(addr_t addr, data_t data) {
 //
 
 uint16_t ks10_t::readIObyte(addr_t addr) {
-    writeReg(regAddr, (addr & ioAddrMask) | flagRead | flagPhys | flagIO | flagByte);
+    writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO | flagByte);
     go();
-    return 0xffff & readReg(regData);
+    return 0xffff & readRegData();
 }
 
 //
@@ -356,8 +356,8 @@ uint16_t ks10_t::readIObyte(addr_t addr) {
 //
 
 void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
-    writeReg(regAddr, (addr & ioAddrMask) | flagWrite | flagPhys | flagIO | flagByte);
-    writeReg(regData, data);
+    writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO | flagByte);
+    writeRegData(data);
     go();
 }
 
@@ -400,42 +400,89 @@ void ks10_t::writeRHCCR(uint64_t data) {
 }
 
 //
-//! This function reads a 64-bit value from the breakpoint register
+//! This function reads a 36-bit value from the Debug Control/Status Register
 //
 
-uint64_t ks10_t::readBRKPT(void) {
-    return *regBRKPT;
+uint64_t ks10_t::readDCSR(void) {
+    return readReg64(regDCSR);
 }
 
 //
-//! This function writes a 64-bit value to the breakpoint register
+//! This function writes a 36-bit value to the Debug Control/Status Register
 //!
 //! \param
-//!     data is the data to be written to the breakpoint register
+//!     data is the data to be written to the Debug Control/Status Register
 //
 
-void ks10_t::writeBRKPT(uint64_t data) {
-    *regBRKPT = data;
+void ks10_t::writeDCSR(uint64_t data) {
+    writeReg64(regDCSR, data);
 }
 
 //
-//! This function reads a 64-bit value from the trace register
+//! This function reads a 36-bit value from the Breakpoint Address Register
 //
 
-uint64_t ks10_t::readTRACE(void) {
+uint64_t ks10_t::readDBAR(void) {
+    return readReg64(regDBAR);
+}
+
+//
+//! This function writes a 36-bit value to the Breakpoint Address Register
+//!
+//! \param
+//!     data is the data to be written to the Breakpoint Address Register
+//
+
+void ks10_t::writeDBAR(uint64_t data) {
+    writeReg64(regDBAR, data);
+}
+
+//
+//! This function reads a 36-bit value from the Breakpoint Mask Register
+//
+
+uint64_t ks10_t::readDBMR(void) {
+    return readReg64(regDBMR);
+}
+
+//
+//! This function writes a 36-bit value to the Breakpoint Mask Register
+//!
+//! \param
+//!     data is the data to be written to the Breakpoint Mask Register
+//
+
+void ks10_t::writeDBMR(uint64_t data) {
+    writeReg64(regDBMR, data);
+}
+
+//
+//! This function reads a 36-bit value from the Debug Instrcution Trace Register
+//
+//  FIXME:
+//   For some reason, a 64-bit load advances the Trace Buffer FIFO twice.  This
+//   code explicity peforms four 16-bit loads across the 16-bit EPI bus.
+//
+
+#if 1
+
+uint64_t ks10_t::readDITR(void) {
+
+    static constexpr volatile uint16_t * temp = reinterpret_cast<volatile uint16_t *>(regDITR);
+    return ((static_cast<uint64_t>(temp[0]) <<  0) |
+            (static_cast<uint64_t>(temp[1]) << 16) |
+            (static_cast<uint64_t>(temp[2]) << 32) |
+            (static_cast<uint64_t>(temp[3]) << 48));
+
+}
+
+#else
+
+uint64_t ks10_t::readTraceData(void) {
     return *regTRACE;
 }
 
-//
-//! This function writes a 64-bit value to the trace register
-//!
-//! \param
-//!     data is the data to be written to the trace register
-//
-
-void ks10_t::writeTRACE(uint64_t data) {
-    *regTRACE = data;
-}
+#endif
 
 //
 //! This function controls the <b>RUN</b> mode of the KS10.
@@ -446,11 +493,11 @@ void ks10_t::writeTRACE(uint64_t data) {
 //
 
 void ks10_t::run(bool enable) {
-    data_t status = readReg(regStat);
+    data_t status = readRegStat();
     if (enable) {
-        writeReg(regStat, status | statRUN);
+        writeRegStat(status | statRUN);
     } else {
-        writeReg(regStat, status & ~statRUN);
+        writeRegStat(status & ~statRUN);
     }
 }
 
@@ -466,7 +513,7 @@ void ks10_t::run(bool enable) {
 //
 
 bool ks10_t::run(void) {
-    return readReg(regStat) & statRUN;
+    return readRegStat() & statRUN;
 }
 
 //
@@ -481,7 +528,7 @@ bool ks10_t::run(void) {
 //
 
 bool ks10_t::cont(void) {
-    return readReg(regStat) & statCONT;
+    return readRegStat() & statCONT;
 }
 
 //
@@ -490,7 +537,7 @@ bool ks10_t::cont(void) {
 //
 
 void ks10_t::execute(void) {
-    writeReg(regStat, statCONT | statEXEC | readReg(regStat));
+    writeRegStat(statCONT | statEXEC | readRegStat());
 }
 
 //
@@ -498,7 +545,7 @@ void ks10_t::execute(void) {
 //
 
 void ks10_t::step(void) {
-    writeReg(regStat, statCONT | readReg(regStat));
+    writeRegStat(statCONT | readRegStat());
 }
 
 //
@@ -506,7 +553,7 @@ void ks10_t::step(void) {
 //
 
 void ks10_t::contin(void) {
-    writeReg(regStat, statRUN | statCONT | readReg(regStat));
+    writeRegStat(statRUN | statCONT | readRegStat());
 }
 
 //
@@ -514,8 +561,7 @@ void ks10_t::contin(void) {
 //
 
 void ks10_t::begin(void) {
-    data_t status = readReg(regStat);
-    writeReg(regStat, status | statRUN | statCONT | statEXEC);
+    writeRegStat(statRUN | statCONT | statEXEC | readRegStat());
 }
 
 //
@@ -529,7 +575,7 @@ void ks10_t::begin(void) {
 //
 
 bool ks10_t::exec(void) {
-    return readReg(regStat) & statEXEC;
+    return readRegStat() & statEXEC;
 }
 
 //
@@ -613,7 +659,7 @@ bool ks10_t::waitHalt(void) {
 //
 
 bool ks10_t::timerEnable(void) {
-    return readReg(regStat) & statTIMEREN;
+    return readRegStat() & statTIMEREN;
 }
 
 //
@@ -625,11 +671,11 @@ bool ks10_t::timerEnable(void) {
 //
 
 void ks10_t::timerEnable(bool enable) {
-    data_t status = readReg(regStat);
+    data_t status = readRegStat();
     if (enable) {
-        writeReg(regStat, status | statTIMEREN);
+        writeRegStat(status | statTIMEREN);
     } else {
-        writeReg(regStat, status & ~statTIMEREN);
+        writeRegStat(status & ~statTIMEREN);
     }
 }
 
@@ -642,7 +688,7 @@ void ks10_t::timerEnable(bool enable) {
 //
 
 bool ks10_t::trapEnable(void) {
-    return readReg(regStat) & statTRAPEN;
+    return readRegStat() & statTRAPEN;
 }
 
 //
@@ -656,11 +702,11 @@ bool ks10_t::trapEnable(void) {
 //
 
 void ks10_t::trapEnable(bool enable) {
-    data_t status = readReg(regStat);
+    data_t status = readRegStat();
     if (enable) {
-        writeReg(regStat, status | statTRAPEN);
+        writeRegStat(status | statTRAPEN);
     } else {
-        writeReg(regStat, status & ~statTRAPEN);
+        writeRegStat(status & ~statTRAPEN);
     }
 }
 
@@ -673,7 +719,7 @@ void ks10_t::trapEnable(bool enable) {
 //
 
 bool ks10_t::cacheEnable(void) {
-    return readReg(regStat) & statCACHEEN;
+    return readRegStat() & statCACHEEN;
 }
 
 //
@@ -687,11 +733,11 @@ bool ks10_t::cacheEnable(void) {
 //
 
 void ks10_t::cacheEnable(bool enable) {
-    data_t status = readReg(regStat);
+    data_t status = readRegStat();
     if (enable) {
-        writeReg(regStat, status | statCACHEEN);
+        writeRegStat(status | statCACHEEN);
     } else {
-        writeReg(regStat, status & ~statCACHEEN);
+        writeRegStat(status & ~statCACHEEN);
     }
 }
 
@@ -704,7 +750,7 @@ void ks10_t::cacheEnable(bool enable) {
 //
 
 bool ks10_t::cpuReset(void) {
-    return readReg(regStat) & statRESET;
+    return readRegStat() & statRESET;
 }
 
 //
@@ -720,11 +766,11 @@ bool ks10_t::cpuReset(void) {
 //
 
 void ks10_t::cpuReset(bool enable) {
-    data_t status = readReg(regStat);
+    data_t status = readRegStat();
     if (enable) {
-        writeReg(regStat, status | statRESET);
+        writeRegStat(status | statRESET);
     } else {
-        writeReg(regStat, status & ~statRESET);
+        writeRegStat(status & ~statRESET);
     }
 }
 
@@ -739,10 +785,10 @@ void ks10_t::cpuReset(bool enable) {
 //
 
 void ks10_t::cpuIntr(void) {
-    data_t status = readReg(regStat);
-    writeReg(regStat, status | statINTR);
+    data_t status = readRegStat();
+    writeRegStat(status | statINTR);
     ROM_SysCtlDelay(10);
-    writeReg(regStat, status);
+    writeRegStat(status);
 }
 
 //
@@ -754,8 +800,8 @@ void ks10_t::cpuIntr(void) {
 //
 
 bool ks10_t::nxmnxd(void) {
-    data_t reg = readReg(regStat);
-    writeReg(regStat, reg & ~statNXMNXD);
+    data_t reg = readRegStat();
+    writeRegStat(reg & ~statNXMNXD);
     return reg & statNXMNXD;
 }
 
@@ -880,7 +926,7 @@ bool ks10_t::testRegister(volatile void * addr, const char *name, bool verbose, 
     // Save register contents
     //
 
-    uint64_t save = readReg(addr);
+    uint64_t save = readReg64(addr);
 
     //
     // Perform tests
@@ -893,7 +939,7 @@ bool ks10_t::testRegister(volatile void * addr, const char *name, bool verbose, 
     // Restore register contents
     //
 
-    writeReg(addr, save);
+    writeReg64(addr, save);
     return success;
 }
 
@@ -914,8 +960,8 @@ bool ks10_t::testRegs(bool verbose) {
     success &= testRegister(regCIR,   "regCIR ",  verbose, 0xfffffffff);
     success &= testRegister(regDZCCR, "regDZCCR", verbose);
     success &= testRegister(regRHCCR, "regRHCCR", verbose);
-    success &= testRegister(regBRKPT, "regBRKPT", verbose);
-    success &= testRegister(regTRACE, "regTRACE", verbose);
+    success &= testRegister(regDBAR,  "regDBAR",  verbose, 0xfffffffff);
+    success &= testRegister(regDBMR,  "regDBMR",  verbose, 0xfffffffff);
     if (success) {
         printf("FPGA: Register test completed successfully.\n");
     }
@@ -961,7 +1007,7 @@ ks10_t::haltStatusBlock_t &ks10_t::getHaltStatusBlock(addr_t addr) {
 //
 //! Get Contents of RH11 Debug Register
 //!
-//! This function return the contents of the RH11 Debug Register
+//! This function return the contents of the RH11 Debug R3egister
 //!
 //! \returns
 //!     Contents of the RH11 Debug Register

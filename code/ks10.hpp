@@ -159,10 +159,13 @@ class ks10_t {
         static void writeDZCCR(uint64_t data);
         static uint64_t readRHCCR(void);
         static void writeRHCCR(uint64_t data);
-        static uint64_t readBRKPT(void);
-        static void writeBRKPT(uint64_t data);
-        static uint64_t readTRACE(void);
-        static void writeTRACE(uint64_t data);
+        static data_t readDCSR(void);
+        static void writeDCSR(data_t data);
+        static data_t readDBAR(void);
+        static void writeDBAR(data_t data);
+        static data_t readDBMR(void);
+        static void writeDBMR(data_t data);
+        static data_t readDITR(void);
         static bool run(void);
         static void run(bool);
         static bool cont(void);
@@ -205,26 +208,15 @@ class ks10_t {
         static const addr_t   ioAddrMask  = 017777777ULL;       //!< KS10 22-bit Address Mask
 
         //
-        // KS10 Breakpoint Masks
-        //
-
-        static const addr_t maskFetch = 0x0000800000000000ULL;  //!< Fetch mask
-        static const addr_t maskRead  = 0x0000400000000000ULL;  //!< Read masks
-        static const addr_t maskWrite = 0x0000100000000000ULL;  //!< Write masks
-        static const addr_t maskPhys  = 0x0000020000000000ULL;  //!< Phys
-        static const addr_t maskIO    = 0x0000008000000000ULL;  //!< IO mask
-        static const addr_t maskByte  = 0x0000001000000000ULL;  //!< BYTE IO mask
-
-        //
         // KS10 Read/Write Address Modes
         //
 
-        static const addr_t flagFetch = 0x0000000200000000ULL;  //!< Fetch flags
-        static const addr_t flagRead  = 0x0000000100000000ULL;  //!< Read flags
-        static const addr_t flagWrite = 0x0000000040000000ULL;  //!< Write flags
-        static const addr_t flagPhys  = 0x0000000008000000ULL;  //!< Phys
-        static const addr_t flagIO    = 0x0000000002000000ULL;  //!< IO flag
-        static const addr_t flagByte  = 0x0000000000400000ULL;  //!< BYTE IO flag
+        static const addr_t flagFetch = 0x200000000ULL;         //!< Fetch flags
+        static const addr_t flagRead  = 0x100000000ULL;         //!< Read flags
+        static const addr_t flagWrite = 0x040000000ULL;         //!< Write flags
+        static const addr_t flagPhys  = 0x008000000ULL;         //!< Phys
+        static const addr_t flagIO    = 0x002000000ULL;         //!< IO flag
+        static const addr_t flagByte  = 0x000400000ULL;         //!< BYTE IO flag
 
         //
         // KS10 FPGA Register Addresses
@@ -251,21 +243,27 @@ class ks10_t {
         //!< RH11 Debug Register
         static constexpr volatile rh11debug_t * regRH11Debug = reinterpret_cast<rh11debug_t *>(epiOffset + 0x30);
 
-        //!< Breakpoint Register
-        static constexpr volatile uint64_t * regBRKPT = reinterpret_cast<uint64_t *>(epiOffset + 0x38);
+        //!< Debug Control/Status Register
+        static constexpr volatile uint64_t * regDCSR = reinterpret_cast<uint64_t *>(epiOffset + 0x38);
 
-        //!< RH11 Debug Register
-        static constexpr volatile uint64_t * regTRACE = reinterpret_cast<uint64_t *>(epiOffset + 0x40);
+        //!< Debug Breakpoint Address Register
+        static constexpr volatile uint64_t * regDBAR = reinterpret_cast<uint64_t *>(epiOffset + 0x40);
+
+        //!< Debug Breakpoint Mask Register
+        static constexpr volatile uint64_t * regDBMR = reinterpret_cast<uint64_t *>(epiOffset + 0x48);
+
+        //!< Debug Instruction Trace Register
+        static constexpr volatile uint64_t * regDITR = reinterpret_cast<uint64_t *>(epiOffset + 0x50);
 
         //!< Firmware Version Register
-        static constexpr const char * regVers = reinterpret_cast<const char *>(epiOffset + 0x48);
+        static constexpr const char * regVers = reinterpret_cast<const char *>(epiOffset + 0x78);
 
         //
         // Low level interface functions
         //
 
-        static data_t readReg(volatile void * reg);
-        static void writeReg(volatile void * reg, data_t data);
+        static data_t readReg64(volatile void * reg);
+        static void writeReg64(volatile void * reg, data_t data);
         static void go(void);
         static bool testReg08(volatile void * addr, const char *name, bool verbose, uint64_t mask);
         static bool testReg64(volatile void * addr, const char *name, bool verbose, uint64_t mask);
@@ -290,15 +288,45 @@ class ks10_t {
     public:
 
         //
-        // Breakpoint constants
+        // Debug Control/Status Register Constants
         //
 
-        static const addr_t bkptENABLE = 0x8000000000000000ULL;
-        static const addr_t bkptFETCH  = (bkptENABLE | flagFetch | flagRead | maskFetch | maskRead);
-        static const addr_t bkptMEMRD  = (bkptENABLE | flagRead  |            maskRead  | maskIO);
-        static const addr_t bkptMEMWR  = (bkptENABLE | flagWrite |            maskWrite | maskIO);
-        static const addr_t bkptIORD   = (bkptENABLE | flagRead  | flagIO   | maskRead  | maskIO);
-        static const addr_t bkptIOWR   = (bkptENABLE | flagWrite | flagIO   | maskWrite | maskIO);
+        static const data_t dcsrBREN_RES = 0x00000c000ULL;
+        static const data_t dcsrBREN_TBF = 0x000008000ULL;
+        static const data_t dcsrBREN_MAT = 0x000004000ULL;
+        static const data_t dcsrBREN_DIS = 0x000000000ULL;
+        static const data_t dcsrTREN_RES = 0x0000000c0ULL;
+        static const data_t dcsrTREN_EN  = 0x000000080ULL;
+        static const data_t dcsrTREN_MAT = 0x000000040ULL;
+        static const data_t dcsrTREN_DIS = 0x000000000ULL;
+        static const data_t dcsrTRACQ    = 0x000000008ULL;
+        static const data_t dcsrFULL     = 0x000000004ULL;
+        static const data_t dcsrEMPTY    = 0x000000002ULL;
+        static const data_t dcsrRESET    = 0x000000001ULL;
+
+        //
+        // Debug Breakpoint Address Register Constants
+        //
+
+        static const data_t dbarFETCH  = (flagFetch | flagRead          );
+        static const data_t dbarMEMRD  = (            flagRead          );
+        static const data_t dbarMEMWR  = (            flagWrite         );
+        static const data_t dbarIORD   = (            flagRead  | flagIO);
+        static const data_t dbarIOWR   = (            flagWrite | flagIO);
+
+        //
+        // Debug Breakpoint Mask Register Constants
+        //
+
+        static const data_t dbmrMEM    = 003777777ULL;          // 1024K
+        static const data_t dbmrIO     = 017777777ULL;
+
+        static const data_t dbmrFETCH  = (flagFetch | flagRead          );
+        static const data_t dbmrMEMRD  = (            flagRead  | flagIO);
+        static const data_t dbmrMEMWR  = (            flagWrite | flagIO);
+        static const data_t dbmrIORD   = (            flagRead  | flagIO);
+        static const data_t dbmrIOWR   = (            flagWrite | flagIO);
+
 };
 
 //
@@ -341,7 +369,7 @@ inline uint32_t ks10_t::rh(data_t data) {
 //!     Register contents.
 //
 
-inline ks10_t::data_t ks10_t::readReg(volatile void * reg) {
+inline ks10_t::data_t ks10_t::readReg64(volatile void * reg) {
     return *reinterpret_cast<volatile data_t*>(reg);
 }
 
@@ -357,7 +385,7 @@ inline ks10_t::data_t ks10_t::readReg(volatile void * reg) {
 //!     data is the data to be written to the register.
 //
 
-inline void ks10_t::writeReg(volatile void * reg, data_t data) {
+inline void ks10_t::writeReg64(volatile void * reg, data_t data) {
     *reinterpret_cast<volatile data_t *>(reg) = data;
 }
 

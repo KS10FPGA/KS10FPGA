@@ -476,7 +476,7 @@ void rh11_t::testFIFO(void) {
                 if (rhdb != (0xff00 + i)) {
                     fail = true;
                     printf("Data from FIFO is incorrect on word %d.\n"
-                           "Expected 0x%04llx.  Received 0x%04llx.\n",
+                           "Expected 0x%04x.  Received 0x%04llx.\n",
                            i, 0xff00 + i, rhdb);
                 }
                 break;
@@ -484,7 +484,7 @@ void rh11_t::testFIFO(void) {
                 if (rhdb != 0) {
                     fail = true;
                     printf("Data from FIFO is incorrect on word %d.\n"
-                           "Expected 0x%04llx.  Received 0x%04llx.\n",
+                           "Expected 0x%04x.  Received 0x%04llx.\n",
                            i, 0, rhdb);
                 }
         }
