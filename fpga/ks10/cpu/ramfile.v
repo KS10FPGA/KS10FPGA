@@ -269,16 +269,16 @@ module RAMFILE (
 
    reg [0:35] ram [0:1023];
    reg [0: 9] rd_addr;
-   
+
 `ifndef SYNTHESIS
    integer i;
-   
+
    initial
      begin
         for (i = 0; i < 1024; i = i + 1)
           begin
              if (i == 15)
-               ram[i] = 36'o777577_030303;	// (Initialize stack pointer)
+               ram[i] = 36'o777577_030303;      // (Initialize stack pointer)
              else
                ram[i] = 0;
           end
