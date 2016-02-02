@@ -110,7 +110,7 @@ module DEBUG (
    wire         empty;
 
    FIFO #(
-      .SIZE       (64),
+      .SIZE       (16*1024),
       .WIDTH      (54)
    ) TRACE_BUFFER (
       .clk        (clk),
