@@ -1,0 +1,23 @@
+#
+# PDP8.ucf
+# For Nexys2 Card
+#
+#
+# Clock Interface
+#
+
+#NET "clk"                      	LOC = "B8";
+NET "clk"                       	TNM_NET = clk;
+NET "clk"                       	IOSTANDARD = LVCMOS33;
+TIMESPEC                        	TS_clk = PERIOD "clk" 20 ns HIGH 50%;
+
+NET "uTIMER/uCLKGEN/clk8p2"		TNM_NET = clk8p2;
+TIMESPEC 				TS_clk8p2 = PERIOD "clk8p2" 121.9512195121 ns HIGH 50%;
+
+
+#NET "rst"	                	IOSTANDARD = LVCMOS33;
+#NET "cons_msec_en"              	IOSTANDARD = LVCMOS33;
+#NET "cons_exec"                 	IOSTANDARD = LVCMOS33;
+#NET "cons_cont"                 	IOSTANDARD = LVCMOS33;
+#NET "consTRAPEN"                	IOSTANDARD = LVCMOS33;
+#NET "bus_ac_lo"               	 	IOSTANDARD = LVCMOS33;

@@ -1,0 +1,262 @@
+################################################################################
+##
+## KS-10 Processor
+##
+## Brief
+##   ESM KS10 User Constraint File
+##
+## Details
+##   The file defines the pinout and clock constrains of the KS10 FPGA.
+##
+## File
+##   esm_ks10.ucf
+##
+## Author
+##   Rob Doyle - doyle (at) cox (dot) net
+##
+################################################################################
+##
+## Copyright (C) 2012-2016 Rob Doyle
+##
+## This source file may be used and distributed without restriction provided
+## that this copyright statement is not removed from the file and that any
+## derivative work contains the original copyright notice and the associated
+## disclaimer.
+##
+## This source file is free software; you can redistribute it and#or modify it
+## under the terms of the GNU Lesser General Public License as published by the
+## Free Software Foundation; version 2.1 of the License.
+##
+## This source is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+## FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+## for more details.
+##
+## You should have received a copy of the GNU Lesser General Public License
+## along with this source; if not, download it from
+## http://www.gnu.org/licenses/lgpl.txt
+##
+################################################################################
+
+#
+# Clock Interface
+#
+
+NET "CLK50MHZ"          LOC = "B12"  | IOSTANDARD = LVTTL | CLOCK_DEDICATED_ROUTE = FALSE;
+NET "CLK50MHZ"          TNM_NET = TN_50MHZ;
+TIMESPEC                TS_clk = PERIOD "TN_50MHZ" 20 ns HIGH 50%;
+
+#
+# Reset
+#
+
+NET "RESET_N"           LOC = "M24"  | IOSTANDARD = LVCMOS33;
+NET "MR_N"              LOC = "N23"  | IOSTANDARD = LVCMOS33;
+NET "MR"                LOC = "AF2"  | IOSTANDARD = LVCMOS33;   // VA2
+
+#
+# SSRAM Interface
+#
+
+NET "ssramCLK"          LOC = "AA18" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramCLKEN_N"      LOC = "AB17" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADV"          LOC = "AC15" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramBW_N<1>"      LOC = "AA19" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramBW_N<2>"      LOC = "Y18"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramBW_N<3>"      LOC = "W17"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramBW_N<4>"      LOC = "AE21" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramOE_N"         LOC = "AC16" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramWE_N"         LOC = "AB18" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramCE"           LOC = "AF21" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<0>"      LOC = "V11"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<1>"      LOC = "U12"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<2>"      LOC = "AF5"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<3>"      LOC = "AE5"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<4>"      LOC = "AF6"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<5>"      LOC = "AE7"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<6>"      LOC = "AD21" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<7>"      LOC = "AB10" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<8>"      LOC = "AB11" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<9>"      LOC = "AA12" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<10>"     LOC = "V12"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<11>"     LOC = "AD6"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<12>"     LOC = "W12"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<13>"     LOC = "AD8"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<14>"     LOC = "AC9"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<15>"     LOC = "AF19" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<16>"     LOC = "AE19" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<17>"     LOC = "Y16"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<18>"     LOC = "AA14" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramADDR<19>"     LOC = "W16"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<0>"      LOC = "AA13" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<1>"      LOC = "AB13" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<2>"      LOC = "AC13" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<3>"      LOC = "AC12" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<4>"      LOC = "AD12" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<5>"      LOC = "AD11" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<6>"      LOC = "AC11" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<7>"      LOC = "AD10" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<8>"      LOC = "AD9"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<9>"      LOC = "AD19" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<10>"     LOC = "AC19" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<11>"     LOC = "AD18" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<12>"     LOC = "AD17" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<13>"     LOC = "AC17" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<14>"     LOC = "AD15" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<15>"     LOC = "AB15" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<16>"     LOC = "AC14" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<17>"     LOC = "AC20" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<18>"     LOC = "AE17" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<19>"     LOC = "AF17" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<20>"     LOC = "AF16" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<21>"     LOC = "AE15" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<22>"     LOC = "AF15" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<23>"     LOC = "AF14" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<24>"     LOC = "AD13" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<25>"     LOC = "AF13" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<26>"     LOC = "AF18" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<27>"     LOC = "AE13" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<28>"     LOC = "AF12" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<29>"     LOC = "AF11" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<30>"     LOC = "AE11" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<31>"     LOC = "AF10" | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<32>"     LOC = "AF9"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<33>"     LOC = "AE9"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<34>"     LOC = "AF8"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+NET "ssramDATA<35>"     LOC = "AF7"  | IOSTANDARD = LVTTL | SLEW = FAST | DRIVE = 4;
+
+#
+# Console Interface
+# LM3S9B96 is configured for EPI Host Bus
+# HB16, Mode=ADNOMUX, CSCFG = 1, BSEL = 1
+#
+
+NET "conDATA<0>"        LOC = "AA26" | IOSTANDARD = LVCMOS33;   // EPI0S0
+NET "conDATA<1>"        LOC = "AE24" | IOSTANDARD = LVCMOS33;   // EPI0S1
+NET "conDATA<2>"        LOC = "W24"  | IOSTANDARD = LVCMOS33;   // EPI0S2
+NET "conDATA<3>"        LOC = "AA23" | IOSTANDARD = LVCMOS33;   // EPI0S3
+NET "conDATA<4>"        LOC = "U26"  | IOSTANDARD = LVCMOS33;   // EPI0S4
+NET "conDATA<5>"        LOC = "Y24"  | IOSTANDARD = LVCMOS33;   // EPI0S5
+NET "conDATA<6>"        LOC = "AB26" | IOSTANDARD = LVCMOS33;   // EPI0S6
+NET "conDATA<7>"        LOC = "AC26" | IOSTANDARD = LVCMOS33;   // EPI0S7
+NET "conDATA<8>"        LOC = "W25"  | IOSTANDARD = LVCMOS33;   // EPI0S8
+NET "conDATA<9>"        LOC = "AD24" | IOSTANDARD = LVCMOS33;   // EPI0S9
+NET "conDATA<10>"       LOC = "AA25" | IOSTANDARD = LVCMOS33;   // EPI0S10
+NET "conDATA<11>"       LOC = "U25"  | IOSTANDARD = LVCMOS33;   // EPI0S11
+NET "conDATA<12>"       LOC = "U24"  | IOSTANDARD = LVCMOS33;   // EPI0S12
+NET "conDATA<13>"       LOC = "Y22"  | IOSTANDARD = LVCMOS33;   // EPI0S13
+NET "conDATA<14>"       LOC = "AC24" | IOSTANDARD = LVCMOS33;   // EPI0S14
+NET "conDATA<15>"       LOC = "V23"  | IOSTANDARD = LVCMOS33;   // EPI0S15
+
+NET "conADDR<1>"        LOC = "V26"  | IOSTANDARD = LVCMOS33;   // EPI0S16  A0
+NET "conADDR<2>"        LOC = "AE23" | IOSTANDARD = LVCMOS33;   // EPI0S17  A1
+NET "conADDR<3>"        LOC = "R25"  | IOSTANDARD = LVCMOS33;   // EPI0S18  A2
+NET "conADDR<4>"        LOC = "AE26" | IOSTANDARD = LVCMOS33;   // EPI0S19  A3
+NET "conADDR<5>"        LOC = "Y26"  | IOSTANDARD = LVCMOS33;   // EPI0S20  A4
+NET "conADDR<6>"        LOC = "AC23" | IOSTANDARD = LVCMOS33;   // EPI0S21  A5
+NET "conADDR<7>"        LOC = "AD26" | IOSTANDARD = LVCMOS33;   // EPI0S22  A6
+#NET "conADDR<8>"       LOC = "AC25" | IOSTANDARD = LVCMOS33;   // EPI0S23  A7
+#NET "conADDR<9>"       LOC = "AF25" | IOSTANDARD = LVCMOS33;   // EPI0S24  A8
+#NET "conADDR<10>"      LOC = "AE25" | IOSTANDARD = LVCMOS33;   // EPI0S25  A9
+
+NET "conBLE_N"          LOC = "AB24" | IOSTANDARD = LVCMOS33;   // EPI0S26 (BSEL0#)
+NET "conBHE_N"          LOC = "W26"  | IOSTANDARD = LVCMOS33;   // EPI0S27 (BSEL1#)
+NET "conRD_N"           LOC = "AA24" | IOSTANDARD = LVCMOS33;   // EPI0S28
+NET "conWR_N"           LOC = "T26"  | IOSTANDARD = LVCMOS33;   // EPI0S29
+NET "haltLED"           LOC = "AF24" | IOSTANDARD = LVCMOS33;   // EPI0S30 (CS#)
+#NET "conCLK"           LOC = "V24"  | IOSTANDARD = LVCMOS33;   // EPI0S31 (CLK)
+NET "conINTR_N"         LOC = "R26"  | IOSTANDARD = LVCMOS33;   // PB7/NMI
+
+#
+# RS232 Interfaces
+#
+
+NET "ttyTXD<0>"         LOC = "D24"  | IOSTANDARD = LVCMOS33;
+NET "ttyTXD<1>"         LOC = "L25"  | IOSTANDARD = LVCMOS33;
+NET "ttyRXD<0>"         LOC = "J26"  | IOSTANDARD = LVCMOS33;
+NET "ttyRXD<1>"         LOC = "K26"  | IOSTANDARD = LVCMOS33;
+
+#
+# SD Card Interfaces
+#
+
+NET "rh11CD_N"          LOC = "D26"  | IOSTANDARD = LVCMOS33;
+NET "rh11CS"            LOC = "B25"  | IOSTANDARD = LVCMOS33;
+NET "rh11MISO"          LOC = "C25"  | IOSTANDARD = LVCMOS33;
+NET "rh11MOSI"          LOC = "A25"  | IOSTANDARD = LVCMOS33;
+NET "rh11SCLK"          LOC = "C26"  | IOSTANDARD = LVCMOS33;
+
+#
+# Testpoints
+#
+
+NET "test<0>"           LOC = "B1"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB31
+NET "test<1>"           LOC = "D1"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB30
+NET "test<2>"           LOC = "E1"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB29
+NET "test<3>"           LOC = "G2"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB28
+NET "test<4>"           LOC = "H1"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB27
+NET "test<5>"           LOC = "C2"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB26
+NET "test<6>"           LOC = "E4"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB25
+NET "test<7>"           LOC = "F3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB24
+NET "test<8>"           LOC = "H3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB23
+NET "test<9>"           LOC = "K3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB22
+NET "test<10>"          LOC = "L4"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB21
+NET "test<11>"          LOC = "L3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB20
+NET "test<12>"          LOC = "M3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB19
+NET "test<13>"          LOC = "M4"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB18
+NET "test<14>"          LOC = "N3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB15
+NET "test<15>"          LOC = "N4"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB14
+NET "test<16>"          LOC = "R3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB13
+NET "test<17>"          LOC = "R4"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB12
+NET "test<18>"          LOC = "T4"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB11
+NET "test<19>"          LOC = "T3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB10
+NET "test<20>"          LOC = "U4"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB9
+NET "test<21>"          LOC = "U3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB8
+NET "test<22>"          LOC = "V3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB7
+NET "test<23>"          LOC = "Y1"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB6
+NET "test<24>"          LOC = "AA2"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB5
+NET "test<25>"          LOC = "AC1"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB4
+NET "test<26>"          LOC = "AD1"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB3
+NET "test<27>"          LOC = "AE1"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB2
+
+#
+# SSRAM Timing
+#
+
+INST    ssramDATA* 	TNM = "ssram_data";
+INST    ssramADDR*	TNM = "ssram_addr";
+INST    ssramOE_N	TNM = "ssram_oe";
+INST    ssramWE_N	TNM = "ssram_we";
+
+OFFSET = OUT AFTER uKS10/uMEM/memCLK REFERENCE_PIN "ssramCLK" RISING;
+OFFSET = OUT AFTER uKS10/uMEM/memCLK REFERENCE_PIN "ssramCLK" FALLING;
+
+TIMEGRP "ssram_data"    OFFSET = IN  5 ns VALID 5 ns BEFORE "uKS10/uMEM/memCLK";
+TIMEGRP "ssram_data"    OFFSET = OUT 5 ns BEFORE "uKS10/uMEM/memCLK";
+TIMEGRP "ssram_addr"    OFFSET = OUT 5 ns BEFORE "uKS10/uMEM/memCLK";
+TIMEGRP "ssram_we"      OFFSET = OUT 5 ns BEFORE "uKS10/uMEM/memCLK";
+
+PIN "uKS10/uCLK/bufgCLKF.O" CLOCK_DEDICATED_ROUTE = FALSE;
+
+NET "uKS10/uCPU/uALU/r*" TIG;
+
+#
+# Trash bin
+#
+
+##TIMEGRP "ssram_inp"     OFFSET = IN 5 ns BEFORE "CLK50MHZ";
+##NET "ssramCLK"          TNM_NET = TN_ssramCLK;
+##TIMEGRP "ssram_data"    OFFSET = IN 5 ns VALID 5 ns BEFORE "ssramCLK";
+##TIMEGRP "ssram_data"    OFFSET = IN 5 ns VALID 5 ns BEFORE "uKS10/uMEM/memCLK";
+##TIMEGRP "ssram_data"    OFFSET = OUT -5 ns AFTER "ssramCLK";
+##TIMEGRP "ssram_addr"    OFFSET = OUT -5 ns AFTER "ssramCLK";
+
+##NET "uKS10/uCPU/uALU/f*"      TPTHRU="aluOUT";
+##NET "uKS10/uCPU/dp*"          TPTHRU="dp";
+##NET "uKS10/uCPU/dbm*"         TPTHRU="dbm";
+##NET "uKS10/uCPU/dbus*"        TPTHRU="dbus";
+##NET "uKS10/uCPU/scad*"        TPTHRU="scad";
+##NET "uKS10/uCPU/uALU/r*"      TPTHRU="aluIN";
+#
+##TIMESPEC "TS24" = FROM "FFS" THRU "aluOUT" THRU "dp" THRU "dbm" THRU "dbus" THRU aluIN TO "FFS" TIG;
+##TIMESPEC "TS25" = FROM "FFS" THRU "aluOUT" THRU "dp" THRU "scad" THRU "dbm" THRU "dbus" THRU aluIN TO "FFS" TIG;

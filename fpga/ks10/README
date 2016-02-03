@@ -1,0 +1,116 @@
+This is revision 0.0.1 of the KS10 FPGA design.
+
+It is mostly configured for running instruction set
+diagnostics and not much else.  I haven't sythesized
+it in a long time and it probably will need some work
+before it will synthesize into anything useful.  I'm
+still mostly trying to get it to simulate and get
+familar with the KS10 design.  First things first!
+
+STATUS:
+
+The design will execute the following diagnostics:
+
+DSKAAA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 1)   Test Pass
+DSKABA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 2)   Test Pass
+DSKACA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 3)   Test Pass
+DSKADA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 4)   Test Pass
+DSKAEA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 5)   Test Pass
+DSKAFA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 6)   Test Pass
+DSKAGA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 7)   Test Pass
+DSKAHA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 8)   Test Pass
+DSKAIA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC ( 9)   Test Pass
+DSKAJA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC (10)   Test Pass
+DSKAKA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC (11)   Test Fail
+DSKALA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC (12)
+DSKAMA0 DECSYSTEM 2020 BASIC INSTRUCTION DIAGNOSTIC (13)
+
+MAKING CHANGES:
+
+The KS10 console provides the starting address for the
+KS10 CPU.  For now, the starting address is supplied by
+some code in the console implementation.  To change the
+starting address, you must change the code in ./cons/cons.v.
+In that file you will find a line (approximately line 100)
+that looks like:
+
+assign busDATAO = busACKO ? 36'o254000030600 : 36'bx;
+
+At startup, KS10 microcode does an IO READ of Address
+o200000 and then executes that instruction.
+  
+When the console detects an IO READ at this address it
+ ACKS the bus by asserting the 'busACKO' signal.  It
+also asserts the constant 36'o254000030600 onto the
+data bus.   For you non-verilog types, this is a 36-bit
+octal constant of "254000030600".   This constant
+is a PDP-10 "JRST 30600" instruction.  Therefore
+the KS10 will begin execution at address 30600.
+
+The following diagnostics have the following starting
+addresses:
+
+  MAINDEC-10-DSKAA.txt
+  MAINDEC-10-DSKAB.txt
+  MAINDEC-10-DSKAC.txt
+  MAINDEC-10-DSKAD.txt
+  MAINDEC-10-DSKAE.txt
+  MAINDEC-10-DSKAF.txt
+  MAINDEC-10-DSKAG.txt
+  MAINDEC-10-DSKAH.txt
+    Starting address is 030600
+
+  MAINDEC-10-DSKAI.txt
+  MAINDEC-10-DSKAJ.txt
+  MAINDEC-10-DSKAK.txt
+    Starting address is 030624
+
+BUILDING THE CODE:
+
+I have been using cygwin and windows to do development
+on this.  You'll need 'make' and 'awk' to do much
+development.  I also use 'rcs' for configuration
+management.  You will note RCS directories in the
+directory tree - but unless you're interested in history
+you can ignore the RCS files.
+
+To change the diagnostic program that is being executed:
+
+(1) edit the makefile and change the line:
+    LOAD := MAINDEC-10-DSKAK.txt
+    to whatever MAINDEC you'd like to run.
+(2) Execute make.  Make will extract the Control ROM
+    code and Dispatch ROM code from the microcode
+    listing file.  It will also extract the executable
+    from the MAINDEC listing file.
+
+$ make
+awk -f rtl/cpu/useq/crom.awk rtl/cpu/useq/ks10.mcr > rtl/cpu/useq/crom.dat
+awk -f rtl/cpu/useq/drom.awk rtl/cpu/useq/ks10.mcr > rtl/cpu/useq/drom.dat
+awk -f rtl/mem/mem.awk -vfilename=MAINDEC-10-DSKAA.txt rtl/mem/MAINDEC-10-DSKAA.txt > rtl/mem/mem.dat
+
+The three awk scripts:
+-  extract the Control ROM (Microcode) from the microcode listing file, and
+-  extract the Dispatch ROM from the microcode listing file, and
+-  extract the PDP-10 Object Code from the MAINDEC-10-DSKAA listing file.
+
+All three awk scripts generate Verilog code to intialize these memory devices.
+
+This .tgz file is configured to execute MAINDEC-10-DSKAA.
+
+To run the simultion is Xilinx ISE webpack (GUI):
+
+(1) install ISE per Xilinx Instructions
+(2) Start ISE Project Navigator
+(3) Open  KS10.xise project (File->Open Project)
+    KS10.xise is in ../ise
+
+Have fun.  If you have questions contact me.
+
+I'll add instructions on how to run the simulator later.
+There is a waveform configuration file "ks10.wcfg" in
+the ISE that I use for viewing simulation results.
+
+Rob Doyle
+
+doyle (at) cox (dot) net
