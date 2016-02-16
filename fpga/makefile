@@ -1029,7 +1029,7 @@ IMPACT_CMDS := \
 	'setCable -target "digilent_plugin DEVICE=JtagHs2 FREQUENCY="' \
 	'identify -inferir' \
 	'identifyMPM' \
-	'attachflash -position 1 -spi S25FL032P' \
+	'attachflash -position 1 -spi S25FL064P' \
 	'assignfiletoattachedflash -position 1 -file $(PROJECT).mcs' \
 	'program -p 1 -dataWidth 1 -spionly -e -v -loadfpga' \
 	'quit'
