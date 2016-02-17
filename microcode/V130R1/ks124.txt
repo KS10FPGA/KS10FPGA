@@ -1,0 +1,191 @@
+		KS Microcode Version 124
+
+This document describes the changes made to the KS10 Microcode version
+123 to create version 124 for TOPS-10 7.03.  
+
+All of the external changes are controlled by conditional assemblys, so
+it is possible to generate an externally identical microcode.  The result 
+of assembling with all of the new conditionals off will not be identical
+binary to version 123 because part of the BLT instruction setup was moved to
+a subroutine.  
+
+There is no performance penalty if no new features are used.  Performance
+changes associated with each feature are discussed below.
+
+Feature 	Description
+-------	-----------------------------------------------------------------
+INHCST	Enables code which prevents the CST from being written if the CST
+	base address is specified as zero.  It allows the CST to be written
+	if a non-zero base address is specified.  Costs several CSB=0 tests
+	on a page refill.  
+
+NOCST	Suppresses all code to update the CST.  Avoids the CSB=0 tests, but
+	would not allow TOPS-20 to run from this microcode.
+
+	Any time that the CST isn't written, memory references are saved.
+	7.03 requires either INHCST or NOCST.
+
+KIPAGE	Enables code to support KI paging.  A KI paging microcode is still
+	needed for diagnostics.
+
+KLPAGE	Enables code to support KL paging.  KL paging is now used by both
+	TOPS-10 and TOPS-20.
+
+	Turning off either KI or KL paging provides the microcode space
+	needed for UBABLT, without requiring changing the DROM chips.
+
+UBABLT	Enables code to support the new BLTBU and BLTUB instructions.
+	These instructions are discussed below in detail.
+----------
+All of the new assemblys will cause the APRID word's microcode options
+field to be non-zero.  Bits are defined as follows:
+	Bit	Meaning
+	---	---------------------------------------------------------
+	 0	Inhibit CST update code is included in this Ucode.
+
+	 1	No CST update code is included in this Ucode.
+
+	 2	This microcode is "non-standard".  Same bit as KL APRID.
+
+	 3	UBABLT instructions are included in this Ucode.
+
+	 4	KI Paging is present in this Ucode.
+
+	 5	KL Paging is present in this Ucode.
+
+	Note that if bit 4 & bit 5 equal zero, both KI and KL paging are
+	defined to be present for compatibility with previous microcodes.
+
+	Turning off either KI or KL paging saves the internal tests mades
+	for every page-fail or UUO to determine which format the UPT is
+	in.
+
+UBABLT instructions.
+
+The KS10 spends a large amount of time re-formatting data from 36-bit
+to Unibus format.   Previous studies have shown that the time spent
+doing this is a limiting factor in network (ANF/DECnet) bandwidth.
+
+Although the KDP currently used for a network interface has other limits, 
+the DMR and DEUNA do not.  7.03 is expected to include a DEUNA driver for
+the KS10, both to support DECnet and LAT.
+
+The best known software implementation of the required byteswapping requires
+on the order of 20 memory references per 36-bit word transformed, plus
+loop setup.  The proposed instructions should make effectively two 
+memory references per word.  
+
+Although the microcode is currently believed to be complete, performance
+characterization has not yet been done.
+
+Instruction formats:
+
+	BLTUB
+	__________________________________________________________
+	|717	|  AC  	| I |  X  |		Y		 |
+	----------------------------------------------------------
+	0      8 9    12  13 14 17 18			        35
+
+The BLTUB instruction will transform data in Unibus (MACY11) format into
+PDP-10 byte-string format.  The source data is required to be left-aligned
+in a PDP-10 word.  The destination data will be a left-aligned, zero-offset
+PDP-10 byte stream.
+
+	BLTBU
+	__________________________________________________________
+	|716	|  AC  	| I |  X  |		Y		 |
+	----------------------------------------------------------
+	0      8 9    12  13 14 17 18			        35
+
+The BLTBU instruction will transform data in PDP-10 byte-string format into
+Unibus (MACY11) format.  The source data is required to be a left-aligned, 
+zero-offset PDP-10 byte string.  The destination data will be left-aligned on
+a PDP-10 word.  
+
+Both instructions are processed exactly as a BLT instruction is, are
+interruptable between words, and return the same result in AC.  The
+only difference is that a BLT moves the data intact, while the UBABLT
+instructions transform the data during the move.  Also, there is
+no "special" "clear core" case.  Of course, pagefails work correctly, and
+PXCT works exactly as on a BLT (Eg, one can blt to/from user buffers'
+virtual addresses). 
+
+
+Format definitions:
+	PDP-10 byte string: 
+		BYTE (8) 1,2,3,4 (4)undefined
+	Equivalent UBA (MACY11) string:
+		BYTE (2)undef (8)2,1 (2)undef (8)4,3
+
+The undefined bits will end up as zero in this implementation, but
+probably shouldn't be spec'ed as such.
+
+Performance observations:
+
+The current MACRO code to do BLTBU looks something like:
+	MOVNI	CNT,3(CNT)
+	ASH	CNT,-2
+	MOVNS	CNT
+	HRRI	CNT,SOURCE
+LOOP:	MOVE	T,(CNT)
+	LSH	T,-4
+	DPB	T,BYTABL+4
+	LSH	T,-8
+	DPB	T,BYTABL+3
+	LSH	T,-8
+	DPB	T,BYTABL+2
+	LSH	T,-8
+	DPB	T,BYTABL+1
+	AOBJN	CNT,LOOP
+
+Where source and destination are assumed to be the same, and BYTABL is
+a table of byte-pointers indexed by CNT.
+
+This is 19 memory references per word in the LOOP. (3 refs/DPB x 4 bytes
+	+ 4 LSH + 2 MOVE + AOBJN )
+BLTBU would make 2.  Further, DPB does shifting and masking that BLTBU
+does not.  BLTBU shifts 2 bytes at a time, for a total of 19 shifts
+(1 bit each) for the entire word.  
+
+In addition, in practice DECNET often copies a whole message into a
+UBA-mapped buffer, then swaps it in place.  UBABLTs can further reduce
+the cost by replacing the MOVSLJ / BLT to get the data to the buffer.
+
+Obviously in the (more rare) case where multiple MSD's are chained,
+the transformation will have to remain in place, as UBABLTs can't
+start in the middle of a string.
+
+Other Notes:
+1. Why not use EXTEND?
+   The KS would have had to reserve many words (16) of CRAM just to dispatch.
+   The performance would not have been as high, since microcoding byte refs
+   (rather than the current 36-bit word) would have been slower.  Optimization
+   is possible, but would have required huge amounts of microcode.  Anyhow,
+   for the intended use, the "word-aligned" restriction seems a small price
+   to pay for the blinding speed.
+2. Other uses
+   I'm told that the KLIPA/KLNIA drivers would like this, but I couldn't
+   find un-EXTENDed opcodes that KL DRAM could decode directly.   
+
+   FILEX, MACY11, MAC36, TKB36, FAL, NFT, and others who import/export
+   PDP-11 files could benefit from these instructions.
+
+   Other KS devices could use this; if LPTSPL (for example) would use
+   8-bit bytes on the KS (Likely due to 8-bit ASCII soon anyhow), the
+   monitor would not have to swap user LPT data.  
+
+3. Why these opcodes?
+   I needed a block of IO instructions that I could use the AC field of.
+   I wanted them close to KL DRAM, so if the KL chose to, it could
+   implement the instructions.
+   All the other opcodes were either assigned, or their dispatch is hard-
+   coded in ROM in the KS DROM.  (Eg "reserved MUUOs")
+
+4. Why not restrict to IO-Legal use?
+   I could be pursuaded.  It would cost a microword.  But it would prevent
+   users from making use of the instructions.  What with "integration",
+   I expect more and more data exchange with PDP-11s, large or small.  Any
+   performance gain seems worthwhile.  If this is not done, the documentation
+   will want to flag these instructions as KS-only.  If it is, they get
+   documented as KS system operations.
+

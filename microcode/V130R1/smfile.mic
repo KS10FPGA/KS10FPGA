@@ -1,0 +1,2 @@
+!This Kludge is necessary because SMFILE won't run under batch.
+.MIC TYPE "RUN DEC:SMFILE^MREAD 'A.ULD^ME CRAM 136^ME CRAM 137^MOUTPUT RAM 'A.RAM^MEXIT^M"

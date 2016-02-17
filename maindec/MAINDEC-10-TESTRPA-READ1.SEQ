@@ -1,0 +1,75 @@
+;
+; This is a quickie test program to test the read command.  Test RPER1[AOE]
+;
+
+
+					; AC0 = DATA
+					; AC1 = ADDR
+
+     0	020000	515040	000001		HRLZI 1, 1		; UBA #1
+
+  					; 
+					; UBA clear
+					;
+
+     1	020001	541040	763000		HRRI  1, 763000		; UBA BASE ADDR
+     2	020002	201000	000100		MOVEI 0, 000100		; UBACSR[INI]
+     3	020003	713001	000100		WRIO  0, 100(1)		; WRITE TO UBACSR
+
+                                        ;
+                                        ; UBA Paging
+                                        ;
+
+     4	020004	201000	140070		MOVEI 0, 140070		; FTM, VLT, PAGE 70
+     5	020005	713001	000001		WRIO  0, 1(1)		; WRITE PAGE 1
+
+  					; 
+					; Device clear
+					;
+
+     6	020006	541040	776700		HRRI  1, 776700		; RH11 BASE ADDR
+     7	020007	201000	000040		MOVEI 0, 000040		; RHCS2[CLR]
+     9	020010	713001	000010		WRIO  0, 10(1)		; WRITE TO RHCS2
+
+					;
+					; Read 128 words
+					;
+
+     9	020011	201000	777374		MOVEI 0, 777374		; -130*2
+    10	020012	713001	000002		WRIO  0, 2(1)		; WRITE TO RHWC
+
+					;
+					; Set destination address to 004000
+					;
+
+    11	020013	201000	004000		MOVEI 0, 004000		; Destination is 004000
+    12	020014	713001	000004		WRIO  0, 4(1)		; WRITE TO RHBA
+
+                                        ;
+                                        ; Set Cylinder to 814 (001456)
+                                        ;
+
+    13	020015	201000	001456		MOVEI 0, 001456		; Cylinder
+    14	020016	713001	000034		WRIO  0, 34(1)		; WRITE TO RPDC
+
+                                        ;
+                                        ; Set Track to 18 (0022)
+					; Set Sector to 19 (0023)
+                                        ;
+
+    15	020017	201000	011023		MOVEI 0, 011023		; Track, Sector
+    16	020020	713001	000006		WRIO  0, 6(1)		; WRITE TO RPDA
+
+
+					;
+					; Issue read command
+					;
+
+    17	020021	201000	000071		MOVEI 0, 000071		; READ | GO
+    18	020022	713001	000000		WRIO  0, 0(1)		; WRITE TO RHCS1
+
+					;
+					; Loop
+					;
+
+    19	020023	254000	020023		JRST     020023		; Loop

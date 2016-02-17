@@ -1,0 +1,143 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Copyright (C) 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1985,1986
+Digital Equipment Corporation, Maynard, Mass.
+
+
+This software is furnished under a license for use only  on  a  single
+computer system and may be copied only with the inclusion of the above
+copyright notice.  This software, or any other copies thereof, may not
+be provided or otherwise made available to any other person except for
+use on such system and to one  who  agrees  to  these  license  terms.
+Title  to  and  ownership of the software shall at all times remain in
+DEC.
+
+The information in this software is subject to change  without  notice
+and  should  not  be  construed  as  a commitment by Digital Equipment
+Corporation.
+
+DEC assumes no responsibility  for  the  use  or  reliability  of  its
+software on equipment which is not supplied by DEC.
+KS10.DOC -- Doc file for KS10 microcode V130                    Page 2
+
+
+1.0  Summary
+
+The KS10 microcode executes in the 2020 CPU and allows  that  hardware
+to execute the DECsystem-10/DECSYSTEM-20 instruction set and software.
+
+
+
+1.1  Purpose of the release
+
+This release of the KS10 microcode adds support  required  by  TOPS-10
+version 7.03.  It also makes location 136 conform to the LSG microcode
+version identification standard.
+
+
+
+1.2  New Features
+
+The TOPS-10 microcode supports the BLTUB and BLTBU instructions, which
+perform  the  byte-swapping operations needed by communication devices
+on the Unibus.  It also will not use a CST if the CST base address  is
+specified as 0.
+
+
+
+1.3  Testing
+
+KS10 microcode version 130 has been tested in-house and  runs  TOPS-20
+Version 4 and TOPS-10 versions 7.02 and 7.03.
+
+
+
+1.4  Bibliography
+
+KS124.TXT, TL, Detailed changes in and rationale for edit 124.
+KS10.DOC -- Doc file for KS10 microcode V130                    Page 3
+
+
+2.0  External Changes
+
+2.1  Changes
+
+The following changes have been made between version 123  and  version
+130:
+
+     1.  Assembly options to support TOPS-10 v 7.03.
+
+     2.  Support of the Version standard's use of location 136.
+
+     3.  A  microcode  which  supports  UBABLT  instructions  supports
+         EITHER  KI  or  KL  paging.   It  does  NOT  support both, as
+         previous microcodes have.
+
+     4.  Bugs in UBR and process context word handling were fixed.
+
+     5.  Bugs in JSR and JSA which caused them not to work as overflow
+         instructions were fixed.
+
+     6.  A bug which caused the  processor  to  hang  if  a  KL-Paging
+         instruction   was   executed  in  certain  circumstances  was
+         corrected.
+
+KS10.DOC -- Doc file for KS10 microcode V130                    Page 4
+
+
+3.0  Known Bugs and Deficiencies
+
+MOVSLJ does not work when executed by PXCT.  EA CALC  is  not  correct
+when  being  fetched  from  previous  context.  There is currently not
+enough microcode space to fix this bug.
+
+WRSPB, WRCSB, WRPUR, WRCSTM, and WRHSB require the word  at  E  to  be
+writable,  even  though  they  only  read  the  location.   This  is a
+restriction caused by the DROM, and will not be ECO'd,  as  these  are
+privileged instructions, and placing this data in a write-enabled page
+is viewed as acceptable.  
+KS10.DOC -- Doc file for KS10 microcode V130                    Page 5
+
+
+4.0  Installation Instructions
+
+KS10.ULD is installed with SMFILE.
+
+5.0  Internal Changes
+
+Comments and pagination have been adjusted.  See also section 2.
+
+6.0  Suggestions
+
+None.
