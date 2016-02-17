@@ -17,7 +17,8 @@ HEADERS := \
 	diskio.h \
 	ff.h \
 	ffconf.h \
-	integer.h
+	integer.h \
+	../taskutil.hpp
 
 $(TARGET).a : $(FILES) 
 

@@ -2,9 +2,11 @@
 //
 //  KS10 Console Microcontroller
 //
-//! Embedded Stdio-like functions.
+//! \brief
+//!    Embedded Stdio-like functions.
 //!
-//! This object provides some of the functionality of stdio.
+//! \details
+//!    This object provides some of the functionality of stdio.
 //!
 //! \file
 //!    stdio.cpp
@@ -14,7 +16,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,7 +41,7 @@
 #include "stdio.h"
 #include "uart.h"
 
-#include "telnetlib/telnet.h"
+#include "telnetlib/telnet_task.hpp"
 
 //! Upper case digits for printing radix greater than 10
 static const char *upper_digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -47,26 +49,47 @@ static const char *upper_digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 //! Lower case digits for printing radix greater than 10
 static const char *lower_digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-//
-//! This function gets a character from the UART receiver.
+//!
+//! \brief
+//!    This function gets a character from the UART receiver.
 //!
 //! \returns
-//!     Character read from UART receiver.
+//!    Character read from UART receiver.
 //!
 
 int getchar(void) {
     return getUART();
 }
 
-//
-//! This function outputs a character to the UART transmitter.
 //!
-//! This function expands newlines to CR, LF sequences.
+//! \brief
+//!    This function outputs a character to the UART transmitter.
 //!
-//! \param ch
-//!     Character to output to UART transmitter.
+//! \details
+//!    This function expands newlines to CR, LF sequences.
 //!
-//
+//! \param ch -
+//!    Character to output to UART transmitter.
+//!
+
+#if 0
+
+static char linbuf[133];
+static int count = 0;
+
+int putchar(int ch) {
+    if (ch == '\n') {
+        putUART('\r');
+        linbuf[count++] = 0;
+        telnet23->puts(linbuf);
+        count = 0;
+    }
+    linbuf[count++] = ch & 0xff;
+    putUART(ch & 0xff);
+    return ch;
+}
+
+#else
 
 int putchar(int ch) {
     if (ch == '\n') {
@@ -76,19 +99,23 @@ int putchar(int ch) {
     return ch;
 }
 
-//
-//! Outputs a string to the UART transmitter.
+#endif
+
 //!
-//! This function outputs a string to the UART transmitter.
+//! \brief
+//!    Outputs a string to the UART transmitter.
 //!
-//! A newline is added which expands newlines to CR, LF sequences.
+//! \details
+//!    This function outputs a string to the UART transmitter.
+//!
+//!    A newline is added which expands newlines to CR, LF sequences.
 //!
 //! \param s
 //!     null terminated string to print.
 //!
 //! \returns
 //!     1 always indicating success
-//
+//!
 
 int puts(const char *s) {
     while (*s) {
@@ -98,12 +125,14 @@ int puts(const char *s) {
     return 1;
 }
 
-//
-//! Unsigned to ASCII
 //!
-//! This function converts an unsigned integer value to a null-terminated
-//! string using the radix that was specified.  The result is stored in the
-//! array given by buffer parameter.
+//! \brief
+//!    Unsigned to ASCII
+//!
+//! \details
+//!    This function converts an unsigned integer value to a null-terminated
+//!    string using the radix that was specified.  The result is stored in the
+//!    array given by buffer parameter.
 //!
 //! \param [in] value
 //!    Value to be printed
@@ -123,7 +152,7 @@ int puts(const char *s) {
 //!
 //! \returns
 //!    Pointer to buffer
-//
+//!
 
 static char *__utoa(unsigned int value, char * buffer, unsigned int radix,
                     const char * digits)  {
@@ -135,12 +164,14 @@ static char *__utoa(unsigned int value, char * buffer, unsigned int radix,
     return buffer;
 }
 
-//
-//! Unsigned Long to ASCII
 //!
-//! This function converts an unsigned long integer value to a null-terminated
-//! string using the radix that was specified.  The result is stored in the
-//! array given by buffer parameter.
+//! \brief
+//!    Unsigned Long to ASCII
+//!
+//! \details
+//!    This function converts an unsigned long integer value to a null-
+//!    terminated string using the radix that was specified.  The result is
+//!    stored in the array given by buffer parameter.
 //!
 //! \param [in] value
 //!    Value to be printed
@@ -160,7 +191,7 @@ static char *__utoa(unsigned int value, char * buffer, unsigned int radix,
 //!
 //! \returns
 //!    Pointer to buffer
-//
+//!
 
 static char *__ultoa(unsigned long value, char * buffer, unsigned int radix,
                      const char * digits) {
@@ -172,19 +203,22 @@ static char *__ultoa(unsigned long value, char * buffer, unsigned int radix,
     return buffer;
 }
 
-//
-//! Unsigned long long to ASCII
 //!
-//! This function converts an unsigned long long integer value to a null-
-//! terminated string using the radix that was specified.  The result is
-//! stored in the array given by buffer parameter.
+//! \brief
+//!    Unsigned long long to ASCII
 //!
-//! This function is specially hacked to work on only octal and hex numbers.
-//! These don't require long long division - just shifts.  The long long
-//! division by arbitrary radix requires a lot of support from the run time
-//! library and it isn't worth the extra code space since it will not be used.
+//! \details
+//!    This function converts an unsigned long long integer value to a null-
+//!    terminated string using the radix that was specified.  The result is
+//!    stored in the array given by buffer parameter.
 //!
-//! The only support for unsigned long long is octal or hex printing.
+//!    This function is specially hacked to work on only octal and hex numbers.
+//!    These don't require long long division - just shifts.  The long long
+//!    division by arbitrary radix requires a lot of support from the run time
+//!    library and it isn't worth the extra code space since it will not be
+//!    used.
+//!
+//!    The only support for unsigned long long is octal or hex printing.
 //!
 //! \param [in] value
 //!    Value to be printed
@@ -204,7 +238,7 @@ static char *__ultoa(unsigned long value, char * buffer, unsigned int radix,
 //!
 //! \returns
 //!    Pointer to buffer
-//
+//!
 
 char *__ulltoa(unsigned long long value, char * buffer, unsigned int radix,
                const char * digits) {
@@ -229,13 +263,15 @@ char *__ulltoa(unsigned long long value, char * buffer, unsigned int radix,
 }
 
 //
-//! Signed Integer to ASCII
+//! \brief
+//!    Signed Integer to ASCII
 //!
-//! This function converts an signed integer value to a null-terminated
-//! string using the radix that was specified.  The result is stored in the
-//! array given by buffer parameter.
+//! \details
+//!    This function converts an signed integer value to a null-terminated
+//!    string using the radix that was specified.  The result is stored in the
+//!    array given by buffer parameter.
 //!
-//! Negative numbers are printed properly.
+//!    Negative numbers are printed properly.
 //!
 //! \param [in] value
 //!    Value to be printed
@@ -252,7 +288,7 @@ char *__ulltoa(unsigned long long value, char * buffer, unsigned int radix,
 //!
 //! \returns
 //!    Pointer to buffer
-//
+//!
 
 char *itoa(int value, char * buffer, int radix) {
     char *bufsav = buffer;
@@ -271,14 +307,16 @@ char *itoa(int value, char * buffer, int radix) {
     return bufsav;
 }
 
-//
-//! Signed Long Integer to ASCII
 //!
-//! This function converts an signed long integer value to a null-terminated
-//! string using the radix that was specified.  The result is stored in the
-//! array given by buffer parameter.
+//! \brief
+//!    Signed Long Integer to ASCII
 //!
-//! Negative numbers are printed properly.
+//! \details
+//!    This function converts an signed long integer value to a null-terminated
+//!    string using the radix that was specified.  The result is stored in the
+//!    array given by buffer parameter.
+//!
+//!    Negative numbers are printed properly.
 //!
 //! \param [in] value
 //!    Value to be printed
@@ -295,7 +333,7 @@ char *itoa(int value, char * buffer, int radix) {
 //!
 //! \returns
 //!    Pointer to buffer
-//
+//!
 
 char *ltoa(long value, char * buffer, int radix) {
     char *bufsav = buffer;
@@ -314,19 +352,22 @@ char *ltoa(long value, char * buffer, int radix) {
     return bufsav;
 }
 
-//
-//! Signed Long Long Integer to ASCII
 //!
-//! This function converts an signed long long integer value to a null-
-//! terminated string using the radix that was specified.  The result is
-//! stored in the array given by buffer parameter.
+//! \brief
+//!    Signed Long Long Integer to ASCII
 //!
-//! This function is specially hacked to work on only octal and hex numbers.
-//! These don't require long long division - just shifts.  The long long
-//! division by arbitrary radix requires a lot of support from the run time
-//! library and it isn't worth the extra code space since it will not be used.
+//! \details
+//!    This function converts an signed long long integer value to a null-
+//!    terminated string using the radix that was specified.  The result is
+//!    stored in the array given by buffer parameter.
 //!
-//! The only support for signed long long is octal or hex printing.
+//!    This function is specially hacked to work on only octal and hex numbers.
+//!    These don't require long long division - just shifts.  The long long
+//!    division by arbitrary radix requires a lot of support from the run time
+//!    library and it isn't worth the extra code space since it will not be
+//!    used.
+//!
+//!    The only support for signed long long is octal or hex printing.
 //!
 //! \param [in] value
 //!    Value to be printed
@@ -343,7 +384,7 @@ char *ltoa(long value, char * buffer, int radix) {
 //!
 //! \returns
 //!    Pointer to buffer
-//
+//!
 
 char *lltoa(long long value, char * buffer, int radix) {
     char *bufsav = buffer;
@@ -362,8 +403,9 @@ char *lltoa(long long value, char * buffer, int radix) {
     return bufsav;
 }
 
-//
-//! Function to pad field sizes to specific widths
+//!
+//! \brief
+//!    Function to pad field sizes to specific widths
 //!
 //! \param [in] width
 //!    Minimum field width.
@@ -379,7 +421,7 @@ char *lltoa(long long value, char * buffer, int radix) {
 //!
 //! \param [in, out] buffer
 //!    Workspace.
-//
+//!
 
 static void padout(int width, int prec, char padchar, bool leftFlag, char* buffer) {
     (void)prec;
@@ -398,6 +440,7 @@ static void padout(int width, int prec, char padchar, bool leftFlag, char* buffe
 
 //
 //!
+//! \brief
 //! Print formatted data to stdout
 //!
 //! The print format string has the following form:
@@ -454,7 +497,7 @@ static void padout(int width, int prec, char padchar, bool leftFlag, char* buffe
 //!
 //
 
-int printf(const char *fmt, ...)  {
+int printf(const char *fmt, ...) {
     char buffer[128];
     char *buf = buffer;
 
@@ -614,4 +657,170 @@ int printf(const char *fmt, ...)  {
     }
     va_end(va);
     return 0;
+}
+
+int uvsnprintf(char *buf, size_t n, const char *fmt, va_list va) {
+
+    //
+    // Save space for a null termination
+    //
+
+    if (n > 0) {
+        n -= 1;
+    }
+
+    char ch;
+    while ((ch = *fmt++)) {
+        if (ch != '%')  {
+            *buf++ = ch;
+        } else {
+            char padchar  = ' ';
+            unsigned int width = 0;
+            unsigned int prec  = 0;
+            unsigned int size  = 0;
+            bool leftFlag = false;
+
+            //
+            // Parse modifier
+            //
+
+            ch = *fmt++;
+            if (ch == '-') {
+                leftFlag = true;
+                ch = *fmt++;
+            }
+
+            //
+            // Parse field width
+            //
+
+            if (ch == '0') {
+                padchar = ch;
+                ch = *fmt++;
+            }
+            while (ch >= '0' && ch <= '9') {
+                width = (width * 10) + (ch - '0');
+                ch = *fmt++;
+            }
+
+            //
+            // Parse precision
+            //
+
+            if (ch == '.') {
+                ch = *fmt++;
+                while (ch >= '0' && ch <= '9') {
+                    prec = (prec * 10) + (ch - '0');
+                    ch = *fmt++;
+                }
+            }
+
+            //
+            // Parse size modifiers
+            //
+
+            if (ch == 'l') {
+                ch = *fmt++;
+                size = 1;
+            }
+            if (ch == 'l') {
+                ch = *fmt++;
+                size = 2;
+            }
+
+            //
+            // Parse conversion type
+            //
+
+            switch (ch) {
+                case 0:
+                    va_end(va);
+                    return 0;
+                case 'u' :
+                    switch(size) {
+                        case 0:
+                            __utoa(va_arg(va, unsigned int), buf, 10, lower_digits);
+                            break;
+                        case 1:
+                            __ultoa(va_arg(va, unsigned long), buf, 10, lower_digits);
+                            break;
+                        case 2:
+                            __ulltoa(va_arg(va, unsigned long long), buf, 10, lower_digits);
+                            break;
+                    }
+                    padout(width, prec, padchar, leftFlag, buf);
+                    break;
+                case 'o' :
+                    switch(size) {
+                        case 0:
+                            __utoa(va_arg(va, unsigned int), buf, 8, lower_digits);
+                            break;
+                        case 1:
+                            __ultoa(va_arg(va, unsigned long), buf, 8, lower_digits);
+                            break;
+                        case 2:
+                            __ulltoa(va_arg(va, unsigned long long), buf, 8, lower_digits);
+                            break;
+                    }
+                    padout(width, prec, padchar, leftFlag, buf);
+                    break;
+                case 'd' :
+                    switch(size) {
+                        case 0:
+                            itoa(va_arg(va, int), buf, 10);
+                            break;
+                        case 1:
+                            ltoa(va_arg(va, long), buf, 10);
+                            break;
+                        case 2:
+                            lltoa(va_arg(va, long long), buf, 10);
+                            break;
+                    }
+                    padout(width, prec, padchar, leftFlag, buf);
+                    break;
+                case 'x' :
+                    switch(size) {
+                        case 0:
+                            __utoa(va_arg(va, unsigned int), buf, 16, lower_digits);
+                            break;
+                        case 1:
+                            __ultoa(va_arg(va, unsigned long), buf, 16, lower_digits);
+                            break;
+                        case 2:
+                            __ulltoa(va_arg(va, unsigned long long), buf, 16, lower_digits);
+                            break;
+                    }
+                    padout(width, prec, padchar, leftFlag, buf);
+                    break;
+                case 'X' :
+                    switch(size) {
+                        case 0:
+                            __utoa(va_arg(va, unsigned int), buf, 16, upper_digits);
+                            break;
+                        case 1:
+                            __ultoa(va_arg(va, unsigned long), buf, 16, upper_digits);
+                            break;
+                        case 2:
+                            __ulltoa(va_arg(va, unsigned long long), buf, 16, upper_digits);
+                            break;
+                    }
+                    padout(width, prec, padchar, leftFlag, buf);
+                    break;
+                case 'c' :
+                    *buf++ = (char)(va_arg(va, int));
+                    break;
+                case 's' :
+                    padout(width, prec, 0, leftFlag, va_arg(va, char*));
+                    break;
+                case '%' :
+                    *buf++ = ch;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    va_end(va);
+    return 0;
+
 }

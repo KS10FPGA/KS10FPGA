@@ -2,10 +2,12 @@
 //
 //  KS10 Console Microcontroller
 //
-//! Secure Digial Card Interface.
+//! \brief
+//!    Secure Digial Card Interface.
 //!
-//! This object provides the interfaces that are required to interact with
-//! an SD Card.
+//! \details
+//!    This object provides the interfaces that are required to interact with
+//!    an SD Card.
 //!
 //! \file
 //!    sd.h
@@ -15,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,6 +39,7 @@
 #define __SD_H
 
 #include <stdint.h>
+#include "taskutil.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +49,7 @@ extern "C" {
     bool sdInitialize(void);
     bool sdReadSector(uint8_t *buf, uint32_t sector);
     bool sdWriteSector(const uint8_t *buf, uint32_t sector);
-    void startSdTask(void);
+    void startSdTask(struct param_t *param);
 
 #ifdef __cplusplus
 }

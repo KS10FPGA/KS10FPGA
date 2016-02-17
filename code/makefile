@@ -18,9 +18,9 @@ FILES := \
 	commands.o \
 	dz11.o \
 	epi.o \
-	fpga.o \
 	ks10.o \
 	main.o\
+	new.o \
 	rh11.o \
 	sd.o \
 	startup.o \
@@ -35,8 +35,8 @@ HEADERS := \
 	dz11.hpp \
 	epi.hpp \
 	fatal.hpp \
-	fpga.hpp \
 	ks10.hpp\
+	new.hpp \
 	prompt.hpp \
 	rh11.hpp \
 	sd.h \

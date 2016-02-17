@@ -2,19 +2,22 @@
 //
 //  KS10 Console Microcontroller
 //
-//! Commands header file.
+//! \brief
+//!    Console commands
 //!
-//! This header file defines the interfaces to the command processing functions.
+//! \details
+//!    This header file defines the interfaces to the command processing
+//!    functions.
 //!
 //! \file
-//!   commands.hpp
+//!    commands.hpp
 //!
 //! \author
 //!    Rob Doyle - doyle (at) cox (dot) net
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,6 +42,7 @@
 
 void consoleOutput(void);
 void printHaltStatus(void);
+void printRH11Debug(void);
 void startCommandTask(char *lineBuffer, xTaskHandle &taskHandle);
 
 #endif

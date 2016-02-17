@@ -548,10 +548,19 @@ module SD (
 
                  //
                  // stateINIT06
-                 //  Read 32-bit Response to CMD8
-                 //  Response should be 8'h00_00_01_aa
-                 //    8'h01 - Voltage
-                 //    8'h55 - Pattern
+                 //  Read 32-bit R7 Response to CMD8 (Figure 7-12)
+                 //
+                 //  Byte 0: (MSB)
+                 //    Must be zero
+                 //
+                 //  Byte 1:
+                 //    Must be zero
+                 //
+                 //  Byte 2:
+                 //    Voltage should be 8'h01
+                 //    
+                 //  Byte 3: (LSB)
+                 //    Check pattern should be 8'h55
                  //
 
                  stateINIT06:
@@ -914,8 +923,20 @@ module SD (
 
                  //
                  // stateINIT16
-                 //  Response should be e0_ff_80_00
                  //  Read 32-bit OCR response to CMD58
+                 //
+                 //  Byte 0: (MSB)
+                 //    Power-up status (bit 7) should be set
+                 //    Card capacity status (bit 6) should be set
+                 //
+                 //  Byte 1:
+                 //    3.3V (bit 5, or bit 4, or both) should be set
+                 //
+                 //  Byte 2:
+                 //    Don't care about contents
+                 //
+                 //  Byte 3: (LSB)
+                 //    Don't care about contents
                  //
 
                  stateINIT16:
@@ -930,18 +951,36 @@ module SD (
                           end
                         1:
                           if (spiDONE)
+                            if (spiRXD[7] & spiRXD[6]) 
+                              begin
+                                 spiOP   <= `spiTR;
+                                 spiTXD  <= 8'hff;
+                                 loopCNT <= 2;
+                              end
+                          else
                             begin
-                               spiOP   <= `spiTR;
-                               spiTXD  <= 8'hff;
-                               loopCNT <= 2;
+                               spiOP   <= `spiCSH;
+                               loopCNT <= 0;
+                               sdERR   <= 12;
+                               sdVAL   <= spiRXD;
+                               state   <= stateINFAIL;
                             end
                         2:
                           if (spiDONE)
-                            begin
-                               spiOP   <= `spiTR;
-                               spiTXD  <= 8'hff;
-                               loopCNT <= 3;
-                            end
+                            if (spiRXD[5] | spiRXD[4])
+                              begin
+                                 spiOP   <= `spiTR;
+                                 spiTXD  <= 8'hff;
+                                 loopCNT <= 3;
+                              end
+                            else
+                              begin
+                                 spiOP   <= `spiCSH;
+                                 loopCNT <= 0;
+                                 sdERR   <= 13;
+                                 sdVAL   <= spiRXD;
+                                 state   <= stateINFAIL;
+                              end
                         3:
                           if (spiDONE)
                             begin
@@ -1242,7 +1281,7 @@ module SD (
                               begin
                                  spiOP   <= `spiCSH;
                                  loopCNT <= 0;
-                                 sdERR   <= 12;
+                                 sdERR   <= 14;
                                  state   <= stateRWFAIL;
                               end
                             else
@@ -1261,7 +1300,8 @@ module SD (
                                else
                                  begin
                                     spiOP <= `spiCSH;
-                                    sdERR <= 13;
+                                    sdVAL <= spiRXD;
+                                    sdERR <= 15;
                                     state <= stateRWFAIL;
                                  end
                             end
@@ -1288,7 +1328,7 @@ module SD (
                                  begin
                                     spiOP   <= `spiCSH;
                                     loopCNT <= 0;
-                                    sdERR   <= 14;
+                                    sdERR   <= 16;
                                     state   <= stateRWFAIL;
                                  end
                                else
@@ -1310,7 +1350,7 @@ module SD (
                                   else
                                     begin
                                        spiOP <= `spiCSH;
-                                       sdERR <= 15;
+                                       sdERR <= 17;
                                        sdVAL <= spiRXD;
                                        state <= stateRWFAIL;
                                     end
@@ -1678,7 +1718,7 @@ module SD (
                                  begin
                                     spiOP   <= `spiCSH;
                                     loopCNT <= 0;
-                                    sdERR   <= 16;
+                                    sdERR   <= 18;
                                     state   <= stateRWFAIL;
                                  end
                                else
@@ -1698,7 +1738,7 @@ module SD (
                                     begin
                                        spiOP <= `spiCSH;
                                        sdVAL <= spiRXD;
-                                       sdERR <= 17;
+                                       sdERR <= 19;
                                     end
                                end
                         end
@@ -1982,7 +2022,7 @@ module SD (
                              begin
                                 spiOP   <= `spiCSH;
                                 sdVAL   <= spiRXD;
-                                sdERR   <= 18;
+                                sdERR   <= 20;
                                 loopCNT <= 0;
                                 state   <= stateRWFAIL;
                              end
@@ -2003,7 +2043,7 @@ module SD (
                             begin
                                spiOP   <= `spiCSH;
                                loopCNT <= 0;
-                               sdERR   <= 19;
+                               sdERR   <= 21;
                                state   <= stateRWFAIL;
                             end
                           else
@@ -2070,7 +2110,7 @@ module SD (
                             begin
                                spiOP   <= `spiCSH;
                                loopCNT <= 0;
-                               sdERR   <= 20;
+                               sdERR   <= 22;
                                state   <= stateRWFAIL;
                             end
                           else
@@ -2092,7 +2132,7 @@ module SD (
                                spiOP   <= `spiCSH;
                                loopCNT <= 0;
                                sdVAL   <= spiRXD;
-                               sdERR   <= 21;
+                               sdERR   <= 23;
                             end
                    end
 
@@ -2124,7 +2164,7 @@ module SD (
                           begin
                              spiOP   <= `spiCSH;
                              sdVAL   <= spiRXD;
-                             sdERR   <= 22;
+                             sdERR   <= 24;
                              state   <= stateRWFAIL;
                           end
                    end
@@ -2306,7 +2346,7 @@ module SD (
                               begin
                                  spiOP   <= `spiCSH;
                                  loopCNT <= 0;
-                                 sdERR   <= 12;
+                                 sdERR   <= 25;
                                  state   <= stateRWFAIL;
                               end
                             else
@@ -2325,7 +2365,7 @@ module SD (
                                else
                                  begin
                                     spiOP <= `spiCSH;
-                                    sdERR <= 13;
+                                    sdERR <= 26;
                                     state <= stateRWFAIL;
                                  end
                             end
@@ -2352,7 +2392,7 @@ module SD (
                                  begin
                                     spiOP   <= `spiCSH;
                                     loopCNT <= 0;
-                                    sdERR   <= 14;
+                                    sdERR   <= 27;
                                     state   <= stateRWFAIL;
                                  end
                                else
@@ -2374,7 +2414,7 @@ module SD (
                                   else
                                     begin
                                        spiOP <= `spiCSH;
-                                       sdERR <= 15;
+                                       sdERR <= 28;
                                        sdVAL <= spiRXD;
                                        state <= stateRWFAIL;
                                     end

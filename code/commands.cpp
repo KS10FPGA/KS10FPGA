@@ -2,9 +2,11 @@
 //
 //  KS10 Console Microcontroller
 //
-//! Console commands
+//! \brief
+//!    Console commands
 //!
-//! All of the console commands are implemented in this file.
+//! \details
+//!    All of the console commands are implemented in this file.
 //!
 //! \file
 //!    commands.cpp
@@ -14,7 +16,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the Free
@@ -49,7 +51,6 @@
 #include "fatfslib/ff.h"
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
-#include "telnetlib/telnet.h"
 #include "SafeRTOS/SafeRTOS_API.h"
 
 #define DEBUG_COMMANDS
@@ -90,6 +91,11 @@ static enum access_t {
 
 bool running = false;
 
+//!
+//! \brief
+//!    Function to output from KS10 console
+//!
+
 void consoleOutput(void) {
     const char cntl_e = 0x05;
     running = true;
@@ -105,15 +111,16 @@ void consoleOutput(void) {
     running = false;
 }
 
-//
-//! Parses an octal number
+//!
+//! \brief
+//!    Parses an octal number
 //!
 //! \param [in] buf
 //!     Pointer to line buffer.
 //!
 //! \returns
 //!     Number
-//
+//!
 
 static ks10_t::data_t parseOctal(const char *buf) {
 
@@ -135,14 +142,16 @@ static ks10_t::data_t parseOctal(const char *buf) {
     return num;
 }
 
-//
-//! This function builds a 36-bit data word from the contents of the .SAV file.
+//!
+//! \brief
+//!    This function builds a 36-bit data word from the contents of the .SAV
+//!    file.
 //!
 //! \param
-//!     b is a pointer to the input data
+//!    b is a pointer to the input data
 //!
 //! \details
-//!     Data is in the format:
+//!    Data is in the format:
 //!
 //!       Byte 0:   0  B00 B01 B02 B03 B04 B05 B06
 //!       Byte 1:   0  B07 B08 B09 B10 B11 B12 B13
@@ -152,13 +161,13 @@ static ks10_t::data_t parseOctal(const char *buf) {
 //!
 //!       Note the position of B35!
 //!
-//!     See "TOPS-10 Tape Processing Manual" Section 6.4 entitled "ANSI-ASCII
-//!     Mode" for format definition.
+//!    See "TOPS-10 Tape Processing Manual" Section 6.4 entitled "ANSI-ASCII
+//!    Mode" for format definition.
 //!
-//!     See also document entitled "Dumper and Backup Tape Formats".
+//!    See also document entitled "Dumper and Backup Tape Formats".
 //!
 //! \returns
-//!     36-bit data word
+//!    36-bit data word
 //!
 
 ks10_t::data_t rdword(const uint8_t *b) {
@@ -170,24 +179,26 @@ ks10_t::data_t rdword(const uint8_t *b) {
             (((ks10_t::data_t)(b[4] & 0x80)) >>  7));   // Bit 35
 }
 
-//
-//! Read the PDP10 .SAV file
 //!
-//! This function reads 5-byte buffers from the FAT filesytems and converts the
-//! data into PDP10 words.
+//! \brief
+//!    Read the PDP10 .SAV file
+//!
+//! \details
+//!    This function reads 5-byte buffers from the FAT filesytems and converts
+//!    the data into PDP10 words.
 //!
 //! \param [in] fp
-//!     file pointer
+//!    file pointer
 //!
 //! \pre
-//!     The filesystem must be mounted and the file must be opened.
+//!    The filesystem must be mounted and the file must be opened.
 //!
 //! \returns
-//!     a 36-bit PDP10 word
+//!    a 36-bit PDP10 word
 //!
 //! \note
-//!     The .SAV file should be a multiple of 5 bytes in size.
-//
+//!    The .SAV file should be a multiple of 5 bytes in size.
+//!
 
 ks10_t::data_t getdata(FIL *fp) {
 
@@ -202,16 +213,19 @@ ks10_t::data_t getdata(FIL *fp) {
     return rdword(buffer);
 }
 
-//
-//! Load code into the KS10
 //!
-//! This function reads a .SAV file and writes the contents of that file to
-//! the KS10 memory.  The .SAV file also contains the starting address of the
-//! executable.  This address is loaded into the Console Instruction Register.
+//! \brief
+//!    Load code into the KS10
+//!
+//! \details
+//!    This function reads a .SAV file and writes the contents of that file to
+//!    the KS10 memory.  The .SAV file also contains the starting address of
+//!    the executable.  This address is loaded into the Console Instruction
+//!    Register.
 //!
 //! \param [in] filename
-//!     filename of the .SAV file
-//
+//!    filename of the .SAV file
+//!
 
 static bool loadCode(const char * filename) {
 
@@ -272,13 +286,16 @@ static bool loadCode(const char * filename) {
     }
 }
 
-//
-//! Print RH11 Debug Word
-//
+//!
+//! \brief
+//!    Print RH11 Debug Word
+//!
 
 void printRH11Debug(void) {
-    volatile ks10_t::rh11debug_t * rh11debug = ks10_t::getRH11debug();
-    printf("RH11 Status summary: 0x%016llx\n"
+    uint64_t rh11stat = ks10_t::getRH11debug();
+    ks10_t::rh11debug_t *rh11debug = reinterpret_cast<ks10_t::rh11debug_t *>(&rh11stat);
+
+    printf("KS10: RH11 status is 0x%016llx\n"
            "  State = %d\n"
            "  Err   = %d\n"
            "  Val   = %d\n"
@@ -288,7 +305,7 @@ void printRH11Debug(void) {
            "  Res2  = 0x%02x\n"
            "  Res3  = 0x%02x\n"
            "",
-           *reinterpret_cast<volatile uint64_t*>(rh11debug),
+           rh11stat,
            rh11debug->state,
            rh11debug->err,
            rh11debug->val,
@@ -299,19 +316,16 @@ void printRH11Debug(void) {
            rh11debug->res3);
 }
 
-//
-//! Print Halt Status
 //!
-//! This function prints the Halt Status Word and the Halt Status Block.
+//! \brief
+//!    Print Halt Status
 //!
 //! \details
+//!    This function prints the Halt Status Word and the Halt Status Block.
+//!
 //!    The code executes a RDHSB instruction in the Console Instruction
 //!    Register to get the address of the Halt Status Block from the CPU.
 //!
-//! \todo
-//!    The microcode doesn't seem to store the FE/SC registers like the
-//!    documents describe.   Delete it?
-//
 
 void printHaltStatus(void) {
 
@@ -404,19 +418,21 @@ void printHaltStatus(void) {
            haltStatusBlock.vma);
 }
 
-//
-//! Breakpoint
+#ifdef CUSTOM_CMD
+
 //!
-//! The <b>BR</b> (Breakpoint) command creates a hardware breakpoint.
+//! \brief
+//!   Breakpoint control
+//!
+//! \details
+//!    The <b>BR</b> (Breakpoint) command creates a hardware breakpoint.
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
-
-#ifdef CUSTOM_CMD
+//!
 
 static void cmdBR(int argc, char *argv[]) {
     const char *usage =
@@ -478,21 +494,23 @@ static void cmdBR(int argc, char *argv[]) {
 
 #endif
 
-//
-//! Boot System
 //!
-//! The <b>BT</b> (Boot) command loads code into KS10 memory and starts
-//! execution.
+//! \brief
+//!    Boot System
 //!
-//! If a filename is supplied as an argument, the <b>BT</b> command will
-//! attempt to load a file from the SD Card of that filename.
+//! \details
+//!    The <b>BT</b> (Boot) command loads code into KS10 memory and starts
+//!    execution.
+//!
+//!    If a filename is supplied as an argument, the <b>BT</b> command will
+//!    attempt to load a file from the SD Card of that filename.
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdBT(int argc, char *argv[]) {
     const char *usage =
@@ -521,21 +539,23 @@ static void cmdBT(int argc, char *argv[]) {
     }
 }
 
-//
-//! Cache Enable
 //!
-//! The <b>CE</b> (Cache Enable) command controls the operation the KS10's
-//! cache.
+//! \brief
+//!    Cache Enable
 //!
-//! - The <b>CE 0</b> command will disable the KS10's cache.
-//! - The <b>CE 1</b> command will enable the KS10's cache.
+//! \details
+//!    The <b>CE</b> (Cache Enable) command controls the operation the KS10's
+//!    cache.
+//!
+//!    - The <b>CE 0</b> command will disable the KS10's cache.
+//!    - The <b>CE 1</b> command will enable the KS10's cache.
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdCE(int argc, char *argv[]) {
     const char *usage =
@@ -563,17 +583,19 @@ static void cmdCE(int argc, char *argv[]) {
     }
 }
 
-//
-//! Continue
 //!
-//! The <b>CO</b> (Continue) command causes the KS10 to exit the <b>HALT</b>
-//! state and continue operation.
+//! \brief
+//!    Continue
+//!
+//! \details
+//!    The <b>CO</b> (Continue) command causes the KS10 to exit the <b>HALT</b>
+//!    state and continue operation.
 //!
 //! \sa cmdHA, cmdSI
 //!
 //! \param [in] argc
 //!    Number of arguments.
-//
+//!
 
 static void cmdCO(int argc, char *[]) {
     const char *usage =
@@ -588,18 +610,20 @@ static void cmdCO(int argc, char *[]) {
     }
 }
 
-//
-//! Deposit IO
 //!
-//! The <b>DI</b> (Deposit IO) deposits data into the IO address previously
-//! loaded by the <b>LA</b> (Load Address) command.
+//! \brief
+//!    Deposit IO
+//!
+//! \details
+//!    The <b>DI</b> (Deposit IO) deposits data into the IO address previously
+//!    loaded by the <b>LA</b> (Load Address) command.
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdDI(int argc, char *argv[]) {
     access = accessIO;
@@ -619,18 +643,20 @@ static void cmdDI(int argc, char *argv[]) {
     }
 }
 
-//
-//! Deposit Memory
 //!
-//! The <b>DM</b> (Deposit Memory) deposits data into the memory address
-//! previously loaded by the <b>LA</b> (Load Address) command.
+//! \brief
+//!    Deposit Memory
+//!
+//! \details
+//!    The <b>DM</b> (Deposit Memory) deposits data into the memory address
+//!    previously loaded by the <b>LA</b> (Load Address) command.
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdDM(int argc, char *argv[]) {
     access = accessMEM;
@@ -651,17 +677,19 @@ static void cmdDM(int argc, char *argv[]) {
 }
 
 //!
-//! Deposit Next
+//! \brief
+//!    Deposit Next
 //!
-//! The <b>DN</b> (Deposit Next) command deposits data into the next memory
-//! or IO address depending on the last <b>DM</b> or <b>DI</b> command.
+//! \details
+//!    The <b>DN</b> (Deposit Next) command deposits data into the next memory
+//!    or IO address depending on the last <b>DM</b> or <b>DI</b> command.
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdDN(int argc, char *argv[]) {
     address += 1;
@@ -688,11 +716,19 @@ static void cmdDN(int argc, char *argv[]) {
 }
 
 //!
-//! Disk Select
+//! \brief
+//!    Disk Select
 //!
-//! The <b>DS</b> (Disk Select) select the Unibus Adapter, RH11 Base address,
-//!  and Unit for booting.
-//
+//! \details
+//!    The <b>DS</b> (Disk Select) select the Unibus Adapter, RH11 Base address,
+//!    and Unit for booting.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//!
 
 static void cmdDS(int argc, char *argv[]) {
    const char *usage =
@@ -755,13 +791,20 @@ static void cmdDS(int argc, char *argv[]) {
    }
 }
 
-//!
-//! Test DZ11
-//!
-//! The <b>DZ</b> (DZ11) tests the DZ11 Terminal Multiplexer
-//
-
 #ifdef CUSTOM_CMD
+
+//!
+//! \brief
+//!    Test DZ11
+//!
+//!    The <b>DZ</b> (DZ11) tests the DZ11 Terminal Multiplexer
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//!
 
 static void cmdDZ(int argc, char *argv[]) {
     const char *usage =
@@ -799,15 +842,17 @@ static void cmdDZ(int argc, char *argv[]) {
 
 #endif
 
-//
-//! Examine IO
 //!
-//! The <b>EI</b> (Examine IO) command reads from the last IO address
-//! specified.
+//! \brief
+//!    Examine IO
+//!
+//! \details
+//!    The <b>EI</b> (Examine IO) command reads from the last IO address
+//!    specified.
 //!
 //! \param [in] argc
 //!    Number of arguments.
-//
+//!
 
 static void cmdEI(int argc, char *[]) {
     access = accessIO;
@@ -826,18 +871,19 @@ static void cmdEI(int argc, char *[]) {
     }
 }
 
-//
-//! Examine Memory
 //!
-//! The <b>EM</b> (Examine Memory) command reads from the last memory address
-//! specified.
+//! \brief
+//!    Examine Memory
+//!
+//! \details
+//!    The <b>EM</b> (Examine Memory) command reads from the last memory address
+//!    specified.
 //!
 //! \sa cmdLA, cmdEI, cmdEN
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
-//
 
 static void cmdEM(int argc, char *[]) {
     access = accessMEM;
@@ -857,17 +903,19 @@ static void cmdEM(int argc, char *[]) {
     }
 }
 
-//
-//! Examine Next
 //!
-//! The <b>EN</b> (Examine Next) command reads from next IO or memory address.
+//! \brief
+//!    Examine Next
+//!
+//! \details
+//!    The <b>EN</b> (Examine Next) command reads from next IO or memory
+//!    address.
 //!
 //! \sa cmdLA, cmdEI, cmdEM, cmdEN
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
-//
 
 static void cmdEN(int argc, char *[]) {
     const char *usage =
@@ -895,12 +943,14 @@ static void cmdEN(int argc, char *[]) {
     }
 }
 
-//
-//! Execute the next instruction
 //!
-//! The <b>EX</b> (Execute) command causes the KS10 to execute the
-//! instruction in the Console Instruction Register, then return to
-//! the halt state.
+//! \brief
+//!    Execute the next instruction
+//!
+//! \details
+//!    The <b>EX</b> (Execute) command causes the KS10 to execute the
+//!    instruction in the Console Instruction Register, then return to the
+//!    halt state.
 //!
 //! \sa cmdCO, cmdSI, cmdHA
 //!
@@ -909,7 +959,7 @@ static void cmdEN(int argc, char *[]) {
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdEX(int argc, char *argv[]) {
     const char *usage =
@@ -926,6 +976,17 @@ static void cmdEX(int argc, char *argv[]) {
 }
 
 #ifdef CUSTOM_CMD
+
+//!
+//! \brief
+//!    Begin execution of KS10
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//!
 
 static void cmdGO(int argc, char *argv[]) {
     const char *usage =
@@ -1039,22 +1100,23 @@ static void cmdGO(int argc, char *argv[]) {
 
 #endif
 
-//
-//! Halt the KS10
 //!
-//! The <b>HA</b> (Halt) command halts the KS10 CPU at the end of the current
-//! instruction.  The KS10 will remain in the <b>HALT</b> state until it is
-//! single-stepped or it is commanded to continue.
+//! \brief
+//!    Halt the KS10
 //!
-//! This command negates the <b>RUN</b> bit in the Console Control Register and
-//! waits for the KS10 to halt.
+//! \details
+//!    The <b>HA</b> (Halt) command halts the KS10 CPU at the end of the current
+//!    instruction.  The KS10 will remain in the <b>HALT</b> state until it is
+//!    single-stepped or it is commanded to continue.
+//!
+//!    This command negates the <b>RUN</b> bit in the Console Control Register
+//!    and waits for the KS10 to halt.
 //!
 //! \sa cmdCO, cmdSI
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
-//
 
 static void cmdHA(int argc, char *[]) {
     const char *usage =
@@ -1072,11 +1134,12 @@ static void cmdHA(int argc, char *[]) {
     }
 }
 
-//
-//! Print halt status word
-//
-
 #ifdef CUSTOM_CMD
+
+//!
+//! \brief
+//!    Print the halt status word
+//!
 
 static void cmdHS(int , char *[]) {
     printHaltStatus();
@@ -1084,11 +1147,13 @@ static void cmdHS(int , char *[]) {
 
 #endif
 
-//
-//! Load Memory Address
 //!
-//! The <b>LA</b> (Load Memory Address) command sets the memory address for the
-//! next commands.
+//! \brief
+//!    Load Memory Address
+//!
+//! \details
+//!    The <b>LA</b> (Load Memory Address) command sets the memory address for
+//!    the next commands.
 //!
 //! \sa cmdLI
 //!
@@ -1097,7 +1162,7 @@ static void cmdHS(int , char *[]) {
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdLA(int argc, char *argv[]) {
     access = accessMEM;
@@ -1122,22 +1187,25 @@ static void cmdLA(int argc, char *argv[]) {
     }
 }
 
-//
-//! Load Diagnostic Monitor SMMON
 //!
-//! The <b>LB</b> (Load Diagnostic) command loads the diagnostic Monitor.
+//! \brief
+//!    Load Diagnostic Monitor SMMON
 //!
-//
+//! \details
+//!    The <b>LB</b> (Load Diagnostic) command loads the diagnostic Monitor.
+//!
 
 static void cmdLB(int, char *[]) {
     printf("LB Command is not implemented, yet.\n");
 }
 
-//
-//! Load IO Address
 //!
-//! The <b>LI</b> (Load IO Address) command sets the IO address for the next
-//! commands.
+//! \brief
+//!    Load IO Address
+//!
+//! \details
+//!    The <b>LI</b> (Load IO Address) command sets the IO address for the next
+//!    commands.
 //!
 //! \sa cmdLI
 //!
@@ -1146,7 +1214,7 @@ static void cmdLB(int, char *[]) {
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdLI(int argc, char *argv[]) {
     access = accessIO;
@@ -1170,21 +1238,23 @@ static void cmdLI(int argc, char *argv[]) {
     }
 }
 
-//
-//! Master Reset
 //!
-//! The <b>MR</b> (Master Reset) command hard resets the KS10 CPU.
+//! \brief
+//!    Master Reset
 //!
-//! When the KS10 is started from <b>RESET</b>, the KS10 will peform a
-//! selftest and initialize the ALU.  When the microcode initialization is
-//! completed, the KS10 will enter the <b>HALT</b> state.
+//! \details
+//!    The <b>MR</b> (Master Reset) command hard resets the KS10 CPU.
+//!
+//!    When the KS10 is started from <b>RESET</b>, the KS10 will peform a
+//!    selftest and initialize the ALU.  When the microcode initialization is
+//!    completed, the KS10 will enter the <b>HALT</b> state.
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdMR(int argc, char *argv[]) {
     const char *usage =
@@ -1211,19 +1281,92 @@ static void cmdMR(int argc, char *argv[]) {
     }
 }
 
-//
-//! Memory Read
+#ifdef CUSTOM_CMD
+
 //!
-//! This function peforms memory reads.
+//! \brief
+//!    Network Interface
+//!
+//! \details
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the argument.
-//
+//!
+
+extern "C" unsigned long lwIPLocalIPAddrGet(void);
+extern "C" unsigned long lwIPLocalNetMaskGet(void);
+extern "C" unsigned long lwIPLocalGWAddrGet(void);
+extern "C" void lwIPLocalMACGet(unsigned char *pucMAC);
+extern "C" void lwIPNetworkConfigChange(unsigned long uIPAddr, unsigned long ulNetMask,
+                                        unsigned long ulGWAddr, unsigned long ulIPMode);
+#define IPADDR_USE_DHCP 1
+
+static void cmdNE(int argc, char *argv[]) {
+    const char *usage =
+        "Usage: NE {DISP | RESET}\n"
+        " NE DISP  - Display Network Addresses.\n"
+        " NE RESET - Reset Network Addresses.\n";
+
+    if (argc == 2) {
+        if (strnicmp(argv[1], "DISP", 4) == 0) {
+            uint32_t addr = lwIPLocalIPAddrGet();
+            if (addr == 0) {
+                printf("  Unable to obtain IP Address.\n");
+            } else {
+                printf("  IP Address      : %ld.%ld.%ld.%ld\n",
+                       ((addr >>  0) & 0xff),
+                       ((addr >>  8) & 0xff),
+                       ((addr >> 16) & 0xff),
+                       ((addr >> 24) & 0xff));
+                addr = lwIPLocalNetMaskGet();
+                printf("  Net Mask        : %ld.%ld.%ld.%ld\n",
+                       ((addr >>  0) & 0xff),
+                       ((addr >>  8) & 0xff),
+                       ((addr >> 16) & 0xff),
+                       ((addr >> 24) & 0xff));
+                addr = lwIPLocalGWAddrGet();
+                printf("  Gateway Address : %ld.%ld.%ld.%ld\n",
+                       ((addr >>  0) & 0xff),
+                       ((addr >>  8) & 0xff),
+                       ((addr >> 16) & 0xff),
+                       ((addr >> 24) & 0xff));
+                uint8_t buffer[6];
+                lwIPLocalMACGet(buffer);
+                printf("  MAC Address     : %02x:%02x:%02x:%02x:%02x:%02x\n",
+                       buffer[0], buffer[1], buffer[2],
+                       buffer[3], buffer[4], buffer[5]);
+            }
+        } else if (strnicmp(argv[1], "RESET", 5) == 0) {
+            lwIPNetworkConfigChange(0, 0, 0, IPADDR_USE_DHCP);
+            printf("  Network parameters were reset.\n");
+        } else {
+            printf(usage);
+        }
+    } else {
+        printf(usage);
+    }
+}
+
+#endif
 
 #ifdef CUSTOM_CMD
+
+//!
+//! \brief
+//!    Memory Read
+//!
+//! \details
+//!    This function peforms memory reads.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the argument.
+//!
 
 static void cmdRD(int argc, char *argv[]) {
     if (argc == 2) {
@@ -1241,11 +1384,18 @@ static void cmdRD(int argc, char *argv[]) {
 
 #endif
 
-//
-//! Test RH11
-//
-
 #ifdef CUSTOM_CMD
+
+//!
+//! \brief
+//!    Execute RH11 tests
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the argument.
+//!
 
 static void cmdRH(int argc, char *argv[]) {
     const char *usage =
@@ -1299,15 +1449,16 @@ static void cmdRH(int argc, char *argv[]) {
 
 #endif
 
-//
-//! SD Card
+//!
+//! \brief
+//!   SD Card Commands
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 #ifdef CUSTOM_CMD
 
@@ -1330,17 +1481,19 @@ static void cmdSD(int argc, char *argv[]) {
 
 #endif
 
-//
-//! Single Step
 //!
-//! The <b>SI</b> (Step Instruction) single steps the KS10 CPU.
+//! \brief
+//!    Single Step
+//!
+//! \details
+//!    The <b>SI</b> (Step Instruction) single steps the KS10 CPU.
 //!
 //! \sa cmdHA, cmdCO
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
-//
+//!
 
 static void cmdSI(int argc, char *[]) {
     const char *usage =
@@ -1354,16 +1507,17 @@ static void cmdSI(int argc, char *[]) {
     }
 }
 
-//
-//! Shutdown Command
 //!
-//! The <b>SH</b> (Shutdown) command deposits non-zero data in KS10 memory
-//! location 30.  This causes TOPS20 to shut down without issuing a warning.
+//! \brief
+//!    Shutdown Command
+//!
+//! \details
+//!    The <b>SH</b> (Shutdown) command deposits non-zero data in KS10 memory
+//!    location 30.  This causes TOPS20 to shut down without issuing a warning.
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
-//
 
 static void cmdSH(int argc, char *[]) {
     const char *usage =
@@ -1377,22 +1531,24 @@ static void cmdSH(int argc, char *[]) {
     }
 }
 
-//
-//! Start Command
 //!
-//! The <b>ST</b> (Start) command stuffs a JRST instruction into the
-//! <b>Console Instruction Register</b> and begins execution starting
-//! with that instruction.
+//! \brief
+//!    Start Command
 //!
-//! The address must be a virtual address and is therefore limited to
-//! 0777777.
+//! \details
+//!    The <b>ST</b> (Start) command stuffs a JRST instruction into the
+//!    <b>Console Instruction Register</b> and begins execution starting
+//!    with that instruction.
+//!
+//!    The address must be a virtual address and is therefore limited to
+//!    0777777.
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdST(int argc, char *argv[]) {
     const char *usage =
@@ -1408,7 +1564,7 @@ static void cmdST(int argc, char *argv[]) {
         } else {
             printf(usage);
             printf("Invalid Address\n"
-                   "Valid addresses are %08o-%08llo\n",
+                   "Valid addresses are %08llo-%08llo\n",
                    ks10_t::memStart, ks10_t::maxVirtAddr);
         }
     } else {
@@ -1416,21 +1572,23 @@ static void cmdST(int argc, char *argv[]) {
     }
 }
 
-//
-//! Timer Enable
 //!
-//! The <b>TE</b> (Timer Enable) command controls the operation the KS10's
-//! one millisecond system timer.
+//! \brief
+//!    Timer Enable
 //!
-//! - The <b>TE 0</b> command will disable the KS10's system timer.
-//! - The <b>TE 1</b> command will enable the KS10's system timer
+//! \details
+//!    The <b>TE</b> (Timer Enable) command controls the operation the KS10's
+//!    one millisecond system timer.
+//!
+//!    - The <b>TE 0</b> command will disable the KS10's system timer.
+//!    - The <b>TE 1</b> command will enable the KS10's system timer
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 void cmdTE(int argc, char *argv[]) {
     const char *usage =
@@ -1458,21 +1616,23 @@ void cmdTE(int argc, char *argv[]) {
     }
 }
 
-//
-//! Traps Enable
 //!
-//! The <b>TP</b> (Trap Enable) command controls the operation the KS10's
-//! trap system.
+//! \brief
+//!    Traps Enable
 //!
-//! - The <b>TP 0</b> command will disable the KS10's traps.
-//! - The <b>TP 1</b> command will enable the KS10's traps.
+//! \details
+//!    The <b>TP</b> (Trap Enable) command controls the operation the KS10's
+//!    trap system.
+//!
+//!    - The <b>TP 0</b> command will disable the KS10's traps.
+//!    - The <b>TP 1</b> command will enable the KS10's traps.
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdTP(int argc, char *argv[]) {
     const char *usage =
@@ -1501,6 +1661,18 @@ static void cmdTP(int argc, char *argv[]) {
 }
 
 #ifdef CUSTOM_CMD
+
+//!
+//! \brief
+//!    Control the Trace Buffer
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//!
+
 static void cmdTR(int argc, char *argv[]) {
     const char *usage =
         "Usage: TR {ON RESET TRIG DUMP}\n"
@@ -1549,19 +1721,21 @@ static void cmdTR(int argc, char *argv[]) {
 
 #endif
 
-//
-//! Memory Write
+#ifdef CUSTOM_CMD
+
 //!
-//! This function peforms writes to memory.
+//! \brief
+//!    Memory Write
+//!
+//! \details
+//!    This function peforms writes to memory.
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
-
-#ifdef CUSTOM_CMD
+//!
 
 static void cmdWR(int argc, char *argv[]) {
     if (argc == 3) {
@@ -1578,22 +1752,28 @@ static void cmdWR(int argc, char *argv[]) {
 
 #endif
 
-//
-//! Not implemented
 //!
-//! This function handles commands that are not implemented.
+//! \brief
+//!    Not implemented
+//!
+//! \details
+//!    This function handles commands that are not implemented.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
+//!
 
 static void cmdXX(int, char *argv[]) {
     printf("Command \"%s\" is not implemented.\n", argv[0]);
 }
 
-//
-//! Zero memory
-//
+//!
+//! \brief
+//!    Zero memory
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
 
 static void cmdZM(int argc, char */*argv*/[]) {
     const char *usage =
@@ -1611,19 +1791,21 @@ static void cmdZM(int argc, char */*argv*/[]) {
     }
 }
 
-//
-//! Test function
+#ifdef CUSTOM_CMD
+
 //!
-//! This function tests the printf() function.
+//! \brief
+//!    Test function
+//!
+//! \details
+//!    This function tests the printf() function and a bunch of other junk
 //!
 //! \param [in] argc
 //!    Number of arguments.
 //!
 //! \param [in] argv
 //!    Array of pointers to the arguments.
-//
-
-#ifdef CUSTOM_CMD
+//!
 
 static void cmdZZ(int argc, char *argv[]) {
 
@@ -1640,22 +1822,6 @@ static void cmdZZ(int argc, char *argv[]) {
         printf("This is a test (long long octal  ) %012llo\n", 0123456ull);
         printf("This is a test (long long hex    ) 0x%llx\n", 0x0123456789abcdefULL);
         printf("This is a test (long long hex    ) 0x%llx\n", 0x95232633579bfe34ull);
-
-        {
-            address = 2;
-            access  = accessMEM;
-            ks10_t::data_t data = 1;
-            ks10_t::writeMem(address, data);
-            if (ks10_t::nxmnxd()) {
-                printf("Write failed. (NXM)\n");
-            }
-            ks10_t::data_t data1 = ks10_t::readMem(address);
-            if (ks10_t::nxmnxd()) {
-                printf("Memory read failed. (NXM)\n");
-            } else {
-                printf("%012llo\n", data1);
-            }
-        }
 
     } else if (argc == 2) {
         if (strncmp(argv[1], "ON", 2) == 0) {
@@ -1692,15 +1858,17 @@ static void cmdZZ(int argc, char *argv[]) {
 
 #endif
 
-//
-//! Parse Commands
 //!
-//! This function parses the commands and dispatches to the various handler
-//! functions.
+//! \brief
+//!    Parse Commands
+//!
+//! \details
+//!    This function parses the commands and dispatches to the various handler
+//!    functions.
 //!
 //! \param [in] buf
 //!    command line
-//
+//!
 
 static void parseCommand(char * buf) {
 
@@ -1768,6 +1936,9 @@ static void parseCommand(char * buf) {
         {"MR", cmdMR},
         {"MS", cmdXX},          // Not implemented.
         {"MT", cmdXX},          // Not implemented.
+#ifdef CUSTOM_CMD
+        {"NE", cmdNE},          // Network info
+#endif
         {"PE", cmdXX},          // Not implemented.
         {"PM", cmdXX},          // Not implemented.
         {"PW", cmdXX},          // Not implemented.
@@ -1847,15 +2018,16 @@ static void parseCommand(char * buf) {
     //xTaskDelete(NULL);
 }
 
-//
-//! Command processing task
+//!
+//! \brief
+//!    Command processing task
 //!
 //! \param
 //!    param - pointer to command line buffer
 //!
 //! \note
 //!    When the command finishes executing, the task deletes itself.
-//
+//!
 
 void taskCommand(void * param) {
     char * buf = reinterpret_cast<char *>(param);
@@ -1864,8 +2036,9 @@ void taskCommand(void * param) {
     xTaskDelete(NULL);
 }
 
-//
-//! Command Processing
+//!
+//! \brief
+//!    Command Processing
 //!
 //! \note
 //!    Command processing is implemented as a task so that it can be:
@@ -1877,7 +2050,6 @@ void taskCommand(void * param) {
 //!    This function executes within the context of the Console Task and not
 //!    the command processing task.
 //!
-//
 
 void startCommandTask(char *lineBuffer, xTaskHandle &taskHandle) {
     static signed char __align64 stack[4096-4];

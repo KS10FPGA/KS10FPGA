@@ -2,10 +2,12 @@
 //
 //  KS10 Console Microcontroller
 //
-//! External Peripheral Interface (EPI) Object
+//! \brief
+//!    External Peripheral Interface (EPI) Object
 //!
-//! This object abstracts the EPI interface. The console microcontroller
-//! interfaces to the KS10 FPGA over the EPI interface.
+//! \details
+//!    This object abstracts the EPI interface. The console microcontroller
+//!    interfaces to the KS10 FPGA over the EPI interface.
 //!
 //! \file
 //!    epi.cpp
@@ -15,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,12 +43,14 @@
 #include "driverlib/inc/hw_memmap.h"
 
 //!
-//! Constructor
+//! \brief
+//!    Constructor
 //!
-//! The constructor initializes this object.
+//! \details
+//!    The constructor initializes this object.
 //!
 //! \returns
-//!     Nothing.
+//!    Nothing.
 //!
 
 void EPIInitialize(void) {
@@ -167,9 +171,13 @@ void EPIInitialize(void) {
                                      EPI_ADDR_RAM_BASE_6));
 }
 
-//
-//! Return EPI Address
-//
+//!
+//! \brief
+//!    Return EPI Address
+//!
+//! \returns
+//!    offset of EPI interface
+//!
 
 unsigned long EPIGetAddressMap(void) {
     return 0x60000000;

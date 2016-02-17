@@ -4,17 +4,17 @@
 //
 //! Telnet Task
 //!
-//! This module initializes LWIP and the telnet task
+//! This module initializes lwIP and the telnet task
 //!
 //! \file
-//!      telnet_task.h
+//!      telnet_task.hpp
 //!
 //! \author
 //!      Rob Doyle - doyle (at) cox (dot) net
 //
 //******************************************************************************
 //
-// Copyright (C) 2014-2015 Rob Doyle
+// Copyright (C) 2014-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify it under
 // the terms of the GNU General Public License as published by the Free Software
@@ -32,17 +32,15 @@
 //
 //******************************************************************************
 
-#ifndef __TELNET_TASK_H
-#define __TELNET_TASK_H
+#ifndef __TELNET_TASK_HPP
+#define __TELNET_TASK_HPP
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "telnet.hpp"
+#include "taskutil.hpp"
 
-void startTelnetTask(void);
+extern telnet_t * telnet23;
+extern telnet_t * telnet2000;
 
-#ifdef __cplusplus
-}
-#endif
+void startTelnetTask(param_t *param);
 
 #endif

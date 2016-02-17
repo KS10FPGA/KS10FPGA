@@ -2,9 +2,11 @@
 //
 //  KS10 Console Microcontroller
 //
-//! UART Object
+//! \brief
+//!    UART Object
 //!
-//! This object provide a UART abstraction.
+//! \details
+//!    This object provide a UART abstraction.
 //!
 //! \file
 //!    uart.cpp
@@ -14,7 +16,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,18 +51,19 @@
 // Static variables
 //
 
-static const uint32_t baudrate = 9600;
+static const uint32_t baudrate = 9600;                          //!< baudrate
+void initializeUART(void) __attribute__((constructor(101)));    //!< run as constructor
 
-void initializeUART(void) __attribute__((constructor(101)));
-
-//
-//! Initialize the UART
 //!
-//! This function is executed like a constructor so that the UART is
-//! initialize before main() is called.  This guarantees that this function
-//! is executed before all others.  This allows all functions called by main()
-//! to use UART or STDIO functions.
-//
+//! \brief
+//!    Initialize the UART
+//!
+//! \details
+//!    This function is executed like a constructor so that the UART is
+//!    initialize before main() is called.  This guarantees that this function
+//!    is executed before all others.  This allows all functions called by
+//!    main() to use UART or STDIO functions.
+//!
 
 void initializeUART(void) {
 
@@ -80,12 +83,14 @@ void initializeUART(void) {
                             UART_CONFIG_WLEN_8);
 }
 
-//
-//! Enable UART Interrupts
 //!
-//! This function enables the UART interrupts.  Interrupts should be enabled
-//! after the serial interface queue has been created.
-//
+//! \brief
+//!    Enable UART Interrupts
+//!
+//! \details
+//!    This function enables the UART interrupts.  Interrupts should be enabled
+//!    after the serial interface queue has been created.
+//!
 
 void enableUARTIntr(void) {
     ROM_IntEnable(INT_UART1);
@@ -93,34 +98,37 @@ void enableUARTIntr(void) {
     ROM_UARTEnable(UART1_BASE);
 }
 
-//
-//! This function returns the state of the UART Transmitter.
+//!
+//! \brief
+//!    This function returns the state of the UART Transmitter.
 //!
 //! \returns
-//!     Returns true if the UART transmitter is full.  False otherwise.
-//
+//!    Returns true if the UART transmitter is full.  False otherwise.
+//!
 
 bool txFull(void) {
     return ROM_UARTBusy(UART1_BASE);
 }
 
-//
-//! This function outputs a character to the UART transmitter.
 //!
-//! \param ch
-//!     Character to output to UART transmitter.
-//
+//! \brief
+//!    This function outputs a character to the UART transmitter.
+//!
+//! \param ch -
+//!    Character to output to UART transmitter.
+//!
 
 void putUART(char ch) {
     ROM_UARTCharPut(UART1_BASE, ch);
 }
 
-//
-//! This function gets a character from the UART receiver queue.
+//!
+//! \brief
+//!    This function gets a character from the UART receiver queue.
 //!
 //! \returns
-//!     Character read from UART receiver.  -1 if empty.
-//
+//!    Character read from UART receiver.  -1 if empty.
+//!
 
 int getUART(void) {
     char ch;
@@ -132,9 +140,10 @@ int getUART(void) {
     }
 }
 
-//
-//! This function queues a character to a handler task.
-//
+//!
+//! \brief
+//!    This function queues a character to a handler task.
+//!
 
 void uart1IntHandler(void) {
 

@@ -2,7 +2,9 @@
 //
 //  KS10 Console Microcontroller
 //
-//! This header file defines the prompt string.
+//!
+//! \brief
+//!    This header file defines the prompt string.
 //!
 //! \file
 //!    prompt.hpp
@@ -12,7 +14,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +36,7 @@
 #define __PROMPT_HPP
 
 //
-// Prompt string
+//! Prompt string
 //
 
 #define PROMPT "KS10> "

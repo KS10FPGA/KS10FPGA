@@ -2,10 +2,12 @@
 //
 //  KS10 Console Microcontroller
 //
-//! RH11 Interface Object
+//! \brief
+//!    RH11 Interface Object
 //!
-//! This object allows the console to interact with the RH11 Disk Controller.
-//! This is mostly for testing the RH11 from the console.
+//! \details
+//!    This object allows the console to interact with the RH11 Disk Controller.
+//!    This is mostly for testing the RH11 from the console.
 //!
 //! \file
 //!    rh11.hpp
@@ -15,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,7 +43,8 @@
 #include "ks10.hpp"
 
 //!
-//! RH11 Interface Object
+//! \brief
+//!    RH11 Interface Object
 //!
 
 class rh11_t {
@@ -168,9 +171,13 @@ class rh11_t {
         void testWrchk(ks10_t::data_t unit);
         void boot(ks10_t::data_t unit);
 
-        //
-        // Constructor
-        //
+        //!
+        //! \brief
+        //!    Constructor
+        //!
+        //! \param base_addr -
+        //!    Base address of RH11 address
+        //!
 
         rh11_t (ks10_t::addr_t base_addr) :
             cs1_addr((base_addr & 07777700) + cs1_offset),
@@ -189,193 +196,290 @@ class rh11_t {
             ;
         }
 
-        //
-        // Write to CS1
-        //
+        //!
+        //! \brief
+        //!    Write to CS1 register
+        //!
+        //! \param data -
+        //!    data to be written to the CS1 register
+        //!
 
         void cs1_write(ks10_t::data_t data) {
             ks10_t::writeIO(cs1_addr, data);
         }
 
-        //
-        // Read from CS1
-        //
+        //!
+        //! \brief
+        //!    Read from CS1 register
+        //!
+        //! \returns
+        //!    Contents of CS1 register
+        //!
 
         ks10_t::data_t cs1_read(void) {
             return ks10_t::readIO(cs1_addr);
         }
 
-        //
-        // Write to WC
-        //
+        //!
+        //! \brief
+        //!    Write to WC register
+        //!
+        //! \param data -
+        //!    data to be written to the WC register
+        //!
 
         void wc_write(ks10_t::data_t data) {
             ks10_t::writeIO(wc_addr, data);
         }
 
         //
-        // Read from WC
-        //
+        //!
+        //! \brief
+        //!    Read from WC register
+        //!
+        //! \returns
+        //!    Contents of WC register
+        //!
 
         ks10_t::data_t wc_read(void) {
             return ks10_t::readIO(wc_addr);
         }
 
-        //
-        // Write to BA
-        //
+        //!
+        //! \brief
+        //!    Write to BA register
+        //!
+        //! \param data -
+        //!    data to be written to the BA register
+        //!
 
         void ba_write(ks10_t::data_t data) {
             ks10_t::writeIO(ba_addr, data);
         }
 
-        //
-        // Read from BA
-        //
+        //!
+        //! \brief
+        //!    Read from BA register
+        //!
+        //! \returns
+        //!    Contents of BA register
+        //!
 
         ks10_t::data_t ba_read(void) {
             return ks10_t::readIO(ba_addr);
         }
 
-        //
-        // Write to DA
-        //
+        //!
+        //! \brief
+        //!    Write to DA register
+        //!
+        //! \param data -
+        //!    data to be written to the DA register
+        //!
 
         void da_write(ks10_t::data_t data) {
             ks10_t::writeIO(da_addr, data);
         }
 
-        //
-        // Read from DA
-        //
+        //!
+        //! \brief
+        //!    Read from DA register
+        //!
+        //! \returns
+        //!    Contents of DA register
+        //!
 
         ks10_t::data_t da_read(void) {
             return ks10_t::readIO(da_addr);
         }
 
-        //
-        // Write to CS2
-        //
+        //!
+        //! \brief
+        //!    Write to CS2 register
+        //!
+        //! \param data -
+        //!    data to be written to the CS2 register
+        //!
 
         void cs2_write(ks10_t::data_t data) {
             ks10_t::writeIO(cs2_addr, data);
         }
 
-        //
-        // Read from CS2
-        //
+        //!
+        //! \brief
+        //!    Read from CS2 register
+        //!
+        //! \returns
+        //!    Contents of CS2 register
+        //!
 
         ks10_t::data_t cs2_read(void) {
             return ks10_t::readIO(cs2_addr);
         }
 
-        //
-        // Write to DS
-        //
+        //!
+        //! \brief
+        //!    Write to DS register
+        //!
+        //! \param data -
+        //!    data to be written to the DS register
+        //!
 
         void ds_write(ks10_t::data_t data) {
             ks10_t::writeIO(ds_addr, data);
         }
 
-        //
-        // Read from DS
-        //
+        //!
+        //! \brief
+        //!    Read from DS register
+        //!
+        //! \returns
+        //!    Contents of DS register
+        //!
 
         ks10_t::data_t ds_read(void) {
             return ks10_t::readIO(ds_addr);
         }
 
-        //
-        // Write to AS
-        //
+        //!
+        //! \brief
+        //!    Write to AS register
+        //!
+        //! \param data -
+        //!    data to be written to the AS register
+        //!
 
         void as_write(ks10_t::data_t data) {
             ks10_t::writeIO(as_addr, data);
         }
 
-        //
-        // Read from AS
-        //
+        //!
+        //! \brief
+        //!    Read from AS register
+        //!
+        //! \returns
+        //!    Contents of AS register
+        //!
 
         ks10_t::data_t as_read(void) {
             return ks10_t::readIO(as_addr);
         }
 
-        //
-        // Write to LA
-        //
+        //!
+        //! \brief
+        //!    Write to LA register
+        //!
+        //! \param data -
+        //!    data to be written to the LA register
+        //!
 
         void la_write(ks10_t::data_t data) {
             ks10_t::writeIO(la_addr, data);
         }
 
-        //
-        // Read from LA
-        //
+        //!
+        //! \brief
+        //!    Read from LA register
+        //!
+        //! \returns
+        //!    Contents of LA register
+        //!
 
         ks10_t::data_t la_read(void) {
             return ks10_t::readIO(la_addr);
         }
 
-        //
-        // Write to DB
-        //
+        //!
+        //! \brief
+        //!    Write to DB register
+        //!
+        //! \param data -
+        //!    data to be written to the DB register
+        //!
 
         void db_write(ks10_t::data_t data) {
             ks10_t::writeIO(db_addr, data);
         }
 
-        //
-        // Read from DB
-        //
+        //!
+        //! \brief
+        //!    Read from DB register
+        //!
+        //! \returns
+        //!    Contents of DB register
+        //!
 
         ks10_t::data_t db_read(void) {
             return ks10_t::readIO(db_addr);
         }
 
-        //
-        // Write to MR
-        //
+        //!
+        //! \brief
+        //!    Write to MR register
+        //!
+        //! \param data -
+        //!    data to be written to the MR register
+        //!
 
         void mr_write(ks10_t::data_t data) {
             ks10_t::writeIO(mr_addr, data);
         }
 
-        //
-        // Read from MR
-        //
+        //!
+        //! \brief
+        //!    Read from MR register
+        //!
+        //! \returns
+        //!    Contents of MR register
+        //!
 
         ks10_t::data_t mr_read(void) {
             return ks10_t::readIO(mr_addr);
         }
 
-        //
-        // Write to OF
-        //
+        //!
+        //! \brief
+        //!    Write to OF register
+        //!
+        //! \param data -
+        //!    data to be written to the OF register
+        //!
 
         void of_write(ks10_t::data_t data) {
             ks10_t::writeIO(of_addr, data);
         }
 
-        //
-        // Read from OF
-        //
+        //!
+        //! \brief
+        //!    Read from OF register
+        //!
+        //! \returns
+        //!    Contents of OF register
+        //!
 
         ks10_t::data_t of_read(void) {
             return ks10_t::readIO(of_addr);
         }
 
-        //
-        // Write to DC
-        //
+        //!
+        //! \brief
+        //!    Write to DC register
+        //!
+        //! \param data -
+        //!    data to be written to the DC register
+        //!
 
         void dc_write(ks10_t::data_t data) {
             ks10_t::writeIO(dc_addr, data);
         }
 
-        //
-        // Read from DC
-        //
+        //!
+        //! \brief
+        //!    Read from DC register
+        //!
+        //! \returns
+        //!    Contents of DC register
+        //!
 
         ks10_t::data_t dc_read(void) {
             return ks10_t::readIO(dc_addr);

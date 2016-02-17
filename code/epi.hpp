@@ -2,10 +2,12 @@
 //
 //  KS10 Console Microcontroller
 //
-//! External Peripheral Interface (EPI) Object
+//! \brief
+//!    External Peripheral Interface (EPI) Object
 //!
-//! This object abstracts the EPI interface. The console microcontroller
-//! interfaces to the KS10 FPGA over the EPI interface.
+//! \details
+//!    This object abstracts the EPI interface. The console microcontroller
+//!    interfaces to the KS10 FPGA over the EPI interface.
 //!
 //! \file
 //!    epi.hpp
@@ -15,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

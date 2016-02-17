@@ -2,30 +2,32 @@
 //
 //  KS10 Console Microcontroller
 //
-//! Startup Code
+//! \brief
+//!    Startup Code
 //!
-//! This module initializes the C/C++ Run Time environment.
+//! \details
+//!    This module initializes the C/C++ Run Time environment.
 //!
-//! This code does the following:
-//! -# Creates the interrupt vector table.
-//! -# Clears .bss
-//! -# Initializes the 'initialized data' from flash
-//! -# Runs C++ static constructors.
-//! -# Calls main()
+//!    This code does the following:
+//!    -# Creates the interrupt vector table.
+//!    -# Clears .bss
+//!    -# Initializes the 'initialized data' from flash
+//!    -# Runs C++ static constructors.
+//!    -# Calls main()
 //!
-//! All interrupt vectors are weakly bound to a interrupt handler that does
-//! nothing.  The use an interrupt vector, just create a function with
-//! the proper name and it will override the weak binding.
+//!    All interrupt vectors are weakly bound to a interrupt handler that does
+//!    nothing.  The use an interrupt vector, just create a function with
+//!    the proper name and it will override the weak binding.
 //!
-//! In C++, the preinit operations are not supported because shared
-//! libraries are not supported and therefore static constructors from
-//! shared libraries are not supported.
+//!    In C++, the preinit operations are not supported because shared
+//!    libraries are not supported and therefore static constructors from
+//!    shared libraries are not supported.
 //!
-//! C++ static destructors are also not implemented because main() should
-//! never exit.
+//!    C++ static destructors are also not implemented because main() should
+//!    never exit.
 //!
-//! Some of the interrupts have independant handlers so that theycan be caught
-//! independantly by the debugger.
+//!    Some of the interrupts have independant handlers so that they can be
+//!    caught independantly by the debugger.
 //!
 //! \file
 //!    startup.cpp
@@ -35,7 +37,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -133,18 +135,18 @@ void __weak __alias i2s0IntHandler(void);               //!< I2S0 interrupt vect
 void __weak __alias epiIntHandler(void);                //!< EPI interrupt vector
 void __weak __alias gpiojIntHandler(void);              //!< GPIO Port J interrupt vector
 
-//
-// Macros to cast entry point addresses to pointers-to-functions.
-//
+//!
+//! Macros to cast entry point addresses to pointers-to-functions.
+//!
 
 #define svcallIntHandler   (void (*)(void))vSafeRTOS_SVC_Handler_Address
 #define pendIntHandler     (void (*)(void))vSafeRTOS_PendSV_Handler_Address
 #define tickIntHandler     (void (*)(void))vSafeRTOS_SysTick_Handler_Address
 #define enetIntHandler     lwIPEthernetIntHandler
 
-//
+//!
 //! Vectors and Stack
-//
+//!
 
 struct vectStruct_t {
     unsigned long *stackEnd;    // Top of stack
@@ -225,15 +227,17 @@ struct vectStruct_t {
 };
 
 //!
-//! Reset Vector
+//! \brief
+//!    Reset Vector
 //!
-//! This code is placed at the reset vector.  It initializes the C/C++
-//! run-time environment.  It does the following:
+//! \details
+//!    This code is placed at the reset vector.  It initializes the C/C++
+//!    run-time environment.  It does the following:
 //!
-//! -# Initializes the "initialized data"
-//! -# Clears bss
-//! -# Executes the static constructors.
-//! -# Calls main()
+//!    -# Initializes the "initialized data"
+//!    -# Clears bss
+//!    -# Executes the static constructors.
+//!    -# Calls main()
 //!
 
 void reset(void) {
@@ -285,11 +289,13 @@ void reset(void) {
     }
 }
 
-//
-//! NMI Interrupt Handler
 //!
-//! This code halts the processor.
-//
+//! \brief
+//!    NMI Interrupt Handler
+//!
+//! \details
+//!    This code halts the processor.
+//!
 
 void nmiIntHandler(void) {
     for (;;) {
@@ -297,11 +303,13 @@ void nmiIntHandler(void) {
     }
 }
 
-//
-//! Fault Interrupt Handler
 //!
-//! This code halts the processor.
-//
+//! \brief
+//!    Fault Interrupt Handler
+//!
+//! \details
+//!    This code halts the processor.
+//!
 
 void faultIntHandler(void) {
     for (;;) {
@@ -309,11 +317,13 @@ void faultIntHandler(void) {
     }
 }
 
-//
-//! Null Interrupt Handler
 //!
-//!  Otherwise unhandled interrupts come here.
-//
+//! \brief
+//!    Null Interrupt Handler
+//!
+//! \details
+//!    Otherwise unhandled interrupts come here.
+//!
 
 void nullIntHandler(void) {
     for (;;) {

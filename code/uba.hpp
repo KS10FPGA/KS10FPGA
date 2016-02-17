@@ -2,10 +2,12 @@
 //
 //  KS10 Console Microcontroller
 //
-//! IO Bridge Interface Object
+//! \brief
+//!    IO Bridge Interface Object
 //!
-//! This object allows the console to interact with the IO Bridge Adapter.
-//! This is mostly for testing the various devices from the console.
+//! \details
+//!    This object allows the console to interact with the IO Bridge Adapter.
+//!    This is mostly for testing the various devices from the console.
 //!
 //! \file
 //!    uba.hpp
@@ -15,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,7 +41,8 @@
 #include "ks10.hpp"
 
 //!
-//! UBA Interface Object
+//! \brief
+//!    UBA Interface Object
 //!
 
 class uba_t {
@@ -88,9 +91,13 @@ class uba_t {
         static const ks10_t::data_t pag_ftm    = 0100000;
         static const ks10_t::data_t pag_vld    = 0040000;
 
-        //
-        // Constructor
-        //
+        //!
+        //! \brief
+        //!    Constructor
+        //!
+        //! \param base_addr -
+        //!    Base address of Unibus Address
+        //!
 
         uba_t (ks10_t::addr_t base_addr) :
             csr_addr((base_addr & 07000000) + uba_offset + csr_offset),
@@ -98,41 +105,70 @@ class uba_t {
             ;
         }
 
-        //
-        // Write to CSR
-        //
+        //!
+        //! \brief
+        //!    Write to CSR
+        //!
+        //! \param data -
+        //!    data to write to the CSR
+        //!
 
         void csr_write(ks10_t::data_t data) {
             ks10_t::writeIO(csr_addr, data);
         }
 
-        //
-        // Read from CSR
-        //
+        //!
+        //! \brief
+        //!    Read from CSR
+        //!
+        //! \return
+        //!    Contents of CSR Register
+        //!
 
         ks10_t::data_t csr_read(void) {
             return ks10_t::readIO(csr_addr);
         }
 
-        //
-        // Write to Paging Memory
-        //
+        //!
+        //! \brief
+        //!    Write to Paging Memory
+        //!
+        //! \param offset -
+        //!    address of Paging Memory
+        //!
+        //! \param data -
+        //!    data to write to Paging Memory
+        //!
 
         void pag_write(ks10_t::addr_t offset, ks10_t::data_t data) {
             ks10_t::writeIO(pag_addr + offset, data);
         }
 
-        //
-        // Read from Paging Memory
-        //
+        //!
+        //! \brief
+        //!    Read from Paging Memory
+        //!
+        //! \param offset -
+        //!    address of Paging Memory
+        //!
+        //! \returns
+        //!    Contents of Paging Memmory
+        //!
 
         ks10_t::data_t pag_read(ks10_t::addr_t offset) {
             return ks10_t::readIO(pag_addr + offset);
         }
 
-        //
-        // Function to convert address to page
-        //
+        //!
+        //! \brief
+        //!    Function to convert address to page
+        //!
+        //! \param addr -
+        //!    memory address
+        //!
+        //! \returns
+        //!    page assocated with the address
+        //!
 
         static inline ks10_t::data_t addr2page(ks10_t::addr_t addr) {
             return (addr >> 9) & 03777;

@@ -4,7 +4,7 @@
 //
 //! Telnet Task
 //!
-//! This module initializes LWIP and the telnet task
+//! This module initializes lwIP and the telnet task
 //!
 //! \file
 //!      telnet_task.cpp
@@ -14,7 +14,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2014-2015 Rob Doyle
+// Copyright (C) 2014-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify it under
 // the terms of the GNU General Public License as published by the Free Software
@@ -33,47 +33,78 @@
 //******************************************************************************
 
 #include "rom.h"
-#include "lwiplib.h"
-#include "telnet.h"
-#include "telnet_task.h"
 #include "stdio.h"
+#include "lwiplib.h"
+#include "telnet.hpp"
+#include "telnet_task.hpp"
 #include "inc/hw_ints.h"
 #include "inc/hw_types.h"
 
-//
-// Telnet handles
-//
+//!
+//! Telnet handles
+//!
 
-handle_t handle23;
-handle_t handle2000;
+telnet_t* telnet23;
+telnet_t* telnet2000;
 
-//
-//! Setup Services Callback
+//!
+//! \brief
+//!    Telnet initalization
+//!
+//! \details
+//!    This function creates a telnet object and returns a pointer to it.
+//!
+//! \param port -
+//!    telnet port
+//!
+//! \param debug -
+//!    enable debug
+//!
+//! \returns
+//!    pointer to telnet object (i.e., "this pointer") as a handle or NULL if
+//!    system could not create the telnet object.
+//!
+
+telnet_t* telnet_init(unsigned int port, bool debug) {
+
+    telnet_t *telnet = new telnet_t(port, debug);
+    if (telnet == NULL) {
+        printf("NET : Can't create telnet object.\n");
+    }
+    return telnet;
+
+}
+
+//!
+//! Setup Telnet Callback
 //!
 //! \details
 //!    This function initializes the various telnet ports.
 //!
 //! \param
-//!    arg - pointer to argument.  Not used.
+//!    arg - pointer to task parameter.
 //!
-//
 
-void SetupServices(void *arg) {
-    (void)arg;
-    handle23   = telnet_init(23);
-    handle2000 = telnet_init(2000);
-    printf("NET : Telnet started.\n");
+static void setupTelnet(void *arg) {
+
+    param_t *param = static_cast<param_t *>(arg);
+    bool debug = param->debug;
+
+    telnet23   = telnet_init(23, debug);
+    telnet2000 = telnet_init(2000, debug);
+    printf("NET : Telnet servers started.\n");
+
 }
 
-//
+//!
 //! startTelnetTask
 //!
 //! \details
 //!    This function initializes the LWIP task and sets up a callback to
 //!    initialize the telnet interfaces.
-//
+//!
 
-void startTelnetTask(void) {
+void startTelnetTask(param_t *param) {
 
     //
     // Get the MAC address from the user registers.
@@ -128,12 +159,12 @@ void startTelnetTask(void) {
     // Setup the remaining services inside the TCP/IP thread's context.
     //
 
-    tcpip_callback(SetupServices, 0);
+    tcpip_callback(setupTelnet, param);
 
     //
     // Success.
     //
 
     printf("NET : Successfully started telnet task.\n");
-    return;
+
 }

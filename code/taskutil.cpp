@@ -2,17 +2,21 @@
 //
 //  KS10 Console Microcontroller
 //
-//! Task Utilities
+//! \brief
+//!    Task Utilities
+//!
+//! \details
+//!    These functions are generically useful for the SafeRTOS tasking
 //!
 //! \file
-//!   taskutil.cpp
+//!    taskutil.cpp
 //!
 //! \author
 //!    Rob Doyle - doyle (at) cox (dot) net
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,9 +40,16 @@
 #include "taskutil.hpp"
 #include "SafeRTOS/SafeRTOS_API.h"
 
-//
-//! Lookup error message
-//
+//!
+//! \brief
+//!    Lookup error message
+//!
+//! \param error -
+//!    SafeRTOS error number
+//!
+//! \returns
+//!    Pointer to character string with error message.
+//!
 
 const char *taskError(portBASE_TYPE error) {
     switch (error) {
@@ -103,25 +114,46 @@ const char *taskError(portBASE_TYPE error) {
     }
 }
 
-//
-//! Task Error Hook
-//
+//!
+//! \brief
+//!    Task Error Hook
+//!
+//! \details
+//!    This function is called whenever a task error occurs.
+//!
+//! \param handle -
+//!    handle of the failed task
+//!
+//! \param name -
+//!    name of the failed task
+//!
+//! \param error -
+//!    error number of the failed task
+//!
 
 void taskErrorHook(xTaskHandle handle, signed portCHAR *name, portBASE_TYPE error) {
-    fatal("\nSafeRTOS Error: task=\"%s\": %s (handle = 0x%08lx)\n", name, taskError(error), (unsigned long)handle);
+    printf("\nSafeRTOS Error: task=\"%s\": %s (handle = 0x%08lx)\n", name, taskError(error), (unsigned long)handle);
+    fatal();
 }
 
-//
-//! Task Delete Hook
-//
+//!
+//! \brief
+//!    Task Delete Hook
+//!
+//! \details
+//!    This function is execute whenever a task is deleted.
+//!
 
 void taskDeleteHook(xTaskHandle /* xTaskToDelete */) {
     ;
 }
 
-//
-//! Idle Task
-//
+//!
+//! \brief
+//!    Idle Task
+//!
+//! \details
+//!    This function is executed whenever there is no task to execute.
 
 void taskIdleHook(void) {
     ;

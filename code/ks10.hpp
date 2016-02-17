@@ -2,10 +2,12 @@
 //
 //  KS10 Console Microcontroller
 //
-//! KS10 Interface Object
+//! \brief
+//!    KS10 Interface Object
 //!
-//! This object provides the interfaces that are required to interact with the
-//! KS10 FPGA.
+//! \details
+//!    This object provides the interfaces that are required to interact with
+//!    the KS10 FPGA.
 //!
 //! \file
 //!    ks10.hpp
@@ -15,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the Free
@@ -138,7 +140,8 @@ class ks10_t {
         // Functions
         //
 
-        ks10_t(void (*consIntrHandler)(void), void (*haltIntrHandler)(void));
+        ks10_t(void);
+        static void enableInterrupts (void (*consIntrHandler)(void), void (*haltIntrHandler)(void));
         static uint32_t lh(data_t data);
         static uint32_t rh(data_t data);
         static data_t readRegStat(void);
@@ -175,8 +178,8 @@ class ks10_t {
         static void step(void);
         static void contin(void);
         static void begin(void);
-        static void boot(void);
-        static bool waitHalt(void);
+        static void boot(bool debug);
+        static void waitHalt(bool debug);
         static bool timerEnable(void);
         static void timerEnable(bool enable);
         static bool trapEnable(void);
@@ -187,11 +190,12 @@ class ks10_t {
         static void cpuReset(bool enable);
         static void cpuIntr(void);
         static bool nxmnxd(void);
-        static bool testRegs(bool verbose);
+        static void testRegs(bool debug);
         static haltStatusWord_t &getHaltStatusWord(void);
         static haltStatusBlock_t &getHaltStatusBlock(addr_t addr);
-        static volatile rh11debug_t *getRH11debug(void);
-        static bool printFirmwareRev(void);
+        static uint64_t getRH11debug(void);
+        static void programFirmware(bool debug);
+        static void checkFirmware(bool debug);
         static void (*consIntrHandler)(void);
         static void (*haltIntrHandler)(void);
         static void putchar(int ch);
@@ -241,7 +245,7 @@ class ks10_t {
         static constexpr volatile uint64_t * regRHCCR = reinterpret_cast<uint64_t *>(epiOffset + 0x28);
 
         //!< RH11 Debug Register
-        static constexpr volatile rh11debug_t * regRH11Debug = reinterpret_cast<rh11debug_t *>(epiOffset + 0x30);
+        static constexpr volatile uint64_t * regRH11Debug = reinterpret_cast<uint64_t *>(epiOffset + 0x30);
 
         //!< Debug Control/Status Register
         static constexpr volatile uint64_t * regDCSR = reinterpret_cast<uint64_t *>(epiOffset + 0x38);
@@ -262,12 +266,10 @@ class ks10_t {
         // Low level interface functions
         //
 
+        static void go(void);
         static data_t readReg64(volatile void * reg);
         static void writeReg64(volatile void * reg, data_t data);
-        static void go(void);
-        static bool testReg08(volatile void * addr, const char *name, bool verbose, uint64_t mask);
-        static bool testReg64(volatile void * addr, const char *name, bool verbose, uint64_t mask);
-        static bool testRegister(volatile void * addr, const char *name, bool verbose, uint64_t mask = 0xffffffffffffffffull);
+        static bool testReg64(volatile void * addr, const char *name, bool verbose, uint64_t mask = 0xffffffffffffffffull);
 
         //
         // Control/Status Register Bits
@@ -327,63 +329,77 @@ class ks10_t {
         static const data_t dbmrIORD   = (            flagRead  | flagIO);
         static const data_t dbmrIOWR   = (            flagWrite | flagIO);
 
+        //
+        // RH11 Controller State
+        //
+
+        static const uint8_t rh11INIT00 =   1;
+        static const uint8_t rh11IDLE   = 124;
+        static const uint8_t rh11INFAIL = 126;
+
 };
 
-//
-//! This function returns the left-half of a data word
 //!
-//! \param
-//!     data is the value of the 36-bit word
+//! \brief
+//!    This function returns the left-half of a data word
+//!
+//! \param data -
+//!    data is the value of the 36-bit word
 //!
 //! \returns
-//!     18-bit left-half of 36-bit data word
-//
+//!    18-bit left-half of 36-bit data word
+//!
 
 inline uint32_t ks10_t::lh(data_t data) {
     return ((data >> 18) & 0777777);
 }
 
-//
-//! This function returns the right-half of a data word
 //!
-//! \param
-//!     data is the value of the 36-bit word
+//! \brief
+//!    This function returns the right-half of a data word
+//!
+//! \param data -
+//!    data is the value of the 36-bit word
 //!
 //! \returns
-//!     18-bit right-half of 36-bit data word
-//
+//!    18-bit right-half of 36-bit data word
+//!
 
 inline uint32_t ks10_t::rh(data_t data) {
     return (data & 0777777);
 }
 
-//
-//! This function reads a 36-bit register from FPGA.
 //!
-//! The address is the register address mapped through the EPI.
+//! \brief
+//!    This function reads a 36-bit register from FPGA.
 //!
-//! \param
-//!     reg is the base address of the register.
+//! \details
+//!    The address is the register address mapped through the EPI.
+//!
+//! \param reg -
+//!    base address of the register.
 //!
 //! \returns
-//!     Register contents.
-//
+//!    Register contents.
+//!
 
 inline ks10_t::data_t ks10_t::readReg64(volatile void * reg) {
     return *reinterpret_cast<volatile data_t*>(reg);
 }
 
-//
-//! This function writes to a 36-bit register in the FPGA.
 //!
-//! The address is the register address mapped through the EPI.
+//! \brief
+//!    This function writes to a 36-bit register in the FPGA.
 //!
-//! \param
-//!     reg is the base address of the register.
+//! \details
+//!    The address is the register address mapped through the EPI.
 //!
-//! \param
-//!     data is the data to be written to the register.
-//
+//! \param reg -
+//!    base address of the register.
+//!
+//! \param data -
+//!    data is the data to be written to the register.
+//!
 
 inline void ks10_t::writeReg64(volatile void * reg, data_t data) {
     *reinterpret_cast<volatile data_t *>(reg) = data;

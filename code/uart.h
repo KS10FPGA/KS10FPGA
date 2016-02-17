@@ -2,7 +2,8 @@
 //
 //  KS10 Console Microcontroller
 //
-//! UART Object
+//! \brief
+//!    UART Object
 //!
 //! \file
 //!    uart.h
@@ -12,7 +13,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

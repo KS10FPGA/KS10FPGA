@@ -2,10 +2,12 @@
 //
 //  KS10 Console Microcontroller
 //
-//! DZ11 Interface Object
+//! \brief
+//!    DZ11 Interface Object
 //!
-//! This object allows the console to interact with the DZ11 Terminal
-//! Multiplexer.   This is mostly for testing the DZ11 from the console.
+//! \details
+//!    This object allows the console to interact with the DZ11 Terminal
+//!    Multiplexer.   This is mostly for testing the DZ11 from the console.
 //!
 //! \file
 //!    dz11.cpp
@@ -15,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,10 +39,11 @@
 #include "stdio.h"
 #include "dz11.hpp"
 
-//
-//! Setup a DZ11 line
 //!
-//! \param line
+//! \brief
+//!    Setup a DZ11 line
+//!
+//! \param line -
 //!    line number
 //!
 
@@ -79,8 +82,9 @@ void dz11_t::setup(unsigned int line) {
     ks10_t::writeIO(csr_addr, csr_mse);
 }
 
-//
-//! Print a test message on the selected DZ11 output
+//!
+//! \brief
+//!    Print a test message on the selected DZ11 output
 //!
 //! \param line
 //!    ASCII line number
@@ -120,8 +124,9 @@ void dz11_t::testTX(char line) {
     }
 }
 
-//
-//! Echo the selected TTY input to the console.
+//!
+//! \brief
+//!    Echo the selected TTY input to the console.
 //!
 //! \param line
 //!    ASCII line number
@@ -177,8 +182,9 @@ void dz11_t::testRX(char line) {
     }
 }
 
-//
-//! Echo the selected TTY input to the back to the TTY output.
+//!
+//! \brief
+//!    Echo the selected TTY input to the back to the TTY output.
 //!
 //! \param line
 //!    ASCII line number

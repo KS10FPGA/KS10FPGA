@@ -2,17 +2,21 @@
 //
 //  KS10 Console Microcontroller
 //
-//! Task Utilities
+//! \brief
+//!    Task Utilities
+//!
+//! \details
+//!    These functions are generically useful for the SafeRTOS tasking
 //!
 //! \file
-//!   taskutil.hpp
+//!    taskutil.hpp
 //!
 //! \author
 //!    Rob Doyle - doyle (at) cox (dot) net
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,9 +43,17 @@
 extern "C" {
 #endif
 
-//
-// Task priorities
-//
+//!
+//! Task parameters
+//!
+
+struct param_t {
+    bool debug;
+};
+
+//!
+//! Task priorities
+//!
 
 enum {
     taskIdlePriority    = 0,    // lowest priority

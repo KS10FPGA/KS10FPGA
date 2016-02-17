@@ -2,10 +2,12 @@
 //
 //  KS10 Console Microcontroller
 //
-//! Main Program
+//! \brief
+//!    Main Program
 //!
-//! This is the console program entry point.  This function does some simple
-//! hardware checks and then starts the console processing.
+//! \details
+//!    This is the console program entry point.  This function does some simple
+//!    hardware checks and then starts the console processing.
 //!
 //! \file
 //!    main.cpp
@@ -15,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,6 +38,7 @@
 #include "stdio.h"
 #include "fatal.hpp"
 #include "console.hpp"
+#include "taskutil.hpp"
 #include "driverlib/rom.h"
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
@@ -43,11 +46,20 @@
 #include "driverlib/inc/hw_memmap.h"
 #include "driverlib/inc/hw_sysctl.h"
 
-//
-// Main Program
-//
+//!
+//! Debugging parameters
+//!
+
+static param_t param;
+
+//!
+//! \brief
+//!    Main Program
+//!
 
 int main(void) {
+
+    param.debug = false;
 
     //
     // Enable Interrupts
@@ -84,14 +96,17 @@ int main(void) {
     //
 
     if (!REVISION_IS_C3) {
-        fatal("CPU : Unsupported processor revision.\n");
+        printf("CPU : Unsupported processor revision.\n");
+        if (!param.debug) {
+            fatal();
+        }
     }
 
     //
     // Start Console.  This function should never return here.
     //
 
-    startConsole();
+    startConsole(&param);
 
     return 0;
 }

@@ -2,30 +2,32 @@
 //
 //  KS10 Console Microcontroller
 //
-//! Initialization Task
+//! \brief
+//!    Console Interface
 //!
-//! This task initializes the console system.
+//! \details
+//!    This task implements the console system.
 //!
 //! \file
-//!      console.cpp
+//!    console.cpp
 //!
 //! \note:
-//!      Regarding Errata 34-172-ERR-1-003-004:
+//!    Regarding Errata 34-172-ERR-1-003-004:
 //!
-//!      The task stacks must be aligned to an 8-byte boundary for printf() to
-//!      work properly.  This requires two things:
+//!    The task stacks must be aligned to an 8-byte boundary for printf() to
+//!    work properly.  This requires two things:
 //!
-//!      -#.  The first byte of the stack buffer must reside at an address
-//!           that is aligned to an 8 byte boundary; (see __aligned macro).
-//!      -#.  The size of the stack (in bytes) must be a number that is
-//!           divisible by 4 but not by 8 e.g. 500.
+//!    -#.  The first byte of the stack buffer must reside at an address
+//!         that is aligned to an 8 byte boundary; (see __aligned macro).
+//!    -#.  The size of the stack (in bytes) must be a number that is
+//!         divisible by 4 but not by 8 e.g. 500.
 //!
 //! \author
-//!      Rob Doyle - doyle (at) cox (dot) net
+//!    Rob Doyle - doyle (at) cox (dot) net
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the Free
@@ -49,7 +51,6 @@
 #include "uart.h"
 #include "stdio.h"
 #include "epi.hpp"
-#include "fpga.hpp"
 #include "ks10.hpp"
 #include "align.hpp"
 #include "fatal.hpp"
@@ -58,26 +59,40 @@
 #include "commands.hpp"
 #include "taskutil.hpp"
 #include "driverlib/rom.h"
-#include "telnetlib/telnet.h"
-#include "telnetlib/telnet_task.h"
+#include "telnetlib/telnet_task.hpp"
 #include "SafeRTOS/SafeRTOS_API.h"
 
 #define DEBUG_CONSOLE
 
 #ifdef DEBUG_CONSOLE
-#define debug(...) printf(__VA_ARGS__)
+#define __debug(...) printf(__VA_ARGS__)
 #else
-#define debug(...)
+#define __debug(...)
 #endif
 
 //
-//! Serial Input Queue
-//!
-//! The interface between the UART input interrupt and the background
-//! processing is the Serial Input Queue.
+// VT100 colors
 //
 
+static const char vt100fg_red[] = "\e[0;31m";
+static const char vt100fg_grn[] = "\e[0;32m";
+static const char vt100fg_rst[] = "\e[0m";
+
+//!
+//! \brief
+//!    Serial Input Queue
+//!
+//! \details
+//!    The Serial Input Queue is the interface between the UART input interrupt
+//!    and the background processing.
+//!
+
 xQueueHandle serialQueueHandle;
+
+//!
+//! \brief
+//!    Create the serial input queue
+//!
 
 void createSerialQueue(void) {
     const unsigned long queueLen    = 128;
@@ -87,14 +102,16 @@ void createSerialQueue(void) {
 
     portBASE_TYPE status = xQueueCreate(serialBuffer, queueBufLen, queueLen, queueSize, &serialQueueHandle);
     if (status != pdPASS) {
-        fatal("RTOS: Failed to create serial input queue.  Status was %s\n", taskError(status));
+        printf("RTOS: Failed to create serial input queue.  Status was %s\n", taskError(status));
+        fatal();
     }
 }
 
-//
-// This interrupt is triggered by the KS10 when it wants to receiver a character
-// or send a character.
-//
+//!
+//! \brief
+//!    This interrupt is triggered by the KS10 when it wants to receiver a
+//!    character or send a character.
+//!
 
 void consInterrupt(void) {
     int ch = ks10_t::getchar();
@@ -103,21 +120,23 @@ void consInterrupt(void) {
     }
 }
 
-//
-// This interrupt is triggered when KS10 changes run/halt state
-//
+//!
+//! \brief
+//!    This interrupt is triggered when KS10 changes run/halt state.
+//!
 
 void haltInterrupt(void) {
     if (ks10_t::halt()) {
-        printf("KS10: %sHalted.%s\n", "\e[0;31m", "\e[0m");
+        printf("KS10: %sHalted.%s\n", vt100fg_red, vt100fg_rst);
         printHaltStatus();
     } else {
-        printf("KS10: %sRunning.%s\n", "\e[0;32m", "\e[0m");
+        printf("KS10: %sRunning.%s\n", vt100fg_grn, vt100fg_rst);
     }
 }
 
-//
-//! Read characters from the input and create a command line
+//!
+//! \brief
+//!    Read characters from the input and create a command line
 //!
 //! \param buf
 //!    command line buffer
@@ -130,7 +149,7 @@ void haltInterrupt(void) {
 //!
 //! \note
 //!    Strings are converted to upper case for processing.
-//
+//!
 
 bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
 
@@ -155,7 +174,7 @@ bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
             case cntl_c:
                 status = xTaskDelete(taskHandle);
                 if (status != pdPASS) {
-                    debug("RTOS: xTaskDelete() failed.  Status was %s\n",
+                    __debug("RTOS: xTaskDelete() failed.  Status was %s\n",
                     taskError(status));
                 }
                 printf("^C\r\n%s ", PROMPT);
@@ -163,7 +182,7 @@ bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
             case cntl_q:
                 status = xTaskResume(taskHandle);
                 if (status != pdPASS) {
-                    debug("RTOS: xTaskResume() failed.  Status was %s\n",
+                    __debug("RTOS: xTaskResume() failed.  Status was %s\n",
                     taskError(status));
                 }
                 putchar('^');
@@ -172,7 +191,7 @@ bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
             case cntl_s:
                 status = xTaskSuspend(taskHandle);
                 if (status != pdPASS) {
-                    debug("RTOS: xTaskSuspend() failed.  Status was %s\n",
+                    __debug("RTOS: xTaskSuspend() failed.  Status was %s\n",
                     taskError(status));
                 }
                 putchar('^');
@@ -211,7 +230,6 @@ bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
                 if (count < len - 1) {
                     buf[count++] = toupper(ch);
                     putchar(ch);
-                    lwip_putchar(handle23, ch);
                 } else {
                     buf[count++] = 0;
                     putchar('\r');
@@ -223,20 +241,15 @@ bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
     }
 }
 
-//
-//! Console Task
-//
+//!
+//! \brief
+//!    Console Task
+//!
 
-void taskConsole(void * /*param*/) {
+void taskConsole(void* arg) {
 
-    //
-    // Program the FPGA
-    //
-
-    bool success = fpgaProg();
-    if (!success) {
-        fatal("");
-    }
+    param_t *param = static_cast<param_t *>(arg);
+    bool debug = param->debug;
 
     //
     // Initialize the EPI interface to the FPGA
@@ -249,53 +262,55 @@ void taskConsole(void * /*param*/) {
     // Initialize KS10 object
     //
 
-    ks10_t ks10(consInterrupt, haltInterrupt);
+    ks10_t ks10;
 
     //
-    // Print the firmware revsion.  If this fails, the FPGA is not programmed
-    // or the bus connection is broken.  Either way, there is no reason to
-    // continue.
+    // Program the firmware
     //
 
-    success = ks10.printFirmwareRev();
-    if (!success) {
-        fatal("FPGA: Unable to communicate with the KS10 FPGA.\n");
-    }
+    ks10.programFirmware(debug);
 
     //
-    // Test the FPGA register interface
+    // Check the firmware revsion.
     //
 
-    success = ks10.testRegs(false);
-    if (!success) {
-        fatal("FPGA: Problem accessing KS10 control registers.\n");
-    }
+    ks10.checkFirmware(debug);
+
+    //
+    // Test the Console Interface Registers
+    //
+
+    ks10.testRegs(debug);
+
+    //
+    // Enable KS10 Interrupts
+    //
+
+    ks10.enableInterrupts(consInterrupt, haltInterrupt);
 
     //
     // Start the SD task
     //
 
-    startSdTask();
+    startSdTask(param);
 
     //
     // Boot the KS10
     //
 
-    ks10.boot();
+    ks10.boot(debug);
 
     //
     // Wait for the KS10 to peform the selftest and initialize the ALU.  When
     // the microcode initialization is completed, the KS10 will enter a HALT
-    // state.  Wait for that to occur.   Timeout if there is a problem.
+    // state.
     //
 
-    success = ks10.waitHalt();
-    if (!success) {
-        fatal("KS10: Timeout waiting for KS10 to initialize.\n");
-    }
+    ks10.waitHalt(debug);
 
     //
-    // Create serial input queue
+    // Create serial input queue.  This is the interface between the UART
+    // interrupt and the RTOS.
     //
 
     createSerialQueue();
@@ -322,34 +337,28 @@ void taskConsole(void * /*param*/) {
     ks10_t::writeMem(ks10_t::mtparm_addr, 000000000000);        // Initialize magtape params.
 
     //
-    // Configure the DZ11 Console Control Register
+    // Initialize contol registers
     //
 
-    ks10_t::writeDZCCR(0x000000000000ff00ULL);
+    ks10_t::writeDZCCR(0x000000000000ff00ULL);                  // Initialize the DZ11 Console Control Register
+    ks10_t::writeRHCCR(0x00000000070707f8ULL);                  // Initialize the RH11 Console Control Registrer
+    ks10_t::writeDBAR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Address Register
+    ks10_t::writeDBAR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Address Register
+    ks10_t::writeDBMR( 0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Mask Register
 
     //
-    // Configure the RH11 Console Control Registrer
+    // Check RH11 Initialization Status
     //
 
-    ks10_t::writeRHCCR(0x00000000070707f8ULL);
-
-    //
-    // Configure Debug Breakpoint Address Register
-    //
-
-    ks10_t::writeDBAR(0x0000000000000000ULL);
-
-    //
-    // Configure Debug Breakpoint Address Register
-    //
-
-    ks10_t::writeDBAR(0x0000000000000000ULL);
-
-    //
-    // Configure Debug Breakpoint Mask Register
-    //
-
-    ks10_t::writeDBMR(0x0000000000000000ULL);
+    uint64_t rh11debug = ks10_t::getRH11debug();
+    if (rh11debug >> 56 == ks10_t::rh11IDLE) {
+        printf("KS10: RH11 successfully initialized SDHC media.\n");
+    } else if (rh11debug >> 40 == 0x7e0c80) {
+        printf("KS10: %sRH11 cannot utilize SDSC media.  Use SDHC media.%s\n", vt100fg_red, vt100fg_rst);
+    } else {
+        printf("KS10: %sRH11 failed to initialize SDHC media.%s\n", vt100fg_red, vt100fg_rst);
+        printRH11Debug();
+    }
 
     //
     // Process commands
@@ -373,24 +382,34 @@ void taskConsole(void * /*param*/) {
     }
 }
 
-//
-//! Start the console task
-//
+//!
+//! \brief
+//!    Start the console task
+//!
+//! \param debug -
+//!    Enables debug messages
+//!
 
-void startConsoleTask(void) {
+void startConsoleTask(param_t *param) {
+
     static signed char __align64 stack[4096-4];
     portBASE_TYPE status = xTaskCreate(taskConsole, reinterpret_cast<const signed char *>("console"),
-                                       stack, sizeof(stack), 0, taskConsolePriority, NULL);
+                                       stack, sizeof(stack), param, taskConsolePriority, NULL);
     if (status != pdPASS) {
-        fatal("RTOS: Failed to create console task.  Status was %s.\n", taskError(status));
+        printf("RTOS: Failed to create console task.  Status was %s.\n", taskError(status));
+        fatal();
     }
 }
 
-//
-// This function starts the RTOS scheduler
-//
+//!
+//! \brief
+//!    This function starts the RTOS scheduler
+//!
+//! \param debug -
+//!    Enables debug messages
+//!
 
-void startConsole(void) {
+void startConsole(param_t *param) {
 
     //
     // RTOS Initialization Parameters
@@ -419,18 +438,19 @@ void startConsole(void) {
     // Start the telnet task
     //
 
-    startTelnetTask();
+    startTelnetTask(param);
 
     //
     // Start the console task
     //
 
-    startConsoleTask();
+    startConsoleTask(param);
 
     //
     // Start the scheduler.  This should not return.
     //
 
     portBASE_TYPE status = xTaskStartScheduler(pdTRUE);
-    fatal("RTOS: Scheduler returned.  Status was %s.\n", taskError(status));
+    printf("RTOS: Scheduler returned.  Status was %s.\n", taskError(status));
+    fatal();
 }

@@ -53,7 +53,10 @@
 //!
 
 DSTATUS disk_initialize(BYTE pdrv) {
-    return ((pdrv == 0) && sdInitialize()) ? 0 : STA_NOINIT;
+    if (!sdStatus()) {
+        sdInitialize();
+    }
+    return (pdrv == 0) ? 0 : STA_NOINIT;
 }
 
 //!
@@ -152,7 +155,9 @@ DRESULT disk_read(BYTE pdrv, BYTE *buf, DWORD sector, BYTE count) {
 //!     Only drive 0 is supported.
 //!
 
-#if 0
+#ifdef SD_WRITE
+#warning FIXME: This is stubbed.
+
 DRESULT disk_write(BYTE pdrv, const BYTE *buf, DWORD sector, BYTE count) {
     (void)pdrv;
     (void)buf;
@@ -160,4 +165,5 @@ DRESULT disk_write(BYTE pdrv, const BYTE *buf, DWORD sector, BYTE count) {
     (void)count;
     return RES_WRPRT;
 }
+
 #endif

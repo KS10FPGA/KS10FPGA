@@ -12,8 +12,8 @@ FILES := \
 	telnet_task.o
 
 HEADERS := \
-	telnet.h \
-	telnet_task.h \
+	telnet.hpp \
+	telnet_task.hpp \
 
 $(TARGET).a : $(FILES) 
 
@@ -27,7 +27,7 @@ clean:
 rcsclean: clean
 	rcsclean *
 
-rcsfetch: $(HEADERS) $(FILES:.o=.c) makefile
+rcsfetch: $(HEADERS) $(FILES:.o=.cpp) makefile
 
 ifneq (${MAKECMDGOALS}, clean)
 -include ${wildcard *.d} __dummy__

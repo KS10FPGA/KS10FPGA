@@ -2,10 +2,12 @@
 //
 //  KS10 Console Microcontroller
 //
-//! RH11 Interface Object
+//! \brief
+//!    RH11 Interface Object
 //!
-//! This object allows the console to interact with the RH11 Disk Controller.
-//! This is mostly for testing the RH11 from the console.
+//! \details
+//!    This object allows the console to interact with the RH11 Disk Controller.
+//!    This is mostly for testing the RH11 from the console.
 //!
 //! \file
 //!    rh11.cpp
@@ -15,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,37 +42,40 @@
 #include "commands.hpp"
 #include "SafeRTOS/SafeRTOS_API.h"
 
-//
-//! Check Signature for sixbit/HOM/,,000000
 //!
-//! \param [in] addr
+//! \brief
+//!   Check Signature for sixbit/HOM/,,000000
+//!
+//! \param [in] addr -
 //!   Address to check for HOM signature
 //!
 //! \returns
 //!   True if signature is found.  False otherwise.
-//
+//!
 
 bool rh11_t::isHomBlock(ks10_t::addr_t addr) {
     return ks10_t::readMem(addr) == 0505755000000;
 }
 
 //
-//! RH11 Controller Clear
+//! \brief
+//!    RH11 Controller Clear
 //
 
 void rh11_t::clear(void) {
     cs2_write(cs2_clr);
 }
 
-//
-//! Wait for disk operation to complete and check for errors
 //!
-//! \param [in] verbose
-//!     Whine about errors if true.
+//! \brief
+//!    Wait for disk operation to complete and check for errors
+//!
+//! \param [in] verbose -
+//!    Whine about errors if true.
 //!
 //! \returns
-//!     True if no errors, false otherwise.
-//
+//!    True if no errors, false otherwise.
+//!
 
 bool rh11_t::wait(bool verbose) {
 
@@ -127,18 +132,19 @@ bool rh11_t::wait(bool verbose) {
     return success;
 }
 
-//
-//! Read a block of data from the RH11
 //!
-//! \param [in] vaddr
-//!     Adapter virtual address
+//! \brief
+//!    Read a block of data from the RH11
 //!
-//! \param [in] daddr
-//!     Disk address in CHS format
+//! \param [in] vaddr -
+//!    Adapter virtual address
+//!
+//! \param [in] daddr -
+//!    Disk address in CHS format
 //!
 //! \returns
-//!     True if no error, false otherwise.
-//
+//!    True if no error, false otherwise.
+//!
 
 bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
 
@@ -197,104 +203,105 @@ bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
 
 }
 
-//
-//! Attempt to boot from the specified Home Block.
 //!
-//! \param [in] paddr
-//!     Physical address (KS10 address) of the disk buffer.
+//! \brief
+//!    Attempt to boot from the specified Home Block.
 //!
-//! \param [in] vaddr
-//!     Virtual address (RH11 address) of the disk buffer.
+//! \param [in] paddr -
+//!    Physical address (KS10 address) of the disk buffer.
 //!
-//! \param [in] daddr
-//!     Disk address (in CHS format) of the data to read.
+//! \param [in] vaddr -
+//!    Virtual address (RH11 address) of the disk buffer.
 //!
-//! \param [in] name
-//!     Name of Home Block used when printing error messages.
+//! \param [in] daddr -
+//!    Disk address (in CHS format) of the data to read.
 //!
-//! \details
-//!
-//!   HOME BLOCK
-//!
-//!     The relavant structure of this page is as follows:
-//!
-//!     Offset    Description
-//!     ------    --------------------------------------------
-//!
-//!        0      SIGNATURE.  CONTAINS SIXBIT/HOM/,,000000
-//!      101      DISK ADDRESS OF FE-FILE AREA (SECTOR #)
-//!      102      LENGTH (# OF SECTORS)
-//!      103      8080 TRACK/CYL/SECTOR
-//!
-//!   FE FILE AREA:
-//!
-//!     The first page in the FE File Area is a directory for the front-end and
-//!     contains the physical disk addresses and lengths for the files contained
-//!     in the remainder of the FE File Area.
-//!
-//!     The structure of this page is as follows:
-//!
-//!     Offset    Description
-//!     ------    --------------------------------------------
-//!
-//!        0      POINTER TO FREE SPACE
-//!        1        PAGE #,,LENGTH
-//!
-//!        2      POINTER TO MICROCODE
-//!        3        PAGE #,,LENGTH
-//!
-//!        4      POINTER TO MONITOR PRE-BOOT
-//!        5        PAGE #,,LENGTH
-//!
-//!        6      POINTER TO DIAGNOSTIC PRE-BOOT
-//!        7        PAGE #,,LENGTH
-//!
-//!       10      POINTER TO BOOTCHECK 1 MICROCODE
-//!       11        PAGE #,,LENGTH
-//!
-//!       12      POINTER TO BOOTCHECK 2 PRE-BOOT
-//!       13        PAGE #,,LENGTH
-//!
-//!       14      POINTER TO MONITOR BOOT
-//!       15        PAGE #,,LENGTH
-//!
-//!       16      POINTER TO DIAGNOSTIC BOOT
-//!       17        PAGE #,,LENGTH
-//!
-//!       20      POINTER TO BOOTCHECK 2
-//!       21        PAGE #,,LENGTH
-//!
-//!       22      POINTER TO INDIRECT FILE 0
-//!       23        PAGE #,,LENGTH
-//!
-//!       24      POINTER TO INDIRECT FILE 1
-//!       25        PAGE #,,LENGTH
-//!
-//!       ..      ...
-//!
-//!      776      POINTER TO INDIRECT FILE 366(8)
-//!      777        PAGE #,,LENGTH
-//!
-//!     The pointers are physical disk addresses (Cylinder/Head/Sector) which
-//!     are formatted as follows:
-//!
-//!       Bits [ 0: 2] - Zero
-//!       Bits [ 3:11] - Cylinder
-//!       Bits [12:22] - Zero
-//!       Bits [23:27] - Track (Head)
-//!       Bits [28:30] - Zero
-//!       Bits [31:35] - Sector
-//!
-//!       Bits [20:35] are formatted as required by the RPDA register
-//!       Bits [ 0:11] are formatted as required by the RPDS register once
-//!                    shifted into the proper place.
-//!
-//!   This is documented in the SMFILE source code entitled:
-//!   DSQDFC0 DECSYSTEM 2020 DIAGNOSTICS FE-FILE PROGRAM
+//! \param [in] offset -
+//!    Offset in HOM block
 //!
 //! \returns
-//!   True if sucessful, false otherwise.
+//!    True if sucessful, false otherwise.
 //!
+//
+//  The disk format is as follows:
+//
+//    HOME BLOCK
+//
+//     The relavant structure of this page is as follows:
+//
+//     Offset    Description
+//     ------    --------------------------------------------
+//
+//         0      SIGNATURE.  CONTAINS SIXBIT/HOM/,,000000
+//       101      DISK ADDRESS OF FE-FILE AREA (SECTOR #)
+//       102      LENGTH (# OF SECTORS)
+//       103      8080 TRACK/CYL/SECTOR
+//
+//    FE FILE AREA:
+//
+//     The first page in the FE File Area is a directory for the front-end and
+//     contains the physical disk addresses and lengths for the files contained
+//     in the remainder of the FE File Area.
+//
+//     The structure of this page is as follows:
+//
+//     Offset    Description
+//     ------    --------------------------------------------
+//
+//         0      POINTER TO FREE SPACE
+//         1        PAGE #,,LENGTH
+//
+//         2      POINTER TO MICROCODE
+//         3        PAGE #,,LENGTH
+//
+//         4      POINTER TO MONITOR PRE-BOOT
+//         5        PAGE #,,LENGTH
+//
+//         6      POINTER TO DIAGNOSTIC PRE-BOOT
+//         7        PAGE #,,LENGTH
+//
+//        10      POINTER TO BOOTCHECK 1 MICROCODE
+//        11        PAGE #,,LENGTH
+//
+//        12      POINTER TO BOOTCHECK 2 PRE-BOOT
+//        13        PAGE #,,LENGTH
+//
+//        14      POINTER TO MONITOR BOOT
+//        15        PAGE #,,LENGTH
+//
+//        16      POINTER TO DIAGNOSTIC BOOT
+//        17        PAGE #,,LENGTH
+//
+//        20      POINTER TO BOOTCHECK 2
+//        21        PAGE #,,LENGTH
+//
+//        22      POINTER TO INDIRECT FILE 0
+//        23        PAGE #,,LENGTH
+//
+//        24      POINTER TO INDIRECT FILE 1
+//        25        PAGE #,,LENGTH
+//
+//        ..      ...
+//
+//       776      POINTER TO INDIRECT FILE 366(8)
+//       777        PAGE #,,LENGTH
+//
+//     The pointers are physical disk addresses (Cylinder/Head/Sector) which
+//     are formatted as follows:
+//
+//        Bits [ 0: 2] - Zero
+//        Bits [ 3:11] - Cylinder
+//        Bits [12:22] - Zero
+//        Bits [23:27] - Track (Head)
+//        Bits [28:30] - Zero
+//        Bits [31:35] - Sector
+//
+//        Bits [20:35] are formatted as required by the RPDA register
+//        Bits [ 0:11] are formatted as required by the RPDS register once
+//                     shifted into the proper place.
+//
+//     This is documented in the SMFILE source code entitled:
+//     DSQDFC0 DECSYSTEM 2020 DIAGNOSTICS FE-FILE PROGRAM
 //
 
 bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
@@ -383,9 +390,10 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
     }
 }
 
-//
-//! This tests the operation of the RH11 FIFO (aka SILO)
-//
+//!
+//! \brief
+//!    This tests the operation of the RH11 FIFO (aka SILO)
+//!
 
 void rh11_t::testFIFO(void) {
     bool fail = false;
@@ -498,10 +506,16 @@ void rh11_t::testFIFO(void) {
 
 }
 
-//
-//! This tests the operation of the Sector Counter in 18-bit mode.
-//! In this mode, there are 20 sectors per track.
-//
+//!
+//! \brief
+//!    This tests the operation of the Sector Counter in 18-bit mode.
+//!
+//! \details
+//!    In this mode, there are 20 sectors per track.
+//!
+//! \param [in] unit -
+//!    Selected disk unit
+//!
 
 void rh11_t::testRPLA20(ks10_t::data_t unit) {
 
@@ -655,10 +669,16 @@ void rh11_t::testRPLA20(ks10_t::data_t unit) {
     printf("RPLA/RPMR sector counter test (20 sector mode) %s.\n", fail ? "failed" : "passed");
 }
 
-//
-//! This tests the operation of the sector byte counter in 16-bit mode.
-//! In this mode, there are 22 sectors per track.
-//
+//!
+//! \brief
+//!   This tests the operation of the sector byte counter in 16-bit mode.
+//!
+//! \details
+//!   In this mode, there are 22 sectors per track.
+//!
+//! \param [in] unit -
+//!    Selected disk unit
+//!
 
 void rh11_t::testRPLA22(ks10_t::data_t unit) {
 
@@ -816,19 +836,27 @@ void rh11_t::testRPLA22(ks10_t::data_t unit) {
     printf("RPLA/RPMR sector counter test (22 sector mode) %s.\n", fail ? "failed" : "passed");
 }
 
-//
-//! This tests the operation of the Sector Counter in 20 sector mode and in
-//! 22 sector mode.
-//
+//!
+//! \brief
+//!    This tests the operation of the Sector Counter in 20 sector mode and in
+//!    22 sector mode.
+//!
+//! \param [in] unit -
+//!    Selected disk unit
+//!
 
 void rh11_t::testRPLA(ks10_t::data_t unit) {
     testRPLA20(unit);
     testRPLA22(unit);
 }
 
-//
-// Test Disk Initialization
-//
+//!
+//! \brief
+//!    Test Disk Initialization
+//!
+//! \param [in] unit -
+//!    Selected disk unit
+//!
 
 void rh11_t::testInit(ks10_t::data_t unit) {
     bool fail = false;
@@ -904,9 +932,13 @@ void rh11_t::testInit(ks10_t::data_t unit) {
 
 }
 
-//
-// Test Disk Read
-//
+//!
+//! \brief
+//!    Test Disk Read
+//!
+//! \param [in] unit -
+//!    Selected disk unit
+//!
 
 void rh11_t::testRead(ks10_t::data_t unit) {
     bool pass = true;
@@ -1025,7 +1057,7 @@ void rh11_t::testRead(ks10_t::data_t unit) {
 
     if (ba_read() != vaddr + 4 * words) {
         pass = false;
-        printf("RH11 Bus Address Register (RHBA) should be %06o.\n"
+        printf("RH11 Bus Address Register (RHBA) should be %06llo.\n"
                "RH11 Bus Address Register (RHBA) was %06llo\n",
                vaddr + 4 * words, ba_read());
     }
@@ -1070,9 +1102,13 @@ void rh11_t::testRead(ks10_t::data_t unit) {
 
 }
 
-//
-// Test Disk Write
-//
+//!
+//! \brief
+//!    Test Disk Write
+//!
+//! \param [in] unit -
+//!    Selected disk unit
+//!
 
 void rh11_t::testWrite(ks10_t::data_t unit) {
     bool pass = true;
@@ -1191,7 +1227,7 @@ void rh11_t::testWrite(ks10_t::data_t unit) {
 
     if (ba_read() != vaddr + 4 * words) {
         pass = false;
-        printf("RH11 Bus Address Register (RHBA) should be %06o.\n"
+        printf("RH11 Bus Address Register (RHBA) should be %06llo.\n"
                "RH11 Bus Address Register (RHBA) was %06llo\n",
                vaddr + 4 * words, ba_read());
     }
@@ -1204,9 +1240,13 @@ void rh11_t::testWrite(ks10_t::data_t unit) {
 
 }
 
-//
-// Test Disk Write Check Command
-//
+//!
+//! \brief
+//!    Test Disk Write Check Command
+//!
+//! \param [in] unit -
+//!    Selected disk unit
+//!
 
 void rh11_t::testWrchk(ks10_t::data_t unit) {
     bool pass = true;
@@ -1394,11 +1434,12 @@ void rh11_t::testWrchk(ks10_t::data_t unit) {
 
 }
 
-//
-//! Bootstrap from RH11
 //!
-//! \param [in] diag
-//!     Boot to diagnostic mode.  I.e., SMMON
+//! \brief
+//!    Bootstrap from RH11
+//!
+//! \param [in] unit -
+//!    Selected disk unit
 //!
 
 void rh11_t::boot(ks10_t::data_t unit) {

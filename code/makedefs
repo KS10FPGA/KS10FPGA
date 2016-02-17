@@ -89,6 +89,10 @@ CPPFLAGS := \
 	-I../lwiplib \
 	-I../telnetlib \
 	-I../ustdlib/ \
+	-Ilwiplib \
+	-Ilwiplib/lwip-1.3.2/src/include/ \
+	-Ilwiplib/lwip-1.3.2/src/include/ipv4 \
+	-Ilwiplib/lwip-1.3.2/ports/Stellaris/include \
 	-I../lwiplib/lwip-1.3.2/src/include/ \
 	-I../lwiplib/lwip-1.3.2/src/include/ipv4 \
 	-I../lwiplib/lwip-1.3.2/ports/Stellaris/include

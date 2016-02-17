@@ -2,9 +2,11 @@
 //
 //  KS10 Console Microcontroller
 //
-//! Embedded Stdio-like functions.
+//! \brief
+//!    Embedded Stdio-like functions.
 //!
-//! This object provides some of the functionality of stdio.
+//! \details
+//!    This object provides some of the functionality of stdio.
 //!
 //! \file
 //!    stdio.h
@@ -14,7 +16,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,7 +46,7 @@ extern "C"
     int putchar(int ch);
     int puts(const char *s);
     int getchar(void);
-    int printf(const char *fmt, ...);
+    int printf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 
 #ifdef __cplusplus
 }

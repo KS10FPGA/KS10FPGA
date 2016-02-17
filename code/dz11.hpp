@@ -2,10 +2,12 @@
 //
 //  KS10 Console Microcontroller
 //
-//! DZ11 Interface Object
+//! \brief
+//!    DZ11 Interface Object
 //!
-//! This object allows the console to interact with the DZ11 Terminal
-//! Multiplexer.   This is mostly for testing the DZ11 from the console.
+//! \details
+//!    This object allows the console to interact with the DZ11 Terminal
+//!    Multiplexer.   This is mostly for testing the DZ11 from the console.
 //!
 //! \file
 //!    dz11.hpp
@@ -15,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the Free
@@ -39,48 +41,49 @@
 #include "ks10.hpp"
 
 //!
-//! DZ11 Interface Object
+//! \brief
+//!    DZ11 Interface Object
 //!
 
 class dz11_t {
     private:
 
         //
-        // Control and Status Register (CSR) definitions
+        //! Control and Status Register (CSR) definitions
         //
 
-        static const ks10_t::addr_t csr_addr  = 03760010;
-        static const ks10_t::data_t csr_trdy  = 0x8000;
-        static const ks10_t::data_t csr_rdone = 0x0080;
-        static const ks10_t::data_t csr_mse   = 0x0020;
-        static const ks10_t::data_t csr_clr   = 0x0010;
+        static const ks10_t::addr_t csr_addr  = 03760010;       //!< CSR Address
+        static const ks10_t::data_t csr_trdy  = 0x8000;         //!< Transmit Ready
+        static const ks10_t::data_t csr_rdone = 0x0080;         //!< Receiver Done
+        static const ks10_t::data_t csr_mse   = 0x0020;         //!< Master Scan Enable
+        static const ks10_t::data_t csr_clr   = 0x0010;         //!< Clear
 
         //
-        // Receiver Buffer Register (RBUF) definitions
+        //! Receiver Buffer Register (RBUF) definitions
         //
 
         static const ks10_t::addr_t rbuf_addr = 03760012;
 
         //
-        // Line Parameter Register (LPR) definitions
+        //! Line Parameter Register (LPR) definitions
         //
 
         static const ks10_t::addr_t lpr_addr = 03760012;
 
         //
-        // Transmit Control Register (TCR) definitions
+        //! Transmit Control Register (TCR) definitions
         //
 
         static const ks10_t::addr_t tcr_addr = 03760014;
 
         //
-        // Modem Status Register (MSR) definitions
+        //! Modem Status Register (MSR) definitions
         //
 
         static const ks10_t::addr_t msr_addr = 03760016;
 
         //
-        // Transmit Data Register (TDR) definitions
+        //! Transmit Data Register (TDR) definitions
         //
 
         static const ks10_t::addr_t tdr_addr = 03760016;
@@ -93,10 +96,10 @@ class dz11_t {
         // DZ11 Base Addresses
         //
 
-        static const ks10_t::addr_t base_addr1 = 03760010;
-        static const ks10_t::addr_t base_addr2 = 03760020;
-        static const ks10_t::addr_t base_addr3 = 03760030;
-        static const ks10_t::addr_t base_addr4 = 03760040;
+        static const ks10_t::addr_t base_addr1 = 03760010;      //!< base address #1
+        static const ks10_t::addr_t base_addr2 = 03760020;      //!< base address #2
+        static const ks10_t::addr_t base_addr3 = 03760030;      //!< base address #3
+        static const ks10_t::addr_t base_addr4 = 03760040;      //!< base address #4
 
         static void testTX(char line);
         static void testRX(char line);

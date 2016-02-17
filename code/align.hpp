@@ -2,17 +2,18 @@
 //
 //  KS10 Console Microcontroller
 //
-//! This header file defines alignment macros.
+//! \brief
+//!    Alignment macros
 //!
 //! \file
-//!   align.hpp
+//!    align.hpp
 //!
 //! \author
 //!    Rob Doyle - doyle (at) cox (dot) net
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2015 Rob Doyle
+// Copyright (C) 2013-2016 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,9 +34,9 @@
 #ifndef __ALIGN_HPP
 #define __ALIGN_HPP
 
-//
-// 8 byte alignment attribute
-//
+//!
+//! 8 byte alignment attribute
+//!
 
 #define __align64 __attribute__((aligned(8)))
 
