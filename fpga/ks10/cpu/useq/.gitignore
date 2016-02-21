@@ -3,5 +3,5 @@
 # the microcode listing files
 #
 
-fpga/ks10/cpu/useq/crom.dat
-fpga/ks10/cpu/useq/drom.dat
+crom.dat
+drom.dat

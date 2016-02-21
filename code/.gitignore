@@ -1,6 +1,6 @@
-code/**/*.o
-code/**/*.a
-code/**/*.d
-code/*.bin
-code/*.elf
-code/*.map
+*.o
+*.a
+*.d
+*.bin
+*.elf
+*.map
