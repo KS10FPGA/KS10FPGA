@@ -514,14 +514,14 @@ bool sdInitialize(void) {
                     case 0xc0300000:
                         typeSDSC = false;
                         initialized = true;
-                        printf("SDHC: SDHC Card Initialized Succesfully.\n");
+                        printf("SDHC: SDHC Card Initialized Successfully.\n");
                         break;
                     case 0x80100000:
                     case 0x80200000:
                     case 0x80300000:
                         typeSDSC = true;
                         initialized = true;
-                        printf("SDHC: SDSC Card Initialized Succesfully.\n");
+                        printf("SDHC: SDSC Card Initialized Successfully.\n");
                         break;
                     default:
                         debug_printf("SDHC: CMD58: R3 Response was 0x%08lx.\n", R3Response);

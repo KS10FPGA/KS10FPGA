@@ -88,11 +88,11 @@ module VMA (
    //  The VMA is loaded when cromMEM_CYCLE is active and the VMA is loaded.
    //
    // Trace
-   //  DPE3/E53
+   //  DPE5/E53
    //  DPM4/E55
    //  DPM4/E56
    //  DPM4/E74
-   //  DPE3/E76
+   //  DPE5/E76
    //  DPM4/E82
    //  DPM4/E90
    //  DPM4/E97

@@ -79,7 +79,12 @@
 `define busLOBYTE(dev)   ((!dev[35] & `devIOBYTE(dev)) | !`devIOBYTE(dev))  // Low byte select
 
 //
-//  The ACs are addresses 0 to 15.  The ACs are never physically addressed.
+// The ACs are addresses 0 to 15.  The ACs are never physically addressed.
+//
+// Trace
+//  DPM4/E160
+//  DPM4/E168
+//  DPM4/E191
 //
 
 `define busACREF(bus)    (!`busPHYS(bus) & (bus[18:31] == 14'b0))

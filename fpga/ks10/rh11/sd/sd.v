@@ -558,7 +558,7 @@ module SD (
                  //
                  //  Byte 2:
                  //    Voltage should be 8'h01
-                 //    
+                 //
                  //  Byte 3: (LSB)
                  //    Check pattern should be 8'h55
                  //
@@ -951,7 +951,7 @@ module SD (
                           end
                         1:
                           if (spiDONE)
-                            if (spiRXD[7] & spiRXD[6]) 
+                            if (spiRXD[7] & spiRXD[6])
                               begin
                                  spiOP   <= `spiTR;
                                  spiTXD  <= 8'hff;
