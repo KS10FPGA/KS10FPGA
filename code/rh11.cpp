@@ -311,7 +311,9 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
     // Read the Home Block
     //
 
-    printf("Reading Home Block.\n");
+    if (debug) {
+        printf("Reading Home Block.\n");
+    }
     bool success = readBlock(vaddr, daddr);
     if (success) {
         if (isHomBlock(paddr)) {
@@ -328,7 +330,9 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                 // Read the FE File Page (a.k.a. Page of Pointers).
                 //
 
-                printf("Reading FE File Page.\n");
+                if (debug) {
+                    printf("Reading FE File Page.\n");
+                }
                 success = readBlock(vaddr, daddr);
                 if (success) {
 
@@ -344,21 +348,23 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                         // Read the Monitor Pre-boot.
                         //
 
-                        printf("Reading Monitor Pre-Boot Page.\n");
+                        if (debug) {
+                            printf("Reading Monitor Pre-Boot Page.\n");
+                        }
                         success = readBlock(vaddr, daddr);
                         if (success) {
-#if 1
+#if 0
                             for (int i = 0; i < 020; i++) {
                                 printf("data[%o] = %012llo\n", 01000 + i, ks10_t::readMem(paddr + i));
                             }
 #endif
                             if (ks10_t::readMem(paddr) != 0) {
-                                printf("Monitor Pre-Boot read successfully.\n");
+                                if (debug) {
+                                    printf("Monitor Pre-Boot read successfully.\n");
+                                }
                                 ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
-#if 1
                                 ks10_t::begin();
                                 consoleOutput();
-#endif
                                 return true;
                             } else {
                                 printf("Monitor Pre-Boot is invalid.\n");
@@ -1441,8 +1447,11 @@ void rh11_t::testWrchk(ks10_t::data_t unit) {
 //! \param [in] unit -
 //!    Selected disk unit
 //!
+//! \param [i] diagmode
+//!    Boot to SMMON
+//!
 
-void rh11_t::boot(ks10_t::data_t unit) {
+void rh11_t::boot(ks10_t::data_t unit, bool diagmode) {
 
     const ks10_t::addr_t paddr = 01000;         // KS10 address of disk buffer
     const ks10_t::addr_t vaddr = 04000;         // UBA address of disk buffer
@@ -1464,7 +1473,7 @@ void rh11_t::boot(ks10_t::data_t unit) {
         diagBootOffset    = 016,
     };
 
-    ks10_t::addr_t offset = monPrebootOffset;
+    ks10_t::addr_t offset = diagmode ? diagPrebootOffset : monPrebootOffset;
 
     //
     // Controller clear

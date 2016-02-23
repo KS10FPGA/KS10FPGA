@@ -499,11 +499,12 @@ static void cmdBR(int argc, char *argv[]) {
 //!    Boot System
 //!
 //! \details
-//!    The <b>BT</b> (Boot) command loads code into KS10 memory and starts
-//!    execution.
+//!    The <b>BT</b> (Boot) command will read the directory information
+//!    from the selected RPxx disk drive, find the appropriate file, load the
+//!    the file into memory, and begin execution.
 //!
-//!    If a filename is supplied as an argument, the <b>BT</b> command will
-//!    attempt to load a file from the SD Card of that filename.
+//!    If the second argument is omitted, it will load the Monitor.  If the
+//!    second argument is 1, it will load the Diagnostic Monitor.
 //!
 //! \param [in] argc
 //!    Number of arguments.
@@ -514,9 +515,11 @@ static void cmdBR(int argc, char *argv[]) {
 
 static void cmdBT(int argc, char *argv[]) {
     const char *usage =
-        "Usage: BT [filename]\n"
-        "Load boot software into the KS10 processor.\n";
-
+        "Usage: BT [1]\n"
+        "       Load software into the KS10 processor.\n"
+        "       BT   - Boot monitor on selected disk.\n"
+        "       BT 1 - Boot diagnostic monitor on selected disk.\n"
+        "       (see DS command)\n";
 
     //
     // Set RH11 Boot Parameters
@@ -524,14 +527,17 @@ static void cmdBT(int argc, char *argv[]) {
 
     ks10_t::writeMem(ks10_t::rhbase_addr, rhbase);
     ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
+    rh11_t rh11(rhbase);
 
     switch (argc) {
         case 1:
-
+            rh11.boot(rhunit, false);
             break;
         case 2:
-            if (!loadCode(argv[1])) {
-                printf("Unable to open file \"%s\".\n", argv[1]);
+            if (strnicmp(argv[1], "1", 1) == 0) {
+                rh11.boot(rhunit, true);
+            } else {
+                printf(usage);
             }
             break;
         default:
@@ -734,19 +740,20 @@ static void cmdDS(int argc, char *argv[]) {
    const char *usage =
        "Usage:\n"
        "  Set boot parameters:\n"
-       "    DS {UBA=n} {RHBASE=nnnnnn} {RHUNIT=n}\n"
+       "    DS {UBA=n} {BASE=nnnnnn} {UNIT=n}\n"
        "      Valid UBA is 1-4\n"
-       "      Valid RHBASE is 776700\n"
-       "      Valid RHUNIT is 0-7\n"
-       "      Default is DS UBA=1 RHBASE=776700 UNIT=0\n"
+       "      Valid BASE is 776700\n"
+       "      Valid UNIT is 0-7\n"
+       "      Default is DS UBA=1 BASE=776700 UNIT=0\n"
+       "      BASE must be 776700.  All others are invalid.\n"
        "  Display boot parameters:\n"
        "    DS\n";
 
    if (argc == 1 || argc > 4) {
        printf("Boot Parameters are:\n"
               "  UBA = %o\n"
-              "  RHBASE = %06o\n"
-              "  RHUNIT = %o\n"
+              "  BASE = %06o\n"
+              "  UNIT = %o\n"
               "\n"
               "%s",
               static_cast<unsigned int>((rhbase >> 18) & 0000007),
@@ -766,16 +773,16 @@ static void cmdDS(int argc, char *argv[]) {
                    }
                    rhbase = (rhbase & 0777777) | (temp << 18);
                }
-           } else if (strnicmp(argv[i], "RHBASE=", 7) == 0) {
-               unsigned int temp = parseOctal(&argv[i][7]);
+           } else if (strnicmp(argv[i], "BASE=", 5) == 0) {
+               unsigned int temp = parseOctal(&argv[i][5]);
                if (temp != 0776700) {
                    printf("Parameter must be 776700: \"%s\".\n", argv[i]);
                    printf(usage);
                } else {
                    rhbase = (rhbase & 07000000) | (temp & 0777777);
                }
-           } else if (strnicmp(argv[i], "RHUNIT=", 7) == 0) {
-               unsigned int temp = parseOctal(&argv[i][7]);
+           } else if (strnicmp(argv[i], "UNIT=", 5) == 0) {
+               unsigned int temp = parseOctal(&argv[i][5]);
                if (temp > 7) {
                    printf("Parameter out of range: \"%s\".\n", argv[i]);
                    printf(usage);
@@ -1189,14 +1196,53 @@ static void cmdLA(int argc, char *argv[]) {
 
 //!
 //! \brief
-//!    Load Diagnostic Monitor SMMON
+//!    Load Boot
 //!
 //! \details
-//!    The <b>LB</b> (Load Diagnostic) command loads the diagnostic Monitor.
+//!    The <b>LB</b> (Load Boot) command will read the directory information
+//!    from the selected RPxx disk drive, find the appropriate file, load the
+//!    the file into memory, and begin execution.
+//!
+//!    If the second argument is omitted, it will load the Monitor.  If the
+//!    second argument is 1, it will load the Diagnostic Monitor.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
 //!
 
-static void cmdLB(int, char *[]) {
-    printf("LB Command is not implemented, yet.\n");
+static void cmdLB(int argc, char *argv[]) {
+    const char *usage =
+        "Usage: LB [1]\n"
+        "       Load software into the KS10 processor.\n"
+        "       LB   - Boot monitor on selected disk.\n"
+        "       LB 1 - Boot diagnostic monitor on selected disk.\n"
+        "       (see DS command)\n";
+
+    //
+    // Set RH11 Boot Parameters
+    //
+
+    ks10_t::writeMem(ks10_t::rhbase_addr, rhbase);
+    ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
+    rh11_t rh11(rhbase);
+
+    switch (argc) {
+        case 1:
+            rh11.boot(rhunit, false);
+            break;
+        case 2:
+            if (strnicmp(argv[1], "1", 1) == 0) {
+                rh11.boot(rhunit, true);
+            } else {
+                printf(usage);
+            }
+            break;
+        default:
+            printf(usage);
+    }
 }
 
 //!
@@ -1417,7 +1463,6 @@ static void cmdRH(int argc, char *argv[]) {
 
     ks10_t::writeMem(ks10_t::rhbase_addr, rhbase);
     ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
-
     rh11_t rh11(rhbase);
 
     if (argc == 2) {

@@ -51,6 +51,8 @@ class rh11_t {
 
     private:
 
+        bool debug;
+
         //
         // Register Addresses
         //
@@ -69,6 +71,12 @@ class rh11_t {
         const ks10_t::addr_t dc_addr;
 
         //
+        // UBA
+        //
+
+        uba_t uba;
+
+        //
         // Register offsets
         //
 
@@ -85,12 +93,6 @@ class rh11_t {
         static const ks10_t::addr_t mr_offset  = 024;
         static const ks10_t::addr_t of_offset  = 032;
         static const ks10_t::addr_t dc_offset  = 034;
-
-        //
-        // UBA
-        //
-
-        uba_t uba;
 
         //
         // Private functions
@@ -169,7 +171,7 @@ class rh11_t {
         void testRead(ks10_t::data_t unit);
         void testWrite(ks10_t::data_t unit);
         void testWrchk(ks10_t::data_t unit);
-        void boot(ks10_t::data_t unit);
+        void boot(ks10_t::data_t unit, bool diagmode = false);
 
         //!
         //! \brief
@@ -179,7 +181,8 @@ class rh11_t {
         //!    Base address of RH11 address
         //!
 
-        rh11_t (ks10_t::addr_t base_addr) :
+        rh11_t (ks10_t::addr_t base_addr, bool debug = false) :
+            debug(debug),
             cs1_addr((base_addr & 07777700) + cs1_offset),
             wc_addr ((base_addr & 07777700) + wc_offset ),
             ba_addr ((base_addr & 07777700) + ba_offset ),
