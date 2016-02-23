@@ -125,6 +125,7 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the -RD00-XXX
 #   -D DEBUG=DSKAA      Diagnostic information (See debug.v)
 #
 
+
 SIM_ARGS := \
         -D SIM_CTY \
         -D SIM_SMMON \
@@ -140,9 +141,6 @@ SIM_ARGS := \
 # Synthesis Control Macros
 #
 # Macro Definitions
-#   -D DZ11_LOOPBACK    Loopback all DZ11 serial data
-#   -D RPXX_ENABLE      RPXX Card Detect Mask [7:0]
-#   -D RPXX_WP		RPXX Write Protect [7:0]
 #   -D RPXX_SIMSEEK	Simulate RPXX seek accurately but slowly
 #   -D RPXX_SIMSEARCH	Simulate RPXX search accurately bus slowly
 #   -D RPXX_SIMDMD	Simulate RPXX diagnostic mode
@@ -154,10 +152,6 @@ SIM_ARGS := \
 #
 
 SYN_ARGS := \
-	-D DZ11_LOOPBACK \
-	-D RPXX_WP=8\'b00000000 \
-	-D RPXX_ENABLE=8\'b00000111 \
-
 #	-D RPXX_SIMSEEK \
 #	-D RPXX_SIMSEARCH
 
