@@ -100,8 +100,6 @@
 module PAGER (
       input  wire          clk,         // Clock
       input  wire          rst,         // Reset
-      input  wire          memCLK,      // Memory Clock
-      input  wire [ 1: 4]  clkPHS,      // Clock Phase
       input  wire          clken,       // Clock Enable
       input  wire [ 0:107] crom,        // Control ROM Data
       input  wire [ 0: 35] drom,        // Dispatch ROM Data
@@ -223,24 +221,24 @@ module PAGER (
    //
 
    RAMB16BWER #(
-      .DATA_WIDTH_A             (36),                           //   Port A data width
-      .DATA_WIDTH_B             (18),                           //   Port B data width
-      .DOA_REG                  (0),                            // * Port A output register not used
-      .DOB_REG                  (0),                            // * Port B output register not used
-      .EN_RSTRAM_A              ("FALSE"),                      //   Port A output register reset (not used)
-      .EN_RSTRAM_B              ("FALSE"),                      //   Port B output register reset (not used)
-      .INIT_A                   (36'b0),                        // * Port A output register initial value (not used)
-      .INIT_B                   (36'b0),                        // * Port B output register initial value (not used)
-      .INIT_FILE                ("NONE"),                       // * Initialization file
-      .RSTTYPE                  ("SYNC"),                       // * Type of reset
-      .RST_PRIORITY_A           ("CE"),                         //
-      .RST_PRIORITY_B           ("CE"),                         //
-      .SIM_COLLISION_CHECK      ("ALL"),                        //
-      .SIM_DEVICE               ("SPARTAN6"),                   //
-      .SRVAL_A                  (36'b0),                        //
-      .SRVAL_B                  (36'b0),                        //
-      .WRITE_MODE_A             ("WRITE_FIRST"),                //
-      .WRITE_MODE_B             ("WRITE_FIRST")                 //
+      .DATA_WIDTH_A             (36),                           // Port A data width
+      .DATA_WIDTH_B             (18),                           // Port B data width
+      .DOA_REG                  (0),                            // Port A output register not used
+      .DOB_REG                  (0),                            // Port B output register not used
+      .EN_RSTRAM_A              ("FALSE"),                      // Port A output register reset (not used)
+      .EN_RSTRAM_B              ("FALSE"),                      // Port B output register reset (not used)
+      .INIT_A                   (36'b0),                        // Port A output register initial value (not used)
+      .INIT_B                   (36'b0),                        // Port B output register initial value (not used)
+      .INIT_FILE                ("NONE"),                       // Initialization file
+      .RSTTYPE                  ("SYNC"),                       // Type of reset
+      .RST_PRIORITY_A           ("CE"),                         // Port A reset priority
+      .RST_PRIORITY_B           ("CE"),                         // Port B reset priority
+      .SIM_COLLISION_CHECK      ("ALL"),                        // Simulation behavior
+      .SIM_DEVICE               ("SPARTAN6"),                   // Simulation device
+      .SRVAL_A                  (36'b0),                        // Port A register reset value
+      .SRVAL_B                  (36'b0),                        // Port B register reset value
+      .WRITE_MODE_A             ("WRITE_FIRST"),                // Port A write mode
+      .WRITE_MODE_B             ("WRITE_FIRST")                 // Port B write mode
    ) pageTABLE (
       .DIA                      (writeData),                    // Port A data input
       .DIPA                     (4'b0),                         // Port A parity input (not used)
