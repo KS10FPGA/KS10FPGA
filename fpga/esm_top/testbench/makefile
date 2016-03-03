@@ -59,7 +59,7 @@ DSMMD.temp.DAT : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQ
 	$(SAV2VERILOG) DSMMD.SAV tempfile
 	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSMMD.DAT > DSMMD.temp.DAT
 
-DSRPA.temp.DAT : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH DSRPA.PATCH 
+DSRPA.temp.DAT : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH DSRPA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dsrpa.sav -f $(DIAGTAPE)
 	mv dsrpa.sav DSRPA.SAV
 	$(SAV2VERILOG) DSRPA.SAV tempfile
@@ -106,26 +106,47 @@ DSRPA.PATCH : makefile
 #  This assumes that a 8GB card is installed.
 #
 
-DEV := sdf
+DEV   := sdf
+UNIT0 := dskb.rp06
+UNIT1 := dskc.rp06
+UNIT2 := red405a2.rp06
 
 check :
 	cat /proc/partitions
 	@echo
 	@echo Device is currently /dev/$(DEV)
 
-rp06_disk : makefile red405a2.rp06 dskb.dsk dskc.dsk
-	dd if=dskb.dsk      of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G
-	dd if=dskc.dsk      of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
-	dd if=red405a2.rp06 of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G
+#
+# Carefully update the SD Card
+#
 
-sdsim.dsk : makefile red405a2.rp06 dskb.dsk dskc.dsk 
-	dd if=dskb.dsk      of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G
-	dd if=dskc.dsk      of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
-	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G
+rp06_disk : makefile $(UNIT0) $(UNIT1) $(UNIT2)
+	@echo ""
+	@echo "The disk" /dev/$(DEV) "is partitioned as follows:"
+	@cat /proc/partitions | grep $(DEV)
+	@echo ""
+	@echo "This script will destroy all of the data on" /dev/$(DEV)
+	@echo "This script will destroy all of the data on" /dev/$(DEV)
+	@echo "This script will destroy all of the data on" /dev/$(DEV)
+	@echo ""
+	@echo "You've been warned.  If you don't know what you're doing.   Stop now!"
+	@echo ""
+	@read -r -p "Are you sure you want to do that? [YES/NO] " prompt; \
+	if [[ $$prompt == "YES" || $$prompt == "yes" ]]; then \
+		echo "This will take a while.  Please be patient."; \
+		dd if=$(UNIT0) of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G; \
+		dd if=$(UNIT1) of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G; \
+		dd if=$(UNIT2) of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G; \
+        else \
+		echo "You must answer YES to write to SD Card!"; \
+        fi
 
-#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=3G
-#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=4G
-#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=5G
-#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=6G
-#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=7G
-#	dd if=red405a2.rp06 of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=8G
+#
+# The Simulator can only access 2GB of SD Card because it uses 32-bit signed integers for seek()
+#
+
+sdsim.dsk : makefile $(UNIT2)
+	dd if=$(UNIT2) of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G
+
+#	dd if=$(UNIT0) of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
+#	dd if=$(UNIT1) of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G
