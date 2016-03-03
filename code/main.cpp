@@ -50,7 +50,12 @@
 //! Debugging parameters
 //!
 
-static param_t param;
+static debug_t debug = {
+    debugCPU    : false,
+    debugKS10   : false,
+    debugSDHC   : false,
+    debugTelnet : false,
+};
 
 //!
 //! \brief
@@ -58,8 +63,6 @@ static param_t param;
 //!
 
 int main(void) {
-
-    param.debug = false;
 
     //
     // Enable Interrupts
@@ -97,7 +100,7 @@ int main(void) {
 
     if (!REVISION_IS_C3) {
         printf("CPU : Unsupported processor revision.\n");
-        if (!param.debug) {
+        if (!debug.debugCPU) {
             fatal();
         }
     }
@@ -106,7 +109,7 @@ int main(void) {
     // Start Console.  This function should never return here.
     //
 
-    startConsole(&param);
+    startConsole(&debug);
 
     return 0;
 }

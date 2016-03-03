@@ -49,7 +49,7 @@ extern "C" {
     bool sdInitialize(void);
     bool sdReadSector(uint8_t *buf, uint32_t sector);
     bool sdWriteSector(const uint8_t *buf, uint32_t sector);
-    void startSdTask(struct param_t *param);
+    void startSdTask(struct debug_t *param);
 
 #ifdef __cplusplus
 }

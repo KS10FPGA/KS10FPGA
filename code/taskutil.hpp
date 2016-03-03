@@ -46,9 +46,16 @@ extern "C" {
 //!
 //! Task parameters
 //!
+//! \brief
+//!    All of the tasks are create with the task parameter pointing at a struct
+//!    of this type.
+//!
 
-struct param_t {
-    bool debug;
+struct debug_t {
+    bool debugCPU;
+    bool debugKS10;
+    bool debugSDHC;
+    bool debugTelnet;
 };
 
 //!

@@ -39,6 +39,7 @@
 #include "stdio.h"
 #include "uba.hpp"
 #include "rh11.hpp"
+#include "debug.hpp"
 #include "commands.hpp"
 #include "SafeRTOS/SafeRTOS_API.h"
 
@@ -311,9 +312,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
     // Read the Home Block
     //
 
-    if (debug) {
-        printf("Reading Home Block.\n");
-    }
+    debug_printf(debug, "Reading Home Block.\n");
     bool success = readBlock(vaddr, daddr);
     if (success) {
         if (isHomBlock(paddr)) {
@@ -330,9 +329,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                 // Read the FE File Page (a.k.a. Page of Pointers).
                 //
 
-                if (debug) {
-                    printf("Reading FE File Page.\n");
-                }
+                debug_printf(debug, "Reading FE File Page.\n");
                 success = readBlock(vaddr, daddr);
                 if (success) {
 
@@ -348,9 +345,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                         // Read the Monitor Pre-boot.
                         //
 
-                        if (debug) {
-                            printf("Reading Monitor Pre-Boot Page.\n");
-                        }
+                        debug_printf(debug, "Reading Monitor Pre-Boot Page.\n");
                         success = readBlock(vaddr, daddr);
                         if (success) {
 #if 0
@@ -359,9 +354,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                             }
 #endif
                             if (ks10_t::readMem(paddr) != 0) {
-                                if (debug) {
-                                    printf("Monitor Pre-Boot read successfully.\n");
-                                }
+                                debug_printf(debug, "Monitor Pre-Boot read successfully.\n");
                                 ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
                                 ks10_t::begin();
                                 consoleOutput();

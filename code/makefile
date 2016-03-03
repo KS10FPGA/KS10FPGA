@@ -33,6 +33,7 @@ HEADERS := \
 	commands.hpp \
 	console.hpp \
 	dz11.hpp \
+	debug.hpp \
 	epi.hpp \
 	fatal.hpp \
 	ks10.hpp\

@@ -3,13 +3,10 @@
 //  KS10 Console Microcontroller
 //
 //! \brief
-//!    Console Interface
-//!
-//! \details
-//!    This task implements the console system.
+//!    Debug Macro
 //!
 //! \file
-//!    console.hpp
+//!    debug.hpp
 //!
 //! \author
 //!    Rob Doyle - doyle (at) cox (dot) net
@@ -34,13 +31,19 @@
 //
 //******************************************************************************
 
-#ifndef __CONSOLE_HPP
-#define __CONSOLE_HPP
+#ifndef __DEBUG_HPP
+#define __DEBUG_HPP
 
-#include "taskutil.hpp"
-#include "SafeRTOS/SafeRTOS_API.h"
+//!
+//! \brief
+//!    Debug print macro
+//!
 
-void startConsole(debug_t *debug);
-extern xQueueHandle serialQueueHandle;
+#define debug_printf(arg, ...)          \
+    do {                                \
+        if (arg) {                      \
+            printf(__VA_ARGS__);        \
+        }                               \
+    } while (0)
 
-#endif  // __CONSOLE_HPP
+#endif

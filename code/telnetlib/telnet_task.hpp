@@ -41,6 +41,6 @@
 extern telnet_t * telnet23;
 extern telnet_t * telnet2000;
 
-void startTelnetTask(param_t *param);
+void startTelnetTask(debug_t *param);
 
 #endif

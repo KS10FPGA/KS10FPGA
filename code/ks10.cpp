@@ -42,6 +42,7 @@
 #include "epi.hpp"
 #include "stdio.h"
 #include "ks10.hpp"
+#include "debug.hpp"
 #include "fatal.hpp"
 #include "driverlib/rom.h"
 #include "driverlib/gpio.h"
@@ -1069,9 +1070,7 @@ ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
 
 bool ks10_t::testReg64(volatile void * addr, const char *name, bool debug, uint64_t mask) {
 
-    if (debug) {
-        printf("KS10:  %s: Checking 64-bit accesses.\n", name);
-    }
+    debug_printf(debug, "KS10:  %s: Checking 64-bit accesses.\n", name);
 
     //
     // Save register contents
@@ -1091,9 +1090,7 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, bool debug, uint6
         uint64_t read64 = *reg64;
         if ((write64 & mask) != 0) {
             if (read64 != write64) {
-                if (debug) {
-                    printf("KS10:  %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
-                }
+                debug_printf(debug, "KS10:  %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
                 success = false;
             }
         }

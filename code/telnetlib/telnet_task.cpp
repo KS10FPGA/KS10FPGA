@@ -87,11 +87,10 @@ telnet_t* telnet_init(unsigned int port, bool debug) {
 
 static void setupTelnet(void *arg) {
 
-    param_t *param = static_cast<param_t *>(arg);
-    bool debug = param->debug;
+    debug_t *debug = static_cast<debug_t *>(arg);
 
-    telnet23   = telnet_init(23, debug);
-    telnet2000 = telnet_init(2000, debug);
+    telnet23   = telnet_init(  23, debug->debugTelnet);
+    telnet2000 = telnet_init(2000, debug->debugTelnet);
     printf("NET : Telnet servers started.\n");
 
 }
@@ -104,7 +103,7 @@ static void setupTelnet(void *arg) {
 //!    initialize the telnet interfaces.
 //!
 
-void startTelnetTask(param_t *param) {
+void startTelnetTask(debug_t *debug) {
 
     //
     // Get the MAC address from the user registers.
@@ -159,7 +158,7 @@ void startTelnetTask(param_t *param) {
     // Setup the remaining services inside the TCP/IP thread's context.
     //
 
-    tcpip_callback(setupTelnet, param);
+    tcpip_callback(setupTelnet, debug);
 
     //
     // Success.

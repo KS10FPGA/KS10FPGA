@@ -18,7 +18,7 @@
 //!    work properly.  This requires two things:
 //!
 //!    -#.  The first byte of the stack buffer must reside at an address
-//!         that is aligned to an 8 byte boundary; (see __aligned macro).
+//!         that is aligned to an 8 byte boundary; (see __align64 macro).
 //!    -#.  The size of the stack (in bytes) must be a number that is
 //!         divisible by 4 but not by 8 e.g. 500.
 //!
@@ -62,14 +62,6 @@
 #include "telnetlib/telnet_task.hpp"
 #include "SafeRTOS/SafeRTOS_API.h"
 
-#define DEBUG_CONSOLE
-
-#ifdef DEBUG_CONSOLE
-#define __debug(...) printf(__VA_ARGS__)
-#else
-#define __debug(...)
-#endif
-
 //
 // VT100 colors
 //
@@ -84,7 +76,7 @@ static const char vt100fg_rst[] = "\e[0m";
 //!
 //! \details
 //!    The Serial Input Queue is the interface between the UART input interrupt
-//!    and the background processing.
+//!    and the Console Task
 //!
 
 xQueueHandle serialQueueHandle;
@@ -109,7 +101,7 @@ void createSerialQueue(void) {
 
 //!
 //! \brief
-//!    This interrupt is triggered by the KS10 when it wants to receiver a
+//!    This interrupt is triggered by the KS10 when it wants to receive a
 //!    character or send a character.
 //!
 
@@ -172,17 +164,13 @@ bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
         int ch = getchar();
         switch (ch) {
             case cntl_c:
-                status = xTaskDelete(taskHandle);
-                if (status != pdPASS) {
-                    __debug("RTOS: xTaskDelete() failed.  Status was %s\n",
-                    taskError(status));
-                }
+                xTaskDelete(taskHandle);
                 printf("^C\r\n%s ", PROMPT);
                 return false;
             case cntl_q:
                 status = xTaskResume(taskHandle);
                 if (status != pdPASS) {
-                    __debug("RTOS: xTaskResume() failed.  Status was %s\n",
+                    printf("RTOS: xTaskResume() failed.  Status was %s\n",
                     taskError(status));
                 }
                 putchar('^');
@@ -191,7 +179,7 @@ bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
             case cntl_s:
                 status = xTaskSuspend(taskHandle);
                 if (status != pdPASS) {
-                    __debug("RTOS: xTaskSuspend() failed.  Status was %s\n",
+                    printf("RTOS: xTaskSuspend() failed.  Status was %s\n",
                     taskError(status));
                 }
                 putchar('^');
@@ -248,8 +236,7 @@ bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
 
 void taskConsole(void* arg) {
 
-    param_t *param = static_cast<param_t *>(arg);
-    bool debug = param->debug;
+    debug_t *debug = static_cast<debug_t *>(arg);
 
     //
     // Initialize the EPI interface to the FPGA
@@ -268,19 +255,19 @@ void taskConsole(void* arg) {
     // Program the firmware
     //
 
-    ks10.programFirmware(debug);
+    ks10.programFirmware(debug->debugKS10);
 
     //
     // Check the firmware revsion.
     //
 
-    ks10.checkFirmware(debug);
+    ks10.checkFirmware(debug->debugKS10);
 
     //
     // Test the Console Interface Registers
     //
 
-    ks10.testRegs(debug);
+    ks10.testRegs(debug->debugKS10);
 
     //
     // Enable KS10 Interrupts
@@ -292,13 +279,13 @@ void taskConsole(void* arg) {
     // Start the SD task
     //
 
-    startSdTask(param);
+    startSdTask(debug);
 
     //
     // Boot the KS10
     //
 
-    ks10.boot(debug);
+    ks10.boot(debug->debugKS10);
 
     //
     // Wait for the KS10 to peform the selftest and initialize the ALU.  When
@@ -306,7 +293,7 @@ void taskConsole(void* arg) {
     // state.
     //
 
-    ks10.waitHalt(debug);
+    ks10.waitHalt(debug->debugKS10);
 
     //
     // Create serial input queue.  This is the interface between the UART
@@ -326,31 +313,31 @@ void taskConsole(void* arg) {
     // Initialize the Console Communications memory area
     //
 
-    ks10_t::writeMem(ks10_t::switch_addr, 000000000000);        // Initialize switch register
-    ks10_t::writeMem(ks10_t::kasw_addr,   003740000000);        // Initialize keep-alive and status word (KASW)
-    ks10_t::writeMem(ks10_t::ctyin_addr,  000000000000);        // Initialize CTY input word
-    ks10_t::writeMem(ks10_t::ctyout_addr, 000000000000);        // Initialize CTY output word
-    ks10_t::writeMem(ks10_t::klnin_addr,  000000000000);        // Initialize KLINIK input word
-    ks10_t::writeMem(ks10_t::klnout_addr, 000000000000);        // Initialize KLINIK output word
-    ks10_t::writeMem(ks10_t::rhbase_addr, 000001776700);        // Initialize RH11 base address
-    ks10_t::writeMem(ks10_t::rhunit_addr, 000000000000);        // Initialize UNIT number
-    ks10_t::writeMem(ks10_t::mtparm_addr, 000000000000);        // Initialize magtape params.
+    ks10.writeMem(ks10_t::switch_addr, 000000000000);           // Initialize switch register
+    ks10.writeMem(ks10_t::kasw_addr,   003740000000);           // Initialize keep-alive and status word (KASW)
+    ks10.writeMem(ks10_t::ctyin_addr,  000000000000);           // Initialize CTY input word
+    ks10.writeMem(ks10_t::ctyout_addr, 000000000000);           // Initialize CTY output word
+    ks10.writeMem(ks10_t::klnin_addr,  000000000000);           // Initialize KLINIK input word
+    ks10.writeMem(ks10_t::klnout_addr, 000000000000);           // Initialize KLINIK output word
+    ks10.writeMem(ks10_t::rhbase_addr, 000001776700);           // Initialize RH11 base address
+    ks10.writeMem(ks10_t::rhunit_addr, 000000000000);           // Initialize UNIT number
+    ks10.writeMem(ks10_t::mtparm_addr, 000000000000);           // Initialize magtape params.
 
     //
     // Initialize contol registers
     //
 
-    ks10_t::writeDZCCR(0x000000000000ff00ULL);                  // Initialize the DZ11 Console Control Register
-    ks10_t::writeRHCCR(0x00000000070707f8ULL);                  // Initialize the RH11 Console Control Registrer
-    ks10_t::writeDBAR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Address Register
-    ks10_t::writeDBAR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Address Register
-    ks10_t::writeDBMR( 0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Mask Register
+    ks10.writeDZCCR(0x000000000000ff00ULL);                     // Initialize the DZ11 Console Control Register
+    ks10.writeRHCCR(0x00000000070707f8ULL);                     // Initialize the RH11 Console Control Registrer
+    ks10.writeDBAR (0x0000000000000000ULL);                     // Initialize the Debug Breakpoint Address Register
+    ks10.writeDBAR (0x0000000000000000ULL);                     // Initialize the Debug Breakpoint Address Register
+    ks10.writeDBMR (0x0000000000000000ULL);                     // Initialize the Debug Breakpoint Mask Register
 
     //
     // Check RH11 Initialization Status
     //
 
-    uint64_t rh11debug = ks10_t::getRH11debug();
+    uint64_t rh11debug = ks10.getRH11debug();
     if (rh11debug >> 56 == ks10_t::rh11IDLE) {
         printf("KS10: RH11 successfully initialized SDHC media.\n");
     } else if (rh11debug >> 40 == 0x7e0c80) {
@@ -390,11 +377,11 @@ void taskConsole(void* arg) {
 //!    Enables debug messages
 //!
 
-void startConsoleTask(param_t *param) {
+void startConsoleTask(debug_t *debug) {
 
     static signed char __align64 stack[4096-4];
     portBASE_TYPE status = xTaskCreate(taskConsole, reinterpret_cast<const signed char *>("console"),
-                                       stack, sizeof(stack), param, taskConsolePriority, NULL);
+                                       stack, sizeof(stack), debug, taskConsolePriority, NULL);
     if (status != pdPASS) {
         printf("RTOS: Failed to create console task.  Status was %s.\n", taskError(status));
         fatal();
@@ -406,10 +393,10 @@ void startConsoleTask(param_t *param) {
 //!    This function starts the RTOS scheduler
 //!
 //! \param debug -
-//!    Enables debug messages
+//!    Debugging parameters
 //!
 
-void startConsole(param_t *param) {
+void startConsole(debug_t *debug) {
 
     //
     // RTOS Initialization Parameters
@@ -438,13 +425,13 @@ void startConsole(param_t *param) {
     // Start the telnet task
     //
 
-    startTelnetTask(param);
+    startTelnetTask(debug);
 
     //
     // Start the console task
     //
 
-    startConsoleTask(param);
+    startConsoleTask(debug);
 
     //
     // Start the scheduler.  This should not return.

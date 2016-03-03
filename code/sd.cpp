@@ -46,8 +46,9 @@
 #include <stdint.h>
 #include "sd.h"
 #include "stdio.h"
-#include "fatal.hpp"
 #include "align.hpp"
+#include "debug.hpp"
+#include "fatal.hpp"
 #include "taskutil.hpp"
 #include "fatfslib/ff.h"
 #include "driverlib/inc/hw_types.h"
@@ -123,21 +124,6 @@ enum rspR2_t {
     rspR2_EPARM  = 0x40,        //!< Erase parameter error
     rspR2_OOR    = 0x80,        //!< Out of range
 };
-
-//!
-//! \brief
-//!    Debug macro
-//!
-//! \details
-//!    This is a macro because I haven't bothered to implement vprintf().
-//!
-
-#define debug_printf(...)               \
-    do {                                \
-        if (debug) {                    \
-            printf(__VA_ARGS__);        \
-        }                               \
-    } while(0)
 
 //!
 //! \brief
@@ -330,7 +316,7 @@ bool sdInitialize(void) {
 
     initialized = false;
 
-    debug_printf("SDHC: Initializing SD Card.\n");
+    debug_printf(debug, "SDHC: Initializing SD Card.\n");
 
     for (int loops = 0; ; loops++) {
 
@@ -353,7 +339,7 @@ bool sdInitialize(void) {
         // (low) during the reception of the reset command (CMD0).
         //
 
-        debug_printf("SDHC: Sending CMD0.\n");
+        debug_printf(debug, "SDHC: Sending CMD0.\n");
         chipEnable(true);
         uint8_t rsp0 = sendCommand(CMD0, 0x00000000, 0x95);
         chipEnable(false);
@@ -364,11 +350,11 @@ bool sdInitialize(void) {
         // the IDLE state with no errors after this command is received.
         //
 
-        debug_printf("SDHC: CMD0: R1 Response was 0x%02x.\n", rsp0);
+        debug_printf(debug, "SDHC: CMD0: R1 Response was 0x%02x.\n", rsp0);
         if (rsp0 == rspR1_IDLE) {
             break;
         } else if (loops == 10) {
-            debug_printf("SDHC: Failed to Reset SD Card.\n");
+            debug_printf(debug, "SDHC: Failed to Reset SD Card.\n");
             return false;
         }
     }
@@ -377,7 +363,7 @@ bool sdInitialize(void) {
     // Send SEND_IF_COND Command.
     //
 
-    debug_printf("SDHC: Sending CMD8.\n");
+    debug_printf(debug, "SDHC: Sending CMD8.\n");
     chipEnable(true);
     uint8_t rsp8 = sendCommand(CMD8, 0x000001aa, 0x87);
 
@@ -397,7 +383,7 @@ bool sdInitialize(void) {
 
         case rspR1_IDLE:
             {
-                debug_printf("SDHC: CMD8: Attempting V2.00 Initialization.\n");
+                debug_printf(debug, "SDHC: CMD8: Attempting V2.00 Initialization.\n");
 
                 //
                 // Check R7 Response to SEND_IF_COND Command.
@@ -410,7 +396,7 @@ bool sdInitialize(void) {
                 chipEnable(false);
                 transactData(0xff);
                 if ((R7Response & 0x0000ffff) != 0x000001aa) {
-                    debug_printf("SDHC: CMD8: R7 Response was 0x%08lx.\n", R7Response);
+                    debug_printf(debug, "SDHC: CMD8: R7 Response was 0x%08lx.\n", R7Response);
                     return false;
                 }
 
@@ -424,7 +410,7 @@ bool sdInitialize(void) {
                     // Send APP_CMD Command
                     //
 
-                    debug_printf("SDHC: Sending CMD55.\n");
+                    debug_printf(debug, "SDHC: Sending CMD55.\n");
                     chipEnable(true);
                     uint8_t rsp55 = sendCommand(CMD55, 0x00000000, 0xff);
                     chipEnable(false);
@@ -435,7 +421,7 @@ bool sdInitialize(void) {
                     //
 
                     if (rsp55 != rspR1_IDLE) {
-                        debug_printf("SDHC: CMD55: R1 Response was 0x%02x.\n", rsp55);
+                        debug_printf(debug, "SDHC: CMD55: R1 Response was 0x%02x.\n", rsp55);
                         return false;
                     }
 
@@ -443,7 +429,7 @@ bool sdInitialize(void) {
                     // Send APP_SEND_OP_COND Command
                     //
 
-                    debug_printf("SDHC: Sending ACMD41.\n");
+                    debug_printf(debug, "SDHC: Sending ACMD41.\n");
                     chipEnable(true);
                     uint8_t rsp41 = sendCommand(ACMD41, 0x40000000, 0xff);
                     chipEnable(false);
@@ -453,7 +439,7 @@ bool sdInitialize(void) {
                     //
 
                     transactData(0xff);
-                    debug_printf("SDHC: ACMD41: R1 Response was 0x%02x.\n", rsp41);
+                    debug_printf(debug, "SDHC: ACMD41: R1 Response was 0x%02x.\n", rsp41);
                     if (rsp41 == rspR1_OK) {
                         break;
                     } else if (loops == 1000) {
@@ -467,7 +453,7 @@ bool sdInitialize(void) {
                 // Send READ_OCR Command
                 //
 
-                debug_printf("SDHC: Sending CMD58.\n");
+                debug_printf(debug, "SDHC: Sending CMD58.\n");
                 chipEnable(true);
                 uint8_t rsp58 = sendCommand(CMD58, 0x00000000, 0xff);
 
@@ -476,7 +462,7 @@ bool sdInitialize(void) {
                 //
 
                 if (rsp58 != rspR1_OK) {
-                    debug_printf("SDHC: CMD58: R1 Response was 0x%02x.\n", rsp58);
+                    debug_printf(debug, "SDHC: CMD58: R1 Response was 0x%02x.\n", rsp58);
                     chipEnable(false);
                     return false;
                 }
@@ -524,7 +510,7 @@ bool sdInitialize(void) {
                         printf("SDHC: SDSC Card Initialized Successfully.\n");
                         break;
                     default:
-                        debug_printf("SDHC: CMD58: R3 Response was 0x%08lx.\n", R3Response);
+                        debug_printf(debug, "SDHC: CMD58: R3 Response was 0x%08lx.\n", R3Response);
                         break;
                 }
             }
@@ -536,14 +522,14 @@ bool sdInitialize(void) {
 
         case rspR1_ILLCMD | rspR1_IDLE:
             {
-                debug_printf("SDHC: CMD8: Attempting V1.00 Initialization.\n");
+                debug_printf(debug, "SDHC: CMD8: Attempting V1.00 Initialization.\n");
                 chipEnable(false);
 
                 //
                 // Send READ_OCR Command
                 //
 
-                debug_printf("SDHC: Sending CMD58.\n");
+                debug_printf(debug, "SDHC: Sending CMD58.\n");
                 chipEnable(true);
                 uint8_t rsp58 = sendCommand(CMD58, 0x00000000, 0xff);
 
@@ -553,7 +539,7 @@ bool sdInitialize(void) {
 
                 if (rsp58 != rspR1_OK) {
                     chipEnable(false);
-                    debug_printf("SDHC: CMD58: R1 Response was 0x%02x.\n", rsp58);
+                    debug_printf(debug, "SDHC: CMD58: R1 Response was 0x%02x.\n", rsp58);
                     return false;
                 }
 
@@ -565,7 +551,7 @@ bool sdInitialize(void) {
                 chipEnable(false);
                 transactData(0xff);
                 if (R3Response != 0xe0ff8000) {
-                    debug_printf("SDHC: CMD8: R3 Response was 0x%08lx.\n", R3Response);
+                    debug_printf(debug, "SDHC: CMD8: R3 Response was 0x%08lx.\n", R3Response);
                     return false;
                 }
 
@@ -574,7 +560,7 @@ bool sdInitialize(void) {
                 //
 
                 for (int loops = 0; ; loops++) {
-                    debug_printf("SDHC: Sending ACMD41.\n");
+                    debug_printf(debug, "SDHC: Sending ACMD41.\n");
                     chipEnable(true);
                     uint8_t rsp41 = sendCommand(ACMD41, 0x40000000, 0xff);
                     chipEnable(false);
@@ -584,7 +570,7 @@ bool sdInitialize(void) {
                     // Check R1 Response to APP_SEND_OP_COND
                     //
 
-                    debug_printf("SDHC: CMD41: R1 Response was 0x%02x.\n", rsp41);
+                    debug_printf(debug, "SDHC: CMD41: R1 Response was 0x%02x.\n", rsp41);
                     if (rsp41 == rspR1_OK) {
                         break;
                     } else if (loops == 10) {
@@ -602,7 +588,7 @@ bool sdInitialize(void) {
         //
 
         default:
-            debug_printf("SDHC: CMD8: R1 Response was 0x%02x.\n", rsp8);
+            debug_printf(debug, "SDHC: CMD8: R1 Response was 0x%02x.\n", rsp8);
             break;
 
     }
@@ -633,7 +619,7 @@ bool sdInitialize(void) {
 bool sdReadSector(uint8_t *buf, uint32_t sector) {
 
     if (!initialized) {
-        debug_printf("SDHC: CMD17: Card is not initialized.\n");
+        debug_printf(debug, "SDHC: CMD17: Card is not initialized.\n");
         return false;
     }
 
@@ -649,7 +635,7 @@ bool sdReadSector(uint8_t *buf, uint32_t sector) {
     // Send READ_SINGLE Command
     //
 
-    debug_printf("SDHC: Sending CMD17.\n");
+    debug_printf(debug, "SDHC: Sending CMD17.\n");
     chipEnable(true);
     uint8_t rsp17 = sendCommand(CMD17, sector, 0xff);
 
@@ -658,7 +644,7 @@ bool sdReadSector(uint8_t *buf, uint32_t sector) {
     //
 
     if (rsp17 != rspR1_OK) {
-        debug_printf("SDHC: CMD17: R1 Response was 0x%02x.\n", rsp17);
+        debug_printf(debug, "SDHC: CMD17: R1 Response was 0x%02x.\n", rsp17);
         chipEnable(false);
         return false;
     }
@@ -669,7 +655,7 @@ bool sdReadSector(uint8_t *buf, uint32_t sector) {
 
     uint8_t readToken = findReadStartToken();
     if (readToken != 0xfe) {
-        debug_printf("SDHC: CMD17: Read Token was 0x%02x.\n", readToken);
+        debug_printf(debug, "SDHC: CMD17: Read Token was 0x%02x.\n", readToken);
         chipEnable(false);
         return false;
     }
@@ -735,7 +721,7 @@ bool sdReadSector(uint8_t *buf, uint32_t sector) {
 bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
 
     if (!initialized) {
-        debug_printf("SDHC: CMD24: Card is not initialized.\n");
+        debug_printf(debug, "SDHC: CMD24: Card is not initialized.\n");
         return false;
     }
 
@@ -751,7 +737,7 @@ bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
     // Send WRITE_SINGLE Command
     //
 
-    debug_printf("SDHC: Sending CMD24.\n");
+    debug_printf(debug, "SDHC: Sending CMD24.\n");
     chipEnable(true);
     uint8_t rsp24 = sendCommand(CMD24, sector, 0xff);
 
@@ -760,7 +746,7 @@ bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
     //
 
     if (rsp24 != rspR1_OK) {
-        debug_printf("SDHC: CMD24: R1 Response was 0x%02x.\n", rsp24);
+        debug_printf(debug, "SDHC: CMD24: R1 Response was 0x%02x.\n", rsp24);
         return false;
     }
 
@@ -791,7 +777,7 @@ bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
 
     uint8_t dataResponse = transactData(0xff);
     if ((dataResponse & 0x1f) != 0x05) {
-        debug_printf("SDHC: CMD24: Data Response was 0x%02x.\n", dataResponse);
+        debug_printf(debug, "SDHC: CMD24: Data Response was 0x%02x.\n", dataResponse);
         return false;
     }
 
@@ -804,7 +790,7 @@ bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
     do {
         token = transactData(0xff);
         if (i == 65536) {
-            debug_printf("SDHC: CMD24: No read token.\n");
+            debug_printf(debug, "SDHC: CMD24: No read token.\n");
             return false;
         }
         i = i + 1;
@@ -814,7 +800,7 @@ bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
     // Send SEND_STATUS Command
     //
 
-    debug_printf("SDHC: Sending CMD13.\n");
+    debug_printf(debug, "SDHC: Sending CMD13.\n");
     uint8_t rsp13 = sendCommand(CMD13, 0x00000000, 0xff);
 
     //
@@ -822,7 +808,7 @@ bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
     //
 
     if (rsp13 != rspR1_OK) {
-        debug_printf("SDHC: CMD13: R1 Response was 0x%02x.\n", rsp13);
+        debug_printf(debug, "SDHC: CMD13: R1 Response was 0x%02x.\n", rsp13);
         return false;
     }
 
@@ -832,7 +818,7 @@ bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
 
     uint8_t R2Response = getR2Response();
     if (R2Response != rspR2_OK) {
-        debug_printf("SDHC: CMD13: R2 Response was 0x%02x.\n", R2Response);
+        debug_printf(debug, "SDHC: CMD13: R2 Response was 0x%02x.\n", R2Response);
         return false;
     }
 
@@ -878,14 +864,12 @@ bool sdStatus(void) {
 //!    initialize the SD Card and mount the FAT32 Filesystem.
 //!
 //! \param param -
-//!    Pointer to parameter list for this task.  It currently only points
-//!    to a boolean which indicates "debug mode".
+//!    Pointer to debug parameter list.
 //!
 
 static void sdTask(void *arg) {
 
-    param_t *param = static_cast<param_t *>(arg);
-    ::debug = param->debug;
+    debug = static_cast<debug_t *>(arg)->debugSDHC;
 
     //
     // Check card status every second
@@ -942,14 +926,14 @@ static void sdTask(void *arg) {
 //! \brief
 //!    Start the SD Task
 //!
-//! \param param -
+//! \param debug -
 //!    thread parameter.
 //!
 
-void startSdTask(param_t *param) {
+void startSdTask(debug_t *debug) {
     static signed char __align64 stack[5120-4];
     portBASE_TYPE status = xTaskCreate(sdTask, reinterpret_cast<const signed char *>("SD"),
-                                       stack, sizeof(stack), param, taskSDPriority, NULL);
+                                       stack, sizeof(stack), debug, taskSDPriority, NULL);
     if (status != pdPASS) {
         printf("SDHC: Failed to create SD task.  Status was %s.\n", taskError(status));
         fatal();
