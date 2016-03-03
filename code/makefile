@@ -18,6 +18,7 @@ FILES := \
 	commands.o \
 	dz11.o \
 	epi.o \
+	fpga.o \
 	ks10.o \
 	main.o\
 	new.o \
@@ -36,6 +37,7 @@ HEADERS := \
 	debug.hpp \
 	epi.hpp \
 	fatal.hpp \
+	fpga.hpp \
 	ks10.hpp\
 	new.hpp \
 	prompt.hpp \
@@ -43,6 +45,7 @@ HEADERS := \
 	sd.h \
 	stdio.h \
 	taskutil.hpp \
+	vt100.hpp \
 	uart.h \
 	uba.hpp
 

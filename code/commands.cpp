@@ -113,6 +113,22 @@ void consoleOutput(void) {
 
 //!
 //! \brief
+//!    Patch the code and whine about it
+//!
+//! \param [in] addr -
+//!    addr is the address to be patched
+//!
+//! \param [in] data -
+//!    data is the data to be written at the patch address
+//!
+
+void patchCode(ks10_t::addr_t addr, ks10_t::data_t data) {
+    ks10_t::writeMem(addr, data);
+    printf("Patched executable with a %012llo instruction at address %06llo.\n", data, addr);
+}
+
+//!
+//! \brief
 //!    Parses an octal number
 //!
 //! \param [in] buf
@@ -1009,8 +1025,30 @@ static void cmdGO(int argc, char *argv[]) {
         ks10_t::writeMem(ks10_t::rhbase_addr, rhbase);
         ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
 
+#if 0
+
         //
-        // Load the diagnostic monitor into memory
+        // Load DSQDA diagnostic subroutines (SUBSM)
+        //
+
+        printf("KS10: Loading SUBSM.\n");
+        if (!loadCode("diag/subsm.sav")) {
+            printf("Failed to load DIAG/SUBSM.SAV\n");
+        }
+
+        //
+        // Load DSQDB diagnostic debugger (SMDDT)
+        //
+
+        printf("KS10: Loading SMDDT.\n");
+        if (!loadCode("diag/smddt.sav")) {
+            printf("Failed to load DIAG/SMDDT.SAV\n");
+        }
+
+#endif
+
+        //
+        // Load DSQDC the diagnostic monitor (SMMON)
         //
 
         printf("KS10: Loading SMMON.\n");
@@ -1028,6 +1066,27 @@ static void cmdGO(int argc, char *argv[]) {
         ks10_t::writeMem(ks10_t::rhbase_addr, rhbase);
         ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
 
+#if 0
+
+        //
+        // Load DSQDA diagnostic subroutines (SUBSM)
+        //
+
+        printf("KS10: Loading SUBSM.\n");
+        if (!loadCode("diag/subsm.sav")) {
+            printf("Failed to load DIAG/SUBSM.SAV\n");
+        }
+
+        //
+        // Load DSQDB diagnostic debugger (SMDDT)
+        //
+
+        printf("KS10: Loading SMDDT.\n");
+        if (!loadCode("diag/smddt.sav")) {
+            printf("Failed to load DIAG/SMDDT.SAV\n");
+        }
+
+#endif
         //
         // Load the diagnostic monitor into memory
         //
@@ -1053,10 +1112,12 @@ static void cmdGO(int argc, char *argv[]) {
 
         ks10_t::data_t start = parseOctal(argv[2]);
         ks10_t::writeRegCIR(ks10_t::opJRST << 18 | start);
-        printf("Wrote CIR\n");
+        printf("KS10: Starting Address: %06llo,,%06llo\n", ks10_t::opJRST, start);
 
         //
         // Fix timing for DSDZA diagnostic
+        // This is required because the KS10 FPGA is faster than the DEC KS10
+        // and the DSDZA diagnostics will fail without this patch.
         //
 
         if (strnicmp("diag/dsdza.sav", argv[1], 10) == 0) {
@@ -1076,7 +1137,7 @@ static void cmdGO(int argc, char *argv[]) {
             ks10_t::writeMem(035665, 60000);    // 7200
             ks10_t::writeMem(035666, 60000);    // 9600
             ks10_t::writeMem(035667, 60000);    // 19.2K
-            printf("Patched DSDZA diagnostic\n");
+            printf("Patched DSDZA diagnostic.\n");
         }
 
     } else {
@@ -1091,6 +1152,16 @@ static void cmdGO(int argc, char *argv[]) {
     ks10_t::cacheEnable(true);
     ks10_t::trapEnable(true);
     ks10_t::timerEnable(true);
+
+    //
+    // Insert Halt Instruction at end of standalone diagnostic test
+    //
+
+#if 0
+
+    patchCode(030057, ks10_t::opHALT << 18 | 030060):
+
+#endif
 
     //
     // Start the KS10 running

@@ -57,6 +57,7 @@ TESTBENCH := esm_top/testbench
 IVERILOG := iverilog
 VVP      := vvp
 CLOC     := ./cloc-1.62.exe
+OBJCOPY  := objcopy
 
 #
 # Fix pipelining (the tee command)

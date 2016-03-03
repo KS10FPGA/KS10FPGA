@@ -40,6 +40,8 @@
 
 #include <stdint.h>
 
+#include "fpga.hpp"
+
 //!
 //! KS10 Interface Object
 //!
@@ -108,6 +110,7 @@ class ks10_t {
 
         static const data_t opJRST  = 0254000;          //!< JRST Instruction
         static const data_t opRDHSB = 0702300;          //!< RDHSB Instruction
+        static const data_t opHALT  = 0254200;          //!< HALT Instruction
 
         //
         // KS10 addresses
@@ -195,6 +198,7 @@ class ks10_t {
         static haltStatusBlock_t &getHaltStatusBlock(addr_t addr);
         static uint64_t getRH11debug(void);
         static void programFirmware(bool debug);
+        static void programFirmware(bool debug, const char *filename);
         static void checkFirmware(bool debug);
         static void (*consIntrHandler)(void);
         static void (*haltIntrHandler)(void);
@@ -202,6 +206,8 @@ class ks10_t {
         static int getchar(void);
 
     private:
+
+        fpga_t fpga;
 
         //
         // Misc constants

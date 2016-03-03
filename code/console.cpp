@@ -232,11 +232,10 @@ void taskConsole(void* arg) {
     debug_t *debug = static_cast<debug_t *>(arg);
 
     //
-    // Initialize the EPI interface to the FPGA
+    // Start the SD task
     //
 
-    EPIInitialize();
-    printf("CPU : EPI interface initialized.\n");
+    startSdTask(debug);
 
     //
     // Initialize KS10 object
@@ -248,7 +247,15 @@ void taskConsole(void* arg) {
     // Program the firmware
     //
 
+#if 1
+
     ks10.programFirmware(debug->debugKS10);
+
+#else
+
+    ks10.programFirmware(debug->debugKS10, "firmware.bin");
+
+#endif
 
     //
     // Check the firmware revsion.
@@ -267,12 +274,6 @@ void taskConsole(void* arg) {
     //
 
     ks10.enableInterrupts(consInterrupt, haltInterrupt);
-
-    //
-    // Start the SD task
-    //
-
-    startSdTask(debug);
 
     //
     // Boot the KS10

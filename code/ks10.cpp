@@ -19,19 +19,18 @@
 //
 // Copyright (C) 2013-2016 Rob Doyle
 //
-// This program is free software; you can redistribute it and/or modify it
-// under the terms of the GNU General Public License as published by the Free
-// Software Foundation; either version 2 of the License, or (at your option)
-// any later version.
+// The KS10 FPGA project is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option) any
+// later version.
 //
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+// The KS10 FPGA project is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+// or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 // more details.
 //
 // You should have received a copy of the GNU General Public License along with
-// this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-// Place - Suite 330, Boston, MA 02111-1307, USA.
+// this software.  If not, see <http://www.gnu.org/licenses/>.
 //
 //******************************************************************************
 //
@@ -44,6 +43,7 @@
 #include "ks10.hpp"
 #include "debug.hpp"
 #include "fatal.hpp"
+#include "fatfslib/ff.h"
 #include "driverlib/rom.h"
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
@@ -53,10 +53,15 @@
 #include "driverlib/inc/hw_memmap.h"
 #include "SafeRTOS/SafeRTOS_API.h"
 
-#define GPIO_PIN_PROG  GPIO_PIN_0
-#define GPIO_PIN_INIT  GPIO_PIN_1
-#define GPIO_PIN_DONE  GPIO_PIN_3
-#define GPIO_HALT_LED  GPIO_PIN_7
+//
+// GPIO Bit Definitions
+//
+
+#define GPIO_HALT_LED  GPIO_PIN_7       // PD7
+
+//
+// Pointers to interrupt handler functions
+//
 
 void (*ks10_t::consIntrHandler)(void);
 void (*ks10_t::haltIntrHandler)(void);
@@ -72,6 +77,7 @@ void (*ks10_t::haltIntrHandler)(void);
 
 ks10_t::ks10_t(void) {
     EPIInitialize();
+    printf("KS10: EPI interface initialized.\n");
 }
 
 //!
@@ -927,77 +933,86 @@ bool ks10_t::nxmnxd(void) {
 
 //!
 //! \brief
-//!    Program the FPGA with firmware.
+//!    Program the FPGA with firmware using the Serial Flash Device
 //!
-//! \note
-//!    PROG# is on PB0, and
-//!    INIT# is on PB1, and
-//!    DONE  is on PB3.
+//! \param debug -
+//!    <b>True</b> enables debug mode.
 //!
 
 void ks10_t::programFirmware(bool debug) {
 
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_PROG);
-    ROM_GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_INIT);
-    ROM_GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_DONE);
-
     //
-    // Assert PROG# momentarily
+    // Construct FPGA object
     //
 
-    ROM_GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_PROG, 0);
-    ROM_SysCtlDelay(100);
-    ROM_GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_PROG, GPIO_PIN_PROG);
-    ROM_SysCtlDelay(100);
+    fpga_t fpga;
 
     //
-    // Verify DONE is negated.
+    // Program the FPGA
     //
 
-    if (ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_DONE) != 0) {
-        printf("KS10: Programming Error.  DONE should be negated while programming.\n");
-        if (!debug) {
-            fatal();
-        }
-    }
-
-    //
-    // Print message
-    //
-
-    printf("KS10: Programming with firmware.");
-
-    //
-    // Check card status every second
-    //
-
-    const unsigned long delay = 1000;
-    portTickType lastTick = xTaskGetTickCount();
-
-    //
-    // Wait for DONE to be asserted.  Error after 10 seconds.
-    // The INIT# pin is asserted (low) if a CRC error occurs
-    //
-
-    for (int i = 0; i < 10; i++) {
-        if (ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_DONE) != 0) {
-            printf("\nKS10: Programmed successfully.\n");
-            return;
-        }
-        if (ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_INIT) == 0) {
-            printf("\nKS10: Programming Error.  CRC Failure.\n");
-            if (!debug) {
-                fatal();
-            }
-        }
-        printf(" .");
-        xTaskDelayUntil(&lastTick, delay);
-    }
-    printf("\nKS10: Programming Error.  Time out.\n");
-    if (!debug) {
+    bool success = fpga.program();
+    if (!success && !debug) {
         fatal();
     }
+
+}
+
+//!
+//! \brief
+//!    Program the FPGA with firmware using the data from the SDHC card.
+//!
+//! \param debug -
+//!    <b>True</b> enables debug mode.
+//!
+//! \param filename -
+//!    Filename of the firmware to load into the FPGA.
+//!
+
+void ks10_t::programFirmware(bool debug, const char *filename) {
+
+    //
+    // Attempt to open the firmware file
+    //
+
+    FIL fp;
+    FRESULT status = f_open(&fp, filename, FA_READ);
+    if (status != FR_OK) {
+        printf("KS10: Unable to open firmware file \"%s\".  Status was %d\n", filename, status);
+        return;
+    } else {
+        debug_printf(debug, "KS10: Opened firmware file \"%s\" for reading.\n", filename);
+    }
+
+    //
+    // Construct FPGA object
+    //
+
+    fpga_t fpga;
+
+    //
+    // Program the FPGA
+    //
+
+    bool success = fpga.program(&fp);
+
+    //
+    // Close the file
+    //
+
+    status = f_close(&fp);
+    if (status != FR_OK) {
+        printf("KS10: Unable to close firmware file \"%s\".  Status was %d\n", filename, status);
+    }
+
+    //
+    // Check status
+    //
+
+    if (!success && !debug) {
+        fatal();
+    }
+
 }
 
 //!
@@ -1013,11 +1028,11 @@ void ks10_t::programFirmware(bool debug) {
 void ks10_t::checkFirmware(bool debug) {
     const char *buf = regVers;
     if ((buf[0] == 'R') && (buf[1] == 'E') && (buf[2] == 'V') && (buf[5] == 0xae)) {
-        printf("KS10: Firmware is %c%c%c %c%c%c%c%c\n",
+        printf("KS10: FPGA Firmware is %c%c%c %c%c%c%c%c\n",
                buf[0] & 0x7f, buf[1] & 0x7f, buf[2] & 0x7f, buf[3] & 0x7f,
                buf[4] & 0x7f, buf[5] & 0x7f, buf[6] & 0x7f, buf[7] & 0x7f);
     } else if (debug) {
-        printf("KS10: Firmware is %02x%02x%02x%02x%02x%02x%02x%02x\n",
+        printf("KS10: FPGA Firmware is %02x%02x%02x%02x%02x%02x%02x%02x\n",
                buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
     } else {
         printf("KS10: Unable to communicate with the KS10 FPGA.\n");
