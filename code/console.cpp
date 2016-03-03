@@ -54,6 +54,7 @@
 #include "ks10.hpp"
 #include "align.hpp"
 #include "fatal.hpp"
+#include "vt100.hpp"
 #include "prompt.hpp"
 #include "console.hpp"
 #include "commands.hpp"
@@ -61,14 +62,6 @@
 #include "driverlib/rom.h"
 #include "telnetlib/telnet_task.hpp"
 #include "SafeRTOS/SafeRTOS_API.h"
-
-//
-// VT100 colors
-//
-
-static const char vt100fg_red[] = "\e[0;31m";
-static const char vt100fg_grn[] = "\e[0;32m";
-static const char vt100fg_rst[] = "\e[0m";
 
 //!
 //! \brief
@@ -119,10 +112,10 @@ void consInterrupt(void) {
 
 void haltInterrupt(void) {
     if (ks10_t::halt()) {
-        printf("KS10: %sHalted.%s\n", vt100fg_red, vt100fg_rst);
+        printf("KS10: %sHalted.%s\n", vt100fg_red, vt100at_rst);
         printHaltStatus();
     } else {
-        printf("KS10: %sRunning.%s\n", vt100fg_grn, vt100fg_rst);
+        printf("KS10: %sRunning.%s\n", vt100fg_grn, vt100at_rst);
     }
 }
 
@@ -341,9 +334,9 @@ void taskConsole(void* arg) {
     if (rh11debug >> 56 == ks10_t::rh11IDLE) {
         printf("KS10: RH11 successfully initialized SDHC media.\n");
     } else if (rh11debug >> 40 == 0x7e0c80) {
-        printf("KS10: %sRH11 cannot utilize SDSC media.  Use SDHC media.%s\n", vt100fg_red, vt100fg_rst);
+        printf("KS10: %sRH11 cannot utilize SDSC media.  Use SDHC media.%s\n", vt100fg_red, vt100at_rst);
     } else {
-        printf("KS10: %sRH11 failed to initialize SDHC media.%s\n", vt100fg_red, vt100fg_rst);
+        printf("KS10: %sRH11 failed to initialize SDHC media.%s\n", vt100fg_red, vt100at_rst);
         printRH11Debug();
     }
 
