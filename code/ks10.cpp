@@ -19,6 +19,8 @@
 //
 // Copyright (C) 2013-2016 Rob Doyle
 //
+// This file is part of the KS10 FPGA Project
+//
 // The KS10 FPGA project is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by the Free
 // Software Foundation, either version 3 of the License, or (at your option) any
