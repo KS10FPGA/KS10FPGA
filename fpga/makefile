@@ -1,3 +1,37 @@
+#******************************************************************************
+#
+# KS-10 Processor
+#
+# Brief
+#    FPGA Build Rules
+#
+# File
+#    makefile
+#
+# Author
+#    Rob Doyle - doyle (at) cox (dot) net
+#
+#******************************************************************************
+#
+# Copyright (C) 2013-2016 Rob Doyle
+#
+# This file is part of the KS10 FPGA Project
+#
+# The KS10 FPGA project is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option) any
+# later version.
+#
+# The KS10 FPGA project is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this software.  If not, see <http://www.gnu.org/licenses/>.
+#
+#******************************************************************************
+
 #
 # Project name.   Also top-level entity name (upper case)
 #
@@ -56,7 +90,7 @@ TESTBENCH := esm_top/testbench
 
 IVERILOG := iverilog
 VVP      := vvp
-CLOC     := ./cloc-1.62.exe
+CLOC     := cloc-1.62.exe
 OBJCOPY  := objcopy
 
 #
@@ -493,7 +527,11 @@ FILTER_ARGS := \
 	'    <filter task="place" file="Place" num="1206" type="warning"></filter>' \
 	'</filters>'
 
-build: $(ISE)/$(PROJECT).mcs
+#
+# Build the binary firmware image
+#
+
+build: $(ISE)/$(PROJECT).bin
 
 #
 # Create the "Control ROM" microcode for microsequencer
@@ -946,7 +984,7 @@ BITGEN_OPTS := \
 	-g sw_gwe_cycle:5 \
 	-g sw_gts_cycle:4
 
-$(ISE)/$(PROJECT).bit: $(ISE)/$(PROJECT).ncd
+$(ISE)/$(PROJECT).bit: $(ISE)/$(PROJECT).ncd makefile
 	@cd $(ISE); \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
 	echo Running BITGEN | tee -a $(PROJECT).log; \
@@ -989,6 +1027,22 @@ $(ISE)/$(PROJECT).mcs: $(ISE)/$(PROJECT).bit makefile
 	echo $(PROMGEN) $(PROMGEN_OPTS) | tee -a $(PROJECT).log; \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
 	$(PROMGEN) $(PROMGEN_OPTS) | tee -a $(PROJECT).log
+
+#
+# Convert Hex File to Binary File
+#
+
+OBJCOPY_OPTS := \
+	-I ihex \
+	-O binary
+
+$(ISE)/$(PROJECT).bin : $(ISE)/$(PROJECT).mcs makefile
+	@cd $(ISE); \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	echo Running OBJCOPY | tee -a $(PROJECT).log; \
+	echo $(OBJCOPY) $(OBJCOPY_OPTS) $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT).bin | tee -a $(PROJECT).log; \
+	echo "################################################################################" | tee -a $(PROJECT).log; \
+	$(OBJCOPY) $(OBJCOPY_OPTS) $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT).bin
 
 #
 # Run 'impact' to program the KS10 flash
