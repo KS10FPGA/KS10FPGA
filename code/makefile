@@ -92,6 +92,9 @@ FATFSLIB := \
 LWIPLIB := \
 	lwiplib/lwiplib.a
 
+CMDLINELIB := \
+	cmdlinelib/cmdlinelib.a
+
 TELNETLIB := \
 	telnetlib/telnetlib.a
 
@@ -101,10 +104,13 @@ USTDLIB := \
 $(TARGET).bin : $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
 
-$(TARGET).elf : $(TARGET).ld $(DRIVERLIB) $(USTDLIB) $(FATFSLIB) $(LWIPLIB) $(TELNETLIB) $(FILES)
-	$(LD) $(LDFLAGS) $(FILES) --start-group $(DRIVERLIB) $(FATFSLIB) $(LWIPLIB) $(TELNETLIB) $(USTDLIB) --end-group $(LIBGCC) $(LIBC) -o $(TARGET).elf
+$(TARGET).elf : $(TARGET).ld $(DRIVERLIB) $(USTDLIB) $(FATFSLIB) $(LWIPLIB) $(TELNETLIB) $(CMDLINELIB) $(FILES)
+	$(LD) $(LDFLAGS) $(FILES) --start-group $(DRIVERLIB) $(FATFSLIB) $(LWIPLIB) $(TELNETLIB) $(USTDLIB) $(CMDLINELIB) --end-group $(LIBGCC) $(LIBC) -o $(TARGET).elf
 
 $(TARGET).o : $(TARGET).cpp $(HEADERS)
+
+$(CMDLINELIB) : FORCE
+	${MAKE} -C cmdlinelib
 
 $(DRIVERLIB) : FORCE
 	${MAKE} -C driverlib
@@ -144,6 +150,7 @@ clean:
 	rm -f *.o
 	rm -f *.d
 	rm -rf ../doc/Doxygen/*
+	${MAKE} -C cmdlinelib clean
 	${MAKE} -C driverlib clean
 	${MAKE} -C fatfslib clean
 	${MAKE} -C lwiplib clean
@@ -152,6 +159,7 @@ clean:
 
 rcsclean: clean
 	rcsclean *
+	${MAKE} -C cmdlinelib rcsclean
 	${MAKE} -C driverlib rcsclean
 	${MAKE} -C fatfslib rcsclean
 	${MAKE} -C lwiplib rcsclean
@@ -159,6 +167,7 @@ rcsclean: clean
 	${MAKE} -C ustdlib rcsclean
 
 rcsfetch: $(HEADERS) $(FILES:.o=.cpp) $(OPENOCD_CFG) $(TARGET).ld makefile makedefs
+	${MAKE} -C cmdlinelib rcsfetch
 	${MAKE} -C driverlib rcsfetch
 	${MAKE} -C fatfslib rcsfetch
 	${MAKE} -C lwiplib rcsfetch
@@ -175,13 +184,22 @@ archive_dist:
 doxygen : Doxyfile
 	doxygen.exe
 
+EXCLUDE := \
+	-e RCS \
+	-e fatfslib \
+	-e lwiplib \
+	-e driverlib \
+	-e ustdlib
+
+FILTYPES := \
+
 check :
 	@echo "Tabs in:"
-	@-find . -type f | grep -v RCS | grep -e '\.cpp$$' -e '\.hpp$$' | xargs grep -P '\t'
+	@-find . -type f | grep -v $(EXCLUDE) | grep -e '\.cpp$$' -e '\.hpp$$' -e '\.c$$' -e '\.h$$' -e '\.s$$' | xargs grep -P '\t'
 	@echo "Trailing white space in:"
-	@-find . -type f | grep -v RCS | grep -e '\.cpp$$' -e '\.hpp$$' | xargs grep -P '[ ]+$$'
+	@-find . -type f | grep -v $(EXCLUDE) | grep -e '\.cpp$$' -e '\.hpp$$' -e '\.c$$' -e '\.h$$' -e '\.s$$' | xargs grep -P '[ ]+$$'
 	@echo "FIXMEs in:"
-	@-find . -type f | grep -v RCS | grep -e '\.cpp$$' -e '\.hpp$$' | xargs grep -i 'fixme'
+	@-find . -type f | grep -v $(EXCLUDE) | grep -e '\.cpp$$' -e '\.hpp$$' -e '\.c$$' -e '\.h$$' -e '\.s$$' | xargs grep -i 'fixme'
 
 
 ifneq (${MAKECMDGOALS}, clean)

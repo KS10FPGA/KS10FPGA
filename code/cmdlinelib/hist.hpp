@@ -3,13 +3,10 @@
 //  KS10 Console Microcontroller
 //
 //! \brief
-//!    Task Utilities
-//!
-//! \details
-//!    These functions are generically useful for the SafeRTOS tasking
+//!    Command History Buffer
 //!
 //! \file
-//!    taskutil.hpp
+//!    hist.hpp
 //!
 //! \author
 //!    Rob Doyle - doyle (at) cox (dot) net
@@ -35,54 +32,30 @@
 //
 //******************************************************************************
 
-#ifndef __TASKUTIL_HPP
-#define __TASKUTIL_HPP
+#ifndef __HIST_HPP
+#define __HIST_HPP
 
-#include "SafeRTOS/SafeRTOS_API.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//!
-//! Task parameters
-//!
-//! \brief
-//!    All of the tasks are create with the task parameter pointing at a struct
-//!    of this type.
-//!
-
-struct debug_t {
-    bool debugCPU;
-    bool debugKS10;
-    bool debugSDHC;
-    bool debugTelnet;
+class hist_t {
+    private:
+        char buffer[128];
+        unsigned int head;
+        unsigned int tail;
+        unsigned int index;
+        unsigned int wrap(unsigned int pos) const;
+        void findfree(unsigned int size);
+        unsigned int entries(void);
+        unsigned int find(unsigned int head, unsigned int which, unsigned int index);
+        int copybuffer(char* cmdline, unsigned int header);
+        static const unsigned int bufsize = sizeof(buffer);
+    public:
+        enum dir_t {
+            up,
+            down,
+        };
+        hist_t(void);
+        void dump(void);
+        void save(const char* line, unsigned char len);
+        int  recall(char* line, dir_t dir);
 };
 
-//!
-//! Task priorities
-//!
-
-enum {
-    taskIdlePriority    = 0,    // lowest priority
-    taskCommandPriority = 1,
-    taskConsolePriority = 2,
-    taskHaltPriority    = 3,
-    taskSDPriority      = 4,    // highest priority
-};
-
-//
-// Task utilities
-//
-
-const char *taskError(portBASE_TYPE error);
-void taskErrorHook(xTaskHandle handle, signed portCHAR *name, portBASE_TYPE error);
-void taskDeleteHook(xTaskHandle xTaskToDelete);
-void taskIdleHook(void);
-bool taskIsRunning(xTaskHandle taskHandle);
-
-#ifdef __cplusplus
-}
 #endif
-
-#endif // __TASKUTIL_HPP

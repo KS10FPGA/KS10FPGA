@@ -551,7 +551,7 @@ static void cmdBT(int argc, char *argv[]) {
             rh11.boot(rhunit, false);
             break;
         case 2:
-            if (strnicmp(argv[1], "1", 1) == 0) {
+            if (*argv[1] == '1') {
                 rh11.boot(rhunit, true);
             } else {
                 printf(usage);
@@ -779,7 +779,7 @@ static void cmdDS(int argc, char *argv[]) {
               usage);
    } else {
        for (int i = 1; i < argc; i++) {
-           if (strnicmp(argv[i], "UBA=", 4) == 0) {
+           if (strnicmp(argv[i], "uba=", 4) == 0) {
                unsigned int temp = parseOctal(&argv[i][4]);
                if (temp > 4) {
                    printf("Parameter out of range: \"%s\".\n", argv[i]);
@@ -790,7 +790,7 @@ static void cmdDS(int argc, char *argv[]) {
                    }
                    rhbase = (rhbase & 0777777) | (temp << 18);
                }
-           } else if (strnicmp(argv[i], "BASE=", 5) == 0) {
+           } else if (strnicmp(argv[i], "base=", 5) == 0) {
                unsigned int temp = parseOctal(&argv[i][5]);
                if (temp != 0776700) {
                    printf("Parameter must be 776700: \"%s\".\n", argv[i]);
@@ -798,7 +798,7 @@ static void cmdDS(int argc, char *argv[]) {
                } else {
                    rhbase = (rhbase & 07000000) | (temp & 0777777);
                }
-           } else if (strnicmp(argv[i], "UNIT=", 5) == 0) {
+           } else if (strnicmp(argv[i], "unit=", 5) == 0) {
                unsigned int temp = parseOctal(&argv[i][5]);
                if (temp > 7) {
                    printf("Parameter out of range: \"%s\".\n", argv[i]);
@@ -840,22 +840,27 @@ static void cmdDZ(int argc, char *argv[]) {
         "  Valid ports are 0-7.\n"
         "  Note: This is all 9600 baud, no parity, 8 data bit, 1 stop bit.\n";
 
-    char *buf = argv[1];
-    if ((argc == 3) && (buf[0] =='T') && (buf[1] >= 'X')) {
-        if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
-            dz11_t::testTX(*argv[2]);
-        } else {
-            printf(usage);
-        }
-    } else if ((argc == 3) && (buf[0] =='R') && (buf[1] >= 'X')) {
-        if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
-            dz11_t::testRX(*argv[2]);
-        } else {
-            printf(usage);
-        }
-    } else if ((argc == 3) && (buf[0] =='E') && (buf[1] >= 'C')) {
-        if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
-            dz11_t::testECHO(*argv[2]);
+    if (argc == 3) {
+        if (strnicmp(argv[1], "tx", 2) == 0) {
+            if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
+                dz11_t::testTX(*argv[2]);
+            } else {
+                printf(usage);
+            }
+
+        } else if (strnicmp(argv[1], "rx", 2) == 0) {
+            if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
+                dz11_t::testRX(*argv[2]);
+            } else {
+                printf(usage);
+            }
+
+        } else if (strnicmp(argv[1], "ec", 2) == 0) {
+            if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
+                dz11_t::testECHO(*argv[2]);
+            } else {
+                printf(usage);
+            }
         } else {
             printf(usage);
         }
@@ -1306,7 +1311,7 @@ static void cmdLB(int argc, char *argv[]) {
             rh11.boot(rhunit, false);
             break;
         case 2:
-            if (strnicmp(argv[1], "1", 1) == 0) {
+            if (*argv[1] == '1') {
                 rh11.boot(rhunit, true);
             } else {
                 printf(usage);
@@ -1387,10 +1392,10 @@ static void cmdMR(int argc, char *argv[]) {
             ;
         }
     } else if (argc == 2) {
-        if (strncmp(argv[1], "ON", 2) == 0) {
+        if (strnicmp(argv[1], "on", 2) == 0) {
             ks10_t::cpuReset(true);
             printf("KS10 is reset\n");
-        } else if (strncmp(argv[1], "OFF", 2) == 0) {
+        } else if (strnicmp(argv[1], "off", 2) == 0) {
             ks10_t::cpuReset(false);
             printf("KS10 is unreset\n");
         }
@@ -1425,11 +1430,11 @@ extern "C" void lwIPNetworkConfigChange(unsigned long uIPAddr, unsigned long ulN
 static void cmdNE(int argc, char *argv[]) {
     const char *usage =
         "Usage: NE {DISP | RESET}\n"
-        " NE DISP  - Display Network Addresses.\n"
+        " NE STAT  - Display Network Addresses.\n"
         " NE RESET - Reset Network Addresses.\n";
 
     if (argc == 2) {
-        if (strnicmp(argv[1], "DISP", 4) == 0) {
+        if (strnicmp(argv[1], "stat", 4) == 0) {
             uint32_t addr = lwIPLocalIPAddrGet();
             if (addr == 0) {
                 printf("  Unable to obtain IP Address.\n");
@@ -1457,7 +1462,7 @@ static void cmdNE(int argc, char *argv[]) {
                        buffer[0], buffer[1], buffer[2],
                        buffer[3], buffer[4], buffer[5]);
             }
-        } else if (strnicmp(argv[1], "RESET", 5) == 0) {
+        } else if (strnicmp(argv[1], "reset", 5) == 0) {
             lwIPNetworkConfigChange(0, 0, 0, IPADDR_USE_DHCP);
             printf("  Network parameters were reset.\n");
         } else {
@@ -1585,10 +1590,10 @@ static void cmdSD(int argc, char *argv[]) {
         "Print directory of SD Card.\n";
 
     if (argc == 2) {
-        if (strnicmp(argv[1], "DIR", 3) == 0) {
+        if (strnicmp(argv[1], "dir", 3) == 0) {
             FRESULT status = directory("");
             if (status != FR_OK) {
-                debug("Directory status was %d\n", status);
+                debug("Directory command failed. Status was %d.\n", status);
             }
         }
     } else {
@@ -1813,18 +1818,10 @@ static void cmdTR(int argc, char *argv[]) {
                ks10_t::writeDCSR(ks10_t::readDCSR() | ks10_t::dcsrTREN_MAT);
             } else if (strnicmp(argv[1], "dump", 4) == 0) {
                 printf("Trace Dump:\n");
-#if 0
-                for (int i = 0; i < 64; i++) {
+                for (int i = 0; (ks10_t::readDCSR() & ks10_t::dcsrEMPTY) != ks10_t::dcsrEMPTY; i++) {
                     uint64_t data = ks10_t::readDITR();
                     printf(" %4d: %06llo %012llo\n", i, ((data >> 36) & 0777777), (data & 0777777777777));
                 }
-#else
-                int i = 0;
-                while ((ks10_t::readDCSR() & ks10_t::dcsrEMPTY) != ks10_t::dcsrEMPTY) {
-                    uint64_t data = ks10_t::readDITR();
-                    printf(" %4d: %06llo %012llo\n", i++, ((data >> 36) & 0777777), (data & 0777777777777));
-                }
-#endif
                 printf("Trace Finished\n");
             } else {
                 printf(usage);
@@ -1941,31 +1938,31 @@ static void cmdZZ(int argc, char *argv[]) {
         printf("This is a test (long long hex    ) 0x%llx\n", 0x95232633579bfe34ull);
 
     } else if (argc == 2) {
-        if (strncmp(argv[1], "ON", 2) == 0) {
+        if (strnicmp(argv[1], "on", 2) == 0) {
             ks10_t::cpuReset(true);
             printf("KS10 held in reset\n");
-        } else if (strncmp(argv[1], "OFF", 2) == 0) {
+        } else if (strnicmp(argv[1], "off", 2) == 0) {
             ks10_t::cpuReset(false);
             printf("KS10 unreset\n");
         }
     } else if (argc == 3) {
         if (*argv[1] == 'R') {
-            if (strncmp(argv[2], "REGADDR", 4) == 0) {
+            if (strnicmp(argv[2], "regaddr", 4) == 0) {
                 printf("  Address Register: %012llo.\n", ks10_t::readRegAddr());
-            } else if (strncmp(argv[2], "REGDATA", 4) == 0) {
+            } else if (strnicmp(argv[2], "regdata", 4) == 0) {
                 printf("  Data Register: %012llo.\n", ks10_t::readRegData());
-            } else if (strncmp(argv[2], "REGCIR", 4) == 0) {
+            } else if (strnicmp(argv[2], "regcir", 4) == 0) {
                 printf("  CIR Register: %012llo.\n", ks10_t::readRegCIR());
-            } else if (strncmp(argv[2], "REGSTAT", 4) == 0) {
+            } else if (strnicmp(argv[2], "regstat", 4) == 0) {
                 printf("  Status Register: %012llo.\n", ks10_t::readRegStat());
-            } else if (strncmp(argv[2], "RH11DEBUG", 4) == 0) {
+            } else if (strnicmp(argv[2], "rh11debug", 4) == 0) {
                 printRH11Debug();
             }
         } else if (*argv[1] == 'W') {
-            if (strncmp(argv[2], "REGCIR", 4) == 0) {
+            if (strnicmp(argv[2], "regcir", 4) == 0) {
                 ks10_t::writeRegCIR(0254000020000);
                 printf(" CIR Register written.\n");
-            } else if (strncmp(argv[2], "REGDIR", 4) == 0) {
+            } else if (strnicmp(argv[2], "regdir", 4) == 0) {
                 ks10_t::writeRegCIR(0);
                 printf(" CIR Register written.\n");
             }
@@ -1977,17 +1974,17 @@ static void cmdZZ(int argc, char *argv[]) {
 
 //!
 //! \brief
-//!    Parse Commands
+//!    Command processing task
 //!
 //! \details
 //!    This function parses the commands and dispatches to the various handler
 //!    functions.
 //!
-//! \param [in] buf
+//! \param [in] param
 //!    command line
 //!
 
-static void parseCommand(char * buf) {
+void taskCommand(void * param) {
 
     //
     // List of Commands
@@ -2091,64 +2088,64 @@ static void parseCommand(char * buf) {
 #endif
     };
 
+    char * buf = reinterpret_cast<char *>(param);
     const int numCMD = sizeof(cmdList)/sizeof(cmdList_t);
+    
+    //
+    // Process command line.  Handle multiple commands seperated by ';'
+    //
 
-    int argc = 0;
     char *p = buf;
-    static const int maxarg = 5;
-    static char *argv[maxarg];
+    bool more = false;
+    do {
 
-    //
-    // Form argc and argv
-    //
+        int argc = 0;
+        static const int maxarg = 5;
+        static char *argv[maxarg];
 
-    bool process = true;
-    while (*p) {
-        if (*p == ' ') {
-            *p = 0;
-            process = true;
-        } else if (process && (argc < maxarg)) {
-            argv[argc++] = p;
-            process = false;
+        //
+        // Form argc and argv
+        //
+        
+        bool process = true;
+        while (*p != 0 && *p != ';') {
+            if (*p == ' ') {
+                *p = 0;
+                process = true;
+            } else if (process && (argc < maxarg)) {
+                argv[argc++] = p;
+                process = false;
+            }
+            p++;
         }
-        p++;
-    }
 
-    //
-    // Execute commands
-    //   argc = 0 when no command <cr> is entered
-    //   argv[0] is the command
-    //   argv[1] is the first argument
-    //
+        more = (*p == ';');
+        *p = 0;
 
-    if (argc != 0) {
-        for (int i = 0; i < numCMD; i++) {
-            if ((cmdList[i].name[0] == argv[0][0]) &&
-                (cmdList[i].name[1] == argv[0][1])) {
-                (*cmdList[i].function)(argc, argv);
-                return;
+        //
+        // Execute commands
+        //   argc = 0 when no command <cr> is entered
+        //   argv[0] is the command
+        //   argv[1] is the first argument
+        //
+
+        bool found = false;
+        if (argc != 0) {
+            for (int i = 0; i < numCMD; i++) {
+                if ((cmdList[i].name[0] == toupper(argv[0][0])) &&
+                    (cmdList[i].name[1] == toupper(argv[0][1]))) {
+                    (*cmdList[i].function)(argc, argv);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                printf("%s: Command not found.\n", argv[0]);
             }
         }
-        printf("Command not found.\n");
-    }
-    //printf("%s ", prompt);
-    //xTaskDelete(NULL);
-}
+        p++;
+    } while (more);
 
-//!
-//! \brief
-//!    Command processing task
-//!
-//! \param
-//!    param - pointer to command line buffer
-//!
-//! \note
-//!    When the command finishes executing, the task deletes itself.
-//!
-
-void taskCommand(void * param) {
-    char * buf = reinterpret_cast<char *>(param);
-    parseCommand(buf);
     printf(PROMPT);
     xTaskDelete(NULL);
 }
@@ -2169,9 +2166,30 @@ void taskCommand(void * param) {
 //!
 
 void startCommandTask(char *lineBuffer, xTaskHandle &taskHandle) {
+
+    //
+    // Don't start the next command until the previous command completes.
+    //
+
+    while (taskIsRunning(taskHandle)) {
+        xTaskDelay(1);
+    }
+
+    //
+    // Store a copy of the command line locally.  The line buffer will be destroyed before the
+    // command completes
+    //
+
+    static char buffer[128];
+    strncpy(buffer, lineBuffer, sizeof(buffer));
+
+    //
+    // Create a task to execute the command
+    //
+
     static signed char __align64 stack[4096-4];
     portBASE_TYPE status = xTaskCreate(taskCommand, reinterpret_cast<const signed char *>("Command"),
-                                       stack, sizeof(stack), lineBuffer, taskCommandPriority, &taskHandle);
+                                       stack, sizeof(stack), buffer, taskCommandPriority, &taskHandle);
     if (status != pdPASS) {
         debug("RTOS: Failed to create Command task.  Status was %s.\n", taskError(status));
     }

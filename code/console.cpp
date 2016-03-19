@@ -61,6 +61,7 @@
 #include "commands.hpp"
 #include "taskutil.hpp"
 #include "driverlib/rom.h"
+#include "cmdlinelib/cmdline.hpp"
 #include "telnetlib/telnet_task.hpp"
 #include "SafeRTOS/SafeRTOS_API.h"
 
@@ -117,109 +118,6 @@ void haltInterrupt(void) {
         printHaltStatus();
     } else {
         printf("KS10: %sRunning.%s\n", vt100fg_grn, vt100at_rst);
-    }
-}
-
-//!
-//! \brief
-//!    Read characters from the input and create a command line
-//!
-//! \param buf
-//!    command line buffer
-//!
-//! \param len
-//!    maximum length of command line
-//!
-//! \param taskHandle
-//!    reference to the command processing task
-//!
-//! \note
-//!    Strings are converted to upper case for processing.
-//!
-
-bool commandLine(char *buf, unsigned int len, xTaskHandle &taskHandle) {
-
-    static const char cntl_c    = 0x03;
-    static const char cntl_q    = 0x11;
-    static const char cntl_s    = 0x13;
-    static const char cntl_u    = 0x15;
-    static const char cntl_fs   = 0x1c;
-    static const char backspace = 0x08;
-
-    unsigned int count = 0;
-
-    for (;;) {
-        portBASE_TYPE status;
-        extern bool running;
-        if (running) {
-            xTaskDelay(1);
-            continue;
-        }
-        int ch = getchar();
-        switch (ch) {
-            case cntl_c:
-                xTaskDelete(taskHandle);
-                printf("^C\r\n%s ", PROMPT);
-                return false;
-            case cntl_q:
-                status = xTaskResume(taskHandle);
-                if (status != pdPASS) {
-                    printf("RTOS: xTaskResume() failed.  Status was %s\n",
-                    taskError(status));
-                }
-                putchar('^');
-                putchar('Q');
-                break;
-            case cntl_s:
-                status = xTaskSuspend(taskHandle);
-                if (status != pdPASS) {
-                    printf("RTOS: xTaskSuspend() failed.  Status was %s\n",
-                    taskError(status));
-                }
-                putchar('^');
-                putchar('S');
-                break;
-            case cntl_u:
-                do {
-                    putchar(backspace);
-                    putchar(' ');
-                    putchar(backspace);
-                } while (--count != 0);
-                break;
-            case cntl_fs:
-                putchar('^');
-                putchar('\\');
-                break;
-            case backspace:
-                if (count > 0) {
-                    putchar(backspace);
-                    putchar(' ');
-                    putchar(backspace);
-                    count -= 1;
-                }
-                break;
-            case '\r':
-                buf[count++] = 0;
-                putchar('\r');
-                putchar('\n');
-                return true;
-            case '\n':
-                break;
-            case -1:
-                xTaskDelay(1);
-                break;
-            default:
-                if (count < len - 1) {
-                    buf[count++] = toupper(ch);
-                    putchar(ch);
-                } else {
-                    buf[count++] = 0;
-                    putchar('\r');
-                    putchar('\n');
-                    return true;
-                }
-                break;
-        }
     }
 }
 
@@ -350,16 +248,40 @@ void taskConsole(void* arg) {
     // - resumed with a ^Q keystroke
     // - deleted with a ^C keystroke
     //
-    // Note: commandLine() blocks until an newline character is received
-    //
 
     printf(PROMPT);
-    xTaskHandle taskCommandHandle;
-    char lineBuffer[128];
+    xTaskHandle taskHandle = NULL;
+    cmdline_t cmdline(taskHandle, startCommandTask);
 
     for (;;) {
-        if (commandLine(lineBuffer, sizeof(lineBuffer), taskCommandHandle)) {
-            startCommandTask(lineBuffer, taskCommandHandle);
+        extern bool running;
+        if (running) {
+            xTaskDelay(1);
+        } else {
+            int ch = getchar();
+            switch (ch) {
+                case -1:
+                    xTaskDelay(1);
+                    break;
+                case 0x03: // ^C
+                    xTaskDelete(taskHandle);
+                    printf("^C\r\n%s", PROMPT);
+                    cmdline.process(ch);
+                    break;
+                case 0x11: // ^Q
+                    xTaskResume(taskHandle);
+                    printf("^Q");
+                    cmdline.process(ch);
+                    break;
+                case 0x13: // ^S
+                    xTaskSuspend(taskHandle);
+                    printf("^S");
+                    cmdline.process(ch);
+                    break;
+                default:
+                    cmdline.process(ch);
+                    break;
+            }
         }
     }
 }

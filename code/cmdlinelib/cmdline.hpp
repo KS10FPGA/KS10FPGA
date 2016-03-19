@@ -3,13 +3,10 @@
 //  KS10 Console Microcontroller
 //
 //! \brief
-//!    Task Utilities
-//!
-//! \details
-//!    These functions are generically useful for the SafeRTOS tasking
+//!    Command Line Processor
 //!
 //! \file
-//!    taskutil.hpp
+//!    cmdline.hpp
 //!
 //! \author
 //!    Rob Doyle - doyle (at) cox (dot) net
@@ -35,54 +32,45 @@
 //
 //******************************************************************************
 
-#ifndef __TASKUTIL_HPP
-#define __TASKUTIL_HPP
+#ifndef __CMDLINE_HPP
+#define __CMDLINE_HPP
 
+#include <string.h>
+
+#include "hist.hpp"
+#include "cursor.hpp"
 #include "SafeRTOS/SafeRTOS_API.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//!
-//! Task parameters
-//!
-//! \brief
-//!    All of the tasks are create with the task parameter pointing at a struct
-//!    of this type.
-//!
-
-struct debug_t {
-    bool debugCPU;
-    bool debugKS10;
-    bool debugSDHC;
-    bool debugTelnet;
+class cmdline_t {
+    private:
+        hist_t hist;
+        cursor_t cursor;
+        void get_hist(hist_t::dir_t dir);
+        void update(void);
+        void inschar(char ch);
+        void delchar(void);
+        void backspace(void);
+        void transpose(void);
+        void newline(void);
+        enum state_t {
+            stateNONE,
+            stateESC,
+            stateESCBRK,
+            statePFN,
+            stateHOME,
+            stateINS,
+            stateEND,
+            statePGUP,
+            statePGDN,
+        } state;
+        char cmdline[80];
+        unsigned int cmdlen;
+        xTaskHandle& taskHandle;
+        void (*taskExecute)(char* cmd, xTaskHandle &taskHandle);
+    public:
+        cmdline_t(xTaskHandle& taskHandle,
+                  void (*taskExecute)(char* cmd, xTaskHandle& taskHandle));
+        void process(int ch);
 };
 
-//!
-//! Task priorities
-//!
-
-enum {
-    taskIdlePriority    = 0,    // lowest priority
-    taskCommandPriority = 1,
-    taskConsolePriority = 2,
-    taskHaltPriority    = 3,
-    taskSDPriority      = 4,    // highest priority
-};
-
-//
-// Task utilities
-//
-
-const char *taskError(portBASE_TYPE error);
-void taskErrorHook(xTaskHandle handle, signed portCHAR *name, portBASE_TYPE error);
-void taskDeleteHook(xTaskHandle xTaskToDelete);
-void taskIdleHook(void);
-bool taskIsRunning(xTaskHandle taskHandle);
-
-#ifdef __cplusplus
-}
 #endif
-
-#endif // __TASKUTIL_HPP

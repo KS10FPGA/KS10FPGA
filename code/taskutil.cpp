@@ -159,3 +159,23 @@ void taskDeleteHook(xTaskHandle /* xTaskToDelete */) {
 void taskIdleHook(void) {
     ;
 }
+
+//!
+//! \brief
+//!    Determine if a task is running.
+//!
+//! \details
+//!    Query the task priority.  If the task isn't running the returned status
+//!    should be errINVALID_TASK_HANDLE.  If the taskHandle is NULL (first
+//!    invocation) be careful not to check the priority - you'll get the
+//!    priority of the console process.
+//!
+
+bool taskIsRunning(xTaskHandle taskHandle) {
+    if (taskHandle == NULL) {
+        return false;
+    }
+    unsigned portBASE_TYPE priority;
+    portBASE_TYPE status = xTaskPriorityGet(taskHandle, &priority);
+    return (status == pdPASS);
+}
