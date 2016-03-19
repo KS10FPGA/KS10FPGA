@@ -145,7 +145,7 @@ module testbench;
    //
 
    localparam [18:35] addrSWITCH    = 18'o000030;
-   localparam [18:35] addrSTAT      = 18'o000031;
+   localparam [18:35] addrKASW      = 18'o000031;
    localparam [18:35] addrCIN       = 18'o000032;
    localparam [18:35] addrCOUT      = 18'o000033;
    localparam [18:35] addrKIN       = 18'o000034;
@@ -639,8 +639,8 @@ module testbench;
         // Control Register
         //
 
-        conWRITE64(addrREGDZCCR, 64'h000000000000ff00);
-        conWRITE64(addrREGRHCCR, 64'h00000000000707f8);
+        conWRITE64(addrREGDZCCR, 64'h00000000_0000ff00);
+        conWRITE64(addrREGRHCCR, 64'h00000000_010101fe);
 
         //
         // Initialize the Debug Registers
@@ -691,7 +691,7 @@ module testbench;
              //
 
              conWRITEMEM(addrSWITCH,  36'o000000_000000);       // Initialize Switch Register
-             conWRITEMEM(addrSTAT,    36'o000000_000000);       // Maintenance Mode
+             conWRITEMEM(addrKASW,    36'o000000_000000);       // Keep Alive Status Word
              conWRITEMEM(addrCIN,     36'o000000_000000);       // Console Input
              conWRITEMEM(addrCOUT,    36'o000000_000000);       // Console Output
              conWRITEMEM(addrKIN,     36'o000000_000000);       // Klinik Input
@@ -736,9 +736,9 @@ module testbench;
              // Handle CTY IO
              //
 
-             if (conINTR)
+             if (1 || conINTR)
                begin
-                  $display("[%11.3f] KS10: Console Interrupted", $time/1.0e3);
+//                $display("[%11.3f] KS10: Console Interrupted", $time/1.0e3);
 
 `ifdef SIM_CTY
 
