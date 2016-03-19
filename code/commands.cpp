@@ -41,6 +41,7 @@
 
 #include "sd.h"
 #include "stdio.h"
+#include "dasm.hpp"
 #include "dz11.hpp"
 #include "ks10.hpp"
 #include "rh11.hpp"
@@ -157,6 +158,43 @@ static ks10_t::data_t parseOctal(const char *buf) {
     num >>= 3;
 
     return num;
+}
+
+//!
+//! \brief
+//!    Read an AC from the KS10.
+//!
+//! \details
+//!    Reading a register is a convoluted process.
+//!
+//!    -# Create a temporary memory location in the KS10 memory in which may be
+//!       used to stash the contents AC.  Read the data at that location
+//!       (addr 0100) and save the data in the  MCU.  We'll restore it when
+//!       we're done.
+//!    -# Execute a MOVEM instruction to move the register contents to the
+//!       temporary memory location.
+//!    -# The MCU can read the contents of the AC from the temporary memoy
+//!       location.
+//!    -# Restore the contents of the temporary memory locaction
+//!
+//! \param reg -
+//!    AC number
+//!
+//! \returns
+//!    contens of the register
+//!
+
+ks10_t::data_t readAC(ks10_t::data_t regAC) {
+
+    regAC &= 017;
+
+    const ks10_t::addr_t tempAddr = 0100;
+    const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
+    ks10_t::executeInstruction((ks10_t::opMOVEM << 18) | (regAC << 23) | tempAddr);
+    ks10_t::addr_t data = ks10_t::readMem(tempAddr);
+    ks10_t::writeMem(tempAddr, tempData);
+
+    return data;
 }
 
 //!
@@ -296,7 +334,8 @@ static bool loadCode(const char * filename) {
             addr  = (addr  + 1) & 0777777;
             ks10_t::writeMem(addr, data36);
 #if 0
-            debug("%06o: %06lo%06lo\n", addr, ks10_t::lh(data36), ks10_t::rh(data36));
+            debug("%06o: %012llo\n", addr, data36);
+            printf("%06o\t%s\n", addr, dasm(data36));
 #endif
             words = (words + 1) & 0777777;
         }
@@ -375,16 +414,7 @@ void printHaltStatus(void) {
     // Load an RDHSB instruction into the CIR and execute it.
     //
 
-    ks10_t::writeRegCIR((ks10_t::opRDHSB << 18) | tempAddr);
-    ks10_t::execute();
-
-    //
-    // Wait for the processor to HALT.
-    //
-
-    while (!ks10_t::halt()) {
-        ;
-    }
+    ks10_t::executeInstruction((ks10_t::opRDHSB << 18) | tempAddr);
 
     //
     // Read the address of the Halt Status Block from the temporary location
@@ -1571,6 +1601,52 @@ static void cmdRH(int argc, char *argv[]) {
 
 #endif
 
+#ifdef CUSTOM_CMD
+
+//!
+//! \brief
+//!    Read register
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the argument.
+//!
+
+static void cmdRR(int argc, char *argv[]) {
+    const char *usage =
+        "Usage: RR {Reg}\n"
+        " RR is octal must be 0 - 17\n"
+        " if Reg is omitted, all register will be displayed\n"
+        " Note: the KS10 must be halted for this to succeed\n";
+
+    if (argc == 1) {
+        if (!ks10_t::halt()) {
+            printf("KS10: CPU is running.   Halt it first.\n");
+        } else {
+            printf("Dump of AC contents:\n");
+            for (unsigned int i = 0; i < 020; i++) {
+                printf("%02o: %012llo\n", i, readAC(i));
+            }
+        }
+    } else if (argc == 2) {
+        if (!ks10_t::halt()) {
+            printf("KS10: CPU is running.   Halt it first.\n");
+        } else {
+            ks10_t::data_t regAC = parseOctal(argv[1]);
+            if (regAC < 020) {
+                printf("%012llo\n", readAC(regAC));
+            } else {
+                printf(usage);
+            }
+        }
+    } else {
+        printf(usage);
+    }
+}
+#endif
+
 //!
 //! \brief
 //!   SD Card Commands
@@ -1797,8 +1873,13 @@ static void cmdTP(int argc, char *argv[]) {
 
 static void cmdTR(int argc, char *argv[]) {
     const char *usage =
-        "Usage: TR {ON RESET TRIG DUMP}\n"
-        "Control the hardware trace facility.\n";
+        "Usage: TR {ON OFF RESET TRIG DUMP}\n"
+        "Control the hardware trace facility.\n"
+        "TR ON    : re-enables the traced facility\n"
+        "TR OFF   : disables the trace facility\n"
+        "TR RESET : resets the trace buffer FIFO.  The FIFO will be empty\n"
+        "TR TRIG  : probably does not work\n"
+        "TR DUMP  : prints the contents of the trace buffer\n";
 
     switch (argc) {
         case 1:
@@ -1813,14 +1894,19 @@ static void cmdTR(int argc, char *argv[]) {
                ks10_t::writeDCSR(ks10_t::readDCSR() & ~ks10_t::dcsrTREN_RES);
             } else if (strnicmp(argv[1], "reset", 5) == 0) {
                 ks10_t::writeDCSR(ks10_t::dcsrRESET);
-                printf("reset\n");
             } else if (strnicmp(argv[1], "trig", 4) == 0) {
                ks10_t::writeDCSR(ks10_t::readDCSR() | ks10_t::dcsrTREN_MAT);
             } else if (strnicmp(argv[1], "dump", 4) == 0) {
-                printf("Trace Dump:\n");
+                // Disable further trace acquisition
+                ks10_t::writeDCSR(ks10_t::readDCSR() & ~ks10_t::dcsrTREN_RES);
+                printf("Dump of Trace Buffer:\n"
+                       "Entry\t  PC  \tOPC AC I XR   EA  \n"
+                       "-----\t------\t--- -- - -- ------\n");
                 for (int i = 0; (ks10_t::readDCSR() & ks10_t::dcsrEMPTY) != ks10_t::dcsrEMPTY; i++) {
                     uint64_t data = ks10_t::readDITR();
-                    printf(" %4d: %06llo %012llo\n", i, ((data >> 36) & 0777777), (data & 0777777777777));
+                    unsigned int pc = (data >> 36) &  0777777;
+                    unsigned long long ir = (data >>  0) & 0777777777777;
+                    printf("%5d\t%06o\t%s\n", i, pc, dasm(ir));
                 }
                 printf("Trace Finished\n");
             } else {
@@ -1922,6 +2008,108 @@ static void cmdZM(int argc, char */*argv*/[]) {
 //!
 
 static void cmdZZ(int argc, char *argv[]) {
+
+    printf("%s\n", dasm(0213000000000ULL));  // "MOVNS"
+    printf("%s\n", dasm(0213200000000ULL));  // "MOVNS 4,0"
+    printf("%s\n", dasm(0213210002020ULL));  // "MOVNS 2020(10)"
+    printf("%s\n", dasm(0213020000000ULL));  // "MOVNS @0"
+    printf("%s\n", dasm(0213032000000ULL));  // "MOVNS @0(12)"
+    printf("%s\n", dasm(0213232000000ULL));  // "MOVNS 4,@0(12)"
+    printf("\n");
+    printf("%s\n", dasm(0213000777777ULL));  // "MOVNS -1"
+    printf("%s\n", dasm(0213200777777ULL));  // "MOVNS 4,-1"
+
+    printf("%s\n", dasm(0213217777777ULL));  // "MOVNS -1(17)"
+
+    printf("%s\n", dasm(0213020777777ULL));  // "MOVNS @-1"
+    printf("%s\n", dasm(0213032777777ULL));  // "MOVNS @-1(12)"
+    printf("%s\n", dasm(0213232777777ULL));  // "MOVNS 4,@-1(12)"
+    printf("\n");
+    printf("%s\n", dasm(0213000003456ULL));  // "MOVNS 3456"
+    printf("%s\n", dasm(0213200003456ULL));  // "MOVNS 4,3456"
+    printf("%s\n", dasm(0213020003456ULL));  // "MOVNS @3456"
+    printf("%s\n", dasm(0213032003456ULL));  // "MOVNS @3456(12)"
+    printf("%s\n", dasm(0213232003456ULL));  // "MOVNS 4,@3456(12)"
+    printf("\n");
+    printf("%s\n", dasm(0254000000000ULL));  // "JRST"
+    printf("%s\n", dasm(0254040000000ULL));  // "PORTAL"
+    printf("%s\n", dasm(0254100000000ULL));  // "JRSTF"
+    printf("%s\n", dasm(0254140000000ULL));  // "INVALID"
+    printf("%s\n", dasm(0254200000000ULL));  // "HALT"
+    printf("%s\n", dasm(0254240000000ULL));  // "XJRSTF"
+    printf("%s\n", dasm(0254300000000ULL));  // "XJEN"
+    printf("%s\n", dasm(0254340000000ULL));  // "XPCW"
+    printf("%s\n", dasm(0254400000000ULL));  // "INVALID"
+    printf("%s\n", dasm(0254440000000ULL));  // "INVALID"
+    printf("%s\n", dasm(0254500000000ULL));  // "JEN"
+    printf("%s\n", dasm(0254540000000ULL));  // "PORTAL"
+    printf("%s\n", dasm(0254600000000ULL));  // "INVALID"
+    printf("%s\n", dasm(0254640000000ULL));  // "SFM"
+    printf("%s\n", dasm(0254700000000ULL));  // "INVALID"
+    printf("%s\n", dasm(0254740000000ULL));  // "INVALID"
+    printf("\n");
+    printf("%s\n", dasm(0254200000000ULL));  // "HALT"
+    printf("%s\n", dasm(0254200300000ULL));  // "HALT 30000"
+    printf("%s\n", dasm(0254220000001ULL));  // "HALT @0"
+    printf("%s\n", dasm(0254220000002ULL));  // "HALT @1"
+    printf("%s\n", dasm(0254225000003ULL));  // "HALT @3(5)"
+    printf("%s\n", dasm(0254225000004ULL));  // "HALT @4(5)"
+    printf("\n");
+    printf("%s\n", dasm(0700000000000ULL));  // "APRID"
+    printf("%s\n", dasm(0700040000000ULL));  // "70004"
+    printf("%s\n", dasm(0700100000000ULL));  // "70010"
+    printf("%s\n", dasm(0700140000000ULL));  // "70014"
+    printf("%s\n", dasm(0700200000000ULL));  // "WRAPR"
+    printf("%s\n", dasm(0700240000000ULL));  // "RDAPR"
+    printf("%s\n", dasm(0700300000000ULL));  // "70030"
+    printf("%s\n", dasm(0700340000000ULL));  // "70034"
+    printf("%s\n", dasm(0700400000000ULL));  // "70040"
+    printf("%s\n", dasm(0700440000000ULL));  // "70044"
+    printf("%s\n", dasm(0700500000000ULL));  // "70050"
+    printf("%s\n", dasm(0700540000000ULL));  // "70054"
+    printf("%s\n", dasm(0700600000000ULL));  // "WRPI"
+    printf("%s\n", dasm(0700640000000ULL));  // "RDPI"
+    printf("%s\n", dasm(0700700000000ULL));  // "70070"
+    printf("%s\n", dasm(0700740000000ULL));  // "70014"
+    printf("%s\n", dasm(0701000000000ULL));  // "70100"
+    printf("%s\n", dasm(0701040000000ULL));  // "RDUBR"
+    printf("%s\n", dasm(0701100000000ULL));  // "CLRPT"
+    printf("%s\n", dasm(0701140000000ULL));  // "WRUBR"
+    printf("%s\n", dasm(0701200000000ULL));  // "WREBR"
+    printf("%s\n", dasm(0701240000000ULL));  // "RDEBR"
+    printf("%s\n", dasm(0701300000000ULL));  // "70130"
+    printf("%s\n", dasm(0701340000000ULL));  // "70134"
+    printf("%s\n", dasm(0701400000000ULL));  // "70140"
+    printf("%s\n", dasm(0701440000000ULL));  // "70144"
+    printf("%s\n", dasm(0701500000000ULL));  // "70150"
+    printf("%s\n", dasm(0701540000000ULL));  // "70154"
+    printf("%s\n", dasm(0701600000000ULL));  // "70160"
+    printf("%s\n", dasm(0701640000000ULL));  // "70164"
+    printf("%s\n", dasm(0701700000000ULL));  // "70170"
+    printf("%s\n", dasm(0701740000000ULL));  // "70174"
+    printf("%s\n", dasm(0702000000000ULL));  // "RDSPB"
+    printf("%s\n", dasm(0702040000000ULL));  // "RDCSB"
+    printf("%s\n", dasm(0702100000000ULL));  // "RDPUR"
+    printf("%s\n", dasm(0702140000000ULL));  // "RDCSTM
+    printf("%s\n", dasm(0702200000000ULL));  // "RDTIM"
+    printf("%s\n", dasm(0702240000000ULL));  // "RDINT"
+    printf("%s\n", dasm(0702300000000ULL));  // "RDHSB"
+    printf("%s\n", dasm(0702340000000ULL));  // "70234"
+    printf("%s\n", dasm(0702400000000ULL));  // "WRSPB"
+    printf("%s\n", dasm(0702440000000ULL));  // "WRCSB"
+    printf("%s\n", dasm(0702500000000ULL));  // "WRPUR"
+    printf("%s\n", dasm(0702540000000ULL));  // "WRCSTM
+    printf("%s\n", dasm(0702600000000ULL));  // "WRTIM"
+    printf("%s\n", dasm(0702640000000ULL));  // "WRINT"
+    printf("%s\n", dasm(0702700000000ULL));  // "WRHSB"
+    printf("%s\n", dasm(0702740000000ULL));  // "70274"
+    printf("\n");
+    printf("%s\n", dasm(0700000000000ULL));  // "APRID"
+    printf("%s\n", dasm(0700000000001ULL));  // "APRID 1"
+    printf("%s\n", dasm(0700006000002ULL));  // "APRID 2(6)
+    printf("%s\n", dasm(0700020000003ULL));  // "APRID @3"
+    printf("%s\n", dasm(0700037000004ULL));  // "APRID @4(17)"
+
 
     if (argc == 1) {
 
@@ -2064,6 +2252,9 @@ void taskCommand(void * param) {
 #ifdef CUSTOM_CMD
         {"RH", cmdRH},          // RH11 Tests
 #endif
+#ifdef CUSTOM_CMD
+        {"RR", cmdRR},          // Read register
+#endif
         {"SC", cmdXX},          // Not implemented.
         {"SD", cmdSD},
         {"SH", cmdSH},
@@ -2090,7 +2281,7 @@ void taskCommand(void * param) {
 
     char * buf = reinterpret_cast<char *>(param);
     const int numCMD = sizeof(cmdList)/sizeof(cmdList_t);
-    
+
     //
     // Process command line.  Handle multiple commands seperated by ';'
     //
@@ -2106,7 +2297,7 @@ void taskCommand(void * param) {
         //
         // Form argc and argv
         //
-        
+
         bool process = true;
         while (*p != 0 && *p != ';') {
             if (*p == ' ') {

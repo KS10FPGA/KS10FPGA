@@ -50,6 +50,7 @@ LDFLAGS := \
 FILES := \
 	console.o \
 	commands.o \
+	dasm.o \
 	dz11.o \
 	epi.o \
 	fpga.o \
@@ -67,6 +68,7 @@ HEADERS := \
 	align.hpp \
 	commands.hpp \
 	console.hpp \
+	dasm.hpp \
 	dz11.hpp \
 	debug.hpp \
 	epi.hpp \

@@ -145,8 +145,11 @@ void ks10_t::enableInterrupts(void (*consIntrHandler)(void), void (*haltIntrHand
 //!    Halt Interrupt Wrapper
 //!
 
+static bool dispatchHaltInterrupt = true;
 extern "C" void gpiodIntHandler(void) {
-    (*ks10_t::haltIntrHandler)();
+    if (dispatchHaltInterrupt) {
+        (*ks10_t::haltIntrHandler)();
+    }
     ROM_GPIOPinIntClear(GPIO_PORTD_BASE, GPIO_PIN_7);
 }
 
@@ -1237,6 +1240,41 @@ int ks10_t::getchar(void) {
     } else {
         return -1;
     }
+}
+
+//!
+//! \brief
+//!    Execute a single instruction
+//!
+//! \param insn -
+//!    Instruction to execute
+//!
+//! \note
+//!    This mucks with the halt interrupt so we don't get halt messages
+//!    displayed during this.
+//!
+
+void ks10_t::executeInstruction(data_t insn) {
+    dispatchHaltInterrupt = false;
+
+    //
+    // Stuff the instruction in the Console Insturction Register and
+    // execute it.
+    //
+
+    ks10_t::writeRegCIR(insn);
+    ks10_t::execute();
+
+    //
+    // Wait for the processor to HALT.
+    //
+
+    while (!ks10_t::halt()) {
+        ;
+    }
+
+    dispatchHaltInterrupt = true;
+
 }
 
 //

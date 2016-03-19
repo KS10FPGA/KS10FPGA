@@ -112,6 +112,7 @@ class ks10_t {
         static const data_t opJRST  = 0254000;          //!< JRST Instruction
         static const data_t opRDHSB = 0702300;          //!< RDHSB Instruction
         static const data_t opHALT  = 0254200;          //!< HALT Instruction
+        static const data_t opMOVEM = 0202000;          //!< MOVEM Instruction
 
         //
         // KS10 addresses
@@ -205,6 +206,7 @@ class ks10_t {
         static void (*haltIntrHandler)(void);
         static void putchar(int ch);
         static int getchar(void);
+        static void executeInstruction(data_t insn);
 
     private:
 
