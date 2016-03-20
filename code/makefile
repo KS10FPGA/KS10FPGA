@@ -38,7 +38,7 @@ TARGET  := console
 
 OPENOCD_CFG := ks10.cfg
 
-ifeq ($(OS),Cygwin)
+ifneq (, $(findstring CYGWIN, $(UNAME)))
     OPENOCD_EXE := /usr/local/openocd-0.8.0/bin/openocd-0.8.0.exe
 else
     OPENOCD_EXE := /usr/bin/openocd

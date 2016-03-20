@@ -32,7 +32,7 @@
 #
 #******************************************************************************
 
-ifeq ($(OS),Cygwin)
+ifneq (, $(findstring CYGWIN, $(UNAME)))
     AR      := arm-none-eabi-ar
     G++     := arm-none-eabi-g++.exe
     GCC     := arm-none-eabi-gcc.exe
