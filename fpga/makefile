@@ -57,24 +57,37 @@ UNAME    := $(shell uname -s)
 #
 
 ifneq (, $(findstring CYGWIN, $(UNAME)))
-XILDIR   := $(shell cygpath -u '$(XILINX)')
+    XILDIR   := $(shell cygpath -u '$(XILINX)')
+    XILEXE   := $(XILDIR)/ISE_DS/ISE/bin/nt64
+    BITGEN   := $(XILEXE)/bitgen.exe
+    FUSE     := $(XILEXE)/fuse.exe
+    MAP      := $(XILEXE)/map.exe
+    NGD      := $(XILEXE)/ngdbuild.exe
+    PAR      := $(XILEXE)/par.exe
+    PROMGEN  := $(XILEXE)/promgen.exe
+    IMPACT   := $(XILEXE)/impact.exe
+    TRCE     := $(XILEXE)/trce
+    XST      := $(XILEXE)/xst.exe
+    INTSTYLE := ise
+    XILPATH  := $(XILDIR)/ISE_DS/ISE/bin/nt64:$(XILDIR)/ISE_DS/ISE/lib/nt64:$(XILDIR)/ISE_DS/common/bin/nt64:$(XILDIR)/ISE_DS/common/lib/nt64
+    UNISIMS  := $(XILDIR)/ISE_DS/PlanAhead/verilog/src/unisims
 else
-XILDIR   := $(XILINX)
+    XILDIR   := $(XILINX)
+    XILDIR   := /opt/Xilinx/14.7
+    XILEXE   := $(XILDIR)/ISE_DS/ISE/bin/lin64
+    BITGEN   := $(XILEXE)/bitgen
+    FUSE     := $(XILEXE)/fuse
+    MAP      := $(XILEXE)/map
+    NGD      := $(XILEXE)/ngdbuild
+    PAR      := $(XILEXE)/par
+    PROMGEN  := $(XILEXE)/promgen
+    IMPACT   := $(XILEXE)/impact
+    TRCE     := $(XILEXE)/trce
+    XST      := $(XILEXE)/xst
+    INTSTYLE := ise
+    XILPATH  := $(XILDIR)/ISE_DS/ISE/bin/lin64:$(XILDIR)/ISE_DS/ISE/lib/lin64:$(XILDIR)/ISE_DS/common/bin/lin64:$(XILDIR)/ISE_DS/common/lib/lin64
+    UNISIMS  := $(XILDIR)/ISE_DS/PlanAhead/verilog/src/unisims
 endif
-
-XILEXE   := $(XILDIR)/ISE_DS/ISE/bin/nt64
-BITGEN   := $(XILEXE)/bitgen.exe
-FUSE     := $(XILEXE)/fuse.exe
-MAP      := $(XILEXE)/map.exe
-NGD      := $(XILEXE)/ngdbuild.exe
-PAR      := $(XILEXE)/par.exe
-PROMGEN  := $(XILEXE)/promgen.exe
-IMPACT   := $(XILEXE)/impact.exe
-TRCE     := $(XILEXE)/trce
-XST      := $(XILEXE)/xst.exe
-INTSTYLE := ise
-XILPATH  := $(XILDIR)/ISE_DS/ISE/bin/nt64:$(XILDIR)/ISE_DS/ISE/lib/nt64:$(XILDIR)/ISE_DS/common/bin/nt64:$(XILDIR)/ISE_DS/common/lib/nt64
-UNISIMS  := $(XILDIR)/ISE_DS/PlanAhead/verilog/src/unisims
 
 #
 # Project structure
