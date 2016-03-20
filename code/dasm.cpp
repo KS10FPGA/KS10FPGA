@@ -1,8 +1,41 @@
+//******************************************************************************
+//
+//  KS10 Console Microcontroller
+//
+//! \brief
+//!    Simple PDP10 Disassembler
+//!
+//!
+//! \file
+//!    dasm.cpp
+//!
+//! \author
+//!    Rob Doyle - doyle (at) cox (dot) net
+//
+//******************************************************************************
+//
+// Copyright (C) 2013-2016 Rob Doyle
+//
+// This file is part of the KS10 FPGA Project
+//
+// The KS10 FPGA project is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option) any
+// later version.
+//
+// The KS10 FPGA project is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+// or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this software.  If not, see <http://www.gnu.org/licenses/>.
+//
+//******************************************************************************
 
-//#include <stdio.h>
 
 #include "dasm.hpp"
-#include "ustdlib/ustdlib.h"
+#include "stdio.h"
 
 static const char* opSTD(const char *opcode, char *buf, unsigned long long insn) {
 
@@ -19,20 +52,20 @@ static const char* opSTD(const char *opcode, char *buf, unsigned long long insn)
     // Print instruction
     //
 
-    len += usprintf(&ptr[len], "%03o %02o %01o %02o %06o\t", op, ac, in, xr, ea);
+    len += sprintf(&ptr[len], "%03o %02o %01o %02o %06o\t", op, ac, in, xr, ea);
 
     //
     // Print opcode
     //
 
-    len += usprintf(&ptr[len], "%s\t", opcode);
+    len += sprintf(&ptr[len], "%s\t", opcode);
 
     //
     // Optionally print AC
     //
 
     if (ac != 0) {
-        len += usprintf(&ptr[len], "%o,", ac);
+        len += sprintf(&ptr[len], "%o,", ac);
     }
 
     //
@@ -40,7 +73,7 @@ static const char* opSTD(const char *opcode, char *buf, unsigned long long insn)
     //
 
     if (in != 0) {
-        len += usprintf(&ptr[len], "@");
+        len += sprintf(&ptr[len], "@");
     }
 
     //
@@ -50,9 +83,9 @@ static const char* opSTD(const char *opcode, char *buf, unsigned long long insn)
     if (ac != 0 || in != 0 || xr != 0 || ea != 0) {
 
         if (ea & 0400000) {
-            len += usprintf(&ptr[len], "-%o", (~ea + 1) & 0377777);
+            len += sprintf(&ptr[len], "-%o", (~ea + 1) & 0377777);
         } else {
-            len += usprintf(&ptr[len], "%o", ea);
+            len += sprintf(&ptr[len], "%o", ea);
         }
     }
 
@@ -61,7 +94,7 @@ static const char* opSTD(const char *opcode, char *buf, unsigned long long insn)
     //
 
     if (xr != 0) {
-        len += usprintf(&ptr[len], "(%o)", xr);
+        len += sprintf(&ptr[len], "(%o)", xr);
     }
 
     return buf;
@@ -134,20 +167,20 @@ static const char* opIOT(const char *, char *buf, unsigned long long insn) {
     // Print instruction
     //
 
-    len += usprintf(&ptr[len], "%03o %02o %01o %02o %06o\t", op, ac, in, xr, ea);
+    len += sprintf(&ptr[len], "%03o %02o %01o %02o %06o\t", op, ac, in, xr, ea);
 
     //
     // Print opcode
     //
 
-    len += usprintf(&ptr[len], "%s\t", table[f]);
+    len += sprintf(&ptr[len], "%s\t", table[f]);
 
     //
     // Optionally print indirect
     //
 
     if (in != 0) {
-        len += usprintf(&ptr[len], "@");
+        len += sprintf(&ptr[len], "@");
     }
 
     //
@@ -155,7 +188,7 @@ static const char* opIOT(const char *, char *buf, unsigned long long insn) {
     //
 
     if (in != 0 || xr != 0 || ea != 0) {
-        len += usprintf(&ptr[len], "%o", ea);
+        len += sprintf(&ptr[len], "%o", ea);
     }
 
     //
@@ -163,7 +196,7 @@ static const char* opIOT(const char *, char *buf, unsigned long long insn) {
     //
 
     if (xr != 0) {
-        len += usprintf(&ptr[len], "(%o)", xr);
+        len += sprintf(&ptr[len], "(%o)", xr);
     }
 
     return buf;
@@ -205,20 +238,20 @@ static const char* opJRST(const char *, char *buf, unsigned long long insn) {
     // Print instruction
     //
 
-    len += usprintf(&ptr[len], "%03o %02o %01o %02o %06o\t", op, ac, in, xr, ea);
+    len += sprintf(&ptr[len], "%03o %02o %01o %02o %06o\t", op, ac, in, xr, ea);
 
     //
     // Print opcode
     //
 
-    len += usprintf(&ptr[len], "%s\t", table[ac]);
+    len += sprintf(&ptr[len], "%s\t", table[ac]);
 
     //
     // Optionally print indirect
     //
 
     if (in != 0) {
-        len += usprintf(&ptr[len], "@");
+        len += sprintf(&ptr[len], "@");
     }
 
     //
@@ -226,14 +259,14 @@ static const char* opJRST(const char *, char *buf, unsigned long long insn) {
     //
 
     if (in != 0 || xr != 0 || ea != 0) {
-        len += usprintf(&ptr[len], "%o", ea);
+        len += sprintf(&ptr[len], "%o", ea);
     }
     //
     // Optionally print XR
     //
 
     if (xr != 0) {
-        len += usprintf(&ptr[len], "(%o)", xr);
+        len += sprintf(&ptr[len], "(%o)", xr);
     }
 
     return buf;

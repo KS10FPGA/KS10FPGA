@@ -100,14 +100,11 @@ CMDLINELIB := \
 TELNETLIB := \
 	telnetlib/telnetlib.a
 
-USTDLIB := \
-	ustdlib/ustdlib.a
-
 $(TARGET).bin : $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
 
-$(TARGET).elf : $(TARGET).ld $(DRIVERLIB) $(USTDLIB) $(FATFSLIB) $(LWIPLIB) $(TELNETLIB) $(CMDLINELIB) $(FILES)
-	$(LD) $(LDFLAGS) $(FILES) --start-group $(DRIVERLIB) $(FATFSLIB) $(LWIPLIB) $(TELNETLIB) $(USTDLIB) $(CMDLINELIB) --end-group $(LIBGCC) $(LIBC) -o $(TARGET).elf
+$(TARGET).elf : $(TARGET).ld $(DRIVERLIB) $(FATFSLIB) $(LWIPLIB) $(TELNETLIB) $(CMDLINELIB) $(FILES)
+	$(LD) $(LDFLAGS) $(FILES) --start-group $(DRIVERLIB) $(FATFSLIB) $(LWIPLIB) $(TELNETLIB) $(CMDLINELIB) --end-group $(LIBGCC) $(LIBC) -o $(TARGET).elf
 
 $(TARGET).o : $(TARGET).cpp $(HEADERS)
 
@@ -125,9 +122,6 @@ $(LWIPLIB) : FORCE
 
 $(TELNETLIB) : FORCE
 	${MAKE} -C telnetlib
-
-$(USTDLIB) : FORCE
-	${MAKE} -C ustdlib
 
 FORCE:
 
@@ -157,7 +151,6 @@ clean:
 	${MAKE} -C fatfslib clean
 	${MAKE} -C lwiplib clean
 	${MAKE} -C telnetlib clean
-	${MAKE} -C ustdlib clean
 
 rcsclean: clean
 	rcsclean *
@@ -166,7 +159,6 @@ rcsclean: clean
 	${MAKE} -C fatfslib rcsclean
 	${MAKE} -C lwiplib rcsclean
 	${MAKE} -C telnetlib rcsclean
-	${MAKE} -C ustdlib rcsclean
 
 rcsfetch: $(HEADERS) $(FILES:.o=.cpp) $(OPENOCD_CFG) $(TARGET).ld makefile makedefs
 	${MAKE} -C cmdlinelib rcsfetch
@@ -174,7 +166,6 @@ rcsfetch: $(HEADERS) $(FILES:.o=.cpp) $(OPENOCD_CFG) $(TARGET).ld makefile maked
 	${MAKE} -C fatfslib rcsfetch
 	${MAKE} -C lwiplib rcsfetch
 	${MAKE} -C telnetlib rcsfetch
-	${MAKE} -C ustdlib rcsfetch
 
 archive_all:
 	tar -czvf ks10_code_all_`date '+%y%m%d'`.tgz *
@@ -190,8 +181,7 @@ EXCLUDE := \
 	-e RCS \
 	-e fatfslib \
 	-e lwiplib \
-	-e driverlib \
-	-e ustdlib
+	-e driverlib
 
 FILTYPES := \
 

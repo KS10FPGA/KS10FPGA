@@ -128,45 +128,6 @@ int puts(const char *s) {
 
 //!
 //! \brief
-//!    Unsigned to ASCII
-//!
-//! \details
-//!    This function converts an unsigned integer value to a null-terminated
-//!    string using the radix that was specified.  The result is stored in the
-//!    array given by buffer parameter.
-//!
-//! \param [in] value
-//!    Value to be printed
-//!
-//! \param [in, out] buffer
-//!    Buffer space for input and output string operations
-//!
-//! \param [in] radix
-//!    Radix of the print operation.  Radix must be between 2 and 36.
-//!
-//! \param [in] digits
-//!    Pointer to string of either uppercase or lowercase digits
-//!
-//! \note
-//!    This function uses recursion to parse the number.  Beware of stack
-//!    space issues.
-//!
-//! \returns
-//!    Pointer to buffer
-//!
-
-static char *__utoa(unsigned int value, char * buffer, unsigned int radix,
-                    const char * digits)  {
-    if (value / radix) {
-        buffer = __utoa(value / radix, buffer, radix, digits);
-    }
-    *buffer++ = digits[value % radix];
-    *buffer   = 0;
-    return buffer;
-}
-
-//!
-//! \brief
 //!    Unsigned Long to ASCII
 //!
 //! \details
@@ -194,10 +155,9 @@ static char *__utoa(unsigned int value, char * buffer, unsigned int radix,
 //!    Pointer to buffer
 //!
 
-static char *__ultoa(unsigned long value, char * buffer, unsigned int radix,
-                     const char * digits) {
+static char *ultoa(unsigned long value, char * buffer, unsigned int radix, const char * digits) {
     if (value / radix) {
-        buffer = __ultoa(value / radix, buffer, radix, digits);
+        buffer = ultoa(value / radix, buffer, radix, digits);
     }
     *buffer++ = digits[value % radix];
     *buffer   = 0;
@@ -241,8 +201,7 @@ static char *__ultoa(unsigned long value, char * buffer, unsigned int radix,
 //!    Pointer to buffer
 //!
 
-char *__ulltoa(unsigned long long value, char * buffer, unsigned int radix,
-               const char * digits) {
+char *ulltoa(unsigned long long value, char * buffer, unsigned int radix, const char * digits) {
     unsigned int shift;
     unsigned long long mask;
     if (radix == 16) {
@@ -256,56 +215,11 @@ char *__ulltoa(unsigned long long value, char * buffer, unsigned int radix,
         return buffer;
     }
     if (value >> shift) {
-        buffer = __ulltoa(value >> shift, buffer, radix, digits);
+        buffer = ulltoa(value >> shift, buffer, radix, digits);
     }
     *buffer++ = digits[value & mask];
     *buffer   = 0;
     return buffer;
-}
-
-//
-//! \brief
-//!    Signed Integer to ASCII
-//!
-//! \details
-//!    This function converts an signed integer value to a null-terminated
-//!    string using the radix that was specified.  The result is stored in the
-//!    array given by buffer parameter.
-//!
-//!    Negative numbers are printed properly.
-//!
-//! \param [in] value
-//!    Value to be printed
-//!
-//! \param [in, out] buffer
-//!    Buffer space for input and output string operations
-//!
-//! \param [in] radix
-//!    Radix of the print operation.  Radix must be between 2 and 36.
-//!
-//! \note
-//!    This function uses recursion to parse the number.  Beware of stack
-//!    space issues.
-//!
-//! \returns
-//!    Pointer to buffer
-//!
-
-char *itoa(int value, char * buffer, int radix) {
-    char *bufsav = buffer;
-
-    if (radix < 2 || radix > 36) {
-        *buffer = 0;
-        return buffer;
-    }
-
-    if (radix == 10 && value < 0) {
-        value =- value;
-        *buffer++ = '-';
-    }
-
-    __utoa(value, buffer, radix, lower_digits);
-    return bufsav;
 }
 
 //!
@@ -349,7 +263,7 @@ char *ltoa(long value, char * buffer, int radix) {
         *buffer++ = '-';
     }
 
-    __ultoa((unsigned long)value, buffer, radix, lower_digits);
+    ultoa((unsigned long)value, buffer, radix, lower_digits);
     return bufsav;
 }
 
@@ -400,7 +314,7 @@ char *lltoa(long long value, char * buffer, int radix) {
         *buffer++ = '-';
     }
 
-    __ulltoa((unsigned long long)value, buffer, radix, lower_digits);
+    ulltoa((unsigned long long)value, buffer, radix, lower_digits);
     return bufsav;
 }
 
@@ -420,23 +334,76 @@ char *lltoa(long long value, char * buffer, int radix) {
 //! \param [in] leftFlag
 //!    Left justify flag.  Not implemented.
 //!
-//! \param [in, out] buffer
-//!    Workspace.
+//! \param [in, out] src
+//!    String to print
 //!
 
-static void padout(int width, int prec, char padchar, bool leftFlag, char* buffer) {
+static void chrout(int width, int prec, char padchar, bool leftFlag, char* src) {
     (void)prec;
     (void)leftFlag;
-    char* p = buffer;
+    char* p = src;
     while (*p++ && width > 0){
         width--;
     }
     while (width-- > 0) {
         putchar(padchar);
     }
-    while (*buffer) {
-        putchar(*buffer++);
+    while (*src) {
+        putchar(*src++);
     }
+}
+
+//!
+//! \brief
+//!    Function to pad field sizes to specific widths
+//!
+//! \param [in] width
+//!    Minimum field width.
+//!
+//! \param [in] prec
+//!    Precision.  Not implemented.
+//!
+//! \param [in] padchar
+//!    Either a zero or a space
+//!
+//! \param [in] leftFlag
+//!    Left justify flag.  Not implemented.
+//!
+//! \param [in, out] dest
+//!    Destination
+//!
+//! \param [in, out] src
+//!    Source
+//!
+//! \returns
+//!    pointer to destination after update
+//!
+
+static int strout(int width, int prec, char padchar, bool leftFlag, char*& dest, char *src) {
+    (void)prec;
+    (void)leftFlag;
+    int ret = 0;
+
+    //
+    // src length
+    //
+
+    char* p = src;
+    while (*p++ && width > 0){
+        width--;
+    }
+
+    while (width-- > 0) {
+        *dest++ = padchar;
+        ret++;
+    }
+
+    while (*src) {
+        if (*src == '\t') printf("[TAB]");
+        *dest++ = *src++;
+        ret++;
+    }
+    return ret;
 }
 
 //
@@ -499,11 +466,11 @@ static void padout(int width, int prec, char padchar, bool leftFlag, char* buffe
 //
 
 int printf(const char *fmt, ...) {
-    char buffer[128];
-    char *buf = buffer;
+    char temp[128];
+    int ret = 0;
 
-    va_list va;
-    va_start(va, fmt);
+    va_list ap;
+    va_start(ap, fmt);
 
     char ch;
 
@@ -514,7 +481,7 @@ int printf(const char *fmt, ...) {
             char padchar  = ' ';
             unsigned int width = 0;
             unsigned int prec  = 0;
-            unsigned int size  = 0;
+            unsigned int type  = 0;
             bool leftFlag = false;
 
             //
@@ -553,16 +520,16 @@ int printf(const char *fmt, ...) {
             }
 
             //
-            // Parse size modifiers
+            // Parse type modifiers
             //
 
             if (ch == 'l') {
                 ch = *fmt++;
-                size = 1;
+                type = 1;
             }
             if (ch == 'l') {
                 ch = *fmt++;
-                size = 2;
+                type = 2;
             }
 
             //
@@ -571,83 +538,83 @@ int printf(const char *fmt, ...) {
 
             switch (ch) {
                 case 0:
-                    va_end(va);
-                    return 0;
+                    va_end(ap);
+                    return ret;
                 case 'u' :
-                    switch(size) {
+                    switch (type) {
                         case 0:
-                            __utoa(va_arg(va, unsigned int), buf, 10, lower_digits);
+                            ultoa(va_arg(ap, unsigned int), temp, 10, lower_digits);
                             break;
                         case 1:
-                            __ultoa(va_arg(va, unsigned long), buf, 10, lower_digits);
+                            ultoa(va_arg(ap, unsigned long), temp, 10, lower_digits);
                             break;
                         case 2:
-                            __ulltoa(va_arg(va, unsigned long long), buf, 10, lower_digits);
+                            ulltoa(va_arg(ap, unsigned long long), temp, 10, lower_digits);
                             break;
                     }
-                    padout(width, prec, padchar, leftFlag, buf);
-                    break;
-                case 'o' :
-                    switch(size) {
-                        case 0:
-                            __utoa(va_arg(va, unsigned int), buf, 8, lower_digits);
-                            break;
-                        case 1:
-                            __ultoa(va_arg(va, unsigned long), buf, 8, lower_digits);
-                            break;
-                        case 2:
-                            __ulltoa(va_arg(va, unsigned long long), buf, 8, lower_digits);
-                            break;
-                    }
-                    padout(width, prec, padchar, leftFlag, buf);
+                    chrout(width, prec, padchar, leftFlag, temp);
                     break;
                 case 'd' :
-                    switch(size) {
+                    switch (type) {
                         case 0:
-                            itoa(va_arg(va, int), buf, 10);
+                            ltoa(va_arg(ap, int), temp, 10);
                             break;
                         case 1:
-                            ltoa(va_arg(va, long), buf, 10);
+                            ltoa(va_arg(ap, long), temp, 10);
                             break;
                         case 2:
-                            lltoa(va_arg(va, long long), buf, 10);
+                            lltoa(va_arg(ap, long long), temp, 10);
                             break;
                     }
-                    padout(width, prec, padchar, leftFlag, buf);
+                    chrout(width, prec, padchar, leftFlag, temp);
+                    break;
+                case 'o' :
+                    switch (type) {
+                        case 0:
+                            ultoa(va_arg(ap, unsigned int), temp, 8, lower_digits);
+                            break;
+                        case 1:
+                            ultoa(va_arg(ap, unsigned long), temp, 8, lower_digits);
+                            break;
+                        case 2:
+                            ulltoa(va_arg(ap, unsigned long long), temp, 8, lower_digits);
+                            break;
+                    }
+                    chrout(width, prec, padchar, leftFlag, temp);
                     break;
                 case 'x' :
-                    switch(size) {
+                    switch (type) {
                         case 0:
-                            __utoa(va_arg(va, unsigned int), buf, 16, lower_digits);
+                            ultoa(va_arg(ap, unsigned int), temp, 16, lower_digits);
                             break;
                         case 1:
-                            __ultoa(va_arg(va, unsigned long), buf, 16, lower_digits);
+                            ultoa(va_arg(ap, unsigned long), temp, 16, lower_digits);
                             break;
                         case 2:
-                            __ulltoa(va_arg(va, unsigned long long), buf, 16, lower_digits);
+                            ulltoa(va_arg(ap, unsigned long long), temp, 16, lower_digits);
                             break;
                     }
-                    padout(width, prec, padchar, leftFlag, buf);
+                    chrout(width, prec, padchar, leftFlag, temp);
                     break;
                 case 'X' :
-                    switch(size) {
+                    switch (type) {
                         case 0:
-                            __utoa(va_arg(va, unsigned int), buf, 16, upper_digits);
+                            ultoa(va_arg(ap, unsigned int), temp, 16, upper_digits);
                             break;
                         case 1:
-                            __ultoa(va_arg(va, unsigned long), buf, 16, upper_digits);
+                            ultoa(va_arg(ap, unsigned long), temp, 16, upper_digits);
                             break;
                         case 2:
-                            __ulltoa(va_arg(va, unsigned long long), buf, 16, upper_digits);
+                            ulltoa(va_arg(ap, unsigned long long), temp, 16, upper_digits);
                             break;
                     }
-                    padout(width, prec, padchar, leftFlag, buf);
+                    chrout(width, prec, padchar, leftFlag, temp);
                     break;
                 case 'c' :
-                    putchar((char)(va_arg(va, int)));
+                    putchar((char)(va_arg(ap, int)));
                     break;
                 case 's' :
-                    padout(width, prec, 0, leftFlag, va_arg(va, char*));
+                    chrout(width, prec, 0, leftFlag, va_arg(ap, char*));
                     break;
                 case '%' :
                     putchar(ch);
@@ -656,29 +623,49 @@ int printf(const char *fmt, ...) {
             }
         }
     }
-    va_end(va);
-    return 0;
+    va_end(ap);
+    return ret;
 }
 
-int uvsnprintf(char *buf, size_t n, const char *fmt, va_list va) {
+//!
+//! \brief
+//!    Low level printer function
+//!
+//! \param buf -
+//!    pointer to buffer where the output goes
+//!
+//! \param size  -
+//!    size of the buffer
+//!
+//! \param fmt -
+//!    format string
+//!
+//! \param va -
+//!    variable length argument list
+//!
+//! \returns
+//!    number of characters that were printed
+//!
 
-    //
-    // Save space for a null termination
-    //
+int vsnprintf(char *buf, size_t size, const char *fmt, va_list ap) {
 
-    if (n > 0) {
-        n -= 1;
+    int ret = 0;
+    char temp[80];
+
+    if (size > 0) {
+        size -= 1;
     }
 
     char ch;
     while ((ch = *fmt++)) {
         if (ch != '%')  {
             *buf++ = ch;
+            ret += 1;
         } else {
             char padchar  = ' ';
             unsigned int width = 0;
             unsigned int prec  = 0;
-            unsigned int size  = 0;
+            unsigned int type  = 0;
             bool leftFlag = false;
 
             //
@@ -717,16 +704,16 @@ int uvsnprintf(char *buf, size_t n, const char *fmt, va_list va) {
             }
 
             //
-            // Parse size modifiers
+            // Parse type modifiers
             //
 
             if (ch == 'l') {
                 ch = *fmt++;
-                size = 1;
+                type = 1;
             }
             if (ch == 'l') {
                 ch = *fmt++;
-                size = 2;
+                type = 2;
             }
 
             //
@@ -735,93 +722,115 @@ int uvsnprintf(char *buf, size_t n, const char *fmt, va_list va) {
 
             switch (ch) {
                 case 0:
-                    va_end(va);
-                    return 0;
+                    return ret;
                 case 'u' :
-                    switch(size) {
+                    switch (type) {
                         case 0:
-                            __utoa(va_arg(va, unsigned int), buf, 10, lower_digits);
+                            ultoa(va_arg(ap, unsigned int), temp, 10, lower_digits);
                             break;
                         case 1:
-                            __ultoa(va_arg(va, unsigned long), buf, 10, lower_digits);
+                            ultoa(va_arg(ap, unsigned long), temp, 10, lower_digits);
                             break;
                         case 2:
-                            __ulltoa(va_arg(va, unsigned long long), buf, 10, lower_digits);
+                            ulltoa(va_arg(ap, unsigned long long), temp, 10, lower_digits);
                             break;
                     }
-                    padout(width, prec, padchar, leftFlag, buf);
-                    break;
-                case 'o' :
-                    switch(size) {
-                        case 0:
-                            __utoa(va_arg(va, unsigned int), buf, 8, lower_digits);
-                            break;
-                        case 1:
-                            __ultoa(va_arg(va, unsigned long), buf, 8, lower_digits);
-                            break;
-                        case 2:
-                            __ulltoa(va_arg(va, unsigned long long), buf, 8, lower_digits);
-                            break;
-                    }
-                    padout(width, prec, padchar, leftFlag, buf);
+                    ret += strout(width, prec, padchar, leftFlag, buf, temp);
                     break;
                 case 'd' :
-                    switch(size) {
+                    switch (type) {
                         case 0:
-                            itoa(va_arg(va, int), buf, 10);
+                            lltoa(va_arg(ap, int), temp, 10);
                             break;
                         case 1:
-                            ltoa(va_arg(va, long), buf, 10);
+                            lltoa(va_arg(ap, long), temp, 10);
                             break;
                         case 2:
-                            lltoa(va_arg(va, long long), buf, 10);
+                            lltoa(va_arg(ap, long long), temp, 10);
                             break;
                     }
-                    padout(width, prec, padchar, leftFlag, buf);
+                    ret += strout(width, prec, padchar, leftFlag, buf, temp);
+                    break;
+                case 'o' :
+                    switch (type) {
+                        case 0:
+                            ultoa(va_arg(ap, unsigned int), temp, 8, lower_digits);
+                            break;
+                        case 1:
+                            ultoa(va_arg(ap, unsigned long), temp, 8, lower_digits);
+                            break;
+                        case 2:
+                            ulltoa(va_arg(ap, unsigned long long), temp, 8, lower_digits);
+                            break;
+                    }
+                    ret += strout(width, prec, padchar, leftFlag, buf, temp);
                     break;
                 case 'x' :
-                    switch(size) {
+                    switch (type) {
                         case 0:
-                            __utoa(va_arg(va, unsigned int), buf, 16, lower_digits);
+                            ultoa(va_arg(ap, unsigned int), temp, 16, lower_digits);
                             break;
                         case 1:
-                            __ultoa(va_arg(va, unsigned long), buf, 16, lower_digits);
+                            ultoa(va_arg(ap, unsigned long), temp, 16, lower_digits);
                             break;
                         case 2:
-                            __ulltoa(va_arg(va, unsigned long long), buf, 16, lower_digits);
+                            ulltoa(va_arg(ap, unsigned long long), temp, 16, lower_digits);
                             break;
                     }
-                    padout(width, prec, padchar, leftFlag, buf);
+                    ret += strout(width, prec, padchar, leftFlag, buf, temp);
                     break;
                 case 'X' :
-                    switch(size) {
+                    switch (type) {
                         case 0:
-                            __utoa(va_arg(va, unsigned int), buf, 16, upper_digits);
+                            ultoa(va_arg(ap, unsigned int), temp, 16, upper_digits);
                             break;
                         case 1:
-                            __ultoa(va_arg(va, unsigned long), buf, 16, upper_digits);
+                            ultoa(va_arg(ap, unsigned long), temp, 16, upper_digits);
                             break;
                         case 2:
-                            __ulltoa(va_arg(va, unsigned long long), buf, 16, upper_digits);
+                            ulltoa(va_arg(ap, unsigned long long), temp, 16, upper_digits);
                             break;
                     }
-                    padout(width, prec, padchar, leftFlag, buf);
+                    ret += strout(width, prec, padchar, leftFlag, buf, temp);
                     break;
                 case 'c' :
-                    *buf++ = (char)(va_arg(va, int));
+                    *buf++ = (char)(va_arg(ap, int));
+                    ret += 1;
                     break;
                 case 's' :
-                    padout(width, prec, 0, leftFlag, va_arg(va, char*));
+                    ret += strout(width, prec, 0, leftFlag, buf, va_arg(ap, char*));
                     break;
                 case '%' :
                     *buf++ = ch;
+                    ret += 1;
                     break;
                 default:
                     break;
             }
         }
     }
-    va_end(va);
-    return 0;
+    *buf++ = 0;
+    return ret;
+}
 
+int sprintf(char *buf, const char *fmt, ...) {
+
+    va_list ap;
+    va_start(ap, fmt);
+
+    int ret = vsnprintf(buf, size_t(~0), fmt, ap);
+
+    va_end(ap);
+    return ret;
+}
+
+int snprintf(char *buf, size_t size, const char *fmt, ...) {
+
+    va_list ap;
+    va_start(ap, fmt);
+
+    int ret = vsnprintf(buf, size, fmt, ap);
+
+    va_end(ap);
+    return ret;
 }

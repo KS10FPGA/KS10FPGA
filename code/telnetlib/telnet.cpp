@@ -36,7 +36,6 @@
 
 #include "lwiplib.h"
 #include "stdio.h"
-#include "ustdlib.h"
 #include "telnet.hpp"
 #include "lwip/tcp.h"
 
@@ -130,9 +129,9 @@ void telnet_t::cmd_parser(void) {
         close_conn();
         return;
     }
-    left = usnprintf(obuf, sizeof(obuf),
-                     "\r\nThis is TELNET echoing your command : \"%s\"\r\n%s",
-                     ibuf, prompt);
+    left = snprintf(obuf, sizeof(obuf),
+                    "\r\nThis is TELNET echoing your command : \"%s\"\r\n%s",
+                    ibuf, prompt);
     ibuf[0] = 0;
 
 }
@@ -244,21 +243,21 @@ void telnet_t::update_state(char ch) {
             if (debug) {
                 printf("NET : Will %d\n", ch);
             }
-            left  = usnprintf(obuf, 4, "%c%c%c%c", cmdIAC, cmdDONT, ch, 0);
+            left  = snprintf(obuf, 4, "%c%c%c%c", cmdIAC, cmdDONT, ch, 0);
             state = stateNORMAL;
             break;
         case stateWONT:
             if (debug) {
                 printf("NET : Wont %d\n", ch);
             }
-            left  = usnprintf(obuf, 4, "%c%c%c%c", cmdIAC, cmdDONT, ch, 0);
+            left  = snprintf(obuf, 4, "%c%c%c%c", cmdIAC, cmdDONT, ch, 0);
             state = stateNORMAL;
             break;
         case stateDO:
             if (debug) {
                 printf("NET : Do %d\n", ch);
             }
-            left  = usnprintf(obuf, 4, "%c%c%c%c", cmdIAC, cmdWONT, ch, 0);
+            left  = snprintf(obuf, 4, "%c%c%c%c", cmdIAC, cmdWONT, ch, 0);
             state = stateNORMAL;
             if (ch == 6) {
                 close_conn();
@@ -268,7 +267,7 @@ void telnet_t::update_state(char ch) {
             if (debug) {
                 printf("NET : Dont %d\n", ch);
             }
-            left  = usnprintf(obuf, 4, "%c%c%c%c", cmdIAC, cmdWONT, ch, 0);
+            left  = snprintf(obuf, 4, "%c%c%c%c", cmdIAC, cmdWONT, ch, 0);
             state = stateNORMAL;
             break;
         case stateNORMAL:
@@ -390,7 +389,7 @@ err_t telnet_t::accept(void *arg, struct tcp_pcb *pcb, err_t err) {
     // Print message
     //
 
-    ts->left = usnprintf(ts->obuf, sizeof(ts->obuf), "\nKS10 Telnet Interface\r\n%s", prompt);
+    ts->left = snprintf(ts->obuf, sizeof(ts->obuf), "\nKS10 Telnet Interface\r\n%s", prompt);
     ts->send_data();
     ts->opened = true;
     return ERR_OK;
