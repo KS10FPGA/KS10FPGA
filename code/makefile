@@ -38,11 +38,7 @@ TARGET  := console
 
 OPENOCD_CFG := ks10.cfg
 
-ifneq (, $(findstring CYGWIN, $(UNAME)))
-    OPENOCD_EXE := /usr/local/openocd-0.8.0/bin/openocd-0.8.0.exe
-else
-    OPENOCD_EXE := /usr/bin/openocd
-endif
+OPENOCD := openocd
 
 LDFLAGS := \
 	--script=$(TARGET).ld \
@@ -134,14 +130,14 @@ FORCE:
 #
 
 load: $(TARGET).bin $(OPENOCD_CFG)
-	-$(OPENOCD_EXE) -f $(OPENOCD_CFG) -c "program_device ()"
+	-$(OPENOCD) -f $(OPENOCD_CFG) -c "program_device ()"
 
 #
 # Reset the target from the JTAG port
 #
 
 reset: $(OPENOCD_CFG)
-	-$(OPENOCD_EXE) -f $(OPENOCD_CFG) -c "reset" -c "shutdown"
+	-$(OPENOCD) -f $(OPENOCD_CFG) -c "reset" -c "shutdown"
 
 clean:
 	rm -f *.elf

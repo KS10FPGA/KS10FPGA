@@ -32,19 +32,11 @@
 #
 #******************************************************************************
 
-ifneq (, $(findstring CYGWIN, $(UNAME)))
-    AR      := arm-none-eabi-ar
-    G++     := arm-none-eabi-g++.exe
-    GCC     := arm-none-eabi-gcc.exe
-    LD      := arm-none-eabi-ld.exe
-    OBJCOPY := arm-none-eabi-objcopy
-else
-    AR      := arm-none-eabi-ar
-    G++     := arm-none-eabi-g++
-    GCC     := arm-none-eabi-gcc
-    LD      := arm-none-eabi-ld
-    OBJCOPY := arm-none-eabi-objcopy
-endif
+AR      := arm-none-eabi-ar
+G++     := arm-none-eabi-g++
+GCC     := arm-none-eabi-gcc
+LD      := arm-none-eabi-ld
+OBJCOPY := arm-none-eabi-objcopy
 
 PART    := LM3S9B96
 
