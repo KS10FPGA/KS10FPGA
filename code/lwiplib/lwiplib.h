@@ -1,105 +1,61 @@
-//*****************************************************************************
+//******************************************************************************
 //
-// lwiplib.h - Prototypes for the lwIP library wrapper API.
+//  KS10 Console Microcontroller
 //
-// Copyright (c) 2008-2012 Texas Instruments Incorporated.  All rights reserved.
-// Software License Agreement
-// 
-// Texas Instruments (TI) is supplying this software for use solely and
-// exclusively on TI's microcontroller products. The software is owned by
-// TI and/or its suppliers, and is protected under applicable copyright
-// laws. You may not combine this software with "viral" open-source
-// software in order to form a larger program.
-// 
-// THIS SOFTWARE IS PROVIDED "AS IS" AND WITH ALL FAULTS.
-// NO WARRANTIES, WHETHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING, BUT
-// NOT LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE. TI SHALL NOT, UNDER ANY
-// CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
-// DAMAGES, FOR ANY REASON WHATSOEVER.
-// 
-// This is part of revision 9107 of the Stellaris Firmware Development Package.
+//! \brief
+//!    lwIP wrapper
+//!
+//! \details
+//!    This wrappers the generic lwIP code with LM3S9B96 specific code and with
+//!    SafeRTOS-specific code
+//!
+//! \file
+//!    lwiplib.h
+//!
+//! \author
+//!    Rob Doyle - doyle (at) cox (dot) net
 //
-//*****************************************************************************
+//******************************************************************************
+//
+// Copyright (C) 2013-2016 Rob Doyle
+//
+// This file is part of the KS10 FPGA Project
+//
+// The KS10 FPGA project is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option) any
+// later version.
+//
+// The KS10 FPGA project is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+// or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along with
+// this software.  If not, see <http://www.gnu.org/licenses/>.
+//
+//******************************************************************************
 
-#ifndef __LWIPLIB_H__
-#define __LWIPLIB_H__
+#ifndef __LWIPLIB_H
+#define __LWIPLIB_H
 
-//*****************************************************************************
-//
-// If building with a C++ compiler, make all of the definitions in this header
-// have a C binding.
-//
-//*****************************************************************************
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-//*****************************************************************************
-//
-// lwIP Options
-//
-//*****************************************************************************
-#include "lwip/opt.h"
+enum mode_t {
+    modeSTATIC = 0,
+    modeDHCP,
+    modeAUTOIP
+};
 
-//*****************************************************************************
-//
-// Ensure that AUTOIP COOP option is configured correctly.
-//
-//*****************************************************************************
-#undef LWIP_DHCP_AUTOIP_COOP
-#define LWIP_DHCP_AUTOIP_COOP   ((LWIP_DHCP) && (LWIP_AUTOIP))
+void lwIPInit(unsigned char *MACAddr, unsigned long IPAddr, unsigned long NetMask, unsigned long GWAddr, enum mode_t mode);
+unsigned long lwIPGetIPAddr(void);
+unsigned long lwIPGetNetMask(void);
+unsigned long lwIPGetGWAddr(void);
 
-//*****************************************************************************
-//
-// lwIP API Header Files
-//
-//*****************************************************************************
-#include "lwip/api.h"
-#include "lwip/netifapi.h"
-#include "lwip/tcp.h"
-#include "lwip/udp.h"
-#include "lwip/tcpip.h"
-#include "lwip/sockets.h"
-#include "lwip/mem.h"
-#include "lwip/stats.h"
-
-//*****************************************************************************
-//
-// IP Address Acquisition Modes
-//
-//*****************************************************************************
-#define IPADDR_USE_STATIC       0
-#define IPADDR_USE_DHCP         1
-#define IPADDR_USE_AUTOIP       2
-
-//*****************************************************************************
-//
-// lwIP Abstraction Layer API
-//
-//*****************************************************************************
-extern void lwIPInit(const unsigned char *pucMac, unsigned long ulIPAddr,
-                     unsigned long ulNetMask, unsigned long ulGWAddr,
-                     unsigned long ulIPMode);
-extern void lwIPTimer(unsigned long ulTimeMS);
-extern void lwIPEthernetIntHandler(void);
-extern unsigned long lwIPLocalIPAddrGet(void);
-extern unsigned long lwIPLocalNetMaskGet(void);
-extern unsigned long lwIPLocalGWAddrGet(void);
-extern void lwIPLocalMACGet(unsigned char *pucMac);
-extern void lwIPNetworkConfigChange(unsigned long ulIPAddr,
-                                    unsigned long ulNetMask,
-                                    unsigned long ulGWAddr,
-                                    unsigned long ulIPMode);
-
-//*****************************************************************************
-//
-// Mark the end of the C bindings section for C++ compilers.
-//
-//*****************************************************************************
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __LWIPLIB_H__
+#endif // __LWIPLIB_H

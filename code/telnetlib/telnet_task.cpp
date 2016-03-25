@@ -39,6 +39,7 @@
 #include "telnet_task.hpp"
 #include "inc/hw_ints.h"
 #include "inc/hw_types.h"
+#include "lwip/tcpip.h"
 
 //!
 //! Telnet handles
@@ -152,7 +153,7 @@ void startTelnetTask(debug_t *debug) {
     // Initialize lwIP MAC address and to use DHCP.
     //
 
-    lwIPInit(macAddr, 0, 0, 0, IPADDR_USE_DHCP);
+    lwIPInit(macAddr, 0, 0, 0, modeDHCP);
 
     //
     // Setup the remaining services inside the TCP/IP thread's context.

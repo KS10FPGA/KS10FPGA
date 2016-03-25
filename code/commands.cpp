@@ -53,7 +53,9 @@
 #include "fatfslib/ff.h"
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
+#include "driverlib/inc/hw_memmap.h"
 #include "SafeRTOS/SafeRTOS_API.h"
+#include "lwiplib/lwiplib.h"
 
 #define DEBUG_COMMANDS
 
@@ -1449,23 +1451,14 @@ static void cmdMR(int argc, char *argv[]) {
 //!    Array of pointers to the argument.
 //!
 
-extern "C" unsigned long lwIPLocalIPAddrGet(void);
-extern "C" unsigned long lwIPLocalNetMaskGet(void);
-extern "C" unsigned long lwIPLocalGWAddrGet(void);
-extern "C" void lwIPLocalMACGet(unsigned char *pucMAC);
-extern "C" void lwIPNetworkConfigChange(unsigned long uIPAddr, unsigned long ulNetMask,
-                                        unsigned long ulGWAddr, unsigned long ulIPMode);
-#define IPADDR_USE_DHCP 1
-
 static void cmdNE(int argc, char *argv[]) {
     const char *usage =
-        "Usage: NE {DISP | RESET}\n"
-        " NE STAT  - Display Network Addresses.\n"
-        " NE RESET - Reset Network Addresses.\n";
+        "Usage: NE STAT\n"
+        " NE STAT  - Display Network Addresses.\n";
 
     if (argc == 2) {
         if (strnicmp(argv[1], "stat", 4) == 0) {
-            uint32_t addr = lwIPLocalIPAddrGet();
+            uint32_t addr = lwIPGetIPAddr();
             if (addr == 0) {
                 printf("  Unable to obtain IP Address.\n");
             } else {
@@ -1474,27 +1467,24 @@ static void cmdNE(int argc, char *argv[]) {
                        ((addr >>  8) & 0xff),
                        ((addr >> 16) & 0xff),
                        ((addr >> 24) & 0xff));
-                addr = lwIPLocalNetMaskGet();
+                addr = lwIPGetNetMask();
                 printf("  Net Mask        : %ld.%ld.%ld.%ld\n",
                        ((addr >>  0) & 0xff),
                        ((addr >>  8) & 0xff),
                        ((addr >> 16) & 0xff),
                        ((addr >> 24) & 0xff));
-                addr = lwIPLocalGWAddrGet();
+                addr = lwIPGetGWAddr();
                 printf("  Gateway Address : %ld.%ld.%ld.%ld\n",
                        ((addr >>  0) & 0xff),
                        ((addr >>  8) & 0xff),
                        ((addr >> 16) & 0xff),
                        ((addr >> 24) & 0xff));
                 uint8_t buffer[6];
-                lwIPLocalMACGet(buffer);
+                ROM_EthernetMACAddrGet(ETH_BASE, buffer);
                 printf("  MAC Address     : %02x:%02x:%02x:%02x:%02x:%02x\n",
                        buffer[0], buffer[1], buffer[2],
                        buffer[3], buffer[4], buffer[5]);
             }
-        } else if (strnicmp(argv[1], "reset", 5) == 0) {
-            lwIPNetworkConfigChange(0, 0, 0, IPADDR_USE_DHCP);
-            printf("  Network parameters were reset.\n");
         } else {
             printf(usage);
         }

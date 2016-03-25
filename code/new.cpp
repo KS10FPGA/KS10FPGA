@@ -5,6 +5,9 @@
 //! \brief
 //!    operator new() and operator delete() implementation
 //!
+//! \details
+//!    These functions use the memory allocators from lwIP
+//!
 //! \file
 //!    new.cpp
 //!
@@ -33,7 +36,7 @@
 //******************************************************************************
 
 #include "stdio.h"
-#include "lwiplib.h"
+#include "lwip/mem.h"
 
 //!
 //! \brief

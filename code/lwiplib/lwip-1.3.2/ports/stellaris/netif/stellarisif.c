@@ -49,8 +49,9 @@
 #include "lwip/mem.h"
 #include "lwip/pbuf.h"
 #include "lwip/sys.h"
-#include <lwip/stats.h>
-#include <lwip/snmp.h>
+#include "lwip/stats.h"
+#include "lwip/snmp.h"
+#include "lwip/tcpip.h"
 #include "netif/etharp.h"
 #include "netif/ppp_oe.h"
 #include "netif/stellarisif.h"

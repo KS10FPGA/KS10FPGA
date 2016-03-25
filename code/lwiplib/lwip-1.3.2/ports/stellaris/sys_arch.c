@@ -39,6 +39,8 @@
 /* Copyright (c) 2008 Texas Instruments Incorporated */
 
 /* lwIP includes. */
+
+#include "lwip/mem.h"
 #include "lwip/opt.h"
 #include "lwip/sys.h"
 
