@@ -228,7 +228,24 @@
 
 #define PBUF_POOL_BUFSIZE  256
 
+/**
+ * PBUF_POOL_SIZE: the number of buffers in the pbuf pool. 
+ */
+
 #define PBUF_POOL_SIZE 64
+
+/*
+   ------------------------------------------------
+   ---------- Network Interfaces options ----------
+   ------------------------------------------------
+*/
+
+/**
+ * LWIP_NETIF_HOSTNAME==1: use DHCP_OPTION_HOSTNAME with netif's hostname
+ * field.
+ */
+
+#define LWIP_NETIF_HOSTNAME 1
 
 /*
    ------------------------------------

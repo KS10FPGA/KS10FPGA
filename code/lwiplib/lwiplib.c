@@ -206,9 +206,7 @@ static void init_callback(void *arg) {
 
     //
     // Create, configure and add the Ethernet controller interface with
-    // default settings.  ip_input should be used to send packets directly to
-    // the stack when not using a RTOS and tcpip_input should be used to send
-    // packets to the TCP/IP thread's queue when using a RTOS.
+    // default settings.
     //
 
     netif_add(&net_if, &init_param->ip_addr, &init_param->net_mask, &init_param->gw_addr, NULL, stellarisif_init, tcpip_input);
