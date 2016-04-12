@@ -850,12 +850,12 @@ const char* dasm(unsigned long long insn) {
 
         {"UUO770", opSTD},         // 770
         {"UUO771", opSTD},         // 771
-        {"UUO771", opSTD},         // 772
-        {"UUO772", opSTD},         // 773
-        {"UUO773", opSTD},         // 774
-        {"UUO774", opSTD},         // 775
-        {"UUO775", opSTD},         // 776
-        {"UUO776", opSTD},         // 777
+        {"UUO772", opSTD},         // 772
+        {"UUO773", opSTD},         // 773
+        {"UUO774", opSTD},         // 774
+        {"UUO775", opSTD},         // 775
+        {"UUO776", opSTD},         // 776
+        {"UUO777", opSTD},         // 777
     };
 
     unsigned int op = (insn >> 27) & 0777;
