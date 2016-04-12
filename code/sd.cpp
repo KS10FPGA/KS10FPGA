@@ -864,7 +864,7 @@ bool sdStatus(void) {
 //!    Detect SD Card insertions and removals.  When an insertion is detected,
 //!    initialize the SD Card and mount the FAT32 Filesystem.
 //!
-//! \param param -
+//! \param arg -
 //!    Pointer to debug parameter list.
 //!
 

@@ -181,6 +181,9 @@ class rh11_t {
         //! \param base_addr -
         //!    Base address of RH11 address
         //!
+        //! \param debug
+        //!    Enable debug mode
+        //!
 
         rh11_t (ks10_t::addr_t base_addr, bool debug = false) :
             debug(debug),

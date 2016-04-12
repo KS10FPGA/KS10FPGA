@@ -1441,7 +1441,7 @@ void rh11_t::testWrchk(ks10_t::data_t unit) {
 //! \param [in] unit -
 //!    Selected disk unit
 //!
-//! \param [i] diagmode
+//! \param [in] diagmode
 //!    Boot to SMMON
 //!
 

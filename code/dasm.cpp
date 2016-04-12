@@ -33,9 +33,26 @@
 //
 //******************************************************************************
 
-
 #include "dasm.hpp"
 #include "stdio.h"
+
+//!
+//! \brief
+//!    This function disassembles a 'standard' instruction.
+//!
+//! \param [in] opcode
+//!    pointer to string with opcode
+//!
+//! \param [in] buf
+//!    pointer to buffer.   Must be long enough to store the disassembled
+//!    instruction.
+//
+//! \param [in] insn
+//!    36-bit instruction to disassemble
+//!
+//! \returns
+//!    pointer to buffer with disassembled instruction
+//!
 
 static const char* opSTD(const char *opcode, char *buf, unsigned long long insn) {
 
@@ -99,6 +116,22 @@ static const char* opSTD(const char *opcode, char *buf, unsigned long long insn)
 
     return buf;
 }
+
+//!
+//! \brief
+//!    This function disassembles an IOT instruction.  These are
+//!    instructions 700, 701, and 702.
+//!
+//! \param [in] buf
+//!    pointer to buffer.   Must be long enough to store the disassembled
+//!    instruction.
+//
+//! \param [in] insn
+//!    36-bit instruction to disassemble
+//!
+//! \returns
+//!    pointer to buffer with disassembled instruction
+//!
 
 static const char* opIOT(const char *, char *buf, unsigned long long insn) {
 
@@ -203,6 +236,20 @@ static const char* opIOT(const char *, char *buf, unsigned long long insn) {
 
 }
 
+//!
+//! \brief
+//!    This function disassembles a JRST instruction.
+//!
+//! \param [in] buf
+//!    pointer to buffer.   Must be long enough to store the disassembled
+//!    instruction.
+//
+//! \param [in] insn
+//!    36-bit instruction to disassemble
+//!
+//! \returns
+//!    pointer to buffer with disassembled instruction
+//!
 
 static const char* opJRST(const char *, char *buf, unsigned long long insn) {
 
@@ -271,6 +318,17 @@ static const char* opJRST(const char *, char *buf, unsigned long long insn) {
 
     return buf;
 }
+
+//!
+//! \brief
+//!    This function disassembles an instruction.
+//!
+//! \param [in] insn
+//!    36-bit instruction to disassemble
+//!
+//! \returns
+//!    pointer to buffer with disassembled instruction
+//!
 
 const char* dasm(unsigned long long insn) {
 

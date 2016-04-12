@@ -640,7 +640,7 @@ int printf(const char *fmt, ...) {
 //! \param fmt -
 //!    format string
 //!
-//! \param va -
+//! \param ap -
 //!    variable length argument list
 //!
 //! \returns

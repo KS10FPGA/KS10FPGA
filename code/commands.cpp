@@ -179,7 +179,7 @@ static ks10_t::data_t parseOctal(const char *buf) {
 //!       location.
 //!    -# Restore the contents of the temporary memory locaction
 //!
-//! \param reg -
+//! \param regAC -
 //!    AC number
 //!
 //! \returns

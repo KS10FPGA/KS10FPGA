@@ -247,11 +247,14 @@ static void init_callback(void *arg) {
 //! \param IPAddr -
 //!    IP Address
 //!
-//! \param Netmask -
+//! \param NetMask -
 //!    Netmask
 //!
 //! \param GWAddr -
 //!    Gateway Address
+//!
+//! \param mode
+//!     Mode
 //!
 
 void lwIPInit(unsigned char *MACAddr, unsigned long IPAddr, unsigned long NetMask, unsigned long GWAddr, enum mode_t mode) {

@@ -58,7 +58,7 @@ template <class T> const T& min(const T& a, const T& b) {
 //! \brief
 //!    putchar
 //!
-//! \param char -
+//! \param ch -
 //!    character to be output
 //!
 
