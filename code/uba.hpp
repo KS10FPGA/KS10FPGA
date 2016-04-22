@@ -168,7 +168,7 @@ class uba_t {
         //!    memory address
         //!
         //! \returns
-        //!    page assocated with the address
+        //!    page associated with the address
         //!
 
         static inline ks10_t::data_t addr2page(ks10_t::addr_t addr) {

@@ -50,7 +50,7 @@ telnet_t* telnet2000;
 
 //!
 //! \brief
-//!    Telnet initalization
+//!    Telnet initialization
 //!
 //! \details
 //!    This function creates a telnet object and returns a pointer to it.

@@ -87,7 +87,7 @@
 #define MEMP_NUM_PBUF 64
 
 /**
- * MEMP_NUM_TCP_PCB: the number of simulatenously active TCP connections.
+ * MEMP_NUM_TCP_PCB: the number of simultaneously active TCP connections.
  * (requires the LWIP_TCP option)
  */
 
@@ -101,7 +101,7 @@
 #define MEMP_NUM_TCP_SEG 48
 
 /**
- * MEMP_NUM_SYS_TIMEOUT: the number of simulateously active timeouts.
+ * MEMP_NUM_SYS_TIMEOUT: the number of simultaneously active timeouts.
  * (requires NO_SYS==0)
  */
 

@@ -341,7 +341,7 @@ err_t telnet_t::recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) 
 //!
 //! \details
 //!    This callback is executed when a listening connection has been made to
-//!    another host.  This function should initalize that connection.  It
+//!    another host.  This function should initialize that connection.  It
 //!    should also register the receive callback.
 //!
 //!    This design is a little funky because the callbacks cannot call a C++

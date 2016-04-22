@@ -433,7 +433,7 @@ void printHaltStatus(void) {
 #endif
 
     //
-    // Retreive and print the Halt Status Block
+    // Retrieve and print the Halt Status Block
     //
 
     const ks10_t::haltStatusBlock_t haltStatusBlock = ks10_t::getHaltStatusBlock(hsbAddr);

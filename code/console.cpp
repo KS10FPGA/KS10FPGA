@@ -157,7 +157,7 @@ void taskConsole(void* arg) {
 #endif
 
     //
-    // Check the firmware revsion.
+    // Check the firmware revision.
     //
 
     ks10.checkFirmware(debug->debugKS10);

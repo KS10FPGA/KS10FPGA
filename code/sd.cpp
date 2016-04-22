@@ -6,7 +6,7 @@
 //!    Secure Digial Card Interface.
 //!
 //! \details
-//!    This object uses the SSI interfact to communciate with an SD Card.
+//!    This object uses the SSI interfact to communicate with an SD Card.
 //!
 //!    The SD Protocol is defined in the following document:
 //!

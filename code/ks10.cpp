@@ -534,7 +534,7 @@ void ks10_t::writeDBMR(uint64_t data) {
 
 //!
 //! \brief
-//!    This function reads a 36-bit value from the Debug Instrcution Trace
+//!    This function reads a 36-bit value from the Debug Instruction Trace
 //!    Register.  The trace buffer automatically increments when the trace buffer
 //!    is read.
 //!
@@ -884,7 +884,7 @@ bool ks10_t::cpuReset(void) {
 //!
 //! \details
 //!    This function controls whether the KS10's is reset.  When reset, the KS10 will
-//!    reset on next clock cycle without completing the current operatoin.
+//!    reset on next clock cycle without completing the current operation.
 //!
 //! \param
 //!    enable is <b>true</b> to assert <b>reset</b> to the KS10 or <b>false</b> to
@@ -1258,7 +1258,7 @@ void ks10_t::executeInstruction(data_t insn) {
     dispatchHaltInterrupt = false;
 
     //
-    // Stuff the instruction in the Console Insturction Register and
+    // Stuff the instruction in the Console Instruction Register and
     // execute it.
     //
 

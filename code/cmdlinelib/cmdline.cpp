@@ -121,7 +121,7 @@ void cmdline_t::get_hist(hist_t::dir_t dir) {
 //! \note
 //!    - The memmove does nothing if the cursor is at the end-of-line (the
 //!      length is zero).
-//!    - The line is updated only if the charcter is inserted into the middle
+//!    - The line is updated only if the character is inserted into the middle
 //!      of line.
 //!
 

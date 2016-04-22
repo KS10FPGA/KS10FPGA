@@ -222,14 +222,14 @@ bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
 //!    Offset in HOM block
 //!
 //! \returns
-//!    True if sucessful, false otherwise.
+//!    True if successful, false otherwise.
 //!
 //
 //  The disk format is as follows:
 //
 //    HOME BLOCK
 //
-//     The relavant structure of this page is as follows:
+//     The relevant structure of this page is as follows:
 //
 //     Offset    Description
 //     ------    --------------------------------------------
