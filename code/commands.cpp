@@ -1150,7 +1150,7 @@ static void cmdGO(int argc, char *argv[]) {
 
         ks10_t::data_t start = parseOctal(argv[2]);
         ks10_t::writeRegCIR(ks10_t::opJRST << 18 | start);
-        printf("KS10: Starting Address: %06llo,,%06llo\n", ks10_t::opJRST, start);
+        printf("KS10: Starting Address set to %06llo\n", start);
 
         //
         // Fix timing for DSDZA diagnostic

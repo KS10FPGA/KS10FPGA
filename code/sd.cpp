@@ -87,6 +87,7 @@ static const uint32_t bitRate = 250000;         //!< bitrate
 enum cmd_t {
     CMD0   =  0,        //!< GO_IDLE_STATE command
     CMD8   =  8,        //!< SEND_IF_COND command
+    CMD10  = 10,        //!< SEND_CID command
     CMD13  = 13,        //!< SEND_STATUS command
     CMD17  = 17,        //!< READ_SINGLE command
     CMD24  = 24,        //!< WRITE_SINGLE command
@@ -514,6 +515,52 @@ bool sdInitialize(void) {
                         debug_printf(debug, "SDHC: CMD58: R3 Response was 0x%08lx.\n", R3Response);
                         break;
                 }
+
+                //
+                // Send SEND_CID command
+                //
+
+                chipEnable(true);
+                uint8_t rsp10 = sendCommand(CMD10, 0x00000000, 0xff);
+
+                //
+                // Check R1 response
+                //
+
+                if (rsp10 != rspR1_OK) {
+                    debug_printf(debug, "SDHC: CMD10: R1 Response was 0x%02x.\n", rsp10);
+                    chipEnable(false);
+                    return false;
+                }
+
+                //
+                // Read and print CID register
+                //
+
+                for (int i = 0; i < 100; i++) {
+                    uint8_t sync = transactData(0xff);
+                    if (sync == 0xfe) {
+                        char buf[20];
+                        for (int i = 0; i < 20; i++) {
+                            buf[i] = transactData(0xff);
+                        }
+                        printf("SDHC: Manufacturer ID  : 0x%02x\n"
+                               "SDHC: OEM ID           : %c%c\n"
+                               "SDHC: Product Name     : %c%c%c%c%c\n"
+                               "SDHC: Product Revision : %d.%d\n"
+                               "SDNC: Product SN       : %02x%02x%02x%02x\n"
+                               "SDHC: Manufacture Date : %d/%d\n",
+                               buf[0],
+                               buf[1], buf[2],
+                               buf[3], buf[4], buf[5], buf[6], buf[7],
+                               buf[8] >> 4, buf[8] & 0x0f,
+                               buf[9], buf[10], buf[11], buf[12],
+                               buf[14] & 0x0f, (2000 + (buf[13] << 4) + (buf[14] >> 4)));
+                        break;
+                    }
+                }
+                chipEnable(false);
+
             }
             break;
 
