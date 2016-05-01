@@ -141,7 +141,7 @@ static const char* opIOT(const char *, char *buf, unsigned long long insn) {
         "70010",        // 70010
         "70014",        // 70014
         "WRAPR",        // 70020
-        "RDAPR",        // 70034
+        "RDAPR",        // 70024
         "70030",        // 70030
         "70034",        // 70034
         "70040",        // 70040
@@ -257,19 +257,19 @@ static const char* opJRST(const char *, char *buf, unsigned long long insn) {
         "JRST",         // 00
         "PORTAL",       // 01 (same as JRST for KS10)
         "JRSTF",        // 02
-        "INVALID",      // 03 (UUO)
+        "UUO",          // 03
         "HALT",         // 04
         "XJRSTF",       // 05
         "XJEN",         // 06
         "XPCW",         // 07
-        "INVALID",      // 10 (UUO)
-        "INVALID",      // 11 (UUO)
+        "JRST10",       // 10
+        "UUO",          // 11
         "JEN",          // 12
-        "INVALID",      // 13 (UUO)
+        "UUO",          // 13
         "SFM",          // 14
-        "INVALID",      // 15 (UUO)
-        "INVALID",      // 16 (UUO)
-        "INVALID",      // 17 (UUO)
+        "UUO",          // 15
+        "UUO",          // 16
+        "UUO",          // 17
     };
 
     char *ptr = buf;
