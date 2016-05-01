@@ -109,10 +109,34 @@ class ks10_t {
         // Opcodes
         //
 
-        static const data_t opJRST  = 0254000;          //!< JRST Instruction
-        static const data_t opRDHSB = 0702300;          //!< RDHSB Instruction
-        static const data_t opHALT  = 0254200;          //!< HALT Instruction
-        static const data_t opMOVEM = 0202000;          //!< MOVEM Instruction
+        static const data_t opJRST   = 0254000;         //!< JRST
+        static const data_t opHALT   = 0254200;         //!< HALT
+        static const data_t opMOVEM  = 0202000;         //!< MOVEM
+
+        static const data_t opAPRID  = 0700000;         //!< APRID
+        static const data_t opWRAPR  = 0700200;         //!< WRAPR
+        static const data_t opRDAPR  = 0700240;         //!< RDAPR
+        static const data_t opWRPI   = 0700600;         //!< WRPI
+        static const data_t opRDPI   = 0700640;         //!< RDPI
+        static const data_t opRDUBR  = 0701040;         //!< RDUBR
+        static const data_t opCLRPT  = 0701100;         //!< CLRPT
+        static const data_t opWRUBR  = 0701140;         //!< WRUBR
+        static const data_t opWREBR  = 0701200;         //!< WREBR
+        static const data_t opRDEBR  = 0701240;         //!< RDEBR
+        static const data_t opRDSPB  = 0702000;         //!< RDSPB
+        static const data_t opRDCSB  = 0702040;         //!< RDCSB
+        static const data_t opRDPUR  = 0702100;         //!< RDPUR
+        static const data_t opRDCSTM = 0702140;         //!< RDCSTM
+        static const data_t opRDTIM  = 0702200;         //!< RDTIM
+        static const data_t opRDINT  = 0702240;         //!< RDINT
+        static const data_t opRDHSB  = 0702300;         //!< RDHSB
+        static const data_t opWRSPB  = 0702400;         //!< WRSPB
+        static const data_t opWRCSB  = 0702440;         //!< WRCSB
+        static const data_t opWRPUR  = 0702500;         //!< WRPUR
+        static const data_t opWRCSTM = 0702540;         //!< WRCSTM
+        static const data_t opWRTIM  = 0702600;         //!< WRTIM
+        static const data_t opWRINT  = 0702640;         //!< WRINT
+        static const data_t opWRHSB  = 0702700;         //!< WRHSB
 
         //
         // KS10 addresses
@@ -207,6 +231,8 @@ class ks10_t {
         static void putchar(int ch);
         static int getchar(void);
         static void executeInstruction(data_t insn);
+        static void setDataAndExecuteInstruction(data_t insn, data_t data, addr_t tempAddr);
+        static data_t executeInstructionAndGetData(data_t insn, addr_t tempAddr);
 
     private:
 

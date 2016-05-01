@@ -128,7 +128,7 @@ void consoleOutput(void) {
 
 void patchCode(ks10_t::addr_t addr, ks10_t::data_t data) {
     ks10_t::writeMem(addr, data);
-    printf("Patched executable with a %012llo instruction at address %06llo.\n", data, addr);
+    printf("KS10: Patched executable with a %012llo instruction at address %06llo.\n", data, addr);
 }
 
 //!
@@ -183,20 +183,14 @@ static ks10_t::data_t parseOctal(const char *buf) {
 //!    AC number
 //!
 //! \returns
-//!    contens of the register
+//!    contents of the register
 //!
 
 ks10_t::data_t readAC(ks10_t::data_t regAC) {
-
     regAC &= 017;
-
-    const ks10_t::addr_t tempAddr = 0100;
-    const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
-    ks10_t::executeInstruction((ks10_t::opMOVEM << 18) | (regAC << 23) | tempAddr);
-    ks10_t::addr_t data = ks10_t::readMem(tempAddr);
-    ks10_t::writeMem(tempAddr, tempData);
-
-    return data;
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnMOVEM = (ks10_t::opMOVEM << 18) | (regAC << 23) | tempAddr;
+    return ks10_t::executeInstructionAndGetData(insnMOVEM, tempAddr);
 }
 
 //!
@@ -404,27 +398,21 @@ void printHaltStatus(void) {
 #if 1
 
     //
-    // Create a temporary memory location to stash the address of the Halt
-    // Status Block.  Save the data in the console.  We'll restore it when
-    // we're done.
+    // Check CPU status
     //
 
-    const ks10_t::addr_t tempAddr = 0100;
-    const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
+    if (!ks10_t::halt()) {
+        printf("KS10: CPU is running. Halt it first.\n");
+        return;
+    }
 
     //
-    // Load an RDHSB instruction into the CIR and execute it.
+    // Read the address of the Halt Status Block
     //
 
-    ks10_t::executeInstruction((ks10_t::opRDHSB << 18) | tempAddr);
-
-    //
-    // Read the address of the Halt Status Block from the temporary location
-    // then restore the data at the temporary location.
-    //
-
-    ks10_t::addr_t hsbAddr = ks10_t::readMem(tempAddr);
-    ks10_t::writeMem(tempAddr, tempData);
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnRDHSB = ks10_t::opRDHSB << 18 | tempAddr;
+    ks10_t::addr_t hsbAddr = ks10_t::executeInstructionAndGetData(insnRDHSB, tempAddr);
 
 #else
 
@@ -465,6 +453,288 @@ void printHaltStatus(void) {
            haltStatusBlock.t0,
            haltStatusBlock.t1,
            haltStatusBlock.vma);
+}
+
+//!
+//! \brief
+//!   Function to print APRID
+//!
+
+static void printAPRID(void) {
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnAPRID = (ks10_t::opAPRID << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        ks10_t::data_t data = ks10_t::executeInstructionAndGetData(insnAPRID, tempAddr);
+        printf("KS10: APRID is %012llo\n"
+               "  INHCST is %llo\n"
+               "  NOCST  is %llo\n"
+               "  NONSTD is %llo\n"
+               "  UBABLT is %llo\n"
+               "  KIPAG  is %llo\n"
+               "  KLPAG  is %llo\n"
+               "  MCV    is %03llo\n"
+               "  HO     is %llo\n"
+               "  HSN    is %d\n",
+               data,
+               ((data >> 35) & 000001),
+               ((data >> 34) & 000001),
+               ((data >> 33) & 000001),
+               ((data >> 32) & 000001),
+               ((data >> 31) & 000001),
+               ((data >> 30) & 000001),
+               ((data >> 18) & 000777),
+               ((data >> 15) & 000007),
+               ((unsigned int)(data & 077777)));
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to executes and prints RDAPR
+//!
+
+static void printRDAPR(void) {
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnRDAPR = (ks10_t::opRDAPR << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        printf("KS10: APR is %012llo\n", ks10_t::executeInstructionAndGetData(insnRDAPR, tempAddr));
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to executes and prints RDPI
+//!
+
+static void printRDPI(void) {
+    const ks10_t::addr_t tempAddr = 0100;
+    const ks10_t::data_t insnRDPI = (ks10_t::opRDPI << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        printf("KS10: PI is %012llo\n", ks10_t::executeInstructionAndGetData(insnRDPI, tempAddr));
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to executes and prints RDUBR
+//!
+
+static void printRDUBR(void) {
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnRDUBR = (ks10_t::opRDUBR << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        printf("KS10: UBR is %012llo\n", ks10_t::executeInstructionAndGetData(insnRDUBR, tempAddr));
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to executes and prints RDEBR
+//!
+
+static void printRDEBR(void) {
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnRDEBR = (ks10_t::opRDEBR << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        ks10_t::data_t data = ks10_t::executeInstructionAndGetData(insnRDEBR, tempAddr);
+        printf("KS10: EBR is %012llo\n"
+               "  T20PAG is %llo\n"
+               "  ENBPAG is %llo\n"
+               "  EBRPAG is %04llo\n",
+               data,
+               ((data >> 14) & 000001),
+               ((data >> 13) & 000001),
+               ((data >>  0) & 003777));
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to executes and prints RDEBR
+//!
+
+static void printRDSPB(void) {
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnRDSPB = (ks10_t::opRDSPB << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        printf("KS10: SPB is %012llo\n", ks10_t::executeInstructionAndGetData(insnRDSPB, tempAddr));
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to executes and prints RDCSB
+//!
+
+static void printRDCSB(void) {
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnRDCSB = (ks10_t::opRDCSB << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        printf("KS10: CSB is %012llo\n", ks10_t::executeInstructionAndGetData(insnRDCSB, tempAddr));
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to executes and prints RDCSTM
+//!
+
+static void printRDCSTM(void) {
+    const ks10_t::addr_t tempAddr   = 0100;
+    const ks10_t::data_t insnRDCSTM = (ks10_t::opRDCSTM << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        printf("KS10: CSTM is %012llo\n", ks10_t::executeInstructionAndGetData(insnRDCSTM, tempAddr));
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to executes and prints RDPUR
+//!
+
+static void printRDPUR(void) {
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnRDPUR = (ks10_t::opRDPUR << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        printf("KS10: PUR is %012llo\n", ks10_t::executeInstructionAndGetData(insnRDPUR, tempAddr));
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to executes and prints RDTIM
+//!
+
+#if 1
+
+static void printRDTIM(void) {
+    printf("KS10: Not implemented.\n");
+}
+
+#else
+
+static void printRDTIM(void) {
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnRDTIM = (ks10_t::opRDTIM << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        printf("KS10: Not implemented.\n");
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+#endif
+
+//!
+//! \brief
+//!   Function to executes and prints RDINT
+//!
+
+static void printRDINT(void) {
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnRDINT = (ks10_t::opRDINT << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        printf("KS10: INT is %012llo\n", ks10_t::executeInstructionAndGetData(insnRDINT, tempAddr));
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to executes and prints RDHSB
+//!
+
+static void printRDHSB(void) {
+    const ks10_t::addr_t tempAddr  = 0100;
+    const ks10_t::data_t insnRDHSB = (ks10_t::opRDHSB << 18) | tempAddr;
+
+    if (ks10_t::halt()) {
+        printf("KS10: HSB is %012llo\n", ks10_t::executeInstructionAndGetData(insnRDHSB, tempAddr));
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to prints all of the ACs
+//!
+
+static void printRDACs(void) {
+    if (ks10_t::halt()) {
+        printf("KS10: Dump of AC contents:\n");
+        for (unsigned int i = 0; i < 020; i++) {
+            printf("  %02o: %012llo\n", i, readAC(i));
+        }
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+//!
+//! \brief
+//!   Function to prints a single AC
+//!
+
+static void printRDAC(ks10_t::addr_t regAC) {
+    if (ks10_t::halt()) {
+        if (regAC < 020) {
+            printf("KS10: %012llo\n", readAC(regAC));
+        } else {
+            printf("KS10: Invalid AC number.\n");
+        }
+    } else {
+        printf("KS10: CPU is running. Halt it first.\n");
+    }
+}
+
+
+//!
+//! \brief
+//!   Function to prints memory contents
+//!
+
+static void printRDMEM(ks10_t::addr_t addr, unsigned int len) {
+    printf("KS10: Memory read:\n");
+    for (unsigned int i = 0; i < len; i++) {
+        ks10_t::data_t data = ks10_t::readMem(addr);
+        if (ks10_t::nxmnxd()) {
+            printf("  Failed. (NXM)\n");
+        } else {
+            printf("  %06llo: %012llo\n", addr, data);
+        }
+        addr++;
+    }
 }
 
 #ifdef CUSTOM_CMD
@@ -799,7 +1069,7 @@ static void cmdDS(int argc, char *argv[]) {
        "    DS\n";
 
    if (argc == 1 || argc > 4) {
-       printf("Boot Parameters are:\n"
+       printf("KS10: Boot Parameters are:\n"
               "  UBA = %o\n"
               "  BASE = %06o\n"
               "  UNIT = %o\n"
@@ -1512,16 +1782,50 @@ static void cmdNE(int argc, char *argv[]) {
 //!
 
 static void cmdRD(int argc, char *argv[]) {
+    const char *usage =
+        "Usage: RD Addr [length]\n"
+        "       RD { APRID | APR | PI  | UBR | EBR | SPB | CSB\n"
+        "          | CSTM  | PUR | TIM | INT | HSB}\n"
+        "       RD AC [reg]\n";
+
     if (argc == 2) {
-        ks10_t::addr_t addr = parseOctal(argv[1]);
-        ks10_t::data_t data = ks10_t::readMem(addr);
-        if (ks10_t::nxmnxd()) {
-            printf("Memory read failed. (NXM)\n");
+        if (strnicmp(argv[1], "aprid", 5) == 0) {
+            printAPRID();
+        } else if (strnicmp(argv[1], "apr", 3) == 0) {
+            printRDAPR();
+        } else if (strnicmp(argv[1], "pi", 2) == 0) {
+            printRDPI();
+        } else if (strnicmp(argv[1], "ubr", 3) == 0) {
+            printRDUBR();
+        } else if (strnicmp(argv[1], "ebr", 3) == 0) {
+            printRDEBR();
+        } else if (strnicmp(argv[1], "spb", 3) == 0) {
+            printRDSPB();
+        } else if (strnicmp(argv[1], "csb", 3) == 0) {
+            printRDCSB();
+        } else if (strnicmp(argv[1], "cstm", 4) == 0) {
+            printRDCSTM();
+        } else if (strnicmp(argv[1], "pur", 3) == 0) {
+            printRDPUR();
+        } else if (strnicmp(argv[1], "tim", 3) == 0) {
+            printRDTIM();
+        } else if (strnicmp(argv[1], "int", 3) == 0) {
+            printRDINT();
+        } else if (strnicmp(argv[1], "hsb", 3) == 0) {
+            printRDHSB();
+        } else if (strnicmp(argv[1], "ac", 2) == 0) {
+            printRDACs();
         } else {
-            printf("%012llo\n", data);
+            printRDMEM(parseOctal(argv[1]), 1);
+        }
+    } else if (argc == 3) {
+        if (strnicmp(argv[1], "ac", 2) == 0) {
+            printRDAC(parseOctal(argv[2]));
+        } else {
+            printRDMEM(parseOctal(argv[1]), parseOctal(argv[2]));
         }
     } else {
-        printf("Usage: RD Addr\n");
+        printf(usage);
     }
 }
 
@@ -1615,9 +1919,9 @@ static void cmdRR(int argc, char *argv[]) {
         if (!ks10_t::halt()) {
             printf("KS10: CPU is running.   Halt it first.\n");
         } else {
-            printf("Dump of AC contents:\n");
+            printf("KS10: Dump of AC contents:\n");
             for (unsigned int i = 0; i < 020; i++) {
-                printf("%02o: %012llo\n", i, readAC(i));
+                printf("  %02o: %012llo\n", i, readAC(i));
             }
         }
     } else if (argc == 2) {
@@ -1626,7 +1930,7 @@ static void cmdRR(int argc, char *argv[]) {
         } else {
             ks10_t::data_t regAC = parseOctal(argv[1]);
             if (regAC < 020) {
-                printf("%012llo\n", readAC(regAC));
+                printf("KS10: %012llo\n", readAC(regAC));
             } else {
                 printf(usage);
             }

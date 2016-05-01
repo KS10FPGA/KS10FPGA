@@ -1277,6 +1277,60 @@ void ks10_t::executeInstruction(data_t insn) {
 
 }
 
+//!
+//! \brief
+//!    Store data into memory and then execute a single instruction
+//!
+//! \details
+//!    This function puts data into memory and then executes a single
+//!    instruction that uses that memory.  The contents of the memory location
+//!    saved prior to storing the data and restored after executing the
+//!    instruction.
+//!
+//! \param insn -
+//!    Instruction to execute
+//!
+//! \param tempAddr -
+//!    Temporary address for results.
+//!
+//! \param data -
+//!    Data to store in temporary memory location
+//!
+
+void ks10_t::setDataAndExecuteInstruction(data_t insn, data_t data, addr_t tempAddr) {
+    const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
+    ks10_t::writeMem(tempAddr, data);
+    ks10_t::executeInstruction(insn);
+    ks10_t::writeMem(tempAddr, tempData);
+}
+
+//!
+//! \brief
+//!    Execute a single instruction and return data
+//!
+//! \details
+//!    This function executes an instruction that modifies memory.  The
+//!    contents of the destination address are saved prior to executing the
+//!    instruction and restored after executing the instruction.
+//!
+//! \param insn -
+//!    Instruction to execute
+//!
+//! \param tempAddr -
+//!    Temporary address for results.
+//!
+//! \returns
+//!    Returns data from instruction execution.
+//!
+
+ks10_t::data_t ks10_t::executeInstructionAndGetData(data_t insn, addr_t tempAddr) {
+    const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
+    ks10_t::executeInstruction(insn);
+    ks10_t::addr_t data = ks10_t::readMem(tempAddr);
+    ks10_t::writeMem(tempAddr, tempData);
+    return data;
+}
+
 //
 //! @}
 //
