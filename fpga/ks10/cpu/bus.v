@@ -124,7 +124,7 @@ module BUS (
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          addr3666  <= 0;
+          addr3666 <= 0;
         else
           addr3666 <= (crom[0:11] == 12'o3726);
      end
