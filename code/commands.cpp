@@ -1917,7 +1917,7 @@ static void cmdRR(int argc, char *argv[]) {
 
     if (argc == 1) {
         if (!ks10_t::halt()) {
-            printf("KS10: CPU is running.   Halt it first.\n");
+            printf("KS10: CPU is running. Halt it first.\n");
         } else {
             printf("KS10: Dump of AC contents:\n");
             for (unsigned int i = 0; i < 020; i++) {
@@ -1926,7 +1926,7 @@ static void cmdRR(int argc, char *argv[]) {
         }
     } else if (argc == 2) {
         if (!ks10_t::halt()) {
-            printf("KS10: CPU is running.   Halt it first.\n");
+            printf("KS10: CPU is running. Halt it first.\n");
         } else {
             ks10_t::data_t regAC = parseOctal(argv[1]);
             if (regAC < 020) {
