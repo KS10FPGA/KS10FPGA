@@ -841,6 +841,14 @@ static void cmdBT(int argc, char *argv[]) {
         "       (see DS command)\n";
 
     //
+    // Configure the CPU
+    //
+
+    ks10_t::cacheEnable(true);
+    ks10_t::trapEnable(true);
+    ks10_t::timerEnable(true);
+
+    //
     // Set RH11 Boot Parameters
     //
 
