@@ -1903,52 +1903,6 @@ static void cmdRH(int argc, char *argv[]) {
 
 #endif
 
-#ifdef CUSTOM_CMD
-
-//!
-//! \brief
-//!    Read register
-//!
-//! \param [in] argc
-//!    Number of arguments.
-//!
-//! \param [in] argv
-//!    Array of pointers to the argument.
-//!
-
-static void cmdRR(int argc, char *argv[]) {
-    const char *usage =
-        "Usage: RR {Reg}\n"
-        " RR is octal must be 0 - 17\n"
-        " if Reg is omitted, all register will be displayed\n"
-        " Note: the KS10 must be halted for this to succeed\n";
-
-    if (argc == 1) {
-        if (!ks10_t::halt()) {
-            printf("KS10: CPU is running. Halt it first.\n");
-        } else {
-            printf("KS10: Dump of AC contents:\n");
-            for (unsigned int i = 0; i < 020; i++) {
-                printf("  %02o: %012llo\n", i, readAC(i));
-            }
-        }
-    } else if (argc == 2) {
-        if (!ks10_t::halt()) {
-            printf("KS10: CPU is running. Halt it first.\n");
-        } else {
-            ks10_t::data_t regAC = parseOctal(argv[1]);
-            if (regAC < 020) {
-                printf("KS10: %012llo\n", readAC(regAC));
-            } else {
-                printf(usage);
-            }
-        }
-    } else {
-        printf(usage);
-    }
-}
-#endif
-
 //!
 //! \brief
 //!   SD Card Commands
@@ -2553,9 +2507,6 @@ void taskCommand(void * param) {
 #endif
 #ifdef CUSTOM_CMD
         {"RH", cmdRH},          // RH11 Tests
-#endif
-#ifdef CUSTOM_CMD
-        {"RR", cmdRR},          // Read register
 #endif
         {"SC", cmdXX},          // Not implemented.
         {"SD", cmdSD},
