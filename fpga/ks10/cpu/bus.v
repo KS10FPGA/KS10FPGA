@@ -97,15 +97,15 @@ module BUS (
    // VMA Flags
    //
 
-   wire vmaREAD    = `vmaREAD(vmaREG);
-   wire vmaWRTEST  = `vmaWRTEST(vmaREG);
-   wire vmaWRITE   = `vmaWRITE(vmaREG);
-   wire vmaEXTD    = `vmaEXTD(vmaREG);
-   wire vmaPHYS    = `vmaPHYS(vmaREG);
-   wire vmaIO      = `vmaIO(vmaREG);
-   wire vmaWRU     = `vmaWRU(vmaREG);
-   wire vmaVECT    = `vmaVECT(vmaREG);
-   wire vmaACREF   = `vmaACREF(vmaREG);
+   wire vmaREAD   = `vmaREAD(vmaREG);
+   wire vmaWRTEST = `vmaWRTEST(vmaREG);
+   wire vmaWRITE  = `vmaWRITE(vmaREG);
+   wire vmaEXTD   = `vmaEXTD(vmaREG);
+   wire vmaPHYS   = `vmaPHYS(vmaREG);
+   wire vmaIO     = `vmaIO(vmaREG);
+   wire vmaWRU    = `vmaWRU(vmaREG);
+   wire vmaVECT   = `vmaVECT(vmaREG);
+   wire vmaACREF  = `vmaACREF(vmaREG);
 
    //
    // Paged Reference
