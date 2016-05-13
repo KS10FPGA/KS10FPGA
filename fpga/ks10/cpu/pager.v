@@ -206,6 +206,15 @@ module PAGER (
 
    wire [ 0: 8] readAddr      = {dp[19:26], dp[18]};
 
+`ifndef PAGE_FAIL_TEST
+
+   //
+   // This is the 'normal' Pager
+   //
+   // Two variants exist: one is optimized to use a XILINX dual port RAM
+   // and the other is gerneric
+   //
+
 `ifdef XILINX
 
    wire [31: 0] readData;
@@ -214,6 +223,8 @@ module PAGER (
 
    //
    // Must use 18Kb Block RAM in True Dual-Port Mode to implement the Page Memory
+   // The Dual Port Memory is configured as follows:
+   //
    //   Port A: 256x36  (write port)
    //   Part B: 512x18  (read  port)
    //
@@ -267,7 +278,7 @@ module PAGER (
         {pageFLAGS, pageADDR} <= readData[14:0];
      end
 
-`else
+`else // !`ifdef XILINX
 
    //
    // Page Table Write (Even)
@@ -337,7 +348,75 @@ module PAGER (
           end
      end
 
-`endif
+`endif // !`ifdef XILINX
+
+`else // !`ifndef PAGE_FAIL_TEST
+
+   //
+   // Page Fail Test 'Pager'.
+   //
+   // This version of the Pager is deliberately broken so as to force a page
+   // failure on every memory access.  It is used to stress test the PAGE FAIL
+   // logic and the interface to the microcode.
+   //
+   // To accomplish this, the pager stores the entire VMA associated with the
+   // page fill.  The page translation is only valid for that single access.
+   // When the VMA is modified (next instruction or next address), the page
+   // translation is returned as invalid.
+   //
+
+   //
+   // Page Table Write
+   //
+
+   reg [14:35] vma;
+   reg [0 :14] pageTABLE;
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          begin
+             vma       <= 0;
+             pageTABLE <= 0;
+          end
+        else
+          if (clken & pageWRITE)
+            begin
+               if (pageSWEEP)
+                 begin
+                    vma       <= 0;
+                    pageTABLE <= 0;
+                 end
+               else
+                 begin
+                    vma       <= vmaREG[14:35];
+                    pageTABLE <= {pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI};
+                 end
+            end
+     end
+
+   //
+   // Page Table Read
+   //
+
+  always @(posedge clk or posedge rst)
+    begin
+       if (rst)
+         begin
+            pageFLAGS <= 0;
+            pageADDR  <= 0;
+         end
+       else
+         if (clken & vmaEN)
+           begin
+              if (`vmaADDR(dp) == vma)
+                {pageFLAGS, pageADDR} <= pageTABLE;
+              else
+                {pageFLAGS, pageADDR} <= 0;
+           end
+    end
+
+`endif // !`ifndef PAGE_FAIL_TEST
 
    //
    // Test only

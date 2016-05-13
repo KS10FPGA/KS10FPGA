@@ -136,7 +136,7 @@ module DISP_PF (
    //  DPE5/E1
    //
 
-   wire specMEMCLR    = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
+   wire specMEMCLR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR );
 
    //
    // pfCYCLE

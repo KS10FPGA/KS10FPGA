@@ -169,10 +169,10 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the -RD00-XXX
 #   -D SIM_SDHC_OFFLINE Simulate the SDHC as offline
 #   -D STOP_ON_COMPLETE Stop simulation when test is complete (See debug.v)
 #   -D STOP_ON_STUCK_PC Stop simulating when PC gets stuck.
+#   -D PAGE_FAIL_TEST   Stress test PAGE FAIL logic
 #   -D DEBUG_DSKAA      Diagnostic information (See debug.v)
 #   -D DEBUG=DSKAA      Diagnostic information (See debug.v)
 #
-
 
 SIM_ARGS := \
         -D SIM_CTY \
