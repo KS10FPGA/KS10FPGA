@@ -160,6 +160,9 @@ module DZRBUF (
    reg [BUF_ADDR_WIDTH-1:0] rd_ptr;
    reg [BUF_ADDR_WIDTH-1:0] wr_ptr;
 
+   wire empty = (depth == 0);
+   wire full  = (depth == FIFO_SIZE - 1);
+
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -195,8 +198,7 @@ module DZRBUF (
           end
      end
 
-   wire empty = (depth == 0);
-   wire full  = (depth == FIFO_SIZE - 1);
+
 
    //
    // RBUF[RDONE]

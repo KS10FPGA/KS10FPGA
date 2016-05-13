@@ -69,6 +69,13 @@ module SCAD (
    wire       loadFE = `cromLOADFE;     // Load FE
 
    //
+   // Registers
+   //
+
+   reg [0:9] fe;                        // Floating-point exponent
+   reg [0:9] sc;                        // Step counter
+
+   //
    // SCADA MUX
    //
    // Details:
@@ -218,7 +225,6 @@ module SCAD (
    //  DPM4/E52
    //
 
-   reg [0:9] fe;
    always @(posedge clk or posedge rst)
     begin
         if (rst)
@@ -238,7 +244,6 @@ module SCAD (
    //  DPM4/E43
    //
 
-   reg [0:9] sc;
    always @(posedge clk or posedge rst)
     begin
         if (rst)

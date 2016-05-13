@@ -113,6 +113,16 @@ module UBA (
    wire [18:35] busADDR   = `busIOADDR(busADDRI);// IO Address
 
    //
+   // Signals
+   //
+
+   wire regUBAMR;                               // Maintenance Mode
+   wire setNXD;                                 // Set NXD
+   wire setTMO;                                 // Set TMO
+   wire pageFAIL;                               // Page fail
+   wire loopACKO;                               // Loopback acknowledge
+
+   //
    // Address Decoding
    //
 
@@ -137,13 +147,8 @@ module UBA (
    //  The status register is read/write.
    //
 
-   wire        setNXD;
-   wire        setTMO;
-   wire        pageFAIL;
    wire        statINTHI;
    wire        statINTLO;
-   wire        loopACKO;
-   wire        regUBAMR;
    wire [0:35] regUBASR;
    wire        statINI = `statINI(regUBASR);
    wire [0: 2] statPIH = `statPIH(regUBASR);

@@ -83,6 +83,9 @@ module RHDB (
    reg [6:0] rd_ptr;
    reg [6:0] wr_ptr;
 
+   wire empty = (depth == 0);
+   wire full  = (depth == `SIZE);
+
    //
    // FIFO State
    //
@@ -119,13 +122,6 @@ module RHDB (
                  wr_ptr <= wr_ptr + 1'b1;
             end
      end
-
-   //
-   // FIFO Status
-   //
-
-   wire empty = (depth == 0);
-   wire full  = (depth == `SIZE);
 
    //
    // Dual Port RAM circular buffer

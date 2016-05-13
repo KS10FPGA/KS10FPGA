@@ -303,7 +303,6 @@ RTL_FILES := \
 	ks10/rh11/rh11.v \
 	ks10/rh11/rhintr.v \
 	ks10/rh11/rhnem.v \
-	ks10/rh11/rhscan.v \
 	ks10/rh11/rhba.v \
 	ks10/rh11/rhdb.v \
 	ks10/rh11/rhwc.v \

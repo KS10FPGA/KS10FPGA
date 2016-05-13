@@ -314,6 +314,12 @@ module CSL (
    wire [7:0] cslADDR = {conADDR[7:1], 1'b0};
 
    //
+   // State Register
+   //
+
+   reg [0:2] state;
+
+   //
    // Write Decoder
    //
    // Details:
@@ -529,6 +535,12 @@ module CSL (
      end
 
    //
+   // 'GO' bit
+   //
+
+   wire regCTRL_GO = (state != stateIDLE);
+
+   //
    // Console Status Register
    //
 
@@ -692,7 +704,6 @@ module CSL (
    //  read/write and IO/memory.
    //
 
-   reg [0:2] state;
    reg [0:9] timer;
    wire cslGO = cslWR & (cslADDR == 8'h12) & cslBLE & conDATA[0];
 
@@ -769,12 +780,6 @@ module CSL (
 
    assign busREQO = ((state == stateREAD ) ||
                      (state == stateWRITE));
-
-   //
-   // 'GO' bit
-   //
-
-   wire regCTRL_GO = (state != stateIDLE);
 
    //
    // Bus ACK

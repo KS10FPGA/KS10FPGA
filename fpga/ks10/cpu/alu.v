@@ -89,6 +89,15 @@ module ALU (
    wire [0: 2] shstyle = `cromSPEC_SHSTYLE;     // ALU Shift Mode
 
    //
+   // Registers
+   //
+
+   reg multi_shift;
+   reg divide_shift;
+   reg carry_in;
+   reg funct_02;
+
+   //
    // Carry Inhibit
    //
    // Details
@@ -96,20 +105,6 @@ module ALU (
    //
 
    wire specCRY18INH = `cromSPEC_EN_40 & (`cromSPEC_SEL == `cromSPEC_SEL_CRY18INH);
-
-   //
-   // ALU Register Write
-   //
-   // Note
-   //  The following ALU destinations write data into the ALU registers.
-   //
-
-   wire write = ((dest ==`cromDST_RAMA)  ||
-                 (dest ==`cromDST_RAMF)  ||
-                 (dest ==`cromDST_RAMQD) ||
-                 (dest ==`cromDST_RAMQU) ||
-                 (dest ==`cromDST_RAMD)  ||
-                 (dest ==`cromDST_RAMU));
 
    //
    // Destination Address Munging
@@ -147,6 +142,20 @@ module ALU (
    //
 
    wire [0:2] func = {fun[0], fun[1], funct_02};
+
+   //
+   // ALU Register Write
+   //
+   // Note
+   //  The following ALU destinations write data into the ALU registers.
+   //
+
+   wire write = ((dest ==`cromDST_RAMA)  ||
+                 (dest ==`cromDST_RAMF)  ||
+                 (dest ==`cromDST_RAMQD) ||
+                 (dest ==`cromDST_RAMQU) ||
+                 (dest ==`cromDST_RAMD)  ||
+                 (dest ==`cromDST_RAMU));
 
    //
    // Input Sign Extension
@@ -807,11 +816,6 @@ module ALU (
    //  DPE5/E62
    //  DPE5/E70
    //
-
-   reg multi_shift;
-   reg divide_shift;
-   reg carry_in;
-   reg funct_02;
 
    always @*
      begin

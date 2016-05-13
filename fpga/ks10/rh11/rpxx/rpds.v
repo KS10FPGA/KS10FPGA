@@ -112,7 +112,8 @@ module RPDS (
    //  M7774/RG5/E57
    //
 
-   reg dsATA;
+   wire dsERR;
+   reg  dsATA;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
@@ -143,7 +144,7 @@ module RPDS (
    //  M7776/EC7/E95
    //
 
-   wire dsERR = (rpER1 != 0) | (rpER2 != 0) | (rpER3 != 0);
+   assign dsERR = (rpER1 != 0) | (rpER2 != 0) | (rpER3 != 0);
 
    //
    // RPDS Positioning In Progress (rpPIP)

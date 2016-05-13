@@ -70,6 +70,37 @@ module LPCSRA (
    );
 
    //
+   // CSRA Initialize (INIT)
+   //
+   // This is a little different than the LP20.  The lpINIT is output from this
+   // register but it cannot be read by the KS10 because it is only asserted
+   // during the write operation
+   //
+   // Trace
+   //  M8586/LPC8/E7
+   //  M8586/LPC8/E8
+   //  M8586/LPC8/E24
+   //  M8586/LPC8/E36
+   //
+
+   wire lpINIT = devRESET | (csraWRITE & devHIBYTE & `lpCSRA_INIT(lpDATAI));
+
+   //
+   // CSRA Error Clear (ECLR)
+   //
+   // This is a little different than the LP20.  The lpECLR is output from this
+   // register but it cannot be read by the KS10 because it is only asserted
+   // during the write operation
+   //
+   // Trace
+   //  M8586/LPC7/E36
+   //  M8586/LPC7/E37
+   //  M8586/LPC7/E42
+   //
+
+   wire lpECLR = lpINIT | (csraWRITE & devHIBYTE & `lpCSRA_ECLR(lpDATAI));
+
+   //
    // On-line Error
    //
    // This is asserted when the printer transtions of off-line
@@ -152,38 +183,6 @@ module LPCSRA (
                lpDHLD <= `lpCSRA_DHLD(lpDATAI);
           end
      end
-
-
-   //
-   // CSRA Error Clear (ECLR)
-   //
-   // This is a little different than the LP20.  The lpECLR is output from this
-   // register but it cannot be read by the KS10 because it is only asserted
-   // during the write operation
-   //
-   // Trace
-   //  M8586/LPC7/E36
-   //  M8586/LPC7/E37
-   //  M8586/LPC7/E42
-   //
-
-   wire lpECLR = lpINIT | (csraWRITE & devHIBYTE & `lpCSRA_ECLR(lpDATAI));
-
-   //
-   // CSRA Initialize (INIT)
-   //
-   // This is a little different than the LP20.  The lpINIT is output from this
-   // register but it cannot be read by the KS10 because it is only asserted
-   // during the write operation
-   //
-   // Trace
-   //  M8586/LPC8/E7
-   //  M8586/LPC8/E8
-   //  M8586/LPC8/E24
-   //  M8586/LPC8/E36
-   //
-
-   wire lpINIT = devRESET | (csraWRITE & devHIBYTE & `lpCSRA_INIT(lpDATAI));
 
    //
    // CSRA Interrupt Enable (IE)

@@ -57,6 +57,26 @@ module RPMR (
    );
 
    //
+   // RPMR Diagnostics Mode (rpDMD)
+   //
+   // Trace
+   //   M7774/RG6/E40
+   //   M7774/RG6/E48
+   //
+
+   reg rpDMD;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          rpDMD <= 0;
+        else
+          if (clr | rpDRVCLR)
+            rpDMD <= 0;
+          else if (rpmrWRITE & rpDRY)
+            rpDMD <= `rpMR_DMD(rpDATAI);
+     end
+
+   //
    // RPMR Diagnostic Data (rpDDAT)
    //
    // Trace
@@ -130,26 +150,6 @@ module RPMR (
             rpDCLK <= 0;
           else if (rpmrWRITE)
             rpDCLK <= `rpMR_DCLK(rpDATAI);
-     end
-
-   //
-   // RPMR Diagnostics Mode (rpDMD)
-   //
-   // Trace
-   //   M7774/RG6/E40
-   //   M7774/RG6/E48
-   //
-
-   reg rpDMD;
-   always @(posedge clk or posedge rst)
-     begin
-        if (rst)
-          rpDMD <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpDMD <= 0;
-          else if (rpmrWRITE & rpDRY)
-            rpDMD <= `rpMR_DMD(rpDATAI);
      end
 
    //

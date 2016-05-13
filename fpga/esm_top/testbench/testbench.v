@@ -155,6 +155,13 @@ module testbench;
    localparam [18:35] addrBOOTMAG   = 18'o000040;
 
    //
+   // Halt Status
+   //
+
+   reg [0:35] haltStatus;
+   reg [0:35] haltAddr;
+
+   //
    // Line buffer for expect()
    //
 
@@ -584,8 +591,6 @@ module testbench;
 
    integer    fd_cty;
    reg [0:35] temp;
-   reg [0:35] haltStatus;
-   reg [0:35] haltAddr;
    reg [0:31] state;
 
    initial
@@ -655,7 +660,7 @@ module testbench;
         conWRITE(addrDBAR, 36'o000000_000000);
         conWRITE(addrDBMR, 36'o000000_000000);
 `endif
-        
+
         //
         // Write to Control/Status Register
         // Release RESET and set RUN.

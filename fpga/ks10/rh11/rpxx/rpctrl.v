@@ -133,6 +133,45 @@ module RPCTRL (
    localparam FIXDELAY  = 0.000100 * `CLKFRQ;   // Fixed delay (100 us)
 
    //
+   // rpDCA
+   //
+
+   wire [9:0] rpDCA = `rpDC_DCA(rpDC);
+
+   //
+   // rpCCA
+   //
+
+   wire [9:0] rpCCA = `rpCC_CCA(rpCC);
+
+   //
+   // rpCC value when command completes
+   //
+
+   reg [15:0] tmpCC;
+
+   //
+   // Head position (cylinder)
+   //
+   // The head position can be unsynchronized from the DCA/CCA if a seek is
+   // performed in maintenance mode: the DCA/CCA moves but the head does not.
+   //
+
+   reg [15:0] head_pos;
+
+   //
+   // Desired Sector
+   //
+
+   wire [5:0] rpSA = `rpDA_SA(rpDA);
+
+   //
+   // RPLA Sector
+   //
+
+   wire [5:0] rpLAS = `rpLA_LAS(rpLA);
+
+   //
    // Check for RPER3[SKI] error. A  SKI error occurs when you seek off the
    // edge of the disk.
    //
@@ -205,39 +244,6 @@ module RPCTRL (
    endfunction
 
    //
-   // rpDCA
-   //
-
-   wire [9:0] rpDCA = `rpDC_DCA(rpDC);
-
-   //
-   // rpCCA
-   //
-
-   wire [9:0] rpCCA = `rpCC_CCA(rpCC);
-
-   //
-   // Head position (cylinder)
-   //
-   // The head position can be unsynchronized from the DCA/CCA if a seek is
-   // performed in maintenance mode: the DCA/CCA moves but the head does not.
-   //
-
-   reg [15:0] head_pos;
-
-   //
-   // Desired Sector
-   //
-
-   wire [5:0] rpSA = `rpDA_SA(rpDA);
-
-   //
-   // RPLA Sector
-   //
-
-   wire [5:0] rpLAS = `rpLA_LAS(rpLA);
-
-   //
    // Diagnostic clock.  Triggered on falling edge of maintenance
    // register signal.
    //
@@ -303,7 +309,6 @@ module RPCTRL (
    //
 
    reg [24: 0] delay;                           // RPxx Delay Simulation
-   reg [15: 0] tmpCC;                           // rpCC value when command completes
    reg [ 5: 0] bit_cnt;                         // Bit counter (0 - 17)
    reg [ 7: 0] word_cnt;                        // Word counter (0 - 255)
    reg         tmpATA;                          // Do ATA at end

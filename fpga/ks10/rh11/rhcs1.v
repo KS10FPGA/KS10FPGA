@@ -99,16 +99,6 @@ module RHCS1 (
      end
 
    //
-   // CS1 Special Conditions (SC)
-   //
-   // Trace
-   //  M7296/CSRB/E2
-   //  M7296/CSRB/E20
-   //
-
-   wire cs1SC = cs1TRE | cs1CPE | rpATA;
-
-   //
    // CS1 Transfer Error (TRE)
    //
    // Note:
@@ -151,6 +141,15 @@ module RHCS1 (
    wire cs1CPE = 0;
 
    //
+   // CS1 Ready (RDY)
+   //
+   // Trace
+   //  M7296/CSRA/E3
+   //
+
+   wire cs1RDY = !rpGO;
+
+   //
    // CS1 Port Select (PSEL)
    //
    // Trace
@@ -169,15 +168,6 @@ module RHCS1 (
           else if (rhcs1WRITE & devHIBYTE & cs1RDY)
             cs1PSEL <= `rhCS1_PSEL(rhDATAI);
      end
-
-   //
-   // CS1 Ready (RDY)
-   //
-   // Trace
-   //  M7296/CSRA/E3
-   //
-
-   wire cs1RDY = !rpGO;
 
    //
    // CS1 Interrupt Enable (IE)
@@ -221,6 +211,16 @@ module RHCS1 (
    //
 
    wire cs1GO = rpGO;
+
+   //
+   // CS1 Special Conditions (SC)
+   //
+   // Trace
+   //  M7296/CSRB/E2
+   //  M7296/CSRB/E20
+   //
+
+   wire cs1SC = cs1TRE | cs1CPE | rpATA;
 
    //
    // Build CS1 Register

@@ -72,6 +72,6 @@
 //   DPM4/E191
 //
 
-`define vmaACREF(reg)    (!`vmaPHYS(reg) & (reg[18:31] == 14'b0))
+`define vmaACREF(reg)    (!`vmaPHYS(reg) & (reg[18:31] == 0))
 
 `endif

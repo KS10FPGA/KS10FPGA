@@ -168,6 +168,7 @@ module RPLA (
    //  M7787/DP6/E30
    //
 
+   wire      sect_inc;
    reg [9:0] sect_ext;
 
    always @(posedge clk or posedge rst)
@@ -199,8 +200,8 @@ module RPLA (
    //  M7787/DP6/E53
    //
 
-   wire sect_inc = (((rpSECNUM == 19) & (sect_ext == 671)) |    // 672 bytes per sector (18-bit mode)
-                    ((rpSECNUM == 21) & (sect_ext == 608)));    // 609 bytes per sector (16-bit mode)
+   assign sect_inc = (((rpSECNUM == 19) & (sect_ext == 671)) |    // 672 bytes per sector (18-bit mode)
+                      ((rpSECNUM == 21) & (sect_ext == 608)));    // 609 bytes per sector (16-bit mode)
 
    //
    // Extension Register Contents
