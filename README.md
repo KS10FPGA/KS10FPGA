@@ -9,8 +9,7 @@ DEC KS10 implementation.
 The entire KS10 Central Processing Unit (CPU) is implemented in a single Field Programmable Gate Array (FPGA) instead using of boards
 of discrete logic. The FPGA is firmware is written in Verilog and currently consists of about 33,000 lines of code plus comments.
 Similarly, the Console Processor is implemented in a single-chip ARM Cortex M3 microcontroller whereas the DEC KS10 used an Intel 8080
-microprocessor and a board full of logic. The console software is written in a mixture of C and C++ and is about 20,000 lines of code
-plus comments (excluding the lwIP TCP/IP stack).
+microprocessor and a board full of logic. All of the software is hosted on top of the SafeRTOS real time operating system (RTOS) which is embedded in the microcontroller ROM by the manufacturer. The console software is written in a mixture of C and C++ and is about 20,000 lines of code plus comments (excluding the lwIP TCP/IP stack and SafeRTOS).  
 
 The KS10 FPGA peripherals are significantly different than the legacy DEC KS10 peripherals. Modern peripherals like Secure Digital
 High-Capacity (SDHC) solid-state disk drives replace the Moving Head RP06 disk drives and TU45 9-track magtape drives. Even though
