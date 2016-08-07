@@ -16,3 +16,5 @@ High-Capacity (SDHC) solid-state disk drives replace the Moving Head RP06 disk d
 the physical devices are different, the original hardware interfaces have been retained. The disk drives use the same bits-on-disk
 formatting as the SIMH simulator so that files and disk images may be moved between SIMH and the target hardware without modification.
 Universal Serial Bus (USB) and Ethernet devices are provided in addition to standard legacy RS-232 devices.
+
+More details can be found on the wiki pages at <a href="https://github.com/KS10FPGA/KS10FPGA/wiki">https://github.com/KS10FPGA/KS10FPGA/wiki</a>
