@@ -96,6 +96,7 @@ endif
 ISE       := esm_top/ise
 MAINDEC   := ../maindec
 TESTBENCH := esm_top/testbench
+QUESTA    := esm_top/questa
 
 #
 # Other tools
@@ -142,7 +143,7 @@ OBJCOPY  := objcopy
 #DIAG     := DSKCC		#    2.1 ms
 #DIAG     := DSKCD		#    5.2 ms
 #DIAG     := DSKCE-RD00		#    5.7 ms
-#DIAG     := DSKCF-RD00		#   10.6 ms	
+#DIAG     := DSKCF-RD00		#   10.6 ms
 #DIAG     := DSKCG		# 1350.0 ms FAIL
 #DIAG     := DSKDA-RD00		#    5.3 ms FAIL
 #DIAG     := DSKEA-RD00		# 1046.0 ms
@@ -160,7 +161,7 @@ OBJCOPY  := objcopy
 DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the -RD00-XXXX suffix
 
 #
-# Macro Definitions
+# Simulator Macro Definitions
 #
 #   -D ENABLE_TIMER     Enable 1 ms timer.  Slows simulation.  (See testbench)
 #   -D SIM_SMMON        Boot to SMMON instead of diagnostic app (See testbench)
@@ -169,7 +170,6 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the -RD00-XXX
 #   -D SIM_SDHC_OFFLINE Simulate the SDHC as offline
 #   -D STOP_ON_COMPLETE Stop simulation when test is complete (See debug.v)
 #   -D STOP_ON_STUCK_PC Stop simulating when PC gets stuck.
-#   -D PAGE_FAIL_TEST   Stress test PAGE FAIL logic
 #   -D DEBUG_DSKAA      Diagnostic information (See debug.v)
 #   -D DEBUG=DSKAA      Diagnostic information (See debug.v)
 #
@@ -186,7 +186,7 @@ SIM_ARGS := \
         -D DIAG=$(DIAG)
 
 #
-# Synthesis Control Macros
+# Synthesis Macro Definitions
 #
 # Macro Definitions
 #   -D RPXX_SIMSEEK	Simulate RPXX seek accurately but slowly
@@ -197,11 +197,14 @@ SIM_ARGS := \
 #   -D CHIPSCOPE_SD     Instrument the SD Controller
 #   -D CHIPSCOPE_MEM    Instrument the Memory Controller
 #   -D CHIPSCOPE_CSL    Instrument the Console Interface
+#   -D PAGE_FAIL_TEST   Stress test PAGE FAIL logic
 #
 
 SYN_ARGS := \
-#	-D RPXX_SIMSEEK \
-#	-D RPXX_SIMSEARCH
+	-D RPXX_SIMSEEK \
+	-D RPXX_SIMDMD \
+#	-D RPXX_SIMSEARCH \
+#	-D PAGE_FAIL_TEST \
 
 #
 # Diagnostic Prefix
@@ -384,7 +387,7 @@ endif
 ifneq (, $(findstring CHIPSCOPE_UBA, $(SYN_ARGS)))
 RTL_FILES += \
 	ks10/xilinx/chipscope_uba_ila/chipscope_uba_ila.v \
-	ks10/xilinx/chipscope_uba_icon/chipscope_uba_icon.v 
+	ks10/xilinx/chipscope_uba_icon/chipscope_uba_icon.v
 CGN_FILES += \
 	ks10/xilinx/chipscope_uba_ila/chipscope_uba_ila.ngc \
 	ks10/xilinx/chipscope_uba_icon/chipscope_uba_icon.ngc
@@ -409,7 +412,7 @@ SSRAM_DAT := \
 # If were simulating SMMON, add the SMMON files.  Otherwise don't.
 #
 
-MON_FILES := 
+MON_FILES :=
 
 ifneq (, $(findstring SIM_SMMON, $(SIM_ARGS)))
 
@@ -519,7 +522,7 @@ BLD_FILES := \
 #
 
 UCF_FILE := \
-	esm_top/$(PROJECT).ucf 
+	esm_top/$(PROJECT).ucf
 
 #
 # Filter file arguments
@@ -675,6 +678,114 @@ isim_bat : $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJEC
 	@cd $(ISE); \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe -gui &
+
+#
+# Questasim
+#
+
+DOFILE := \
+        "onerror {resume}" \
+        "quietly WaveActivateNextPane {} 0 " \
+        "add wave -noupdate -radix octal -radixshowbase 0 clk" \
+        "add wave -noupdate -radix octal -radixshowbase 0 reset" \
+        "add wave -noupdate -color \"lightblue\" -divider {Memory Interface}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {busADDRI}             {/testbench/uKS10/uKS10/uMEM/busADDRI}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {busDATAI}             {/testbench/uKS10/uKS10/uMEM/busDATAI}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {busDATAO}             {/testbench/uKS10/uKS10/uMEM/busDATAO}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {memREAD}              {/testbench/uKS10/uKS10/uMEM/memREAD}"  \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {memWRITE}             {/testbench/uKS10/uKS10/uMEM/memWRITE}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {memWRTEST}            {/testbench/uKS10/uKS10/uMEM/memWRTEST}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {ssramDATA}            {/testbench/uKS10/uKS10/uMEM/ssramDATA}" \
+        "add wave -noupdate -divider {CPU Interface}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {clk}                  {/testbench/clk}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {reset}                {/testbench/reset}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {clken}                {/testbench/uKS10/uKS10/uCPU/uINTF/clken}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuREQO}              {/testbench/uKS10/uKS10/uCPU/cpuREQO}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuACKI}              {/testbench/uKS10/uKS10/uCPU/cpuACKI}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuADDRO[0:35]}       {/testbench/uKS10/uKS10/uCPU/cpuADDRO}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 3: READ}             {/testbench/uKS10/uKS10/uCPU/cpuADDRO[3]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 4: WRTEST}           {/testbench/uKS10/uKS10/uCPU/cpuADDRO[4]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 5: WRITE}            {/testbench/uKS10/uKS10/uCPU/cpuADDRO[5]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {10: IO}               {/testbench/uKS10/uKS10/uCPU/cpuADDRO[10]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {11: WRU}              {/testbench/uKS10/uKS10/uCPU/cpuADDRO[11]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {12: VECT}             {/testbench/uKS10/uKS10/uCPU/cpuADDRO[12]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuADDRO[14:35]}      {/testbench/uKS10/uKS10/uCPU/cpuADDRO[14:35]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuDATAI}             {/testbench/uKS10/uKS10/uCPU/cpuDATAI}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuDATAO}             {/testbench/uKS10/uKS10/uCPU/cpuDATAO}" \
+        "add wave -noupdate -divider {** CPU **}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {CROM J}               {/testbench/uKS10/uKS10/uCPU/uUSEQ/uCROM/addr}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {CROM ADDR}            {/testbench/uKS10/uKS10/uCPU/uUSEQ/addr}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {CROM CURR ADDR}       {/testbench/uKS10/uKS10/uCPU/uUSEQ/uSTACK/currADDR}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {PC}                   {/testbench/uKS10/uKS10/uDEBUG/cpuPC}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {IR}                   {/testbench/uKS10/uKS10/uDEBUG/cpuHR}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 0: MAG}              {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[0]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 1: PC}               {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[1]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 2: HR}               {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[2]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 3: AR}               {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[3]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 4: ARX}              {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[4]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 5: BR}               {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[5]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 6: BRX}              {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[6]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 7: ONE}              {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[7]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 8: EBR}              {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[8]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 9: UBR}              {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[9]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {10: MASK}             {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[10]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {11: FLG}              {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[11]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {12: PI}               {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[12]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {13: XWD1}             {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[13]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {14: T0}               {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[14]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {15: T1}               {/testbench/uKS10/uKS10/uCPU/uALU/aluRAM[15]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC0}                  {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[0]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC1}                  {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[1]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC2}                  {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[2]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC3}                  {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[3]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC4}                  {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[4]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC5}                  {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[5]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC6}                  {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[6]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC7}                  {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[7]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC8}                  {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[8]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC9}                  {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[9]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC10}                 {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[10]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC11}                 {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[11]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC12}                 {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[12]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC13}                 {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[13]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC14}                 {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[14]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC15}                 {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[15]}" \
+        "run 100 us"
+
+$(QUESTA)/wave.do: makefile
+	@echo "Creating "$@ > /dev/stderr
+	@echo "" > $@
+	@for CMD in $(DOFILE); \
+	do \
+	    echo $$CMD >> $@; \
+	done
+
+#
+#	vlib $(QUESTA)/work
+#	vmap
+#./$(QUESTA)/work work
+#	+define+XILINX\
+#
+
+questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(SSRAM_DAT) makefile $(QUESTA)/wave.do
+	vlib work
+	vlog $(SIM_FILES) $(RTL_FILES) \
+	+define+SSRAM_DAT=\"$(TESTBENCH)/$(DIAG).dat\" \
+	+define+CROM_DAT=\"$(CROM_DAT)\" \
+	+define+DROM_DAT=\"$(DROM_DAT)\" \
+	+define+SDSIM_DSK=\"$(SIM_DISK)\" \
+	$(subst -D ,+define+,$(SIM_ARGS) $(SYN_ARGS))
+	echo testbench -novopt -do $(QUESTA)/wave.do
+	cmd /c "vsim testbench -novopt -do $(QUESTA)/wave.do"
+
+#
+# Vivado
+#
+
+VIVADO_EXE = /cygdrive/c/Xilinx/Vivado/2015.4/bin/vivado
+
+vivado: $(SSRAM_DAT)
+	$(VIVADO_EXE) -help
 
 #
 # xst
@@ -1107,7 +1218,7 @@ reload: $(ISE)/$(PROJECT)_impact.cmd
 # TRCE
 #
 
-trce : 
+trce :
 	$(TRCE) -v -tsi asdf.tsi $(ISE)/$(PROJECT).ncd
 
 
