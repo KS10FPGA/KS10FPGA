@@ -62,7 +62,7 @@ FILES := \
 	startup.o \
 	stdio.o \
 	taskutil.o \
-	uart.o 
+	uart.o
 
 HEADERS := \
 	align.hpp \
@@ -137,7 +137,7 @@ load: $(TARGET).bin $(OPENOCD_CFG)
 #
 
 reset: $(OPENOCD_CFG)
-	-$(OPENOCD) -f $(OPENOCD_CFG) -c "reset" -c "shutdown"
+	-$(OPENOCD) -f $(OPENOCD_CFG) -c "reset_device ()"
 
 clean:
 	rm -f *.elf
