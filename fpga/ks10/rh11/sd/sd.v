@@ -139,62 +139,64 @@ module SD (
                     stateREAD15   = 38,
                     stateREAD16   = 39,
                     stateREAD17   = 40,
+                    stateREAD18   = 41,
+                    stateREAD19   = 42,
                     // Write header states
-                    stateWRITEH00 = 41,
-                    stateWRITEH01 = 42,
-                    stateWRITEH02 = 43,
-                    stateWRITEH03 = 44,
+                    stateWRITEH00 = 43,
+                    stateWRITEH01 = 44,
+                    stateWRITEH02 = 45,
+                    stateWRITEH03 = 46,
                     // Write States
-                    stateWRITE00  = 45,
-                    stateWRITE01  = 46,
-                    stateWRITE02  = 47,
-                    stateWRITE03  = 48,
-                    stateWRITE04  = 49,
-                    stateWRITE05  = 50,
-                    stateWRITE06  = 51,
-                    stateWRITE07  = 52,
-                    stateWRITE08  = 53,
-                    stateWRITE09  = 54,
-                    stateWRITE10  = 55,
-                    stateWRITE11  = 56,
-                    stateWRITE12  = 57,
-                    stateWRITE13  = 58,
-                    stateWRITE14  = 59,
-                    stateWRITE15  = 60,
-                    stateWRITE16  = 61,
-                    stateWRITE17  = 62,
-                    stateWRITE18  = 63,
-                    stateWRITE19  = 64,
-                    stateWRITE20  = 65,
-                    stateWRITE21  = 66,
-                    stateWRITE22  = 67,
-                    stateWRITE23  = 68,
-                    stateWRITE24  = 69,
-                    stateWRITE25  = 70,
+                    stateWRITE00  = 47,
+                    stateWRITE01  = 48,
+                    stateWRITE02  = 49,
+                    stateWRITE03  = 50,
+                    stateWRITE04  = 51,
+                    stateWRITE05  = 52,
+                    stateWRITE06  = 53,
+                    stateWRITE07  = 54,
+                    stateWRITE08  = 55,
+                    stateWRITE09  = 56,
+                    stateWRITE10  = 57,
+                    stateWRITE11  = 58,
+                    stateWRITE12  = 59,
+                    stateWRITE13  = 60,
+                    stateWRITE14  = 61,
+                    stateWRITE15  = 62,
+                    stateWRITE16  = 63,
+                    stateWRITE17  = 64,
+                    stateWRITE18  = 65,
+                    stateWRITE19  = 66,
+                    stateWRITE20  = 67,
+                    stateWRITE21  = 68,
+                    stateWRITE22  = 69,
+                    stateWRITE23  = 70,
+                    stateWRITE24  = 71,
+                    stateWRITE25  = 72,
                     // Write Check Header States
-                    stateWRCHKH00 = 71,
-                    stateWRCHKH01 = 72,
-                    stateWRCHKH02 = 73,
-                    stateWRCHKH03 = 74,
+                    stateWRCHKH00 = 73,
+                    stateWRCHKH01 = 74,
+                    stateWRCHKH02 = 75,
+                    stateWRCHKH03 = 76,
                     // Write Check States
-                    stateWRCHK00  = 75,
-                    stateWRCHK01  = 76,
-                    stateWRCHK02  = 77,
-                    stateWRCHK03  = 78,
-                    stateWRCHK04  = 79,
-                    stateWRCHK05  = 80,
-                    stateWRCHK06  = 81,
-                    stateWRCHK07  = 82,
-                    stateWRCHK08  = 83,
-                    stateWRCHK09  = 84,
-                    stateWRCHK10  = 85,
-                    stateWRCHK11  = 86,
-                    stateWRCHK12  = 87,
-                    stateWRCHK13  = 88,
-                    stateWRCHK14  = 89,
-                    stateWRCHK15  = 90,
-                    stateWRCHK16  = 91,
-                    stateWRCHK17  = 92,
+                    stateWRCHK00  = 77,
+                    stateWRCHK01  = 78,
+                    stateWRCHK02  = 79,
+                    stateWRCHK03  = 80,
+                    stateWRCHK04  = 81,
+                    stateWRCHK05  = 82,
+                    stateWRCHK06  = 83,
+                    stateWRCHK07  = 84,
+                    stateWRCHK08  = 85,
+                    stateWRCHK09  = 86,
+                    stateWRCHK10  = 87,
+                    stateWRCHK11  = 88,
+                    stateWRCHK12  = 89,
+                    stateWRCHK13  = 90,
+                    stateWRCHK14  = 91,
+                    stateWRCHK15  = 92,
+                    stateWRCHK16  = 93,
+                    stateWRCHK17  = 94,
                     // Other States
                     stateFINI     = 122,
                     stateACKRP    = 123,
@@ -1544,14 +1546,40 @@ module SD (
                  //
                  // stateREAD15
                  //  Read and discard second byte of CRC
-                 //  Determine if we are done reading from the device.
+                 //  Negate Chip Select
                  //
 
                  stateREAD15:
                    begin
                       if (spiDONE)
                         begin
-                           spiOP <= `spiCSH;
+                           spiOP  <= `spiCSH;
+                           spiTXD <= 8'hff;
+                           state  <= stateREAD16;
+                        end
+                   end
+
+                 //
+                 // stateREAD16
+                 //  Send idle character with Chip Select negated
+                 //
+
+                 stateREAD16:
+                   begin
+                      spiOP  <= `spiTR;
+                      spiTXD <= 8'hff;
+                      state  <= stateREAD17;
+                   end
+
+                 //
+                 // stateREAD17
+                 //  Determine if we are done reading from the device.
+                 //
+
+                 stateREAD17:
+                   begin
+                      if (spiDONE)
+                        begin
                            if (sectCNT & (rhWC == 0))
                              begin
                                 sdINCSECT <= sectCNT;
@@ -1564,29 +1592,29 @@ module SD (
                                 sdINCSECT <= sectCNT;
                                 sectCNT   <= !sectCNT;
                                 sectADDR  <= sectADDR + 1'b1;
-                                state     <= stateREAD16;
+                                state     <= stateREAD18;
                              end
                         end
                    end
 
                  //
-                 // stateREAD16
+                 // stateREAD18
                  //
                  // Negate sdINCSECT
                  //
 
-                 stateREAD16:
+                 stateREAD18:
                    begin
-                      state <= stateREAD17;
+                      state <= stateREAD19;
                    end
 
                  //
-                 // stateREAD17
+                 // stateREAD20
                  //
                  // Abort if RPXX has errors.   Specifically RPER1[AOE].
                  //
 
-                 stateREAD17:
+                 stateREAD19:
                    begin
                       if (rpSDREQ[sdSCAN])
                         state <= stateREAD00;
