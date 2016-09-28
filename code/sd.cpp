@@ -548,7 +548,7 @@ bool sdInitialize(void) {
                                "SDHC: OEM ID           : %c%c\n"
                                "SDHC: Product Name     : %c%c%c%c%c\n"
                                "SDHC: Product Revision : %d.%d\n"
-                               "SDNC: Product SN       : %02x%02x%02x%02x\n"
+                               "SDHC: Product SN       : %02x%02x%02x%02x\n"
                                "SDHC: Manufacture Date : %d/%d\n",
                                buf[0],
                                buf[1], buf[2],
