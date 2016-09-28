@@ -39,7 +39,7 @@
 `timescale 1ns/1ps
 
 `ifndef SDSIM_DSK
- `define SDSIM_DSK "./sdsim1.dsk"
+ `define SDSIM_DSK "./sdsim.dsk"
 `endif
 
 `define SEEK_SET 0
