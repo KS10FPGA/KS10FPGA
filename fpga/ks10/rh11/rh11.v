@@ -71,6 +71,7 @@ module RH11 (
       output wire         rh11MOSI,             // RH11 Data Out
       output wire         rh11SCLK,             // RH11 Clock
       output wire         rh11CS,               // RH11 Chip Select
+      output wire [ 7: 0] rh11LEDS,             // RH11 Status LEDs
       output wire [ 0:63] rh11DEBUG,            // RH11 Debug Output
       // Reset
       input  wire         devRESET,             // IO Bus Bridge Reset
@@ -642,7 +643,8 @@ module RH11 (
               .rpSDOP   (rpSDOP[i]),
               .rpSDREQ  (rpSDREQ[i]),
               .rpSDACK  (rpSDACK[i]),
-              .rpSDLSA  (rpSDLSA[i])
+              .rpSDLSA  (rpSDLSA[i]),
+              .rpACTIVE (rh11LEDS[i])
            );
         end
    endgenerate

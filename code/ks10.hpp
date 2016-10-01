@@ -100,8 +100,8 @@ class ks10_t {
             uint8_t res1;                               //!< Reserved
             uint8_t rdcnt;                              //!< Read count
             uint8_t wrcnt;                              //!< Write count
-            uint8_t val;                                //!< Error value
-            uint8_t err;                                //!< Error number (MSB)
+            uint8_t errval;                             //!< Error value
+            uint8_t errnum;                             //!< Error number
             uint8_t state;                              //!< Controller state
         };
 

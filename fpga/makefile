@@ -313,8 +313,8 @@ RTL_FILES := \
 	ks10/rh11/rhcs2.v \
 	ks10/rh11/rpxx/rpaddr.v \
 	ks10/rh11/rpxx/rpcs1.v \
-	ks10/rh11/rpxx/rpda.v \
 	ks10/rh11/rpxx/rpctrl.v \
+	ks10/rh11/rpxx/rpda.v \
 	ks10/rh11/rpxx/rpdc.v \
 	ks10/rh11/rpxx/rpds.v \
 	ks10/rh11/rpxx/rper1.v \
@@ -1429,9 +1429,9 @@ cloc :
 
 check :
 	@echo "Tabs in:"
-	@-find ks10 -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '\t'
+	@-find ks10 esm_top -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '\t'
 	@echo "Trailing white space in:"
-	@-find ks10 -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '[ ]+$$'
+	@-find ks10 esm_top -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '[ ]+$$'
 	@echo "FIXMEs in:"
-	@-find ks10 -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -i 'fixme'
+	@-find ks10 esm_top -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -i 'fixme'
 

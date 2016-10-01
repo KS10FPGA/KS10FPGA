@@ -91,7 +91,8 @@ module RPXX (
       output wire [ 2: 0] rpSDOP,               // SD Operation
       output wire         rpSDREQ,              // SD Request
       input  wire         rpSDACK,              // SD Complete Acknowledge
-      output wire [20: 0] rpSDLSA               // SD Linear Sector Address
+      output wire [20: 0] rpSDLSA,              // SD Linear Sector Address
+      output wire         rpACTIVE              // RP is active
    );
 
    //
@@ -712,7 +713,8 @@ module RPXX (
       .rpADRBUSY   (rpADRBUSY),
       .rpSDOP      (rpSDOP),
       .rpSDREQ     (rpSDREQ),
-      .rpSDACK     (rpSDACK)
+      .rpSDACK     (rpSDACK),
+      .rpACTIVE    (rpACTIVE)
    );
 
    //

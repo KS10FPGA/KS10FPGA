@@ -187,6 +187,19 @@ NET "rh11MOSI"          LOC = "A25"  | IOSTANDARD = LVCMOS33;
 NET "rh11SCLK"          LOC = "C26"  | IOSTANDARD = LVCMOS33;
 
 #
+# Disk Activity LEDs
+#
+
+NET "rh11LEDS_N<0>"     LOC = "AE1"  | IOSTANDARD = LVCMOS33;   // VB2
+NET "rh11LEDS_N<1>"     LOC = "AD1"  | IOSTANDARD = LVCMOS33;   // VB3
+NET "rh11LEDS_N<2>"     LOC = "AC1"  | IOSTANDARD = LVCMOS33;   // VB4
+NET "rh11LEDS_N<3>"     LOC = "AA2"  | IOSTANDARD = LVCMOS33;   // VB5
+NET "rh11LEDS_N<4>"     LOC = "Y1"   | IOSTANDARD = LVCMOS33;   // VB6
+NET "rh11LEDS_N<5>"     LOC = "V3"   | IOSTANDARD = LVCMOS33;   // VB7
+NET "rh11LEDS_N<6>"     LOC = "U3"   | IOSTANDARD = LVCMOS33;   // VB8
+NET "rh11LEDS_N<7>"     LOC = "U4"   | IOSTANDARD = LVCMOS33;   // VB9
+
+#
 # Testpoints
 #
 
@@ -210,14 +223,6 @@ NET "test<16>"          LOC = "R3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRI
 NET "test<17>"          LOC = "R4"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB12
 NET "test<18>"          LOC = "T4"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB11
 NET "test<19>"          LOC = "T3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB10
-NET "test<20>"          LOC = "U4"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB9
-NET "test<21>"          LOC = "U3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB8
-NET "test<22>"          LOC = "V3"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB7
-NET "test<23>"          LOC = "Y1"   | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB6
-NET "test<24>"          LOC = "AA2"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB5
-NET "test<25>"          LOC = "AC1"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB4
-NET "test<26>"          LOC = "AD1"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB3
-NET "test<27>"          LOC = "AE1"  | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 4;   // VB2
 
 #
 # SSRAM Timing

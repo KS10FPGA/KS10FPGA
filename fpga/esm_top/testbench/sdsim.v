@@ -211,7 +211,7 @@
                          position = sector * 512;
                          $display("[%11.3f] KS10: SDSIM - Seek to SD Sector 0x%08x for write. (Byte = %d).\n",
                                   $time/1.0e3, sector, position);
-                         
+
                          status = $fseek(fd, position, `SEEK_SET);
                          if (status == `EOF)
                            begin

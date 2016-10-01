@@ -118,7 +118,8 @@ module RPCTRL (
       input  wire         rpADRBUSY,            // Address calculation busy
       output reg  [ 2: 0] rpSDOP,               // SD operation
       output wire         rpSDREQ,              // SD request
-      input  wire         rpSDACK               // SD acknowledge
+      input  wire         rpSDACK,              // SD acknowledge
+      output reg          rpACTIVE              // Disk is active
    );
 
    //
@@ -871,7 +872,7 @@ module RPCTRL (
                                 // The search completes when a diagnostic index
                                 // pulse is detected.
                                 //
-                                // The dianostics only do Read Header and Write
+                                // The diagnostics only do Read Header and Write
                                 // Header operations.  The others probably don't
                                 // work.
                                 //
@@ -1291,6 +1292,45 @@ module RPCTRL (
                       state <= stateIDLE;
 
                   endcase
+               end
+          end
+     end
+
+   //
+   // Activity Timer
+   //
+
+   reg [31:0] acttimer;
+   localparam ACTTIME = 0.01 * `CLKFRQ;          // 0.01 seconds
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          begin
+             rpACTIVE <= 0;
+             acttimer <= 0;
+          end
+        else
+          begin
+             if ((go_cmd & (rpFUN == `funSEEK  )) |
+                 (go_cmd & (rpFUN == `funRECAL )) |
+                 (go_cmd & (rpFUN == `funSEARCH)) |
+                 (go_cmd & (rpFUN == `funWRCHK )) |
+                 (go_cmd & (rpFUN == `funWRCHKH)) |
+                 (go_cmd & (rpFUN == `funWRITE )) |
+                 (go_cmd & (rpFUN == `funWRITEH)) |
+                 (go_cmd & (rpFUN == `funREAD  )) |
+                 (go_cmd & (rpFUN == `funREADH )))
+               begin
+                  rpACTIVE <= 1;
+                  acttimer <= $rtoi(ACTTIME);
+               end
+             else
+               begin
+                  if (acttimer == 0)
+                    rpACTIVE <= 0;
+                  else
+                    acttimer <= acttimer - 1'b1;
                end
           end
      end

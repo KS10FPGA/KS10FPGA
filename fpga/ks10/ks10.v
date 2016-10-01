@@ -62,7 +62,8 @@ module KS10 (
       input  wire         rh11MISO,     // RH11 Data In
       output wire         rh11MOSI,     // RH11 Data Out
       output wire         rh11SCLK,     // RH11 Clock
-      output wire         rh11CS,       // SD11 Chip Select
+      output wire         rh11CS,       // RH11 Chip Select
+      output wire [ 7: 0] rh11LEDS,     // RH11 LEDs
       // Console Interfaces
       inout  wire [15: 0] conDATA,      // Console Data Bus
       input  wire [ 7: 1] conADDR,      // Console Address Bus
@@ -82,7 +83,7 @@ module KS10 (
       output wire [ 0:19] ssramADDR,    // SSRAM Address Bus
       inout  wire [ 0:35] ssramDATA,    // SSRAM Data Bus
       output wire         haltLED,      // Halt LED
-      output wire [ 0:27] test          // Test signals
+      output wire [ 0:19] test          // Test signals
    );
 
    //
@@ -441,6 +442,7 @@ module KS10 (
       .rh11MOSI         (rh11MOSI),
       .rh11SCLK         (rh11SCLK),
       .rh11CS           (rh11CS),
+      .rh11LEDS         (rh11LEDS),
       .rh11DEBUG        (rh11DEBUG),
       // Reset
       .devRESET         (ctl1RESET),

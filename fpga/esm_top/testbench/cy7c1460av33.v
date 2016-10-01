@@ -147,9 +147,9 @@ module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
    reg         oetri;           // register set by oe which sets the tristate
    reg         enable;          // register to make the ram enabled when equal to 1
    reg  [19:0] addreg;          // register to hold the input address
-   reg  [35:0] pipereg;  	// register for the output data
+   reg  [35:0] pipereg;         // register for the output data
    reg  [35:0] mem [0:`no_words]; // RAM array
-   reg  [35:0] writeword;	// temporary holding register for the write data
+   reg  [35:0] writeword;       // temporary holding register for the write data
 
    reg         burstinit;       // register to hold a[0] for burst type
    reg  [19:0] i;               // temporary register used to write to all mem locs.

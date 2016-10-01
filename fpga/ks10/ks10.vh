@@ -46,7 +46,7 @@
 //
 
 `define MAJOR_VER "00"                  // Two ASCII characters
-`define MINOR_VER "10"                  // Two ASCII characters
+`define MINOR_VER "11"                  // Two ASCII characters
 
 //
 // CPU Clock Frequency

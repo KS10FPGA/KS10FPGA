@@ -71,7 +71,7 @@ DSRPA.temp.DAT : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQ
 
 DSQDA.DAT : $(T10BACKUP) $(DIAGTAPE)
 	$(T10BACKUP) -i -x diagnostics..subsm.sav -f $(DIAGTAPE)
-	mv subsm.sav DSQDA.SAV	
+	mv subsm.sav DSQDA.SAV
 	$(SAV2VERILOG) DSQDA.SAV DSQDA.DAT
 
 DSQDB.DAT : $(T10BACKUP) $(DIAGTAPE)
@@ -107,9 +107,9 @@ DSRPA.PATCH : makefile
 #
 
 DEV   := sdf
-UNIT0 := dskb.rp06
-UNIT1 := dskc.rp06
-UNIT2 := red405a2.rp06
+UNIT0 := dskb.rp06.gz
+UNIT1 := dskc.rp06.gz
+UNIT2 := red405a2.rp06.gz
 
 check :
 	cat /proc/partitions
@@ -134,9 +134,9 @@ rp06_disk : makefile $(UNIT0) $(UNIT1) $(UNIT2)
 	@read -r -p "Are you sure you want to do that? [YES/NO] " prompt; \
 	if [[ $$prompt == "YES" || $$prompt == "yes" ]]; then \
 		echo "This will take a while.  Please be patient."; \
-		dd if=$(UNIT0) of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G; \
-		dd if=$(UNIT1) of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G; \
-		dd if=$(UNIT2) of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G; \
+		zcat $(UNIT0) | dd of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G; \
+		zcat $(UNIT1) | dd of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G; \
+		zcat $(UNIT2) | dd of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G; \
         else \
 		echo "You must answer YES to write to SD Card!"; \
         fi
@@ -146,7 +146,6 @@ rp06_disk : makefile $(UNIT0) $(UNIT1) $(UNIT2)
 #
 
 sdsim.dsk : makefile $(UNIT2)
-	dd if=$(UNIT2) of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G
-
-#	dd if=$(UNIT0) of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
-#	dd if=$(UNIT1) of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G
+	zcat $(UNIT0) | dd of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G
+	zcat $(UNIT0) | dd of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
+	zcat $(UNIT0) | dd of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G

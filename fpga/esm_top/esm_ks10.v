@@ -41,7 +41,7 @@
 
 `default_nettype none
 `timescale 1ns/1ps
-  
+
 module ESM_KS10 (
       // Clock/Reset
       input  wire         RESET_N,      // Reset
@@ -57,6 +57,7 @@ module ESM_KS10 (
       output wire         rh11MOSI,     // RH11 Data Out
       output wire         rh11SCLK,     // RH11 Clock
       output wire         rh11CS,       // RH11 Chip Select
+      output wire [ 7: 0] rh11LEDS_N,   // RH11 Status LEDS
       // Console Microcontroller Interfaces
       inout  wire [15: 0] conDATA,      // Console Data Bus
       input  wire [ 7: 1] conADDR,      // Console Address Bus
@@ -76,16 +77,22 @@ module ESM_KS10 (
       output wire [ 0:19] ssramADDR,    // SSRAM Address Bus
       inout  wire [ 0:35] ssramDATA,    // SSRAM Data Bus
       output wire         haltLED,      // Halt LED
-      output wire [ 0:27] test          // Test signals
+      output wire [ 0:19] test          // Test signals
    );
 
    //
-   // DZ-11 Interfaces
+   // DZ11 Interfaces
    //
 
-   wire [7:0] dz11TXD;                	// DZ11 TXD
-   wire [7:0] dz11RXD;                	// DZ11 RXD
-   wire dz11LOOP;			// DZ11 Loopback
+   wire [7:0] dz11TXD;                  // DZ11 TXD
+   wire [7:0] dz11RXD;                  // DZ11 RXD
+   wire dz11LOOP;                       // DZ11 Loopback
+
+   //
+   // RH11 Interfaces
+   //
+
+   wire [7:0] rh11LEDS;                 // Activity LEDs
 
    //
    // KS10 Processor
@@ -104,6 +111,7 @@ module ESM_KS10 (
       .rh11MOSI         (rh11MOSI),
       .rh11SCLK         (rh11SCLK),
       .rh11CS           (rh11CS),
+      .rh11LEDS         (rh11LEDS),
       // Console
       .conADDR          (conADDR),
       .conDATA          (conDATA ),
@@ -126,7 +134,7 @@ module ESM_KS10 (
       .haltLED          (haltLED)
    );
 
-   //   
+   //
    // TXD is an output from the FT4232.  RXD is an input to the FT4232.
    // Therefore TXD and RXD must get twisted here.
    //
@@ -135,12 +143,18 @@ module ESM_KS10 (
 
    assign ttyRXD[1:0]  = dz11TXD[1:0];
    assign dz11RXD[7:0] = dz11LOOP ? dz11TXD[7:0] : {dz11TXD[7:2], ttyTXD[1:0]};
-   
+
    //
    // MR needs to be an input for the system to work.  We assign it to an
    // output so that the tool doesn't whine about the unused input.
    //
 
    assign MR = !MR_N;
+
+   //
+   // Negate LEDs.  LEDs are illuminated when the output is low.
+   //
+
+   assign rh11LEDS_N = ~rh11LEDS;
 
 endmodule

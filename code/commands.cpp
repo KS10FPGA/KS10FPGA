@@ -348,19 +348,19 @@ void printRH11Debug(void) {
     ks10_t::rh11debug_t *rh11debug = reinterpret_cast<ks10_t::rh11debug_t *>(&rh11stat);
 
     printf("KS10: RH11 status is 0x%016llx\n"
-           "  State = %d\n"
-           "  Err   = %d\n"
-           "  Val   = %d\n"
-           "  WrCnt = %d\n"
-           "  RdCnt = %d\n"
-           "  Res1  = 0x%02x\n"
-           "  Res2  = 0x%02x\n"
-           "  Res3  = 0x%02x\n"
+           "  State  = %d\n"
+           "  ErrNum = %d\n"
+           "  ErrVal = %d\n"
+           "  WrCnt  = %d\n"
+           "  RdCnt  = %d\n"
+           "  Res1   = 0x%02x\n"
+           "  Res2   = 0x%02x\n"
+           "  Res3   = 0x%02x\n"
            "",
            rh11stat,
            rh11debug->state,
-           rh11debug->err,
-           rh11debug->val,
+           rh11debug->errnum,
+           rh11debug->errval,
            rh11debug->wrcnt,
            rh11debug->rdcnt,
            rh11debug->res1,
