@@ -221,7 +221,7 @@ module RPXX (
    //  M7774/RG4/E78
    //
 
-  wire rpSETILF    = ((!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o12) & `rpCS1_GO(rpDATAI)) |
+   wire rpSETILF   = ((!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o12) & `rpCS1_GO(rpDATAI)) |
                       (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o13) & `rpCS1_GO(rpDATAI)) |
                       (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o15) & `rpCS1_GO(rpDATAI)) |
                       (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o16) & `rpCS1_GO(rpDATAI)) |

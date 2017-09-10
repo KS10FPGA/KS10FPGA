@@ -900,7 +900,7 @@ module RPCTRL (
                                 //
                                 // If accurate search is required for diagnostics
                                 // (see DSRPA TEST-302), the search completes
-                                // when the sector under the head (visbile in
+                                // when the sector under the head (visible in
                                 // the RPLA register) is the same as the desired
                                 // sector.  This is slow but is very accurate.
                                 //

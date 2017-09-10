@@ -6,7 +6,7 @@
 //    Pager
 //
 // Details
-//   The page table translates virtual addresses/page numbers to phyical
+//   The page table translates virtual addresses/page numbers to physical
 //   addresses/page numbers.  There are 512 virtual pages which map to 2048
 //   pages.
 //
