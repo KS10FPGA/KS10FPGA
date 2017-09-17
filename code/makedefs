@@ -43,6 +43,7 @@ PART    := LM3S9B96
 CFLAGS := \
 	-std=c99 \
 	-Wall \
+	-Werror \
 	-DPART_${PART} \
 	-DTARGET_IS_TEMPEST_RC3 \
 	-mthumb \
@@ -68,6 +69,7 @@ CPPFLAGS := \
 	-std=gnu++11 \
 	-W \
 	-Wall \
+	-Werror \
 	-DPART_${PART} \
 	-DTARGET_IS_TEMPEST_RC3 \
 	-mthumb \

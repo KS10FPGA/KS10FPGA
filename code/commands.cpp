@@ -1341,8 +1341,6 @@ static void cmdGO(int argc, char *argv[]) {
         ks10_t::writeMem(ks10_t::rhbase_addr, rhbase);
         ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
 
-#if 0
-
         //
         // Load DSQDA diagnostic subroutines (SUBSM)
         //
@@ -1360,8 +1358,6 @@ static void cmdGO(int argc, char *argv[]) {
         if (!loadCode("diag/smddt.sav")) {
             printf("Failed to load DIAG/SMDDT.SAV\n");
         }
-
-#endif
 
         //
         // Load DSQDC the diagnostic monitor (SMMON)
@@ -1382,8 +1378,6 @@ static void cmdGO(int argc, char *argv[]) {
         ks10_t::writeMem(ks10_t::rhbase_addr, rhbase);
         ks10_t::writeMem(ks10_t::rhunit_addr, rhunit);
 
-#if 0
-
         //
         // Load DSQDA diagnostic subroutines (SUBSM)
         //
@@ -1402,7 +1396,6 @@ static void cmdGO(int argc, char *argv[]) {
             printf("Failed to load DIAG/SMDDT.SAV\n");
         }
 
-#endif
         //
         // Load the diagnostic monitor into memory
         //
@@ -1437,6 +1430,7 @@ static void cmdGO(int argc, char *argv[]) {
         //
 
         if (strnicmp("diag/dsdza.sav", argv[1], 10) == 0) {
+
             ks10_t::writeMem(035650, 60000);    // 50
             ks10_t::writeMem(035651, 60000);    // 75
             ks10_t::writeMem(035652, 60000);    // 110
@@ -1454,6 +1448,8 @@ static void cmdGO(int argc, char *argv[]) {
             ks10_t::writeMem(035666, 60000);    // 9600
             ks10_t::writeMem(035667, 60000);    // 19.2K
             printf("Patched DSDZA diagnostic.\n");
+
+
         }
 
     } else {

@@ -41,6 +41,7 @@
 #include "uba.hpp"
 #include "rh11.hpp"
 #include "debug.hpp"
+#include "vt100.hpp"
 #include "commands.hpp"
 #include "SafeRTOS/SafeRTOS_API.h"
 
@@ -90,7 +91,7 @@ bool rh11_t::wait(bool verbose) {
     if (!cs1_read() & cs1_rdy) {
         success = false;
         if (verbose) {
-            printf("Disk should be busy.\n");
+            printf("KS10: Error: Disk should be busy.\n");
         }
     }
 
@@ -112,7 +113,7 @@ bool rh11_t::wait(bool verbose) {
     if (!cs1_read() & cs1_rdy) {
         success = false;
         if (verbose) {
-            printf("Disk Timeout.\n");
+            printf("KS10: Error: Disk Timeout.\n");
         }
     }
 
@@ -124,7 +125,7 @@ bool rh11_t::wait(bool verbose) {
     if (cs1_read() & cs1_sc) {
         success = false;
         if (verbose) {
-            printf("Disk error.  CS1 = %012llo\n", cs1_read());
+            printf("KS10: Error: CS1 = %012llo\n", cs1_read());
             printf("             CS2 = %012llo\n", cs2_read());
             printf("             DS  = %012llo\n", ds_read());
         }
@@ -151,7 +152,7 @@ bool rh11_t::wait(bool verbose) {
 bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
 
 #if 0
-    printf("Readblock: vaddr=%06llo, daddr=%012llo\n", vaddr, daddr);
+    printf("KS10: Readblock: vaddr=%06llo, daddr=%012llo\n", vaddr, daddr);
 #endif
 
     //
@@ -197,7 +198,7 @@ bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
     //
 
     if (cs1_read() & cs1_sc) {
-        printf("Disk error reading boot sector\n");
+        printf("KS10: Disk error reading boot sector\n");
         return false;
     }
 
@@ -313,7 +314,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
     // Read the Home Block
     //
 
-    debug_printf(debug, "Reading Home Block.\n");
+    debug_printf(debug, "KS10: Reading Home Block.\n");
     bool success = readBlock(vaddr, daddr);
     if (success) {
         if (isHomBlock(paddr)) {
@@ -330,7 +331,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                 // Read the FE File Page (a.k.a. Page of Pointers).
                 //
 
-                debug_printf(debug, "Reading FE File Page.\n");
+                debug_printf(debug, "KS10: Reading FE File Page.\n");
                 success = readBlock(vaddr, daddr);
                 if (success) {
 
@@ -346,46 +347,46 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                         // Read the Monitor Pre-boot.
                         //
 
-                        debug_printf(debug, "Reading Monitor Pre-Boot Page.\n");
+                        debug_printf(debug, "KS10: Reading Monitor Pre-Boot Page.\n");
                         success = readBlock(vaddr, daddr);
                         if (success) {
 #if 0
                             for (int i = 0; i < 020; i++) {
-                                printf("data[%o] = %012llo\n", 01000 + i, ks10_t::readMem(paddr + i));
+                                printf("KS10: data[%o] = %012llo\n", 01000 + i, ks10_t::readMem(paddr + i));
                             }
 #endif
                             if (ks10_t::readMem(paddr) != 0) {
-                                debug_printf(debug, "Monitor Pre-Boot read successfully.\n");
+                                debug_printf(debug, "KS10: Monitor Pre-Boot read successfully.\n");
                                 ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
                                 ks10_t::begin();
                                 consoleOutput();
                                 return true;
                             } else {
-                                printf("Monitor Pre-Boot is invalid.\n");
+                                printf("KS10: Monitor Pre-Boot is invalid.\n");
                                 return false;
                             }
                         } else {
-                            printf("Unable to read Monitor Pre-Boot\n");
+                            printf("KS10: Unable to read Monitor Pre-Boot\n");
                             return false;
                         }
                     } else {
-                        printf("Invalid Monitor Pre-Boot disk address.\n");
+                        printf("KS10: Invalid Monitor Pre-Boot disk address.\n");
                         return false;
                     }
                 } else {
-                    printf("Unreadable FE File Page.\n");
+                    printf("KS10: Unreadable FE File Page.\n");
                     return false;
                 }
             } else {
-                printf("Home Block has invalid address of FE File Page.\n");
+                printf("KS10: Home Block has invalid address of FE File Page.\n");
                 return false;
             }
         } else {
-            printf("Home Block not found.\n");
+            printf("KS10: Home Block not found.\n");
             return false;
         }
     } else {
-        printf("Home Block is unreadable.\n");
+        printf("KS10: Home Block is unreadable.\n");
         return false;
     }
 }
@@ -426,31 +427,31 @@ void rh11_t::testFIFO(void) {
             case 0:
                 if (!cs2 & cs2_ir) {
                     fail = true;
-                    printf("CS2[IR] should be set after reset\n");
+                    printf("KS10: CS2[IR] should be set after reset\n");
                 }
                 if (cs2 & cs2_or) {
                     fail = true;
-                    printf("CS2[OR] Should be clear after reset\n");
+                    printf("KS10: CS2[OR] Should be clear after reset\n");
                 }
                 break;
             case 1 ... 65:
                 if (!cs2 & cs2_ir) {
                     fail = true;
-                    printf("CS2[IR] should be set after %d entries.\n", i);
+                    printf("KS10: CS2[IR] should be set after %d entries.\n", i);
                 }
                 if (!cs2 & cs2_or) {
                     fail = true;
-                    printf("CS2[OR] Should be set after %d entries.\n", i);
+                    printf("KS10: CS2[OR] Should be set after %d entries.\n", i);
                 }
                 break;
             case 66 ... 75:
                 if (cs2 & cs2_ir) {
                     fail = true;
-                    printf("CS2[IR] should be clear after %d entries.\n", i);
+                    printf("KS10: CS2[IR] should be clear after %d entries.\n", i);
                 }
                 if (!cs2 & cs2_or) {
                     fail = true;
-                    printf("CS2[OR] Should be set after %d entries.\n", i);
+                    printf("KS10: CS2[OR] Should be set after %d entries.\n", i);
                 }
                 break;
         }
@@ -483,16 +484,16 @@ void rh11_t::testFIFO(void) {
             case 0 ... 65:
                 if (rhdb != (0xff00 + i)) {
                     fail = true;
-                    printf("Data from FIFO is incorrect on word %d.\n"
-                           "Expected 0x%04x.  Received 0x%04llx.\n",
+                    printf("KS10: Data from FIFO is incorrect on word %d.\n"
+                           "      Expected 0x%04x.  Received 0x%04llx.\n",
                            i, 0xff00 + i, rhdb);
                 }
                 break;
             case 66 ... 75:
                 if (rhdb != 0) {
                     fail = true;
-                    printf("Data from FIFO is incorrect on word %d.\n"
-                           "Expected 0x%04x.  Received 0x%04llx.\n",
+                    printf("KS10: Data from FIFO is incorrect on word %d.\n"
+                           "      Expected 0x%04x.  Received 0x%04llx.\n",
                            i, 0, rhdb);
                 }
         }
@@ -502,7 +503,7 @@ void rh11_t::testFIFO(void) {
     // Print results
     //
 
-    printf("RHDB FIFO test %s.\n", fail ? "failed" : "passed");
+    printf("KS10: RHDB FIFO test %s.\n", fail ? "failed" : "passed");
 
 }
 
@@ -574,79 +575,79 @@ void rh11_t::testRPLA20(ks10_t::data_t unit) {
             case 0 ... 127:
                 if (rpla != 0x0000) {
                     fail = true;
-                    printf("RPLA SEC should be 0, EXT should be 00 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 0, EXT should be 00 after %3d clocks\n", i);
                 }
                 break;
             case 128 ... 255:
                 if (rpla != 0x0010) {
                     fail = true;
-                    printf("RPLA SEC should be 0, EXT should be 20 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 0, EXT should be 20 after %3d clocks\n", i);
                 }
                 break;
             case 256 ... 511:
                 if (rpla != 0x0020) {
                     fail = true;
-                    printf("RPLA SEC should be 0, EXT should be 40 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 0, EXT should be 40 after %3d clocks\n", i);
                 }
                 break;
             case 512 ... 671:
                 if (rpla != 0x0030) {
                     fail = true;
-                    printf("RPLA SEC should be 0, EXT should be 60 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 0, EXT should be 60 after %3d clocks\n", i);
                 }
                 break;
             case 672 ... 799:
                 if (rpla != 0x0040) {
                     fail = true;
-                    printf("RPLA SEC should be 1, EXT should be 00 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 1, EXT should be 00 after %3d clocks\n", i);
                 }
                 break;
             case 800 ... 927:
                 if (rpla != 0x0050) {
                     fail = true;
-                    printf("RPLA SEC should be 1, EXT should be 20 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 1, EXT should be 20 after %3d clocks\n", i);
                 }
                 break;
             case 928 ... 1183:
                 if (rpla != 0x0060) {
                     fail = true;
-                    printf("RPLA SEC should be 1, EXT should be 40 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 1, EXT should be 40 after %3d clocks\n", i);
                 }
                 break;
             case 12608 ... 12767:
                 if (rpla != 0x04b0) {
                     fail = true;
-                    printf("RPLA SEC should be 18, EXT should be 60 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 18, EXT should be 60 after %3d clocks\n", i);
                 }
                 break;
             case 12768 ... 12895:
                 if (rpla != 0x04c0) {
                     fail = true;
-                    printf("RPLA SEC should be 19, EXT should be 00 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 19, EXT should be 00 after %3d clocks\n", i);
                 }
                 break;
             case 12896 ... 13023:
                 if (rpla != 0x04d0) {
                     fail = true;
-                    printf("RPLA SEC should be 19, EXT should be 20 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 19, EXT should be 20 after %3d clocks\n", i);
                 }
                 break;
             case 13024 ... 13279:
                 if (rpla != 0x04e0) {
                     fail = true;
-                    printf("RPLA SEC should be 19, EXT should be 40 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 19, EXT should be 40 after %3d clocks\n", i);
                 }
                 break;
             case 13280 ... 13439:
                 if (rpla != 0x04f0) {
                     fail = true;
-                    printf("RPLA SEC should be 19, EXT should be 60 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 19, EXT should be 60 after %3d clocks\n", i);
                 }
                 break;
             case 13440 ... 13567:
                 if (rpla != 0x04c0) {
                     fail = true;
-                    printf("RPLA SEC should be 19, EXT should be 00 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 19, EXT should be 00 after %3d clocks\n", i);
                 }
                 break;
 
@@ -666,7 +667,7 @@ void rh11_t::testRPLA20(ks10_t::data_t unit) {
     // Print results
     //
 
-    printf("RPLA/RPMR sector counter test (20 sector mode) %s.\n", fail ? "failed" : "passed");
+    printf("KS10: RPLA/RPMR sector counter test (20 sector mode) %s.\n", fail ? "failed" : "passed");
 }
 
 //!
@@ -737,85 +738,85 @@ void rh11_t::testRPLA22(ks10_t::data_t unit) {
             case 0 ... 127:
                 if (rpla != 0x0000) {
                     fail = true;
-                    printf("RPLA SEC should be 0, EXT should be 00 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 0, EXT should be 00 after %3d clocks\n", i);
                 }
                 break;
             case 128 ... 255:
                 if (rpla != 0x0010) {
                     fail = true;
-                    printf("RPLA SEC should be 0, EXT should be 20 after %3d clocks.\n", i);
+                    printf("KS10: RPLA SEC should be 0, EXT should be 20 after %3d clocks.\n", i);
                 }
                 break;
             case 256 ... 511:
                 if (rpla != 0x0020) {
                     fail = true;
-                    printf("RPLA SEC should be 0, EXT should be 40 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 0, EXT should be 40 after %3d clocks\n", i);
                 }
                 break;
             case 512 ... 608:
                 if (rpla != 0x0030) {
                     fail = true;
-                    printf("RPLA SEC should be 0, EXT should be 60 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 0, EXT should be 60 after %3d clocks\n", i);
                 }
                 break;
             case 609 ... 736:
                 if (rpla != 0x0040) {
                     fail = true;
-                    printf("RPLA SEC should be 1, EXT should be 00 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 1, EXT should be 00 after %3d clocks\n", i);
                 }
                 break;
             case 737 ... 864:
                 if (rpla != 0x0050) {
                     fail = true;
-                    printf("RPLA SEC should be 1, EXT should be 20 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 1, EXT should be 20 after %3d clocks\n", i);
                 }
                 break;
             case 865 ... 1120:
                 if (rpla != 0x0060) {
                     fail = true;
-                    printf("RPLA SEC should be 1, EXT should be 40 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 1, EXT should be 40 after %3d clocks\n", i);
                 }
                 break;
             case 1121 ... 1217:
                 if (rpla != 0x0070) {
                     fail = true;
-                    printf("RPLA SEC should be 1, EXT should be 40 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 1, EXT should be 40 after %3d clocks\n", i);
                 }
                 break;
             case 12692 ... 12788:
                 if (rpla != 0x0530) {
                     fail = true;
-                    printf("RPLA SEC should be 20, EXT should be 60 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 20, EXT should be 60 after %3d clocks\n", i);
                 }
                 break;
             case 12789 ... 12916:
                 if (rpla != 0x0540) {
                     fail = true;
-                    printf("RPLA SEC should be 21, EXT should be 00 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 21, EXT should be 00 after %3d clocks\n", i);
                 }
                 break;
             case 12917 ... 13044:
                 if (rpla != 0x0550) {
                     fail = true;
-                    printf("RPLA SEC should be 21, EXT should be 20 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 21, EXT should be 20 after %3d clocks\n", i);
                 }
                 break;
             case 13045 ... 13300:
                 if (rpla != 0x0560) {
                     fail = true;
-                    printf("RPLA SEC should be 21, EXT should be 40 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 21, EXT should be 40 after %3d clocks\n", i);
                 }
                 break;
             case 13301 ... 13397:
                 if (rpla != 0x0570) {
                     fail = true;
-                    printf("RPLA SEC should be 21, EXT should be 60 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 21, EXT should be 60 after %3d clocks\n", i);
                 }
                 break;
             case 13398 ... 13525:
                 if (rpla != 0x0540) {
                     fail = true;
-                    printf("RPLA SEC should be 21, EXT should be 00 after %3d clocks\n", i);
+                    printf("KS10: RPLA SEC should be 21, EXT should be 00 after %3d clocks\n", i);
                 }
                 break;
         }
@@ -833,7 +834,7 @@ void rh11_t::testRPLA22(ks10_t::data_t unit) {
     // Print results
     //
 
-    printf("RPLA/RPMR sector counter test (22 sector mode) %s.\n", fail ? "failed" : "passed");
+    printf("KS10: RPLA/RPMR sector counter test (22 sector mode) %s.\n", fail ? "failed" : "passed");
 }
 
 //!
@@ -880,7 +881,7 @@ void rh11_t::testInit(ks10_t::data_t unit) {
     //
 
     if (!(ds_read() & ds_mol)) {
-        printf("Disk is off-line.\n");
+        printf("KS10: Disk is off-line.\n");
         return;
     }
 
@@ -897,7 +898,7 @@ void rh11_t::testInit(ks10_t::data_t unit) {
 
     if (!(ds_read() & ds_mol)) {
         fail = true;
-        printf("Disk initialization timeout.\n");
+        printf("KS10: Disk initialization timeout.\n");
     }
 
     //
@@ -906,7 +907,7 @@ void rh11_t::testInit(ks10_t::data_t unit) {
 
     if (ds_read() & ds_vv) {
         fail = true;
-        printf("Volume Valid should not be set after initialization.\n");
+        printf("KS10: Volume Valid should not be set after initialization.\n");
     }
 
     //
@@ -921,14 +922,14 @@ void rh11_t::testInit(ks10_t::data_t unit) {
 
     if (!(ds_read() & ds_vv)) {
         fail = true;
-        printf("Volume Valid should be set after preset command.\n");
+        printf("KS10: Volume Valid should be set after preset command.\n");
     }
 
     //
     // Print results
     //
 
-    printf("Disk initialization test %s.\n", fail ? "failed" : "passed");
+    printf("KS10: Disk initialization test %s.\n", fail ? "failed" : "passed");
 
 }
 
@@ -966,7 +967,7 @@ void rh11_t::testRead(ks10_t::data_t unit) {
     //
 
     if (!(ds_read() & ds_mol)) {
-        printf("Disk is off-line.\n");
+        printf("KS10: Disk is off-line.\n");
         return;
     }
 
@@ -1028,7 +1029,7 @@ void rh11_t::testRead(ks10_t::data_t unit) {
 
     if (cs1_read() & cs1_go) {
         pass = false;
-        printf("CS1[GO] should be negated.\n");
+        printf("KS10: CS1[GO] should be negated.\n");
     }
 
     //
@@ -1037,7 +1038,7 @@ void rh11_t::testRead(ks10_t::data_t unit) {
 
     if ((cs1_read() & 0x003e) != cs1_cmdrd) {
         pass = false;
-        printf("CS1[FUN] should be a read command.\n");
+        printf("KS10: CS1[FUN] should be a read command.\n");
     }
 
     //
@@ -1046,8 +1047,8 @@ void rh11_t::testRead(ks10_t::data_t unit) {
 
     if (wc_read() != 0) {
         pass = false;
-        printf("RH11 Word Count Register (RHWC) should be 0.\n"
-               "RH11 Word Count Register (RHWC) was 0x%04llx\n",
+        printf("KS10: RH11 Word Count Register (RHWC) should be 0.\n"
+               "      RH11 Word Count Register (RHWC) was 0x%04llx\n",
                wc_read());
     }
 
@@ -1057,8 +1058,8 @@ void rh11_t::testRead(ks10_t::data_t unit) {
 
     if (ba_read() != vaddr + 4 * words) {
         pass = false;
-        printf("RH11 Bus Address Register (RHBA) should be %06llo.\n"
-               "RH11 Bus Address Register (RHBA) was %06llo\n",
+        printf("KS10: RH11 Bus Address Register (RHBA) should be %06llo.\n"
+               "      RH11 Bus Address Register (RHBA) was %06llo\n",
                vaddr + 4 * words, ba_read());
     }
 
@@ -1068,37 +1069,27 @@ void rh11_t::testRead(ks10_t::data_t unit) {
 
     if (pattern != ks10_t::readMem(paddr - 1)) {
         pass = false;
-        printf("RH11 Memory immediately before buffer was modified.\n");
+        printf("KS10: RH11 Memory immediately before buffer was modified.\n");
     }
 
     for (unsigned int i = 0; i < words; i++) {
-        printf("RH11 read %d = %012llo\n", i, ks10_t::readMem(paddr + i));
+        printf("KS10: RH11 read %d = %012llo\n", i, ks10_t::readMem(paddr + i));
         if (pattern == ks10_t::readMem(paddr + i)) {
             pass = false;
-            printf("RH11 Memory buffer was not modified by disk read.\n");
+            printf("KS10: RH11 Memory buffer was not modified by disk read.\n");
         }
     }
 
     if (pattern != ks10_t::readMem(paddr + words)) {
         pass = false;
-        printf("RH11 Memory immediately after buffer was modified.\n");
+        printf("KS10: RH11 Memory immediately after buffer was modified.\n");
     }
-
-    //
-    // Check UBACSR
-    //
-
-#if 1
-    uba.csr_write(7);
-    printf("UBACSR is %012llo\n", uba.csr_read());
-    printf("UBAPAG[1] is %012llo\n", uba.pag_read(1));
-#endif
 
     //
     // Print results
     //
 
-    printf("RH11 disk read test %s.\n", pass ? "passed" : "failed");
+    printf("KS10: RH11 disk read test %s.\n", pass ? "passed" : "failed");
 
 }
 
@@ -1136,7 +1127,7 @@ void rh11_t::testWrite(ks10_t::data_t unit) {
     //
 
     if (!(ds_read() & ds_mol)) {
-        printf("Disk is off-line.\n");
+        printf("KS10: Disk is off-line.\n");
         return;
     }
 
@@ -1198,7 +1189,7 @@ void rh11_t::testWrite(ks10_t::data_t unit) {
 
     if (cs1_read() & cs1_go) {
         pass = false;
-        printf("CS1[GO] should be negated.\n");
+        printf("KS10: CS1[GO] should be negated.\n");
     }
 
     //
@@ -1207,7 +1198,7 @@ void rh11_t::testWrite(ks10_t::data_t unit) {
 
     if ((cs1_read() & 0x003e) != cs1_cmdwr) {
         pass = false;
-        printf("CS1[FUN] should be a write command.\n");
+        printf("KS10: CS1[FUN] should be a write command.\n");
     }
 
     //
@@ -1216,8 +1207,8 @@ void rh11_t::testWrite(ks10_t::data_t unit) {
 
     if (wc_read() != 0) {
         pass = false;
-        printf("RH11 Word Count Register (RHWC) should be 0.\n"
-               "RH11 Word Count Register (RHWC) was 0x%04llx\n",
+        printf("KS10: RH11 Word Count Register (RHWC) should be 0.\n"
+               "      RH11 Word Count Register (RHWC) was 0x%04llx\n",
                wc_read());
     }
 
@@ -1227,8 +1218,8 @@ void rh11_t::testWrite(ks10_t::data_t unit) {
 
     if (ba_read() != vaddr + 4 * words) {
         pass = false;
-        printf("RH11 Bus Address Register (RHBA) should be %06llo.\n"
-               "RH11 Bus Address Register (RHBA) was %06llo\n",
+        printf("KS10: RH11 Bus Address Register (RHBA) should be %06llo.\n"
+               "      RH11 Bus Address Register (RHBA) was %06llo\n",
                vaddr + 4 * words, ba_read());
     }
 
@@ -1236,7 +1227,7 @@ void rh11_t::testWrite(ks10_t::data_t unit) {
     // Print results
     //
 
-    printf("RH11 disk write test %s.\n", pass ? "passed" : "failed");
+    printf("KS10: RH11 disk write test %s.\n", pass ? "passed" : "failed");
 
 }
 
@@ -1274,7 +1265,7 @@ void rh11_t::testWrchk(ks10_t::data_t unit) {
     //
 
     if (!(ds_read() & ds_mol)) {
-        printf("Disk is off-line.\n");
+        printf("KS10: Disk is off-line.\n");
         return;
     }
 
@@ -1386,10 +1377,10 @@ void rh11_t::testWrchk(ks10_t::data_t unit) {
 
     if (cs2_read() & cs2_wce) {
         pass = false;
-        printf("Write check error on matching data.\n");
+        printf("KS10: Write check error on matching data.\n");
     }
 
-    printf("CS2 Register is 0x%04llx (1)\n", cs2_read());
+    printf("KS10: CS2 Register is 0x%04llx (1)\n", cs2_read());
 
     //
     // Change the pattern on one word.  This should create a CS2[WCE].
@@ -1421,16 +1412,16 @@ void rh11_t::testWrchk(ks10_t::data_t unit) {
 
     if (!cs2_read() & cs2_wce) {
         pass = false;
-        printf("No write check error on mismatching data.\n");
+        printf("KS10: No write check error on mismatching data.\n");
     }
 
-    printf("CS2 Register is 0x%04llx (2)\n", cs2_read());
+    printf("KS10: CS2 Register is 0x%04llx (2)\n", cs2_read());
 
     //
     // Print results
     //
 
-    printf("RH11 disk wrchk test %s.\n", pass ? "passed" : "failed");
+    printf("KS10: RH11 disk wrchk test %s.\n", pass ? "passed" : "failed");
 
 }
 
@@ -1486,7 +1477,7 @@ void rh11_t::boot(ks10_t::data_t unit, bool diagmode) {
     //
 
     if (!(ds_read() & ds_mol)) {
-        printf("Disk is off-line.\n");
+        printf("KS10: Disk is off-line.\n");
         return;
     }
 
@@ -1515,13 +1506,13 @@ void rh11_t::boot(ks10_t::data_t unit, bool diagmode) {
 
     bool success = bootBlock(paddr, vaddr, priHomeBlock, offset);
     if (!success) {
-        printf("Trying Alternate Home Block.\n");
+        printf("KS10: Trying Alternate Home Block.\n");
         success = bootBlock(paddr, vaddr, altHomeBlock, offset);
         if (!success) {
-            printf("Trying Secondary Home Block.\n");
+            printf("KS10: Trying Secondary Home Block.\n");
             success = bootBlock(paddr, vaddr, secHomeBlock, offset);
             if (!success) {
-                printf("Unable to boot from this disk.\n");
+                printf("KS10: Unable to boot from this disk.\n");
             }
         }
     }

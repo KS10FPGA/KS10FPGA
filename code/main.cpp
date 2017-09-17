@@ -91,9 +91,10 @@ int main(void) {
     // Print startup message
     //
 
-    printf("\x1b[H\x1b[2J");
-    printf("CPU : Console alive.\n");
-    printf("CPU : Device identifier is 0x%08lx.\n", HWREG(SYSCTL_DID0));
+    printf("\x1b[H\x1b[2J"
+           "CPU : Console alive.\n"
+           "CPU : Copyright 2017 (c) Rob Doyle.  All rights reserved.\n"
+           "CPU : Device identifier is 0x%08lx.\n", HWREG(SYSCTL_DID0));
 
     //
     // Device Rev C3 is required for the ROM functions.
@@ -107,7 +108,7 @@ int main(void) {
     }
 
     //
-    // Start Console.  This function should never return here.
+    // Start Console.  This function should never return.
     //
 
     startConsole(&debug);
