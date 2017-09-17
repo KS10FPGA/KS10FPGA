@@ -957,7 +957,7 @@ NGD_OPTS += \
 	-sd ../../ks10/xilinx/chipscope_uba_icon
 endif
 
-$(ISE)/$(PROJECT).ngd: $(ISE)/$(PROJECT).ngc $(UCF_FILE) $(CGN_FILES) $(ISE)/$(PROJECT).filter makefile
+$(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).bld: $(ISE)/$(PROJECT).ngc $(UCF_FILE) $(CGN_FILES) $(ISE)/$(PROJECT).filter makefile
 	@cd $(ISE); \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
 	echo Running NGDBUILD | tee -a $(PROJECT).log; \

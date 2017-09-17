@@ -78,7 +78,7 @@ module SKIP (
 
    reg skip0;
 
-   always @(crom or skip40)
+   always @*
      begin
         if (`cromSKIP_EN_40)
           case (`cromSKIP_SEL)
@@ -116,7 +116,7 @@ module SKIP (
 
    reg skip1;
 
-   always @(crom or skip20)
+   always @*
      begin
         if (`cromSKIP_EN_20)
           case (`cromSKIP_SEL)
@@ -154,7 +154,7 @@ module SKIP (
 
    reg skip2;
 
-   always @(crom or skip10)
+   always @*
      begin
         if (`cromSKIP_EN_10)
           case (`cromSKIP_SEL)

@@ -95,7 +95,8 @@ module SCAD (
    //
 
    reg [0: 9] scadA;
-   always @(asel or sc or snum or dp)
+
+   always @*
      begin
         case (asel)
           `cromSCAD_ASEL_SC:
@@ -131,7 +132,8 @@ module SCAD (
    //
 
    reg [0:9] scadB;
-   always @(bsel or fe or dp)
+
+   always @*
      begin
         case (bsel)
           `cromSCAD_BSEL_FE:
@@ -192,7 +194,7 @@ module SCAD (
    //  DPM3/E24
    //
 
-   always @(fun or scadA or scadB)
+   always @*
      begin
         case (fun)
           `cromSCAD_A_PLUS_A:

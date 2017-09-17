@@ -86,11 +86,7 @@ module DISPATCH (
    //  microcode address.  It cannot clear bits.
    //
 
-   always @(dispDIAG or dispRET or dispJ or dispAREAD or
-            dispMUL  or dispPF or dispNI or dispBYTE or dispEA or
-            dispSCAD or  dispNORM or dispDROM_A or dispDROM_B or
-            dispEN40 or dispEN20 or dispEN10 or
-            dispSEL  or dispSELH or dp)
+   always @*
      begin
 
         //
