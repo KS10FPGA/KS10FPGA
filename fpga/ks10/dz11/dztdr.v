@@ -68,7 +68,7 @@ module DZTDR (
    //  TDR is write-only and can be accessed as bytes or words
    //
 
-   always @(csrTLINE or tdrWRITE or devLOBYTE)
+   always @*
      begin
         if (tdrWRITE & devLOBYTE)
           case (csrTLINE)

@@ -71,7 +71,7 @@ module UBAINTR (
 
    reg [1:7] devINTRH;
 
-   always @(statINTHI or statPIH)
+    always @*
      begin
         if (statINTHI)
           case (statPIH)
@@ -97,7 +97,7 @@ module UBAINTR (
 
    reg [1:7] devINTRL;
 
-   always @(statINTLO or statPIL)
+   always @*
      begin
         if (statINTLO)
           case (statPIL)
