@@ -394,11 +394,21 @@ CGN_FILES += \
 endif
 
 #
-# Simulation testbench files
+# Disk drives
 #
 
-SIM_DISK := \
-	$(TESTBENCH)/sdsim.dsk
+UNIT0_DSK := $(TESTBENCH)/unit0.dsk
+UNIT1_DSK := $(TESTBENCH)/unit1.dsk
+UNIT2_DSK := $(TESTBENCH)/unit2.dsk
+UNIT3_DSK := $(TESTBENCH)/unit3.dsk
+UNIT4_DSK := $(TESTBENCH)/unit4.dsk
+UNIT5_DSK := $(TESTBENCH)/unit5.dsk
+UNIT6_DSK := $(TESTBENCH)/unit6.dsk
+UNIT7_DSK := $(TESTBENCH)/unit7.dsk
+
+#
+# Simulation testbench files
+#
 
 SIM_FILES := \
 	$(TESTBENCH)/cy7c1460av33.v \
@@ -638,7 +648,14 @@ FUSE_ARGS := \
 	-d SSRAM_DAT=\"\"../../$(TESTBENCH)/$(DIAG).dat\"\" \
 	-d CROM_DAT=\"\"../../$(CROM_DAT)\"\" \
 	-d DROM_DAT=\"\"../../$(DROM_DAT)\"\" \
-	-d SDSIM_DSK=\"\"../../$(SIM_DISK)\"\" \
+	-d UNIT0_DSK=\"\"../../$(UNIT0_DSK)\"\" \
+	-d UNIT1_DSK=\"\"../../$(UNIT1_DSK)\"\" \
+	-d UNIT2_DSK=\"\"../../$(UNIT2_DSK)\"\" \
+	-d UNIT3_DSK=\"\"../../$(UNIT3_DSK)\"\" \
+	-d UNIT4_DSK=\"\"../../$(UNIT4_DSK)\"\" \
+	-d UNIT5_DSK=\"\"../../$(UNIT5_DSK)\"\" \
+	-d UNIT6_DSK=\"\"../../$(UNIT6_DSK)\"\" \
+	-d UNIT7_DSK=\"\"../../$(UNIT7_DSK)\"\" \
 	-intstyle $(INTSTYLE) \
 	-incremental \
 	-o   $(PROJECT)_isim.exe \
@@ -773,7 +790,14 @@ questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(SSRAM_
 	+define+SSRAM_DAT=\"$(TESTBENCH)/$(DIAG).dat\" \
 	+define+CROM_DAT=\"$(CROM_DAT)\" \
 	+define+DROM_DAT=\"$(DROM_DAT)\" \
-	+define+SDSIM_DSK=\"$(SIM_DISK)\" \
+	+define+UNIT0_DSK=\"$(UNIT0_DSK)\" \
+	+define+UNIT1_DSK=\"$(UNIT1_DSK)\" \
+	+define+UNIT2_DSK=\"$(UNIT2_DSK)\" \
+	+define+UNIT3_DSK=\"$(UNIT3_DSK)\" \
+	+define+UNIT4_DSK=\"$(UNIT4_DSK)\" \
+	+define+UNIT5_DSK=\"$(UNIT5_DSK)\" \
+	+define+UNIT6_DSK=\"$(UNIT6_DSK)\" \
+	+define+UNIT7_DSK=\"$(UNIT7_DSK)\" \
 	$(subst -D ,+define+,$(SIM_ARGS) $(SYN_ARGS))
 	echo testbench -novopt -do $(QUESTA)/wave.do
 	cmd /c "vsim testbench -novopt -do $(QUESTA)/wave.do"
@@ -890,7 +914,7 @@ XST_CMDS += \
 endif
 
 $(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr: $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(ISE)/$(PROJECT).filter $(RTL_FILES) $(INC_FILES) $(DAT_FILES) makefile
-	@cd $(ISE); \
+	-@cd $(ISE); \
 	echo "################################################################################" | tee    $(PROJECT).log; \
 	echo Running XST | tee -a $(PROJECT).log; \
 	echo $(XST) $(XST_OPTS) -ifn $(PROJECT).xst -ofn $(PROJECT).syr | tee -a $(PROJECT).log; \
@@ -957,7 +981,7 @@ NGD_OPTS += \
 	-sd ../../ks10/xilinx/chipscope_uba_icon
 endif
 
-$(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).bld: $(ISE)/$(PROJECT).ngc $(UCF_FILE) $(CGN_FILES) $(ISE)/$(PROJECT).filter makefile
+$(ISE)/$(PROJECT).ngd: $(ISE)/$(PROJECT).ngc $(UCF_FILE) $(CGN_FILES) $(ISE)/$(PROJECT).filter makefile
 	@cd $(ISE); \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
 	echo Running NGDBUILD | tee -a $(PROJECT).log; \
@@ -1233,7 +1257,14 @@ testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SI
 	-D SSRAM_DAT=\"$(SSRAM_DAT)\" \
 	-D CROM_DAT=\"$(CROM_DAT)\" \
 	-D DROM_DAT=\"$(DROM_DAT)\" \
-	-D SDSIM_DSK=\"$(SIM_DISK)\" \
+	-D UNIT0_DSK=\"$(UNIT0_DSK)\" \
+	-D UNIT1_DSK=\"$(UNIT1_DSK)\" \
+	-D UNIT2_DSK=\"$(UNIT2_DSK)\" \
+	-D UNIT3_DSK=\"$(UNIT3_DSK)\" \
+	-D UNIT4_DSK=\"$(UNIT4_DSK)\" \
+	-D UNIT5_DSK=\"$(UNIT5_DSK)\" \
+	-D UNIT6_DSK=\"$(UNIT6_DSK)\" \
+	-D UNIT7_DSK=\"$(UNIT7_DSK)\" \
 	-I ks10 \
 	-I ks10/cpu \
 	-I ks10/cpu/useq \
