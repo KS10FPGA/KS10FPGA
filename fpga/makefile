@@ -118,7 +118,7 @@ OBJCOPY  := objcopy
 # status, or zero if all commands exit successfully.
 #
 
-.SHELLFLAGS = -o pipefail -c
+.SHELLFLAGS = -o pipefail -ec
 
 #
 # Initialized Memory Contents (Simulation only)
@@ -179,7 +179,6 @@ SIM_ARGS := \
         -D SIM_SMMON \
         -D SIM_SDHC \
         -D ENABLE_TIMER \
-        -D STOP_ON_COMPLETE \
         -D STOP_ON_STUCK_PC \
         -D DEBUG_$(DIAGBASE) \
         -D DEBUG=$(DIAGBASE) \
@@ -777,16 +776,12 @@ $(QUESTA)/wave.do: makefile
 	    echo $$CMD >> $@; \
 	done
 
-#
-#	vlib $(QUESTA)/work
-#	vmap
-#./$(QUESTA)/work work
-#	+define+XILINX\
-#
-
 questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(SSRAM_DAT) makefile $(QUESTA)/wave.do
-	vlib work
+	vlib $(QUESTA)/work
+	vmap work $(QUESTA)/work
 	vlog $(SIM_FILES) $(RTL_FILES) \
+	-work $(QUESTA)/work \
+	-lint \
 	+define+SSRAM_DAT=\"$(TESTBENCH)/$(DIAG).dat\" \
 	+define+CROM_DAT=\"$(CROM_DAT)\" \
 	+define+DROM_DAT=\"$(DROM_DAT)\" \

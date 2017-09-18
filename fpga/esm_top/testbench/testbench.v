@@ -373,6 +373,7 @@ module testbench;
 
    task printHaltStatusBlock;
       input [18:35] address;
+      reg   [ 0:35] temp;
       begin
          conREADMEMP(address +  0, temp);
          $display("[%11.3f] KS10:   MAG is %012o", $time/1.0e3, temp);

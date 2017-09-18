@@ -66,6 +66,13 @@ module DEBUG (
    );
 
    //
+   // Registers
+   //
+
+   reg [18:35] PC;
+   reg [14*8:1] test;
+
+   //
    // Match and mask
    //
 
@@ -218,9 +225,6 @@ module DEBUG (
    //
    // Print out Program Counter in the Simulator
    //
-
-   reg [18:35] PC;
-   reg [14*8:1] test;
 
    always @(posedge clk or posedge rst)
      begin
