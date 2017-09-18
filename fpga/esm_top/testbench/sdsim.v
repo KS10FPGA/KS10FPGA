@@ -38,8 +38,44 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`ifndef SDSIM_DSK
- `define SDSIM_DSK "./sdsim.dsk"
+//
+// The Verilog simulator uses 32-bit signed integers.  This is only big enough
+// to SEEK a 2GB disk which is too small to simulate our entire disk array.
+// Luckily a single RP07 is less than 1GB on disk.  Instead of simulating the
+// SD Card with a single file, we will use a seperate file for each if the 8
+// disk units.
+//
+
+`ifndef UNIT0_DSK
+ `define UNIT0_DSK "./unit0.dsk"
+`endif
+
+`ifndef UNIT1_DSK
+ `define UNIT1_DSK "./unit1.dsk"
+`endif
+
+`ifndef UNIT2_DSK
+ `define UNIT2_DSK "./unit2.dsk"
+`endif
+
+`ifndef UNIT3_DSK
+ `define UNIT3_DSK "./unit3.dsk"
+`endif
+
+`ifndef UNIT4_DSK
+ `define UNIT4_DSK "./unit4.dsk"
+`endif
+
+`ifndef UNIT5_DSK
+ `define UNIT5_DSK "./unit5.dsk"
+`endif
+
+`ifndef UNIT6_DSK
+ `define UNIT6_DSK "./unit6.dsk"
+`endif
+
+`ifndef UNIT7_DSK
+ `define UNIT7_DSK "./unit7.dsk"
 `endif
 
 `define SEEK_SET 0
@@ -72,19 +108,109 @@
                     stateWRITE2 = 7;
 
    //
-   // Open the file
+   // Open the files
    //
 
-   integer fd;
+   integer fd[0:7];
 
    initial
      begin
-        fd = $fopen(`SDSIM_DSK, "r+b");
-        if (fd == 0)
+
+        //
+        // Open Unit 0
+        //
+
+        fd[0] = $fopen(`UNIT0_DSK, "r+b");
+        if (fd[0] == 0)
           begin
-             $display("[%11.3f] KS10: Unable to open \"%s\".\n", $time/1.0e3, `SDSIM_DSK);
+             $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 0.", $time/1.0e3, `UNIT0_DSK);
              $stop;
           end
+        $display("[%11.3f] KS10: SDSIM - Opened \"%s\" on unit 0.", $time/1.0e3, `UNIT0_DSK);
+
+        //
+        // Open Unit 1
+        //
+
+        fd[1] = $fopen(`UNIT1_DSK, "r+b");
+        if (fd[1] == 0)
+          begin
+             $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 1.", $time/1.0e3, `UNIT1_DSK);
+             $stop;
+          end
+        $display("[%11.3f] KS10: SDSIM - Opened \"%s\" on unit 1.", $time/1.0e3, `UNIT1_DSK);
+
+        //
+        // Open Unit 2
+        //
+
+        fd[2] = $fopen(`UNIT2_DSK, "r+b");
+        if (fd[2] == 0)
+          begin
+             $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 2.", $time/1.0e3, `UNIT2_DSK);
+             $stop;
+          end
+        $display("[%11.3f] KS10: SDSIM - Opened \"%s\" on unit 2.", $time/1.0e3, `UNIT2_DSK);
+
+        //
+        // Open Unit 3
+        //
+
+        fd[3] = $fopen(`UNIT3_DSK, "r+b");
+        if (fd[3] == 0)
+          begin
+             $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 3.", $time/1.0e3, `UNIT3_DSK);
+             $stop;
+          end
+        $display("[%11.3f] KS10: SDSIM - Opened \"%s\" on unit 3.", $time/1.0e3, `UNIT3_DSK);
+
+        //
+        // Open Unit 4
+        //
+
+        fd[4] = $fopen(`UNIT4_DSK, "r+b");
+        if (fd[4] == 0)
+          begin
+             $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 4.", $time/1.0e3, `UNIT4_DSK);
+             $stop;
+          end
+        $display("[%11.3f] KS10: SDSIM - Opened \"%s\" on unit 4.", $time/1.0e3, `UNIT4_DSK);
+
+        //
+        // Open Unit 5
+        //
+
+        fd[5] = $fopen(`UNIT5_DSK, "r+b");
+        if (fd[5] == 0)
+          begin
+             $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 5.", $time/1.0e3, `UNIT5_DSK);
+             $stop;
+          end
+        $display("[%11.3f] KS10: SDSIM - Opened \"%s\" on unit 5.", $time/1.0e3, `UNIT5_DSK);
+
+        //
+        // Open Unit 6
+        //
+
+        fd[6] = $fopen(`UNIT6_DSK, "r+b");
+        if (fd[6] == 0)
+          begin
+             $display("[%11.3f] KS10:SDSIM -  Unable to open \"%s\" on unit 6.", $time/1.0e3, `UNIT6_DSK);
+             $stop;
+          end
+        $display("[%11.3f] KS10: SDSIM - Opened \"%s\" on unit 6.", $time/1.0e3, `UNIT6_DSK);
+
+        //
+        // Open Unit 7
+        //
+
+        fd[7] = $fopen(`UNIT7_DSK, "r+b");
+        if (fd[7] == 0)
+          begin
+             $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 7.", $time/1.0e3, `UNIT7_DSK);
+             $stop;
+          end
+        $display("[%11.3f] KS10: SDSIM - Opened \"%s\" on unit 7.", $time/1.0e3, `UNIT7_DSK);
      end
 
    //
@@ -115,6 +241,7 @@
    integer bytecnt;                     // Byte counter
    integer sector;                      // Sector address
    integer position;                    // fseek position
+   integer disk;                        // Disk
 
    always @(posedge clk or posedge rst)
      begin
@@ -182,15 +309,16 @@
                     else if ((spiRX[0:7] == 8'h51) && (clkstat == 2'b10))
                       begin
 
-                         sector = spiRX[16:39];
+                         disk   = spiRX[16:18];
+                         sector = spiRX[19:39];
                          position = sector * 512;
-                         $display("[%11.3f] KS10: SDSIM - Seek to SD Sector 0x%08x for read. (Byte = %d).\n",
-                                  $time/1.0e3, sector, position);
+                         $display("[%11.3f] KS10: SDSIM - Disk %1d seek to sector 0x%08x for read.",
+                                  $time/1.0e3, disk, sector);
 
-                         status = $fseek(fd, position, `SEEK_SET);
+                         status = $fseek(fd[disk], position, `SEEK_SET);
                          if (status == `EOF)
                            begin
-                              $display("[%11.3f] KS10: SDSIM - $fseek() returned EOF.\n", $time/1.0e3);
+                              $display("[%11.3f] KS10: SDSIM - $fseek() returned EOF.", $time/1.0e3);
                               $stop();
                            end
 
@@ -207,15 +335,16 @@
                     else if ((spiRX[0:7] == 8'h58) && (clkstat == 2'b10))
                       begin
 
-                         sector = spiRX[16:39];
+                         disk   = spiRX[16:18];
+                         sector = spiRX[19:39];
                          position = sector * 512;
-                         $display("[%11.3f] KS10: SDSIM - Seek to SD Sector 0x%08x for write. (Byte = %d).\n",
-                                  $time/1.0e3, sector, position);
+                         $display("[%11.3f] KS10: SDSIM - Disk %d seek to sector 0x%08x for write.",
+                                  $time/1.0e3, disk, sector);
 
-                         status = $fseek(fd, position, `SEEK_SET);
+                         status = $fseek(fd[disk], position, `SEEK_SET);
                          if (status == `EOF)
                            begin
-                              $display("[%11.3f] KS10: SDSIM - $fseek() returned EOF.\n", $time/1.0e3);
+                              $display("[%11.3f] KS10: SDSIM - $fseek() returned EOF.", $time/1.0e3);
                               $stop();
                            end
 
@@ -283,7 +412,7 @@
                    begin
                       if (bitcnt == 0)
                         begin
-                           status   = $fscanf(fd, "%c", ch);
+                           status   = $fscanf(fd[disk], "%c", ch);
                            bitcnt  <= 7;
                            bytecnt <= 0;
                            spiTX   <= {ch, 48'h00_00_00_00_00_00};
@@ -317,7 +446,7 @@
                           end
                         else
                           begin
-                             status   = $fscanf(fd, "%c", ch);
+                             status   = $fscanf(fd[disk], "%c", ch);
                              bitcnt  <= 7;
                              spiTX   <= {ch, 48'h00_00_00_00_00_00};
                              bytecnt <= bytecnt + 1;
@@ -355,7 +484,7 @@
                      begin
                         if (bitcnt == 0)
                           begin
-                             $fwrite(fd, "%c", spiRX[48:55]);
+                             $fwrite(fd[disk], "%c", spiRX[48:55]);
                              bitcnt  <= 7;
                              bytecnt <= 0;
                              spiTX   <=56'hff_ff_ff_ff_ff_ff_ff;
@@ -390,7 +519,7 @@
                              end
                            else
                              begin
-                                $fwrite(fd, "%c", spiRX[48:55]);
+                                $fwrite(fd[disk], "%c", spiRX[48:55]);
                                 bitcnt  <= 7;
                                 spiTX   <= 56'hff_ff_ff_ff_ff_ff_ff;
                                 bytecnt <= bytecnt + 1;
@@ -413,7 +542,7 @@
                    begin
                       if ((bitcnt == 0) || sdCS)
                         begin
-                           $fflush(fd);
+                           $fflush(fd[disk]);
                            state  <= stateRESET;
                         end
                       else

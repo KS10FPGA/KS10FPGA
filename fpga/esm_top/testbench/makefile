@@ -1,7 +1,26 @@
+#
+# Programs
+#
+
 T10BACKUP   := ../../../tools/tapeutils-0.6.mods/t10backup.exe
 DIAGTAPE    := ../../../Tape\ and\ Disk\ Images/KS10\ Diagnostics/ks_diag_gs.tap
 SAV2VERILOG := ../../../tools/sav2verilog/sav2verilog.exe
 MERGE_AWK   := ../../../tools/merge/merge.awk
+
+#
+# Read SD Card to file so it can be examined.
+#  This assumes that a 8GB card is installed.
+#
+
+DEV   := sdf
+UNIT0 := dskb.rp06.gz
+UNIT1 := dskc.rp06.gz
+UNIT2 := red405a2.rp06.gz
+UNIT3 := dskb.rp06.gz
+UNIT4 := dskb.rp06.gz
+UNIT5 := dskb.rp06.gz
+UNIT6 := dskb.rp06.gz
+UNIT7 := dskb.rp06.gz
 
 all : DSDAB.temp.DAT
 
@@ -101,16 +120,6 @@ DSRPA.PATCH : makefile
 	echo -e "568000000\t\t// mem[060773] = 255000000000" >  DSRPA.PATCH
 	echo -e "000000000\t\t// mem[077263] = 000000000000" >> DSRPA.PATCH
 
-#
-# Read SD Card to file so it can be examined.
-#  This assumes that a 8GB card is installed.
-#
-
-DEV   := sdf
-UNIT0 := dskb.rp06.gz
-UNIT1 := dskc.rp06.gz
-UNIT2 := red405a2.rp06.gz
-
 check :
 	cat /proc/partitions
 	@echo
@@ -142,10 +151,37 @@ rp06_disk : makefile $(UNIT0) $(UNIT1) $(UNIT2)
         fi
 
 #
-# The Simulator can only access 2GB of SD Card because it uses 32-bit signed integers for seek()
+# The SD Card Simulator uses a seperate file for each of the devices
+#   $fseek() can't seek a 8GB file so we split it up.
+#   These are the disk images
 #
 
-sdsim.dsk : makefile $(UNIT2)
-	zcat $(UNIT0) | dd of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G
-	zcat $(UNIT0) | dd of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G
-	zcat $(UNIT0) | dd of=sdsim.dsk bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G
+unit0.dsk : makefile $(UNIT0)
+	zcat $(UNIT0) > unit0.dsk
+
+unit1.dsk : makefile $(UNIT1)
+	zcat $(UNIT1) > unit1.dsk
+
+unit2.dsk : makefile $(UNIT2)
+	zcat $(UNIT2) > unit2.dsk
+
+unit3.dsk : makefile $(UNIT3)
+	zcat $(UNIT3) > unit3.dsk
+
+unit4.dsk : makefile $(UNIT4)
+	zcat $(UNIT4) > unit4.dsk
+
+unit5.dsk : makefile $(UNIT5)
+	zcat $(UNIT5) > unit5.dsk
+
+unit6.dsk : makefile $(UNIT6)
+	zcat $(UNIT6) > unit6.dsk
+
+unit7.dsk : makefile $(UNIT7)
+	zcat $(UNIT7) > unit7.dsk
+
+sim_disk : unit0.dsk unit1.dsk unit2.dsk unit3.dsk unit4.dsk unit5.dsk unit6.dsk unit7.dsk
+
+clean :	makefile
+	rcsclean *
+	rm -rf unit0.dsk unit1.dsk unit2.dsk unit3.dsk unit4.dsk unit5.dsk unit6.dsk unit7.dsk

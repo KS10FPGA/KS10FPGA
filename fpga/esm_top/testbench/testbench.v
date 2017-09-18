@@ -64,7 +64,7 @@ module testbench;
    wire         conINTR_N;      // Console Interrupt
    wire         conINTR = ~conINTR_N;
    wire         haltLED;        // Halt LED
-   wire [0 :27] test;           // Test port
+   wire [0 :19] test;           // Test port
 
    //
    // DZ11 Serial Interface
@@ -85,7 +85,8 @@ module testbench;
    wire         rh11MISO;       // RH11 Data In
    wire         rh11MOSI;       // RH11 Data Out
    wire         rh11SCLK;       // RH11 Clock
-   wire         rh11CS;         // SD11 Chip Select
+   wire         rh11CS;         // RH11 Chip Select
+   wire [ 7: 0] rh11LEDS_N;     // RH11 Status LEDS
 
    //
    // SSRAM
@@ -120,7 +121,7 @@ module testbench;
 `ifdef SIM_SMMON
    localparam [ 0:35] valREGCIR     = 36'o254000_020000;  // SMMON
 `else
-   localparam [ 0:35] valREGCIR     = 36'o254000_030010;  // Basic diagnostics
+   localparam [ 0:35] valREGCIR     = 36'o254000_030001;  // Basic diagnostics
 `endif
 
    //
@@ -645,7 +646,7 @@ module testbench;
         //
 
         conWRITE64(addrREGDZCCR, 64'h00000000_0000ff00);
-        conWRITE64(addrREGRHCCR, 64'h00000000_010101fe);
+        conWRITE64(addrREGRHCCR, 64'h00000000_07070700);
 
         //
         // Initialize the Debug Registers
@@ -696,11 +697,12 @@ module testbench;
              //
 
              conWRITEMEM(addrSWITCH,  36'o000000_000000);       // Initialize Switch Register
-             conWRITEMEM(addrKASW,    36'o000000_000000);       // Keep Alive Status Word
+             conWRITEMEM(addrKASW,    36'o003740_000000);       // Keep Alive Status Word
              conWRITEMEM(addrCIN,     36'o000000_000000);       // Console Input
              conWRITEMEM(addrCOUT,    36'o000000_000000);       // Console Output
              conWRITEMEM(addrKIN,     36'o000000_000000);       // Klinik Input
              conWRITEMEM(addrKOUT,    36'o000000_000000);       // Klinik Output
+//           conWRITEMEM(addrRHBASE,  36'o000001_776700);       // RH Base Address
              conWRITEMEM(addrRHBASE,  36'o000000_000000);       // RH Base Address
              conWRITEMEM(addrBOOTDSK, 36'o000000_000000);       // Boot Disk Unit Number
              conWRITEMEM(addrBOOTMAG, 36'o000000_000000);       // Boot Magtape Parameters
@@ -754,9 +756,9 @@ module testbench;
                   //
 
                   expect("UBA # - ",                                  "1\015",      state[0]);
-                  expect("DISK:<DIRECTORY> OR DISK:[P,PN] - ",        "\015",       state[1]);
-                  expect("SMMON CMD - ",                              "STD\015",    state[2]);
-                  expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",   "Y\015",      state[3]);
+                  expect("DISK:<DIRECTORY> OR DISK:[P,PN] - ",        "PS:\015",    state[1]);
+                  expect("SMMON CMD - ",                              "SMCPU\015",  state[2]);
+                  expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",   "0\015",      state[3]);
                   expect("LH SWITCHES <# OR ?> - ",                   "000000\015", state[4]);
                   expect("RH SWITCHES <# OR ?> - ",                   "400000\015", state[5]);
 
@@ -814,6 +816,7 @@ module testbench;
       .rh11MOSI         (rh11MOSI),
       .rh11SCLK         (rh11SCLK),
       .rh11CS           (rh11CS),
+      .rh11LEDS_N       (rh11LEDS_N),
       // Console Interfaces
       .conADDR          (conADDR),
       .conDATA          (conDATA),
