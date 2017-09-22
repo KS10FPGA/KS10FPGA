@@ -602,11 +602,7 @@ module testbench;
 
 `ifdef SIM_CTY
 
- `ifdef __ICARUS__
-        fd_cty = $fopen({``DEBUG, "_cty_out.txt"}, "w");
- `else
         fd_cty = $fopen("cty_out.txt", "w");
- `endif
 
 `endif
 

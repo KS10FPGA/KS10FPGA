@@ -121,7 +121,7 @@
         //
 
         fd[0] = $fopen(`UNIT0_DSK, "r+b");
-        if (fd[0] == 0)
+        if (fd[0] == -1)
           begin
              $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 0.", $time/1.0e3, `UNIT0_DSK);
              $stop;
@@ -133,7 +133,7 @@
         //
 
         fd[1] = $fopen(`UNIT1_DSK, "r+b");
-        if (fd[1] == 0)
+        if (fd[1] == -1)
           begin
              $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 1.", $time/1.0e3, `UNIT1_DSK);
              $stop;
@@ -145,7 +145,7 @@
         //
 
         fd[2] = $fopen(`UNIT2_DSK, "r+b");
-        if (fd[2] == 0)
+        if (fd[2] == -1)
           begin
              $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 2.", $time/1.0e3, `UNIT2_DSK);
              $stop;
@@ -157,7 +157,7 @@
         //
 
         fd[3] = $fopen(`UNIT3_DSK, "r+b");
-        if (fd[3] == 0)
+        if (fd[3] == -1)
           begin
              $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 3.", $time/1.0e3, `UNIT3_DSK);
              $stop;
@@ -169,7 +169,7 @@
         //
 
         fd[4] = $fopen(`UNIT4_DSK, "r+b");
-        if (fd[4] == 0)
+        if (fd[4] == -1)
           begin
              $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 4.", $time/1.0e3, `UNIT4_DSK);
              $stop;
@@ -181,7 +181,7 @@
         //
 
         fd[5] = $fopen(`UNIT5_DSK, "r+b");
-        if (fd[5] == 0)
+        if (fd[5] == -1)
           begin
              $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 5.", $time/1.0e3, `UNIT5_DSK);
              $stop;
@@ -193,7 +193,7 @@
         //
 
         fd[6] = $fopen(`UNIT6_DSK, "r+b");
-        if (fd[6] == 0)
+        if (fd[6] == -1)
           begin
              $display("[%11.3f] KS10:SDSIM -  Unable to open \"%s\" on unit 6.", $time/1.0e3, `UNIT6_DSK);
              $stop;
@@ -205,7 +205,7 @@
         //
 
         fd[7] = $fopen(`UNIT7_DSK, "r+b");
-        if (fd[7] == 0)
+        if (fd[7] == -1)
           begin
              $display("[%11.3f] KS10: SDSIM - Unable to open \"%s\" on unit 7.", $time/1.0e3, `UNIT7_DSK);
              $stop;
@@ -412,7 +412,7 @@
                    begin
                       if (bitcnt == 0)
                         begin
-                           status   = $fscanf(fd[disk], "%c", ch);
+                           ch = $fgetc(fd[disk]);
                            bitcnt  <= 7;
                            bytecnt <= 0;
                            spiTX   <= {ch, 48'h00_00_00_00_00_00};
@@ -446,7 +446,7 @@
                           end
                         else
                           begin
-                             status   = $fscanf(fd[disk], "%c", ch);
+                             ch  = $fgetc(fd[disk]);
                              bitcnt  <= 7;
                              spiTX   <= {ch, 48'h00_00_00_00_00_00};
                              bytecnt <= bytecnt + 1;
