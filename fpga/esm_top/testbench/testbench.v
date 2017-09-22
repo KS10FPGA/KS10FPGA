@@ -796,7 +796,7 @@ module testbench;
 
    always
      begin
-        #1000000 $fflush;
+        #1000000 $fflush(fd_cty);
      end
 
    //
