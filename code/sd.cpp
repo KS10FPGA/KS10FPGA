@@ -230,8 +230,6 @@ static uint8_t sendCommand(uint8_t cmd, uint32_t data, uint8_t crc) {
     return response;
 }
 
-#ifdef SD_WRITE
-
 //!
 //! \brief
 //!    Wait for an R2 Response from the SD Card.
@@ -243,8 +241,6 @@ static uint8_t sendCommand(uint8_t cmd, uint32_t data, uint8_t crc) {
 static uint8_t getR2Response(void) {
     return transactData(0xff);
 }
-
-#endif
 
 //!
 //! \brief
@@ -742,8 +738,6 @@ bool sdReadSector(uint8_t *buf, uint32_t sector) {
     return true;
 }
 
-#ifdef SD_WRITE
-
 //!
 //! \brief
 //!    Writes a 512-byte sector to the SD Card
@@ -888,8 +882,6 @@ bool sdWriteSector(const uint8_t *buf, uint32_t sector) {
 
     return true;
 }
-
-#endif
 
 //!
 //! \brief

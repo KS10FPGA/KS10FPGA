@@ -40,11 +40,11 @@
 
 //!
 //! Initialize the Drive
-//! 
-//! \param [in] pdrv
-//!     Physical drive number (0..255) 
 //!
-//! \returns 
+//! \param [in] pdrv
+//!     Physical drive number (0..255)
+//!
+//! \returns
 //!     0 if successfully initialized, or
 //!     STA_NOINIT otherwise.
 //!
@@ -61,11 +61,11 @@ DSTATUS disk_initialize(BYTE pdrv) {
 
 //!
 //! Get Disk Status
-//! 
-//! \param [in] pdrv
-//!     Physical drive number (0..255) 
 //!
-//! \returns 
+//! \param [in] pdrv
+//!     Physical drive number (0..255)
+//!
+//! \returns
 //!     0 if successfully initialized, or
 //!     STA_NOINIT otherwise.
 //!
@@ -79,14 +79,14 @@ DSTATUS disk_status(BYTE pdrv) {
 
 //!
 //! Read Sector(s) from disk
-//! 
+//!
 //! \param [in] pdrv
-//!     Physical drive number (0..255) 
+//!     Physical drive number (0..255)
 //!
 //! \param [in, out] buf
 //!     Buffer to store read data.  Must be large enough for entire
 //!     read operation.
-//! 
+//!
 //! \param [in] sector
 //!     Sector address (LBA)
 //!
@@ -94,13 +94,14 @@ DSTATUS disk_status(BYTE pdrv) {
 //!     Number of sectors to read (1..128)
 //!
 //! \details
-//!     The SD Card only implementes single sector read operations.
+//!     The SD Card only implements single sector read operations.
 //!     The read operation is called multiple times if multiple
 //!     sectors are read.
 //!
-//! \returns 
+//! \returns
 //!     RES_OK if disk was read successfully,
 //!     RES_PARERR if not drive 0,
+//!     RES_NOTRDY if the disk is busy,
 //!     RES_ERR if read failed.
 //!
 //! \note
@@ -126,14 +127,13 @@ DRESULT disk_read(BYTE pdrv, BYTE *buf, DWORD sector, BYTE count) {
 
 //!
 //! Write Sector(s) to disk
-//! 
-//! \param [in] pdrv
-//!     Physical drive number (0..255) 
 //!
-//! \param [in out] buf
-//!     Buffer to store read data.   Must be large enough for the entire
-//!     write operation.
-//! 
+//! \param [in] pdrv
+//!     Physical drive number (0..255)
+//!
+//! \param [in, out] buf
+//!     Buffer to get data written to disk.
+//!
 //! \param [in] sector
 //!     Sector address (LBA)
 //!
@@ -141,29 +141,102 @@ DRESULT disk_read(BYTE pdrv, BYTE *buf, DWORD sector, BYTE count) {
 //!     Number of sectors to read (1..128)
 //!
 //! \details
-//!     The SD Card only implementes single sector write operations.
+//!     The SD Card only implements single sector write operations.
 //!     The write operation is called multiple times if multiple
 //!     sectors are written.
 //!
-//!     The KS10 Console SD Disk is read-only.  Writes to the SD Card
-//!     always fail and return a write protect error.
-//!
 //! \returns
-//!     RES_WRPRT always
+//!     RES_OK if disk was written successfully,
+//!     RES_PARERR if not drive 0,
+//!     RES_NOTRDY if the disk is busy,
+//!     RES_ERR if write failed.
 //!
 //! \note
 //!     Only drive 0 is supported.
 //!
 
-#ifdef SD_WRITE
-#warning FIXME: This is stubbed.
-
 DRESULT disk_write(BYTE pdrv, const BYTE *buf, DWORD sector, BYTE count) {
-    (void)pdrv;
-    (void)buf;
-    (void)sector;
-    (void)count;
-    return RES_WRPRT;
+
+    if (pdrv != 0) {
+        return RES_PARERR;
+    } else if (!sdStatus()) {
+        return RES_NOTRDY;
+    }
+
+    const BYTE * bufptr = buf;
+    for (DWORD i = 0; i < count; i++) {
+        bool success = sdWriteSector(bufptr, sector + i);
+        if (!success) {
+            return RES_ERROR;
+        }
+    }
+    return RES_OK;
 }
 
-#endif
+//!
+//! Disk device control
+//!
+//! \param [in] pdrv
+//!     Physical drive number (0..255)
+//!
+//! \param [in] cmd
+//!     Control command code
+//!
+//! \param [in, out] buf
+//!     Parameter buffer
+//!
+//!
+//! \details
+//!     The SD Card parameter are hard coded and not exactly
+//!     correct.
+//!
+//! \returns
+//!     RES_OK on recognized commands,
+//!     RES_PARERR if not drive 0 or if the command is unrecognized.
+//!
+//! \note
+//!     Only drive 0 is supported.
+//!
+
+DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buf) {
+
+    if (pdrv != 0) {
+        return RES_PARERR;
+    } else if (!sdStatus()) {
+        return RES_NOTRDY;
+    }
+
+    switch(cmd) {
+        case CTRL_SYNC:
+            return RES_OK;
+        case GET_SECTOR_COUNT:
+            *(DWORD*)buf = 16777216U;
+            return RES_OK;
+        case GET_SECTOR_SIZE:
+            *(WORD*)buf = 512;
+            return RES_OK;
+        default:
+            return RES_PARERR;
+    }
+
+}
+
+//!
+//! Return the current time in FAT format
+//!
+//! \returns
+//!     21 June 2017, 12:00:00 AM always
+//!
+//! \note
+//!     We just need to return a valid time.  We don't have
+//!     a realtime clock so we make one up.  We use today.
+//!
+
+DWORD get_fattime(void) {
+    return (((2017UL - 1980) << 25) |   // 2017
+            ( 6UL << 21) |              // Month
+            (21UL << 16) |              // Day
+            (12UL << 11) |              // Hour
+            ( 0UL << 5)  |              // Min
+            ( 0UL >> 1));               // Sec
+}

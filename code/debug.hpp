@@ -35,6 +35,8 @@
 #ifndef __DEBUG_HPP
 #define __DEBUG_HPP
 
+#include "stdio.h"
+
 //!
 //! \brief
 //!    Debug print macro
