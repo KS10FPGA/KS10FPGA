@@ -174,7 +174,7 @@ archive_dist:
 	${MAKE} rcsfetch
 	tar --exclude-vcs -czvf ks10_code_dist_`date '+%y%m%d'`.tgz *
 
-doxygen : Doxyfile
+doxygen : doxyfile
 	doxygen.exe
 
 EXCLUDE := \
