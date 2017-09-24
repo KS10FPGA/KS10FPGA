@@ -1447,7 +1447,6 @@ void rh11_t::boot(ks10_t::data_t unit, bool diagmode) {
 
     enum homeBlock_t {
         priHomeBlock = 001,
-        altHomeBlock = 010,
         secHomeBlock = 012,
     };
 
@@ -1506,14 +1505,10 @@ void rh11_t::boot(ks10_t::data_t unit, bool diagmode) {
 
     bool success = bootBlock(paddr, vaddr, priHomeBlock, offset);
     if (!success) {
-        printf("KS10: Trying Alternate Home Block.\n");
-        success = bootBlock(paddr, vaddr, altHomeBlock, offset);
+        printf("KS10: Trying Secondary Home Block.\n");
+        success = bootBlock(paddr, vaddr, secHomeBlock, offset);
         if (!success) {
-            printf("KS10: Trying Secondary Home Block.\n");
-            success = bootBlock(paddr, vaddr, secHomeBlock, offset);
-            if (!success) {
-                printf("KS10: Unable to boot from this disk.\n");
-            }
+            printf("KS10: Unable to boot from this disk.\n");
         }
     }
 }
