@@ -1732,27 +1732,25 @@ static void cmdNE(int argc, char *argv[]) {
 
     if (argc == 2) {
         if (strnicmp(argv[1], "stat", 4) == 0) {
-            uint32_t addr = lwIPGetIPAddr();
-            if (addr == 0) {
+            const struct netif* netif = lwip_netif();
+            if (netif->ip_addr.addr == 0) {
                 printf("  Unable to obtain IP Address.\n");
             } else {
                 printf("  IP Address      : %ld.%ld.%ld.%ld\n",
-                       ((addr >>  0) & 0xff),
-                       ((addr >>  8) & 0xff),
-                       ((addr >> 16) & 0xff),
-                       ((addr >> 24) & 0xff));
-                addr = lwIPGetNetMask();
+                       ((netif->ip_addr.addr >>  0) & 0xff),
+                       ((netif->ip_addr.addr >>  8) & 0xff),
+                       ((netif->ip_addr.addr >> 16) & 0xff),
+                       ((netif->ip_addr.addr >> 24) & 0xff));
                 printf("  Net Mask        : %ld.%ld.%ld.%ld\n",
-                       ((addr >>  0) & 0xff),
-                       ((addr >>  8) & 0xff),
-                       ((addr >> 16) & 0xff),
-                       ((addr >> 24) & 0xff));
-                addr = lwIPGetGWAddr();
+                       ((netif->netmask.addr >>  0) & 0xff),
+                       ((netif->netmask.addr >>  8) & 0xff),
+                       ((netif->netmask.addr >> 16) & 0xff),
+                       ((netif->netmask.addr >> 24) & 0xff));
                 printf("  Gateway Address : %ld.%ld.%ld.%ld\n",
-                       ((addr >>  0) & 0xff),
-                       ((addr >>  8) & 0xff),
-                       ((addr >> 16) & 0xff),
-                       ((addr >> 24) & 0xff));
+                       ((netif->gw.addr >>  0) & 0xff),
+                       ((netif->gw.addr >>  8) & 0xff),
+                       ((netif->gw.addr >> 16) & 0xff),
+                       ((netif->gw.addr >> 24) & 0xff));
                 uint8_t buffer[6];
                 ROM_EthernetMACAddrGet(ETH_BASE, buffer);
                 printf("  MAC Address     : %02x:%02x:%02x:%02x:%02x:%02x\n",

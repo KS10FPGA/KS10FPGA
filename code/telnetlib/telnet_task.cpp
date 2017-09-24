@@ -14,7 +14,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2014-2016 Rob Doyle
+// Copyright (C) 2014-2017 Rob Doyle
 //
 // This program is free software; you can redistribute it and/or modify it under
 // the terms of the GNU General Public License as published by the Free Software
@@ -38,8 +38,8 @@
 #include "telnet.hpp"
 #include "telnet_task.hpp"
 #include "inc/hw_ints.h"
-#include "inc/hw_types.h"
-#include "lwip/tcpip.h"
+#include "inc/hw_memmap.h"
+#include "driverlib/sysctl.h"
 
 //!
 //! Telnet handles
@@ -107,6 +107,20 @@ static void setupTelnet(void *arg) {
 void startTelnetTask(debug_t *debug) {
 
     //
+    // Enable the Ethernet Controller
+    //
+
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_ETH);
+
+    //
+    // Lower the priority of the Ethernet interrupt handler.  This is required
+    // so that the interrupt handler can safely call the interrupt-safe
+    // SafeRTOS functions (specifically to send messages to the queue).
+    //
+
+    ROM_IntPrioritySet(INT_ETH, 0xc0);
+
+    //
     // Get the MAC address from the user registers.
     //
 
@@ -129,31 +143,32 @@ void startTelnetTask(debug_t *debug) {
     // into the form needed by the Ethernet Controller.
     //
 
-    unsigned char macAddr[6];
-    macAddr[0] = ((user0 >>  0) & 0xff);
-    macAddr[1] = ((user0 >>  8) & 0xff);
-    macAddr[2] = ((user0 >> 16) & 0xff);
-    macAddr[3] = ((user1 >>  0) & 0xff);
-    macAddr[4] = ((user1 >>  8) & 0xff);
-    macAddr[5] = ((user1 >> 16) & 0xff);
+    unsigned char mac_addr[6];
+    mac_addr[0] = ((user0 >>  0) & 0xff);
+    mac_addr[1] = ((user0 >>  8) & 0xff);
+    mac_addr[2] = ((user0 >> 16) & 0xff);
+    mac_addr[3] = ((user1 >>  0) & 0xff);
+    mac_addr[4] = ((user1 >>  8) & 0xff);
+    mac_addr[5] = ((user1 >> 16) & 0xff);
+
+    ROM_EthernetMACAddrSet(ETH_BASE, mac_addr);
 
     printf("NET : MAC Address is %02x:%02x:%02x:%02x:%02x:%02x\n",
-           macAddr[0], macAddr[1], macAddr[2],
-           macAddr[3], macAddr[4], macAddr[5]);
+           mac_addr[0], mac_addr[1], mac_addr[2],
+           mac_addr[3], mac_addr[4], mac_addr[5]);
 
     //
-    // Lower the priority of the Ethernet interrupt handler.  This is required
-    // so that the interrupt handler can safely call the interrupt-safe
-    // SafeRTOS functions (specifically to send messages to the queue).
+    // Initialize lwIP MAC addr and IP addr.
     //
 
-    ROM_IntPrioritySet(INT_ETH, 0xc0);
+    struct ip_addr ip_addr;
+    struct ip_addr net_mask;
+    struct ip_addr gw_addr;
+    IP4_ADDR(&ip_addr,  192, 168,   2, 20);
+    IP4_ADDR(&net_mask, 255, 255, 255,  0);
+    IP4_ADDR(&gw_addr,  192, 168,   2,  1);
 
-    //
-    // Initialize lwIP MAC address and to use DHCP.
-    //
-
-    lwIPInit(macAddr, 0, 0, 0, modeDHCP);
+    lwip_param(&ip_addr, &net_mask, &gw_addr);
 
     //
     // Setup the remaining services inside the TCP/IP thread's context.

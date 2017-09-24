@@ -41,15 +41,10 @@
 #include "align.hpp"
 #include "lwiplib.h"
 #include "driverlib/rom.h"
-#include "driverlib/debug.h"
 #include "driverlib/inc/hw_memmap.h"
-#include "driverlib/inc/hw_sysctl.h"
 #include "driverlib/inc/hw_types.h"
-#include "SafeRTOS/SafeRTOS_API.h"
 #include "driverlib/ethernet.h"
 #include "lwip/dhcp.h"
-#include "lwip/sys.h"
-#include "lwip/tcpip.h"
 #include "lwip/autoip.h"
 #include "netif/stellarisif.h"
 
@@ -58,7 +53,7 @@
 //!    Net interface instance
 ///!
 
-static struct netif net_if;
+static struct netif netif;
 
 //!
 //! \brief
@@ -69,7 +64,6 @@ struct init_param_t {
     struct ip_addr ip_addr;
     struct ip_addr net_mask;
     struct ip_addr gw_addr;
-    enum mode_t mode;
 };
 
 //!
@@ -82,38 +76,6 @@ struct init_param_t {
 //!
 
 static xQueueHandle enetIntQueue;
-
-//!
-//! \brief
-//!    Potentially start DHCP
-//!
-//! \param mode
-//!    Address assignment mode
-//!
-
-static inline void start_dhcp(enum mode_t mode) {
-#if LWIP_DHCP
-    if (mode == modeDHCP) {
-        dhcp_start(&net_if);
-    }
-#endif
-}
-
-//!
-//! \brief
-//!    Potentially start auto-ip
-//!
-//! \param mode
-//!    Address assignment mode
-//!
-
-static inline void start_autoip(enum mode_t mode) {
-#if LWIP_AUTOIP
-    if (mode == modeAUTOIP) {
-        autoip_start(&net_if);
-    }
-#endif
-}
 
 //!
 //! \brief
@@ -169,7 +131,7 @@ static void enetIntTask(void *arg) {
         while (xQueueReceive(enetIntQueue, &arg, portMAX_DELAY) != pdPASS) {
             ;
         }
-        stellarisif_interrupt(&net_if);
+        stellarisif_interrupt(&netif);
         ROM_EthernetIntEnable(ETH_BASE, ETH_INT_RX | ETH_INT_TX);
     }
 }
@@ -182,7 +144,7 @@ static void enetIntTask(void *arg) {
 //!    Pointer to initialization data
 //!
 
-static void init_callback(void *arg) {
+void init_callback(void *arg) {
 
     struct init_param_t * init_param = (struct init_param_t *)arg;
 
@@ -209,26 +171,34 @@ static void init_callback(void *arg) {
     // default settings.
     //
 
-    netif_add(&net_if, &init_param->ip_addr, &init_param->net_mask, &init_param->gw_addr, NULL, stellarisif_init, tcpip_input);
-    netif_set_default(&net_if);
+    netif_add(&netif, &init_param->ip_addr, &init_param->net_mask, &init_param->gw_addr, NULL, stellarisif_init, tcpip_input);
+    netif_set_default(&netif);
 
     //
     // Start DHCP, if enabled.
     //
 
-    start_dhcp(init_param->mode);
+#if LWIP_DHCP
+
+    dhcp_start(&netif);
+
+#endif
 
     //
     // Start AutoIP, if enabled
     //
 
-    start_autoip(init_param->mode);
+#if LWIP_AUTOIP
+
+    autoip_start(&netif);
+
+#endif
 
     //
     // Set up interface
     //
 
-    netif_set_up(&net_if);
+    netif_set_up(&netif);
 
     //
     // Start the MDI-X timer
@@ -241,74 +211,47 @@ static void init_callback(void *arg) {
 //! \brief
 //!    Initialize lwIP
 //!
-//! \param MACAddr -
-//!    MAC Address
-//!
-//! \param IPAddr -
+
+//! \param ip_addr -
 //!    IP Address
 //!
-//! \param NetMask -
+//! \param net_mask -
 //!    Netmask
 //!
-//! \param GWAddr -
+//! \param gw_addr -
 //!    Gateway Address
 //!
-//! \param mode
-//!     Mode
-//!
 
-void lwIPInit(unsigned char *MACAddr, unsigned long IPAddr, unsigned long NetMask, unsigned long GWAddr, enum mode_t mode) {
-
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_ETH);
-    ROM_EthernetMACAddrSet(ETH_BASE, MACAddr);
+void lwip_param(struct ip_addr *ip_addr, struct ip_addr *net_mask, struct ip_addr *gw_addr) {
 
     static struct init_param_t init_param;
 
-    if (mode == modeSTATIC) {
-        init_param.ip_addr.addr = htonl(IPAddr);
-        init_param.net_mask.addr = htonl(NetMask);
-        init_param.gw_addr.addr = htonl(GWAddr);
-    } else {
-        init_param.ip_addr.addr = 0;
-        init_param.net_mask.addr = 0;
-        init_param.gw_addr.addr = 0;
-    }
-    init_param.mode = mode; 
+#if DHCP
+
+    init_param.ip_addr.addr  = 0;
+    init_param.net_mask.addr = 0;
+    init_param.gw_addr.addr  = 0;
+
+#else
+
+    init_param.ip_addr.addr  = ip_addr->addr;
+    init_param.net_mask.addr = net_mask->addr;
+    init_param.gw_addr.addr  = gw_addr->addr;
+
+#endif
+
     tcpip_init(init_callback, &init_param);
+
 }
 
 //!
 //! \brief
-//!    Function to return the IP Address
+//!    Function to return the lwIP net interface parameters
 //!
 //! \returns
-//!    IP Address
+//!    netif
 //!
 
-unsigned long lwIPGetIPAddr(void) {
-    return net_if.ip_addr.addr;
-}
-
-//!
-//! \brief
-//!    Function to return the Netmask
-//!
-//! \returns
-//!    Netmask
-//!
-
-unsigned long lwIPGetNetMask(void) {
-    return net_if.netmask.addr;
-}
-
-//!
-//! \brief
-//!    Function to return the Gateway Address
-//!
-//! \returns
-//!    Gateway Address
-//!
-
-unsigned long lwIPGetGWAddr(void) {
-    return net_if.gw.addr;
+const struct netif *lwip_netif(void) {
+    return &netif;
 }

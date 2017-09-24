@@ -39,20 +39,14 @@
 #ifndef __LWIPLIB_H
 #define __LWIPLIB_H
 
+#include "lwip/tcpip.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-enum mode_t {
-    modeSTATIC = 0,
-    modeDHCP,
-    modeAUTOIP
-};
-
-void lwIPInit(unsigned char *MACAddr, unsigned long IPAddr, unsigned long NetMask, unsigned long GWAddr, enum mode_t mode);
-unsigned long lwIPGetIPAddr(void);
-unsigned long lwIPGetNetMask(void);
-unsigned long lwIPGetGWAddr(void);
+    void lwip_param(struct ip_addr *ip_addr, struct ip_addr *net_mask, struct ip_addr *gw_addr);
+    const struct netif *lwip_netif(void);
 
 #ifdef __cplusplus
 }
