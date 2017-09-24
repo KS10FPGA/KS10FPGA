@@ -245,7 +245,8 @@ module RPDS (
         else
           if (rpCLRVV)
             dsVV <= 0;
-          else if (rpPRESET | rpPAKACK)
+          else if ((rpPRESET & !dsERR) |
+                   (rpPAKACK & !dsERR))
             dsVV <= 1;
      end
 
