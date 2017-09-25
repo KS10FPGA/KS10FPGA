@@ -56,6 +56,7 @@ module RHCS2 (
       input  wire         rhRDY,                // Controller ready
       input  wire         rhSETDLT,             // Set DLT
       input  wire         rhSETWCE,             // Set WCE
+      input  wire         rhSETNED,             // Set NED
       input  wire         rhSETNEM,             // Set NEM
       input  wire         rhBUFIR,              // Status IR
       input  wire         rhBUFOR,              // Status OR
@@ -144,15 +145,14 @@ module RHCS2 (
         else
           if (errCLR)
             rhcs2UPE <= 0;
-          else if (1'b0)
-            rhcs2UPE <= 1;
           else if (rhcs2WRITE & devHIBYTE)
             rhcs2UPE <= `rhCS2_UPE(rhDATAI);
      end
 
    //
    // RHCS2 Non-existent Drive
-   //  Not implemented.  All drives are valid.
+   //  NED is asserted when a read or write is performed to a disk that is not
+   //  present.
    //
    // Trace
    //  M7296/CSRB/E9
@@ -162,7 +162,17 @@ module RHCS2 (
    //  M7295/BCTB/E93
    //
 
-   wire rhcs2NED = 0;
+   reg rhcs2NED;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          rhcs2NED <= 0;
+        else
+          if (errCLR)
+            rhcs2NED <= 0;
+          else if (rhSETNED)
+            rhcs2NED <= 1;
+     end
 
    //
    // RHCS2 Non-existent Memory

@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -430,11 +430,46 @@ module RH11 (
    wire rhCMDGO = rhcs1WRITE & `rpCS1_GO(rhDATAI);
 
    //
+   // Set Non-existant Device (NED)
+   //
+
+   wire rhSETNED = (rpdaWRITE  & !rpEN[rhUNIT] |
+                    rpdaREAD   & !rpEN[rhUNIT] |
+                    rpdsWRITE  & !rpEN[rhUNIT] |
+                    rpdsREAD   & !rpEN[rhUNIT] |
+                    rper1WRITE & !rpEN[rhUNIT] |
+                    rper1READ  & !rpEN[rhUNIT] |
+                    rpasWRITE  & !rpEN[rhUNIT] |
+                    rpasREAD   & !rpEN[rhUNIT] |
+                    rplaWRITE  & !rpEN[rhUNIT] |
+                    rplaREAD   & !rpEN[rhUNIT] |
+                    rpmrWRITE  & !rpEN[rhUNIT] |
+                    rpmrREAD   & !rpEN[rhUNIT] |
+                    rpdtWRITE  & !rpEN[rhUNIT] |
+                    rpdtREAD   & !rpEN[rhUNIT] |
+                    rpsnWRITE  & !rpEN[rhUNIT] |
+                    rpsnREAD   & !rpEN[rhUNIT] |
+                    rpofWRITE  & !rpEN[rhUNIT] |
+                    rpofREAD   & !rpEN[rhUNIT] |
+                    rpdcWRITE  & !rpEN[rhUNIT] |
+                    rpdcREAD   & !rpEN[rhUNIT] |
+                    rpccWRITE  & !rpEN[rhUNIT] |
+                    rpccREAD   & !rpEN[rhUNIT] |
+                    rper2WRITE & !rpEN[rhUNIT] |
+                    rper2READ  & !rpEN[rhUNIT] |
+                    rper3WRITE & !rpEN[rhUNIT] |
+                    rper3READ  & !rpEN[rhUNIT] |
+                    rpec1WRITE & !rpEN[rhUNIT] |
+                    rpec1READ  & !rpEN[rhUNIT] |
+                    rpec2WRITE & !rpEN[rhUNIT] |
+                    rpec2READ  & !rpEN[rhUNIT]);
+
+   //
    // Command Clear
    //
-   // The logic doesn't fully decode the Read, Write, and Wrchk commands and
-   // therefore includes some illegal commands.  This 'feature' is replicated
-   // here.
+   // The DEC KS10 logic doesn't fully decode the Read, Write, and Wrchk
+   // commands and therefore includes some illegal commands.  This 'feature' is
+   // replicated here.
    //
    // Trace
    //  M7296/CSRA/E6
@@ -544,6 +579,7 @@ module RH11 (
       .rhCLR      (rhCLR),
       .rhRDY      (rhRDY),
       .rhSETDLT   (rhSETDLT),
+      .rhSETNED   (rhSETNED),
       .rhSETNEM   (rhSETNEM),
       .rhSETWCE   (sdSETWCE),
       .rhBUFIR    (rhBUFIR),
