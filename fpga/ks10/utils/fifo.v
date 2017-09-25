@@ -18,7 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -181,13 +181,5 @@ module FIFO #(
              out <= mem[rd_addr];
           end
      end
-
-initial
-  begin
-     $display("SIZE is %d", SIZE);
-     $display("WIDTH is %d", WIDTH);
-     $display("ADDR_WIDTH is %d", ADDR_WIDTH);
-     $display("BUFSZ is %d", BUFSZ);
-  end
 
 endmodule
