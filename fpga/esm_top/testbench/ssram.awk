@@ -1,7 +1,46 @@
+################################################################################
+##
+## KS-10 Processor
+##
+## Brief
+##   This AWK script reads a DEC listing file and extracts the object code.
+##
+## Details
+##   This script is used to initialize SSRAM to a known program for simulation.
+##
+## File
+##   ssram.awk
+##
+## Author
+##   Rob Doyle - doyle (at) cox (dot) net
+##
+################################################################################
+##
+## Copyright (C) 2012-2017 Rob Doyle
+##
+## This source file may be used and distributed without restriction provided
+## that this copyright statement is not removed from the file and that any
+## derivative work contains the original copyright notice and the associated
+## disclaimer.
+##
+## This source file is free software; you can redistribute it and#or modify it
+## under the terms of the GNU Lesser General Public License as published by the
+## Free Software Foundation; version 2.1 of the License.
+##
+## This source is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+## FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+## for more details.
+##
+## You should have received a copy of the GNU Lesser General Public License
+## along with this source; if not, download it from
+## http://www.gnu.org/licenses/lgpl.txt
+##
+################################################################################
+
 #
-# This script reads a DEC listing file and extracts the object
-#  code.
-#  
+# Max function
+#
 
 function max(a, b) {
     return (a < b) ? b : a;
@@ -28,7 +67,7 @@ BEGIN {
 #
 #  These looks like:
 #
-#" xxx	xxxxxx	xx xx x xx xxxxxx 	
+#" xxx  xxxxxx  xx xx x xx xxxxxx
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7] [0-7][0-7] [0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
     data1 = lshift(strtonum("0" substr($3,  1, 2)), 30);
@@ -50,7 +89,7 @@ BEGIN {
 #
 #  These looks like:
 #
-#" xxx	xxxxxx	7 xxx xx x xx xxxxxx 
+#" xxx  xxxxxx  7 xxx xx x xx xxxxxx
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7] [0-7][0-7][0-7] [0-7][0-7] [0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
     data1 = lshift(strtonum("0" substr($3,  1, 1)), 33);
@@ -73,7 +112,7 @@ BEGIN {
 #
 #  These looks like:
 #
-#" xxx	xxxxxx	7 xxx x x xx xxxxxx 
+#" xxx  xxxxxx  7 xxx x x xx xxxxxx
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7] [0-7][0-7][0-7] [0-7] [0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
     data1 = lshift(strtonum("0" substr($3,  1, 1)), 33);
     data2 = lshift(strtonum("0" substr($3,  3, 3)), 24);
@@ -95,7 +134,7 @@ BEGIN {
 #
 #  These looks like:
 #
-#" xxx	xxxxxx	xxx xx xx xx xxxxxx 
+#" xxx  xxxxxx  xxx xx xx xx xxxxxx
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] [0-7][0-7] [0-7][0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
     data1 = lshift(strtonum("0" substr($3,  1, 3)), 27);
@@ -113,12 +152,12 @@ BEGIN {
 }
 
 #
-# Sixbit 
+# Sixbit
 #  6x 6-bit characters span the 36-bit word
 #
 #  These looks like:
 #
-#" xxx	aaaaaa	dd dd dd dd dd dd "
+#" xxx  aaaaaa  dd dd dd dd dd dd "
 #
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7] [0-7][0-7] [0-7][0-7] [0-7][0-7] [0-7][0-7] [0-7][0-7].*/ {
@@ -143,8 +182,8 @@ BEGIN {
 #
 #  These looks like:
 #
-#" xxx	aaaaaa	ddd ddd ddd ddd ddd "
-# 
+#" xxx  aaaaaa  ddd ddd ddd ddd ddd "
+#
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] [0-7][0-7][0-7] [0-7][0-7][0-7] [0-7][0-7][0-7] [0-7][0-7][0-7].*/ {
     data1 = lshift(and(strtonum("0" substr($3,  1, 3)), 0177), 29)
@@ -167,7 +206,7 @@ BEGIN {
 #
 #  These looks like:
 #
-#" xxx	aaaaaa	ddd 0000000000 "
+#" xxx  aaaaaa  ddd 0000000000 "
 #
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] 0000000000.*/ {
@@ -183,7 +222,7 @@ BEGIN {
 
 #
 # Byte 2
-#" 4800	006727	005 033 00000000 	INIMSG:	BYTE (7)	5,33		;^E, ALTMODE
+#" 4800 006727  005 033 00000000        INIMSG: BYTE (7)        5,33            ;^E, ALTMODE
 #
 # See DSQDA
 #
@@ -201,7 +240,7 @@ BEGIN {
 }
 
 # Bytes
-#" 2791	023352	0 117 124 0 123 120 	"
+#" 2791 023352  0 117 124 0 123 120     "
 #
 # See DSQDC
 #
@@ -228,7 +267,7 @@ BEGIN {
 #
 #  These looks like:
 #
-#" xxx	aaaaaa	ddd dd d dd dddddd "
+#" xxx  aaaaaa  ddd dd d dd dddddd "
 #
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7] [0-7][0-7] [0-7] [0-7][0-7] [0-7][0-7][0-7][0-7][0-7][0-7].*/ {
@@ -248,10 +287,10 @@ BEGIN {
 
 #
 # Definitions
-# 
+#
 #  These looks like:
 #
-#" xxx	aaaaaa	dddddd	dddddd "
+#" xxx  aaaaaa  dddddd  dddddd "
 #
 
 /^.*\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7][0-7][0-7][0-7]\t[0-7][0-7][0-7][0-7][0-7][0-7].*/ {
@@ -270,17 +309,17 @@ BEGIN {
 
 END {
    prevaddr = 0;
-   for (addr = 0; addr <= lastaddr; addr++) { 
+   for (addr = 0; addr <= lastaddr; addr++) {
        if (map[addr] != "") {
-	   data = strtonum("0" map[addr]);
-	   if (addr != prevaddr + 1 ){
-	       printf "@%x\n", addr
-	   }
-	   printf "%09x\t\t// mem[%06o] = %012o\n", data, addr, data
-	   prevaddr = addr;
+           data = strtonum("0" map[addr]);
+           if (addr != prevaddr + 1 ){
+               printf "@%x\n", addr
+           }
+           printf "%09x\t\t// mem[%06o] = %012o\n", data, addr, data
+           prevaddr = addr;
        } else {
-	   printf "%09x\t\t// mem[%06o] = %012o (init)\n", 0, addr, 0
-	   prevaddr = addr;
+           printf "%09x\t\t// mem[%06o] = %012o (init)\n", 0, addr, 0
+           prevaddr = addr;
        }
    }
 }

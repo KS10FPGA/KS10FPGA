@@ -30,7 +30,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -63,40 +63,40 @@
 `include "../uba/ubabus.vh"
 
 module DZ11 (
-      input  wire         clk,                  // Clock
-      input  wire         rst,                  // Reset
+      input  wire         clk,                          // Clock
+      input  wire         rst,                          // Reset
       // DZ11 Interfaces
-      output wire [ 7: 0] dz11TXD,              // DZ11 Transmitter Serial Data
-      input  wire [ 7: 0] dz11RXD,              // DZ11 Receiver Serial Data
-      input  wire [ 7: 0] dz11CO,               // DZ11 Carrier Detect
-      input  wire [ 7: 0] dz11RI,               // DZ11 Ring Indicator
-      output wire [ 7: 0] dz11DTR,              // DZ11 Data Terminal Ready
+      output wire [ 7: 0] dzTXD,                        // DZ11 Transmitter Serial Data
+      input  wire [ 7: 0] dzRXD,                        // DZ11 Receiver Serial Data
+      input  wire [ 7: 0] dzCO,                         // DZ11 Carrier Detect
+      input  wire [ 7: 0] dzRI,                         // DZ11 Ring Indicator
+      output wire [ 7: 0] dzDTR,                        // DZ11 Data Terminal Ready
       // Reset
-      input  wire         devRESET,             // IO Bus Bridge Reset
+      input  wire         devRESET,                     // IO Bus Bridge Reset
       // Interrupt
-      output wire [ 7: 4] devINTR,              // Interrupt Request
-      input  wire [ 7: 4] devINTA,              // Interrupt Acknowledge
+      output wire [ 7: 4] devINTR,                      // Interrupt Request
+      input  wire [ 7: 4] devINTA,                      // Interrupt Acknowledge
       // Target
-      input  wire         devREQI,              // Device Request In
-      output wire         devACKO,              // Device Acknowledge Out
-      input  wire [ 0:35] devADDRI,             // Device Address In
+      input  wire         devREQI,                      // Device Request In
+      output wire         devACKO,                      // Device Acknowledge Out
+      input  wire [ 0:35] devADDRI,                     // Device Address In
       // Initiator
-      output wire         devREQO,              // Device Request Out
-      input  wire         devACKI,              // Device Acknowledge In
-      output wire [ 0:35] devADDRO,             // Device Address Out
+      output wire         devREQO,                      // Device Request Out
+      input  wire         devACKI,                      // Device Acknowledge In
+      output wire [ 0:35] devADDRO,                     // Device Address Out
       // Data
-      input  wire [ 0:35] devDATAI,             // Data In
-      output reg  [ 0:35] devDATAO              // Data Out
+      input  wire [ 0:35] devDATAI,                     // Data In
+      output reg  [ 0:35] devDATAO                      // Data Out
    );
 
    //
    // DZ Parameters
    //
 
-   parameter [14:17] dzDEV  = `dz1DEV;          // DZ11 Device Number
-   parameter [18:35] dzADDR = `dz1ADDR;         // DZ11 Base Address
-   parameter [18:35] dzVECT = `dz1VECT;         // DZ11 Interrupt Vector
-   parameter [ 7: 4] dzINTR = `dz1INTR;         // DZ11 Interrupt
+   parameter [14:17] dzDEV  = `dz1DEV;                  // DZ11 Device Number
+   parameter [18:35] dzADDR = `dz1ADDR;                 // DZ11 Base Address
+   parameter [18:35] dzVECT = `dz1VECT;                 // DZ11 Interrupt Vector
+   parameter [ 7: 4] dzINTR = `dz1INTR;                 // DZ11 Interrupt
 
    //
    // DZ Register Addresses
@@ -113,8 +113,8 @@ module DZ11 (
    // DZ Interrupt Vectors
    //
 
-   localparam [18:35] rxVECT = dzVECT;          // DZ11 RX Interrupt Vector
-   localparam [18:35] txVECT = dzVECT + 4;      // DZ11 TX Interrupt Vector
+   localparam [18:35] rxVECT = dzVECT;                  // DZ11 RX Interrupt Vector
+   localparam [18:35] txVECT = dzVECT + 4;              // DZ11 TX Interrupt Vector
 
    //
    // Device Address and Flags
@@ -226,7 +226,7 @@ module DZ11 (
       .regTCR     (regTCR)
    );
 
-   assign dz11DTR = `dzTCR_DTR(regTCR);
+   assign dzDTR = `dzTCR_DTR(regTCR);
 
    //
    // Modem Status Register (MSR)
@@ -235,8 +235,8 @@ module DZ11 (
    DZMSR MSR (
       .clk        (clk),
       .rst        (rst),
-      .dz11CO     (dz11CO),
-      .dz11RI     (dz11RI),
+      .dzCO       (dzCO),
+      .dzRI       (dzRI),
       .regMSR     (regMSR)
    );
 
@@ -276,7 +276,7 @@ module DZ11 (
    //  receivers.
    //
 
-   wire [7:0] uartRXD = csrMAINT ? dz11TXD[7:0] : dz11RXD[7:0];
+   wire [7:0] uartRXD = csrMAINT ? dzTXD[7:0] : dzRXD[7:0];
    wire [7:0] uartTXD;
 
    //
@@ -407,7 +407,7 @@ module DZ11 (
    // Serial output data
    //
 
-   assign dz11TXD = uartTXD;
+   assign dzTXD = uartTXD;
 
    //
    // DZ11 Device Interface

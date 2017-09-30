@@ -12,7 +12,7 @@
 //!    console.cpp
 //!
 //! \note:
-//!    Regarding Errata 34-172-ERR-1-003-004:
+//!    Regarding SafeRTOS Errata 34-172-ERR-1-003-004:
 //!
 //!    The task stacks must be aligned to an 8-byte boundary for printf() to
 //!    work properly.  This requires two things:
@@ -27,7 +27,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2016 Rob Doyle
+// Copyright (C) 2013-2017 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -56,6 +56,7 @@
 #include "align.hpp"
 #include "fatal.hpp"
 #include "vt100.hpp"
+#include "config.hpp"
 #include "prompt.hpp"
 #include "console.hpp"
 #include "commands.hpp"
@@ -189,42 +190,10 @@ void taskConsole(void* arg) {
     ks10.waitHalt(debug->debugKS10);
 
     //
-    // Create serial input queue.  This is the interface between the UART
-    // interrupt and the RTOS.
+    // Read the configuration from the SD Card.
     //
 
-    createSerialQueue();
-
-    //
-    // The serial input queue has been created.  Now enable the UART receiver
-    // interrupts.  The interrupt will begin queuing characters to this task.
-    //
-
-    enableUARTIntr();
-
-    //
-    // Initialize the Console Communications memory area
-    //
-
-    ks10.writeMem(ks10_t::switch_addr, 000000000000);           // Initialize switch register
-    ks10.writeMem(ks10_t::kasw_addr,   003740000000);           // Initialize keep-alive and status word (KASW)
-    ks10.writeMem(ks10_t::ctyin_addr,  000000000000);           // Initialize CTY input word
-    ks10.writeMem(ks10_t::ctyout_addr, 000000000000);           // Initialize CTY output word
-    ks10.writeMem(ks10_t::klnin_addr,  000000000000);           // Initialize KLINIK input word
-    ks10.writeMem(ks10_t::klnout_addr, 000000000000);           // Initialize KLINIK output word
-    ks10.writeMem(ks10_t::rhbase_addr, 000001776700);           // Initialize RH11 base address
-    ks10.writeMem(ks10_t::rhunit_addr, 000000000000);           // Initialize UNIT number
-    ks10.writeMem(ks10_t::mtparm_addr, 000000000000);           // Initialize magtape params.
-
-    //
-    // Initialize contol registers
-    //
-
-    ks10.writeDZCCR(0x000000000000ff00ULL);                     // Initialize the DZ11 Console Control Register
-    ks10.writeRHCCR(0x00000000070707f8ULL);                     // Initialize the RH11 Console Control Registrer
-    ks10.writeDBAR (0x0000000000000000ULL);                     // Initialize the Debug Breakpoint Address Register
-    ks10.writeDBAR (0x0000000000000000ULL);                     // Initialize the Debug Breakpoint Address Register
-    ks10.writeDBMR (0x0000000000000000ULL);                     // Initialize the Debug Breakpoint Mask Register
+    recallConfig(debug->debugKS10);
 
     //
     // Check RH11 Initialization Status
@@ -239,6 +208,19 @@ void taskConsole(void* arg) {
         printf("KS10: %sRH11 failed to initialize SDHC media.%s\n", vt100fg_red, vt100at_rst);
         printRH11Debug();
     }
+
+    //
+    // Begin receiving characters from the UART:
+    //
+    // - Create serial input queue.  The queue is the interface between the UART
+    //   interrupt and the RTOS.
+    //
+    // - Once the serial input queue has been created, enable the UART receiver
+    //   interrupts.  The interrupt will begin queuing characters to this task.
+    //
+
+    createSerialQueue();
+    enableUARTIntr();
 
     //
     // Process commands

@@ -77,16 +77,17 @@ module testbench;
    // RH11 Secure Digital Interface
    //
 
-`ifdef SIM_SDHC_OFFLINE
-   wire         rh11CD_N = 1;   // RH11 Card not present
-`else
-   wire         rh11CD_N = 0;   // RH11 Card present
-`endif
-   wire         rh11MISO;       // RH11 Data In
-   wire         rh11MOSI;       // RH11 Data Out
-   wire         rh11SCLK;       // RH11 Clock
-   wire         rh11CS;         // RH11 Chip Select
-   wire [ 7: 0] rh11LEDS_N;     // RH11 Status LEDS
+   wire         sdCD_N = 0;     // SD Card Detect
+   wire         sdMISO;         // SD Data In
+   wire         sdMOSI;         // SD Data Out
+   wire         sdSCLK;         // SD Clock
+   wire         sdCS;           // SD Chip Select
+
+   //
+   // RPXX Interface
+   //
+
+   wire [ 7: 0] rpLEDS_N;       // RPXX Status LEDS
 
    //
    // SSRAM
@@ -807,13 +808,14 @@ module testbench;
       // DZ11 Interfaces
       .ttyTXD           (ttyTXD),
       .ttyRXD           (ttyRXD),
-      // RH11 Interfaces
-      .rh11CD_N         (rh11CD_N),
-      .rh11MISO         (rh11MISO),
-      .rh11MOSI         (rh11MOSI),
-      .rh11SCLK         (rh11SCLK),
-      .rh11CS           (rh11CS),
-      .rh11LEDS_N       (rh11LEDS_N),
+      // SD Interfaces
+      .sdCD_N           (sdCD_N),
+      .sdMISO           (sdMISO),
+      .sdMOSI           (sdMOSI),
+      .sdSCLK           (sdSCLK),
+      .sdCS             (sdCS),
+      // RPXX Interfaces
+      .rpLEDS_N         (rpLEDS_N),
       // Console Interfaces
       .conADDR          (conADDR),
       .conDATA          (conDATA),
@@ -865,10 +867,10 @@ module testbench;
    SDSIM SD (
       .clk              (clk),
       .rst              (reset),
-      .sdMISO           (rh11MISO),
-      .sdMOSI           (rh11MOSI),
-      .sdSCLK           (rh11SCLK),
-      .sdCS             (rh11CS)
+      .sdMISO           (sdMISO),
+      .sdMOSI           (sdMOSI),
+      .sdSCLK           (sdSCLK),
+      .sdCS             (sdCS)
    );
 
 `else
@@ -877,7 +879,7 @@ module testbench;
    // Terminate input
    //
 
-   assign rh11MISO = 0;
+   assign sdMISO = 0;
 
 `endif
 

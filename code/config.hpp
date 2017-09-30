@@ -3,14 +3,14 @@
 //  KS10 Console Microcontroller
 //
 //! \brief
-//!    Console commands
+//!    Configuration Object
 //!
 //! \details
-//!    This header file defines the interfaces to the command processing
-//!    functions.
+//!    This object allows the console to store and recall configuration
+//!    state from the SD Card.
 //!
 //! \file
-//!    commands.hpp
+//!    config.hpp
 //!
 //! \author
 //!    Rob Doyle - doyle (at) cox (dot) net
@@ -36,15 +36,20 @@
 //
 //******************************************************************************
 
-#ifndef __COMMANDS_HPP
-#define __COMMANDS_HPP
+#ifndef __CONFIG_HPP
+#define __CONFIG_HPP
 
-#include "SafeRTOS/SafeRTOS_API.h"
+#include "fatfslib/ff.h"
 
-void consoleOutput(void);
-void printHaltStatus(void);
-void printRH11Debug(void);
-void recallConfig(bool debug);
-void startCommandTask(char *lineBuffer, xTaskHandle &taskHandle);
+//!
+//! \brief
+//!    Configuration Object
+//!
+
+class config_t {
+    public:
+        static bool read(bool debug, const char *filename, void *buf, unsigned int size);
+        static bool write(bool debug, const char *filename, const void *buf, unsigned int size);
+};
 
 #endif

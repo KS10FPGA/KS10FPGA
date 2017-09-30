@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -44,8 +44,8 @@
 module DZMSR (
       input  wire        clk,                   // Clock
       input  wire        rst,                   // Reset
-      input  wire [ 7:0] dz11CO,                // DZ11 Carrier Detect
-      input  wire [ 7:0] dz11RI,                // DZ11 Ring Indicator
+      input  wire [ 7:0] dzCO,                  // DZ11 Carrier Detect
+      input  wire [ 7:0] dzRI,                  // DZ11 Ring Indicator
       output reg  [15:0] regMSR                 // MSR Output
    );
 
@@ -64,7 +64,7 @@ module DZMSR (
           end
         else
           begin
-             tmpMSR <= {dz11CO, dz11RI};
+             tmpMSR <= {dzCO, dzRI};
              regMSR <= tmpMSR;
           end
      end

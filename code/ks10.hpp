@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2016 Rob Doyle
+// Copyright (C) 2013-2017 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -189,8 +189,8 @@ class ks10_t {
         static void writeIObyte(addr_t addr, uint16_t data);
         static uint64_t readDZCCR(void);
         static void writeDZCCR(uint64_t data);
-        static uint64_t readRHCCR(void);
-        static void writeRHCCR(uint64_t data);
+        static uint64_t readRPCCR(void);
+        static void writeRPCCR(uint64_t data);
         static data_t readDCSR(void);
         static void writeDCSR(data_t data);
         static data_t readDBAR(void);
@@ -277,7 +277,7 @@ class ks10_t {
         static constexpr volatile uint64_t * regDZCCR = reinterpret_cast<uint64_t *>(epiOffset + 0x20);
 
         //!< RH11 Console Control Register
-        static constexpr volatile uint64_t * regRHCCR = reinterpret_cast<uint64_t *>(epiOffset + 0x28);
+        static constexpr volatile uint64_t * regRPCCR = reinterpret_cast<uint64_t *>(epiOffset + 0x28);
 
         //!< RH11 Debug Register
         static constexpr volatile uint64_t * regRH11Debug = reinterpret_cast<uint64_t *>(epiOffset + 0x30);

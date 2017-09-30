@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -50,8 +50,8 @@ module RPDS (
       input  wire         rpSETLST,             // Last sector transferred
       input  wire         rpSETATA,             // Set ATA
       input  wire         rpGO,                 // Go command
-      input  wire         rpCD,                 // SD Card detect
-      input  wire         rpWP,                 // SD Write protect
+      input  wire         rpMOL,                // Media On-line
+      input  wire         rpWRL,                // Write Lock
       input  wire         rpDPR,                // Drive present
       input  wire         rpPIP,                // Positioning in progress
       input  wire         rpDRY,                // Drive ready
@@ -66,32 +66,18 @@ module RPDS (
    );
 
    //
-   // Watch for transitions of rpCD
+   // Watch for transitions of rpMOL
    //
 
-   reg lastCD;
+   reg lastMOL;
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          lastCD <= 0;
+          lastMOL <= 0;
         else
-          lastCD <= rpCD;
+          lastMOL <= rpMOL;
      end
-
-   //
-   // MOL is asserted when disk transitions to on-line or
-   // transitions to off-line
-   //
-
-   wire rpSETMOL = (rpCD != lastCD);
-
-   //
-   // VV is cleared when the disk transitions to online
-   // from off-line
-   //
-
-   wire rpCLRVV  = rpCD & !lastCD;
 
    //
    // RPDS Attention (rpATA)
@@ -111,6 +97,10 @@ module RPDS (
    //  M7774/RG5/E51
    //  M7774/RG5/E57
    //
+   // Note:
+   //  ATA is asserted when the disk transitions from off-line to on-line or
+   //  from off-line to on-line.
+   //
 
    wire dsERR;
    reg  dsATA;
@@ -121,7 +111,7 @@ module RPDS (
         else
           if (clr | rpCLRATA | rpDRVCLR)
             dsATA <= 0;
-          else if (rpSETATA | rpSETMOL | (rpGO & dsERR))
+          else if (rpSETATA | (rpMOL != lastMOL) | (rpGO & dsERR))
             dsATA <= 1;
      end
 
@@ -164,7 +154,7 @@ module RPDS (
    //  M7774/RG6/E23
    //
 
-   wire dsMOL = rpCD;
+   wire dsMOL = rpMOL;
 
    //
    // RPDS Write Lock (rpWRL)
@@ -173,7 +163,7 @@ module RPDS (
    //  M7774/RG6/E16
    //
 
-   wire dsWRL = rpWP;
+   wire dsWRL = rpWRL;
 
    //
    // RPDS Last Sector Transferred (rpLST)
@@ -236,6 +226,12 @@ module RPDS (
    //  M7774/RG4/E68
    //  M7774/RG6/E16
    //
+   // Note:
+   //  VV is cleared when the disk transitions from off-line to online.
+   //  Clearing rpMOL does not clear VV.
+   //
+   //  VV is not set when a composite error (RPDS[ERR]) is present.
+   //
 
    reg dsVV;
    always @(posedge clk or posedge rst)
@@ -243,7 +239,7 @@ module RPDS (
         if (rst)
           dsVV <= 0;
         else
-          if (rpCLRVV)
+          if (rpMOL & !lastMOL)
             dsVV <= 0;
           else if ((rpPRESET & !dsERR) |
                    (rpPAKACK & !dsERR))

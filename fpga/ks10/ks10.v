@@ -18,7 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -54,16 +54,18 @@ module KS10 (
       input  wire         RESET_N,      // Reset
       input  wire         CLK50MHZ,     // Clock
       // DZ11 Interfaces
-      output wire [ 7: 0] dz11TXD,      // DZ11 Transmitter Serial Data
-      input  wire [ 7: 0] dz11RXD,      // DZ11 Receiver Serial Data
-      output wire         dz11LOOP,     // DZ11 Loopback enable
-      // RH11 Interfaces
-      input  wire         rh11CD_N,     // RH11 Card Detect
-      input  wire         rh11MISO,     // RH11 Data In
-      output wire         rh11MOSI,     // RH11 Data Out
-      output wire         rh11SCLK,     // RH11 Clock
-      output wire         rh11CS,       // RH11 Chip Select
-      output wire [ 7: 0] rh11LEDS,     // RH11 LEDs
+      input  wire [ 7: 0] dzRXD,        // DZ Receiver Serial Data
+      output wire [ 7: 0] dzTXD,        // DZ Transmitter Serial Data
+      output wire [ 7: 0] dzDTR,        // DZ Data Terminal Ready
+      // SD Interfaces
+      input  wire [ 7: 0] sdCD,         // SD Card Detect
+      input  wire [ 7: 0] sdWP,         // SD Write Protect
+      input  wire         sdMISO,       // SD Data In
+      output wire         sdMOSI,       // SD Data Out
+      output wire         sdSCLK,       // SD Clock
+      output wire         sdCS,         // SD Chip Select
+      // RPXX Interfaces
+      output wire [ 7: 0] rpLEDS,       // RPXX LEDs
       // Console Interfaces
       inout  wire [15: 0] conDATA,      // Console Data Bus
       input  wire [ 7: 1] conADDR,      // Console Address Bus
@@ -142,22 +144,25 @@ module KS10 (
    // DZ11 Signals
    //
 
-   wire [ 0: 7] dz11DTR;                // DZ11 Data Terminal Ready
-   wire [ 0:63] dz11CCR;                // DZ11 Console Control Register
-   wire [ 0: 7] dz11RI = dz11CCR[56:63];// DZ11 Ring Indicator
-   wire [ 0: 7] dz11CO = dz11CCR[48:55];// DZ11 Carrier Sense
-   assign dz11LOOP     = dz11CCR[47];   // DZ11 Loopback
+   wire [ 0:63] dzCCR;                  // DZ11 Console Control Register
+   wire [ 0: 7] dzRI;                   // DZ11 Ring Indicator
+   wire [ 0: 7] dzCO;                   // DZ11 Carrier Sense
+   wire         dzLOOP;                 // DZ11 Loopback
 
    //
    // RH11 Interfaces
    //
 
-   wire [ 0:63] rh11CCR;                 // RH11 Console Control Register
-   wire [ 0:63] rh11DEBUG;               // RH11 Debug
-   wire [ 7: 0] rh11WP  = rh11CCR[56:63];// RH11 Write Protect
-   wire [ 7: 0] rh11CD  = rh11CCR[48:55];// RH11 Card Detect
-   wire [ 7: 0] rh11DPR = rh11CCR[40:47];// RH11 Drive Present
-   wire [ 7: 0] rh11EN  = rh11CCR[32:39];// RH11 Enabled
+   wire [ 0:63] rhDEBUG;                // RH11 Debug
+
+   //
+   // RPxx Interfaces
+   //
+
+   wire [ 0:63] rpCCR;                  // RPXX Console Control Register
+   wire [ 7: 0] rpWRL;                  // RPXX Write Lock
+   wire [ 7: 0] rpMOL;                  // RPXX Media on-line
+   wire [ 7: 0] rpDPR;                  // RPXX Drive Present
 
    //
    // Memory Signals
@@ -199,6 +204,32 @@ module KS10 (
    wire [ 0: 1] debugTREN;              // Trace Enable
    wire         debugTRRESET;           // Trace Reset
    wire         debugREADITR;           // Read Instruction Trace Register
+
+   //
+   // Synchronize the DZCCR
+   //
+
+   SYNC #(
+      .WIDTH (17)
+   ) syncDZCCR (
+      .clk   (cpuCLK),
+      .rst   (rst),
+      .i     (dzCCR[47:63]),
+      .o     ({dzLOOP, dzCO, dzRI})
+   );
+
+   //
+   // Synchronize the RPCCR
+   //
+
+   SYNC #(
+      .WIDTH (24)
+   ) syncRPCCR (
+      .clk   (cpuCLK),
+      .rst   (rst),
+      .i     (rpCCR[40:63]),
+      .o     ({rpDPR, rpMOL, rpWRL})
+   );
 
    //
    // Clock Generator and Reset Synchronization
@@ -333,11 +364,12 @@ module KS10 (
       .cslCACHEEN       (cslCACHEEN),
       .cslINTR          (cslINTR),
       .cslRESET         (cpuRST),
-      // DZ11
-      .dz11CCR          (dz11CCR),
+      // DZ11 Interfaces
+      .dzCCR            (dzCCR),
+      // RPXX Interfaces
+      .rpCCR            (rpCCR),
       // RH11 Interfaces
-      .rh11CCR          (rh11CCR),
-      .rh11DEBUG        (rh11DEBUG),
+      .rhDEBUG          (rhDEBUG),
       // Debug Interface
       .debugCSR         (debugCSR),
       .debugBAR         (debugBAR),
@@ -433,17 +465,18 @@ module KS10 (
    uRH11 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      // RH11 IO
-      .rh11CD           (rh11CD),
-      .rh11WP           (rh11WP),
-      .rh11DPR          (rh11DPR),
-      .rh11EN           (rh11EN),
-      .rh11MISO         (rh11MISO),
-      .rh11MOSI         (rh11MOSI),
-      .rh11SCLK         (rh11SCLK),
-      .rh11CS           (rh11CS),
-      .rh11LEDS         (rh11LEDS),
-      .rh11DEBUG        (rh11DEBUG),
+      // SD Interfaces
+      .sdMISO           (sdMISO),
+      .sdMOSI           (sdMOSI),
+      .sdSCLK           (sdSCLK),
+      .sdCS             (sdCS),
+      // RH11 Interfaces
+      .rhDEBUG          (rhDEBUG),
+      // RPXX Interfaces
+      .rpMOL            (rpMOL),
+      .rpWRL            (rpWRL),
+      .rpDPR            (rpDPR),
+      .rpLEDS           (rpLEDS),
       // Reset
       .devRESET         (ctl1RESET),
       // Interrupt
@@ -521,11 +554,11 @@ module KS10 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
       // DZ11 IO
-      .dz11TXD          (dz11TXD),
-      .dz11RXD          (dz11RXD),
-      .dz11CO           (dz11CO),
-      .dz11RI           (dz11RI),
-      .dz11DTR          (dz11DTR),
+      .dzTXD            (dzTXD),
+      .dzRXD            (dzRXD),
+      .dzCO             (dzCO),
+      .dzRI             (dzRI),
+      .dzDTR            (dzDTR),
       // Reset
       .devRESET         (ctl3RESET),
       // Interrupt

@@ -16,7 +16,7 @@
 ##
 ################################################################################
 ##
-## Copyright (C) 2012-2016 Rob Doyle
+## Copyright (C) 2012-2017 Rob Doyle
 ##
 ## This source file may be used and distributed without restriction provided
 ## that this copyright statement is not removed from the file and that any
@@ -180,24 +180,24 @@ NET "ttyRXD<1>"         LOC = "K26"  | IOSTANDARD = LVCMOS33;
 # SD Card Interfaces
 #
 
-NET "rh11CD_N"          LOC = "D26"  | IOSTANDARD = LVCMOS33;
-NET "rh11CS"            LOC = "B25"  | IOSTANDARD = LVCMOS33;
-NET "rh11MISO"          LOC = "C25"  | IOSTANDARD = LVCMOS33;
-NET "rh11MOSI"          LOC = "A25"  | IOSTANDARD = LVCMOS33;
-NET "rh11SCLK"          LOC = "C26"  | IOSTANDARD = LVCMOS33;
+NET "sdCD_N"            LOC = "D26"  | IOSTANDARD = LVCMOS33;
+NET "sdCS"              LOC = "B25"  | IOSTANDARD = LVCMOS33;
+NET "sdMISO"            LOC = "C25"  | IOSTANDARD = LVCMOS33;
+NET "sdMOSI"            LOC = "A25"  | IOSTANDARD = LVCMOS33;
+NET "sdSCLK"            LOC = "C26"  | IOSTANDARD = LVCMOS33;
 
 #
 # Disk Activity LEDs
 #
 
-NET "rh11LEDS_N<0>"     LOC = "AE1"  | IOSTANDARD = LVCMOS33;   // VB2
-NET "rh11LEDS_N<1>"     LOC = "AD1"  | IOSTANDARD = LVCMOS33;   // VB3
-NET "rh11LEDS_N<2>"     LOC = "AC1"  | IOSTANDARD = LVCMOS33;   // VB4
-NET "rh11LEDS_N<3>"     LOC = "AA2"  | IOSTANDARD = LVCMOS33;   // VB5
-NET "rh11LEDS_N<4>"     LOC = "Y1"   | IOSTANDARD = LVCMOS33;   // VB6
-NET "rh11LEDS_N<5>"     LOC = "V3"   | IOSTANDARD = LVCMOS33;   // VB7
-NET "rh11LEDS_N<6>"     LOC = "U3"   | IOSTANDARD = LVCMOS33;   // VB8
-NET "rh11LEDS_N<7>"     LOC = "U4"   | IOSTANDARD = LVCMOS33;   // VB9
+NET "rpLEDS_N<0>"       LOC = "AE1"  | IOSTANDARD = LVCMOS33;   // VB2
+NET "rpLEDS_N<1>"       LOC = "AD1"  | IOSTANDARD = LVCMOS33;   // VB3
+NET "rpLEDS_N<2>"       LOC = "AC1"  | IOSTANDARD = LVCMOS33;   // VB4
+NET "rpLEDS_N<3>"       LOC = "AA2"  | IOSTANDARD = LVCMOS33;   // VB5
+NET "rpLEDS_N<4>"       LOC = "Y1"   | IOSTANDARD = LVCMOS33;   // VB6
+NET "rpLEDS_N<5>"       LOC = "V3"   | IOSTANDARD = LVCMOS33;   // VB7
+NET "rpLEDS_N<6>"       LOC = "U3"   | IOSTANDARD = LVCMOS33;   // VB8
+NET "rpLEDS_N<7>"       LOC = "U4"   | IOSTANDARD = LVCMOS33;   // VB9
 
 #
 # Testpoints

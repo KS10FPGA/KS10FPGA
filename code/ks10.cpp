@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2016 Rob Doyle
+// Copyright (C) 2013-2017 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -438,26 +438,26 @@ void ks10_t::writeDZCCR(uint64_t data) {
 
 //!
 //! \brief
-//!    This function reads a 64-bit value from the RHCCR
+//!    This function reads a 64-bit value from the RPCCR
 //!
 //! \returns
-//!    contents of the RHCCR register
+//!    contents of the RPCCR register
 //!
 
-uint64_t ks10_t::readRHCCR(void) {
-    return *regRHCCR;
+uint64_t ks10_t::readRPCCR(void) {
+    return *regRPCCR;
 }
 
 //!
 //! \brief
-//!    This function writes a 64-bit value to the RHCCR
+//!    This function writes a 64-bit value to the RPCCR
 //!
 //! \param data -
-//!    data is the data to be written to the RHCCR
+//!    data is the data to be written to the RPCCR
 //!
 
-void ks10_t::writeRHCCR(uint64_t data) {
-    *regRHCCR = data;
+void ks10_t::writeRPCCR(uint64_t data) {
+    *regRPCCR = data;
 }
 
 //!
@@ -1142,7 +1142,7 @@ void ks10_t::testRegs(bool debug) {
     success &= testReg64(regData,  "regDATA ", debug, 0xfffffffff);
     success &= testReg64(regCIR,   "regCIR  ", debug, 0xfffffffff);
     success &= testReg64(regDZCCR, "regDZCCR", debug);
-    success &= testReg64(regRHCCR, "regRHCCR", debug);
+    success &= testReg64(regRPCCR, "regRPCCR", debug);
     success &= testReg64(regDBAR,  "regDBAR ", debug, 0xfffffffff);
     success &= testReg64(regDBMR,  "regDBMR ", debug, 0xfffffffff);
     if (success) {

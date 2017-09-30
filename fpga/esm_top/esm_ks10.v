@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -49,15 +49,16 @@ module ESM_KS10 (
       input  wire         MR_N,         // Master Reset push button
       output wire         MR,           // Master Reset out
       // DZ11 Interfaces
-      input  wire [ 1: 0] ttyTXD,       // DZ11 RS-232 Transmitted Data
-      output wire [ 1: 0] ttyRXD,       // DZ11 RS-232 Received Data
+      input  wire [ 1: 0] ttyTXD,       // DZ RS-232 Transmitted Data
+      output wire [ 1: 0] ttyRXD,       // DZ RS-232 Received Data
       // RH11 Interfaces
-      input  wire         rh11CD_N,     // RH11 Card Detect
-      input  wire         rh11MISO,     // RH11 Data In
-      output wire         rh11MOSI,     // RH11 Data Out
-      output wire         rh11SCLK,     // RH11 Clock
-      output wire         rh11CS,       // RH11 Chip Select
-      output wire [ 7: 0] rh11LEDS_N,   // RH11 Status LEDS
+      input  wire         sdCD_N,       // SD Card Detect
+      input  wire         sdMISO,       // SD Data In
+      output wire         sdMOSI,       // SD Data Out
+      output wire         sdSCLK,       // SD Clock
+      output wire         sdCS,         // SD Chip Select
+      // RPXX Interfaces
+      output wire [ 7: 0] rpLEDS_N,     // RPXX Status LEDS
       // Console Microcontroller Interfaces
       inout  wire [15: 0] conDATA,      // Console Data Bus
       input  wire [ 7: 1] conADDR,      // Console Address Bus
@@ -81,18 +82,25 @@ module ESM_KS10 (
    );
 
    //
-   // DZ11 Interfaces
+   // DZ Interfaces
    //
 
-   wire [7:0] dz11TXD;                  // DZ11 TXD
-   wire [7:0] dz11RXD;                  // DZ11 RXD
-   wire dz11LOOP;                       // DZ11 Loopback
+   wire [7:0] dzRXD;                    // DZ RXD
+   wire [7:0] dzTXD;                    // DZ TXD
+   wire [7:0] dzDTR;                    // DZ DTR
 
    //
-   // RH11 Interfaces
+   // RP Interaces
    //
 
-   wire [7:0] rh11LEDS;                 // Activity LEDs
+   wire [7:0] rpLEDS;                   // Activity LEDs
+
+   //
+   // SD Interfaces
+   //
+
+   wire [7:0] sdWP = {7{1'b0}};         // SD Write Protect
+   wire [7:0] sdCD = {7{1'b1}};         // SD Card Detect
 
    //
    // KS10 Processor
@@ -102,16 +110,18 @@ module ESM_KS10 (
       .RESET_N          (RESET_N),
       .CLK50MHZ         (CLK50MHZ),
       // DZ11
-      .dz11TXD          (dz11TXD),
-      .dz11RXD          (dz11RXD),
-      .dz11LOOP         (dz11LOOP),
-      // RH11
-      .rh11CD_N         (rh11CD_N),
-      .rh11MISO         (rh11MISO),
-      .rh11MOSI         (rh11MOSI),
-      .rh11SCLK         (rh11SCLK),
-      .rh11CS           (rh11CS),
-      .rh11LEDS         (rh11LEDS),
+      .dzTXD            (dzTXD),
+      .dzRXD            (dzRXD),
+      .dzDTR            (dzDTR),
+      // SD
+      .sdCD             (sdCD),
+      .sdWP             (sdWP),
+      .sdMISO           (sdMISO),
+      .sdMOSI           (sdMOSI),
+      .sdSCLK           (sdSCLK),
+      .sdCS             (sdCS),
+      // RPXX
+      .rpLEDS           (rpLEDS),
       // Console
       .conADDR          (conADDR),
       .conDATA          (conDATA ),
@@ -138,11 +148,11 @@ module ESM_KS10 (
    // TXD is an output from the FT4232.  RXD is an input to the FT4232.
    // Therefore TXD and RXD must get twisted here.
    //
-   // Route TTY0, TTY1 to pins.  Conditionally loopback everything else.
+   // Route TTY0, TTY1 to pins.
    //
 
-   assign ttyRXD[1:0]  = dz11TXD[1:0];
-   assign dz11RXD[7:0] = dz11LOOP ? dz11TXD[7:0] : {dz11TXD[7:2], ttyTXD[1:0]};
+   assign ttyRXD[1:0] = dzTXD[1:0];
+   assign dzRXD[7:0] = {6'b0, ttyTXD[1:0]};
 
    //
    // MR needs to be an input for the system to work.  We assign it to an
@@ -155,6 +165,6 @@ module ESM_KS10 (
    // Negate LEDs.  LEDs are illuminated when the output is low.
    //
 
-   assign rh11LEDS_N = ~rh11LEDS;
+   assign rpLEDS_N = ~rpLEDS;
 
 endmodule

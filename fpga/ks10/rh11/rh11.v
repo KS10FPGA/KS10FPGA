@@ -62,17 +62,18 @@
 module RH11 (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
+      // SD Interfaces
+      input  wire         sdMISO,               // SD Data In
+      output wire         sdMOSI,               // SD Data Out
+      output wire         sdSCLK,               // SD Clock
+      output wire         sdCS,                 // SD Chip Select
       // RH11 Interfaces
-      input  wire [ 7: 0] rh11CD,               // RH11 Card Detect
-      input  wire [ 7: 0] rh11WP,               // RH11 Write Protect
-      input  wire [ 7: 0] rh11DPR,              // RH11 Drive Present
-      input  wire [ 7: 0] rh11EN,               // RH11 Enabled
-      input  wire         rh11MISO,             // RH11 Data In
-      output wire         rh11MOSI,             // RH11 Data Out
-      output wire         rh11SCLK,             // RH11 Clock
-      output wire         rh11CS,               // RH11 Chip Select
-      output wire [ 7: 0] rh11LEDS,             // RH11 Status LEDs
-      output wire [ 0:63] rh11DEBUG,            // RH11 Debug Output
+      output wire [ 0:63] rhDEBUG,              // RH11 Debug Output
+      // RPXX Interfaces
+      input  wire [ 7: 0] rpMOL,                // RPxx Media On-line
+      input  wire [ 7: 0] rpWRL,                // RPxx Write Lock
+      input  wire [ 7: 0] rpDPR,                // RPxx Drive Present
+      output wire [ 7: 0] rpLEDS,               // RPxx Status LEDs
       // Reset
       input  wire         devRESET,             // IO Bus Bridge Reset
       // Interrupt
@@ -238,42 +239,6 @@ module RH11 (
    wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
-   // Drive Present
-   //
-
-   wire [7:0] rhDPR = rh11DPR;
-
-   //
-   // Synchronize the SD Card Detect
-   //
-
-   wire [7:0] rhCD;
-
-   SYNC #(
-      .WIDTH (8)
-   ) syncCD (
-      .clk   (clk),
-      .rst   (rst),
-      .o     (rhCD),
-      .i     (rh11CD)
-   );
-
-   //
-   // Synchronize the SD Write Protect
-   //
-
-   wire [7:0] rhWP;
-
-   SYNC #(
-      .WIDTH (8)
-   ) syncWP (
-      .clk   (clk),
-      .rst   (rst),
-      .o     (rhWP),
-      .i     (rh11WP)
-   );
-
-   //
    // Interrupt Acknowledge
    //
 
@@ -430,39 +395,45 @@ module RH11 (
    wire rhCMDGO = rhcs1WRITE & `rpCS1_GO(rhDATAI);
 
    //
+   // Drive is present
+   //
+
+   wire rpPRES = rpDPR[rhUNIT];
+
+   //
    // Set Non-existant Device (NED)
    //
 
-   wire rhSETNED = (rpdaWRITE  & !rpEN[rhUNIT] |
-                    rpdaREAD   & !rpEN[rhUNIT] |
-                    rpdsWRITE  & !rpEN[rhUNIT] |
-                    rpdsREAD   & !rpEN[rhUNIT] |
-                    rper1WRITE & !rpEN[rhUNIT] |
-                    rper1READ  & !rpEN[rhUNIT] |
-                    rpasWRITE  & !rpEN[rhUNIT] |
-                    rpasREAD   & !rpEN[rhUNIT] |
-                    rplaWRITE  & !rpEN[rhUNIT] |
-                    rplaREAD   & !rpEN[rhUNIT] |
-                    rpmrWRITE  & !rpEN[rhUNIT] |
-                    rpmrREAD   & !rpEN[rhUNIT] |
-                    rpdtWRITE  & !rpEN[rhUNIT] |
-                    rpdtREAD   & !rpEN[rhUNIT] |
-                    rpsnWRITE  & !rpEN[rhUNIT] |
-                    rpsnREAD   & !rpEN[rhUNIT] |
-                    rpofWRITE  & !rpEN[rhUNIT] |
-                    rpofREAD   & !rpEN[rhUNIT] |
-                    rpdcWRITE  & !rpEN[rhUNIT] |
-                    rpdcREAD   & !rpEN[rhUNIT] |
-                    rpccWRITE  & !rpEN[rhUNIT] |
-                    rpccREAD   & !rpEN[rhUNIT] |
-                    rper2WRITE & !rpEN[rhUNIT] |
-                    rper2READ  & !rpEN[rhUNIT] |
-                    rper3WRITE & !rpEN[rhUNIT] |
-                    rper3READ  & !rpEN[rhUNIT] |
-                    rpec1WRITE & !rpEN[rhUNIT] |
-                    rpec1READ  & !rpEN[rhUNIT] |
-                    rpec2WRITE & !rpEN[rhUNIT] |
-                    rpec2READ  & !rpEN[rhUNIT]);
+   wire rhSETNED = (rpdaWRITE  & !rpPRES |
+                    rpdaREAD   & !rpPRES |
+                    rpdsWRITE  & !rpPRES |
+                    rpdsREAD   & !rpPRES |
+                    rper1WRITE & !rpPRES |
+                    rper1READ  & !rpPRES |
+                    rpasWRITE  & !rpPRES |
+                    rpasREAD   & !rpPRES |
+                    rplaWRITE  & !rpPRES |
+                    rplaREAD   & !rpPRES |
+                    rpmrWRITE  & !rpPRES |
+                    rpmrREAD   & !rpPRES |
+                    rpdtWRITE  & !rpPRES |
+                    rpdtREAD   & !rpPRES |
+                    rpsnWRITE  & !rpPRES |
+                    rpsnREAD   & !rpPRES |
+                    rpofWRITE  & !rpPRES |
+                    rpofREAD   & !rpPRES |
+                    rpdcWRITE  & !rpPRES |
+                    rpdcREAD   & !rpPRES |
+                    rpccWRITE  & !rpPRES |
+                    rpccREAD   & !rpPRES |
+                    rper2WRITE & !rpPRES |
+                    rper2READ  & !rpPRES |
+                    rper3WRITE & !rpPRES |
+                    rper3READ  & !rpPRES |
+                    rpec1WRITE & !rpPRES |
+                    rpec1READ  & !rpPRES |
+                    rpec2WRITE & !rpPRES |
+                    rpec2READ  & !rpPRES);
 
    //
    // Command Clear
@@ -661,9 +632,9 @@ module RH11 (
               .rhUNIT   (rhUNIT),
               .rpNUM    (i[2:0]),
               .rpPAT    (rhPAT),
-              .rpCD     (rhCD[i]),
-              .rpWP     (rhWP[i]),
-              .rpDPR    (rhDPR[i]),
+              .rpMOL    (rpMOL[i]),
+              .rpWRL    (rpWRL[i]),
+              .rpDPR    (rpDPR[i]),
               .rpCS1    (rpCS1[i]),
               .rpDA     (rpDA[i]),
               .rpDS     (rpDS[i]),
@@ -680,7 +651,7 @@ module RH11 (
               .rpSDREQ  (rpSDREQ[i]),
               .rpSDACK  (rpSDACK[i]),
               .rpSDLSA  (rpSDLSA[i]),
-              .rpACTIVE (rh11LEDS[i])
+              .rpACTIVE (rpLEDS[i])
            );
         end
    endgenerate
@@ -696,10 +667,10 @@ module RH11 (
 `ifndef SYNTHESIS
       .file       (file),
 `endif
-      .sdMISO     (rh11MISO),
-      .sdMOSI     (rh11MOSI),
-      .sdSCLK     (rh11SCLK),
-      .sdCS       (rh11CS),
+      .sdMISO     (sdMISO),
+      .sdMOSI     (sdMOSI),
+      .sdSCLK     (sdSCLK),
+      .sdCS       (sdCS),
       // Device interface
       .devDATAI   (devDATAI),
       .devDATAO   (sdDATAO),
@@ -720,7 +691,7 @@ module RH11 (
       .sdSETWCE   (sdSETWCE),
       .sdREADOP   (sdREADOP),
       .sdSCAN     (sdSCAN),
-      .sdDEBUG    (rh11DEBUG)
+      .sdDEBUG    (rhDEBUG)
    );
 
    //
@@ -753,69 +724,73 @@ module RH11 (
                      rpec2WRITE | rpec2READ |
                      //
                      vectREAD);
+
    //
    // Unit Selection
    //
 
-   wire [15:0] rpdaUNIT  = rh11EN[rhUNIT] ? rpDA[rhUNIT] : 0;
-   wire [15:0] rpdsUNIT  = rh11EN[rhUNIT] ? rpDS[rhUNIT] : 0;
-   wire [15:0] rplaUNIT  = rh11EN[rhUNIT] ? rpLA[rhUNIT] : 0;
-   wire [15:0] rpmrUNIT  = rh11EN[rhUNIT] ? rpMR[rhUNIT] : 0;
-   wire [15:0] rpdtUNIT  = rh11EN[rhUNIT] ? rpDT[rhUNIT] : 0;
-   wire [15:0] rpsnUNIT  = rh11EN[rhUNIT] ? rpSN[rhUNIT] : 0;
-   wire [15:0] rpofUNIT  = rh11EN[rhUNIT] ? rpOF[rhUNIT] : 0;
-   wire [15:0] rpdcUNIT  = rh11EN[rhUNIT] ? rpDC[rhUNIT] : 0;
-   wire [15:0] rpccUNIT  = rh11EN[rhUNIT] ? rpCC[rhUNIT] : 0;
-   wire [15:0] rper1UNIT = rh11EN[rhUNIT] ? rpER1[rhUNIT] : 0;
-   wire [15:0] rper2UNIT = rh11EN[rhUNIT] ? rpER2[rhUNIT] : 0;
-   wire [15:0] rper3UNIT = rh11EN[rhUNIT] ? rpER3[rhUNIT] : 0;
+   wire [15:0] rpdaUNIT  = rpDA[rhUNIT];
+   wire [15:0] rpdsUNIT  = rpDS[rhUNIT];
+   wire [15:0] rplaUNIT  = rpLA[rhUNIT];
+   wire [15:0] rpmrUNIT  = rpMR[rhUNIT];
+   wire [15:0] rpdtUNIT  = rpDT[rhUNIT];
+   wire [15:0] rpsnUNIT  = rpSN[rhUNIT];
+   wire [15:0] rpofUNIT  = rpOF[rhUNIT];
+   wire [15:0] rpdcUNIT  = rpDC[rhUNIT];
+   wire [15:0] rpccUNIT  = rpCC[rhUNIT];
+   wire [15:0] rper1UNIT = rpER1[rhUNIT];
+   wire [15:0] rper2UNIT = rpER2[rhUNIT];
+   wire [15:0] rper3UNIT = rpER3[rhUNIT];
 
    //
    // Bus Mux and little-endian to big-endian bus swap.
+   //  Only output the RP register if the disk is present.
    //
 
    always @*
      begin
-        devDATAO = sdDATAO;
-        if (rhcs1WRITE | rhcs1READ)
+        devDATAO = 0;
+        if (devREQO)
+          devDATAO = sdDATAO;
+        if (rhcs1READ)
           devDATAO = {20'b0, rhCS1};
-        if (rhwcWRITE | rhwcREAD)
+        if (rhwcREAD)
           devDATAO = {20'b0, rhWC};
-        if (rhbaWRITE | rhbaREAD)
+        if (rhbaREAD)
           devDATAO = {20'b0, rhBA[15:0]};
-        if (rpdaWRITE | rpdaREAD)
+        if (rpdaREAD & rpPRES)
           devDATAO = {20'b0, rpdaUNIT};
-        if (rhcs2WRITE | rhcs2READ)
+        if (rhcs2READ)
           devDATAO = {20'b0, rhCS2};
-        if (rpdsWRITE | rpdsREAD)
+        if (rpdsREAD & rpPRES)
           devDATAO = {20'b0, rpdsUNIT};
-        if (rper1WRITE | rper1READ)
+        if (rper1READ & rpPRES)
           devDATAO = {20'b0, rper1UNIT};
-        if (rpasWRITE | rpasREAD)
+        if (rpasREAD & rpPRES)
           devDATAO = {20'b0, rpAS};
-        if (rplaWRITE | rplaREAD)
+        if (rplaREAD & rpPRES)
           devDATAO = {20'b0, rplaUNIT};
-        if (rhdbWRITE | rhdbREAD)
+        if (rhdbREAD)
           devDATAO = {20'b0, rhDB};
-        if (rpmrWRITE | rpmrREAD)
+        if (rpmrREAD & rpPRES)
           devDATAO = {20'b0, rpmrUNIT};
-        if (rpdtWRITE | rpdtREAD)
+        if (rpdtREAD & rpPRES)
           devDATAO = {20'b0, rpdtUNIT};
-        if (rpsnWRITE | rpsnREAD)
+        if (rpsnREAD & rpPRES)
           devDATAO = {20'b0, rpsnUNIT};
-        if (rpofWRITE | rpofREAD)
+        if (rpofREAD & rpPRES)
           devDATAO = {20'b0, rpofUNIT};
-        if (rpdcWRITE | rpdcREAD)
+        if (rpdcREAD & rpPRES)
           devDATAO = {20'b0, rpdcUNIT};
-        if (rpccWRITE | rpccREAD)
+        if (rpccREAD & rpPRES)
           devDATAO = {20'b0, rpccUNIT};
-        if (rper2WRITE | rper2READ)
+        if (rper2READ & rpPRES)
           devDATAO = {20'b0, rper2UNIT};
-        if (rper3WRITE | rper3READ)
+        if (rper3READ & rpPRES)
           devDATAO = {20'b0, rper3UNIT};
-        if (rpec1WRITE | rpec1READ)
+        if (rpec1READ & rpPRES)
           devDATAO = {20'b0, rpEC1};
-        if (rpec2WRITE | rpec2READ)
+        if (rpec2READ & rpPRES)
           devDATAO = {20'b0, rpEC2};
         if (vectREAD)
           devDATAO = {20'b0, rhVECT};
@@ -831,7 +806,7 @@ module RH11 (
    // Create DMA address
    //
 
-   assign devADDRO = (sdREADOP) ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
+   assign devADDRO = sdREADOP ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
 
    //
    // Whine about unacked bus cycles

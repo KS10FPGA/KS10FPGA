@@ -13,7 +13,7 @@
 #
 #******************************************************************************
 #
-# Copyright (C) 2013-2016 Rob Doyle
+# Copyright (C) 2013-2017 Rob Doyle
 #
 # This file is part of the KS10 FPGA Project
 #
@@ -50,6 +50,7 @@ LDFLAGS := \
 FILES := \
 	console.o \
 	commands.o \
+	config.o \
 	dasm.o \
 	dz11.o \
 	epi.o \
@@ -67,6 +68,7 @@ FILES := \
 HEADERS := \
 	align.hpp \
 	commands.hpp \
+	config.hpp \
 	console.hpp \
 	dasm.hpp \
 	dz11.hpp \

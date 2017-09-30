@@ -13,7 +13,7 @@
 #
 #******************************************************************************
 #
-# Copyright (C) 2013-2016 Rob Doyle
+# Copyright (C) 2013-2017 Rob Doyle
 #
 # This file is part of the KS10 FPGA Project
 #
@@ -93,19 +93,25 @@ endif
 # Project structure
 #
 
-ISE       := esm_top/ise
-MAINDEC   := ../maindec
-TESTBENCH := esm_top/testbench
-QUESTA    := esm_top/questa
+MAINDEC      := ../maindec
+TESTBENCH    := esm_top/testbench
+ISE_DIR      := esm_top/ise
+QUESTA_DIR   := esm_top/questa
+IVERILOG_DIR := esm_top/iverilog
 
 #
 # Other tools
 #
 
-IVERILOG := iverilog
-VVP      := vvp
-CLOC     := cloc-1.62.exe
-OBJCOPY  := objcopy
+IVERILOG     := iverilog
+VVP          := vvp
+VLIB         := vlib
+VMAP         := vmap
+VLOG         := vlog
+VSIM         := vsim
+VIVADO       := /cygdrive/c/Xilinx/Vivado/2015.4/bin/vivado
+OBJCOPY      := objcopy
+CLOC         := cloc-1.62.exe
 
 #
 # Fix pipelining (the tee command)
@@ -414,18 +420,23 @@ SIM_FILES := \
 	$(TESTBENCH)/testbench.v \
 	$(TESTBENCH)/sdsim.v
 
-SSRAM_DAT := \
-	$(TESTBENCH)/$(DIAG).dat
-
 #
+# If loading a diagnostic, add it.  Otherwise don't
 # If were simulating SMMON, add the SMMON files.  Otherwise don't.
 #
 
-MON_FILES :=
+SEQ_FILES :=
+
+ifdef DIAG
+
+SEQ_FILES += \
+	$(MAINDEC)/$(PREFIX)$(DIAG).SEQ
+
+endif
 
 ifneq (, $(findstring SIM_SMMON, $(SIM_ARGS)))
 
-MON_FILES += \
+SEQ_FILES += \
 	$(MAINDEC)/MAINDEC-10-DSQDA-RD00.SEQ \
 	$(MAINDEC)/MAINDEC-10-DSQDB-RD00.SEQ \
 	$(MAINDEC)/MAINDEC-10-DSQDC-RD00.SEQ
@@ -522,9 +533,9 @@ DOC_FILES := \
 #
 
 BLD_FILES := \
-	$(ISE)/esm_ks10.xise \
-	$(ISE)/esm_ks10.gise \
-	$(ISE)/esm_ks10.wcfg
+	$(ISE_DIR)/esm_ks10.xise \
+	$(ISE_DIR)/esm_ks10.gise \
+	$(ISE_DIR)/esm_ks10.wcfg
 
 #
 # UCF File
@@ -555,7 +566,7 @@ FILTER_ARGS := \
 # Build the binary firmware image
 #
 
-build: $(ISE)/$(PROJECT).bin
+build: $(ISE_DIR)/$(PROJECT).bin
 
 #
 # Create the "Control ROM" microcode for microsequencer
@@ -573,17 +584,26 @@ ks10/cpu/useq/drom.dat: ks10/cpu/useq/ks10.mcr ks10/cpu/useq/drom.awk
 
 #
 # Initialize the SSRAM with MAINDEC (simulation only)
-# Note special rule for force $(DIAG).dat to rebuild
+# Ensure that there is something to execute.  If not, error out.
 #
 
-$(TESTBENCH)/$(DIAG).dat : FORCE
-FORCE:
+ifeq ($(SEQ_FILES), )
 
-$(TESTBENCH)/$(DIAG).dat : $(MON_FILES) $(MAINDEC)/$(PREFIX)$(DIAG).SEQ $(TESTBENCH)/ssram.awk makefile
-	cat $(MON_FILES) $(MAINDEC)/$(PREFIX)$(DIAG).SEQ | \
-	awk -f $(TESTBENCH)/ssram.awk -vfilename=$(DIAG).SEQ > $(TESTBENCH)/$(DIAG).dat
+$(TESTBENCH)/ssram.dat : $(SEQ_FILES) $(TESTBENCH)/ssram.awk makefile
+	$(error "Need to define DIAG (from command line - DIAG=DSKAA) or define SIM_SMMON or both")
 
-$(ISE)/$(PROJECT).filter: makefile
+else
+
+$(TESTBENCH)/ssram.dat : $(SEQ_FILES) $(TESTBENCH)/ssram.awk makefile
+	cat $(SEQ_FILES) | \
+	awk -f $(TESTBENCH)/ssram.awk -vfilename="$(SEQ_FILES)" > $(TESTBENCH)/ssram.dat
+
+endif
+
+.PHONY : $(TESTBENCH)/ssram.dat
+
+$(ISE_DIR)/$(PROJECT).filter: makefile
+
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
 	@for FIL in $(FILTER_ARGS); \
@@ -591,7 +611,7 @@ $(ISE)/$(PROJECT).filter: makefile
 	    echo $$FIL >> $@; \
 	done
 
-$(ISE)/$(PROJECT).xst: makefile
+$(ISE_DIR)/$(PROJECT).xst: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
 	@for CMD in $(XST_CMDS); \
@@ -599,7 +619,7 @@ $(ISE)/$(PROJECT).xst: makefile
 	    echo $$CMD >> $@; \
 	done
 
-$(ISE)/$(PROJECT).prj: makefile
+$(ISE_DIR)/$(PROJECT).prj: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
 	@for FILE in $(RTL_FILES); \
@@ -607,7 +627,7 @@ $(ISE)/$(PROJECT).prj: makefile
 	    echo 'verilog work "../../'$$FILE'"' >> $@; \
 	done
 
-$(ISE)/$(PROJECT)_isim.prj: makefile
+$(ISE_DIR)/$(PROJECT)_isim.prj: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
 	@for FILE in $(RTL_FILES); \
@@ -620,7 +640,7 @@ $(ISE)/$(PROJECT)_isim.prj: makefile
 	done
 	@echo 'verilog work "$(XILINX)/ISE_DS/ISE/verilog/src/glbl.v"' >> $@;
 
-$(ISE)/$(PROJECT)_isim.cmd: makefile
+$(ISE_DIR)/$(PROJECT)_isim.cmd: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
 	@for CMD in $(ISIM_CMDS); \
@@ -628,7 +648,7 @@ $(ISE)/$(PROJECT)_isim.cmd: makefile
 	    echo $$CMD >> $@; \
 	done
 
-$(ISE)/$(PROJECT)_impact.cmd: makefile
+$(ISE_DIR)/$(PROJECT)_impact.cmd: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
 	@for CMD in $(IMPACT_CMDS); \
@@ -644,7 +664,7 @@ $(ISE)/$(PROJECT)_impact.cmd: makefile
 FUSE_ARGS := \
 	$(subst -D,-d,$(SIM_ARGS) $(SYN_ARGS)) \
 	-d XILINX \
-	-d SSRAM_DAT=\"\"../../$(TESTBENCH)/$(DIAG).dat\"\" \
+	-d SSRAM_DAT=\"\"../../$(TESTBENCH)/ssram.dat\"\" \
 	-d CROM_DAT=\"\"../../$(CROM_DAT)\"\" \
 	-d DROM_DAT=\"\"../../$(DROM_DAT)\"\" \
 	-d UNIT0_DSK=\"\"../../$(UNIT0_DSK)\"\" \
@@ -666,8 +686,8 @@ FUSE_ARGS := \
 	work.$(SIMTOP) \
 	work.glbl
 
-$(ISE)/$(PROJECT)_isim.exe: $(ISE)/$(PROJECT)_isim.prj $(RTL_FILES) $(SIM_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) makefile
-	@cd $(ISE); \
+$(ISE_DIR)/$(PROJECT)_isim.exe: $(ISE_DIR)/$(PROJECT)_isim.prj $(RTL_FILES) $(SIM_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) makefile
+	@cd $(ISE_DIR); \
 	$(FUSE) $(FUSE_ARGS)
 
 #
@@ -685,13 +705,13 @@ ISIM_ARGS := \
 	-view $(PROJECT).wcfg \
 	-wdb c:/temp/$(PROJECT).wdb
 
-isim: $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg $(TESTBENCH)/$(DIAG).dat makefile
-	@cd $(ISE); \
+isim: $(ISE_DIR)/$(PROJECT)_isim.exe $(ISE_DIR)/$(PROJECT)_isim.cmd $(ISE_DIR)/$(PROJECT).wcfg $(TESTBENCH)/ssram.dat makefile
+	@cd $(ISE_DIR); \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe $(ISIM_ARGS) &
 
-isim_bat : $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJECT).wcfg $(TESTBENCH)/$(DIAG).dat makefile
-	@cd $(ISE); \
+isim_bat : $(ISE_DIR)/$(PROJECT)_isim.exe $(ISE_DIR)/$(PROJECT)_isim.cmd $(ISE_DIR)/$(PROJECT).wcfg $(TESTBENCH)/ssram.dat makefile
+	@cd $(ISE_DIR); \
 	export PATH=$(XILPATH):$$PATH; \
 	./$(PROJECT)_isim.exe -gui &
 
@@ -699,36 +719,17 @@ isim_bat : $(ISE)/$(PROJECT)_isim.exe $(ISE)/$(PROJECT)_isim.cmd $(ISE)/$(PROJEC
 # Questasim
 #
 
-DOFILE := \
-        "onerror {resume}" \
-        "quietly WaveActivateNextPane {} 0 " \
-        "add wave -noupdate -radix octal -radixshowbase 0 clk" \
-        "add wave -noupdate -radix octal -radixshowbase 0 reset" \
-        "add wave -noupdate -color \"lightblue\" -divider {Memory Interface}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {busADDRI}             {/testbench/uKS10/uKS10/uMEM/busADDRI}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {busDATAI}             {/testbench/uKS10/uKS10/uMEM/busDATAI}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {busDATAO}             {/testbench/uKS10/uKS10/uMEM/busDATAO}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {memREAD}              {/testbench/uKS10/uKS10/uMEM/memREAD}"  \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {memWRITE}             {/testbench/uKS10/uKS10/uMEM/memWRITE}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {memWRTEST}            {/testbench/uKS10/uKS10/uMEM/memWRTEST}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {ssramDATA}            {/testbench/uKS10/uKS10/uMEM/ssramDATA}" \
-        "add wave -noupdate -divider {CPU Interface}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {clk}                  {/testbench/clk}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {reset}                {/testbench/reset}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {clken}                {/testbench/uKS10/uKS10/uCPU/uINTF/clken}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuREQO}              {/testbench/uKS10/uKS10/uCPU/cpuREQO}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuACKI}              {/testbench/uKS10/uKS10/uCPU/cpuACKI}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuADDRO[0:35]}       {/testbench/uKS10/uKS10/uCPU/cpuADDRO}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label { 3: READ}             {/testbench/uKS10/uKS10/uCPU/cpuADDRO[3]}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label { 4: WRTEST}           {/testbench/uKS10/uKS10/uCPU/cpuADDRO[4]}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label { 5: WRITE}            {/testbench/uKS10/uKS10/uCPU/cpuADDRO[5]}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {10: IO}               {/testbench/uKS10/uKS10/uCPU/cpuADDRO[10]}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {11: WRU}              {/testbench/uKS10/uKS10/uCPU/cpuADDRO[11]}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {12: VECT}             {/testbench/uKS10/uKS10/uCPU/cpuADDRO[12]}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuADDRO[14:35]}      {/testbench/uKS10/uKS10/uCPU/cpuADDRO[14:35]}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuDATAI}             {/testbench/uKS10/uKS10/uCPU/cpuDATAI}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuDATAO}             {/testbench/uKS10/uKS10/uCPU/cpuDATAO}" \
-        "add wave -noupdate -divider {** CPU **}" \
+DO_BUSES := \
+        "add wave -noupdate -divider {BUSSES}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uKS10/uCPU/clk}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {DP}                   {/testbench/uKS10/uKS10/uCPU/dp}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {DBUS}                 {/testbench/uKS10/uKS10/uCPU/dbus}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {DBM}                  {/testbench/uKS10/uKS10/uCPU/dbm}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {RAMFILE}              {/testbench/uKS10/uKS10/uCPU/ramfile}" \
+
+DO_CPU := \
+        "add wave -noupdate -divider {CPU}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uKS10/uCPU/clk}" \
         "add wave -noupdate -radix octal -radixshowbase 0 -label {CROM J}               {/testbench/uKS10/uKS10/uCPU/uUSEQ/uCROM/addr}" \
         "add wave -noupdate -radix octal -radixshowbase 0 -label {CROM ADDR}            {/testbench/uKS10/uKS10/uCPU/uUSEQ/addr}" \
         "add wave -noupdate -radix octal -radixshowbase 0 -label {CROM CURR ADDR}       {/testbench/uKS10/uKS10/uCPU/uUSEQ/uSTACK/currADDR}" \
@@ -765,24 +766,94 @@ DOFILE := \
         "add wave -noupdate -radix octal -radixshowbase 0 -label {AC12}                 {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[12]}" \
         "add wave -noupdate -radix octal -radixshowbase 0 -label {AC13}                 {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[13]}" \
         "add wave -noupdate -radix octal -radixshowbase 0 -label {AC14}                 {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[14]}" \
-        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC15}                 {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[15]}" \
-        "run 100 us"
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {AC15}                 {/testbench/uKS10/uKS10/uCPU/uRAMFILE/ram[15]}"
 
-$(QUESTA)/wave.do: makefile
+DO_CPU_INTF := \
+        "add wave -noupdate -divider {CPU Interface}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uKS10/uCPU/clk}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {clken}                {/testbench/uKS10/uKS10/uCPU/uINTF/clken}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuREQO}              {/testbench/uKS10/uKS10/uCPU/cpuREQO}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuACKI}              {/testbench/uKS10/uKS10/uCPU/cpuACKI}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuADDRO[0:35]}       {/testbench/uKS10/uKS10/uCPU/cpuADDRO}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 3: READ}             {/testbench/uKS10/uKS10/uCPU/cpuADDRO[3]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 4: WRTEST}           {/testbench/uKS10/uKS10/uCPU/cpuADDRO[4]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label { 5: WRITE}            {/testbench/uKS10/uKS10/uCPU/cpuADDRO[5]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {10: IO}               {/testbench/uKS10/uKS10/uCPU/cpuADDRO[10]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {11: WRU}              {/testbench/uKS10/uKS10/uCPU/cpuADDRO[11]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {12: VECT}             {/testbench/uKS10/uKS10/uCPU/cpuADDRO[12]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuADDRO[14:35]}      {/testbench/uKS10/uKS10/uCPU/cpuADDRO[14:35]}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuDATAI}             {/testbench/uKS10/uKS10/uCPU/cpuDATAI}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {cpuDATAO}             {/testbench/uKS10/uKS10/uCPU/cpuDATAO}" \
+
+DO_DBM := \
+        "add wave -noupdate -divider {DBM}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uKS10/uCPU/clk}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {memCLK}               {/testbench/uKS10/uKS10/uCPU/uDBM/memCLK}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {clkPHS}               {/testbench/uKS10/uKS10/uCPU/uDBM/clkPHS}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {enable}               {/testbench/uKS10/uKS10/uCPU/uDBM/enable}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {mux}                  {/testbench/uKS10/uKS10/uCPU/uDBM/mux}" \
+
+DO_MEM_INTF := \
+        "add wave -noupdate -color \"lightblue\" -divider {Memory Interface}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {busADDRI}             {/testbench/uKS10/uKS10/uMEM/busADDRI}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {busDATAI}             {/testbench/uKS10/uKS10/uMEM/busDATAI}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {busDATAO}             {/testbench/uKS10/uKS10/uMEM/busDATAO}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {memREAD}              {/testbench/uKS10/uKS10/uMEM/memREAD}"  \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {memWRITE}             {/testbench/uKS10/uKS10/uMEM/memWRITE}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {memWRTEST}            {/testbench/uKS10/uKS10/uMEM/memWRTEST}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {ssramDATA}            {/testbench/uKS10/uKS10/uMEM/ssramDATA}" \
+
+DO_RH11 := \
+	"add wave -noupdate -divider {RH11}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {devREQO}              {/testbench/uKS10/uKS10/uRH11/devREQO}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {devDATAO}             {/testbench/uKS10/uKS10/uRH11/devDATAO}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {devACKI}              {/testbench/uKS10/uKS10/uRH11/devACKI}"
+
+DO_SD_INTF := \
+	"add wave -noupdate -divider {SD}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {ch}                   {/testbench/SD/ch}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {spiTX}                {/testbench/SD/spiTX}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {devREQO}              {/testbench/uKS10/uKS10/uRH11/uSD/devREQO}" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {devDATAO}             {/testbench/uKS10/uKS10/uRH11/uSD/devDATAO}" \
+
+
+DOFILE := \
+        "onerror {resume}" \
+        "quietly WaveActivateNextPane {} 0 " \
+        "view wave" \
+        "add wave -noupdate -radix octal -radixshowbase 0 clk" \
+        "add wave -noupdate -radix octal -radixshowbase 0 reset" \
+        "add wave -noupdate -radix octal -radixshowbase 0 -label {clkPHS}               {/testbench/uKS10/uKS10/uCLK/clkPHS}" \
+
+DO_END := \
+       "run 100 us"
+
+$(QUESTA_DIR)/wave.do: makefile
 	@echo "Creating "$@ > /dev/stderr
 	@echo "" > $@
-	@for CMD in $(DOFILE); \
+	@for CMD in $(DOFILE) $(DO_CPU_INTF) $(DO_CPU) $(DO_RH11); \
 	do \
 	    echo $$CMD >> $@; \
 	done
 
-questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(SSRAM_DAT) makefile $(QUESTA)/wave.do
-	vlib $(QUESTA)/work
-	vmap work $(QUESTA)/work
-	vlog $(SIM_FILES) $(RTL_FILES) \
-	-work $(QUESTA)/work \
+questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBENCH)/ssram.dat makefile $(QUESTA_DIR)/wave.do
+	$(VLIB) $(QUESTA_DIR)/work
+	$(VMAP) work $(QUESTA_DIR)/work
+	$(VLOG) $(SIM_FILES) $(RTL_FILES) \
+	-work $(QUESTA_DIR)/work \
 	-lint \
-	+define+SSRAM_DAT=\"$(TESTBENCH)/$(DIAG).dat\" \
+	+incdir+ks10 \
+	+incdir+ks10/uba \
+	+incdir+ks10/cpu \
+	+incdir+ks10/cpu/useq \
+	+incdir+ks10/debug \
+	+incdir+ks10/dz11 \
+	+incdir+ks10/dz11/uart \
+	+incdir+ks10/mem \
+	+incdir+ks10/rh11 \
+	+incdir+ks10/rh11/rpxx \
+	+incdir+ks10/rh11/sd \
+	+define+SSRAM_DAT=\"$(TESTBENCH)/ssram.dat\" \
 	+define+CROM_DAT=\"$(CROM_DAT)\" \
 	+define+DROM_DAT=\"$(DROM_DAT)\" \
 	+define+UNIT0_DSK=\"$(UNIT0_DSK)\" \
@@ -794,17 +865,17 @@ questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(SSRAM_
 	+define+UNIT6_DSK=\"$(UNIT6_DSK)\" \
 	+define+UNIT7_DSK=\"$(UNIT7_DSK)\" \
 	$(subst -D ,+define+,$(SIM_ARGS) $(SYN_ARGS))
-	echo testbench -novopt -do $(QUESTA)/wave.do
-	cmd /c "vsim testbench -novopt -do $(QUESTA)/wave.do"
+	vsim -i testbench -do $(QUESTA_DIR)/wave.do &
+
+#	echo "run 1 sec" | $(VSIM) testbench
+
 
 #
 # Vivado
 #
 
-VIVADO_EXE = /cygdrive/c/Xilinx/Vivado/2015.4/bin/vivado
-
-vivado: $(SSRAM_DAT)
-	$(VIVADO_EXE) -help
+vivado: $(TESTBENCH)/ssram.dat
+	$(VIVADO) -help
 
 #
 # xst
@@ -908,13 +979,20 @@ XST_CMDS += \
 	'-sd {"../../ks10//xilinx/chipscope_uba_ila" "../../ks10//xilinx/chipscope_uba_icon"}'
 endif
 
-$(ISE)/$(PROJECT).ngc $(ISE)/$(PROJECT).ngr: $(ISE)/$(PROJECT).xst $(ISE)/$(PROJECT).prj $(ISE)/$(PROJECT).filter $(RTL_FILES) $(INC_FILES) $(DAT_FILES) makefile
-	-@cd $(ISE); \
+#
+# Some versions of XST don't set the return status correctly.  We have to
+# grep the listing file to see if the build succeeded
+#
+
+$(ISE_DIR)/$(PROJECT).ngc $(ISE_DIR)/$(PROJECT).ngr: $(ISE_DIR)/$(PROJECT).xst $(ISE_DIR)/$(PROJECT).prj $(ISE_DIR)/$(PROJECT).filter $(RTL_FILES) $(INC_FILES) $(DAT_FILES) makefile
+	-@cd $(ISE_DIR); \
 	echo "################################################################################" | tee    $(PROJECT).log; \
 	echo Running XST | tee -a $(PROJECT).log; \
 	echo $(XST) $(XST_OPTS) -ifn $(PROJECT).xst -ofn $(PROJECT).syr | tee -a $(PROJECT).log; \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
-	$(XST) $(XST_OPTS) -ifn $(PROJECT).xst -ofn $(PROJECT).syr | tee -a $(PROJECT).log
+	rm -f $(PROJECT).ngc; \
+	$(XST) $(XST_OPTS) -ifn $(PROJECT).xst -ofn $(PROJECT).syr | tee -a $(PROJECT).log; \
+	grep -e "Number of errors[ ]*:[ ]*0" < $(PROJECT).syr
 
 #
 # ngdbuild
@@ -976,8 +1054,8 @@ NGD_OPTS += \
 	-sd ../../ks10/xilinx/chipscope_uba_icon
 endif
 
-$(ISE)/$(PROJECT).ngd: $(ISE)/$(PROJECT).ngc $(UCF_FILE) $(CGN_FILES) $(ISE)/$(PROJECT).filter makefile
-	@cd $(ISE); \
+$(ISE_DIR)/$(PROJECT).ngd: $(ISE_DIR)/$(PROJECT).ngc $(UCF_FILE) $(CGN_FILES) $(ISE_DIR)/$(PROJECT).filter makefile
+	@cd $(ISE_DIR); \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
 	echo Running NGDBUILD | tee -a $(PROJECT).log; \
 	echo $(NGD) $(NGD_OPTS) $(PROJECT).ngc $(PROJECT).ngd | tee -a $(PROJECT).log; \
@@ -1035,8 +1113,8 @@ MAP_OPTS:= \
 	-xe n \
 	-xt 0
 
-$(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf: $(ISE)/$(PROJECT).ngd $(ISE)/$(PROJECT).filter makefile
-	@cd $(ISE); \
+$(ISE_DIR)/$(PROJECT)_map.ncd $(ISE_DIR)/$(PROJECT).pcf: $(ISE_DIR)/$(PROJECT).ngd $(ISE_DIR)/$(PROJECT).filter makefile
+	@cd $(ISE_DIR); \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
 	echo Running MAP | tee -a $(PROJECT).log; \
 	echo $(MAP) $(MAP_OPTS) -o $(PROJECT)_map.ncd $(PROJECT).ngd $(PROJECT).pcf | tee -a $(PROJECT).log; \
@@ -1070,8 +1148,8 @@ PAR_OPTS := \
 	-w \
 	-xe n
 
-$(ISE)/$(PROJECT).ncd: $(ISE)/$(PROJECT)_map.ncd $(ISE)/$(PROJECT).pcf $(ISE)/$(PROJECT).filter makefile
-	@cd $(ISE); \
+$(ISE_DIR)/$(PROJECT).ncd: $(ISE_DIR)/$(PROJECT)_map.ncd $(ISE_DIR)/$(PROJECT).pcf $(ISE_DIR)/$(PROJECT).filter makefile
+	@cd $(ISE_DIR); \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
 	echo Running PAR | tee -a $(PROJECT).log; \
 	echo $(PAR) $(PAR_OPTS) $(PROJECT)_map.ncd $(PROJECT).ncd $(PROJECT).pcf | tee -a $(PROJECT).log; \
@@ -1126,8 +1204,8 @@ BITGEN_OPTS := \
 	-g sw_gwe_cycle:5 \
 	-g sw_gts_cycle:4
 
-$(ISE)/$(PROJECT).bit: $(ISE)/$(PROJECT).ncd makefile
-	@cd $(ISE); \
+$(ISE_DIR)/$(PROJECT).bit: $(ISE_DIR)/$(PROJECT).ncd makefile
+	@cd $(ISE_DIR); \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
 	echo Running BITGEN | tee -a $(PROJECT).log; \
 	echo $(BITGEN) $(BITGEN_OPTS) $(PROJECT).ncd $(PROJECT).bit | tee -a $(PROJECT).log; \
@@ -1162,8 +1240,8 @@ PROMGEN_OPTS := \
 	-u 0000 $(PROJECT).bit \
 	-w
 
-$(ISE)/$(PROJECT).mcs: $(ISE)/$(PROJECT).bit makefile
-	@cd $(ISE); \
+$(ISE_DIR)/$(PROJECT).mcs: $(ISE_DIR)/$(PROJECT).bit makefile
+	@cd $(ISE_DIR); \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
 	echo Running PROMGEN | tee -a $(PROJECT).log; \
 	echo $(PROMGEN) $(PROMGEN_OPTS) | tee -a $(PROJECT).log; \
@@ -1178,13 +1256,13 @@ OBJCOPY_OPTS := \
 	-I ihex \
 	-O binary
 
-$(ISE)/$(PROJECT).bin : $(ISE)/$(PROJECT).mcs makefile
-	@cd $(ISE); \
+$(ISE_DIR)/$(PROJECT).bin : $(ISE_DIR)/$(PROJECT).mcs makefile
+	@cd $(ISE_DIR); \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
 	echo Running OBJCOPY | tee -a $(PROJECT).log; \
-	echo $(OBJCOPY) $(OBJCOPY_OPTS) $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT).bin | tee -a $(PROJECT).log; \
+	echo $(OBJCOPY) $(OBJCOPY_OPTS) $(ISE_DIR)/$(PROJECT).mcs $(ISE_DIR)/$(PROJECT).bin | tee -a $(PROJECT).log; \
 	echo "################################################################################" | tee -a $(PROJECT).log; \
-	$(OBJCOPY) $(OBJCOPY_OPTS) $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT).bin
+	$(OBJCOPY) $(OBJCOPY_OPTS) $(ISE_DIR)/$(PROJECT).mcs $(ISE_DIR)/$(PROJECT).bin
 
 #
 # Run 'impact' to program the KS10 flash
@@ -1220,17 +1298,17 @@ IMPACT_CMDS := \
 	'setCable -target "digilent_plugin DEVICE=JtagHs2 FREQUENCY="' \
 	'identify -inferir' \
 	'identifyMPM' \
-	'attachflash -position 1 -spi S25FL064P' \
+	'attachflash -position 1 -spi S25FL032P' \
 	'assignfiletoattachedflash -position 1 -file $(PROJECT).mcs' \
 	'program -p 1 -dataWidth 1 -spionly -e -v -loadfpga' \
 	'quit'
 
-load: $(ISE)/$(PROJECT).mcs $(ISE)/$(PROJECT)_impact.cmd
-	cd $(ISE); \
+load: $(ISE_DIR)/$(PROJECT).mcs $(ISE_DIR)/$(PROJECT)_impact.cmd
+	cd $(ISE_DIR); \
 	$(IMPACT) -batch $(PROJECT)_impact.cmd
 
-reload: $(ISE)/$(PROJECT)_impact.cmd
-	cd $(ISE); \
+reload: $(ISE_DIR)/$(PROJECT)_impact.cmd
+	cd $(ISE_DIR); \
 	$(IMPACT) -batch $(PROJECT)_impact.cmd
 
 #
@@ -1238,18 +1316,17 @@ reload: $(ISE)/$(PROJECT)_impact.cmd
 #
 
 trce :
-	$(TRCE) -v -tsi asdf.tsi $(ISE)/$(PROJECT).ncd
-
+	$(TRCE) -v -tsi asdf.tsi $(ISE_DIR)/$(PROJECT).ncd
 
 #
 # iverilog
 #
 
-testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(SSRAM_DAT) makefile
-	$(IVERILOG) -W all -s testbench -o $@ $(SIM_FILES) $(RTL_FILES) \
+iverilog : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBENCH)/ssram.dat makefile
+	$(IVERILOG) -W all -s testbench -o $(IVERILOG_DIR)/sim.vvp $(SIM_FILES) $(RTL_FILES) \
 	$(SIM_ARGS) \
 	$(SYN_ARGS) \
-	-D SSRAM_DAT=\"$(SSRAM_DAT)\" \
+	-D SSRAM_DAT=\"$(TESTBENCH)/ssram.dat\" \
 	-D CROM_DAT=\"$(CROM_DAT)\" \
 	-D DROM_DAT=\"$(DROM_DAT)\" \
 	-D UNIT0_DSK=\"$(UNIT0_DSK)\" \
@@ -1271,15 +1348,15 @@ testsuite/$(DIAG).vvp : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SI
 	-I ks10/rh11/rpxx \
 	-I ks10/rh11/sd \
 	-I ks10/uba
-
-testsuite/$(DIAG).txt : testsuite/$(DIAG).vvp
-	$(VVP) -n $< > testsuite/$(DIAG).txt
+	$(VVP) -n $(IVERILOG_DIR)/sim.vvp | tee $(IVERILOG_DIR)/sim.log
 
 #
 # Clean everything
 #
 
-clean: clean_rtl clean_ise
+clean: clean_rtl clean_ise clean_questa clean_iverilog
+	rm -f cty_out.txt \
+	      rhstatus.txt
 
 #
 # Clean RTL
@@ -1289,6 +1366,7 @@ clean_rtl:
 	rm -f ks10/cpu/useq/crom.dat
 	rm -f ks10/cpu/useq/drom.dat
 	rm -f $(TESTBENCH)/*.dat
+	rm -f $(TESTBENCH)/unit?.dsk
 	find . -type f -name "*~" | xargs rm -fv
 
 #
@@ -1296,75 +1374,93 @@ clean_rtl:
 #
 
 clean_ise:
-	rm -rf $(ISE)/xst \
-               $(ISE)/_ngo \
-               $(ISE)/_xmsgs \
-               $(ISE)/isim \
-               $(ISE)/iseconfig \
-               $(ISE)/xlnx_auto_0_xdb
-	rm -f  $(ISE)/$(PROJECT).bgn \
-	       $(ISE)/$(PROJECT).bit \
-	       $(ISE)/$(PROJECT).bld \
-	       $(ISE)/$(PROJECT).cfi \
-               $(ISE)/$(PROJECT).cmd_log \
-               $(ISE)/$(PROJECT).drc \
-               $(ISE)/$(PROJECT).filter \
-               $(ISE)/$(PROJECT).log \
-               $(ISE)/$(PROJECT).lso \
-               $(ISE)/$(PROJECT).mcs \
-               $(ISE)/$(PROJECT).ncd \
-               $(ISE)/$(PROJECT).ngc \
-               $(ISE)/$(PROJECT).ngc_xst.xrpt \
-               $(ISE)/$(PROJECT).ngd \
-               $(ISE)/$(PROJECT).ngr \
-               $(ISE)/$(PROJECT).pad \
-               $(ISE)/$(PROJECT).par \
-               $(ISE)/$(PROJECT).pcf\
-               $(ISE)/$(PROJECT).prj\
-               $(ISE)/$(PROJECT).prm\
-               $(ISE)/$(PROJECT).ptwx \
-               $(ISE)/$(PROJECT).srp \
-               $(ISE)/$(PROJECT).syr \
-               $(ISE)/$(PROJECT).stx \
-               $(ISE)/$(PROJECT).twr \
-               $(ISE)/$(PROJECT).twx \
-               $(ISE)/$(PROJECT).unroutes \
-               $(ISE)/$(PROJECT).ut \
-               $(ISE)/$(PROJECT).wdb \
-               $(ISE)/$(PROJECT).xpi \
-               $(ISE)/$(PROJECT).xst \
-               $(ISE)/$(PROJECT)_bitgen.xwbt \
-               $(ISE)/$(PROJECT)_envsettings.html \
-               $(ISE)/$(PROJECT)_guide.ncd \
-               $(ISE)/$(PROJECT)_impact.cmd \
-               $(ISE)/$(PROJECT)_isim.cmd \
-               $(ISE)/$(PROJECT)_isim.exe \
-               $(ISE)/$(PROJECT)_isim.prj \
-               $(ISE)/$(PROJECT)_map.map \
-               $(ISE)/$(PROJECT)_map.mrp \
-               $(ISE)/$(PROJECT)_map.ncd \
-               $(ISE)/$(PROJECT)_map.ngm \
-               $(ISE)/$(PROJECT)_map.xrpt \
-               $(ISE)/$(PROJECT)_ngdbuild.xrpt \
-               $(ISE)/$(PROJECT)_pad.csv \
-               $(ISE)/$(PROJECT)_pad.txt \
-               $(ISE)/$(PROJECT)_par.xrpt \
-               $(ISE)/$(PROJECT)_summary.html \
-               $(ISE)/$(PROJECT)_summary.xml \
-               $(ISE)/$(PROJECT)_usage.xml \
-               $(ISE)/$(PROJECT)_xst.xrpt \
-               $(ISE)/fuse.log \
-               $(ISE)/fuse.xmsgs \
-               $(ISE)/fuseRelaunch.cmd \
-               $(ISE)/_impactbatch.log \
-               $(ISE)/isim.cmd \
-               $(ISE)/isim.log \
-               $(ISE)/par_usage_statistics.html \
-               $(ISE)/usage_statistics_webtalk.html \
-               $(ISE)/webtalk.log \
-               $(ISE)/webtalk_pn.xml \
-               $(ISE)/xilinx_device_details.xml \
-               $(ISE)/xilinxsim.ini
+	rm -rf $(ISE_DIR)/xst \
+               $(ISE_DIR)/_ngo \
+               $(ISE_DIR)/_xmsgs \
+               $(ISE_DIR)/isim \
+               $(ISE_DIR)/iseconfig \
+               $(ISE_DIR)/xlnx_auto_0_xdb
+	rm -f  $(ISE_DIR)/$(PROJECT).bgn \
+	       $(ISE_DIR)/$(PROJECT).bit \
+	       $(ISE_DIR)/$(PROJECT).bld \
+	       $(ISE_DIR)/$(PROJECT).cfi \
+               $(ISE_DIR)/$(PROJECT).cmd_log \
+               $(ISE_DIR)/$(PROJECT).drc \
+               $(ISE_DIR)/$(PROJECT).filter \
+               $(ISE_DIR)/$(PROJECT).log \
+               $(ISE_DIR)/$(PROJECT).lso \
+               $(ISE_DIR)/$(PROJECT).mcs \
+               $(ISE_DIR)/$(PROJECT).ncd \
+               $(ISE_DIR)/$(PROJECT).ngc \
+               $(ISE_DIR)/$(PROJECT).ngc_xst.xrpt \
+               $(ISE_DIR)/$(PROJECT).ngd \
+               $(ISE_DIR)/$(PROJECT).ngr \
+               $(ISE_DIR)/$(PROJECT).pad \
+               $(ISE_DIR)/$(PROJECT).par \
+               $(ISE_DIR)/$(PROJECT).pcf\
+               $(ISE_DIR)/$(PROJECT).prj\
+               $(ISE_DIR)/$(PROJECT).prm\
+               $(ISE_DIR)/$(PROJECT).ptwx \
+               $(ISE_DIR)/$(PROJECT).srp \
+               $(ISE_DIR)/$(PROJECT).syr \
+               $(ISE_DIR)/$(PROJECT).stx \
+               $(ISE_DIR)/$(PROJECT).twr \
+               $(ISE_DIR)/$(PROJECT).twx \
+               $(ISE_DIR)/$(PROJECT).unroutes \
+               $(ISE_DIR)/$(PROJECT).ut \
+               $(ISE_DIR)/$(PROJECT).wdb \
+               $(ISE_DIR)/$(PROJECT).xpi \
+               $(ISE_DIR)/$(PROJECT).xst \
+               $(ISE_DIR)/$(PROJECT)_bitgen.xwbt \
+               $(ISE_DIR)/$(PROJECT)_envsettings.html \
+               $(ISE_DIR)/$(PROJECT)_guide.ncd \
+               $(ISE_DIR)/$(PROJECT)_impact.cmd \
+               $(ISE_DIR)/$(PROJECT)_isim.cmd \
+               $(ISE_DIR)/$(PROJECT)_isim.exe \
+               $(ISE_DIR)/$(PROJECT)_isim.prj \
+               $(ISE_DIR)/$(PROJECT)_map.map \
+               $(ISE_DIR)/$(PROJECT)_map.mrp \
+               $(ISE_DIR)/$(PROJECT)_map.ncd \
+               $(ISE_DIR)/$(PROJECT)_map.ngm \
+               $(ISE_DIR)/$(PROJECT)_map.xrpt \
+               $(ISE_DIR)/$(PROJECT)_ngdbuild.xrpt \
+               $(ISE_DIR)/$(PROJECT)_pad.csv \
+               $(ISE_DIR)/$(PROJECT)_pad.txt \
+               $(ISE_DIR)/$(PROJECT)_par.xrpt \
+               $(ISE_DIR)/$(PROJECT)_summary.html \
+               $(ISE_DIR)/$(PROJECT)_summary.xml \
+               $(ISE_DIR)/$(PROJECT)_usage.xml \
+               $(ISE_DIR)/$(PROJECT)_xst.xrpt \
+               $(ISE_DIR)/fuse.log \
+               $(ISE_DIR)/fuse.xmsgs \
+               $(ISE_DIR)/fuseRelaunch.cmd \
+               $(ISE_DIR)/_impactbatch.log \
+               $(ISE_DIR)/isim.cmd \
+               $(ISE_DIR)/isim.log \
+               $(ISE_DIR)/par_usage_statistics.html \
+               $(ISE_DIR)/usage_statistics_webtalk.html \
+               $(ISE_DIR)/webtalk.log \
+               $(ISE_DIR)/webtalk_pn.xml \
+               $(ISE_DIR)/xilinx_device_details.xml \
+               $(ISE_DIR)/xilinxsim.ini
+
+#
+# Cleanup after modelsim
+#
+
+clean_questa:
+	rm -rf $(QUESTA_DIR)/work
+	rm -f  $(QUESTA_DIR)/esm_ks10.cr.mti \
+	       $(QUESTA_DIR)/esm_ks10.mpf \
+	       $(QUESTA_DIR)/vsim.wlf \
+	       $(QUESTA_DIR)/wave.do
+#
+# Cleanup after iverilog
+#
+
+clean_iverilog:
+	rm -f $(IVERILOG_DIR)/sim.vvp \
+	      $(IVERILOG_DIR)/sim.log
 
 #
 # rcsclean everything
@@ -1377,7 +1473,7 @@ rcsclean: rcsclean_rtl rcsclean_ise
 #
 
 rcsclean_ise: clean_ise
-	rcsclean $(ISE)/*
+	rcsclean $(ISE_DIR)/*
 
 #
 # rcsclean RTL

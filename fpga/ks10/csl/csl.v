@@ -164,7 +164,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -229,10 +229,11 @@ module CSL (
       output wire         cslINTR,      // Interrupt KS10
       output wire         cslRESET,     // Reset KS10
       // DZ11 Interfaces
-      output reg  [ 0:63] dz11CCR,      // DZ11 Console Control Register
-      // RH11 Interfaces
-      output reg  [ 0:63] rh11CCR,      // RH11 Console Control Register
-      input  wire [ 0:63] rh11DEBUG,    // RH11 Debug Info
+      output reg  [ 0:63] dzCCR,        // DZ11 Console Control Register
+      // RPXX Interfaces
+      output reg  [ 0:63] rpCCR,        // RPXX Console Control Register
+      // SD Interfaces
+      input  wire [ 0:63] rhDEBUG,      // RH Debug Info
       // Debug Interfaces
       input  wire [ 0:35] debugCSR,     // Debug Control/Status Register
       output reg  [ 0:35] debugBAR,     // Debug Breakpoint Address Register
@@ -350,8 +351,8 @@ module CSL (
              regCIR          <= 0;
              regDATA         <= 0;
              regADDR         <= 0;
-             dz11CCR         <= 0;
-             rh11CCR         <= 0;
+             dzCCR           <= 0;
+             rpCCR           <= 0;
              regCTRL_NXMNXD  <= 0;
              regCTRL_TIMEREN <= 0;
              regCTRL_TRAPEN  <= 0;
@@ -401,19 +402,19 @@ module CSL (
                  // DZ11 Console Control Register
                  //
 
-                 8'h20 : dz11CCR[48:55] <= conDATA[15:8];
-                 8'h22 : dz11CCR[32:39] <= conDATA[15:8];
-                 8'h24 : dz11CCR[16:23] <= conDATA[15:8];
-                 8'h26 : dz11CCR[ 0: 7] <= conDATA[15:8];
+                 8'h20 : dzCCR[48:55] <= conDATA[15:8];
+                 8'h22 : dzCCR[32:39] <= conDATA[15:8];
+                 8'h24 : dzCCR[16:23] <= conDATA[15:8];
+                 8'h26 : dzCCR[ 0: 7] <= conDATA[15:8];
 
                  //
-                 // RH11 Console Control Register
+                 // RPXX Console Control Register
                  //
 
-                 8'h28 : rh11CCR[48:55] <= conDATA[15:8];
-                 8'h2a : rh11CCR[32:39] <= conDATA[15:8];
-                 8'h2c : rh11CCR[16:23] <= conDATA[15:8];
-                 8'h2e : rh11CCR[ 0: 7] <= conDATA[15:8];
+                 8'h28 : rpCCR[48:55] <= conDATA[15:8];
+                 8'h2a : rpCCR[32:39] <= conDATA[15:8];
+                 8'h2c : rpCCR[16:23] <= conDATA[15:8];
+                 8'h2e : rpCCR[ 0: 7] <= conDATA[15:8];
 
                  //
                  // Debug Control/Status Register
@@ -484,19 +485,19 @@ module CSL (
                  // DZ11 Console Control Register
                  //
 
-                 8'h20 : dz11CCR[56:63] <= conDATA[7:0];
-                 8'h22 : dz11CCR[40:47] <= conDATA[7:0];
-                 8'h24 : dz11CCR[24:31] <= conDATA[7:0];
-                 8'h26 : dz11CCR[ 8:15] <= conDATA[7:0];
+                 8'h20 : dzCCR[56:63] <= conDATA[7:0];
+                 8'h22 : dzCCR[40:47] <= conDATA[7:0];
+                 8'h24 : dzCCR[24:31] <= conDATA[7:0];
+                 8'h26 : dzCCR[ 8:15] <= conDATA[7:0];
 
                  //
-                 // RH11 Console Control Register
+                 // RPXX Console Control Register
                  //
 
-                 8'h28 : rh11CCR[56:63] <= conDATA[7:0];
-                 8'h2a : rh11CCR[40:47] <= conDATA[7:0];
-                 8'h2c : rh11CCR[24:31] <= conDATA[7:0];
-                 8'h2e : rh11CCR[ 8:15] <= conDATA[7:0];
+                 8'h28 : rpCCR[56:63] <= conDATA[7:0];
+                 8'h2a : rpCCR[40:47] <= conDATA[7:0];
+                 8'h2c : rpCCR[24:31] <= conDATA[7:0];
+                 8'h2e : rpCCR[ 8:15] <= conDATA[7:0];
 
                  //
                  // Debug Control/Status Register
@@ -610,28 +611,28 @@ module CSL (
           // DZ11 Console Control Register
           //
 
-          8'h20 : dout <= dz11CCR[48:63];
-          8'h22 : dout <= dz11CCR[32:47];
-          8'h24 : dout <= dz11CCR[16:31];
-          8'h26 : dout <= dz11CCR[ 0:15];
+          8'h20 : dout <= dzCCR[48:63];
+          8'h22 : dout <= dzCCR[32:47];
+          8'h24 : dout <= dzCCR[16:31];
+          8'h26 : dout <= dzCCR[ 0:15];
 
           //
-          // RH11 Console Control Register
+          // RPXX Console Control Register
           //
 
-          8'h28 : dout <= rh11CCR[48:63];
-          8'h2a : dout <= rh11CCR[32:47];
-          8'h2c : dout <= rh11CCR[16:31];
-          8'h2e : dout <= rh11CCR[ 0:15];
+          8'h28 : dout <= rpCCR[48:63];
+          8'h2a : dout <= rpCCR[32:47];
+          8'h2c : dout <= rpCCR[16:31];
+          8'h2e : dout <= rpCCR[ 0:15];
 
           //
           // RH11 Debug Register
           //
 
-          8'h30 : dout <= rh11DEBUG[48:63];
-          8'h32 : dout <= rh11DEBUG[32:47];
-          8'h34 : dout <= rh11DEBUG[16:31];
-          8'h36 : dout <= rh11DEBUG[ 0:15];
+          8'h30 : dout <= rhDEBUG[48:63];
+          8'h32 : dout <= rhDEBUG[32:47];
+          8'h34 : dout <= rhDEBUG[16:31];
+          8'h36 : dout <= rhDEBUG[ 0:15];
 
           //
           // Debug Control/Status Register

@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -73,8 +73,8 @@ module RPXX (
       input  wire [ 2: 0] rhUNIT,               // Unit select
       input  wire [ 2: 0] rpNUM,                // Unit number
       input  wire         rpPAT,                // Parity Test
-      input  wire         rpCD,                 // Card Detect from SD Card
-      input  wire         rpWP,                 // Write Protect from SD Card
+      input  wire         rpMOL,                // Media On-line
+      input  wire         rpWRL,                // Write Lock
       input  wire         rpDPR,                // Drive Present
       output wire [15: 0] rpCS1,                // CS1 Register
       output wire [15: 0] rpDA,                 // DA  Register
@@ -331,8 +331,8 @@ module RPXX (
    //  M7773/SN1/E59
    //
 
-   wire rpSETWLE  = ((!rpPAT & rpWP & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITE ) & `rpCS1_GO(rpDATAI)) |
-                     (!rpPAT & rpWP & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITEH) & `rpCS1_GO(rpDATAI)));
+   wire rpSETWLE  = ((!rpPAT & rpWRL & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITE ) & `rpCS1_GO(rpDATAI)) |
+                     (!rpPAT & rpWRL & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITEH) & `rpCS1_GO(rpDATAI)));
 
    //
    // Invalid address error
@@ -509,8 +509,8 @@ module RPXX (
       .rpSETLST    (rpSETLST),
       .rpSETATA    (rpSETATA),
       .rpGO        (rpGO),
-      .rpCD        (rpCD),
-      .rpWP        (rpWP),
+      .rpMOL       (rpMOL),
+      .rpWRL       (rpWRL),
       .rpDPR       (rpDPR),
       .rpPIP       (rpPIP),
       .rpDRY       (rpDRY),
