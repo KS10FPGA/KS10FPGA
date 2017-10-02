@@ -45,12 +45,12 @@
 `default_nettype none
 `timescale 1ns/1ps
 
+`ifdef XILINX
+
 module CLKFWD (
       output wire O,    // Out
       input  wire I     // In
    );
-
-`ifdef XILINX
 
    ODDR2 #(
        .DDR_ALIGNMENT      ("NONE"),    // Sets output alignment
@@ -68,10 +68,6 @@ module CLKFWD (
        .S                  (1'b0)       // 1-bit set input
    );
 
-`else
-
-   assign O = I;
+endmodule
 
 `endif
-
-endmodule
