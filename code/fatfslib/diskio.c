@@ -34,6 +34,7 @@
 //******************************************************************************
 
 #include <stdbool.h>
+#include "ffconf.h"
 #include "diskio.h"
 #include "../sd.h"
 #include "../stdio.h"
@@ -155,6 +156,8 @@ DRESULT disk_read(BYTE pdrv, BYTE *buf, DWORD sector, BYTE count) {
 //!     Only drive 0 is supported.
 //!
 
+#if !_FS_READONLY
+
 DRESULT disk_write(BYTE pdrv, const BYTE *buf, DWORD sector, BYTE count) {
 
     if (pdrv != 0) {
@@ -172,6 +175,8 @@ DRESULT disk_write(BYTE pdrv, const BYTE *buf, DWORD sector, BYTE count) {
     }
     return RES_OK;
 }
+
+#endif
 
 //!
 //! Disk device control
@@ -196,7 +201,18 @@ DRESULT disk_write(BYTE pdrv, const BYTE *buf, DWORD sector, BYTE count) {
 //!
 //! \note
 //!     Only drive 0 is supported.
+//!     Only the necessary ioctls are implemented.
 //!
+
+#if _USE_MKFS
+#error "diskio.c: GET_SECTOR_COUNT and GET_BLOCK_SIZE ioctls are not implemented."
+#endif
+
+#if _MAX_SS != 512
+#error "diskio.c: GET_SECTOR_SIZE ioctl is not implemented."
+#endif
+
+#if !_FS_READONLY
 
 DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buf) {
 
@@ -210,16 +226,18 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buf) {
         case CTRL_SYNC:
             return RES_OK;
         case GET_SECTOR_COUNT:
-            *(DWORD*)buf = 16777216U;
-            return RES_OK;
+        case GET_BLOCK_SIZE:
         case GET_SECTOR_SIZE:
-            *(WORD*)buf = 512;
-            return RES_OK;
+            printf("disk_ioctl() - Unimplemented ioctl (%d)\n", cmd);
+            return RES_PARERR;
         default:
+            printf("disk_ioctl() - Unrecognized ioctl (%d)\n", cmd);
             return RES_PARERR;
     }
 
 }
+
+#endif
 
 //!
 //! Return the current time in FAT format
@@ -232,6 +250,8 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buf) {
 //!     a realtime clock so we make one up.  We use today.
 //!
 
+#if !_FS_READONLY
+
 DWORD get_fattime(void) {
     return (((2017UL - 1980) << 25) |   // 2017
             ( 6UL << 21) |              // Month
@@ -239,4 +259,7 @@ DWORD get_fattime(void) {
             (12UL << 11) |              // Hour
             ( 0UL << 5)  |              // Min
             ( 0UL >> 1));               // Sec
+
+#endif
+
 }
