@@ -68,6 +68,7 @@
 static bool typeSDSC    = false;                //!< Card Type
 static bool initialized = false;                //!< State
 static bool debug       = false;                //!< Debug
+static unsigned int sectors;			//!< number of sectors
 
 static const uint32_t bitRate = 250000;         //!< bitrate
 
@@ -87,6 +88,7 @@ static const uint32_t bitRate = 250000;         //!< bitrate
 enum cmd_t {
     CMD0   =  0,        //!< GO_IDLE_STATE command
     CMD8   =  8,        //!< SEND_IF_COND command
+    CMD9   =  9,        //!< SEND_CSD command
     CMD10  = 10,        //!< SEND_CID command
     CMD13  = 13,        //!< SEND_STATUS command
     CMD17  = 17,        //!< READ_SINGLE command
@@ -555,8 +557,104 @@ bool sdInitialize(void) {
                         break;
                     }
                 }
-                chipEnable(false);
 
+                chipEnable(false);
+                transactData(0xff);
+
+                //
+                // Send SEND_CSD command
+                //
+
+                chipEnable(true);
+                uint8_t rsp9 = sendCommand(CMD9, 0x00000000, 0xff);
+
+                //
+                // Check R1 response
+                //
+
+                if (rsp9 != rspR1_OK) {
+                    debug_printf(debug, "SDHC: CMD9: R1 Response was 0x%02x.\n", rsp10);
+                    chipEnable(false);
+                    return false;
+                }
+
+                //
+                // Read and print CSD register
+                //
+
+                for (int i = 0; i < 100; i++) {
+                    uint8_t sync = transactData(0xff);
+                    if (sync == 0xfe) {
+                        char buf[20];
+                        for (int i = 0; i < 20; i++) {
+                            buf[i] = transactData(0xff);
+                        }
+                        switch (buf[0] >> 6) {
+                            case 0:
+
+                                //
+                                // CSD Version 1.0
+                                //
+
+                                {
+                                    unsigned int c_size = ((((unsigned int)buf[6] & 3) << 10) +
+                                                           ((unsigned int)buf[7]       <<  2) +
+                                                           ((unsigned int)buf[8]       >>  6) +
+                                                           1);
+                                    unsigned int mult = (((buf[5] & 0x0f) << 0) +
+                                                         ((buf[9] & 0x03) << 1) +
+                                                         (buf[10] >> 7) +
+                                                         2);
+                                    sectors = c_size << (mult - 9);
+                                }
+
+                                break;
+                            case 1:
+
+                                //
+                                // CSD Version 2.0
+                                //
+
+                                {
+                                    unsigned int c_size = (((unsigned int)buf[8] << 8) +
+                                                           ((unsigned int)buf[9] << 0) +
+                                                           1);
+                                    sectors = c_size << 10;
+                                }
+                                break;
+                            default:
+                                sectors = 0;
+                                printf("SDHC: CMD9: Unrecognized CSD Structure.\n");
+                                break;
+                        }
+                        unsigned int size_gb = 0;
+                        switch (sectors) {
+                            case 1572864 ... 3145727:
+                                size_gb = 1;
+                                break;
+                            case 3145728 ... 6291455:
+                                size_gb = 2;
+                                break;
+                            case 6291456 ... 12582911:
+                                size_gb = 4;
+                                break;
+                            case 12582912 ... 25165823:
+                                size_gb = 8;
+                                break;
+                            case 25165824 ... 50331647:
+                                size_gb = 16;
+                                break;
+                            case 50331648 ... 100663295:
+                                size_gb = 32;
+                                break;
+                        }
+                        printf("SDHC: Sectors          : %d\n"
+                               "SDHC: Size             : %d GB\n",
+                               sectors, size_gb);
+                        break;
+
+                    }
+                }
             }
             break;
 
