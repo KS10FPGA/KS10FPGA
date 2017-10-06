@@ -166,6 +166,17 @@ class ks10_t {
         static const data_t cty_valid   = 0x100;        //!< Input/Output character valid
 
         //
+        // KS10 Read/Write Address Modes
+        //
+
+        static const addr_t flagFetch = 0x200000000ULL; //!< Fetch flags
+        static const addr_t flagRead  = 0x100000000ULL; //!< Read flags
+        static const addr_t flagWrite = 0x040000000ULL; //!< Write flags
+        static const addr_t flagPhys  = 0x008000000ULL; //!< Phys
+        static const addr_t flagIO    = 0x002000000ULL; //!< IO flag
+        static const addr_t flagByte  = 0x000400000ULL; //!< BYTE IO flag
+
+        //
         // Functions
         //
 
@@ -198,6 +209,7 @@ class ks10_t {
         static data_t readDBMR(void);
         static void writeDBMR(data_t data);
         static data_t readDITR(void);
+        static data_t readDPCIR(void);
         static bool run(void);
         static void run(bool);
         static bool cont(void);
@@ -247,17 +259,6 @@ class ks10_t {
         static const addr_t   ioAddrMask  = 017777777ULL;       //!< KS10 22-bit Address Mask
 
         //
-        // KS10 Read/Write Address Modes
-        //
-
-        static const addr_t flagFetch = 0x200000000ULL;         //!< Fetch flags
-        static const addr_t flagRead  = 0x100000000ULL;         //!< Read flags
-        static const addr_t flagWrite = 0x040000000ULL;         //!< Write flags
-        static const addr_t flagPhys  = 0x008000000ULL;         //!< Phys
-        static const addr_t flagIO    = 0x002000000ULL;         //!< IO flag
-        static const addr_t flagByte  = 0x000400000ULL;         //!< BYTE IO flag
-
-        //
         // KS10 FPGA Register Addresses
         //
 
@@ -294,6 +295,9 @@ class ks10_t {
         //!< Debug Instruction Trace Register
         static constexpr volatile uint64_t * regDITR = reinterpret_cast<uint64_t *>(epiOffset + 0x50);
 
+        //!< Debug Program Counter and Instruction Register
+        static constexpr volatile uint64_t * regDPCIR = reinterpret_cast<uint64_t *>(epiOffset + 0x60);
+
         //!< Firmware Version Register
         static constexpr const char * regVers = reinterpret_cast<const char *>(epiOffset + 0x78);
 
@@ -328,18 +332,26 @@ class ks10_t {
         // Debug Control/Status Register Constants
         //
 
-        static const data_t dcsrBREN_RES = 0x00000c000ULL;
-        static const data_t dcsrBREN_TBF = 0x000008000ULL;
-        static const data_t dcsrBREN_MAT = 0x000004000ULL;
-        static const data_t dcsrBREN_DIS = 0x000000000ULL;
-        static const data_t dcsrTREN_RES = 0x0000000c0ULL;
-        static const data_t dcsrTREN_EN  = 0x000000080ULL;
-        static const data_t dcsrTREN_MAT = 0x000000040ULL;
-        static const data_t dcsrTREN_DIS = 0x000000000ULL;
-        static const data_t dcsrTRACQ    = 0x000000008ULL;
-        static const data_t dcsrFULL     = 0x000000004ULL;
-        static const data_t dcsrEMPTY    = 0x000000002ULL;
-        static const data_t dcsrRESET    = 0x000000001ULL;
+        static const data_t dcsrBRCMD          = 0x000e00000ULL;
+        static const data_t dcsrBRCMD_BOTH     = 0x000600000ULL;
+        static const data_t dcsrBRCMD_FULL     = 0x000400000ULL;
+        static const data_t dcsrBRCMD_MATCH    = 0x000200000ULL;
+        static const data_t dcsrBRCMD_DISABLE  = 0x000000000ULL;
+        static const data_t dcsrBRSTATE        = 0x0001c0000ULL;
+        static const data_t dcsrBRSTATE_ARMED  = 0x000040000ULL;
+        static const data_t dcsrBRSTATE_IDLE   = 0x000000000ULL;
+        static const data_t dcsrTRCMD          = 0x0000000e0ULL;
+        static const data_t dcsrTRCMD_STOP     = 0x000000060ULL;
+        static const data_t dcsrTRCMD_MATCH    = 0x000000040ULL;
+        static const data_t dcsrTRCMD_TRIG     = 0x000000020ULL;
+        static const data_t dcsrTRCMD_RESET    = 0x000000000ULL;
+        static const data_t dcsrTRSTATE        = 0x00000001cULL;
+        static const data_t dcsrTRSTATE_DONE   = 0x00000000cULL;
+        static const data_t dcsrTRSTATE_ACTIVE = 0x000000008ULL;
+        static const data_t dcsrTRSTATE_ARMED  = 0x000000004ULL;
+        static const data_t dcsrTRSTATE_IDLE   = 0x000000000ULL;
+        static const data_t dcsrFULL           = 0x000000002ULL;
+        static const data_t dcsrEMPTY          = 0x000000001ULL;
 
         //
         // Debug Breakpoint Address Register Constants

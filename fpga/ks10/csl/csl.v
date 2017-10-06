@@ -235,14 +235,16 @@ module CSL (
       // SD Interfaces
       input  wire [ 0:63] rhDEBUG,      // RH Debug Info
       // Debug Interfaces
-      input  wire [ 0:35] debugCSR,     // Debug Control/Status Register
-      output reg  [ 0:35] debugBAR,     // Debug Breakpoint Address Register
-      output reg  [ 0:35] debugBMR,     // Debug Breakpoint Mask Register
-      input  wire [ 0:63] debugITR,     // Debug Instruction Trace Register
-      output reg  [ 0: 1] debugBRKEN,   // Debug Breakpoint Enable
-      output reg  [ 0: 1] debugTREN,    // Debug Trace Enable
-      output wire         debugTRRESET, // Debug Debug Trace Reset
-      output wire         debugREADITR  // Debug Trace Read
+      output wire         regTRCMD_WR,  // Debug Control/Status Trace Command Write
+      output reg  [ 0: 2] regTRCMD,     // Debug Control/Status Trace Command
+      output wire         regBRCMD_WR,  // Debug Control/Status Breakpoint Command Write
+      output reg  [ 0: 2] regBRCMD,     // Debug Control/Status Breakpoint Command
+      input  wire [ 0:35] regDCSR,      // Debug Control/Status Register
+      output reg  [ 0:35] regDBAR,      // Debug Breakpoint Address Register
+      output reg  [ 0:35] regDBMR,      // Debug Breakpoint Mask Register
+      output wire         regDITR_RD,   // Debug Instruction Trace Register Read
+      input  wire [ 0:63] regDITR,      // Debug Instruction Trace Register
+      input  wire [ 0:63] regDPCIR      // Debug Program Counter and Instruction Register
    );
 
    //
@@ -358,10 +360,10 @@ module CSL (
              regCTRL_TRAPEN  <= 0;
              regCTRL_CACHEEN <= 0;
              regCTRL_RESET   <= 1;
-             debugBRKEN      <= 0;
-             debugTREN       <= 0;
-             debugBAR        <= 0;
-             debugBMR        <= 0;
+             regTRCMD        <= 0;
+             regBRCMD        <= 0;
+             regDBAR         <= 0;
+             regDBMR         <= 0;
           end
 
         else if (cslWR)
@@ -417,27 +419,18 @@ module CSL (
                  8'h2e : rpCCR[ 0: 7] <= conDATA[15:8];
 
                  //
-                 // Debug Control/Status Register
-                 //
-
-                 8'h38 :
-                   begin
-                      debugBRKEN <= conDATA[15:14];
-                   end
-
-                 //
                  // Debug Breakpoint Address Register
                  //
 
-                 8'h40 : debugBAR[20:27] <= conDATA[15:8];
-                 8'h42 : debugBAR[ 4:11] <= conDATA[15:8];
+                 8'h40 : regDBAR[20:27] <= conDATA[15:8];
+                 8'h42 : regDBAR[ 4:11] <= conDATA[15:8];
 
                  //
                  // Debug Breakpoint Mask Register
                  //
 
-                 8'h48 : debugBMR[20:27] <= conDATA[15:8];
-                 8'h4a : debugBMR[ 4:11] <= conDATA[15:8];
+                 8'h48 : regDBMR[20:27] <= conDATA[15:8];
+                 8'h4a : regDBMR[ 4:11] <= conDATA[15:8];
 
                endcase
 
@@ -503,26 +496,24 @@ module CSL (
                  // Debug Control/Status Register
                  //
 
-                 8'h38 :
-                   begin
-                      debugTREN <= conDATA[7:6];
-                   end
+                 8'h38 : regTRCMD <= conDATA[7:5];
+                 8'h3a : regBRCMD <= conDATA[7:5];
 
                  //
                  // Debug Breakpoint Address Register
                  //
 
-                 8'h40 : debugBAR[28:35] <= conDATA[7:0];
-                 8'h42 : debugBAR[12:19] <= conDATA[7:0];
-                 8'h44 : debugBAR[ 0: 3] <= conDATA[3:0];
+                 8'h40 : regDBAR[28:35] <= conDATA[7:0];
+                 8'h42 : regDBAR[12:19] <= conDATA[7:0];
+                 8'h44 : regDBAR[ 0: 3] <= conDATA[3:0];
 
                  //
                  // Debug Breakpoint Mask Register
                  //
 
-                 8'h48 : debugBMR[28:35] <= conDATA[7:0];
-                 8'h4a : debugBMR[12:19] <= conDATA[7:0];
-                 8'h4c : debugBMR[ 0: 3] <= conDATA[3:0];
+                 8'h48 : regDBMR[28:35] <= conDATA[7:0];
+                 8'h4a : regDBMR[12:19] <= conDATA[7:0];
+                 8'h4c : regDBMR[ 0: 3] <= conDATA[3:0];
 
                endcase
           end
@@ -638,37 +629,46 @@ module CSL (
           // Debug Control/Status Register
           //
 
-          8'h38 : dout <= debugCSR[20:35];
-          8'h3a : dout <= debugCSR[ 4:19];
-          8'h3c : dout <= {12'b0, debugCSR[0:3]};
+          8'h38 : dout <= regDCSR[20:35];
+          8'h3a : dout <= regDCSR[ 4:19];
+          8'h3c : dout <= {12'b0, regDCSR[0:3]};
           8'h3e : dout <= 0;
 
           //
           // Breakpoint Address Register
           //
 
-          8'h40 : dout <= debugBAR[20:35];
-          8'h42 : dout <= debugBAR[ 4:19];
-          8'h44 : dout <= {12'b0, debugBAR[0:3]};
+          8'h40 : dout <= regDBAR[20:35];
+          8'h42 : dout <= regDBAR[ 4:19];
+          8'h44 : dout <= {12'b0, regDBAR[0:3]};
           8'h46 : dout <= 0;
 
           //
           // Breakpoint Mask Register
           //
 
-          8'h48 : dout <= debugBMR[20:35];
-          8'h4a : dout <= debugBMR[ 4:19];
-          8'h4c : dout <= {12'b0, debugBMR[0:3]};
+          8'h48 : dout <= regDBMR[20:35];
+          8'h4a : dout <= regDBMR[ 4:19];
+          8'h4c : dout <= {12'b0, regDBMR[0:3]};
           8'h4e : dout <= 0;
 
           //
           // Instruction Trace Register
           //
 
-          8'h50 : dout <= debugITR[48:63];
-          8'h52 : dout <= debugITR[32:47];
-          8'h54 : dout <= debugITR[16:31];
-          8'h56 : dout <= debugITR[ 0:15];
+          8'h50 : dout <= regDITR[48:63];
+          8'h52 : dout <= regDITR[32:47];
+          8'h54 : dout <= regDITR[16:31];
+          8'h56 : dout <= regDITR[ 0:15];
+
+          //
+          // Debug Program Counter and Intruction Register
+          //
+
+          8'h60 : dout <= regDPCIR[48:63];
+          8'h62 : dout <= regDPCIR[32:47];
+          8'h64 : dout <= regDPCIR[16:31];
+          8'h66 : dout <= regDPCIR[ 0:15];
 
           //
           // Firmware Version Register
@@ -858,8 +858,9 @@ module CSL (
    // Debug Outputs
    //
 
-   assign debugTRRESET = cslWR & (cslADDR == 8'h38) & cslBLE & conDATA[0];
-   assign debugREADITR = cslRD & (cslADDR == 8'h56);
+   assign regDITR_RD  = cslRD & (cslADDR == 8'h56);
+   assign regTRCMD_WR = cslWR & (cslADDR == 8'h38) & cslBLE;
+   assign regBRCMD_WR = cslWR & (cslADDR == 8'h3a) & cslBLE;
 
 `ifndef SYNTHESIS
 

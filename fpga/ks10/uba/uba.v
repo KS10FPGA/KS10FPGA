@@ -341,7 +341,7 @@ module UBA (
           begin
              if (busREQI)
                addr <= busADDRI;
-             if (devREQI)
+             if (busREQO)
                addr <= devADDRI;
              if (setNXD)
                $display("[%11.3f] UBA%d: Nonexistent device (NXD).  Addr = %012o.",

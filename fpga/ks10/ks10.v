@@ -195,15 +195,17 @@ module KS10 (
    wire [ 0:35] cpuHR;                  // Instruction Register
    wire         regsLOAD;               // Update registers
    wire         vmaLOAD;                // Update VMA
+   wire         regTRCMD_WR;            // Control/Status Trace Command Write
+   wire [ 0: 2] regTRCMD;               // Control/Status Trace Command
+   wire         regBRCMD_WR;            // Control/Status Breakpoint Command Write
+   wire [ 0: 2] regBRCMD;               // Control/Status Breakpoint Command
+   wire [ 0:35] regDCSR;                // Control/Status Register
+   wire [ 0:35] regDBAR;                // Breakpoint Address Register
+   wire [ 0:35] regDBMR;                // Breakpoint Mask Register
+   wire         regDITR_RD;             // Read Instruction Trace Register
+   wire [ 0:63] regDITR;                // Instruction Trace Register
+   wire [ 0:63] regDPCIR;               // Program counter and instruction register
    wire         debugHALT;              // Breakpoint the CPU
-   wire [ 0:35] debugCSR;               // Control/Status Register
-   wire [ 0:35] debugBAR;               // Breakpoint Address Register
-   wire [ 0:35] debugBMR;               // Breakpoint Mask Register
-   wire [ 0:63] debugITR;               // Instruction Trace Register
-   wire [ 0: 1] debugBRKEN;             // Breakpoint Enable
-   wire [ 0: 1] debugTREN;              // Trace Enable
-   wire         debugTRRESET;           // Trace Reset
-   wire         debugREADITR;           // Read Instruction Trace Register
 
    //
    // Synchronize the DZCCR
@@ -371,14 +373,16 @@ module KS10 (
       // RH11 Interfaces
       .rhDEBUG          (rhDEBUG),
       // Debug Interface
-      .debugCSR         (debugCSR),
-      .debugBAR         (debugBAR),
-      .debugBMR         (debugBMR),
-      .debugITR         (debugITR),
-      .debugBRKEN       (debugBRKEN),
-      .debugTREN        (debugTREN),
-      .debugTRRESET     (debugTRRESET),
-      .debugREADITR     (debugREADITR)
+      .regTRCMD_WR      (regTRCMD_WR),
+      .regTRCMD         (regTRCMD),
+      .regBRCMD_WR      (regBRCMD_WR),
+      .regBRCMD         (regBRCMD),
+      .regDCSR          (regDCSR),
+      .regDBAR          (regDBAR),
+      .regDBMR          (regDBMR),
+      .regDITR_RD       (regDITR_RD),
+      .regDITR          (regDITR),
+      .regDPCIR         (regDPCIR)
    );
 
    //
@@ -589,14 +593,16 @@ module KS10 (
       .cpuHR            (cpuHR),
       .regsLOAD         (regsLOAD),
       .vmaLOAD          (vmaLOAD),
-      .debugCSR         (debugCSR),
-      .debugBAR         (debugBAR),
-      .debugBMR         (debugBMR),
-      .debugITR         (debugITR),
-      .debugBRKEN       (debugBRKEN),
-      .debugTREN        (debugTREN),
-      .debugTRRESET     (debugTRRESET),
-      .debugREADITR     (debugREADITR),
+      .regTRCMD_WR      (regTRCMD_WR),
+      .regTRCMD         (regTRCMD),
+      .regBRCMD_WR      (regBRCMD_WR),
+      .regBRCMD         (regBRCMD),
+      .regDCSR          (regDCSR),
+      .regDBAR          (regDBAR),
+      .regDBMR          (regDBMR),
+      .regDITR_RD       (regDITR_RD),
+      .regDITR          (regDITR),
+      .regDPCIR         (regDPCIR),
       .debugHALT        (debugHALT)
    );
 

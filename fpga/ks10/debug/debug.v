@@ -19,7 +19,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -44,8 +44,6 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`include "debug.vh"
-
 module DEBUG (
       input  wire         rst,          // Reset
       input  wire         clk,          // Clock
@@ -54,67 +52,147 @@ module DEBUG (
       input  wire [ 0:35] cpuHR,        // Instruction register
       input  wire         regsLOAD,     // Load registers
       input  wire         vmaLOAD,      // Load VMA
-      output wire [ 0:35] debugCSR,     // Control/Status Register
-      input  wire [ 0:35] debugBAR,     // Breakpoint Address Register
-      input  wire [ 0:35] debugBMR,     // Breakpoint Mask Register
-      output wire [ 0:63] debugITR,     // Instruction Trace Register
-      input  wire [ 1: 0] debugBRKEN,   // Break Enable
-      input  wire [ 1: 0] debugTREN,    // Trace Enable
-      input  wire         debugTRRESET, // Trace Reset
-      input  wire         debugREADITR, // Read Instruction Trace Register
+      input  wire         regTRCMD_WR,  // DCSR trace command write
+      input  wire [ 0: 2] regTRCMD,     // DCSR trace command
+      input  wire         regBRCMD_WR,  // DCSR breakpoint command write
+      input  wire [ 0: 2] regBRCMD,     // DCSR breakpoint command
+      output wire [ 0:35] regDCSR,      // DCSR register
+      input  wire [ 0:35] regDBAR,      // Breakpoint address register
+      input  wire [ 0:35] regDBMR,      // DBAR register
+      input  wire         regDITR_RD,   // DITR read
+      output wire [ 0:63] regDITR,      // DITR register
+      output reg  [ 0:63] regDPCIR,     // DPCIR register
       output wire         debugHALT     // Halt signal to CPU
    );
 
    //
-   // Registers
+   // Full/empty flags
    //
 
-   reg [18:35] PC;
-   reg [14*8:1] test;
+   wire trfull;
+   wire trempty;
 
    //
    // Match and mask
    //
 
-   wire match = (cpuADDR & debugBMR) == (debugBAR & debugBMR);
+   wire match = (cpuADDR & regDBMR) == (regDBAR & regDBMR);
 
    //
-   // Trace Triggered
+   // Trace Trigger State Machine
    //
 
-   reg debugACQ;
+   localparam [2:0] regTRCMD_RESET   = 0,
+                    regTRCMD_TRIGGER = 1,
+                    regTRCMD_ADDRMAT = 2,
+                    regTRCMD_STOP    = 3;
+
+   localparam [2:0] trstateIDLE   = 0,
+                    trstateARMED  = 1,
+                    trstateACTIVE = 2,
+                    trstateDONE   = 3;
+
+   reg [2:0] trstate;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          debugACQ <= 0;
+          trstate <= trstateIDLE;
         else
-          if (debugTRRESET)
-            debugACQ <= 0;
-          else if (((debugTREN == `debug_TRCEN)) |
-                   ((debugTREN == `debug_TRCMAT) & match))
-            debugACQ <= 1;
+          if ((regTRCMD == regTRCMD_RESET) & regTRCMD_WR)
+            trstate <= trstateIDLE;
+          else
+            case (trstate)
+              trstateIDLE:
+                if (regTRCMD_WR)
+                  case (regTRCMD)
+                    regTRCMD_TRIGGER:
+                      trstate <= trstateACTIVE;
+                    regTRCMD_ADDRMAT:
+                      trstate <= trstateARMED;
+                  endcase
+              trstateARMED:
+                if (match)
+                  trstate <= trstateACTIVE;
+                else if ((regTRCMD == regTRCMD_STOP) & regTRCMD_WR)
+                  trstate <= trstateDONE;
+              trstateACTIVE:
+                if (trfull | ((regTRCMD == regTRCMD_STOP) & regTRCMD_WR))
+                  trstate <= trstateDONE;
+              trstateDONE:
+                trstate <= trstateDONE;
+            endcase
      end
 
    //
-   // Trace Buffer Read/Write/Clear
+   // Breakpoint Trigger State Machine
    //
 
-   wire rd;
-   wire wr;
-   wire clr = debugTRRESET;
-   wire debugWRITITR = debugACQ & regsLOAD;
+   localparam [2:0] regBRCMD_DISABLE = 0,
+                    regBRCMD_TRIG    = 1,
+                    regBRCMD_FULL    = 2,
+                    regBRCMD_EITHER  = 3;
 
-   EDGETRIG #(.POSEDGE(0)) traceRD(clk, rst, 1'b1, debugREADITR, rd);
-   EDGETRIG #(.POSEDGE(1)) traceWR(clk, rst, 1'b1, debugWRITITR, wr);
+   localparam [2:0] brstateIDLE  = 0,
+                    brstateARMED = 1,
+                    brstateBREAK = 2;
+
+  reg [2:0] brstate;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          brstate <= trstateIDLE;
+        else
+          if ((regBRCMD == regBRCMD_DISABLE) & regBRCMD_WR)
+            brstate <= brstateIDLE;
+          else
+            case (brstate)
+              brstateIDLE:
+                if (regBRCMD_WR)
+                  case (regBRCMD)
+                    regBRCMD_TRIG,
+                    regBRCMD_FULL,
+                    regBRCMD_EITHER:
+                      brstate <= brstateARMED;
+                  endcase
+              brstateARMED:
+                if (((regBRCMD == regBRCMD_TRIG)   & match ) |
+                    ((regBRCMD == regBRCMD_FULL)   & trfull) |
+                    ((regBRCMD == regBRCMD_EITHER) & match ) |
+                    ((regBRCMD == regBRCMD_EITHER) & trfull))
+                  brstate <= brstateBREAK;
+              brstateBREAK:
+                brstate <= brstateIDLE;
+            endcase
+     end
 
    //
-   // Instruction Trace Buffer
+   // Instruction Trace Buffer (FIFO)
    //
 
+   wire fifo_rd;
+   wire fifo_wr;
    wire [ 0:35] fifoHR;
    wire [18:35] fifoPC;
-   wire         full;
-   wire         empty;
+
+   EDGETRIG #(
+      .POSEDGE    (0)
+   ) traceRD (
+      .clk        (clk),
+      .rst        (rst),
+      .clken      (1'b1),
+      .i          (regDITR_RD),
+      .o          (fifo_rd)
+   );
+
+   EDGETRIG #(
+      .POSEDGE    (1)
+   ) traceWR (
+      .clk        (clk),
+      .rst        (rst),
+      .clken      (1'b1),
+      .i          (regsLOAD & (trstate == trstateACTIVE)),
+      .o          (fifo_wr)
+   );
 
    FIFO #(
       .SIZE       (16*1024),
@@ -122,33 +200,46 @@ module DEBUG (
    ) TRACE_BUFFER (
       .clk        (clk),
       .rst        (rst),
-      .clr        (clr),
+      .clr        (trstate == trstateIDLE),
       .clken      (1'b1),
-      .rd         (rd),
-      .wr         (wr),
+      .rd         (fifo_rd),
+      .wr         (fifo_wr),
       .in         ({cpuPC, cpuHR}),
       .out        ({fifoPC, fifoHR}),
-      .full       (full),
-      .empty      (empty)
+      .full       (trfull),
+      .empty      (trempty)
    );
 
    //
    // Build Control/Status Register
    //
 
-   assign debugCSR = {20'b0, debugBRKEN, 6'b0, debugTREN, 2'b0, debugACQ, full, empty, 1'b0};
+   assign regDCSR = {12'b0, regBRCMD, brstate, 10'b0, regTRCMD, trstate, trfull, trempty};
 
    //
    // Build Instruction Trace Register
    //
 
-   assign debugITR = {10'b0, fifoPC, fifoHR};
+   assign regDITR = {10'b0, fifoPC, fifoHR};
+
+   //
+   // DPCIR Register
+   //
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          regDPCIR <= 0;
+        else
+          if (regsLOAD)
+            regDPCIR <= {cpuPC, cpuHR};
+     end
 
    //
    // Breakpoint Halt
    //
 
-   assign debugHALT = (debugBRKEN == `debug_BRKMAT) & match;
+   assign debugHALT = brstate == brstateBREAK;
 
    //
    // Simulation Support
@@ -170,6 +261,13 @@ module DEBUG (
    //
 
 `ifndef SYNTHESIS
+
+   //
+   // Registers
+   //
+
+   reg [18:35] PC;
+   reg [14*8:1] test;
 
    //
    // Remember last time VMA was updated

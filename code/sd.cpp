@@ -68,7 +68,7 @@
 static bool typeSDSC    = false;                //!< Card Type
 static bool initialized = false;                //!< State
 static bool debug       = false;                //!< Debug
-static unsigned int sectors;			//!< number of sectors
+static unsigned int sectors;                    //!< number of sectors
 
 static const uint32_t bitRate = 250000;         //!< bitrate
 

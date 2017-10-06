@@ -540,7 +540,7 @@ void ks10_t::writeDBMR(uint64_t data) {
 //!
 //! \note
 //!    For some reason, a 64-bit load advances the Trace Buffer FIFO twice.
-//!    This code explicity peforms four 16-bit loads across the 16-bit EPI bus.
+//!    This code explicitly peforms four 16-bit loads across the 16-bit EPI bus.
 //!
 //! \returns
 //!    contents of the DITR register
@@ -565,6 +565,19 @@ uint64_t ks10_t::readDITR(void) {
 }
 
 #endif
+
+//!
+//! \brief
+//!    This function reads a 36-bit value from the Debug Program Counter and
+//!    Instruction Register.
+//!
+//! \returns
+//!    contents of the DPCIR register
+//!
+
+uint64_t ks10_t::readDPCIR(void) {
+    return *regDPCIR;
+}
 
 //!
 //! \brief

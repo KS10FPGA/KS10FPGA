@@ -69,24 +69,27 @@
 
 #define CUSTOM_CMD
 
-//
-// Current address set by cmdLI or cmdLA
-//
+//!
+//! \brief
+//!    Current address set by cmdLI or cmdLA
+//!
 
 static ks10_t::addr_t address;
 
-//
-// Memory or IO address
-//
+//!
+//! \brief
+//!    Memory or IO address
+//!
 
 static enum access_t {
     accessMEM = 0,              //!< KS10 Memory Access
     accessIO,                   //!< KS10 IO Access
 } access;
 
-//
-// DZ11 non-volatile configuration
-//
+//!
+//! \brief
+//!    DZ11 non-volatile configuration
+//!
 
 static struct dzcfg_t {
     uint64_t dzccr;
@@ -94,9 +97,10 @@ static struct dzcfg_t {
 
 static const char *dzcfg_file = "DZ11CFG.DAT";
 
-//
-// RH11 non-volatile configuration
-//
+//!
+//! \brief
+//!    RH11 non-volatile configuration
+//!
 
 static struct rhcfg_t {
     ks10_t::data_t rhbase;
@@ -116,9 +120,10 @@ static struct rpcfg_t {
 
 static const char *rpcfg_file = "RPXXCFG.DAT";
 
-//
-// Recall Configuration
-//
+//!
+//! \brief
+//!    Recall Configuration
+//!
 
 void recallConfig(bool debug) {
 
@@ -170,9 +175,10 @@ void recallConfig(bool debug) {
 
 }
 
-//
-// Write characters to the KS10
-//
+//!
+//! \brief
+//!    Write characters to the KS10
+//!
 
 bool running = false;
 
@@ -182,13 +188,19 @@ bool running = false;
 //!
 
 void consoleOutput(void) {
-    const char cntl_e = 0x05;
+    void printPCIR(uint64_t data);
+
+    const char cntl_e = 0x05;   // ^E
+    const char cntl_t = 0x14;   // ^T
+
     running = true;
     while (!ks10_t::halt()) {
         int ch = getchar();
         if (ch == cntl_e) {
             printf("\n");
             break;
+        } else if (ch == cntl_t) {
+            printPCIR(ks10_t::readDPCIR());
         } else if (ch != -1) {
             ks10_t::putchar(ch);
         }
@@ -768,7 +780,7 @@ static void printRDHSB(void) {
 
 //!
 //! \brief
-//!   Function to prints all of the ACs
+//!   Function to print all of the ACs
 //!
 
 static void printRDACs(void) {
@@ -784,7 +796,7 @@ static void printRDACs(void) {
 
 //!
 //! \brief
-//!   Function to prints a single AC
+//!   Function to print a single AC
 //!
 
 static void printRDAC(ks10_t::addr_t regAC) {
@@ -799,10 +811,9 @@ static void printRDAC(ks10_t::addr_t regAC) {
     }
 }
 
-
 //!
 //! \brief
-//!   Function to prints memory contents
+//!   Function to print memory contents
 //!
 
 static void printRDMEM(ks10_t::addr_t addr, unsigned int len) {
@@ -817,6 +828,80 @@ static void printRDMEM(ks10_t::addr_t addr, unsigned int len) {
         addr++;
     }
 }
+
+//!
+//! \brief
+//!   Function to print breakpoint trace hardware status
+//!
+
+static void printDEBUG(void) {
+    ks10_t::data_t dcsr = ks10_t::readDCSR();
+    ks10_t::data_t dbar = ks10_t::readDBAR();
+    ks10_t::data_t dbmr = ks10_t::readDBMR();
+    printf("Breakpoint and Trace System Status: \n"
+           "  DCSR      : %012llo\n"
+           "    TREMPTY :   %s\n"
+           "    TRFULL  :   %s\n"
+           "    TRSTATE :   %s\n"
+           "    TRCMD   :   %s\n"
+           "    BRSTATE :   %s\n"
+           "    BRCMD   :   %s\n"
+           "  DBAR      : %012llo\n"
+           "    FLAGS   :   %s%s%s%s%s%s\n"
+           "    ADDRESS :   %08llo\n"
+           "  DBMR      : %012llo\n"
+           "    FLAGS   :   %s%s%s%s%s%s\n"
+           "    ADDRESS :   %08llo\n",
+           dcsr,
+           dcsr & ks10_t::dcsrEMPTY ? "True" : "False",
+           dcsr & ks10_t::dcsrFULL  ? "True" : "False",
+           (((dcsr & ks10_t::dcsrTRSTATE) == ks10_t::dcsrTRSTATE_IDLE) ? "Idle" :
+            (((dcsr & ks10_t::dcsrTRSTATE) == ks10_t::dcsrTRSTATE_ARMED) ? "Armed" :
+             (((dcsr & ks10_t::dcsrTRSTATE) == ks10_t::dcsrTRSTATE_ACTIVE) ? "Active" :
+              (((dcsr & ks10_t::dcsrTRSTATE) == ks10_t::dcsrTRSTATE_DONE) ? "Done" :
+               "Unknown")))),
+           (((dcsr & ks10_t::dcsrTRCMD) == ks10_t::dcsrTRCMD_RESET) ? "Reset" :
+            (((dcsr & ks10_t::dcsrTRCMD) == ks10_t::dcsrTRCMD_TRIG) ? "Trigger" :
+             (((dcsr & ks10_t::dcsrTRCMD) == ks10_t::dcsrTRCMD_MATCH) ? "Address Match" :
+              (((dcsr & ks10_t::dcsrTRCMD) == ks10_t::dcsrTRCMD_STOP) ? "Stop" :
+               "Unknown")))),
+           (((dcsr & ks10_t::dcsrBRSTATE) == ks10_t::dcsrBRSTATE_IDLE) ? "Idle" :
+            (((dcsr & ks10_t::dcsrBRSTATE) == ks10_t::dcsrBRSTATE_ARMED) ? "Armed" :
+             "Unknown")),
+           (((dcsr & ks10_t::dcsrBRCMD) == ks10_t::dcsrBRCMD_DISABLE) ? "Disable" :
+            (((dcsr & ks10_t::dcsrBRCMD) == ks10_t::dcsrBRCMD_MATCH) ? "Address Match" :
+             (((dcsr & ks10_t::dcsrBRCMD) == ks10_t::dcsrBRCMD_FULL) ? "Trace Full" :
+              (((dcsr & ks10_t::dcsrBRCMD) == ks10_t::dcsrBRCMD_BOTH) ? "Address Match or Trace Full" :
+               "Unknown")))),
+           dbar,
+           dbar & ks10_t::flagFetch ? "Fetch "    : "",
+           dbar & ks10_t::flagRead  ? "Read "     : "",
+           dbar & ks10_t::flagWrite ? "Write "    : "",
+           dbar & ks10_t::flagPhys  ? "Physical " : "",
+           dbar & ks10_t::flagIO    ? "IO "       : "",
+           dbar & ks10_t::flagByte  ? "Byte "     : "",
+           dbar & ks10_t::maxIOAddr,
+           dbmr,
+           dbmr & ks10_t::flagFetch ? "Fetch "    : "",
+           dbmr & ks10_t::flagRead  ? "Read "     : "",
+           dbmr & ks10_t::flagWrite ? "Write "    : "",
+           dbmr & ks10_t::flagPhys  ? "Physical " : "",
+           dbmr & ks10_t::flagIO    ? "IO "       : "",
+           dbmr & ks10_t::flagByte  ? "Byte "     : "",
+           dbmr & ks10_t::maxIOAddr);
+}
+
+//!
+//! \brief
+//!   Function to print trace data
+//!
+
+void printPCIR(uint64_t data) {
+    unsigned int pc = (data >> 36) &  0777777;
+    unsigned long long ir = (data >> 0) & 0777777777777;
+    printf("%06o\t%s\n", pc, dasm(ir));
+}
+
 
 #ifdef CUSTOM_CMD
 
@@ -836,25 +921,31 @@ static void printRDMEM(ks10_t::addr_t addr, unsigned int len) {
 
 static void cmdBR(int argc, char *argv[]) {
     const char *usage =
+        "Control the breakpoint hardware.\n"
         "Usage: BR {FETCH | MEMRD | MEMWR | IORD | IOWR} Address\n"
-        "       BR OFF - disable beakpoint\n"
-        "       BR ON  - re-enable breakpoint\n"
-        "Control the hardware breakpoint facility.\n";
+        "       BR OFF   - disable breakpoint\n"
+        "       BR MATCH - break on address match\n"
+        "       BR FULL  - break on trace buffer full\n"
+        "       BR BOTH  - break on buffer full or address match\n"
+        "       BR STAT  - display breakpoint registers\n";
 
     ks10_t::data_t addr;
 
     switch (argc) {
         case 1:
-            printf("Debug Control/Status Register     : %012llo\n", ks10_t::readDCSR());
-            printf("Debug Breakpoint Address Register : %012llo\n", ks10_t::readDBAR());
-            printf("Debug Breakpoint Mask Register    : %012llo\n", ks10_t::readDBMR());
             printf(usage);
             break;
         case 2:
-            if (strnicmp(argv[1], "off", 3) == 0) {
-                ks10_t::writeDCSR(ks10_t::readDCSR() & ~ks10_t::dcsrBREN_RES);
-            } else if (strnicmp(argv[1], "on", 2) == 0) {
-                ks10_t::writeDCSR(ks10_t::readDCSR() | ks10_t::dcsrBREN_MAT);
+            if (strnicmp(argv[1], "off", 2) == 0) {
+                ks10_t::writeDCSR(ks10_t::dcsrBRCMD_DISABLE | (ks10_t::readDCSR() & ~ks10_t::dcsrBRCMD));
+            } else if (strnicmp(argv[1], "match", 2) == 0) {
+                ks10_t::writeDCSR(ks10_t::dcsrBRCMD_MATCH   | (ks10_t::readDCSR() & ~ks10_t::dcsrBRCMD));
+            } else if (strnicmp(argv[1], "full", 2) == 0) {
+                ks10_t::writeDCSR(ks10_t::dcsrBRCMD_FULL    | (ks10_t::readDCSR() & ~ks10_t::dcsrBRCMD));
+            } else if (strnicmp(argv[1], "both", 2) == 0) {
+                ks10_t::writeDCSR(ks10_t::dcsrBRCMD_BOTH    | (ks10_t::readDCSR() & ~ks10_t::dcsrBRCMD));
+            } else if (strnicmp(argv[1], "stat", 2) == 0) {
+                printDEBUG();
             } else {
                 printf(usage);
                 return;
@@ -863,23 +954,18 @@ static void cmdBR(int argc, char *argv[]) {
         case 3:
             addr = parseOctal(argv[2]);
             if (strnicmp(argv[1], "fetch", 5) == 0) {
-                ks10_t::writeDCSR(ks10_t::dcsrBREN_MAT);
                 ks10_t::writeDBAR(ks10_t::dbarFETCH | addr);
                 ks10_t::writeDBMR(ks10_t::dbmrFETCH | ks10_t::dbmrMEM);
             } else if (strnicmp(argv[1], "memrd", 5) == 0) {
-                ks10_t::writeDCSR(ks10_t::dcsrBREN_MAT);
                 ks10_t::writeDBAR(ks10_t::dbarMEMRD | addr);
                 ks10_t::writeDBMR(ks10_t::dbmrMEMRD | ks10_t::dbmrMEM);
             } else if (strnicmp(argv[1], "memwr", 5) == 0) {
-                ks10_t::writeDCSR(ks10_t::dcsrBREN_MAT);
                 ks10_t::writeDBAR(ks10_t::dbarMEMWR | addr);
                 ks10_t::writeDBMR(ks10_t::dbmrMEMWR | ks10_t::dbmrMEM);
             } else if (strnicmp(argv[1], "iord", 4) == 0) {
-                ks10_t::writeDCSR(ks10_t::dcsrBREN_MAT);
                 ks10_t::writeDBAR(ks10_t::dbarIORD | addr);
                 ks10_t::writeDBMR(ks10_t::dbmrIORD | ks10_t::dbmrIO);
             } else if (strnicmp(argv[1], "iowr", 4) == 0) {
-                ks10_t::writeDCSR(ks10_t::dcsrBREN_MAT);
                 ks10_t::writeDBAR(ks10_t::dbarIOWR | addr);
                 ks10_t::writeDBMR(ks10_t::dbmrIOWR | ks10_t::dbmrIO);
              } else {
@@ -2061,8 +2147,8 @@ static void cmdRP(int argc, char *argv[]) {
               "      UNIT: PRESENT ONLINE WRPROT\n");
        for (int i = 0; i < 8; i++) {
            printf("        %1d:     %d      %d      %d\n", i,
-                  (int)(rpcfg.rpccr >> (16 + i)) & 1, 
-                  (int)(rpcfg.rpccr >> ( 8 + i)) & 1, 
+                  (int)(rpcfg.rpccr >> (16 + i)) & 1,
+                  (int)(rpcfg.rpccr >> ( 8 + i)) & 1,
                   (int)(rpcfg.rpccr >> ( 0 + i)) & 1);
        }
        printf(usage);
@@ -2075,7 +2161,7 @@ static void cmdRP(int argc, char *argv[]) {
        }
        return;
    }
-   
+
    int unit = -1;
    for (int i = 1; i < argc; i++) {
        if (strnicmp(argv[i], "unit=", 5) == 0) {
@@ -2400,14 +2486,20 @@ static void cmdTP(int argc, char *argv[]) {
 //!
 
 static void cmdTR(int argc, char *argv[]) {
-    const char *usage =
-        "Usage: TR {ON OFF RESET TRIG DUMP}\n"
-        "Control the hardware trace facility.\n"
-        "TR ON    : re-enables the traced facility\n"
-        "TR OFF   : disables the trace facility\n"
-        "TR RESET : resets the trace buffer FIFO.  The FIFO will be empty\n"
-        "TR TRIG  : probably does not work\n"
-        "TR DUMP  : prints the contents of the trace buffer\n";
+    static const char *usage =
+        "Control the instruction trace hardware.\n"
+        "Usage: TR {RESET TRIG MATCH SINGLE DUMP}\n"
+        "       TR RESET  : disables trace and flush the trace buffer\n"
+        "       TR TRIG   : trigger trace immediately\n"
+        "       TR MATCH  : trigger trace on address match\n"
+        "       TR STOP   : stop acquiring trace data\n"
+        "       TR STAT   : display instruction trace registers\n"
+        "       TR DUMP   : print the contents of the trace buffer\n";
+
+    static const char *header =
+        "Dump of Trace Buffer:\n"
+        "Entry\t  PC  \tOPC AC I XR   EA  \n"
+        "-----\t------\t--- -- - -- ------\n";
 
     switch (argc) {
         case 1:
@@ -2416,25 +2508,23 @@ static void cmdTR(int argc, char *argv[]) {
             printf(usage);
             break;
         case 2:
-            if (strnicmp(argv[1], "on", 2) == 0) {
-               ks10_t::writeDCSR(ks10_t::readDCSR() | ks10_t::dcsrTREN_EN);
-            } else if (strnicmp(argv[1], "off", 3) == 0) {
-               ks10_t::writeDCSR(ks10_t::readDCSR() & ~ks10_t::dcsrTREN_RES);
-            } else if (strnicmp(argv[1], "reset", 5) == 0) {
-                ks10_t::writeDCSR(ks10_t::dcsrRESET);
-            } else if (strnicmp(argv[1], "trig", 4) == 0) {
-               ks10_t::writeDCSR(ks10_t::readDCSR() | ks10_t::dcsrTREN_MAT);
-            } else if (strnicmp(argv[1], "dump", 4) == 0) {
+            if (strnicmp(argv[1], "reset", 2) ==   0) {
+                ks10_t::writeDCSR(ks10_t::dcsrTRCMD_RESET | (ks10_t::readDCSR() & ~ks10_t::dcsrTRCMD));
+            } else if (strnicmp(argv[1], "trig",   2) == 0) {
+                ks10_t::writeDCSR(ks10_t::dcsrTRCMD_TRIG  | (ks10_t::readDCSR() & ~ks10_t::dcsrTRCMD));
+            } else if (strnicmp(argv[1], "match",  2) == 0) {
+               ks10_t::writeDCSR(ks10_t::dcsrTRCMD_MATCH  | (ks10_t::readDCSR() & ~ks10_t::dcsrTRCMD));
+            } else if (strnicmp(argv[1], "stop",   4) == 0) {
+               ks10_t::writeDCSR(ks10_t::dcsrTRCMD_STOP   | (ks10_t::readDCSR() & ~ks10_t::dcsrTRCMD));
+            } else if (strnicmp(argv[1], "stat",   4) == 0) {
+                printDEBUG();
+            } else if (strnicmp(argv[1], "dump",   4) == 0) {
                 // Disable further trace acquisition
-                ks10_t::writeDCSR(ks10_t::readDCSR() & ~ks10_t::dcsrTREN_RES);
-                printf("Dump of Trace Buffer:\n"
-                       "Entry\t  PC  \tOPC AC I XR   EA  \n"
-                       "-----\t------\t--- -- - -- ------\n");
+                ks10_t::writeDCSR(ks10_t::dcsrTRCMD_STOP  | (ks10_t::readDCSR() & ~ks10_t::dcsrTRCMD));
+                printf(header);
                 for (int i = 0; (ks10_t::readDCSR() & ks10_t::dcsrEMPTY) != ks10_t::dcsrEMPTY; i++) {
-                    uint64_t data = ks10_t::readDITR();
-                    unsigned int pc = (data >> 36) &  0777777;
-                    unsigned long long ir = (data >>  0) & 0777777777777;
-                    printf("%5d\t%06o\t%s\n", i, pc, dasm(ir));
+                    printf("%5d\t", i);
+                    printPCIR(ks10_t::readDITR());
                 }
                 printf("Trace Finished\n");
             } else {
