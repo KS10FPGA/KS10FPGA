@@ -47,10 +47,7 @@ module LPCTRL (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       input  wire [ 1: 0] lpMODE,               // Mode
-      input  wire         lpCMDGO,              // Go Command
-
-      output wire         lpINCBAR,             // Increment bus address register
-      output wire [15: 0] regCSRB               // CSRA Output
+      input  wire         lpCMDGO               // Go Command
    );
 
    //

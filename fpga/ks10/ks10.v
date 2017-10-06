@@ -47,6 +47,7 @@
 `include "uba/uba.vh"
 `include "dz11/dz11.vh"
 `include "rh11/rh11.vh"
+`include "lp20/lp20.vh"
 `include "rh11/rpxx/rpxx.vh"
 
 module KS10 (
@@ -96,12 +97,6 @@ module KS10 (
    wire cpuCLK;                         // CPU clock
    wire memCLK;                         // Memory clock
    wire [1:4] clkPHS;                   // Clock phase
-
-   //
-   // Bus Arbiter Signals
-   //
-
-   wire [ 0:35] arbADDRO;               // Arbiter Address Out
 
    //
    // Console Signals
@@ -168,24 +163,41 @@ module KS10 (
    // Memory Signals
    //
 
+   wire         memREQI;                // Memory REQ
+   wire         memACKO;                // Memory ACK
    wire [ 0:35] memDATAI;               // Memory Data In
    wire [ 0:35] memDATAO;               // Memory Data Out
-   wire         memREQ;                 // Memory REQ
-   wire         memACK;                 // Memory ACK
+   wire [ 0:35] memADDRI;               // Memory Address In
 
    //
-   // Unibus Interfaces (x4)
+   // Buses between Backplane Bus Arbiter and UBA Adapters (x4)
    //
 
-   wire [ 1: 7] ubaINTR;                // Unibus Interrupt Request
    wire         ubaREQI;                // Unibus Bus Request In
-   wire [ 0: 3] ubaREQO;                // Unibus Bus Request Out
-   wire [ 0: 3] ubaACKI;                // Unibus Bus Acknowledge In
-   wire [ 0: 3] ubaACKO;                // Unibus Bus Acknowledge Out
-   wire [ 0:35] ubaADDRO[0:3];          // Unibus Address Out
-   wire [ 0:35] ubaDATAI;               // Unibus Data In
-   wire [ 0:35] ubaDATAO[0:3];          // Unibus Data Out
-   wire [ 1: 7] ubaINTRO[0:3];          // Unibus Interrupt
+   wire [ 1: 4] ubaREQO;                // Unibus Bus Request Out
+   wire [ 1: 4] ubaACKI;                // Unibus Bus Acknowledge In
+   wire [ 1: 4] ubaACKO;                // Unibus Bus Acknowledge Out
+   wire [ 0:35] ubaADDRI[1:4];          // Unibus Address In
+   wire [ 0:35] ubaADDRO[1:4];          // Unibus Address Out
+   wire [ 0:35] ubaDATAI[1:4];          // Unibus Data In
+   wire [ 0:35] ubaDATAO[1:4];          // Unibus Data Out
+   wire [ 1: 7] ubaINTR[1:4];           // Unibus Interrupt Request
+
+   //
+   // Buses between UBA adapters and UBA devices (x16)
+   //
+
+   wire         devRESET[1:4];
+   wire [ 1: 4] devREQI [1:4];
+   wire [ 1: 4] devREQO [1:4];
+   wire [ 1: 4] devACKI [1:4];
+   wire [ 1: 4] devACKO [1:4];
+   wire [ 0:35] devADDRI[1:4][1:4];
+   wire [ 0:35] devADDRO[1:4][1:4];
+   wire [ 0:35] devDATAI[1:4][1:4];
+   wire [ 0:35] devDATAO[1:4][1:4];
+   wire [ 7: 4] devINTR [1:4][1:4];
+   wire [ 7: 4] devINTA [1:4][1:4];
 
    //
    // Debug Signals
@@ -262,30 +274,37 @@ module KS10 (
       .cslREQO          (cslREQI),
       .cslACKI          (cslACKO),
       .cslACKO          (cslACKI),
-      .cslADDRI         (cslADDRO),
       .cslDATAI         (cslDATAO),
       .cslDATAO         (cslDATAI),
+      .cslADDRI         (cslADDRO),
+      .cslADDRO         (cslADDRI),
       // Unibus
       .ubaREQI          (ubaREQO),
       .ubaREQO          (ubaREQI),
       .ubaACKI          (ubaACKO),
       .ubaACKO          (ubaACKI),
-      .uba0ADDRI        (ubaADDRO[0]),
-      .uba1ADDRI        (ubaADDRO[1]),
-      .uba2ADDRI        (ubaADDRO[2]),
-      .uba3ADDRI        (ubaADDRO[3]),
-      .uba0DATAI        (ubaDATAO[0]),
       .uba1DATAI        (ubaDATAO[1]),
+      .uba1DATAO        (ubaDATAI[1]),
+      .uba1ADDRI        (ubaADDRO[1]),
+      .uba1ADDRO        (ubaADDRI[1]),
       .uba2DATAI        (ubaDATAO[2]),
+      .uba2DATAO        (ubaDATAI[2]),
+      .uba2ADDRI        (ubaADDRO[2]),
+      .uba2ADDRO        (ubaADDRI[2]),
       .uba3DATAI        (ubaDATAO[3]),
-      .ubaDATAO         (ubaDATAI),
+      .uba3DATAO        (ubaDATAI[3]),
+      .uba3ADDRI        (ubaADDRO[3]),
+      .uba3ADDRO        (ubaADDRI[3]),
+      .uba4DATAI        (ubaDATAO[4]),
+      .uba4DATAO        (ubaDATAI[4]),
+      .uba4ADDRI        (ubaADDRO[4]),
+      .uba4ADDRO        (ubaADDRI[4]),
       // Memory
-      .memREQO          (memREQ),
-      .memACKI          (memACK),
+      .memREQO          (memREQI),
+      .memACKI          (memACKO),
       .memDATAI         (memDATAO),
       .memDATAO         (memDATAI),
-      // Arb
-      .arbADDRO         (arbADDRO)
+      .memADDRO         (memADDRI)
    );
 
    //
@@ -310,7 +329,7 @@ module KS10 (
       .cslINTRI         (cslINTR),
       .cslINTRO         (cslINTRO),
       // UBA
-      .ubaINTR          (ubaINTR),
+      .ubaINTR          (ubaINTR[1] | ubaINTR[2] |  ubaINTR[3] | ubaINTR[4]),
       // CPU
       .cpuREQO          (cpuREQO),
       .cpuACKI          (cpuACKI),
@@ -347,7 +366,7 @@ module KS10 (
       .busREQO          (cslREQO),
       .busACKI          (cslACKI),
       .busACKO          (cslACKO),
-      .busADDRI         (arbADDRO),
+      .busADDRI         (cslADDRI),
       .busADDRO         (cslADDRO),
       .busDATAI         (cslDATAI),
       .busDATAO         (cslDATAO),
@@ -394,9 +413,9 @@ module KS10 (
       .cpuCLK           (cpuCLK),
       .memCLK           (memCLK),
       .clkPHS           (clkPHS),
-      .busREQI          (memREQ),
-      .busACKO          (memACK),
-      .busADDRI         (arbADDRO),
+      .busREQI          (memREQI),
+      .busACKO          (memACKO),
+      .busADDRI         (memADDRI),
       .busDATAI         (memDATAI),
       .busDATAO         (memDATAO),
       .ssramCLK         (ssramCLK),
@@ -414,18 +433,6 @@ module KS10 (
    // IO Bridge #1
    //
 
-   wire         ctl1REQO;
-   wire [ 0:35] ctl1ADDRO;
-   wire [ 0:35] ctl1DATAO;
-   wire [ 7: 4] ctl1INTA;
-   wire         ctl1RESET;
-   wire         ctl1rh1ACKO;
-   wire         rh1REQO;
-   wire         rh1ACKO;
-   wire [ 0:35] rh1ADDRO;
-   wire [ 0:35] rh1DATAO;
-   wire [ 7: 4] rh1INTR;
-
    UBA #(
       .ubaNUM           (`devUBA1),
       .ubaADDR          (`ubaADDR)
@@ -437,22 +444,101 @@ module KS10 (
       .busREQO          (ubaREQO[1]),
       .busACKI          (ubaACKI[1]),
       .busACKO          (ubaACKO[1]),
-      .busADDRI         (arbADDRO),
+      .busADDRI         (ubaADDRI[1]),
       .busADDRO         (ubaADDRO[1]),
-      .busDATAI         (ubaDATAI),
+      .busDATAI         (ubaDATAI[1]),
       .busDATAO         (ubaDATAO[1]),
-      .busINTR          (ubaINTRO[1]),
-      .devREQO          (ctl1REQO),
-      .devACKI          (rh1ACKO),
-      .devREQI          (rh1REQO),
-      .devACKO          (ctl1rh1ACKO),
-      .devADDRO         (ctl1ADDRO),
-      .devADDRI         (rh1ADDRO),
-      .devDATAO         (ctl1DATAO),
-      .devDATAI         (rh1DATAO),
-      .devINTR          (rh1INTR),
-      .devINTA          (ctl1INTA),
-      .devRESET         (ctl1RESET)
+      .busINTR          (ubaINTR[1]),
+      // IO Bridge 1 Common
+      .devRESET         (devRESET[1]),
+      .devREQI          (devREQO[1]),
+      .devREQO          (devREQI[1]),
+      .devACKI          (devACKO[1]),
+      .devACKO          (devACKI[1]),
+      // IO Bridge 1, Device #1
+      .dev1INTR         (devINTR[1][1]),
+      .dev1INTA         (devINTA[1][1]),
+      .dev1ADDRI        (devADDRO[1][1]),
+      .dev1ADDRO        (devADDRI[1][1]),
+      .dev1DATAI        (devDATAO[1][1]),
+      .dev1DATAO        (devDATAI[1][1]),
+      // IO Bridge 1, Device #2
+      .dev2INTR         (devINTR[1][2]),
+      .dev2INTA         (devINTA[1][2]),
+      .dev2ADDRI        (devADDRO[1][2]),
+      .dev2ADDRO        (devADDRI[1][2]),
+      .dev2DATAI        (devDATAO[1][2]),
+      .dev2DATAO        (devDATAI[1][2]),
+      // IO Bridge 1, Device #3
+      .dev3INTR         (devINTR[1][3]),
+      .dev3INTA         (devINTA[1][3]),
+      .dev3ADDRI        (devADDRO[1][3]),
+      .dev3ADDRO        (devADDRI[1][3]),
+      .dev3DATAI        (devDATAO[1][3]),
+      .dev3DATAO        (devDATAI[1][3]),
+      // IO Bridge 1, Device #4
+      .dev4INTR         (devINTR[1][1]),
+      .dev4INTA         (devINTA[1][1]),
+      .dev4ADDRI        (devADDRO[1][1]),
+      .dev4ADDRO        (devADDRI[1][1]),
+      .dev4DATAI        (devDATAO[1][1]),
+      .dev4DATAO        (devDATAI[1][1])
+   );
+
+   //
+   // IO Bridge #3
+   //
+
+   UBA #(
+      .ubaNUM           (`devUBA3),
+      .ubaADDR          (`ubaADDR)
+   )
+   UBA3 (
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
+      .busREQI          (ubaREQI),
+      .busREQO          (ubaREQO[3]),
+      .busACKI          (ubaACKI[3]),
+      .busACKO          (ubaACKO[3]),
+      .busADDRI         (ubaADDRI[3]),
+      .busADDRO         (ubaADDRO[3]),
+      .busDATAI         (ubaDATAI[3]),
+      .busDATAO         (ubaDATAO[3]),
+      .busINTR          (ubaINTR[3]),
+      // IO Bridge 3 Common
+      .devRESET         (devRESET[3]),
+      .devREQI          (devREQO[3]),
+      .devREQO          (devREQI[3]),
+      .devACKI          (devACKO[3]),
+      .devACKO          (devACKI[3]),
+      // IO Bridge 3, Device #1
+      .dev1INTR         (devINTR[3][1]),
+      .dev1INTA         (devINTA[3][1]),
+      .dev1ADDRI        (devADDRO[3][1]),
+      .dev1ADDRO        (devADDRI[3][1]),
+      .dev1DATAI        (devDATAO[3][1]),
+      .dev1DATAO        (devDATAI[3][1]),
+      // IO Bridge 3, Device #2
+      .dev2INTR         (devINTR[3][2]),
+      .dev2INTA         (devINTA[3][2]),
+      .dev2ADDRI        (devADDRO[3][2]),
+      .dev2ADDRO        (devADDRI[3][2]),
+      .dev2DATAI        (devDATAO[3][2]),
+      .dev2DATAO        (devDATAI[3][2]),
+      // IO Bridge 3, Device #3
+      .dev3INTR         (devINTR[3][3]),
+      .dev3INTA         (devINTA[3][3]),
+      .dev3ADDRI        (devADDRO[3][3]),
+      .dev3ADDRO        (devADDRI[3][3]),
+      .dev3DATAI        (devDATAO[3][3]),
+      .dev3DATAO        (devDATAI[3][3]),
+      // IO Bridge 3, Device #4
+      .dev4INTR         (devINTR[3][4]),
+      .dev4INTA         (devINTA[3][4]),
+      .dev4ADDRI        (devADDRO[3][4]),
+      .dev4ADDRO        (devADDRI[3][4]),
+      .dev4DATAI        (devDATAO[3][4]),
+      .dev4DATAO        (devDATAI[3][4])
    );
 
    //
@@ -481,67 +567,18 @@ module KS10 (
       .rpWRL            (rpWRL),
       .rpDPR            (rpDPR),
       .rpLEDS           (rpLEDS),
-      // Reset
-      .devRESET         (ctl1RESET),
-      // Interrupt
-      .devINTR          (rh1INTR),
-      .devINTA          (ctl1INTA),
-      // Target
-      .devREQI          (ctl1REQO),
-      .devACKO          (rh1ACKO),
-      .devADDRI         (ctl1ADDRO),
-      // Initiator
-      .devREQO          (rh1REQO),
-      .devACKI          (ctl1rh1ACKO),
-      .devADDRO         (rh1ADDRO),
-      // Data
-      .devDATAI         (ctl1DATAO),
-      .devDATAO         (rh1DATAO)
-      );
-
-   //
-   // IO Bridge #3
-   //
-
-   wire         ctl3REQO;
-   wire [ 0:35] ctl3ADDRO;
-   wire [ 0:35] ctl3DATAO;
-   wire [ 7: 4] ctl3INTA;
-   wire         ctl3RESET;
-   wire         ctl3dz1ACKO;
-   wire         dz1REQO;
-   wire         dz1ACKO;
-   wire [ 0:35] dz1ADDRO;
-   wire [ 0:35] dz1DATAO;
-   wire [ 7: 4] dz1INTR;
-
-   UBA #(
-      .ubaNUM           (`devUBA3),
-      .ubaADDR          (`ubaADDR)
-   )
-   UBA3 (
-      .rst              (cpuRST),
-      .clk              (cpuCLK),
-      .busREQI          (ubaREQI),
-      .busREQO          (ubaREQO[3]),
-      .busACKI          (ubaACKI[3]),
-      .busACKO          (ubaACKO[3]),
-      .busADDRI         (arbADDRO),
-      .busADDRO         (ubaADDRO[3]),
-      .busDATAI         (ubaDATAI),
-      .busDATAO         (ubaDATAO[3]),
-      .busINTR          (ubaINTRO[3]),
-      .devREQO          (ctl3REQO),
-      .devACKI          (dz1ACKO),
-      .devREQI          (dz1REQO),
-      .devACKO          (ctl3dz1ACKO),
-      .devADDRO         (ctl3ADDRO),
-      .devADDRI         (dz1ADDRO),
-      .devDATAO         (ctl3DATAO),
-      .devDATAI         (dz1DATAO),
-      .devINTR          (dz1INTR),
-      .devINTA          (ctl3INTA),
-      .devRESET         (ctl3RESET)
+      // Device
+      .devRESET         (devRESET[1]),
+      .devINTR          (devINTR[1][1]),
+      .devINTA          (devINTA[1][1]),
+      .devREQI          (devREQI[1][1]),
+      .devREQO          (devREQO[1][1]),
+      .devACKI          (devACKI[1][1]),
+      .devACKO          (devACKO[1][1]),
+      .devADDRI         (devADDRI[1][1]),
+      .devADDRO         (devADDRO[1][1]),
+      .devDATAI         (devDATAI[1][1]),
+      .devDATAO         (devDATAO[1][1])
    );
 
    //
@@ -563,22 +600,46 @@ module KS10 (
       .dzCO             (dzCO),
       .dzRI             (dzRI),
       .dzDTR            (dzDTR),
-      // Reset
-      .devRESET         (ctl3RESET),
-      // Interrupt
-      .devINTR          (dz1INTR),
-      .devINTA          (ctl3INTA),
-      // Target
-      .devREQI          (ctl3REQO),
-      .devACKO          (dz1ACKO),
-      .devADDRI         (ctl3ADDRO),
-      // Initiator
-      .devREQO          (dz1REQO),
-      .devACKI          (ctl3dz1ACKO),
-      .devADDRO         (dz1ADDRO),
-      // Data
-      .devDATAI         (ctl3DATAO),
-      .devDATAO         (dz1DATAO)
+      // Device
+      .devRESET         (devRESET[3]),
+      .devINTR          (devINTR[3][1]),
+      .devINTA          (devINTA[3][1]),
+      .devREQI          (devREQI[3][1]),
+      .devREQO          (devREQO[3][1]),
+      .devACKI          (devACKI[3][1]),
+      .devACKO          (devACKO[3][1]),
+      .devADDRI         (devADDRI[3][1]),
+      .devADDRO         (devADDRO[3][1]),
+      .devDATAI         (devDATAI[3][1]),
+      .devDATAO         (devDATAO[3][1])
+   );
+
+   //
+   // LP20 #1 is connected to IO Bridge 3 Device 2
+   //
+
+   LP20 #(
+      .lpDEV            (`lp1DEV),
+      .lpADDR           (`lp1ADDR),
+      .lpVECT           (`lp1VECT),
+      .lpINTR           (`lp1INTR)
+   ) uLP20 (
+      .clk              (cpuCLK),
+      .rst              (cpuRST),
+      // LP20 Interfaces
+      .lpONLINE         (1'b1),
+      // Device
+      .devRESET         (devRESET[3]),
+      .devINTR          (devINTR[3][2]),
+      .devINTA          (devINTA[3][2]),
+      .devREQI          (devREQI[3][2]),
+      .devREQO          (devREQO[3][2]),
+      .devACKI          (devACKI[3][2]),
+      .devACKO          (devACKO[3][2]),
+      .devADDRI         (devADDRI[3][2]),
+      .devADDRO         (devADDRO[3][2]),
+      .devDATAI         (devDATAI[3][2]),
+      .devDATAO         (devDATAO[3][2])
    );
 
    //
@@ -613,27 +674,6 @@ module KS10 (
    assign conINTR_N = ~cslINTRO;
 
    //
-   // Interrupts
-   //
-
-   assign ubaINTR = ubaINTRO[0] | ubaINTRO[1] |  ubaINTRO[2] | ubaINTRO[3];
-
-   //
-   // Unused Unibus Devices
-   //
-
-   assign ubaREQO[0]  = 0;
-   assign ubaREQO[2]  = 0;
-   assign ubaACKO[0]  = 0;
-   assign ubaACKO[2]  = 0;
-   assign ubaADDRO[0] = 0;
-   assign ubaADDRO[2] = 0;
-   assign ubaDATAO[0] = 0;
-   assign ubaDATAO[2] = 0;
-   assign ubaINTRO[0] = 0;
-   assign ubaINTRO[2] = 0;
-
-   //
    // Halt LED
    //
 
@@ -644,5 +684,75 @@ module KS10 (
    //
 
    assign test = 0;
+
+   //
+   // IO Bridge #2 is not implemented. Tie inputs.
+   //
+
+   assign ubaREQO[2]  = 0;
+   assign ubaACKO[2]  = 0;
+   assign ubaADDRO[2] = 0;
+   assign ubaDATAO[2] = 0;
+   assign ubaINTR[2]  = 0;
+
+   //
+   // IO Bridge #4 is not implemented. Tie inputs.
+   //
+
+   assign ubaREQO[4]  = 0;
+   assign ubaACKO[4]  = 0;
+   assign ubaADDRO[4] = 0;
+   assign ubaDATAO[4] = 0;
+   assign ubaINTR[4]  = 0;
+
+   //
+   // IO Bridge #1, Device 2 is not implemented. Tie inputs
+   //
+
+   assign devINTR[1][2] = 0;
+   assign devREQO[1][2] = 0;
+   assign devACKO[1][2] = 0;
+   assign devADDRO[1][2] = 0;
+   assign devDATAO[1][2] = 0;
+
+   //
+   // IO Bridge #1, Device 3 is not implemented. Tie inputs
+   //
+
+   assign devINTR[1][3] = 0;
+   assign devREQO[1][3] = 0;
+   assign devACKO[1][3] = 0;
+   assign devADDRO[1][3] = 0;
+   assign devDATAO[1][3] = 0;
+
+   //
+   // IO Bridge #1, Device 4 is not implemented. Tie inputs
+   //
+
+   assign devINTR[1][4] = 0;
+   assign devREQO[1][4] = 0;
+   assign devACKO[1][4] = 0;
+   assign devADDRO[1][4] = 0;
+   assign devDATAO[1][4] = 0;
+
+   //
+   // IO Bridge #3, Device 3 is not implemented. Tie inputs
+   //
+
+   assign devINTR[3][3] = 0;
+   assign devREQO[3][3] = 0;
+   assign devACKO[3][3] = 0;
+   assign devADDRO[3][3] = 0;
+   assign devDATAO[3][3] = 0;
+
+   //
+   // IO Bridge #3, Device 4 is not implemented. Tie inputs
+   //
+
+   assign devINTR[3][4] = 0;
+   assign devREQO[3][4] = 0;
+   assign devACKO[3][4] = 0;
+   assign devADDRO[3][4] = 0;
+   assign devDATAO[3][4] = 0;
 
 endmodule

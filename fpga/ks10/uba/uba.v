@@ -56,42 +56,60 @@
 `include "../cpu/bus.vh"
 
 module UBA (
-      input  wire         rst,                  // Reset
-      input  wire         clk,                  // Clock
+      input  wire         rst,                          // Reset
+      input  wire         clk,                          // Clock
       // KS10 Backplane Bus Interface
-      input  wire         busREQI,              // Backplane Bus Request In
-      output wire         busREQO,              // Backplane Bus Request Out
-      input  wire         busACKI,              // Backplane Bus Acknowledge In
-      output wire         busACKO,              // Backplane Bus Acknowledge Out
-      input  wire [ 0:35] busADDRI,             // Backplane Bus Address In
-      output wire [ 0:35] busADDRO,             // Backplane Bus Address Out
-      input  wire [ 0:35] busDATAI,             // Backplane Bus Data In
-      output reg  [ 0:35] busDATAO,             // Backplane Bus Data Out
-      output wire [ 1: 7] busINTR,              // Backplane Bus Interrupt Request
+      input  wire         busREQI,                      // Backplane Bus Request In
+      output wire         busREQO,                      // Backplane Bus Request Out
+      input  wire         busACKI,                      // Backplane Bus Acknowledge In
+      output wire         busACKO,                      // Backplane Bus Acknowledge Out
+      input  wire [ 0:35] busADDRI,                     // Backplane Bus Address In
+      output wire [ 0:35] busADDRO,                     // Backplane Bus Address Out
+      input  wire [ 0:35] busDATAI,                     // Backplane Bus Data In
+      output reg  [ 0:35] busDATAO,                     // Backplane Bus Data Out
+      output wire [ 1: 7] busINTR,                      // Backplane Bus Interrupt Request
       // Device Interface
-      output wire         devREQO,              // IO Device Request Out
-      input  wire         devACKI,              // IO Device Acknowledge In
-      input  wire         devREQI,              // IO Device Request In
-      output wire         devACKO,              // IO Device Acknowledge Out
-      output wire [ 0:35] devADDRO,             // IO Device Address Out
-      input  wire [ 0:35] devADDRI,             // IO Device Address In
-      output wire [ 0:35] devDATAO,             // IO Device Data Out
-      input  wire [ 0:35] devDATAI,             // IO Device Data In
-      input  wire [ 7: 4] devINTR,              // IO Device Interrupt Request
-      output wire [ 7: 4] devINTA,              // IO Device Interrupt Acknowledge
-      output wire         devRESET              // IO Device Reset
+      output wire         devRESET,                     // IO Device Reset
+      input  wire [ 1: 4] devREQI,                      // IO Device Request In
+      output wire [ 1: 4] devREQO,                      // IO Device Request Out
+      input  wire [ 1: 4] devACKI,                      // IO Device Acknowledge In
+      output reg  [ 1: 4] devACKO,                      // IO Device Acknowledge Out
+      input  wire [ 7: 4] dev1INTR,                     // IO Device 1 Interrupt Request
+      output wire [ 7: 4] dev1INTA,                     // IO Device 1 Interrupt Acknowledge
+      input  wire [ 0:35] dev1ADDRI,                    // IO Device 1 Address In
+      output wire [ 0:35] dev1ADDRO,                    // IO Device 1 Address Out
+      input  wire [ 0:35] dev1DATAI,                    // IO Device 1 Data In
+      output wire [ 0:35] dev1DATAO,                    // IO Device 1 Data Out
+      input  wire [ 7: 4] dev2INTR,                     // IO Device 2 Interrupt Request
+      output wire [ 7: 4] dev2INTA,                     // IO Device 2 Interrupt Acknowledge
+      input  wire [ 0:35] dev2ADDRI,                    // IO Device 2 Address In
+      output wire [ 0:35] dev2ADDRO,                    // IO Device 2 Address Out
+      input  wire [ 0:35] dev2DATAI,                    // IO Device 2 Data In
+      output wire [ 0:35] dev2DATAO,                    // IO Device 2 Data Out
+      input  wire [ 7: 4] dev3INTR,                     // IO Device 3 Interrupt Request
+      output wire [ 7: 4] dev3INTA,                     // IO Device 3 Interrupt Acknowledge
+      input  wire [ 0:35] dev3ADDRI,                    // IO Device 3 Address In
+      output wire [ 0:35] dev3ADDRO,                    // IO Device 3 Address Out
+      input  wire [ 0:35] dev3DATAI,                    // IO Device 3 Data In
+      output wire [ 0:35] dev3DATAO,                    // IO Device 3 Data Out
+      input  wire [ 7: 4] dev4INTR,                     // IO Device 4 Interrupt Request
+      output wire [ 7: 4] dev4INTA,                     // IO Device 4 Interrupt Acknowledge
+      input  wire [ 0:35] dev4ADDRI,                    // IO Device 4 Address In
+      output wire [ 0:35] dev4ADDRO,                    // IO Device 4 Address Out
+      input  wire [ 0:35] dev4DATAI,                    // IO Device 4 Data In
+      output wire [ 0:35] dev4DATAO                     // IO Device 4 Data Out
    );
 
    //
    // IO Bridge Configuration
    //
 
-   parameter  [14:17] ubaNUM    = 4'd0;                    // Bridge Device Number
-   parameter  [18:35] ubaADDR   = `ubaADDR;                // Base address
-   localparam [18:35] pageADDR  = ubaADDR + `pageOFFSET;   // Paging RAM Address
-   localparam [18:35] statADDR  = ubaADDR + `statOFFSET;   // Status Register Address
-   localparam [18:35] maintADDR = ubaADDR + `maintOFFSET;  // Maintenance Register Address
-   localparam [ 0:35] wruRESP   = `getWRU(ubaNUM);         // Lookup WRU Response
+   parameter  [14:17] ubaNUM   = 4'd0;                  // Bridge Device Number
+   parameter  [18:35] ubaADDR  = `ubaADDR;              // Base address
+   localparam [18:35] pageADDR = ubaADDR + `pageOFFSET; // Paging RAM Address
+   localparam [18:35] statADDR = ubaADDR + `statOFFSET; // Status Register Address
+   localparam [18:35] maintADDR= ubaADDR + `maintOFFSET;// Maintenance Register Address
+   localparam [ 0:35] wruRESP  = `getWRU(ubaNUM);       // Lookup WRU Response
 
    //
    // Address Bus
@@ -101,26 +119,26 @@ module UBA (
    //  busADDRI[14:35] is address
    //
 
-   wire         busREAD   = `busREAD(busADDRI);  // Read Cycle (IO or Memory)
-   wire         busWRITE  = `busWRITE(busADDRI); // Write Cycle (IO or Memory)
-   wire         busPHYS   = `busPHYS(busADDRI);  // Physical reference
-   wire         busIO     = `busIO(busADDRI);    // IO Cycle
-   wire         busWRU    = `busWRU(busADDRI);   // Read interrupting controller number
-   wire         busVECT   = `busVECT(busADDRI);  // Read interrupt vector
-   wire         busIOBYTE = `busIOBYTE(busADDRI);// IO Bridge Byte IO Operation
-   wire [15:17] busPI     = `busPI(busADDRI);    // IO Bridge PI Request
-   wire [14:17] busDEV    = `busDEV(busADDRI);   // IO Bridge Device Number
-   wire [18:35] busADDR   = `busIOADDR(busADDRI);// IO Address
+   wire         busREAD   = `busREAD(busADDRI);         // Read Cycle (IO or Memory)
+   wire         busWRITE  = `busWRITE(busADDRI);        // Write Cycle (IO or Memory)
+   wire         busPHYS   = `busPHYS(busADDRI);         // Physical reference
+   wire         busIO     = `busIO(busADDRI);           // IO Cycle
+   wire         busWRU    = `busWRU(busADDRI);          // Read interrupting controller number
+   wire         busVECT   = `busVECT(busADDRI);         // Read interrupt vector
+   wire         busIOBYTE = `busIOBYTE(busADDRI);       // IO Bridge Byte IO Operation
+   wire [15:17] busPI     = `busPI(busADDRI);           // IO Bridge PI Request
+   wire [14:17] busDEV    = `busDEV(busADDRI);          // IO Bridge Device Number
+   wire [18:35] busADDR   = `busIOADDR(busADDRI);       // IO Address
 
    //
    // Signals
    //
 
-   wire regUBAMR;                               // Maintenance Mode
-   wire setNXD;                                 // Set NXD
-   wire setTMO;                                 // Set TMO
-   wire pageFAIL;                               // Page fail
-   wire loopACKO;                               // Loopback acknowledge
+   wire regUBAMR;                                       // Maintenance Mode
+   wire setNXD;                                         // Set NXD
+   wire setTMO;                                         // Set TMO
+   wire pageFAIL;                                       // Page fail
+   wire loopACKO;                                       // Loopback acknowledge
 
    //
    // Address Decoding
@@ -181,6 +199,58 @@ module UBA (
    );
 
    //
+   // Device acknowledge selector
+   //
+
+   always @*
+     begin
+        devACKO  = 0;
+        if (devREQI[1])
+          devACKO[1] = busACKI;
+        else if (devREQI[2])
+          devACKO[2] = busACKI;
+        else if (devREQI[3])
+          devACKO[3] = busACKI;
+        else if (devREQI[4])
+          devACKO[4] = busACKI;
+     end
+
+   //
+   // Device request selector
+   //  The address and data bus is enabled to the KS10 backplane bus arbiter
+   //  when requested be either the initiator or the target.
+
+
+   reg [0:35] devADDRI;
+   reg [0:35] devDATAI;
+
+   always @*
+     begin
+        devADDRI = 0;
+        devDATAI = 0;
+        if ((busREQI & devACKI[1]) | devREQI[1])
+          begin
+             devADDRI = dev1ADDRI;
+             devDATAI = dev1DATAI;
+          end
+        else if ((busREQI & devACKI[2]) | devREQI[2])
+          begin
+             devADDRI = dev2ADDRI;
+             devDATAI = dev2DATAI;
+          end
+        else if ((busREQI & devACKI[3]) |devREQI[3])
+          begin
+             devADDRI = dev3ADDRI;
+             devDATAI = dev3DATAI;
+          end
+        else if ((busREQI & devACKI[4]) |devREQI[4])
+          begin
+             devADDRI = dev4ADDRI;
+             devDATAI = dev4DATAI;
+          end
+     end
+
+   //
    // NXD Bus Monitor
    //
    //  The Bus Monitor acknowledges bus requests to the UBA and devices on the
@@ -195,7 +265,7 @@ module UBA (
       .ubaREQ     (ubaREAD  | ubaWRITE | loopREAD | loopWRITE),
       .ubaACK     (ubaREAD  | ubaWRITE | loopREAD | loopWRITE),
       .devREQ     (devREAD  | devWRITE | vectREAD),
-      .devACK     (devACKI),
+      .devACK     (devACKI[1] | devACKI[2] | devACKI[3] | devACKI[4]),
       .wruREQ     (wruREAD),
       .wruACK     (wruREAD & ((busPI == statPIH) | (busPI == statPIL))),
       .setNXD     (setNXD)
@@ -219,6 +289,9 @@ module UBA (
    // Interrupts
    //
 
+   wire [1:4] devINTA;
+   wire [1:4] devINTR = dev1INTR | dev2INTR | dev3INTR | dev4INTR;
+
    UBAINTR INTR (
       .rst        (rst),
       .clk        (clk),
@@ -232,6 +305,11 @@ module UBA (
       .devINTR    (devINTR),
       .devINTA    (devINTA)
    );
+
+   assign dev1INTA = devINTA;
+   assign dev2INTA = devINTA;
+   assign dev3INTA = devINTA;
+   assign dev4INTA = devINTA;
 
    //
    // IO Bus Paging
@@ -259,17 +337,28 @@ module UBA (
    // KS10 to Device Interface
    //
 
-   assign devREQO  = busREQI;
-   assign devACKO  = busACKI;
-   assign devDATAO = busDATAI;
-   assign devADDRO = busADDRI;
+   assign devREQO[1] = busREQI;
+   assign devREQO[2] = busREQI;
+   assign devREQO[3] = busREQI;
+   assign devREQO[4] = busREQI;
+
+   assign dev1ADDRO = busADDRI;
+   assign dev2ADDRO = busADDRI;
+   assign dev3ADDRO = busADDRI;
+   assign dev4ADDRO = busADDRI;
+
+   assign dev1DATAO = busDATAI;
+   assign dev2DATAO = busDATAI;
+   assign dev3DATAO = busDATAI;
+   assign dev4DATAO = busDATAI;
+
    assign devRESET = statINI;
 
    //
    // Device to KS10 Interface
    //
 
-   assign busREQO  = devREQI;
+   assign busREQO = devREQI[1] | devREQI[2] | devREQI[3] | devREQI[4];
 
    //
    // KS10 Bus Data Multiplexer
@@ -290,46 +379,7 @@ module UBA (
    // Whine about NXD and TMO
    //
 
-`ifdef SYNTHESIS
-`ifdef CHIPSCOPE_UBA
-
-   //
-   // ChipScope Pro Integrated Controller (ICON)
-   //
-
-   wire [35:0] control0;
-
-   chipscope_uba_icon uICON (
-      .CONTROL0   (control0)
-   );
-
-   //
-   // ChipScope Pro Integrated Logic Analyzer (ILA)
-   //
-
-   wire [151:0] TRIG0 = {
-       devADDRI,               // dataport[116:151]
-       devDATAI,               // dataport[ 80:115]
-       busADDRO,                // dataport[ 44: 79]
-       busDATAO,                // dataport[  8: 43]
-       pageFAIL,                // dataport[      7]
-       setTMO,                  // dataport[      6]
-       setNXD,                  // dataport[      5]
-       busACKO,                 // dataport[      4]
-       busACKI,                 // dataport[      3]
-       busREQO,                 // dataport[      2]
-       busREQI,                 // dataport[      1]
-       rst                      // dataport[      0]
-   };
-
-   chipscope_uba_ila uILA (
-      .CLK        (clk),
-      .CONTROL    (control0),
-      .TRIG0      (TRIG0)
-   );
-
-`endif
-`else
+`ifndef SYNTHESIS
 
    reg [0:35] addr;
 

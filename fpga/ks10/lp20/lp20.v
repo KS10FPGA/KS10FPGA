@@ -214,25 +214,26 @@ module LP20 (
    wire        lpINCBCTR;       // Increment Byte Counter
    wire        lpINCCKSM;       // Update checksum
 
-   wire        lpVAL   = 0;     // Valid (Not implemented)
-   wire        lpNRDY  = 0;     //
-   wire        lpDPAR  = 0;     //
-   wire        lpOVFU  = 0;     //
-   wire        lpOFFL  = 0;     //
-   wire        lpDVOF  = 0;     //
-   wire        lpLPE   = 0;     //
-   wire        lpSETMPE   = 0;  //
+   wire        lpVAL    = 0;    // Valid (Not implemented)
+   wire        lpLA180  = 0;    //
+   wire        lpNRDY   = 0;    //
+   wire        lpDPAR   = 0;    //
+   wire        lpOVFU   = 0;    //
+   wire        lpOFFL   = 0;    //
+   wire        lpDVOF   = 0;    //
+   wire        lpLPE    = 0;    //
+   wire        lpSETMPE = 0;    //
 
-   wire        lpSETRPE   = 0;  //
-   wire        lpMTE   = 0;     //
-   wire        lpDTE   = 0;     //
-   wire        lpSETGOE   = 0;  //
-   wire        lpGOCLR = 0;
+   wire        lpSETRPE = 0;    //
+   wire        lpMTE    = 0;    //
+   wire        lpDTE    = 0;    //
+   wire        lpSETGOE = 0;    //
+   wire        lpGOCLR  = 0;    //
 
    wire        lpSETERR;        // Set Error
    wire        lpSETDHLD;       // Set delimiter hold
    wire        lpCMDGO;         // Go command
-   wire        lpGORST;
+   wire        lpGORST;         //
    wire [ 7:0] lpDATA;          // byte data to checksum
 
    //
@@ -279,6 +280,7 @@ module LP20 (
       .csrbWRITE  (csrbWRITE),
       .lpINIT     (lpINIT),
       .lpVAL      (lpVAL),
+      .lpLA180    (lpLA180),
       .lpNRDY     (lpNRDY),
       .lpDPAR     (lpDPAR),
       .lpOVFU     (lpOVFU),
@@ -379,9 +381,7 @@ module LP20 (
       .clk        (clk),
       .rst        (rst),
       .lpMODE     (lpMODE),
-      .lpCMDGO    (lpCMDGO),
-
-      .lpINCBAR   (lpINCBAR)
+      .lpCMDGO    (lpCMDGO)
    );
 
    //
@@ -424,7 +424,7 @@ module LP20 (
 
    always @*
      begin
-        devDATAO = 36'bx;
+        devDATAO = 0;
         if (csraREAD)
           devDATAO = {20'b0, regCSRA};
         if (csrbREAD)
@@ -442,7 +442,10 @@ module LP20 (
         if (cksmREAD | pdatREAD)
           devDATAO = {20'b0, regCKSM, regPDAT};
         if (vectREAD)
-          devDATAO = lpVECT;
+          devDATAO = {20'b0, lpVECT};
      end
+
+
+   assign devREQO = 0;
 
 endmodule
