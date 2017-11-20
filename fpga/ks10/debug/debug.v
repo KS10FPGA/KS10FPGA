@@ -267,6 +267,7 @@ module DEBUG (
    //
 
    reg [18:35] PC;
+   reg [ 0:35] IR;
    reg [14*8:1] test;
 
    //
@@ -328,12 +329,14 @@ module DEBUG (
      begin
         if (rst)
           begin
+             IR   = 0;
              PC   = 0;
              test = "";
           end
         else
           if (regsLOAD)
             begin
+               IR     = cpuHR;
                PC     = cpuPC;
                lastIR = $time;
 
