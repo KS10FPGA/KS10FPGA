@@ -25,7 +25,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -315,7 +315,6 @@ module UBA (
    // IO Bus Paging
    //
 
-   wire [0: 3] pageFLAGS;
    wire [0:35] pageDATAO;
 
    UBAPAGE PAGE (
@@ -329,7 +328,6 @@ module UBA (
       .pageWRITE  (pageWRITE),
       .pageDATAO  (pageDATAO),
       .pageADDRI  (devADDRI),
-      .pageFLAGS  (pageFLAGS),
       .pageFAIL   (pageFAIL)
    );
 

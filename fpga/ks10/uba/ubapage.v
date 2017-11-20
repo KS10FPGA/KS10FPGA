@@ -94,7 +94,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -134,7 +134,6 @@ module UBAPAGE (
       input  wire         pageWRITE,            // Page RAM write
       output wire [ 0:35] pageDATAO,            // Paging RAM Data Out
       input  wire [ 0:35] pageADDRI,            // IO Device Address In
-      output wire [ 0: 3] pageFLAGS,            // Page flags
       output wire         pageFAIL              // Page NXM
    );
 
@@ -163,19 +162,29 @@ module UBAPAGE (
    //  ADDR Flags were already added by the device
    //
 
-   assign busADDRO  = {pageADDRI[0:15], pageRAM[virtPAGE][4:14], pageADDRI[25:33]};
-   assign pageFLAGS = pageRAM[virtPAGE][0:3];
+   assign busADDRO = {pageADDRI[0:15], pageRAM[virtPAGE][4:14], pageADDRI[25:33]};
 
    //
-   // NXM generated when:
+   // pageFLAGS
+   //
+
+   wire [0:3] pageFLAGS = pageRAM[virtPAGE][0:3];
+
+   //
+   // An NXM generated when:
    //   - UBA A17 not zero
    //   - Page not valid
-   //   - two address LSB not zero
+   //   - if in FTM and the two address LSB are not zero.  This is similar to
+   //     an alignment error.
+   //
+   // Note:
+   //  The RH11 should be configured for FTM (36-bit accesses) while the LP20
+   //  should be configured for byte and word accesses.  The DZ11 doesn't do DMA.
    //
 
    assign pageFAIL = ((busREQO & pageADDRI[18]) |
-                      (busREQO & pageADDRI[34] & !regUBAMR) |
-                      (busREQO & pageADDRI[35] & !regUBAMR) |
+                      (busREQO & `flagsFTM(pageFLAGS) & pageADDRI[34]) |
+                      (busREQO & `flagsFTM(pageFLAGS) & pageADDRI[35]) |
                       (busREQO & !`flagsVLD(pageFLAGS)));
 
 endmodule
