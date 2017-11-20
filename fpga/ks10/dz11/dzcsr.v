@@ -71,7 +71,8 @@ module DZCSR (
    //  care.  The clear only takes a single clock cycle.
    //
 
-   localparam CSRPER = 3.0;                     // 3.0 microseconds
+   localparam        CSRPER = 3.0;              // 3.0 microseconds
+   localparam [63:0] CSRCNT = CSRPER * `CLKFRQ / 1000000;
 
    //
    // Big-endian to little-endian data bus swap
@@ -102,7 +103,7 @@ module DZCSR (
              if (devRESET)
                clrCOUNT <= 0;
              if (csrWRITE & devLOBYTE & `dzCSR_CLR(dzDATAI))
-               clrCOUNT <= CSRPER * `CLKFRQ / 1000000;
+               clrCOUNT <= CSRCNT[9:0];
              else if (clrCOUNT != 0)
                clrCOUNT <= clrCOUNT - 1'b1;
           end
