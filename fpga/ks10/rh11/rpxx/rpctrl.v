@@ -107,7 +107,7 @@ module RPCTRL (
       output reg          rpPIP,                // Positioning-in-progress
       input  wire         rpCLBERR,             // Class B error (abort)
       input  wire         rpSETAOE,             // Set address overflow error
-      output reg          rpSETATA,             // Set attenation
+      output reg          rpSETATA,             // Set attention
       output wire         rpSETDCK,             // Set data check error
       output reg          rpSETDTE,             // Set drive timing error
       output wire         rpSETOPI,             // Set operation incomplete

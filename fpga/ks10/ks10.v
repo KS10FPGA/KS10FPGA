@@ -6,7 +6,7 @@
 //   KS10 System
 //
 // Details
-//   The system consists of a Clock Generator, a CPU, a Bus Aribter, a Memory
+//   The system consists of a Clock Generator, a CPU, a Bus Arbiter, a Memory
 //   Controller, two Unibus Interfaces, and Console Interface, a DZ11 Terminal
 //   Multiplexer, and an RH11 Disk Controller.
 //

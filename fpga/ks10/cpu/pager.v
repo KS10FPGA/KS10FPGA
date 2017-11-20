@@ -212,7 +212,7 @@ module PAGER (
    // This is the 'normal' Pager
    //
    // Two variants exist: one is optimized to use a XILINX dual port RAM
-   // and the other is gerneric
+   // and the other is generic which infers RAM from the HDL.
    //
 
 `ifdef XILINX

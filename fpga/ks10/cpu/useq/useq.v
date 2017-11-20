@@ -54,7 +54,7 @@ module USEQ (
       input  wire         pageFAIL,             // Page Fail
       input  wire [0: 35] dp,                   // Datapath
       input  wire [0: 11] dispDIAG,             // Diagnostic Addr
-      input  wire         piINTR,               // Extenal Interrupt
+      input  wire         piINTR,               // External Interrupt
       input  wire         cpuEXEC,              // Execute Switch Active
       input  wire         cpuCONT,              // Continue Switch Active
       input  wire         ioBUSY,               // IO Busy

@@ -19,7 +19,7 @@
 //   addresses are selected.
 //
 //   See the description of the dispatch logic and the microcontroller for
-//   addtional details.
+//   additional details.
 //
 // File
 //   skip.v
@@ -29,7 +29,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any

@@ -400,7 +400,7 @@ module ALU (
    //  The am2901 latches the addresses when the clock is low. These latches
    //  would be a problem for an FPGA design.  Latching the address lines is
    //  not necessary anyway because the RAM address lines come directly from
-   //  the CROM which is already registered.   We'll abosorb the address latch
+   //  the CROM which is already registered.   We'll absorb the address latch
    //  into the CROM register.
    //
    // Note:

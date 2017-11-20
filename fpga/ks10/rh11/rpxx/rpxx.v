@@ -378,7 +378,7 @@ module RPXX (
    //
    // Register Modification Refused
    //
-   // Only the RPMR and the RPAS registers can be written durning an operation.
+   // Only the RPMR and the RPAS registers can be written during an operation.
    //
    // Trace
    //  M7774/RG6/E29
