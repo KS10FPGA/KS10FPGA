@@ -142,7 +142,6 @@ module KS10 (
    wire [ 0:63] dzCCR;                  // DZ11 Console Control Register
    wire [ 0: 7] dzRI;                   // DZ11 Ring Indicator
    wire [ 0: 7] dzCO;                   // DZ11 Carrier Sense
-   wire         dzLOOP;                 // DZ11 Loopback
 
    //
    // RH11 Interfaces
@@ -224,12 +223,25 @@ module KS10 (
    //
 
    SYNC #(
-      .WIDTH (17)
+      .WIDTH (16)
    ) syncDZCCR (
       .clk   (cpuCLK),
       .rst   (rst),
-      .i     (dzCCR[47:63]),
-      .o     ({dzLOOP, dzCO, dzRI})
+      .i     (dzCCR[16:31]),
+      .o     ({dzCO, dzRI})
+   );
+
+   //
+   // Synchronize the LPCCR
+   //
+
+   SYNC #(
+      .WIDTH (13)
+   ) syncLPCCR (
+      .clk   (cpuCLK),
+      .rst   (rst),
+      .i     ({lpCCR[6:15], lpCCR[27], lpCCR[30], lpCCR[31]}),
+      .o     ({lpCONFIG, lpOVFU, lpSETONLN, lpSETOFFLN})
    );
 
    //
