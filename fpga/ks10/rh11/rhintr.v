@@ -14,7 +14,7 @@
 // Notes
 //   RH11 interrupts are a little strange.
 //
-//   Please read the white pager entited "PDP-11 Interrupts: Variations On A
+//   Please read the white pager entitled "PDP-11 Interrupts: Variations On A
 //   Theme", Bob Supnik, 03-Feb-2002 [revised 20-Feb-2004]
 //
 // Author

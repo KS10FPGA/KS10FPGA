@@ -146,13 +146,6 @@ module RH11 (
 
    integer file;
 
-   initial
-     begin
-        file = $fopen("rhstatus.txt", "w");
-        $fwrite(file, "[%11.3f] RH11: Debug Mode.\n", $time/1.0e3);
-        $fflush(file);
-     end
-
 `endif
 
    //
@@ -809,10 +802,17 @@ module RH11 (
    assign devADDRO = sdREADOP ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
 
    //
-   // Whine about unacked bus cycles
+   // Debug output
    //
 
 `ifndef SYNTHESIS
+
+   initial
+     begin
+        file = $fopen("rhstatus.txt", "w");
+        $fwrite(file, "[%11.3f] RH11: Debug Mode.\n", $time/1.0e3);
+        $fflush(file);
+     end
 
    always @(posedge clk)
      begin
