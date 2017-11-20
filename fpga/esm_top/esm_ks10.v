@@ -51,6 +51,9 @@ module ESM_KS10 (
       // DZ11 Interfaces
       input  wire [ 1: 0] ttyTXD,       // DZ RS-232 Transmitted Data
       output wire [ 1: 0] ttyRXD,       // DZ RS-232 Received Data
+      // LP20 Interfaces
+      input  wire         lprTXD,       // LP20 RS-232 Transmitted Data
+      output wire         lprRXD,       // LP20 RS-232 Received Data
       // RH11 Interfaces
       input  wire         sdCD_N,       // SD Card Detect
       input  wire         sdMISO,       // SD Data In
@@ -103,56 +106,78 @@ module ESM_KS10 (
    wire [7:0] sdCD = {7{1'b1}};         // SD Card Detect
 
    //
+   // LP20 Interface
+   //
+
+   wire lpRXD;
+   wire lpTXD;
+
+   //
    // KS10 Processor
    //
 
    KS10 uKS10(
-      .RESET_N          (RESET_N),
-      .CLK50MHZ         (CLK50MHZ),
+      .RESET_N      (RESET_N),
+      .CLK50MHZ     (CLK50MHZ),
       // DZ11
-      .dzTXD            (dzTXD),
-      .dzRXD            (dzRXD),
-      .dzDTR            (dzDTR),
+      .dzTXD        (dzTXD),
+      .dzRXD        (dzRXD),
+      .dzDTR        (dzDTR),
+      // LP20
+      .lpRXD        (lpRXD),
+      .lpTXD        (lpTXD),
       // SD
-      .sdCD             (sdCD),
-      .sdWP             (sdWP),
-      .sdMISO           (sdMISO),
-      .sdMOSI           (sdMOSI),
-      .sdSCLK           (sdSCLK),
-      .sdCS             (sdCS),
+      .sdCD         (sdCD),
+      .sdWP         (sdWP),
+      .sdMISO       (sdMISO),
+      .sdMOSI       (sdMOSI),
+      .sdSCLK       (sdSCLK),
+      .sdCS         (sdCS),
       // RPXX
-      .rpLEDS           (rpLEDS),
+      .rpLEDS       (rpLEDS),
       // Console
-      .conADDR          (conADDR),
-      .conDATA          (conDATA ),
-      .conBLE_N         (conBLE_N),
-      .conBHE_N         (conBHE_N),
-      .conRD_N          (conRD_N),
-      .conWR_N          (conWR_N),
-      .conINTR_N        (conINTR_N),
+      .conADDR      (conADDR),
+      .conDATA      (conDATA ),
+      .conBLE_N     (conBLE_N),
+      .conBHE_N     (conBHE_N),
+      .conRD_N      (conRD_N),
+      .conWR_N      (conWR_N),
+      .conINTR_N    (conINTR_N),
       // Memory
-      .ssramCLK         (ssramCLK),
-      .ssramCLKEN_N     (ssramCLKEN_N),
-      .ssramADV         (ssramADV),
-      .ssramBW_N        (ssramBW_N),
-      .ssramOE_N        (ssramOE_N),
-      .ssramWE_N        (ssramWE_N),
-      .ssramCE          (ssramCE),
-      .ssramADDR        (ssramADDR),
-      .ssramDATA        (ssramDATA),
-      .test             (test),
-      .haltLED          (haltLED)
+      .ssramCLK     (ssramCLK),
+      .ssramCLKEN_N (ssramCLKEN_N),
+      .ssramADV     (ssramADV),
+      .ssramBW_N    (ssramBW_N),
+      .ssramOE_N    (ssramOE_N),
+      .ssramWE_N    (ssramWE_N),
+      .ssramCE      (ssramCE),
+      .ssramADDR    (ssramADDR),
+      .ssramDATA    (ssramDATA),
+      .test         (test),
+      .haltLED      (haltLED)
    );
 
    //
    // TXD is an output from the FT4232.  RXD is an input to the FT4232.
    // Therefore TXD and RXD must get twisted here.
    //
-   // Route TTY0, TTY1 to pins.
+   // TTY3 - TTY7 are not pinned out
    //
 
-   assign ttyRXD[1:0] = dzTXD[1:0];
-   assign dzRXD[7:0] = {6'b0, ttyTXD[1:0]};
+   assign ttyRXD[0] = dzTXD[0];
+   assign dzRXD[0] = ttyTXD[0];
+
+   assign ttyRXD[1] = dzTXD[1];
+   assign dzRXD[1] = ttyTXD[1];
+
+   assign dzRXD[7:2] = 6'b0;
+
+   //
+   // Like the TTY RS-232, the LPR RS-232 lines get twised here.
+   //
+
+   assign lpRXD = lprTXD;
+   assign lprRXD = lpTXD;
 
    //
    // MR needs to be an input for the system to work.  We assign it to an

@@ -198,8 +198,10 @@ class ks10_t {
         static void writeIO(addr_t addr, data_t data);
         static uint16_t readIObyte(addr_t addr);
         static void writeIObyte(addr_t addr, uint16_t data);
-        static uint64_t readDZCCR(void);
-        static void writeDZCCR(uint64_t data);
+        static uint32_t readDZCCR(void);
+        static void writeDZCCR(uint32_t data);
+        static uint32_t readLPCCR(void);
+        static void writeLPCCR(uint32_t data);
         static uint64_t readRPCCR(void);
         static void writeRPCCR(uint64_t data);
         static data_t readDCSR(void);
@@ -275,7 +277,10 @@ class ks10_t {
         static constexpr volatile void * regCIR  = reinterpret_cast<void *>(epiOffset + 0x18);
 
         //!< DZ11 Console Control Register
-        static constexpr volatile uint64_t * regDZCCR = reinterpret_cast<uint64_t *>(epiOffset + 0x20);
+        static constexpr volatile uint32_t * regDZCCR = reinterpret_cast<uint32_t *>(epiOffset + 0x20);
+
+        //!< LP20 Console Control Register
+        static constexpr volatile uint32_t * regLPCCR = reinterpret_cast<uint32_t *>(epiOffset + 0x24);
 
         //!< RH11 Console Control Register
         static constexpr volatile uint64_t * regRPCCR = reinterpret_cast<uint64_t *>(epiOffset + 0x28);
@@ -383,6 +388,16 @@ class ks10_t {
         static const uint8_t rh11INIT00 =   1;
         static const uint8_t rh11IDLE   = 124;
         static const uint8_t rh11INFAIL = 126;
+
+        //
+        // LPCCR Configuration Bits
+        //
+
+        static const uint32_t lpOVFU     = 0x00000010;
+        static const uint32_t lpSIXLPI   = 0x00000008;
+        static const uint32_t lpONLINE   = 0x00000004;
+        static const uint32_t lpSETONLN  = 0x00000002;
+        static const uint32_t lpSETOFFLN = 0x00000001;
 
 };
 

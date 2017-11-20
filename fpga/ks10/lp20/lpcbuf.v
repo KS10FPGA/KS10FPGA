@@ -3,13 +3,13 @@
 // KS-10 Processor
 //
 // Brief
-//   LP20 Bus Address Register (BAR) implementation.
+//   LP20 Character Buffer Register (CBUF) implementation.
 //
 // Details
-//   This file provides the implementation of the LP20 BAR Register.
+//   The module implements the LP20 CBUF Register.
 //
 // File
-//   lpbar.v
+//   lpcbuf.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -41,49 +41,68 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`include "lpcsra.vh"
-`include "lpbar.vh"
+`include "lpcbuf.vh"
 
-module LPBAR (
+module LPCBUF (
       input  wire         clk,          // Clock
       input  wire         rst,          // Reset
-      input  wire         devLOBYTE,    // Device low byte
-      input  wire [35: 0] lpDATAI,      // Bus data in
-      input  wire         barWRITE,     // Write to BAR
-      input  wire         csraWRITE,    // Write to CSRA
+      input  wire         devREQO,      // Device request out
+      input  wire         devACKI,      // Device acknowledge in
+      input  wire         cbufWRITE,    // Write to CBUF
       input  wire         lpINIT,       // Initialize
-      input  wire         lpINCBAR,     // Increment BAR
-      output reg  [17: 0] regBAR        // BAR Output
+      input  wire [35: 0] lpDATAI,      // Bus data in
+      input  wire         lpMODELDRAM,  // Load translation RAM
+      input  wire [17: 0] regBAR,       // Bus Address
+      output reg  [ 7: 0] regCBUF       // CBUF register
    );
 
    //
-   // Bus address register
-   //
-   // The BAR increments by 4 because of the IO Bus to KS10 address
-   // translation. The two LSBs should always be zero.
+   // Byte selection logic
+   //  This unpacks bytes from the 36-bit data word.
    //
    // Trace
-   //  M8585/LPR2/E2
-   //  M8585/LPR2/E3
-   //  M8585/LPR2/E6
-   //  M8585/LPR2/E9
-   //  M8585/LPR2/E12
+   //  M8587/LPD2/E7
+   //  M8587/LPD2/E15
+   //
+
+   reg [7:0] byteDATAI;
+   always @*
+     begin
+        case (regBAR[1:0])
+          2'b00: // Even word, low byte
+            byteDATAI <= lpDATAI[25:18];
+          2'b01: // Even word, high byte
+            byteDATAI <= lpDATAI[33:26];
+          2'b10: // Odd word, low byte
+            byteDATAI <= lpDATAI[ 7: 0];
+          2'b11: // Odd word, high byte
+            byteDATAI <= lpDATAI[15: 8];
+        endcase
+     end
+
+   //
+   // Character Buffer Register
+   //
+   // This register is written by Normal IO and by DMA.
+   // It is NOT altered when loading translation RAM.
+   //
+   // Trace
+   //  M8587/LPD2/E7
+   //  M8587/LPD2/E15
    //
 
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          regBAR <= 0;
+          regCBUF <= 0;
         else
           begin
              if (lpINIT)
-               regBAR <= 0;
-             else if (csraWRITE & devLOBYTE)
-               regBAR[17:16] <= `lpCSRA_ADDR(lpDATAI);
-             else if (barWRITE)
-               regBAR[15: 0] <= `lpBAR_ADDR(lpDATAI);
-             else if (lpINCBAR)
-               regBAR <= regBAR + 1'b1;
+               regCBUF <= 0;
+             else if (cbufWRITE)
+               regCBUF <= `lpCBUF_DAT(lpDATAI);
+             else if (!lpMODELDRAM & devREQO & devACKI)
+               regCBUF <= byteDATAI;
           end
      end
 

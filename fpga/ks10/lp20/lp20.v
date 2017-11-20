@@ -9,7 +9,8 @@
 //   The information used to design the LP20 was obtained from the following
 //   DEC docmument:
 //
-//   "LP20 Line Printer Systerm Manuel" DEC Publication EK-LP20-TM-004
+//   "LP20 Line Printer Systerm Manuel" DEC Publication EK-LP20-TM-004, and
+//   "MP00006_LP20_Nov75, LP20 Line PRinter System Field Maintenance Print Set"
 //
 // Notes
 //   Regarding endian-ness:
@@ -29,7 +30,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -67,39 +68,56 @@
 `include "../uba/ubabus.vh"
 
 module LP20 (
-      input  wire         clk,                  // Clock
-      input  wire         rst,                  // Reset
+      input  wire         clk,                          // Clock
+      input  wire         rst,                          // Reset
       // LP20 Interfaces
-      input  wire         lpONLINE,             // LP20 Online
+      input  wire         lpOVFU,                       // Optical vertical format unit
       // Reset
-      input  wire         devRESET,             // IO Bus Bridge Reset
+      input  wire         devRESET,                     // IO Bus Bridge Reset
       // Interrupt
-      output wire [ 7: 4] devINTR,              // Interrupt Request
-      input  wire [ 7: 4] devINTA,              // Interrupt Acknowledge
+      output wire [ 7: 4] devINTR,                      // Interrupt Request
+      input  wire [ 7: 4] devINTA,                      // Interrupt Acknowledge
       // Target
-      input  wire         devREQI,              // Device Request In
-      output wire         devACKO,              // Device Acknowledge Out
-      input  wire [ 0:35] devADDRI,             // Device Address In
+      input  wire         devREQI,                      // Device Request In
+      output wire         devACKO,                      // Device Acknowledge Out
+      input  wire [ 0:35] devADDRI,                     // Device Address In
       // Initiator
-      output wire         devREQO,              // Device Request Out
-      input  wire         devACKI,              // Device Acknowledge In
-      output wire [ 0:35] devADDRO,             // Device Address Out
+      output wire         devREQO,                      // Device Request Out
+      input  wire         devACKI,                      // Device Acknowledge In
+      output wire [ 0:35] devADDRO,                     // Device Address Out
       // Data
-      input  wire [ 0:35] devDATAI,             // Data In
-      output reg  [ 0:35] devDATAO              // Data Out
+      input  wire [ 0:35] devDATAI,                     // Data In
+      output reg  [ 0:35] devDATAO,                     // Data Out
+      // LP26 Interfaces
+      output wire         lpINIT,                       // LP26 initialize
+      input  wire         lpONLINE,                     // LP26 online status
+      input  wire         lpPARERR,                     // LP26 printer parity error
+      input  wire         lpDEMAND,                     // LP26 printer is ready for next character
+      input  wire         lpVFURDY,                     // LP26 DAVFU is ready
+      output wire         lpPI,                         // LP26 printer paper instruction
+      input  wire         lpTOF,                        // LP26 printer is at top of form
+      output wire [ 8: 1] lpDATA,                       // LP26 printer data
+      output wire         lpDPAR,                       // LP26 printer data parity
+      output wire         lpSTROBE                      // LP26 printer data strobe
    );
 
-   //
-   // DZ Parameters
-   //
+`ifndef SYNTHESIS
 
-   parameter [14:17] lpDEV  = `lp1DEV;          // LP20 Device Number
-   parameter [18:35] lpADDR = `lp1ADDR;         // LP20 Base Address
-   parameter [18:35] lpVECT = `lp1VECT;         // LP20 Interrupt Vector
-   parameter [ 7: 4] lpINTR = `lp1INTR;         // LP20 Interrupt
+   integer file;
+
+`endif
 
    //
-   // DZ Register Addresses
+   // LP Parameters
+   //
+
+   parameter [14:17] lpDEV  = `lp1DEV;                  // LP20 Device Number
+   parameter [18:35] lpADDR = `lp1ADDR;                 // LP20 Base Address
+   parameter [18:35] lpVECT = `lp1VECT;                 // LP20 Interrupt Vector
+   parameter [ 7: 4] lpINTR = `lp1INTR;                 // LP20 Interrupt
+
+   //
+   // LP Register Addresses
    //
 
    localparam [18:35] csraADDR = lpADDR + `csraOFFSET;  // CSRA Register
@@ -108,8 +126,17 @@ module LP20 (
    localparam [18:35] bctrADDR = lpADDR + `bctrOFFSET;  // BCTR Register
    localparam [18:35] pctrADDR = lpADDR + `pctrOFFSET;  // PCTR Register
    localparam [18:35] ramdADDR = lpADDR + `ramdOFFSET;  // RAMD Register
+   localparam [18:35] cctrADDR = lpADDR + `cctrOFFSET;  // CCTR Register
    localparam [18:35] cbufADDR = lpADDR + `cbufOFFSET;  // CBUF Register
    localparam [18:35] cksmADDR = lpADDR + `cksmOFFSET;  // CKSM Register
+   localparam [18:35] pdatADDR = lpADDR + `pdatOFFSET;  // PDAT Register
+
+   //
+   // Address Flags
+   //
+
+   localparam [0:17] rdFLAGS = 18'b000_100_000_000_000_000;
+   localparam [0:17] wrFLAGS = 18'b000_001_000_000_000_000;
 
    //
    // Device Address and Flags
@@ -139,8 +166,8 @@ module LP20 (
    wire vectREAD  = devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == lpDEV);
    wire csraREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == csraADDR[18:34]);
    wire csraWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == csraADDR[18:34]);
-   wire csrbREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == csraADDR[18:34]);
-   wire csrbWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == csraADDR[18:34]);
+   wire csrbREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == csrbADDR[18:34]);
+   wire csrbWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == csrbADDR[18:34]);
    wire barREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == barADDR[18:34]);
    wire barWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == barADDR[18:34]);
    wire bctrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == bctrADDR[18:34]);
@@ -149,14 +176,14 @@ module LP20 (
    wire pctrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == pctrADDR[18:34]);
    wire ramdREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == ramdADDR[18:34]);
    wire ramdWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == ramdADDR[18:34]);
-   wire cctrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cbufADDR[18:34]) & devHIBYTE;
-   wire cctrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cbufADDR[18:34]) & devHIBYTE;
-   wire cbufREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cksmADDR[18:34]) & devLOBYTE;
-   wire cbufWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cksmADDR[18:34]) & devLOBYTE;
-   wire cksmREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cbufADDR[18:34]) & devHIBYTE;
-   wire cksmWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cbufADDR[18:34]) & devHIBYTE;
-   wire pdatREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cksmADDR[18:34]) & devLOBYTE;
-   wire pdatWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cksmADDR[18:34]) & devLOBYTE;
+   wire cctrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cctrADDR[18:34]) & devHIBYTE;
+   wire cctrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cctrADDR[18:34]) & devHIBYTE;
+   wire cbufREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cbufADDR[18:34]) & devLOBYTE;
+   wire cbufWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cbufADDR[18:34]) & devLOBYTE;
+   wire cksmREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cksmADDR[18:34]) & devHIBYTE;
+   wire cksmWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cksmADDR[18:34]) & devHIBYTE;
+   wire pdatREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == pdatADDR[18:34]) & devLOBYTE;
+   wire pdatWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == pdatADDR[18:34]) & devLOBYTE;
 
    //
    // Big-endian to little-endian data bus swap
@@ -165,33 +192,12 @@ module LP20 (
    wire [35:0] lpDATAI = devDATAI[0:35];
 
    //
-   // Control/Status Register A
+   // Registers
    //
 
    wire [15:0] regCSRA;
-   wire        lpINIT = `lpCSRA_INIT(regCSRA);
-   wire        lpECLR = `lpCSRA_ECLR(regCSRA);
-   wire [ 1:0] lpMODE = `lpCSRA_MODE(regCSRA);
-
-   //
-   // Control/Status Register B
-   //
-
    wire [15:0] regCSRB;
-   wire        lpMPE  = `lpCSRB_MPE(regCSRB);
-   wire        lpRPE  = `lpCSRB_RPE(regCSRB);
-   wire        lpGOE  = `lpCSRB_GOE(regCSRB);
-
-   //
-   // Base Address Register
-   //
-
    wire [17:0] regBAR;
-
-   //
-   //
-   //
-
    wire [15:0] regBCTR;
    wire [15:0] regPCTR;
    wire [15:0] regRAMD;
@@ -201,40 +207,105 @@ module LP20 (
    wire [ 7:0] regPDAT;
 
    //
+   // Control/Status Register A Decode
+   //
+
+   wire        lpERR  = `lpCSRA_ERR(regCSRA);
+   wire        lpDHLD = `lpCSRA_DHLD(regCSRA);
+   wire        lpECLR = `lpCSRA_ECLR(regCSRA);
+   assign      lpINIT = `lpCSRA_INIT(regCSRA);
+   wire        lpDONE = `lpCSRA_DONE(regCSRA);
+   wire        lpIE   = `lpCSRA_IE(regCSRA);
+   wire [ 1:0] lpMODE = `lpCSRA_MODE(regCSRA);
+   wire        lpPAR  = `lpCSRA_PAR(regCSRA);
+
+   //
+   // Modes
+   //
+
+   wire        lpMODEPRINT = (lpMODE == `lpCSRA_MODE_PRINT);
+   wire        lpMODETEST  = (lpMODE == `lpCSRA_MODE_TEST);
+   wire        lpMODELDVFU = (lpMODE == `lpCSRA_MODE_DAVFU);
+   wire        lpMODELDRAM = (lpMODE == `lpCSRA_MODE_RAM);
+
+   //
+   // Control/Status Register B Decode
+   //
+
+   wire        lpMPE  = `lpCSRB_MPE(regCSRB);
+   wire        lpRPE  = `lpCSRB_RPE(regCSRB);
+   wire        lpDTE  = `lpCSRB_DTE(regCSRB);
+   wire        lpGOE  = `lpCSRB_GOE(regCSRB);
+   wire [ 2:0] lpTEST = `lpCSRB_TEST(regCSRB);
+
+   //
+   // Go/Stop Command
+   //
+
+   wire lpCMDGO   = csraWRITE & devLOBYTE &  `lpCSRA_GO(lpDATAI);
+   wire lpCMDSTOP = csraWRITE & devLOBYTE & !`lpCSRA_GO(lpDATAI);
+
+   //
    // Signals
    //
 
-   wire        lpPCZ;           // Page count zero
-   wire        lpUNDC;          // Undefined character
-   wire        lpDVON;          // DAVFU ready
-   wire        lpDONE;          // Done
-   wire        lpGO;            // Go
-   wire        lpINCBAR;
-   wire        lpDECPCTR;       // Decrement Page Counter
-   wire        lpINCBCTR;       // Increment Byte Counter
-   wire        lpINCCKSM;       // Update checksum
+   wire lpGO;                           // DMA is active
+   wire lpREADY;                        // Enable the next DMA transaction
+   wire lpSETIRQ;                       // Interrupt request
+   wire lpSETPCZ;                       // Page counter is zero
+   wire lpSETDONE;                      // Byte counter is done (done with DMA)
+   wire lpINCR;                         // Increment bus address, byte count, and RAM address
+   wire lpINCCCTR;                      // Increment Column Counter
+   wire lpCLRCCTR;                      // Clear Colunn Counter
+   wire lpSETRPE;                       // Set RAM parity error
+   wire lpSETMPE;                       // Set memory parity error
+   wire lpSETMSYN;                      // Set IO bus timeout error
+   wire lpSETUNDC;                      // Set undefined character
+   wire lpSETDHLD;                      // Set delimiter hold
+   wire lpCLRDHLD;                      // Clr delimiter hold
+   wire lpVAL;                          // Printer valid data
+   wire lpLPE;                          // Line printer parity error
+   wire lpSETDTE;                       // Set demand timeout error
 
-   wire        lpVAL    = 0;    // Valid (Not implemented)
-   wire        lpLA180  = 0;    //
-   wire        lpNRDY   = 0;    //
-   wire        lpDPAR   = 0;    //
-   wire        lpOVFU   = 0;    //
-   wire        lpOFFL   = 0;    //
-   wire        lpDVOF   = 0;    //
-   wire        lpLPE    = 0;    //
-   wire        lpSETMPE = 0;    //
+//   wire lpVFUERR;                     // VFU error
 
-   wire        lpSETRPE = 0;    //
-   wire        lpMTE    = 0;    //
-   wire        lpDTE    = 0;    //
-   wire        lpSETGOE = 0;    //
-   wire        lpGOCLR  = 0;    //
+   wire lpSETGOE = lpCMDGO & lpERR;     // Set GO error
 
-   wire        lpSETERR;        // Set Error
-   wire        lpSETDHLD;       // Set delimiter hold
-   wire        lpCMDGO;         // Go command
-   wire        lpGORST;         //
-   wire [ 7:0] lpDATA;          // byte data to checksum
+   //
+   // Test Demand timeout timer
+   //
+
+   wire lpTESTDTE = (lpMODE == `lpCSRA_MODE_RAM) & (lpTEST == `lpCSRB_TEST_DTE);
+
+   //
+   // Test DMA Acknowledge timeout timer
+   //
+
+   wire lpTESTMSYN = (lpMODE == `lpCSRA_MODE_RAM) & (lpTEST == `lpCSRB_TEST_MSYN);
+
+   //
+   // Test RAM Parity
+   //
+
+   wire lpTESTRPE = (lpMODE == `lpCSRA_MODE_TEST) & (lpTEST == `lpCSRB_TEST_RAMPAR);
+
+   //
+   // Test Memory Parity
+   //
+
+   wire lpTESTMPE = (lpMODE == `lpCSRA_MODE_RAM) & (lpTEST == `lpCSRB_TEST_MEMPAR);
+
+   //
+   // Test Line Printer parity
+   //
+
+   wire lpTESTLPE = lpTEST == `lpCSRB_TEST_LPTPAR;
+
+   //
+   // Test Page Counter
+   //
+
+   wire lpTESTPCTR = (lpMODE == `lpCSRA_MODE_TEST) & (lpTEST == `lpCSRB_TEST_PCTR);
 
    //
    // Control/Status Register A (CSRA)
@@ -246,22 +317,26 @@ module LP20 (
       .devRESET   (devRESET),
       .devLOBYTE  (devLOBYTE),
       .devHIBYTE  (devHIBYTE),
-      .lpDATAI    (lpDATAI),
       .csraWRITE  (csraWRITE),
-      .lpPCZ      (lpPCZ),
-      .lpUNDC     (lpUNDC),
-      .lpDVON     (lpDVON),
+      .bctrWRITE  (bctrWRITE),
+      .pctrWRITE  (pctrWRITE),
+      .lpDATAI    (lpDATAI),
       .lpONLINE   (lpONLINE),
-      .lpDONE     (lpDONE),
       .lpGO       (lpGO),
       .lpLPE      (lpLPE),
-      .lpMPE      (lpMPE),
-      .lpRPE      (lpRPE),
-      .lpMTE      (lpMTE),
-      .lpDTE      (lpDTE),
-      .lpGOE      (lpGOE),
-      .lpSETDHLD  (lpSETDHLD),
+      .lpVFURDY   (lpVFURDY),
       .lpCMDGO    (lpCMDGO),
+      .lpSETUNDC  (lpSETUNDC),
+      .lpSETMPE   (lpSETMPE),
+      .lpSETRPE   (lpSETRPE),
+      .lpSETMSYN  (lpSETMSYN),
+      .lpSETDHLD  (lpSETDHLD),
+      .lpCLRDHLD  (lpCLRDHLD),
+      .lpSETDTE   (lpSETDTE),
+      .lpSETGOE   (lpSETGOE),
+      .lpSETPCZ   (lpSETPCZ),
+      .lpSETDONE  (lpSETDONE),
+      .lpSETIRQ   (lpSETIRQ),
       .regBAR     (regBAR),
       .regCSRA    (regCSRA)
    );
@@ -276,22 +351,21 @@ module LP20 (
       .devRESET   (devRESET),
       .devLOBYTE  (devLOBYTE),
       .devHIBYTE  (devHIBYTE),
-      .lpDATAI    (lpDATAI),
       .csrbWRITE  (csrbWRITE),
+      .lpDATAI    (lpDATAI),
       .lpINIT     (lpINIT),
-      .lpVAL      (lpVAL),
-      .lpLA180    (lpLA180),
-      .lpNRDY     (lpNRDY),
-      .lpDPAR     (lpDPAR),
+      .lpECLR     (lpECLR),
       .lpOVFU     (lpOVFU),
-      .lpOFFL     (lpOFFL),
-      .lpDVOF     (lpDVOF),
+      .lpVFURDY   (lpVFURDY),
+      .lpVAL      (lpVAL),
       .lpLPE      (lpLPE),
+      .lpDPAR     (lpDPAR),
+      .lpONLINE   (lpONLINE),
       .lpSETMPE   (lpSETMPE),
       .lpSETRPE   (lpSETRPE),
-      .lpMTE      (lpMTE),
-      .lpDTE      (lpDTE),
+      .lpSETMSYN  (lpSETMSYN),
       .lpSETGOE   (lpSETGOE),
+      .lpSETDTE   (lpSETDTE),
       .regCSRB    (regCSRB)
    );
 
@@ -302,12 +376,12 @@ module LP20 (
    LPBAR BAR (
       .clk        (clk),
       .rst        (rst),
+      .lpINIT     (lpINIT),
       .devLOBYTE  (devLOBYTE),
       .lpDATAI    (lpDATAI),
       .barWRITE   (barWRITE),
       .csraWRITE  (csraWRITE),
-      .lpINIT     (lpINIT),
-      .lpINCBAR   (lpINCBAR),
+      .lpINCBAR   (lpINCR),
       .regBAR     (regBAR)
    );
 
@@ -318,10 +392,11 @@ module LP20 (
    LPBCTR BCTR (
       .clk        (clk),
       .rst        (rst),
+      .lpINIT     (lpINIT),
       .lpDATAI    (lpDATAI),
       .bctrWRITE  (bctrWRITE),
-      .lpINIT     (lpINIT),
-      .lpINCBCTR  (lpINCBCTR),
+      .lpINCBCTR  (lpINCR),
+      .lpSETDONE  (lpSETDONE),
       .regBCTR    (regBCTR)
    );
 
@@ -329,35 +404,78 @@ module LP20 (
    // Column Counter Register (CCTR)
    //
 
-/*
-
    LPCCTR CCTR (
       .clk        (clk),
       .rst        (rst),
-      .devRESET   (devRESET),
-      .devLOBYTE  (devLOBYTE),
-      .devHIBYTE  (devHIBYTE),
- .devDATAI   (devDATAI),
-      .cctrWRITE  (cctrWRITE),
       .lpINIT     (lpINIT),
-
+      .lpDATAI    (lpDATAI),
+      .cctrWRITE  (cctrWRITE),
+      .lpCLRCCTR  (lpCLRCCTR),
+      .lpINCCCTR  (lpINCCCTR),
       .regCCTR    (regCCTR)
    );
-*/
 
    //
-   // Page Count Register (LPPCTR)
+   // Page Count Register (PCTR)
    //
 
    LPPCTR PCTR (
       .clk        (clk),
       .rst        (rst),
       .lpDATAI    (lpDATAI),
+      .csrbWRITE  (csrbWRITE),
       .pctrWRITE  (pctrWRITE),
       .lpINIT     (lpINIT),
-      .lpDECPCTR  (lpDECPCTR),
-      .lpPCZ      (lpPCZ),
+      .lpTOF      (lpTOF),
+      .lpTESTPCTR (lpTESTPCTR),
+      .lpSETPCZ   (lpSETPCZ),
       .regPCTR    (regPCTR)
+   );
+
+   //
+   // RAM Data (RAMD)
+   //
+
+   LPRAMD RAMD (
+      .clk        (clk),
+      .rst        (rst),
+      .devREQO    (devREQO),
+      .devACKI    (devACKI),
+      .lpINIT     (lpINIT),
+      .lpDATAI    (lpDATAI),
+      .cbufWRITE  (cbufWRITE),
+      .ramdWRITE  (ramdWRITE),
+      .lpERR      (lpERR),
+      .lpPAR      (lpPAR),
+      .lpTESTRPE  (lpTESTRPE),
+      .lpMODEPRINT(lpMODEPRINT),
+      .lpMODETEST (lpMODETEST),
+      .lpMODELDVFU(lpMODELDVFU),
+      .lpMODELDRAM(lpMODELDRAM),
+      .lpCMDGO    (lpCMDGO),
+      .lpINCADDR  (lpINCR),
+      .lpSETRPE   (lpSETRPE),
+      .lpSETDHLD  (lpSETDHLD),
+      .lpCLRDHLD  (lpCLRDHLD),
+      .regBAR     (regBAR),
+      .regRAMD    (regRAMD)
+   );
+
+   //
+   // Character Buffer Register (CBUF)
+   //
+
+   LPCBUF CBUF (
+      .clk        (clk),
+      .rst        (rst),
+      .devREQO    (devREQO),
+      .devACKI    (devACKI),
+      .cbufWRITE  (cbufWRITE),
+      .lpINIT     (lpINIT),
+      .lpDATAI    (lpDATAI),
+      .lpMODELDRAM(lpMODELDRAM),
+      .regBAR     (regBAR),
+      .regCBUF    (regCBUF)
    );
 
    //
@@ -367,22 +485,97 @@ module LP20 (
    LPCKSM CKSM (
       .clk        (clk),
       .rst        (rst),
-      .lpGOCLR    (lpGOCLR),
-      .lpDATA     (lpDATA),
-      .lpINCCKSM  (lpINCCKSM),
+      .devREQO    (devREQO),
+      .devACKI    (devACKI),
+      .lpDATAI    (lpDATAI),
+      .lpCMDGO    (lpCMDGO),
+      .regBAR     (regBAR),
       .regCKSM    (regCKSM)
    );
 
    //
-   // LPCTRL
+   // Printer Data Interface (LPPDAT)
    //
 
-   LPCTRL CTRL (
+   LPPDAT PDAT (
       .clk        (clk),
       .rst        (rst),
-      .lpMODE     (lpMODE),
-      .lpCMDGO    (lpCMDGO)
+      .devREQO    (devREQO),
+      .devACKI    (devACKI),
+      .lpINIT     (lpINIT),
+      .lpCBUF     (regCBUF),
+      .lpRAMD     (regRAMD),
+      .lpCCTR     (regCCTR),
+      .lpMODETEST (lpMODETEST),
+      .lpMODEPRINT(lpMODEPRINT),
+      .lpMODELDVFU(lpMODELDVFU),
+      .lpTESTDTE  (lpTESTDTE),
+      .lpTESTLPE  (lpTESTLPE),
+      .lpDHLD     (lpDHLD),
+      .lpCMDGO    (lpCMDGO),
+      .lpCLRCCTR  (lpCLRCCTR),
+      .lpINCCCTR  (lpINCCCTR),
+      .lpSETUNDC  (lpSETUNDC),
+      .lpSETDTE   (lpSETDTE),
+      .lpREADY    (lpREADY),
+      .lpLPE      (lpLPE),
+      .lpVAL      (lpVAL),
+      .lpPDAT     (regPDAT),
+      // Printer interfaces
+      .lpPARERR   (lpPARERR),
+      .lpDEMAND   (lpDEMAND),
+      .lpDPAR     (lpDPAR),
+      .lpPI       (lpPI),
+      .lpSTROBE   (lpSTROBE),
+      .lpDATA     (lpDATA)
    );
+
+   //
+   // DMA Controller (LPCTRL)
+   //
+
+   LPDMA DMA (
+      .clk        (clk),
+      .rst        (rst),
+      .devREQO    (devREQO),
+      .devACKI    (devACKI),
+      .lpDATAI    (lpDATAI),
+      .lpDONE     (lpDONE),
+      .lpTESTMSYN (lpTESTMSYN),
+      .lpTESTMPE  (lpTESTMPE),
+      .lpERR      (lpERR),
+      .lpCMDGO    (lpCMDGO),
+      .lpCMDSTOP  (lpCMDSTOP),
+      .lpREADY    (lpREADY),
+      .lpGO       (lpGO),
+      .lpSETMPE   (lpSETMPE),
+      .lpSETMSYN  (lpSETMSYN),
+      .lpINCR     (lpINCR)
+   );
+
+   //
+   // Interrupt Controller (LPINTR)
+   //
+
+   LPINTR INTR (
+      .clk        (clk),
+      .rst        (rst),
+      .devWRU     (devWRU),
+      .vectREAD   (vectREAD),
+      .csraREAD   (csraREAD),
+      .lpINIT     (lpINIT),
+      .lpIE       (lpIE),
+      .lpSETIRQ   (lpSETIRQ),
+      .lpINTR     (lpINTR),
+      .devINTA    (devINTA),
+      .devINTR    (devINTR)
+   );
+
+   //
+   // Create DMA address
+   //
+
+   assign devADDRO = {rdFLAGS, regBAR};
 
    //
    // Generate Bus ACK
@@ -392,10 +585,12 @@ module LP20 (
                      csrbREAD | csrbWRITE |
                      barREAD  | barWRITE  |
                      bctrREAD | bctrWRITE |
+                     //
                      pctrREAD | pctrWRITE |
                      ramdREAD | ramdWRITE |
                      cctrREAD | cctrWRITE |
                      cbufREAD | cbufWRITE |
+                     //
                      cksmREAD | cksmWRITE |
                      pdatREAD | pdatWRITE |
                      vectREAD);
@@ -445,7 +640,61 @@ module LP20 (
           devDATAO = {20'b0, lpVECT};
      end
 
+`ifndef SYNTHESIS
 
-   assign devREQO = 0;
+   initial
+     begin
+        file = $fopen("lpstatus.txt", "w");
+        $fwrite(file, "[%11.3f] LP20: Debug Mode.\n", $time/1.0e3);
+        $fflush(file);
+     end
+
+   always @(posedge clk)
+     begin
+        if (lpGO & devREQO & devACKI)
+          $fwrite(file, "[%11.3f] LP20: Read %012o from Memory.  BAR was %06o.\n", $time/1.0e3, lpDATAI[35:0], regBAR);
+        if (csraWRITE)
+          $fwrite(file, "[%11.3f] LP20: Wrote %06o to CSRA.  CSRA is %06o.\n", $time/1.0e3, lpDATAI[15:0], regCSRA);
+        if (csraREAD)
+          $fwrite(file, "[%11.3f] LP20: Read %06o from CSRA.\n", $time/1.0e3, regCSRA);
+        if (csrbWRITE)
+          $fwrite(file, "[%11.3f] LP20: Wrote %06o to CSRB.  CSRB is %06o.\n", $time/1.0e3, lpDATAI[15:0], regCSRB);
+        if (csrbREAD)
+          $fwrite(file, "[%11.3f] LP20: Read %06o from CSRB.\n", $time/1.0e3, regCSRB);
+        if (barWRITE)
+          $fwrite(file, "[%11.3f] LP20: Wrote %06o to BAR.  BAR is %06o.\n", $time/1.0e3, lpDATAI[15:0], regBAR);
+        if (barREAD)
+          $fwrite(file, "[%11.3f] LP20: Read %06o from BAR.\n", $time/1.0e3, regBAR);
+        if (bctrWRITE)
+          $fwrite(file, "[%11.3f] LP20: Wrote %06o to BCTR.  BCTR is %06o.\n", $time/1.0e3, lpDATAI[15:0], regBCTR);
+        if (bctrREAD)
+          $fwrite(file, "[%11.3f] LP20: Read %06o from BCTR.\n", $time/1.0e3, regBCTR);
+        if (pctrWRITE)
+          $fwrite(file, "[%11.3f] LP20: Wrote %06o to PCTR.  PCTR is %06o.\n", $time/1.0e3, lpDATAI[15:0], regPCTR);
+        if (pctrREAD)
+          $fwrite(file, "[%11.3f] LP20: Read %06o from PCTR.\n", $time/1.0e3, regPCTR);
+        if (ramdWRITE)
+          $fwrite(file, "[%11.3f] LP20: Wrote %06o to RAMD.  RAMD is %06o.\n", $time/1.0e3, lpDATAI[15:0], regRAMD);
+        if (ramdREAD)
+          $fwrite(file, "[%11.3f] LP20: Read %06o from RAMD.\n", $time/1.0e3, regRAMD);
+        if (cctrWRITE)
+          $fwrite(file, "[%11.3f] LP20: Wrote %06o to CCTR.  CCTR is %06o.\n", $time/1.0e3, lpDATAI[15:0], regCCTR);
+        if (cctrREAD)
+          $fwrite(file, "[%11.3f] LP20: Read %06o from CCTR.\n", $time/1.0e3, regCCTR);
+        if (cbufWRITE)
+          $fwrite(file, "[%11.3f] LP20: Wrote %06o to CBUF.  CBUF is %06o.\n", $time/1.0e3, lpDATAI[15:0], regCBUF);
+        if (cbufREAD)
+          $fwrite(file, "[%11.3f] LP20: Read %06o from CBUF.\n", $time/1.0e3, regCBUF);
+        if (cksmWRITE)
+          $fwrite(file, "[%11.3f] LP20: Wrote %06o to CKSM.  CKSM is %06o.\n", $time/1.0e3, lpDATAI[15:0], regCKSM);
+        if (cksmREAD)
+          $fwrite(file, "[%11.3f] LP20: Read %06o from CKSM.\n", $time/1.0e3, regCKSM);
+        if (pdatWRITE)
+          $fwrite(file, "[%11.3f] LP20: Wrote %06o to PDAT.  PDAT is %06o.\n", $time/1.0e3, lpDATAI[15:0], regPDAT);
+        if (pdatREAD)
+          $fwrite(file, "[%11.3f] LP20: Read %06o from PDAT.\n", $time/1.0e3, regPDAT);
+     end
+
+`endif
 
 endmodule

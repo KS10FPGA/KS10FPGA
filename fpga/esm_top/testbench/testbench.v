@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -37,6 +37,8 @@
 
 `default_nettype none
 `timescale 1ns/1ps
+
+`include "uart.vh"
 
 `define STRLEN 80
 `define STRDEF 0:`STRLEN*8-1
@@ -72,6 +74,13 @@ module testbench;
 
    wire [ 1: 2] ttyTXD = 2'b11; // DZ11 RS-232 Received Data
    wire [ 1: 2] ttyRXD;         // DZ11 RS-232 Transmitted Data
+
+   //
+   // LP26 Serial Interface
+   //
+
+   wire lprTXD = 1'b1;          // LP26 RS-232 Received Data
+   wire lprRXD;                 // LP26 RS-232 Transmitted Data
 
    //
    // RH11 Secure Digital Interface
@@ -134,6 +143,7 @@ module testbench;
    localparam [ 7: 0] addrREGSTATUS = 8'h10;
    localparam [ 7: 0] addrREGCIR    = 8'h18;
    localparam [ 7: 0] addrREGDZCCR  = 8'h20;
+   localparam [ 7: 0] addrREGLPCCR  = 8'h24;
    localparam [ 7: 0] addrREGRHCCR  = 8'h28;
    localparam [ 7: 0] addrRH11DEB   = 8'h30;
    localparam [ 7: 0] addrDCSR      = 8'h38;
@@ -181,8 +191,8 @@ module testbench;
       input [18:35] address;
       input [ 0:35] data;
       begin
-         conWRITE(addrREGADDR, {18'o010000, address});
-         conWRITE(addrREGDATA, data);
+         conWRITE36(addrREGADDR, {18'o010000, address});
+         conWRITE36(addrREGDATA, data);
          conGO(address);
       end
    endtask
@@ -195,9 +205,9 @@ module testbench;
       input  [18:35] address;
       output [ 0:35] data;
       begin
-         conWRITE(addrREGADDR, {18'o040000, address});
+         conWRITE36(addrREGADDR, {18'o040000, address});
          conGO(address);
-         conREAD(addrREGDATA, data);
+         conREAD36(addrREGDATA, data);
       end
    endtask
 
@@ -210,9 +220,43 @@ module testbench;
       output [ 0:35] data;
       reg    [ 0:15] status;
       begin
-         conWRITE(addrREGADDR, {18'o041000, address});
+         conWRITE36(addrREGADDR, {18'o041000, address});
          conGO(address);
-         conREAD(addrREGDATA, data);
+         conREAD36(addrREGDATA, data);
+      end
+   endtask
+
+   //
+   // Task to write a 32-bit word to console register
+   //
+   // Note:
+   //  A 32-bit write requires 2 16-bit word operations.
+   //
+
+   task conWRITE32;
+      input [7: 0] addr;
+      input [0:31] data;
+      begin
+         conWRITE16(addr+0, data[16:31]);
+         conWRITE16(addr+2, data[ 0:15]);
+         #100;
+      end
+   endtask
+
+   //
+   // Task to read a 32-bit word from console register
+   //
+   // Note:
+   //  A 32-bit read requires 2 16-bit word operations.
+   //
+
+   task conREAD32;
+      input [7:0] addr;
+      output reg [0:31] data;
+      begin
+         conREAD16(addr+0, data[16:31]);
+         conREAD16(addr+2, data[ 0:15]);
+         #100;
       end
    endtask
 
@@ -223,13 +267,13 @@ module testbench;
    //  A 36-bit write requires 3 16-bit word operations.
    //
 
-   task conWRITE;
+   task conWRITE36;
       input [7: 0] addr;
       input [0:35] data;
       begin
-         conWRITEw(addr+0, data[20:35]);
-         conWRITEw(addr+2, data[ 4:19]);
-         conWRITEw(addr+4, {12'b0, data[0:3]});
+         conWRITE16(addr+0, data[20:35]);
+         conWRITE16(addr+2, data[ 4:19]);
+         conWRITE16(addr+4, {12'b0, data[0:3]});
          #100;
       end
    endtask
@@ -241,13 +285,13 @@ module testbench;
    //  A 36-bit read requires 3 16-bit word operations.
    //
 
-   task conREAD;
+   task conREAD36;
       input [7:0] addr;
       output reg [0:35] data;
       begin
-         conREADw(addr+0, data[20:35]);
-         conREADw(addr+2, data[ 4:19]);
-         conREADw(addr+4, data[ 0: 3]);
+         conREAD16(addr+0, data[20:35]);
+         conREAD16(addr+2, data[ 4:19]);
+         conREAD16(addr+4, data[ 0: 3]);
          #100;
       end
    endtask
@@ -263,10 +307,10 @@ module testbench;
       input [7: 0] addr;
       input [0:63] data;
       begin
-         conWRITEw(addr+0, data[48:63]);
-         conWRITEw(addr+2, data[32:47]);
-         conWRITEw(addr+4, data[16:31]);
-         conWRITEw(addr+6, data[ 0:15]);
+         conWRITE16(addr+0, data[48:63]);
+         conWRITE16(addr+2, data[32:47]);
+         conWRITE16(addr+4, data[16:31]);
+         conWRITE16(addr+6, data[ 0:15]);
          #100;
       end
    endtask
@@ -282,10 +326,10 @@ module testbench;
       input [7:0] addr;
       output reg [0:63] data;
       begin
-         conREADw(addr+0, data[48:63]);
-         conREADw(addr+2, data[32:47]);
-         conREADw(addr+4, data[16:31]);
-         conREADw(addr+6, data[ 0:15]);
+         conREAD16(addr+0, data[48:63]);
+         conREAD16(addr+2, data[32:47]);
+         conREAD16(addr+4, data[16:31]);
+         conREAD16(addr+6, data[ 0:15]);
          #100;
       end
    endtask
@@ -299,18 +343,18 @@ module testbench;
       input [18:35] address;
       reg   [ 0:15] status;
       begin
-         conWRITEw(addrREGSTATUS+2, statGO);
+         conWRITE16(addrREGSTATUS+2, statGO);
          #100
-         conREADw(addrREGSTATUS+2, status);
+         conREAD16(addrREGSTATUS+2, status);
          while (status & statGO)
-           #100 conREADw(addrREGSTATUS+2, status);
+           #100 conREAD16(addrREGSTATUS+2, status);
 
-         conREADw(addrREGSTATUS, status);
+         conREAD16(addrREGSTATUS, status);
          if (status & statNXMNXD)
            $display("[%11.3f] KS10: NXM/NXD at address %06o", $time/1.0e3,
                     address);
 
-         conWRITEw(addrREGSTATUS, status & ~statNXMNXD);
+         conWRITE16(addrREGSTATUS, status & ~statNXMNXD);
 
       end
    endtask
@@ -323,7 +367,7 @@ module testbench;
    // This timing assumes an 8 MHz CPU clock
    //
 
-   task conWRITEw;
+   task conWRITE16;
       input [ 7:0] addr;
       input [15:0] data;
       begin
@@ -349,7 +393,7 @@ module testbench;
    // This timing assumes an 8 MHz CPU clock
    //
 
-   task conREADw;
+   task conREAD16;
       input [7:0] addr;
       output reg [15:0] data;
       begin
@@ -636,14 +680,18 @@ module testbench;
         //
 
         #600
-        conWRITE(addrREGCIR, valREGCIR);
+        conWRITE36(addrREGCIR, valREGCIR);
 
         //
-        // Initialize the DZ11 Console Control Register and RH11 Console
-        // Control Register
+        // Enable 8 channels of the DZ11
         //
 
-        conWRITE64(addrREGDZCCR, 64'h00000000_0000ff00);
+        conWRITE32(addrREGDZCCR, 32'h0000ff00);
+
+        //
+        // Enable UNIT0, UNIT1, and UNIT2 disk drives
+        //
+
         conWRITE64(addrREGRHCCR, 64'h00000000_07070700);
 
         //
@@ -651,13 +699,13 @@ module testbench;
         //
 
 `ifdef BRKPT
-        conWRITE(addrDCSR, 36'o000000_040000);
-        conWRITE(addrDBAR, 36'o140000_034776);
-        conWRITE(addrDBMR, 36'o140003_777777);
+        conWRITE36(addrDCSR, 36'o000000_040000);
+        conWRITE36(addrDBAR, 36'o140000_034776);
+        conWRITE36(addrDBMR, 36'o140003_777777);
 `else
-        conWRITE(addrDCSR, 36'o000000_000000);
-        conWRITE(addrDBAR, 36'o000000_000000);
-        conWRITE(addrDBMR, 36'o000000_000000);
+        conWRITE36(addrDCSR, 36'o000000_000000);
+        conWRITE36(addrDBAR, 36'o000000_000000);
+        conWRITE36(addrDBMR, 36'o000000_000000);
 `endif
 
         //
@@ -665,15 +713,21 @@ module testbench;
         // Release RESET and set RUN.
         //
 
-        conWRITE(addrREGSTATUS, statRUN);
+        conWRITE36(addrREGSTATUS, statRUN);
         $display("[%11.3f] KS10: Starting KS10", $time/1.0e3);
 
         //
         // Readback Console Instruction Register
         //
 
-        conREAD(addrREGCIR, temp);
+        conREAD36(addrREGCIR, temp);
         $display("[%11.3f] KS10: CIR is \"%12o\"", $time/1.0e3, temp);
+
+        //
+        // Put the printer on-line.  Set the baud rate
+        //
+
+        conWRITE32(addrREGLPCCR, 32'h02590002);
 
         //
         // Handle Startup.
@@ -710,9 +764,9 @@ module testbench;
              //
 
 `ifdef ENABLE_TIMER
-             conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN | statTIMEREN));
+             conWRITE36(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN | statTIMEREN));
 `else
-             conWRITE(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN));
+             conWRITE36(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN));
 `endif
           end
 
@@ -756,9 +810,9 @@ module testbench;
                   expect("UBA # - ",                                  "1\015",      state[0]);
                   expect("DISK:<DIRECTORY> OR DISK:[P,PN] - ",        "PS:\015",    state[1]);
                   expect("SMMON CMD - ",                              "SMCPU\015",  state[2]);
-                  expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",   "0\015",      state[3]);
-                  expect("LH SWITCHES <# OR ?> - ",                   "000000\015", state[4]);
-                  expect("RH SWITCHES <# OR ?> - ",                   "400000\015", state[5]);
+                  expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",   "Y\015",      state[3]);
+                  expect("LH SWITCHES <# OR ?> - ",                   "0\015",      state[4]);
+                  expect("RH SWITCHES <# OR ?> - ",                   "40\015",     state[5]);
 
                   //
                   // DSRPA (RP06-RH11 BASIC DRIVE DIAGNOSTIC) Responses
@@ -770,8 +824,19 @@ module testbench;
                   expect("PUT DRIVE ON LINE. HIT <CR> WHEN READY",    "\015",       state[9]);
 
                   //
+                  // DSLPA (DECSYSTEM 2020 LINE PRINTER DIAGNOSTIC) Responses
                   //
-                  //
+
+                  expect("IS THIS AN LP05 OR LP14 LINE PRINTER ? Y OR N <CR> - ",       "Y\015",       state[10]);
+                  expect("IS THIS AN LP07 LINE PRINTER ? Y OR N <CR> - ",               "Y\015",       state[11]);
+                  expect("IS THIS AN LP05, LP14 OR LP26 LINE PRINTER ? Y OR N <CR> - ", "Y\015",       state[12]);
+                  expect("IS THIS AN LP20 CONTROLLER WITH NO PRINTER ? Y OR N <CR> - ", "Y\015",       state[13]);
+                  expect("TYPE ALTMODE WHEN READY - ",                                  "\033",        state[14]);
+                  expect("DOES THIS LPT HAVE A DAVFU ? Y OR N <CR> - ",                 "Y\015",       state[15]);
+                  expect("CHANNEL-PASS NUMBER: (1-16, CR=ALL CHANNELS) ",               "1\015",       state[16]);
+                  expect("CHANNEL NUMBER: (1-12, CR=ALL CHANNELS) ",                    "1\015",       state[17]);
+                  expect("CHANNEL NUMBER: (2-12, CR=ALL CHANNELS) ",                    "2\015",       state[18]);
+                  expect("*",                                                           "111\015",     state[19]);
 
                   charout();
 
@@ -808,6 +873,9 @@ module testbench;
       // DZ11 Interfaces
       .ttyTXD           (ttyTXD),
       .ttyRXD           (ttyRXD),
+      // LP26 Interface
+      .lprTXD           (lprTXD),
+      .lprRXD           (lprRXD),
       // SD Interfaces
       .sdCD_N           (sdCD_N),
       .sdMISO           (sdMISO),
@@ -880,6 +948,70 @@ module testbench;
    //
 
    assign sdMISO = 0;
+
+`endif
+
+`ifdef SIM_LPR
+
+   //
+   // LPR Debug Simulation
+   //
+
+   wire intr;
+   wire clken;
+   wire [7:0] data;
+   integer file;
+
+   UART_BRG #(
+      .CLKFRQ  (50000000)
+   )
+   lprBRG (
+      .clk     (clk),
+      .rst     (reset),
+      .speed   (`UARTBR_115200),
+      .clken   (clken)
+   );
+
+   UART_RX lprRX (
+      .clk    (clk),
+      .rst    (reset),
+      .clr    (1'b0),
+      .clken  (clken),
+      .length (`UARTLEN_8),
+      .parity (`UARTPAR_NONE),
+      .stop   (`UARTSTOP_1),
+      .rxd    (lprRXD),
+      .rfull  (1'b0),
+      .full   (),
+      .intr   (intr),
+      .data   (data),
+      .pare   (),
+      .frme   (),
+      .ovre   ()
+   );
+
+   //
+   // Open printer output file
+   //
+
+   initial
+     begin
+        file = $fopen("lpr_out.txt", "w");
+     end
+
+   //
+   // Print characters
+   //
+
+   always @(posedge clk)
+     begin
+        if (intr)
+          begin
+             $fwrite(file, "%c", {1'b0, data[6:0]});
+             $fflush(file);
+          end
+     end
+
 
 `endif
 

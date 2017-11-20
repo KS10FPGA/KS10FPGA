@@ -3,7 +3,7 @@
 // KS-10 Processor
 //
 // Brief
-//   LPCSRA definitions
+//   LP20 Control and Status Register A (CSRA) definitions.
 //
 // Details
 //   This file contains the bit definitions for the LP20 CSRA register.
@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -48,7 +48,7 @@
 `define lpCSRA_ERR(bus)  (bus[15])      // Error
 `define lpCSRA_PCZ(bus)  (bus[14])      // Page counter zero
 `define lpCSRA_UNDC(bus) (bus[13])      // Undefined character
-`define lpCSRA_DVON(bus) (bus[12])      // DAVFU ready
+`define lpCSRA_VFUR(bus) (bus[12])      // DAVFU ready
 `define lpCSRA_ONLN(bus) (bus[11])      // On line
 `define lpCSRA_DHLD(bus) (bus[10])      // Delimiter hold
 `define lpCSRA_ECLR(bus) (bus[ 9])      // Error clear
@@ -64,9 +64,9 @@
 // Mode bits
 //
 
-`define lpCSRA_MODE_PRINT 2'b00
-`define lpCSRA_MODE_TEST  2'b01
-`define lpCSRA_MODE_DAVFU 2'b10
-`define lpCSRA_MODE_RAM   2'b11
+`define lpCSRA_MODE_PRINT 2'b00         // Normal mode
+`define lpCSRA_MODE_TEST  2'b01         // Don't print.  Loopback printer interface.
+`define lpCSRA_MODE_DAVFU 2'b10         // DMA data into DAVFU
+`define lpCSRA_MODE_RAM   2'b11         // DMA data into translation RAM
 
 `endif

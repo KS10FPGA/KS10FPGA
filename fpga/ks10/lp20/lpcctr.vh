@@ -3,14 +3,13 @@
 // KS-10 Processor
 //
 // Brief
-//   LP20 Translation RAM (RAMD) definitions.
+//   LP20 Column Counter Register (CCTR) definitions.
 //
 // Details
-//   This file contains the bit definitions for the LP20 translation RAM
-//   register.
+//   This file contains the bit definitions for the LP20 CCTR register.
 //
 // File
-//   lpramd.vh
+//   lpcctr.vh
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -39,21 +38,13 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifndef __LPRAMD_VH
-`define __LPRAMD_VH
+`ifndef __LPCCTR_VH
+`define __LPCCTR_VH
 
 //
-// lpRAMD Register Bits
+// lpCCTR Register Bits
 //
 
-`define lpRAMD_RAP(bus)  (bus[12])      // RAM Parity
-`define lpRAMD_INT(bus)  (bus[11])      // Interrupt
-`define lpRAMD_DEL(bus)  (bus[10])      // Delimiter instruction
-`define lpRAMD_TRANS(bus)(bus[9])       // Translation bit
-`define lpRAMD_PI(bus)   (bus[8])       // Paper instruction
-`define lpRAMD_SLEW(bus) (bus[4])       // Slew bit
-`define lpRAMD_CHAN(bus) (bus[3:0])     // Channel data
-`define lpRAMD_CTRL(bus) (bus[11:8])    // RAM Control
-`define lpRAMD_DATA(bus) (bus[ 7:0])    // RAM Data
+`define lpCCTR_DAT(bus) (bus[15:8])     // Count
 
 `endif

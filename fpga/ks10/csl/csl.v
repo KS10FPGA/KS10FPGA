@@ -18,7 +18,7 @@
 //       instruction which causes the code to jump to the entry point of the
 //       code/bootloader but can be used to execute any single instruction.
 //
-//       This mechanism allowes the Console set the address that the KS10
+//       This mechanism allows the Console set the address that the KS10
 //       begins execution.
 //
 //
@@ -229,7 +229,11 @@ module CSL (
       output wire         cslINTR,      // Interrupt KS10
       output wire         cslRESET,     // Reset KS10
       // DZ11 Interfaces
-      output reg  [ 0:63] dzCCR,        // DZ11 Console Control Register
+      output reg  [ 0:31] dzCCR,        // DZ11 Console Control Register
+      // LP20/LP26 Interfaces
+      output reg  [ 0:31] lpCCR,        // LP20 Console Control Register
+      input  wire         lpONLINE,     // LP26 status
+      input  wire         lpSIXLPI,     // LP26 line spacing
       // RPXX Interfaces
       output reg  [ 0:63] rpCCR,        // RPXX Console Control Register
       // SD Interfaces
@@ -354,6 +358,7 @@ module CSL (
              regDATA         <= 0;
              regADDR         <= 0;
              dzCCR           <= 0;
+             lpCCR[0:28]     <= 0;
              rpCCR           <= 0;
              regCTRL_NXMNXD  <= 0;
              regCTRL_TIMEREN <= 0;
@@ -402,12 +407,13 @@ module CSL (
 
                  //
                  // DZ11 Console Control Register
+                 // LP20 Console Control Register
                  //
 
-                 8'h20 : dzCCR[48:55] <= conDATA[15:8];
-                 8'h22 : dzCCR[32:39] <= conDATA[15:8];
-                 8'h24 : dzCCR[16:23] <= conDATA[15:8];
-                 8'h26 : dzCCR[ 0: 7] <= conDATA[15:8];
+                 8'h20 : dzCCR[16:23] <= conDATA[15:8];
+                 8'h22 : dzCCR[ 0: 7] <= conDATA[15:8];
+                 8'h24 : lpCCR[16:23] <= conDATA[15:8];
+                 8'h26 : lpCCR[ 0: 7] <= conDATA[15:8];
 
                  //
                  // RPXX Console Control Register
@@ -476,12 +482,13 @@ module CSL (
 
                  //
                  // DZ11 Console Control Register
+                 // LP20 Console Control Register
                  //
 
-                 8'h20 : dzCCR[56:63] <= conDATA[7:0];
-                 8'h22 : dzCCR[40:47] <= conDATA[7:0];
-                 8'h24 : dzCCR[24:31] <= conDATA[7:0];
-                 8'h26 : dzCCR[ 8:15] <= conDATA[7:0];
+                 8'h20 : dzCCR[24:31] <= conDATA[7:0];
+                 8'h22 : dzCCR[ 8:15] <= conDATA[7:0];
+                 8'h24 : lpCCR[24:28] <= conDATA[7:3];
+                 8'h26 : lpCCR[ 8:15] <= conDATA[7:0];
 
                  //
                  // RPXX Console Control Register
@@ -600,12 +607,13 @@ module CSL (
 
           //
           // DZ11 Console Control Register
+          // LP20 Console Control Register
           //
 
-          8'h20 : dout <= dzCCR[48:63];
-          8'h22 : dout <= dzCCR[32:47];
-          8'h24 : dout <= dzCCR[16:31];
-          8'h26 : dout <= dzCCR[ 0:15];
+          8'h20 : dout <= dzCCR[16:31];
+          8'h22 : dout <= dzCCR[ 0:15];
+          8'h24 : dout <= {lpCCR[16:27], lpSIXLPI, lpONLINE, 2'b0};
+          8'h26 : dout <= lpCCR[ 0:15];
 
           //
           // RPXX Console Control Register
@@ -853,6 +861,17 @@ module CSL (
    assign cslCACHEEN = regCTRL_CACHEEN;
    assign cslINTR    = cslWR & (cslADDR == 8'h10) & cslBLE & conDATA[1];
    assign cslRESET   = regCTRL_RESET;
+
+   //
+   // LP20 Outputs
+   //
+
+   wire wrLPCCR = cslWR & (cslADDR == 8'h24) & cslBLE;
+
+   always @*
+     begin
+        lpCCR[29:31] <= {1'b0, wrLPCCR & conDATA[1], wrLPCCR & conDATA[0]};
+     end
 
    //
    // Debug Outputs

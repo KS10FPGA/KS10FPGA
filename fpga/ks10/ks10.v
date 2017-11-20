@@ -58,6 +58,9 @@ module KS10 (
       input  wire [ 7: 0] dzRXD,        // DZ Receiver Serial Data
       output wire [ 7: 0] dzTXD,        // DZ Transmitter Serial Data
       output wire [ 7: 0] dzDTR,        // DZ Data Terminal Ready
+      // LP20 Interface
+      input  wire         lpRXD,        // LP Receiver Serial Data
+      output wire         lpTXD,        // LP Transmitter Serial Data
       // SD Interfaces
       input  wire [ 7: 0] sdCD,         // SD Card Detect
       input  wire [ 7: 0] sdWP,         // SD Write Protect
@@ -139,9 +142,30 @@ module KS10 (
    // DZ11 Signals
    //
 
-   wire [ 0:63] dzCCR;                  // DZ11 Console Control Register
+   wire [ 0:31] dzCCR;                  // DZ11 Console Control Register
    wire [ 0: 7] dzRI;                   // DZ11 Ring Indicator
    wire [ 0: 7] dzCO;                   // DZ11 Carrier Sense
+
+   //
+   // LP20/LP26 Signals
+   //
+
+   wire [ 0:31] lpCCR;                  // LP20 Console Control Register
+   wire         lpSETONLN;              // LP20 set online
+   wire         lpSETOFFLN;             // LP20 set offline
+   wire         lpONLINE;               // LP20 status
+   wire         lpOVFU;                 // LP20 has optical vertical format unit
+   wire [ 6:15] lpCONFIG;               // LP20 serial configuration
+   wire         lpINIT;                 // LP26 initialization
+   wire         lpPARERR;               // LP26 data parity error
+   wire         lpDPAR;                 // LP26 data parity
+   wire [ 8: 1] lpDATA;                 // LP26 data
+   wire         lpSTROBE;               // LP26 data strobe
+   wire         lpDEMAND;               // LP26 ready for next character
+   wire         lpVFURDY;               // LP26 vertical format unit ready
+   wire         lpSIXLPI;               // LP26 line spacing
+   wire         lpPI;                   // LP26 paper instruction
+   wire         lpTOF;                  // LP26 top of form
 
    //
    // RH11 Interfaces
@@ -399,6 +423,10 @@ module KS10 (
       .cslRESET         (cpuRST),
       // DZ11 Interfaces
       .dzCCR            (dzCCR),
+      // LP20/LP26 Interfaces
+      .lpCCR            (lpCCR),
+      .lpONLINE         (lpONLINE),
+      .lpSIXLPI         (lpSIXLPI),
       // RPXX Interfaces
       .rpCCR            (rpCCR),
       // RH11 Interfaces
@@ -638,9 +666,9 @@ module KS10 (
    ) uLP20 (
       .clk              (cpuCLK),
       .rst              (cpuRST),
-      // LP20 Interfaces
-      .lpONLINE         (1'b1),
-      // Device
+      // LP20 Configuration
+      .lpOVFU           (lpOVFU),
+      // Device Interface
       .devRESET         (devRESET[3]),
       .devINTR          (devINTR[3][2]),
       .devINTA          (devINTA[3][2]),
@@ -651,7 +679,44 @@ module KS10 (
       .devADDRI         (devADDRI[3][2]),
       .devADDRO         (devADDRO[3][2]),
       .devDATAI         (devDATAI[3][2]),
-      .devDATAO         (devDATAO[3][2])
+      .devDATAO         (devDATAO[3][2]),
+      // LP26 Interfaces
+      .lpINIT           (lpINIT),
+      .lpONLINE         (lpONLINE),
+      .lpPARERR         (lpPARERR),
+      .lpDEMAND         (lpDEMAND),
+      .lpVFURDY         (lpVFURDY),
+      .lpPI             (lpPI),
+      .lpTOF            (lpTOF),
+      .lpDATA           (lpDATA),
+      .lpDPAR           (lpDPAR),
+      .lpSTROBE         (lpSTROBE)
+   );
+
+   //
+   // LP26 printer connected to the LP20 interface
+   //
+
+   LP26 uLP26 (
+      .clk              (cpuCLK),
+      .rst              (cpuRST),
+      .lpINIT           (lpINIT),
+      .lpSETONLN        (lpSETONLN),
+      .lpSETOFFLN       (lpSETOFFLN),
+      .lpCONFIG         (lpCONFIG),
+      .lpOVFU           (lpOVFU),
+      .lpRXD            (lpRXD),
+      .lpTXD            (lpTXD),
+      .lpSTROBE         (lpSTROBE),
+      .lpDATA           (lpDATA),
+      .lpDPAR           (lpDPAR),
+      .lpPI             (lpPI),
+      .lpTOF            (lpTOF),
+      .lpPARERR         (lpPARERR),
+      .lpONLINE         (lpONLINE),
+      .lpVFURDY         (lpVFURDY),
+      .lpSIXLPI         (lpSIXLPI),
+      .lpDEMAND         (lpDEMAND)
    );
 
    //

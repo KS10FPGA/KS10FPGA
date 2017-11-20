@@ -6,7 +6,7 @@
 //   LP20 Page Count Register (PCTR)
 //
 // Details
-//   The module implements the LP20 PCTR Register.
+//   This file provides the implementation of the LP20 PCTR Register.
 //
 // File
 //   lppctr.v
@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -44,23 +44,42 @@
 `include "lppctr.vh"
 
 module LPPCTR (
-      input  wire         clk,                  // Clock
-      input  wire         rst,                  // Reset
-      input  wire [35: 0] lpDATAI,              // Bus data in
-      input  wire         pctrWRITE,            // Write to PCTR
-      input  wire         lpINIT,               // Initialize
-      input  wire         lpDECPCTR,            // Decrement PCTR
-      output wire         lpPCZ,                // Page counter is zero
-      output wire [15: 0] regPCTR               // PCTR output
+      input  wire        clk,           // Clock
+      input  wire        rst,           // Reset
+      input  wire [35:0] lpDATAI,       // Bus data in
+      input  wire        csrbWRITE,     // Write to CSRB
+      input  wire        pctrWRITE,     // Write to PCTR
+      input  wire        lpINIT,        // Initialize
+      input  wire        lpTESTPCTR,    // Test PCTR
+      input  wire        lpTOF,         // Top of form (Decrement PCTR)
+      output wire        lpSETPCZ,      // Page counter is zero
+      output wire [15:0] regPCTR        // PCTR output
    );
 
    //
-   // Page count register
+   // Decrement page counter
+   //
+   // Trace
+   //  M8587/LPD4/E35
+   //  M8587/LPD4/E41
+   //  M8587/LPD4/E52
+   //
+
+   wire decrement  = ((lpTESTPCTR & csrbWRITE & lpDATAI[0]) |
+                      (!lpTESTPCTR & lpTOF));
+
+   //
+   // Page Count Register
+   //
+   // In Page Counter Test Mode, writing to the LSB of the CSRB will increment
+   // the Page Counter.
    //
    // Trace
    //  M8597/LPD4/E22
    //  M8597/LPD4/E30
+   //  M8597/LPD4/E35
    //  M8597/LPD4/E38
+   //  M8597/LPD4/E41
    //
 
    reg [11:0] count;
@@ -74,24 +93,26 @@ module LPPCTR (
                count <= 0;
              else if (pctrWRITE)
                count <= `lpPCTR_DAT(lpDATAI);
-             else if (lpDECPCTR)
+             else if (decrement)
                count <= count - 1'b1;
           end
      end
-
-   //
-   // Build PCTR Register
-   //
-
-   assign regPCTR = {4'b0, count};
 
    //
    // Page counter is zero
    //
    // Trace
    //  M8597/LPD4/E38
+   //  M8586/LPC9/E58
+   //  M8586/LPC9/E33
    //
 
-   assign lpPCZ = (count == 0);
+   assign lpSETPCZ = (count == 1) & decrement;
+
+   //
+   // Build PCTR Register
+   //
+
+   assign regPCTR = {4'b0, count};
 
 endmodule

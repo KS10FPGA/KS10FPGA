@@ -34,6 +34,9 @@
 
 include makedefs
 
+DOXYGEN := \
+	/cygdrive/c/Program\ Files/doxygen/bin/doxygen.exe
+
 TARGET  := console
 
 OPENOCD_CFG := ks10.cfg
@@ -56,6 +59,7 @@ FILES := \
 	epi.o \
 	fpga.o \
 	ks10.o \
+	lp20.o \
 	main.o\
 	new.o \
 	rh11.o \
@@ -77,6 +81,7 @@ HEADERS := \
 	fatal.hpp \
 	fpga.hpp \
 	ks10.hpp\
+	lp20.hpp \
 	new.hpp \
 	prompt.hpp \
 	rh11.hpp \
@@ -177,7 +182,7 @@ archive_dist:
 	tar --exclude-vcs -czvf ks10_code_dist_`date '+%y%m%d'`.tgz *
 
 doxygen : doxyfile
-	doxygen.exe
+	$(DOXYGEN)
 
 EXCLUDE := \
 	-e RCS \

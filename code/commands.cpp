@@ -44,6 +44,7 @@
 #include "dasm.hpp"
 #include "dz11.hpp"
 #include "ks10.hpp"
+#include "lp20.hpp"
 #include "rh11.hpp"
 #include "align.hpp"
 #include "config.hpp"
@@ -92,10 +93,21 @@ static enum access_t {
 //!
 
 static struct dzcfg_t {
-    uint64_t dzccr;
+    uint32_t dzccr;
 } dzcfg;
 
 static const char *dzcfg_file = "DZ11CFG.DAT";
+
+//!
+//! \brief
+//!    LP20 non-volatile configuration
+//!
+
+static struct lpcfg_t {
+    uint32_t lpccr;
+} lpcfg;
+
+static const char *lpcfg_file = "LP20CFG.DAT";
 
 //!
 //! \brief
@@ -122,19 +134,70 @@ static const char *rpcfg_file = "RPXXCFG.DAT";
 
 //!
 //! \brief
+//!    Initialize LP Console Control Register
+//!
+
+void initLPCCR(void) {
+
+    //
+    // Read LPCCR
+    //
+
+    uint32_t lpccr = ks10_t::readLPCCR();
+
+    //
+    // Set baudrate to 115200 baud, no parity, 8 data bits, 2 stop bits.
+    //
+
+    lpccr = 0x02590000 | (lpccr & 0x0000ffff);
+
+    //
+    // Handle online/offline commands
+    //
+
+    if ((lpcfg.lpccr & ks10_t::lpONLINE) != 0) {
+        lpccr |= ks10_t::lpSETONLN;
+    } else {
+        lpccr |= ks10_t::lpSETOFFLN;
+    }
+
+    //
+    // Handle OVFU
+    //
+
+    if ((lpcfg.lpccr & ks10_t::lpOVFU) != 0) {
+        lpccr |=  ks10_t::lpOVFU;
+    } else {
+        lpccr &= ~ks10_t::lpOVFU;
+    }
+
+    //
+    // Write LPCCR back
+    //
+
+    ks10_t::writeLPCCR(lpccr);
+}
+
+//!
+//! \brief
 //!    Recall Configuration
 //!
 
 void recallConfig(bool debug) {
 
     //
-    // Read the configuration file.  Use defaults if the configuration cannot
+    // Read the configuration files.  Use defaults if the configuration cannot
     // be read.
     //
 
     if (!config_t::read(debug, dzcfg_file, &dzcfg, sizeof(dzcfg))) {
         printf("KS10: Unable to read \"%s\".  Using defaults.\n", dzcfg_file);
-        dzcfg.dzccr = 0x000000000000ff00ULL;
+        dzcfg.dzccr = 0x0000ff00U;
+    }
+
+    if (!config_t::read(debug, lpcfg_file, &lpcfg, sizeof(lpcfg))) {
+        printf("KS10: Unable to read \"%s\".  Using defaults.\n", lpcfg_file);
+        lpcfg.lpccr = 0x00000001U;
     }
 
     if (!config_t::read(debug, rhcfg_file, &rhcfg, sizeof(rhcfg))) {
@@ -153,25 +216,31 @@ void recallConfig(bool debug) {
     // Initialize the Console Communications memory area
     //
 
-    ks10_t::writeMem(ks10_t::switch_addr, 0400000400000);          // Initialize switch register
-    ks10_t::writeMem(ks10_t::kasw_addr,   0003740000000);          // Initialize keep-alive and status word (KASW)
-    ks10_t::writeMem(ks10_t::ctyin_addr,  0000000000000);          // Initialize CTY input word
-    ks10_t::writeMem(ks10_t::ctyout_addr, 0000000000000);          // Initialize CTY output word
-    ks10_t::writeMem(ks10_t::klnin_addr,  0000000000000);          // Initialize KLINIK input word
-    ks10_t::writeMem(ks10_t::klnout_addr, 0000000000000);          // Initialize KLINIK output word
-    ks10_t::writeMem(ks10_t::rhbase_addr, rhcfg.rhbase);           // Initialize RH11 base address
-    ks10_t::writeMem(ks10_t::rhunit_addr, rhcfg.rhunit);           // Initialize UNIT number
-    ks10_t::writeMem(ks10_t::mtparm_addr, rhcfg.mtparam);          // Initialize magtape params.
+    ks10_t::writeMem(ks10_t::switch_addr, 0400000400000);       // Initialize switch register
+    ks10_t::writeMem(ks10_t::kasw_addr,   0003740000000);       // Initialize keep-alive and status word (KASW)
+    ks10_t::writeMem(ks10_t::ctyin_addr,  0000000000000);       // Initialize CTY input word
+    ks10_t::writeMem(ks10_t::ctyout_addr, 0000000000000);       // Initialize CTY output word
+    ks10_t::writeMem(ks10_t::klnin_addr,  0000000000000);       // Initialize KLINIK input word
+    ks10_t::writeMem(ks10_t::klnout_addr, 0000000000000);       // Initialize KLINIK output word
+    ks10_t::writeMem(ks10_t::rhbase_addr, rhcfg.rhbase);        // Initialize RH11 base address
+    ks10_t::writeMem(ks10_t::rhunit_addr, rhcfg.rhunit);        // Initialize UNIT number
+    ks10_t::writeMem(ks10_t::mtparm_addr, rhcfg.mtparam);       // Initialize magtape params.
 
     //
     // Initialize contol registers
     //
 
-    ks10_t::writeDZCCR(dzcfg.dzccr);                               // Initialize the DZ11 Console Control Register
-    ks10_t::writeRPCCR(rpcfg.rpccr);                               // Initialize the RPxx Console Control Registrer
-    ks10_t::writeDBAR (0x0000000000000000ULL);                     // Initialize the Debug Breakpoint Address Register
-    ks10_t::writeDBAR (0x0000000000000000ULL);                     // Initialize the Debug Breakpoint Address Register
-    ks10_t::writeDBMR (0x0000000000000000ULL);                     // Initialize the Debug Breakpoint Mask Register
+    ks10_t::writeDZCCR(dzcfg.dzccr);                            // Initialize the DZ11 Console Control Register
+    ks10_t::writeRPCCR(rpcfg.rpccr);                            // Initialize the RPxx Console Control Register
+    ks10_t::writeDBAR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Address Register
+    ks10_t::writeDBAR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Address Register
+    ks10_t::writeDBMR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Mask Register
+
+    //
+    // Initialize RPCCR
+    //
+
+    initLPCCR();                                                // Initialize the LP20 Console Control Registrer
 
 }
 
@@ -191,16 +260,19 @@ void consoleOutput(void) {
     void printPCIR(uint64_t data);
 
     const char cntl_e = 0x05;   // ^E
+    const char cntl_l = 0x0c;	// ^L
     const char cntl_t = 0x14;   // ^T
 
     running = true;
     while (!ks10_t::halt()) {
         int ch = getchar();
         if (ch == cntl_e) {
-            printf("\n");
+            printf("^E\n");
             break;
         } else if (ch == cntl_t) {
             printPCIR(ks10_t::readDPCIR());
+        } else if (ch == cntl_l) {
+            ks10_t::writeLPCCR(ks10_t::lpSETONLN | ks10_t::readLPCCR());
         } else if (ch != -1) {
             ks10_t::putchar(ch);
         }
@@ -798,6 +870,12 @@ static void printRDACs(void) {
 //! \brief
 //!   Function to print a single AC
 //!
+//! \param regAC
+//!    AC register
+//!
+//! \pre
+//!    regAC must be < 020
+//!
 
 static void printRDAC(ks10_t::addr_t regAC) {
     if (ks10_t::halt()) {
@@ -815,6 +893,12 @@ static void printRDAC(ks10_t::addr_t regAC) {
 //! \brief
 //!   Function to print memory contents
 //!
+//! \param addr
+//!   Address of data to print
+//!
+//! \param len
+//!   Number of words to read and print
+//!
 
 static void printRDMEM(ks10_t::addr_t addr, unsigned int len) {
     printf("KS10: Memory read:\n");
@@ -824,6 +908,30 @@ static void printRDMEM(ks10_t::addr_t addr, unsigned int len) {
             printf("  Failed. (NXM)\n");
         } else {
             printf("  %06llo: %012llo\n", addr, data);
+        }
+        addr++;
+    }
+}
+
+//!
+//! \brief
+//!   Function to disassemble and print  memory contents
+//!
+//! \param addr
+//!   Address of data to begin disassembly
+//!
+//! \param len
+//!   Number of words to read and print
+//!
+
+static void dasmMEM(ks10_t::addr_t addr, unsigned int len) {
+    printf("KS10: Memory disassembly:\n");
+    for (unsigned int i = 0; i < len; i++) {
+        ks10_t::data_t data = ks10_t::readMem(addr);
+        if (ks10_t::nxmnxd()) {
+            printf("  Failed. (NXM)\n");
+        } else {
+            printf("      %07llo: %s\n", addr & ks10_t::maxMemAddr, dasm(data));
         }
         addr++;
     }
@@ -1096,6 +1204,10 @@ static void cmdCE(int argc, char *argv[]) {
 //! \param [in] argc
 //!    Number of arguments.
 //!
+//! \note
+//!    If a breakpoint was previously armed, we will re-arm it before
+//     continuing.
+//!
 
 static void cmdCO(int argc, char *[]) {
     const char *usage =
@@ -1103,12 +1215,38 @@ static void cmdCO(int argc, char *[]) {
         "Continue the KS10 from the HALT state.\n";
 
     if (argc == 1) {
+        ks10_t::data_t dcsr = ks10_t::readDCSR();
+        if (((dcsr & ks10_t::dcsrBRCMD) == ks10_t::dcsrBRCMD_MATCH) && ((dcsr & ks10_t::dcsrBRSTATE) == ks10_t::dcsrBRSTATE_IDLE)) {
+            printf("KS10: Re-arming breakpoint.\n");
+            ks10_t::writeDCSR(ks10_t::dcsrBRCMD_MATCH | dcsr);
+        }
+
         ks10_t::contin();
         consoleOutput();
     } else {
         printf(usage);
     }
 }
+
+#ifdef CUSTOM_CMD
+
+static void cmdDA(int argc, char *argv[]) {
+    const char *usage =
+        "Usage: DASM addr {length}.\n";
+
+    switch (argc) {
+        case 2:
+            dasmMEM(parseOctal(argv[1]), 1);
+            break;
+        case 3:
+            dasmMEM(parseOctal(argv[1]), parseOctal(argv[2]));
+            break;
+        default:
+            printf(usage);
+    }
+}
+
+#endif
 
 //!
 //! \brief
@@ -1479,7 +1617,7 @@ static void cmdEN(int argc, char *[]) {
 static void cmdEX(int argc, char *argv[]) {
     const char *usage =
         "Usage: EX Instruction\n"
-        "Put and instruction in the CIR and execute it.\n";
+        "Put an instruction in the CIR and execute it.\n";
 
     if (argc == 2) {
         ks10_t::data_t data = parseOctal(argv[1]);
@@ -1894,6 +2032,80 @@ static void cmdLI(int argc, char *argv[]) {
     }
 }
 
+#ifdef CUSTOM_CMD
+
+//!
+//! \brief
+//!    Configure LPxx printer
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the argument.
+//!
+
+static void cmdLP(int argc, char *argv[]) {
+    const char *usage =
+        "Usage: LP {OVFU | DAVFU}, {ONLINE | OFFLINE}} \n"
+        "       LP BREAK\n"
+        "       LP SAVE\n"
+        "       LP STATUS\n";
+
+    if (argc == 1) {
+        uint32_t lpccr = ks10_t::readLPCCR();
+        printf("KS10: LP26 #1 Printer Configuration:\n"
+               "      Vertical Format Unit : %s\n"
+               "      Printer Status       : %s, %d LPI\n"
+               "%s",
+               (lpccr & ks10_t::lpOVFU  ) != 0 ? "Optical" : "Digital",
+               (lpccr & ks10_t::lpONLINE) != 0 ? "Online"  : "Offline",
+               (lpccr & ks10_t::lpSIXLPI) != 0 ? 6 : 8,
+               usage);
+        return;
+    }
+
+    if ((argc == 2) && strnicmp(argv[1], "save", 4) == 0) {
+        if (config_t::write(false, lpcfg_file, &lpcfg, sizeof(lpcfg))) {
+            printf("KS10: Sucessfully wrote configuration file.\n");
+        }
+        return;
+    } else if ((argc == 2) && (strnicmp(argv[1], "break", 4) == 0)) {
+        static const ks10_t::addr_t flagPhys  = 0x008000000ULL;
+        static const ks10_t::addr_t flagIO    = 0x002000000ULL;
+        ks10_t::writeDBAR(flagPhys | flagIO | 003775400ULL);            // break on IO operations to
+        ks10_t::writeDBMR(flagPhys | flagIO | 017777700ULL);            // range of addresses
+        ks10_t::writeDCSR(ks10_t::dcsrBRCMD_MATCH | (ks10_t::readDCSR() & ~ks10_t::dcsrBRCMD));
+        return;
+    } else if ((argc == 2) && (strnicmp(argv[1], "stat", 4) == 0)) {
+        lp20_t::dumpRegs();
+        return;
+    } else if ((argc == 2) && (strnicmp(argv[1], "test", 4) == 0)) {
+        lp20_t::testRegs();
+        return;
+    }
+
+    for (int i = 1; i < argc; i++) {
+        if (strnicmp(argv[i], "online", 4) == 0) {
+            lpcfg.lpccr |= ks10_t::lpONLINE;
+            initLPCCR();
+        } else if (strnicmp(argv[i], "offline", 4) == 0) {
+            lpcfg.lpccr &= ~ks10_t::lpONLINE;
+            initLPCCR();
+        } else if (strnicmp(argv[i], "ovfu", 4) == 0) {
+            lpcfg.lpccr |= ks10_t::lpOVFU;
+            initLPCCR();
+        } else if (strnicmp(argv[i], "davfu", 4) == 0) {
+            lpcfg.lpccr &= ~ks10_t::lpOVFU;
+            initLPCCR();
+        } else {
+            printf(usage);
+        }
+    }
+}
+
+#endif
+
 //!
 //! \brief
 //!    Master Reset
@@ -2014,7 +2226,7 @@ static void cmdRD(int argc, char *argv[]) {
     const char *usage =
         "Usage: RD Addr [length]\n"
         "       RD { APRID | APR | PI  | UBR | EBR | SPB | CSB\n"
-        "          | CSTM  | PUR | TIM | INT | HSB}\n"
+        "          | CSTM  | PUR | TIM | INT | HSB | PC}\n"
         "       RD AC [reg]\n";
 
     if (argc == 2) {
@@ -2044,6 +2256,8 @@ static void cmdRD(int argc, char *argv[]) {
             printRDHSB();
         } else if (strnicmp(argv[1], "ac", 2) == 0) {
             printRDACs();
+        } else if (strnicmp(argv[1], "pc", 2) == 0) {
+            printPCIR(ks10_t::readDITR());
         } else {
             printRDMEM(parseOctal(argv[1]), 1);
         }
@@ -2811,6 +3025,9 @@ void taskCommand(void * param) {
         {"CO", cmdCO},          // Continue
         {"CP", cmdXX},          // Not implemented.
         {"CS", cmdXX},          // Not implemented.
+#ifdef CUSTOM_CMD
+        {"DA", cmdDA},          // Disassemble
+#endif
         {"DB", cmdXX},          // Not implemented.
         {"DC", cmdXX},          // Not implemented.
         {"DF", cmdXX},          // Not implemented.
@@ -2848,6 +3065,9 @@ void taskCommand(void * param) {
         {"LF", cmdXX},          // Not implemented.
         {"LI", cmdLI},
         {"LK", cmdXX},          // Not implemented.
+#ifdef CUSTOM_CMD
+        {"LP", cmdLP},          // LPxx configuration
+#endif
         {"LR", cmdXX},          // Not implemented.
         {"LT", cmdXX},          // Not implemented.
         {"MB", cmdXX},          // Not implemented.

@@ -216,10 +216,21 @@ module UBA (
      end
 
    //
-   // Device request selector
+   // Device arbiter
+   //
    //  The address and data bus is enabled to the KS10 backplane bus arbiter
-   //  when requested be either the initiator or the target.
-
+   //  when:
+   //
+   //  1.  The device is initiating a DMA request.  In this case the device
+   //      (initiator) asserts devREQI[n].  In multiple requests are present,
+   //      this arbiter selects the lowest device.
+   //  2.  The device is the target of either an memory or IO request.  In this
+   //      case the initiator asserts busREQI and target, if any, asserts
+   //      devACKI[n].
+   //  3.  The device is reponding to a Interrupt Vector request.  In this case,
+   //      the CPU asserts both busREQI and busVECT.  Responding to an interrupt
+   //      vector request has priority over all other types of bus transactions.
+   //
 
    reg [0:35] devADDRI;
    reg [0:35] devDATAI;
@@ -228,25 +239,113 @@ module UBA (
      begin
         devADDRI = 0;
         devDATAI = 0;
-        if ((busREQI & devACKI[1]) | devREQI[1])
+
+        //
+        // Interrupt arbitration
+        //
+
+        if (busREQI & busVECT)
           begin
-             devADDRI = dev1ADDRI;
-             devDATAI = dev1DATAI;
+
+             //
+             // INTR 7 (Highest Priority)
+             //
+
+             if (dev1INTR[7])
+               devDATAI = dev1DATAI;
+             else if (dev2INTR[7])
+               devDATAI = dev2DATAI;
+             else if (dev3INTR[7])
+               devDATAI = dev3DATAI;
+             else if (dev4INTR[7])
+               devDATAI = dev3DATAI;
+
+             //
+             // INTR 6
+             //
+
+             else if (dev1INTR[6])
+               devDATAI = dev1DATAI;
+             else if (dev2INTR[6])
+               devDATAI = dev2DATAI;
+             else if (dev3INTR[6])
+               devDATAI = dev3DATAI;
+             else if (dev4INTR[6])
+               devDATAI = dev4DATAI;
+
+             //
+             // INTR 5
+             //
+
+             else if (dev1INTR[5])
+               devDATAI = dev1DATAI;
+             else if (dev2INTR[5])
+               devDATAI = dev2DATAI;
+             else if (dev3INTR[5])
+               devDATAI = dev3DATAI;
+             else if (dev4INTR[5])
+               devDATAI = dev4DATAI;
+
+             //
+             // INTR 4 (Lowest prioity)
+             //
+
+             else if (dev1INTR[4])
+               devDATAI = dev1DATAI;
+             else if (dev2INTR[4])
+               devDATAI = dev2DATAI;
+             else if (dev3INTR[4])
+               devDATAI = dev3DATAI;
+             else if (dev4INTR[4])
+               devDATAI = dev4DATAI;
           end
-        else if ((busREQI & devACKI[2]) | devREQI[2])
+        else
+
+          //
+          // Device arbitration
+          //
+
           begin
-             devADDRI = dev2ADDRI;
-             devDATAI = dev2DATAI;
-          end
-        else if ((busREQI & devACKI[3]) |devREQI[3])
-          begin
-             devADDRI = dev3ADDRI;
-             devDATAI = dev3DATAI;
-          end
-        else if ((busREQI & devACKI[4]) |devREQI[4])
-          begin
-             devADDRI = dev4ADDRI;
-             devDATAI = dev4DATAI;
+
+             //
+             // Device 1
+             //
+
+             if ((busREQI & devACKI[1]) | devREQI[1])
+               begin
+                  devADDRI = dev1ADDRI;
+                  devDATAI = dev1DATAI;
+               end
+
+             //
+             // Device 2
+             //
+
+             else if ((busREQI & devACKI[2]) | devREQI[2])
+               begin
+                  devADDRI = dev2ADDRI;
+                  devDATAI = dev2DATAI;
+               end
+
+             //
+             // Device 3
+             //
+
+             else if ((busREQI & devACKI[3]) | devREQI[3])
+               begin
+                  devADDRI = dev3ADDRI;
+                  devDATAI = dev3DATAI;
+               end
+
+             //
+             //
+             //
+
+             else if ((busREQI & devACKI[4]) | devREQI[4])
+               begin
+                  devADDRI = dev4ADDRI;
+                  devDATAI = dev4DATAI;
+               end
           end
      end
 
@@ -404,9 +503,9 @@ module UBA (
              if (busACKI)
                begin
                   if (`busREAD(busADDRO))
-                    $display("[%11.3f] UBA: Read %012o from address %012o.", $time/1.0e3, busDATAI, busADDRO);
+                    $display("[%11.3f] UBA%d: Read %012o from address %012o.", $time/1.0e3, ubaNUM, busDATAI, busADDRO);
                   else
-                    $display("[%11.3f] UBA: Wrote %012o to address %012o.", $time/1.0e3, busDATAO, busADDRO);
+                    $display("[%11.3f] UBA%d: Wrote %012o to address %012o.", $time/1.0e3, ubaNUM, busDATAO, busADDRO);
                end
 
           end

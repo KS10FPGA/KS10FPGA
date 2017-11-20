@@ -3,10 +3,10 @@
 // KS-10 Processor
 //
 // Brief
-//   LP20 Checksum Register (CKSM)
+//   LP20 Checksum Register (CKSM) implementation.
 //
 // Details
-//   The module implements the LP20 CKSM Register.
+//   This file provides the implementation of the LP20 CKSM Register.
 //
 // File
 //   lpcksm.v
@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -41,25 +41,27 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`include "lpcksm.vh"
+`include "lpcbuf.vh"
 
 module LPCKSM (
-      input  wire         clk,                  // Clock
-      input  wire         rst,                  // Reset
-      input  wire         lpGOCLR,              // Go clear
-      input  wire [ 7: 0] lpDATA,               // Data input
-      input  wire         lpINCCKSM,            // Update CKSM
-      output reg  [ 7: 0] regCKSM               // CKSM output
+      input  wire        clk,           // Clock
+      input  wire        rst,           // Reset
+      input  wire        devREQO,       // Device request in
+      input  wire        devACKI,       // Device acknowledge out
+      input  wire [35:0] lpDATAI,       // Bus data in
+      input  wire        lpCMDGO,       // Start DMA
+      input  wire [17:0] regBAR,        // Base address
+      output reg  [ 7:0] regCKSM        // CKSM output
    );
 
    //
    // Checksum register
    //
    // Trace
-   //  M8585/LPI0/E62
-   //  M8586/LPI0/E67
-   //  M8585/LPI0/E72
-   //  M8585/LPI0/E57
+   //  M8585/LPC10/E62
+   //  M8586/LPC10/E67
+   //  M8585/LPC10/E72
+   //  M8585/LPC10/E57
    //
 
    always @(posedge clk or posedge rst)
@@ -68,10 +70,19 @@ module LPCKSM (
           regCKSM <= 0;
         else
           begin
-             if (lpGOCLR)
+             if (lpCMDGO)
                regCKSM <= 0;
-             else if (lpINCCKSM)
-               regCKSM <= regCKSM + lpDATA;
+             else if (devREQO & devACKI)
+               case (regBAR[1:0])
+                 2'b00: // Even word, low byte
+                   regCKSM <= regCKSM + lpDATAI[25:18];
+                 2'b01: // Even word, high byte
+                   regCKSM <= regCKSM + lpDATAI[33:26];
+                 2'b10: // Odd word, low byte
+                   regCKSM <= regCKSM + lpDATAI[ 7: 0];
+                 2'b11: // Odd word, high byte
+                   regCKSM <= regCKSM + lpDATAI[15: 8];
+               endcase
           end
      end
 

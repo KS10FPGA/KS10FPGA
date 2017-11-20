@@ -172,9 +172,11 @@ NET "conINTR_N"         LOC = "R26"  | IOSTANDARD = LVCMOS33;   // PB7/NMI
 #
 
 NET "ttyTXD<0>"         LOC = "D24"  | IOSTANDARD = LVCMOS33;
-NET "ttyTXD<1>"         LOC = "L25"  | IOSTANDARD = LVCMOS33;
+NET "ttyTXD<1>"         LOC = "B2"   | IOSTANDARD = LVCMOS33;   // VA31
+NET "lprTXD"            LOC = "L25"  | IOSTANDARD = LVCMOS33;
 NET "ttyRXD<0>"         LOC = "J26"  | IOSTANDARD = LVCMOS33;
-NET "ttyRXD<1>"         LOC = "K26"  | IOSTANDARD = LVCMOS33;
+NET "ttyRXD<1>"         LOC = "C1"   | IOSTANDARD = LVCMOS33;   // VA30
+NET "lprRXD"            LOC = "K26"  | IOSTANDARD = LVCMOS33;
 
 #
 # SD Card Interfaces

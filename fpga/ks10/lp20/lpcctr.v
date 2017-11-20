@@ -3,14 +3,13 @@
 // KS-10 Processor
 //
 // Brief
-//   LP20 Translation RAM (RAMD) definitions.
+//   LP20 Column Count Register (CCTR) implementation
 //
 // Details
-//   This file contains the bit definitions for the LP20 translation RAM
-//   register.
+//   This file provides the implementation of the LP20 CCTR Register.
 //
 // File
-//   lpramd.vh
+//   lpbctr.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -39,21 +38,43 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifndef __LPRAMD_VH
-`define __LPRAMD_VH
+`default_nettype none
+`timescale 1ns/1ps
 
-//
-// lpRAMD Register Bits
-//
+`include "lpcctr.vh"
 
-`define lpRAMD_RAP(bus)  (bus[12])      // RAM Parity
-`define lpRAMD_INT(bus)  (bus[11])      // Interrupt
-`define lpRAMD_DEL(bus)  (bus[10])      // Delimiter instruction
-`define lpRAMD_TRANS(bus)(bus[9])       // Translation bit
-`define lpRAMD_PI(bus)   (bus[8])       // Paper instruction
-`define lpRAMD_SLEW(bus) (bus[4])       // Slew bit
-`define lpRAMD_CHAN(bus) (bus[3:0])     // Channel data
-`define lpRAMD_CTRL(bus) (bus[11:8])    // RAM Control
-`define lpRAMD_DATA(bus) (bus[ 7:0])    // RAM Data
+module LPCCTR (
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         lpINIT,       // Initialize
+      input  wire [35: 0] lpDATAI,      // Bus data in
+      input  wire         cctrWRITE,    // Write to CCTR
+      input  wire         lpCLRCCTR,    // Clear CCTR
+      input  wire         lpINCCCTR,    // Increment CCTR
+      output reg  [ 7: 0] regCCTR       // CCTR output
+   );
 
-`endif
+   //
+   // Column counter register
+   //
+   // Trace
+   //  M8587/LPD5/E47
+   //  M8587/LPD5/E48
+   //
+
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          regCCTR <= 0;
+        else
+          begin
+             if (lpINIT | lpCLRCCTR)
+               regCCTR <= 0;
+             else if (cctrWRITE)
+               regCCTR <= `lpCCTR_DAT(lpDATAI);
+             else if (lpINCCCTR)
+               regCCTR <= regCCTR + 1'b1;
+          end
+     end
+
+endmodule

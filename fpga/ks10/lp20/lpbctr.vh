@@ -3,7 +3,7 @@
 // KS-10 Processor
 //
 // Brief
-//   LPBCTR definitions
+//   LP20 Byte Counter (BCTR) definitions.
 //
 // Details
 //   This file contains the bit definitions for the LP20 BCTR register.
@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any

@@ -1,12 +1,12 @@
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
 // Brief
-//   LP20 Control and Status Register B (CSRB)
+//   LP20 Control and Status Register B (CSRB) implementation.
 //
 // Details
-//   The module implements the LP20 CSRB Register.
+//   This file provides the implementation of the LP20 CSRB Register.
 //
 // File
 //   lpcsrb.v
@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -41,32 +41,48 @@
 `default_nettype none
 `timescale 1ns/1ps
 
+`include "lpcsra.vh"
 `include "lpcsrb.vh"
 
 module LPCSRB (
-      input  wire         clk,                  // Clock
-      input  wire         rst,                  // Reset
-      input  wire         devRESET,             // Device Reset from UBA
-      input  wire         devLOBYTE,            // Device Low Byte
-      input  wire         devHIBYTE,            // Device High Byte
-      input  wire [35: 0] lpDATAI,              // Bus Data In
-      input  wire         csrbWRITE,            // Write to CSRA
-      input  wire         lpINIT,               // Initialize
-      input  wire         lpVAL,                // Valid
-      input  wire         lpLA180,              // LP180
-      input  wire         lpNRDY,               // Not ready
-      input  wire         lpDPAR,               // Data Parity
-      input  wire         lpOVFU,               // Optical vertical format unit
-      input  wire         lpOFFL,               // Offline
-      input  wire         lpDVOF,               // DAVFU not ready
-      input  wire         lpLPE,                // LPT parity error
-      input  wire         lpSETMPE,             // MEM parity error
-      input  wire         lpSETRPE,             // RAM parity error
-      input  wire         lpMTE,                // Unibus time-out error
-      input  wire         lpDTE,                // Demand time-out error
-      input  wire         lpSETGOE,             // Go error
-      output wire [15: 0] regCSRB               // CSRA Output
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         devRESET,     // Device Reset from UBA
+      input  wire         devLOBYTE,    // Device Low Byte
+      input  wire         devHIBYTE,    // Device High Byte
+      input  wire         csrbWRITE,    // Write to CSRA
+      input  wire [35: 0] lpDATAI,      // Bus Data In
+      input  wire         lpINIT,       // Initialize
+      input  wire         lpECLR,       // Error clear
+      input  wire         lpOVFU,       // Optical vertical format unit
+      input  wire         lpVFURDY,     // DAVFU ready
+      input  wire         lpVAL,        // Printer valid data
+      input  wire         lpLPE,        // Line printer parity error
+      input  wire         lpDPAR,       // Line printer data parity
+      input  wire         lpONLINE,     // Online
+      input  wire         lpSETMPE,     // Memory parity error
+      input  wire         lpSETRPE,     // RAM parity error
+      input  wire         lpSETMSYN,    // IO bus time-out error
+      input  wire         lpSETGOE,     // Go error
+      input  wire         lpSETDTE,     // Set demand timeout error
+      output wire [15: 0] regCSRB       // CSRA Output
    );
+
+   //
+   // Printer not ready (NRDY)
+   //  Not implemented
+   //
+
+   wire lpNRDY = 0;
+
+   //
+   // Printer Data Parity (DPAR)
+   //
+
+   //
+   // Optical Vertical Format Unit (OVFU)
+   //  This is a configuration option governed by the LPCCR
+   //
 
    //
    // CSRB TEST (TEST)
@@ -92,6 +108,18 @@ module LPCSRB (
      end
 
    //
+   // DAVFU Error (VFUE)
+   //
+   // Trace
+   //  M8587/LPD6/E11
+   //  M8587/LPD6/E50
+   //  M8587/LPD6/E66
+   //  M8587/LPD6/E74
+   //
+
+   wire lpVFUE = !lpVFURDY;
+
+   //
    // Memory Parity Error
    //
    // Trace
@@ -105,10 +133,10 @@ module LPCSRB (
           lpMPE <= 0;
         else
           begin
-             if (lpSETMPE)
-               lpMPE <= 1;
-             else if (lpINIT)
+             if (lpINIT)
                lpMPE <= 0;
+             else if (lpSETMPE)
+               lpMPE <= 1;
           end
      end
 
@@ -126,10 +154,54 @@ module LPCSRB (
           lpRPE <= 0;
         else
           begin
-             if (lpSETRPE)
-               lpRPE <= 1;
-             else if (lpINIT)
+             if (lpINIT)
                lpRPE <= 0;
+             else if (lpSETRPE)
+               lpRPE <= 1;
+          end
+     end
+
+   //
+   // IO Bus Timeout Error
+   //
+   // Trace
+   //  M8586/LPC3/E55
+   //  M8586/LPC3/E56
+   //
+
+   reg lpMSYN;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          lpMSYN <= 0;
+        else
+          begin
+             if (lpECLR)
+               lpMSYN <= 0;
+             else if (lpSETMSYN)
+               lpMSYN <= 1;
+          end
+     end
+
+   //
+   // Demand Timeout Error
+   //
+   // Trace
+   //  M8586/LPC3/E55
+   //  M8586/LPC3/E55
+   //
+
+   reg lpDTE;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          lpDTE <= 0;
+        else
+          begin
+             if (lpECLR)
+               lpDTE <= 0;
+             else if (lpSETDTE)
+               lpDTE <= 1;
           end
      end
 
@@ -147,10 +219,10 @@ module LPCSRB (
           lpGOE <= 0;
         else
           begin
-             if (lpSETGOE)
-               lpGOE <= 1;
-             else if (lpINIT)
+             if (lpINIT)
                lpGOE <= 0;
+             else if (lpSETGOE)
+               lpGOE <= 1;
           end
      end
 
@@ -159,6 +231,6 @@ module LPCSRB (
    //
 
    assign regCSRB = {lpVAL, 1'b0, lpNRDY, lpDPAR, lpOVFU, lpTEST,
-                     lpOFFL, lpDVOF, lpLPE, lpMPE, lpRPE, lpMTE, lpDTE, lpGOE};
+                     !lpONLINE, lpVFUE, lpLPE, lpMPE, lpRPE, lpMSYN, lpDTE, lpGOE};
 
 endmodule

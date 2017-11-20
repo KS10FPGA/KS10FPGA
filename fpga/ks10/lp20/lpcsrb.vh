@@ -3,7 +3,7 @@
 // KS-10 Processor
 //
 // Brief
-//   LPCSRB definitions
+//   LP20 Control and Status Register B (CSRB) definitions.
 //
 // Details
 //   This file contains the bit definitions for the LP20 CSRB register.
@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -64,13 +64,13 @@
 // Test bits
 //
 
-`define lpCSRB_TEST_NORM  3'b000
-`define lpCSRB_TEST_DTE   3'b001
-`define lpCSRB_TEST_MTE   3'b010
-`define lpCSRB_TEST_RAM   3'b011
-`define lpCSRB_TEST_MPE   3'b100
-`define lpCSRB_TEST_LPE   3'b101
-`define lpCSRB_TEST_PCTR  3'b110
-`define lpCSRB_TEST_NU    3'b111
+`define lpCSRB_TEST_NORM   3'b000
+`define lpCSRB_TEST_DTE    3'b001
+`define lpCSRB_TEST_MSYN   3'b010
+`define lpCSRB_TEST_RAMPAR 3'b011
+`define lpCSRB_TEST_MEMPAR 3'b100
+`define lpCSRB_TEST_LPTPAR 3'b101
+`define lpCSRB_TEST_PCTR   3'b110
+`define lpCSRB_TEST_NU     3'b111
 
 `endif

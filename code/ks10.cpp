@@ -420,7 +420,7 @@ void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
 //!    contents of the DZCCR register
 //!
 
-uint64_t ks10_t::readDZCCR(void) {
+uint32_t ks10_t::readDZCCR(void) {
     return *regDZCCR;
 }
 
@@ -432,8 +432,32 @@ uint64_t ks10_t::readDZCCR(void) {
 //!    data is the data to be written to the DZCCR
 //!
 
-void ks10_t::writeDZCCR(uint64_t data) {
+void ks10_t::writeDZCCR(uint32_t data) {
     *regDZCCR = data;
+}
+
+//!
+//! \brief
+//!    This function reads a 64-bit value from the LPCCR
+//!
+//! \returns
+//!    contents of the LPCCR register
+//!
+
+uint32_t ks10_t::readLPCCR(void) {
+    return *regLPCCR;
+}
+
+//!
+//! \brief
+//!    This function writes a 64-bit value to the LPCCR
+//!
+//! \param data -
+//!    data is the data to be written to the LPCCR
+//!
+
+void ks10_t::writeLPCCR(uint32_t data) {
+    *regLPCCR = data;
 }
 
 //!
@@ -1152,14 +1176,14 @@ void ks10_t::testRegs(bool debug) {
     success &= testReg64(regAddr,  "regADDR ", debug, 0xfffffffff);
     success &= testReg64(regData,  "regDATA ", debug, 0xfffffffff);
     success &= testReg64(regCIR,   "regCIR  ", debug, 0xfffffffff);
-    success &= testReg64(regDZCCR, "regDZCCR", debug);
+    success &= testReg64(regDZCCR, "regDZCCR", debug, 0xfffffff0ffffffff);
     success &= testReg64(regRPCCR, "regRPCCR", debug);
     success &= testReg64(regDBAR,  "regDBAR ", debug, 0xfffffffff);
     success &= testReg64(regDBMR,  "regDBMR ", debug, 0xfffffffff);
     if (success) {
         printf("KS10: Console Interface Register test completed successfully.\n");
     } else {
-        printf("KS10: Console Interface Register test failed.\n");
+        printf("KS10: Fatal - Console Interface Register test failed.\n");
         if (!debug) {
             fatal();
         }

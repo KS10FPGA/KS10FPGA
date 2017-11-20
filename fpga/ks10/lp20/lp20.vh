@@ -9,14 +9,14 @@
 //   This file contains LP20 configuration parameters
 //
 // File
-//   dz11.vh
+//   lp20.vh
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not

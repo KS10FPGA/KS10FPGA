@@ -6,7 +6,7 @@
 //   LP20 Control and Status Register A (CSRA)
 //
 // Details
-//   The module implements the LP20 CSRA Register.
+//   This file provides the implementation of the LP20 CSRA Register.
 //
 // File
 //   lpcsra.v
@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -44,29 +44,33 @@
 `include "lpcsra.vh"
 
 module LPCSRA (
-      input  wire         clk,                  // Clock
-      input  wire         rst,                  // Reset
-      input  wire         devRESET,             // Device Reset from UBA
-      input  wire         devLOBYTE,            // Device Low Byte
-      input  wire         devHIBYTE,            // Device High Byte
-      input  wire [35: 0] lpDATAI,              // Device Data In
-      input  wire         csraWRITE,            // Write to CSRA
-      input  wire         lpPCZ,                // Page count zero
-      input  wire         lpUNDC,               // Undefined character
-      input  wire         lpDVON,               // DAVFU ready
-      input  wire         lpONLINE,             // On line
-      input  wire         lpDONE,               // Done
-      input  wire         lpGO,                 // Go
-      input  wire         lpLPE,                // Line printer parity error
-      input  wire         lpMPE,                // Memory parity error
-      input  wire         lpRPE,                // RAM parity error
-      input  wire         lpMTE,                // Unibus timeout error
-      input  wire         lpDTE,                // Demand timeout error
-      input  wire         lpGOE,                // Go Error
-      input  wire         lpSETDHLD,            // Set delimiter hold
-      output wire         lpCMDGO,              // Go command
-      input  wire [17: 0] regBAR,               // Bus address register
-      output wire [15: 0] regCSRA               // CSRA Output
+      input  wire        clk,           // Clock
+      input  wire        rst,           // Reset
+      input  wire        devRESET,      // Device Reset from UBA
+      input  wire        devLOBYTE,     // Device Low Byte
+      input  wire        devHIBYTE,     // Device High Byte
+      input  wire        bctrWRITE,     // Byte counter write
+      input  wire        pctrWRITE,     // Page counter write
+      input  wire        csraWRITE,     // Write to CSRA
+      input  wire [35:0] lpDATAI,       // Device Data In
+      input  wire        lpONLINE,      // On line
+      input  wire        lpGO,          // Go
+      input  wire        lpLPE,         // Line printer parity error
+      input  wire        lpVFURDY,      // Vertical format unit ready
+      input  wire        lpCMDGO,       // Go command
+      input  wire        lpSETUNDC,     // Set undefined character
+      input  wire        lpSETMPE,      // Memory parity error
+      input  wire        lpSETRPE,      // RAM parity error
+      input  wire        lpSETMSYN,     // IO bus timeout error
+      input  wire        lpSETDHLD,     // Set delimiter hold
+      input  wire        lpCLRDHLD,     // Clear delimiter hold
+      input  wire        lpSETDTE,      // Set demand timeout error
+      input  wire        lpSETGOE,      // Set go Error
+      input  wire        lpSETPCZ,      // Set page counter is zero
+      input  wire        lpSETDONE,     // Set DMA done
+      output wire        lpSETIRQ,      // Interrupt request
+      input  wire [17:0] regBAR,        // Bus address register
+      output wire [15:0] regCSRA        // CSRA Output
    );
 
    //
@@ -74,7 +78,7 @@ module LPCSRA (
    //
    // This is a little different than the LP20.  The lpINIT is output from this
    // register but it cannot be read by the KS10 because it is only asserted
-   // during the write operation
+   // during the write operation. It looks like it is write only.
    //
    // Trace
    //  M8586/LPC8/E7
@@ -88,9 +92,9 @@ module LPCSRA (
    //
    // CSRA Error Clear (ECLR)
    //
-   // This is a little different than the LP20.  The lpECLR is output from this
-   // register but it cannot be read by the KS10 because it is only asserted
-   // during the write operation
+   // This is a little different than the LP20.  The lpECLR is an output from
+   // this register but it cannot be read by the KS10 because it is only
+   // asserted during the write operation.
    //
    // Trace
    //  M8586/LPC7/E36
@@ -103,7 +107,7 @@ module LPCSRA (
    //
    // On-line Error
    //
-   // This is asserted when the printer transtions of off-line
+   // Watch for transitions of printer status
    //
    // Trace
    //  M8586/LPC7/E71
@@ -118,30 +122,54 @@ module LPCSRA (
           lastONLINE <= lpONLINE;
      end
 
-   wire errONLINE = !lpONLINE & lastONLINE;
-
    //
    // DAVFU Error
    //
-   // This is asserted when the DAVFU transitions to not ready
+   // Watch for transitions of the DAVFU
    //
    // Trace
    //  M8586/LPC7/E70
    //
 
-   reg lastDAVFU;
+   reg lastVFURDY;
    always @(posedge clk or posedge rst)
      begin
         if (rst)
-          lastDAVFU <= 0;
+          lastVFURDY <= 0;
         else
-          lastDAVFU <= lpDVON;
+          lastVFURDY <= lpVFURDY;
      end
 
-   wire errDAVFU = !lpDVON & lastDAVFU;
+   //
+   // Line printer parity error
+   //
+   // Watch for transitions of the LPE
+   //
+   // Trace
+   //  M8586/LPC7/E66
+   //
+
+   reg lastLPE;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          lastLPE <= 0;
+        else
+          lastLPE <= lpLPE;
+     end
 
    //
-   // CSRA Error (ERR)
+   // lpSETERR
+   //
+   // Trace
+   //  M8587/LPC7/E31
+   //  M8587/LPCS/E42
+   //
+
+   wire lpSETERR = lpSETMPE | lpSETRPE | lpSETMSYN | lpSETDTE | (!lpONLINE & lastONLINE) | (!lpVFURDY & lastVFURDY) | (lpLPE & !lastLPE) | lpSETGOE;
+
+   //
+   // CSRA Composite Error (ERR)
    //
    // Trace
    //  M8586/LPC7/E42
@@ -157,15 +185,66 @@ module LPCSRA (
           lpERR <= 0;
         else
           begin
-             if (lpMPE | lpRPE | lpMTE | lpDTE | errONLINE | errDAVFU | lpLPE | lpGOE)
-               lpERR <= 1;
-             else if (lpECLR)
+             if (lpECLR)
                lpERR <= 0;
+             else if (lpSETERR)
+               lpERR <= 1;
+          end
+     end
+
+   //
+   // CSRA Page Count Zero (PCZ)
+   //
+   // Trace
+   //  M8586/LPC9/E58
+   //  M8586/LPC9/E33
+   //  M8586/LPC9/E58
+   //  M8597/LPD4/E38
+   //
+
+   reg lpPCZ;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          lpPCZ <= 0;
+        else
+          begin
+             if (lpINIT | pctrWRITE)
+               lpPCZ <= 0;
+             else if (lpSETPCZ)
+               lpPCZ <= 1;
+          end
+     end
+
+   //
+   // CSRA Undefined Characters (UNDC)
+   //
+   // Trace
+   //  M8587/LPD6/E63
+   //
+
+   reg lpUNDC;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          lpUNDC <= 0;
+        else
+          begin
+             if (lpCMDGO)
+               lpUNDC <= 0;
+             else if (lpSETUNDC)
+               lpUNDC <= 1;
           end
      end
 
    //
    // CSRA Delimiter Hold (DHLD)
+   //
+   // Trace
+   //  M8587/LPD5/E52
+   //  M8587/LPD5/E53
+   //  M8587/LPD5/E56
+   //  M8587/LPD5/E57
    //
 
    reg lpDHLD;
@@ -175,13 +254,34 @@ module LPCSRA (
           lpDHLD <= 0;
         else
           begin
-             if (lpINIT)
+             if (lpINIT | lpCLRDHLD)
                lpDHLD <= 0;
              else if (lpSETDHLD)
                lpDHLD <= 1;
              else if (csraWRITE & devHIBYTE)
                lpDHLD <= `lpCSRA_DHLD(lpDATAI);
           end
+     end
+
+   //
+   // CSRA Done (DONE)
+   //
+   // Trace
+   //  M8585/LPC9/E35
+   //  M8585/LPC9/E40
+   //  M8585/LPC9/E65
+   //
+
+   reg lpDONE;
+   always @(posedge clk or posedge rst)
+     begin
+        if (rst)
+          lpDONE <= 0;
+        else
+          if (bctrWRITE)
+            lpDONE <= 0;
+          else if (lpINIT | lpSETDONE)
+            lpDONE <= 1;
      end
 
    //
@@ -252,13 +352,18 @@ module LPCSRA (
    // Build CSRA
    //
 
-   assign regCSRA = {lpERR, lpPCZ, lpUNDC, lpDVON, lpONLINE, lpDHLD, lpECLR, lpINIT,
-                     lpDONE, lpIE, regBAR[17:16], lpMODE, lpPAR, lpGO};
+   assign regCSRA = {lpERR, lpPCZ, lpUNDC, lpVFURDY, lpONLINE, lpDHLD, lpECLR, lpINIT,
+                     lpDONE, lpIE, regBAR[17:16], lpMODE[1:0], lpPAR, lpGO};
 
    //
-   // CSRA Command GO
+   // Interrupt Request
+   //
+   // Trace
+   //  M8586/LPC4/E65
+   //  M8586/LPC4/E74
+   //  M8586/LPC4/E75
    //
 
-   assign lpCMDGO = csraWRITE & devLOBYTE & `lpCSRA_GO(lpDATAI);
+   assign lpSETIRQ = lpSETERR | lpSETPCZ | lpSETUNDC | lpSETDONE | (lpVFURDY != lastVFURDY) | (lpONLINE != lastONLINE);
 
 endmodule
