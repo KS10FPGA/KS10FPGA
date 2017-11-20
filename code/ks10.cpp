@@ -1121,11 +1121,9 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, bool debug, uint6
     for (unsigned long long write64 = 1; write64 != 0; write64 <<= 1) {
         *reg64 = write64;
         uint64_t read64 = *reg64;
-        if ((write64 & mask) != 0) {
-            if (read64 != write64) {
-                debug_printf(debug, "KS10:  %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
-                success = false;
-            }
+        if ((read64 & mask) != (write64 & mask)) {
+            debug_printf(debug, "KS10:  %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
+            success = false;
         }
     }
 
