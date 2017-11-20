@@ -3,7 +3,7 @@
 // KS-10 Processor
 //
 // Brief
-//   DZ11 UART Baud Rate Generator
+//   UART Baud Rate Generator
 //
 // Details
 //   This module provides a baud rate generator for use by the UART transmitter
@@ -19,7 +19,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -44,84 +44,64 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`include "../dzuart.vh"
+`include "uart.vh"
 `include "../../ks10.vh"
 
 module UART_BRG (
-      input  wire       clk,                    // Clock
-      input  wire       rst,                    // Reset
-      input  wire [3:0] speed,                  // Speed Select
-      output wire       brgCLKEN                // BRG Clock Enable
+      input  wire       clk,            // Clock
+      input  wire       rst,            // Reset
+      input  wire [4:0] speed,          // Speed Select
+      output wire       clken           // UART Clock Enable
    );
 
    //
    // Divider constants
    //
 
-   localparam CLKFRQ = `CLKFRQ;                 // Clock frequency
-   localparam CLKDIV = `CLKDIV;                 // 16x Clock
+   parameter  CLKFRQ = `CLKFRQ;         // Clock frequency
+   localparam CLKDIV = `CLKDIV;         // 16x Clock
 
    //
    // Fractional N increment ROM
    //
 
-   reg [0:31] rom[0:15];
+   reg [0:31] rom[0:31];
 
    initial
      begin
 
-`ifdef SYNTHESIS
-
-        //
-        // This table is for synthesis.  The fraction is rounded to
-        // the nearest integer
-        //
-
-        rom[   `UARTBR_50] = $rtoi((2.0**32.0) * CLKDIV *     50.0 / CLKFRQ + 0.5);
-        rom[   `UARTBR_75] = $rtoi((2.0**32.0) * CLKDIV *     75.0 / CLKFRQ + 0.5);
-        rom[  `UARTBR_110] = $rtoi((2.0**32.0) * CLKDIV *    110.0 / CLKFRQ + 0.5);
-        rom[  `UARTBR_134] = $rtoi((2.0**32.0) * CLKDIV *    134.5 / CLKFRQ + 0.5);
-        rom[  `UARTBR_150] = $rtoi((2.0**32.0) * CLKDIV *    150.0 / CLKFRQ + 0.5);
-        rom[  `UARTBR_300] = $rtoi((2.0**32.0) * CLKDIV *    300.0 / CLKFRQ + 0.5);
-        rom[  `UARTBR_600] = $rtoi((2.0**32.0) * CLKDIV *    600.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_1200] = $rtoi((2.0**32.0) * CLKDIV *   1200.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_1800] = $rtoi((2.0**32.0) * CLKDIV *   1800.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_2000] = $rtoi((2.0**32.0) * CLKDIV *   2000.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_2400] = $rtoi((2.0**32.0) * CLKDIV *   2400.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_3600] = $rtoi((2.0**32.0) * CLKDIV *   3600.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_4800] = $rtoi((2.0**32.0) * CLKDIV *   4800.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_7200] = $rtoi((2.0**32.0) * CLKDIV *   7200.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_9600] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);
-        rom[`UARTBR_19200] = $rtoi((2.0**32.0) * CLKDIV *  19200.0 / CLKFRQ + 0.5);
-
-`else
-
-        //
-        // This table is for simulation.  The baud rates are hacked to
-        // speed up the simulation.  The DSDZA diagnostic expects the
-        // baud rate to increase monotonically.  Tests with slower
-        // data rates should take longer than tests with faster data
-        // rates.
-        //
-
-        rom[   `UARTBR_50] = $rtoi((2.0**32.0) * CLKDIV *  14865.0 / CLKFRQ + 0.5);
-        rom[   `UARTBR_75] = $rtoi((2.0**32.0) * CLKDIV *  17677.0 / CLKFRQ + 0.5);
-        rom[  `UARTBR_110] = $rtoi((2.0**32.0) * CLKDIV *  21020.0 / CLKFRQ + 0.5);
-        rom[  `UARTBR_134] = $rtoi((2.0**32.0) * CLKDIV *  25000.0 / CLKFRQ + 0.5);
-        rom[  `UARTBR_150] = $rtoi((2.0**32.0) * CLKDIV *  30050.0 / CLKFRQ + 0.5);
-        rom[  `UARTBR_300] = $rtoi((2.0**32.0) * CLKDIV *  35300.0 / CLKFRQ + 0.5);
-        rom[  `UARTBR_600] = $rtoi((2.0**32.0) * CLKDIV *  42000.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_1200] = $rtoi((2.0**32.0) * CLKDIV *  50000.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_1800] = $rtoi((2.0**32.0) * CLKDIV *  60000.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_2000] = $rtoi((2.0**32.0) * CLKDIV *  71000.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_2400] = $rtoi((2.0**32.0) * CLKDIV *  84000.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_3600] = $rtoi((2.0**32.0) * CLKDIV * 100000.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_4800] = $rtoi((2.0**32.0) * CLKDIV * 119000.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_7200] = $rtoi((2.0**32.0) * CLKDIV * 141000.0 / CLKFRQ + 0.5);
-        rom[ `UARTBR_9600] = $rtoi((2.0**32.0) * CLKDIV * 168000.0 / CLKFRQ + 0.5);
-        rom[`UARTBR_19200] = $rtoi((2.0**32.0) * CLKDIV * 200000.0 / CLKFRQ + 0.5);
-
-`endif
+        rom[    `UARTBR_50] = $rtoi((2.0**32.0) * CLKDIV *     50.0 / CLKFRQ + 0.5);    // 0
+        rom[    `UARTBR_75] = $rtoi((2.0**32.0) * CLKDIV *     75.0 / CLKFRQ + 0.5);    // 1
+        rom[   `UARTBR_110] = $rtoi((2.0**32.0) * CLKDIV *    110.0 / CLKFRQ + 0.5);    // 2
+        rom[   `UARTBR_134] = $rtoi((2.0**32.0) * CLKDIV *    134.5 / CLKFRQ + 0.5);    // 3
+        rom[   `UARTBR_150] = $rtoi((2.0**32.0) * CLKDIV *    150.0 / CLKFRQ + 0.5);    // 4
+        rom[   `UARTBR_300] = $rtoi((2.0**32.0) * CLKDIV *    300.0 / CLKFRQ + 0.5);    // 5
+        rom[   `UARTBR_600] = $rtoi((2.0**32.0) * CLKDIV *    600.0 / CLKFRQ + 0.5);    // 6
+        rom[  `UARTBR_1200] = $rtoi((2.0**32.0) * CLKDIV *   1200.0 / CLKFRQ + 0.5);    // 7
+        rom[  `UARTBR_1800] = $rtoi((2.0**32.0) * CLKDIV *   1800.0 / CLKFRQ + 0.5);    // 8
+        rom[  `UARTBR_2000] = $rtoi((2.0**32.0) * CLKDIV *   2000.0 / CLKFRQ + 0.5);    // 9
+        rom[  `UARTBR_2400] = $rtoi((2.0**32.0) * CLKDIV *   2400.0 / CLKFRQ + 0.5);    // 10
+        rom[  `UARTBR_3600] = $rtoi((2.0**32.0) * CLKDIV *   3600.0 / CLKFRQ + 0.5);    // 11
+        rom[  `UARTBR_4800] = $rtoi((2.0**32.0) * CLKDIV *   4800.0 / CLKFRQ + 0.5);    // 12
+        rom[  `UARTBR_7200] = $rtoi((2.0**32.0) * CLKDIV *   7200.0 / CLKFRQ + 0.5);    // 13
+        rom[  `UARTBR_9600] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);    // 14
+        rom[ `UARTBR_19200] = $rtoi((2.0**32.0) * CLKDIV *  19200.0 / CLKFRQ + 0.5);    // 15
+        rom[ `UARTBR_38400] = $rtoi((2.0**32.0) * CLKDIV *  38400.0 / CLKFRQ + 0.5);    // 16
+        rom[ `UARTBR_57600] = $rtoi((2.0**32.0) * CLKDIV *  57600.0 / CLKFRQ + 0.5);    // 17
+        rom[`UARTBR_115200] = $rtoi((2.0**32.0) * CLKDIV * 115200.0 / CLKFRQ + 0.5);    // 18
+        rom[`UARTBR_230400] = $rtoi((2.0**32.0) * CLKDIV * 230400.0 / CLKFRQ + 0.5);    // 19
+        rom[`UARTBR_460800] = $rtoi((2.0**32.0) * CLKDIV * 460800.0 / CLKFRQ + 0.5);    // 20
+        rom[`UARTBR_921600] = $rtoi((2.0**32.0) * CLKDIV * 921600.0 / CLKFRQ + 0.5);    // 21
+        rom[            22] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);    // 22
+        rom[            23] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);    // 23
+        rom[            24] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);    // 24
+        rom[            25] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);    // 25
+        rom[            26] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);    // 26
+        rom[            27] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);    // 27
+        rom[            28] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);    // 28
+        rom[            29] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);    // 29
+        rom[            30] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);    // 30
+        rom[            31] = $rtoi((2.0**32.0) * CLKDIV *   9600.0 / CLKFRQ + 0.5);    // 31
 
      end
 
@@ -150,6 +130,6 @@ module UART_BRG (
    // Create output signal
    //
 
-   assign brgCLKEN = carry;
+   assign clken = carry;
 
 endmodule

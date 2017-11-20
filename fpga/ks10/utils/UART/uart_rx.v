@@ -15,6 +15,8 @@
 //   therefore unbuffered.  If you require a double buffered UART, then you
 //   will need to layer a set of buffers on top of this device.
 //
+//   This UART receiver is compatible with the DZ11.
+//
 // File
 //   uart_rx.v
 //
@@ -23,7 +25,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2009-2016 Rob Doyle
+// Copyright (C) 2009-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -48,13 +50,13 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`include "../dzuart.vh"
+`include "uart.vh"
 
 module UART_RX (
       input  wire       clk,            // Clock
       input  wire       rst,            // Reset
       input  wire       clr,            // Clear
-      input  wire       brgCLKEN,       // Clock enable from BRG
+      input  wire       clken,          // Clock enable from BRG
       input  wire [1:0] length,         // Character length
       input  wire       stop,           // Number of stop bits
       input  wire [1:0] parity,         // Receiver parity
@@ -178,7 +180,7 @@ module UART_RX (
               //
 
               stateIDLE:
-                if (brgCLKEN & !din)
+                if (clken & !din)
                   begin
                      state <= stateSTART;
                      brdiv <= 7;
@@ -189,7 +191,7 @@ module UART_RX (
               //
 
               stateSTART:
-                if (brgCLKEN)
+                if (clken)
                   if (!din)
                     if (brdiv == 0)
                       begin
@@ -210,7 +212,7 @@ module UART_RX (
               //
 
               stateBIT0:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -225,7 +227,7 @@ module UART_RX (
               //
 
               stateBIT1:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -240,7 +242,7 @@ module UART_RX (
               //
 
               stateBIT2:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -255,7 +257,7 @@ module UART_RX (
               //
 
               stateBIT3:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -270,7 +272,7 @@ module UART_RX (
               //
 
               stateBIT4:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -297,7 +299,7 @@ module UART_RX (
               //
 
               stateBIT5:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -324,7 +326,7 @@ module UART_RX (
               //
 
               stateBIT6:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -351,7 +353,7 @@ module UART_RX (
               //
 
               stateBIT7:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -371,7 +373,7 @@ module UART_RX (
               //
 
               statePARITY:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        if (parity == `UARTPAR_EVEN)
@@ -394,7 +396,7 @@ module UART_RX (
               //
 
               stateSTOP1:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        if (!din)
@@ -419,7 +421,7 @@ module UART_RX (
               //
 
               stateSTOP2:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        if (!din)
@@ -436,7 +438,7 @@ module UART_RX (
               //
 
               stateWAIT:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     state <= stateDONE;
                   else

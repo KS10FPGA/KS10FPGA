@@ -294,9 +294,6 @@ RTL_FILES := \
 	ks10/cpu/useq/dispatch.v \
 	ks10/cpu/useq/useq.v \
 	ks10/debug/debug.v \
-	ks10/dz11/uart/uart_brg.v \
-	ks10/dz11/uart/uart_rx.v \
-	ks10/dz11/uart/uart_tx.v \
 	ks10/dz11/dzcsr.v \
 	ks10/dz11/dzmsr.v \
 	ks10/dz11/dztcr.v \
@@ -350,7 +347,10 @@ RTL_FILES := \
 	ks10/utils/fifo.v \
 	ks10/utils/sync.v \
 	ks10/utils/clkfwd.v \
-	ks10/utils/edgetrig.v
+	ks10/utils/edgetrig.v \
+	ks10/utils/uart/uart_brg.v \
+	ks10/utils/uart/uart_rx.v \
+	ks10/utils/uart/uart_tx.v
 
 #
 # Coregen Files
@@ -492,7 +492,6 @@ INC_FILES := \
 	ks10/dz11/dzrbuf.vh \
 	ks10/dz11/dztcr.vh \
 	ks10/dz11/dztdr.vh \
-	ks10/dz11/dzuart.vh \
 	ks10/lp20/lp20.vh \
 	ks10/lp20/lpbar.vh \
 	ks10/lp20/lpbctr.vh \
@@ -530,6 +529,8 @@ INC_FILES := \
 	ks10/uba/ubasr.vh \
 	ks10/uba/ubabus.vh \
 	ks10/uba/ubapage.vh \
+	ks10/utils/ascii.vh \
+	ks10/utils/uart/uart.vh \
 	ks10/ks10.vh
 
 #
@@ -700,6 +701,7 @@ FUSE_ARGS := \
 	-d UNIT5_DSK=\"\"../../$(UNIT5_DSK)\"\" \
 	-d UNIT6_DSK=\"\"../../$(UNIT6_DSK)\"\" \
 	-d UNIT7_DSK=\"\"../../$(UNIT7_DSK)\"\" \
+	-i ../../ks10/utils/uart \
 	-intstyle $(INTSTYLE) \
 	-incremental \
 	-o   $(PROJECT)_isim.exe \
@@ -972,6 +974,8 @@ questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBE
 	+incdir+ks10/rh11 \
 	+incdir+ks10/rh11/rpxx \
 	+incdir+ks10/rh11/sd \
+	+incdir+ks10/utils \
+	+incdir+ks10/utils/uart \
 	+define+SSRAM_DAT=\"$(TESTBENCH)/ssram.dat\" \
 	+define+CROM_DAT=\"$(CROM_DAT)\" \
 	+define+DROM_DAT=\"$(DROM_DAT)\" \
@@ -1460,6 +1464,7 @@ iverilog : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TES
 	-D UNIT6_DSK=\"$(UNIT6_DSK)\" \
 	-D UNIT7_DSK=\"$(UNIT7_DSK)\" \
 	-I ks10 \
+	-I ks10/utils \
 	-I ks10/cpu \
 	-I ks10/cpu/useq \
 	-I ks10/debug \
@@ -1470,7 +1475,8 @@ iverilog : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TES
 	-I ks10/rh11 \
 	-I ks10/rh11/rpxx \
 	-I ks10/rh11/sd \
-	-I ks10/uba
+	-I ks10/uba \
+	-I ks10/utils/uart
 	$(VVP) -n $(IVERILOG_DIR)/sim.vvp | tee $(IVERILOG_DIR)/sim.log
 
 #
@@ -1647,6 +1653,7 @@ rcsclean_rtl: clean_rtl
 	-rcsclean ks10/rh11/rpxx/*
 	-rcsclean ks10/uba/*
 	-rcsclean ks10/utils/*
+	-rcsclean ks10/utils/UART/*
 	-rcsclean ks10/xilinx/*
 	-rcsclean ks10/xilinx/chipscope_cpu_ila/*
 	-rcsclean ks10/xilinx/chipscope_cpu_iocon/*

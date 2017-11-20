@@ -6,18 +6,18 @@
 //   DZ11 UART Baud Rate Generator
 //
 // Details
-//   This file contains the definitions that are required to use the UART_BRG
-//   module.
+//   This file contains the definitions that are required to use the UART
+//   modules.
 //
 // File
-//   dzuart.vh
+//   uart.vh
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2017 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -39,31 +39,39 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifndef __DZUART_VH
-`define __DZUART_VH
+`ifndef __UART_VH
+`define __UART_VH
 
 `define CLKDIV  16
 
 //
 // Baudrate selection
+//  The first 16 entries match the COM5016 that is used in DZ11.
+//  The rest of the entries are more modern and faster.
 //
 
-`define UARTBR_50     (4'd0)
-`define UARTBR_75     (4'd1)
-`define UARTBR_110    (4'd2)
-`define UARTBR_134    (4'd3)
-`define UARTBR_150    (4'd4)
-`define UARTBR_300    (4'd5)
-`define UARTBR_600    (4'd6)
-`define UARTBR_1200   (4'd7)
-`define UARTBR_1800   (4'd8)
-`define UARTBR_2000   (4'd9)
-`define UARTBR_2400   (4'd10)
-`define UARTBR_3600   (4'd11)
-`define UARTBR_4800   (4'd12)
-`define UARTBR_7200   (4'd13)
-`define UARTBR_9600   (4'd14)
-`define UARTBR_19200  (4'd15)
+`define UARTBR_50     (5'd0)
+`define UARTBR_75     (5'd1)
+`define UARTBR_110    (5'd2)
+`define UARTBR_134    (5'd3)
+`define UARTBR_150    (5'd4)
+`define UARTBR_300    (5'd5)
+`define UARTBR_600    (5'd6)
+`define UARTBR_1200   (5'd7)
+`define UARTBR_1800   (5'd8)
+`define UARTBR_2000   (5'd9)
+`define UARTBR_2400   (5'd10)
+`define UARTBR_3600   (5'd11)
+`define UARTBR_4800   (5'd12)
+`define UARTBR_7200   (5'd13)
+`define UARTBR_9600   (5'd14)
+`define UARTBR_19200  (5'd15)
+`define UARTBR_38400  (5'd16)
+`define UARTBR_57600  (5'd17)
+`define UARTBR_115200 (5'd18)
+`define UARTBR_230400 (5'd19)
+`define UARTBR_460800 (5'd20)
+`define UARTBR_921600 (5'd21)
 
 //
 // Character Size

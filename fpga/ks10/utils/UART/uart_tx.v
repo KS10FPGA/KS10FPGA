@@ -15,6 +15,8 @@
 //   therefore unbuffered.  If you require a double buffered UART, then you
 //   will need to layer a set of buffers on top of this device.
 //
+//   This UART transmitter is compatible with the DZ11.
+//
 // File
 //   uart_tx.vhd
 //
@@ -48,16 +50,16 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`include "../dzuart.vh"
+`include "uart.vh"
 
 module UART_TX (
       input  wire       clk,            // Clock
       input  wire       rst,            // Reset
       input  wire       clr,            // Clear
+      input  wire       clken,          // Clock enable from BRG
       input  wire [1:0] length,         // Character length
       input  wire [1:0] parity,         // Parity
       input  wire       stop,           // Number of stop bits
-      input  wire       brgCLKEN,       // Clock enable from BRG
       input  wire [7:0] data,           // Transmitter data
       input  wire       load,           // Load transmitter
       output wire       empty,          // Transmitter buffer empty
@@ -89,7 +91,7 @@ module UART_TX (
    // UART Transmitter:
    //
    // Details
-   //   The brgCLKEN is 16 clocks per bit.  The UART transmits LSB first.
+   //   The clken is 16 clocks per bit.  The UART transmits LSB first.
    //
    //   When the load input is asserted, the data is loaded into the
    //   Transmit Register and the state machine is started.
@@ -157,7 +159,7 @@ module UART_TX (
               //
 
               stateSYNC:
-               if (brgCLKEN)
+               if (clken)
                  begin
                     brdiv <= 15;
                     state <= stateSTART;
@@ -168,7 +170,7 @@ module UART_TX (
               //
 
               stateSTART:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -182,7 +184,7 @@ module UART_TX (
               //
 
               stateBIT0:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -196,7 +198,7 @@ module UART_TX (
               //
 
               stateBIT1:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -210,7 +212,7 @@ module UART_TX (
               //
 
               stateBIT2:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -224,7 +226,7 @@ module UART_TX (
               //
 
               stateBIT3:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -238,7 +240,7 @@ module UART_TX (
               //
 
               stateBIT4:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -261,7 +263,7 @@ module UART_TX (
               //
 
               stateBIT5:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -284,7 +286,7 @@ module UART_TX (
               //
 
               stateBIT6:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -307,7 +309,7 @@ module UART_TX (
               //
 
               stateBIT7:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -325,7 +327,7 @@ module UART_TX (
               //
 
               statePARITY:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -339,7 +341,7 @@ module UART_TX (
               //
 
               stateSTOP1:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -356,7 +358,7 @@ module UART_TX (
               //
 
               stateSTOP2:
-                if (brgCLKEN)
+                if (clken)
                   if (brdiv == 0)
                     begin
                        brdiv <= 15;
@@ -415,7 +417,7 @@ module UART_TX (
    // Outputs
    //
 
-   assign empty = (state == stateIDLE);
+   assign empty = (state == stateIDLE) & !load;
    assign intr  = (state == stateDONE);
    assign txd   = txdata;
 

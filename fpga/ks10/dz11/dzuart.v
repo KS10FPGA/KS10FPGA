@@ -92,13 +92,13 @@ module DZUART (
    // UART Baud Rate Generator
    //
 
-   wire brgCLKEN;
+   wire clken;
 
    UART_BRG ttyBRG (
-      .clk        (clk),
-      .rst        (rst),
-      .speed      (`dzLPR_SPEED(lprREG)),
-      .brgCLKEN   (brgCLKEN)
+      .clk     (clk),
+      .rst     (rst),
+      .speed   ({1'b0, `dzLPR_SPEED(lprREG)}),
+      .clken   (clken)
    );
 
    //
@@ -106,18 +106,18 @@ module DZUART (
    //
 
    UART_TX ttyTX (
-       .clk      (clk),
-       .rst      (rst),
-       .clr      (clr),
-       .length   (`dzLPR_LEN(lprREG)),
-       .parity   (`dzLPR_PAR(lprREG)),
-       .stop     (`dzLPR_STOP(lprREG)),
-       .brgCLKEN (brgCLKEN),
-       .load     (txload),
-       .data     (txdata),
-       .empty    (txempty),
-       .intr     (),
-       .txd      (txd)
+       .clk    (clk),
+       .rst    (rst),
+       .clr    (clr),
+       .clken  (clken),
+       .length (`dzLPR_LEN(lprREG)),
+       .parity (`dzLPR_PAR(lprREG)),
+       .stop   (`dzLPR_STOP(lprREG)),
+       .load   (txload),
+       .data   (txdata),
+       .empty  (txempty),
+       .intr   (),
+       .txd    (txd)
    );
 
    //
@@ -125,21 +125,21 @@ module DZUART (
    //
 
    UART_RX ttyRX (
-       .clk      (clk),
-       .rst      (rst),
-       .clr      (clr),
-       .length   (`dzLPR_LEN(lprREG)),
-       .parity   (`dzLPR_PAR(lprREG)),
-       .stop     (`dzLPR_STOP(lprREG)),
-       .brgCLKEN (`dzLPR_RXEN(lprREG) & brgCLKEN),
-       .rxd      (rxd),
-       .rfull    (rxclr),
-       .full     (rxfull),
-       .intr     (),
-       .data     (rxdata),
-       .pare     (rxpare),
-       .frme     (rxfrme),
-       .ovre     (rxovre)
+       .clk    (clk),
+       .rst    (rst),
+       .clr    (clr),
+       .clken  (`dzLPR_RXEN(lprREG) & clken),
+       .length (`dzLPR_LEN(lprREG)),
+       .parity (`dzLPR_PAR(lprREG)),
+       .stop   (`dzLPR_STOP(lprREG)),
+       .rxd    (rxd),
+       .rfull  (rxclr),
+       .full   (rxfull),
+       .intr   (),
+       .data   (rxdata),
+       .pare   (rxpare),
+       .frme   (rxfrme),
+       .ovre   (rxovre)
    );
 
 endmodule
