@@ -445,12 +445,22 @@ module LP26 (
                        // prints a carriage return, and resets the buffer
                        // pointer.
                        //
+                       // An LP07 will go offline if you overprint a line 8
+                       // times without paper motion.  This is tested by
+                       // DSLPA TEST.115.  An LP26 will overprint 140 times
+                       // before it will declare a fault.  This is not tested
+                       // by the diagnostics.
+                       //
+                       // For now, we disable support for the LP07. Note that
+                       // the LP07 code is broken and is unlikely to be fixed.
+                       //
 
                        asciiCR:
+`ifdef LPR_LP07
                          if (lpCRCNT == 8'b1111_1111)
-                           //state <= stateLPROFFLN;
-                           state <= stateWAIT;
+                           state <= stateLPROFFLN;
                          else
+`endif
                            begin
                               lpCRCNT <= {lpCRCNT[6:0], 1'b0};
                               lpCOUNT <= 0;
