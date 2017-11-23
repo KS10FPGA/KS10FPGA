@@ -588,16 +588,19 @@ UCF_FILE := \
 
 FILTER_ARGS := \
 	'<filters xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="filter.xsd">' \
-	'    <filter task="map"   file="Map"   num="284"  type="warning"></filter>' \
-	'    <filter task="xst"   file="Xst"   num="647"  type="warning"></filter>' \
-	'    <filter task="xst"   file="Xst"   num="1710" type="warning"></filter>' \
-	'    <filter task="xst"   file="Xst"   num="1895" type="warning"></filter>' \
-	'    <filter task="xst"   file="Xst"   num="2261" type="info"   ></filter>' \
-	'    <filter task="xst"   file="Xst"   num="2677" type="warning"></filter>' \
-	'    <filter task="place" file="Place" num="1109" type="warning"></filter>' \
-	'    <filter task="place" file="Place" num="1137" type="warning"></filter>' \
-	'    <filter task="place" file="Place" num="1197" type="warning"></filter>' \
-	'    <filter task="place" file="Place" num="1206" type="warning"></filter>' \
+	'    <filter task="map"    file="Map"             num="284"  type="warning"></filter>' \
+	'    <filter task="xst"    file="Xst"             num="647"  type="warning"></filter>' \
+	'    <filter task="xst"    file="Xst"             num="1710" type="warning"></filter>' \
+	'    <filter task="xst"    file="Xst"             num="1895" type="warning"></filter>' \
+	'    <filter task="xst"    file="Xst"             num="2261" type="info"   ></filter>' \
+	'    <filter task="xst"    file="Xst"             num="2677" type="warning"></filter>' \
+	'    <filter task="xst"    file="Xst"             num="2708" type="warning"></filter>' \
+	'    <filter task="place"  file="Place"           num="1109" type="warning"></filter>' \
+	'    <filter task="place"  file="Place"           num="1137" type="warning"></filter>' \
+	'    <filter task="place"  file="Place"           num="1197" type="warning"></filter>' \
+	'    <filter task="place"  file="Place"           num="1206" type="warning"></filter>' \
+	'    <filter task="bitgen" file="Bitgen"          num="341"  type="info"   ></filter>' \
+	'    <filter task="bitgen" file="PhysDesignRules" num="2410" type="warning"></filter>' \
 	'</filters>'
 
 #
@@ -1900,7 +1903,7 @@ rcsclean_rtl: clean_rtl
 	-rcsclean ks10/dz11/*
 	-rcsclean ks10/dz11/uart/*
 	-rcsclean ks10/lp20/*
-	-rcsclean ks10/lp26/*	
+	-rcsclean ks10/lp26/*
 	-rcsclean ks10/mem/*
 	-rcsclean ks10/rh11/*
 	-rcsclean ks10/rh11/sd/*
