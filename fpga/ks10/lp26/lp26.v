@@ -94,6 +94,8 @@
 `default_nettype none
 `timescale 1ns/1ps
 
+`define IGNORE_CTRL_CHARS
+
 module LP26 (
       input  wire         clk,          // Clock
       input  wire         rst,          // Reset
@@ -268,33 +270,38 @@ module LP26 (
    // Printer state
    //
 
-   localparam [3:0] stateIDLE      =  0,        // Wait for something to do
+   localparam [4:0] stateIDLE      =  0,        // Wait for something to do
                     statePRINT     =  1,        // Print line buffer
                     stateVFUEVEN   =  2,        // Read even byte of VFU program
                     stateVFUODD    =  3,        // Read odd  byte of VFU program
                     stateVFUCHAN   =  4,        // Count channel linefeeds
                     stateVFUVT     =  5,        // Count vertical tab linefeeds
-                    stateVFUSLEW   =  6,        // Send zero or more LFs
+                    stateVFUSLEW   =  6,        // Count slew linefeeds.
                     stateVFUPRINT  =  7,        // VFU print buffer
-                    stateVFUOFFLN  =  8,        // Set VFU offline
-                    stateVFUNOTRDY =  9,        // Set VFU not ready
-                    stateVFURDY    = 10,        // Set VFU ready
-                    stateLPROFFLN  = 11,        // Set printer offline
-                    stateWAIT      = 12,        // Wait for UART to finish
-                    stateDONE      = 13,        // Done
-                    stateDLY1      = 14,
-                    stateDLY2      = 15;
-
+                    stateVFUMOVE   =  8,        // Send zero or more LFs
+                    stateVFUOFFLN  =  9,        // Set VFU offline
+                    stateVFUNOTRDY = 10,        // Set VFU not ready
+                    stateVFURDY    = 11,        // Set VFU ready
+                    stateLPROFFLN  = 12,        // Set printer offline
+                    stateWAIT      = 13,        // Wait for UART to finish
+                    stateDONE      = 14,        // Done
+                    stateDLY1      = 15,
+                    stateDLY2      = 16,
+                    stateDLY3      = 17,
+                    stateDLY4      = 18,
+                    stateDLY5      = 19,
+                    stateDLY6      = 20;
 
    //
    // Printer state machine
    //
 
-   reg [3:0] state;                             // State variable
+   reg [4:0] state;                             // State variable
    reg [7:0] lpCCTR;                            // Character counter
    reg [6:1] lpTEMP;                            // Temporary byte storage
    reg [7:0] lpLCTR;                            // Line counter
    reg [7:0] lpCRCNT;                           // Number or overprints
+   reg [7:0] lpLFCNT;                           // Nuber of line feeds for vertical motion
    reg [7:0] lpCOUNT;                           // Generic counter for misc things.
    reg [7:0] lpTXDAT;                           // UART transmit data
    reg       lpTXSTB;                           // UART transmit strobe
@@ -306,19 +313,22 @@ module LP26 (
      begin
         if (rst)
           begin
-             lpCCTR  <= 0;
-             lpLCTR  <= 0;
-             lpTEMP  <= 0;
-             lpTXSTB <= 0;
-             lpTXDAT <= 0;
-             lpCRCNT <= 0;
-             lpCOUNT <= 0;
+             lpCCTR    <= 0;
+             lpLCTR    <= 0;
+             lpTEMP    <= 0;
+             lpTXSTB   <= 0;
+             lpTXDAT   <= 0;
+             lpCRCNT   <= 0;
+             lpLFCNT   <= 0;
+             lpCOUNT   <= 0;
              lpDVFULEN <= 0;
-             state <= stateIDLE;
+             state     <= stateIDLE;
 
 `ifndef SYNTHESIS
              for (j = 0; j < 256; j = j + 1)
-               lpLINBUF[j] <= 0;
+               begin
+                  lpLINBUF[j] <= 0;
+               end
 `endif
 
           end
@@ -355,7 +365,7 @@ module LP26 (
                        charSTART3:
                          begin
                             lpDVFULEN <= 0;
-                            state <= stateVFUEVEN;
+                            state     <= stateVFUEVEN;
                           end
 
                         //
@@ -366,18 +376,16 @@ module LP26 (
                          state <= stateVFUNOTRDY;
 
                        //
-                       // Do DVFU things, print the buffer, and end with a CR
+                       // Print the buffer, print a carriage return, do VFU
+                       // motion, and then reset the buffer pointer
                        //
 
                        default:
                          if (lpVFURDY)
                            begin
-                              lpCOUNT <= 0;
+                              lpLFCNT <= 0;
                               if (`VFU_SLEW(lpDATA))
-                                begin
-                                   lpCOUNT <= `VFU_CHAN(lpDATA);
-                                   state <= stateVFUSLEW;
-                                end
+                                state <= stateVFUSLEW;
                               else if (`VFU_CHAN(lpDATA) < 12)
                                 state <= stateVFUCHAN;
                               else
@@ -435,10 +443,14 @@ module LP26 (
                        asciiRS,
                        asciiUS,
                        asciiDEL:
+`ifdef IGNORE_CTRL_CHARS
+                         state <= stateWAIT;
+`else
                          begin
                             lpLINBUF[lpCCTR] <= asciiSP;
                             lpCCTR <= lpCCTR + 1'b1;
                          end
+`endif
 
                        //
                        // A carriage return prints the buffered characters,
@@ -502,7 +514,7 @@ module LP26 (
 
                        asciiVT:
                          begin
-                            lpCOUNT <= 0;
+                            lpLFCNT <= 0;
                             state   <= stateVFUVT;
                          end
 
@@ -549,7 +561,6 @@ module LP26 (
                stateDLY1:
                  state <= statePRINT;
 
-
                //
                // stateVFUEVEN
                //  Read the first byte of VFU data.  Save it for later.  This
@@ -573,7 +584,7 @@ module LP26 (
                        (lpPI & (lpDATA == charSTART3)))
                      begin
                         lpDVFULEN <= 0;
-                        state <= stateVFUEVEN;
+                        state     <= stateVFUEVEN;
                      end
                    else if (lpPI & (lpDATA == charSTOP))
                      if (lpDVFULEN == 0)
@@ -629,7 +640,10 @@ module LP26 (
                //
                // stateVFUCHAN
                //  Count the number of linefeeds to move to the next channel
-               //  marker
+               //  marker.
+               //
+               //  This state doesn't actually print any linefeeds even though
+               //  we update the line counter (lpLCTR).
                //
                //  We count the linefeeds and watch for overrun errors
                //  like this because the diagnostic software doesn't wait
@@ -640,16 +654,26 @@ module LP26 (
                stateVFUCHAN:
                  begin
                     lpLCTR  <= lpLCTR  + 1'b1;
-                    lpCOUNT <= lpCOUNT + 1'b1;
+                    lpLFCNT <= lpLFCNT + 1'b1;
                     if (lpVFUMATCH(lpVFUDAT[!lpOVFU][lpLCTR], lpDATA))
-                      state <= stateVFUSLEW;
+                      begin
+                         lpCOUNT <= 0;
+                         state   <= stateVFUPRINT;
+                      end
                     else if (lpLCTR > lpVFULEN)
                       state <= stateVFUOFFLN;
+                    else
+                      state <= stateDLY2;
                  end
+
+               stateDLY2:
+                 state <= stateVFUCHAN;
 
                //
                // stateVFUVT
                //  Handle vertical tabs.  Vertical tabs are VFU channel 2.
+               //
+               //  This state doesn't actually print any linefeeds.
                //
                //  We count the linefeeds and watch for overrun errors
                //  like this because the software doesn't wait long enough to
@@ -659,30 +683,44 @@ module LP26 (
                stateVFUVT:
                  begin
                     lpLCTR  <= lpLCTR  + 1'b1;
-                    lpCOUNT <= lpCOUNT + 1'b1;
+                    lpLFCNT <= lpLFCNT + 1'b1;
                     if (lpVFUMATCH(lpVFUDAT[!lpOVFU][lpLCTR], 8'd1))
-                      state <= stateVFUSLEW;
+                      begin
+                         lpCOUNT <= 0;
+                         state <= stateVFUPRINT;
+                      end
                     else if (lpLCTR > lpVFULEN)
                       state <= stateVFUOFFLN;
+                    else
+                      state <= stateDLY3;
                  end
+
+               stateDLY3:
+                 state <= stateVFUVT;
 
                //
                // stateVFUSLEW
-               //  Print the buffer, send zero or more LFs for vertical motion,
-               //  then send a CR.
+               //  We already know how many linefeeds but we still need to
+               //  check for overrun errors.
                //
 
                stateVFUSLEW:
-                 if (lpTXEMPTY & lpXON)
-                   if (lpCOUNT == 0)
-                     state <= stateVFUPRINT;
-                   else
-                     begin
-                        lpCRCNT <= 0;
-                        lpTXSTB <= 1;
-                        lpTXDAT <= asciiLF;
-                        lpCOUNT <= lpCOUNT - 1'b1;
-                     end
+                 begin
+                    lpLCTR  <= lpLCTR  + 1'b1;
+                    lpLFCNT <= lpLFCNT + 1'b1;
+                    if (lpLFCNT == `VFU_CHAN(lpDATA))
+                      begin
+                         lpCOUNT <= 0;
+                         state <= stateVFUPRINT;
+                      end
+                    else if (lpLCTR > lpVFULEN)
+                      state <= stateVFUOFFLN;
+                    else
+                      state <= stateDLY4;
+                 end
+
+               stateDLY4:
+                 state <= stateVFUSLEW;
 
                //
                // stateVFUPRINT
@@ -698,7 +736,7 @@ module LP26 (
                         lpCOUNT <= 0;
                         lpTXSTB <= 1;
                         lpTXDAT <= asciiCR;
-                        state   <= stateWAIT;
+                        state   <= stateVFUMOVE;
                      end
                    else
                      begin
@@ -706,11 +744,32 @@ module LP26 (
                         lpTXSTB    <= 1;
                         lpTXDAT    <= lpLINBUF[lpCOUNT];
                         lpCOUNT    <= lpCOUNT + 1'b1;
-                        state      <= stateDLY2;
+                        state      <= stateDLY5;
                      end
 
-               stateDLY2:
+               stateDLY5:
                  state <= stateVFUPRINT;
+
+               //
+               // stateVFUMOVE
+               //  Move the printer vertically.
+               //
+
+               stateVFUMOVE:
+                 if (lpTXEMPTY & lpXON)
+                   if (lpLFCNT == 0)
+                     state <= stateWAIT;
+                   else
+                     begin
+                        lpCRCNT <= 0;
+                        lpTXSTB <= 1;
+                        lpTXDAT <= asciiLF;
+                        lpLFCNT <= lpLFCNT - 1'b1;
+                        state   <= stateDLY6;
+                     end
+
+               stateDLY6:
+                 state <= stateVFUMOVE;
 
                //
                // stateVFUOFFLN
