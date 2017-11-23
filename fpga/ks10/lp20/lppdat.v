@@ -50,6 +50,8 @@
 `include "lpcsra.vh"
 `include "lpramd.vh"
 
+`define EXPAND_TABS
+
 module LPPDAT (
       input  wire         clk,          // Clock
       input  wire         rst,          // Reset
@@ -206,15 +208,12 @@ module LPPDAT (
 
    localparam [3:0] stateIDLE   =  0,   // Wait for something to do
                     statePARSE  =  1,   // Examine the characters
-                    stateTAB    =  2,   // Expand tabs to spaces
-                    stateWRAPCH =  3,   // Send the wrapped char
-                    stateDVFU   =  4,   // Send a DVFU char
-                    stateWAIT   =  5,   // Wait for UART to finish
-                    stateDELAY1 =  6,   // Delay
-                    stateDELAY2 =  7,   // Delay
-                    stateDELAY3 =  8,   // Delay
-                    stateDELAY4 =  9,   // Delay
-                    stateDELAY5 = 10;   // Delay
+                    stateWRAPLF =  2,   // Send linefeed on line wrap
+                    stateTAB    =  3,   // Expand tabs to spaces
+                    stateWRAPCH =  4,   // Send the wrapped char
+                    stateDVFU   =  5,   // Send a DVFU char
+                    stateWAIT   =  6,   // Wait for UART to finish
+                    stateDELAY  =  7;   // Delay
 
    reg [3:0] state;
 
@@ -370,17 +369,22 @@ module LPPDAT (
                    //
 
                    asciiTAB:
-`define USETABS
-`ifdef USETABS
                      if (lpDEMAND)
+`ifdef EXPAND_TABS
                        begin
-                          lpPI     <= 0;
-                          lpDATA   <= lpPDAT;
-                          lpSTROBE <= 1;
-                          state    <= stateWAIT;
+                          lpPI      <= 0;
+                          lpDATA    <= asciiSP;
+                          lpSTROBE  <= 1;
+                          lpINCCCTR <= 1;
+                          state     <= stateTAB;
                        end
 `else
-                     state <= stateTAB;
+                       begin
+                          lpPI      <= 0;
+                          lpDATA    <= lpPDAT;
+                          lpSTROBE  <= 1;
+                          state     <= stateWAIT;
+                       end
 `endif
 
                    //
@@ -395,10 +399,10 @@ module LPPDAT (
                        if (lpCCTR == 132)
                          begin
                             lpPI      <= 0;
-                            lpDATA    <= asciiLF;
+                            lpDATA    <= asciiCR;
                             lpSTROBE  <= 1;
                             lpCLRCCTR <= 1;
-                            state     <= stateDELAY2;
+                            state     <= stateWRAPLF;
                          end
                        else
                          begin
@@ -412,38 +416,18 @@ module LPPDAT (
                  endcase
 
                //
-               // stateTAB
-               //  Expand horizonal tabs to spaces
+               // stateWRAPLF
                //
 
-               stateTAB:
+               stateWRAPLF:
                  if (lpDEMAND)
-                   if ((lpCCTR[2:0] == 0) & (lpCCTR[7:3] != 0))
-                     state <= stateWAIT;
-                   else
-                     begin
-                        lpPI      <= 0;
-                        lpDATA    <= asciiSP;
-                        lpSTROBE  <= 1;
-                        lpINCCCTR <= 1;
-                        state     <= stateDELAY1;
-                     end
-
-               //
-               // stateDELAY2
-               //  Wait for CCTR to update when expanding tabs
-               //
-
-               stateDELAY1:
-                 state <= stateTAB;
-
-               //
-               // stateDELAY2
-               //  Wait for printer to update status
-               //
-
-               stateDELAY2:
-                 state <= stateWRAPCH;
+                   begin
+                      lpPI      <= 0;
+                      lpDATA    <= asciiLF;
+                      lpSTROBE  <= 1;
+                      lpCLRCCTR <= 1;
+                      state     <= stateWRAPCH;
+                   end
 
                //
                // stateWRAPCH
@@ -459,6 +443,23 @@ module LPPDAT (
                       lpINCCCTR <= 1;
                       state     <= stateWAIT;
                    end
+
+               //
+               // stateTAB
+               //  Expand horizonal tabs to spaces
+               //
+
+               stateTAB:
+                 if (lpDEMAND)
+                   if (lpCCTR[2:0] == 0)
+                     state <= stateWAIT;
+                   else
+                     begin
+                        lpPI      <= 0;
+                        lpDATA    <= asciiSP;
+                        lpSTROBE  <= 1;
+                        lpINCCCTR <= 1;
+                     end
 
                //
                // stateDVFU:
@@ -486,30 +487,14 @@ module LPPDAT (
 
                stateWAIT:
                  if (lpDEMAND)
-                   state <= stateDELAY3;
+                   state <= stateDELAY;
 
                //
-               // stateDELAY3
+               // stateDELAY
                //  Wait for printer to update status
                //
 
-               stateDELAY3:
-                 state <= stateDELAY4;
-
-               //
-               // stateDELAY4
-               //  Wait for printer to update status
-               //
-
-               stateDELAY4:
-                 state <= stateDELAY5;
-
-               //
-               // stateDELAY5
-               //  Wait for printer to update status
-               //
-
-               stateDELAY5:
+               stateDELAY:
                  state <= stateIDLE;
 
              endcase
