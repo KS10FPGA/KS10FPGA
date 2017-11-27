@@ -1131,7 +1131,8 @@ WAVE_LP20 :=\
 	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {lpOVFULEN}            {/testbench/uKS10/uKS10/uLP26/lpOVFULEN}" \
 	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {lpVFULEN}             {/testbench/uKS10/uKS10/uLP26/lpVFULEN}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {lpTEMP}               {/testbench/uKS10/uKS10/uLP26/lpTEMP}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {lpCOUNT}              {/testbench/uKS10/uKS10/uLP26/lpCOUNT}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {lpCOUNT}              {/testbench/uKS10/uKS10/uLP26/lpCOUNT}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {lpLFCNT}              {/testbench/uKS10/uKS10/uLP26/lpLFCNT}" \
 	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {lpLCTR}               {/testbench/uKS10/uKS10/uLP26/lpLCTR}" \
 	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {lpCCTR}               {/testbench/uKS10/uKS10/uLP26/lpCCTR}" \
 	"add wave -noupdate -radix ascii    -radixshowbase 0 -label {lpLINBUF}             {/testbench/uKS10/uKS10/uLP26/lpLINBUF}" \

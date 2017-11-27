@@ -11,57 +11,8 @@
 // File
 //   lp26.v
 //
-// Notes:
-//   I found the operation of the print buffering to be unexpected but well
-//   documented in the printer manual.  The following examples are provided
-//   in the manual.
-//
-//   Example 1
-//
-//       Hex Code   Action
-//       --------  -------------------------------------------------------------
-//       0x41      "A" is stored in the print buffer.
-//       0x0d      Carriage return (CR) causes "A" to be printed and resets the
-//                 printer buffer.
-//       0x0a      Line feed (LF) advances the paper one line.
-//       0x42      "B" is stored in the print buffer.
-//       0x43      "C" is stored in the print buffer.
-//       0x0a      Line feed (LF) advances the paper one line.
-//       0x44      "D" is stored in the print buffer.
-//       0x0d      Carriage return (CR) causes "BCD" to be printed and resets
-//                 the printer buffer.
-//
-//       The resulting output is:
-//
-//       Line 1:  A
-//       Line 2:  (blank)
-//       Line 3:  BCD
-//
-//   Example 2
-//
-//       Assume vertical tab stops are set on line 6 and line 12.
-//
-//       Hex Code   Action
-//       --------  -------------------------------------------------------------
-//       0x41      "A" is stored in the print buffer.
-//       0x0d      Carriage return (CR) causes "A" to be printed and resets the
-//                 printer buffer.
-//       0x0b      Vertical Tab (VT) advances the paper to line 6.
-//       0x42      "B" is stored in the print buffer.
-//       0x43      "C" is stored in the print buffer.
-//       0x0b      Vertical Tab (VT) advances the paper to line 12.
-//       0x44      "D" is stored in the print buffer.
-//       0x0d      Carriage return (CR) causes "BCD" to be printed and resets
-//                 the printer buffer.
-//
-//   The resulting output is:
-//
-//   Line  1:  A
-//   Line  6:  (blank)
-//   Line 12:  BCD
-//
-// See also
-//   Most of this information in in "LP26 Line Printer Maintenance Manual",
+// Note:
+//   Most of this information is from "LP26 Line Printer Maintenance Manual",
 //   Dataproducts publication number 255182C
 //
 // Author
@@ -282,15 +233,14 @@ module LP26 (
                     stateVFUOFFLN  =  9,        // Set VFU offline
                     stateVFUNOTRDY = 10,        // Set VFU not ready
                     stateVFURDY    = 11,        // Set VFU ready
-                    stateLPROFFLN  = 12,        // Set printer offline
-                    stateWAIT      = 13,        // Wait for UART to finish
-                    stateDONE      = 14,        // Done
-                    stateDLY1      = 15,
-                    stateDLY2      = 16,
-                    stateDLY3      = 17,
-                    stateDLY4      = 18,
-                    stateDLY5      = 19,
-                    stateDLY6      = 20;
+                    stateWAIT      = 12,        // Wait for UART to finish
+                    stateDONE      = 13,        // Done
+                    stateDLY1      = 14,
+                    stateDLY2      = 15,
+                    stateDLY3      = 16,
+                    stateDLY4      = 17,
+                    stateDLY5      = 18,
+                    stateDLY6      = 19;
 
    //
    // Printer state machine
@@ -300,7 +250,6 @@ module LP26 (
    reg [7:0] lpCCTR;                            // Character counter
    reg [6:1] lpTEMP;                            // Temporary byte storage
    reg [7:0] lpLCTR;                            // Line counter
-   reg [7:0] lpCRCNT;                           // Number or overprints
    reg [7:0] lpLFCNT;                           // Nuber of line feeds for vertical motion
    reg [7:0] lpCOUNT;                           // Generic counter for misc things.
    reg [7:0] lpTXDAT;                           // UART transmit data
@@ -318,7 +267,6 @@ module LP26 (
              lpTEMP    <= 0;
              lpTXSTB   <= 0;
              lpTXDAT   <= 0;
-             lpCRCNT   <= 0;
              lpLFCNT   <= 0;
              lpCOUNT   <= 0;
              lpDVFULEN <= 0;
@@ -381,16 +329,20 @@ module LP26 (
                        //
 
                        default:
-                         if (lpVFURDY)
-                           begin
-                              lpLFCNT <= 0;
-                              if (`VFU_SLEW(lpDATA))
-                                state <= stateVFUSLEW;
-                              else if (`VFU_CHAN(lpDATA) < 12)
-                                state <= stateVFUCHAN;
-                              else
-                                state <= stateVFUOFFLN;
-                           end
+                         begin
+                            lpLFCNT <= 0;
+                            if (`VFU_SLEW(lpDATA))
+                              state <= stateVFUSLEW;
+                            else if (`VFU_CHAN(lpDATA) < 12)
+                              begin
+                                 lpCOUNT <= 0;
+                                 lpLCTR  <= (lpLCTR == lpVFULEN) ? 8'b0 : lpLCTR + 1'b1;
+                                 lpLFCNT <= lpLFCNT + 1'b1;
+                                 state   <= stateVFUCHAN;
+                              end
+                            else
+                              state <= stateVFUOFFLN;
+                         end
 
                      endcase
 
@@ -463,18 +415,11 @@ module LP26 (
                        // before it will declare a fault.  This is not tested
                        // by the diagnostics.
                        //
-                       // For now, we disable support for the LP07. Note that
-                       // the LP07 code is broken and is unlikely to be fixed.
+                       // For now, we do not support LP07-like operation.
                        //
 
                        asciiCR:
-`ifdef LPR_LP07
-                         if (lpCRCNT == 8'b1111_1111)
-                           state <= stateLPROFFLN;
-                         else
-`endif
                            begin
-                              lpCRCNT <= {lpCRCNT[6:0], 1'b0};
                               lpCOUNT <= 0;
                               state   <= statePRINT;
                            end
@@ -487,9 +432,8 @@ module LP26 (
 
                        asciiLF:
                          begin
-                            lpCRCNT <= 0;
                             lpCOUNT <= 0;
-                            lpLCTR  <= lpLCTR + 1'b1;
+                            lpLCTR  <= (lpLCTR == lpVFULEN) ? 8'b0 : lpLCTR + 1'b1;
                             state   <= statePRINT;
                          end
 
@@ -501,7 +445,6 @@ module LP26 (
 
                        asciiFF:
                          begin
-                            lpCRCNT <= 0;
                             lpCOUNT <= 0;
                             lpLCTR  <= 0;
                             state   <= statePRINT;
@@ -550,11 +493,10 @@ module LP26 (
                         end
                       else
                         begin
-                           lpCRCNT[0] <= 1;
-                           lpTXSTB    <= 1;
-                           lpTXDAT    <= lpLINBUF[lpCOUNT];
-                           lpCOUNT    <= lpCOUNT + 1'b1;
-                           state      <= stateDLY1;
+                           lpTXSTB <= 1;
+                           lpTXDAT <= lpLINBUF[lpCOUNT];
+                           lpCOUNT <= lpCOUNT + 1'b1;
+                           state   <= stateDLY1;
                         end
                  end
 
@@ -616,6 +558,8 @@ module LP26 (
                //  this case, the printer is taken offline and the DAVFU
                //  reports that it is not ready.
                //
+               //  The VFU length limit of 143 is tested by DSLPA TEST.112
+               //
 
                stateVFUODD:
                  if (lpSTROBE)
@@ -624,7 +568,7 @@ module LP26 (
                        (lpPI & (lpDATA == charSTART3)))
                      begin
                         lpDVFULEN <= 0;
-                        state <= stateVFUEVEN;
+                        state     <= stateVFUEVEN;
                      end
                    else if (lpPI & (lpDATA == charSTOP))
                      state <= stateVFUOFFLN;
@@ -652,19 +596,21 @@ module LP26 (
                //
 
                stateVFUCHAN:
-                 begin
-                    lpLCTR  <= lpLCTR  + 1'b1;
-                    lpLFCNT <= lpLFCNT + 1'b1;
-                    if (lpVFUMATCH(lpVFUDAT[!lpOVFU][lpLCTR], lpDATA))
-                      begin
-                         lpCOUNT <= 0;
-                         state   <= stateVFUPRINT;
-                      end
-                    else if (lpLCTR > lpVFULEN)
-                      state <= stateVFUOFFLN;
-                    else
-                      state <= stateDLY2;
-                 end
+                 if (lpCOUNT == lpVFULEN)
+                   state <= stateVFUOFFLN;
+                 else
+                   if (lpVFUMATCH(lpVFUDAT[!lpOVFU][lpLCTR], lpDATA))
+                     begin
+                        lpCOUNT <= 0;
+                        state   <= stateVFUPRINT;
+                     end
+                   else
+                     begin
+                        lpLCTR  <= (lpLCTR == lpVFULEN) ? 8'b0 : lpLCTR + 1'b1;
+                        lpLFCNT <= lpLFCNT + 1'b1;
+                        lpCOUNT <= lpCOUNT + 1'b1;
+                        state   <= stateDLY2;
+                     end
 
                stateDLY2:
                  state <= stateVFUCHAN;
@@ -681,19 +627,21 @@ module LP26 (
                //
 
                stateVFUVT:
-                 begin
-                    lpLCTR  <= lpLCTR  + 1'b1;
-                    lpLFCNT <= lpLFCNT + 1'b1;
-                    if (lpVFUMATCH(lpVFUDAT[!lpOVFU][lpLCTR], 8'd1))
-                      begin
-                         lpCOUNT <= 0;
-                         state <= stateVFUPRINT;
-                      end
-                    else if (lpLCTR > lpVFULEN)
-                      state <= stateVFUOFFLN;
-                    else
-                      state <= stateDLY3;
-                 end
+                 if (lpCOUNT == lpVFULEN)
+                   state <= stateVFUOFFLN;
+                 else
+                   if (lpVFUMATCH(lpVFUDAT[!lpOVFU][lpLCTR], 8'd1))
+                     begin
+                        lpCOUNT <= 0;
+                        state   <= stateVFUPRINT;
+                     end
+                   else
+                     begin
+                        lpLCTR  <= (lpLCTR == lpVFULEN) ? 8'b0 : lpLCTR + 1'b1;
+                        lpLFCNT <= lpLFCNT + 1'b1;
+                        lpCOUNT <= lpCOUNT + 1'b1;
+                        state   <= stateDLY3;
+                     end
 
                stateDLY3:
                  state <= stateVFUVT;
@@ -706,15 +654,13 @@ module LP26 (
 
                stateVFUSLEW:
                  begin
-                    lpLCTR  <= lpLCTR  + 1'b1;
+                    lpLCTR  <= (lpLCTR == lpVFULEN) ? 8'b0 : lpLCTR + 1'b1;
                     lpLFCNT <= lpLFCNT + 1'b1;
                     if (lpLFCNT == `VFU_CHAN(lpDATA))
                       begin
                          lpCOUNT <= 0;
-                         state <= stateVFUPRINT;
+                         state   <= stateVFUPRINT;
                       end
-                    else if (lpLCTR > lpVFULEN)
-                      state <= stateVFUOFFLN;
                     else
                       state <= stateDLY4;
                  end
@@ -740,11 +686,10 @@ module LP26 (
                      end
                    else
                      begin
-                        lpCRCNT[0] <= 1;
-                        lpTXSTB    <= 1;
-                        lpTXDAT    <= lpLINBUF[lpCOUNT];
-                        lpCOUNT    <= lpCOUNT + 1'b1;
-                        state      <= stateDLY5;
+                        lpTXSTB <= 1;
+                        lpTXDAT <= lpLINBUF[lpCOUNT];
+                        lpCOUNT <= lpCOUNT + 1'b1;
+                        state   <= stateDLY5;
                      end
 
                stateDLY5:
@@ -761,7 +706,6 @@ module LP26 (
                      state <= stateWAIT;
                    else
                      begin
-                        lpCRCNT <= 0;
                         lpTXSTB <= 1;
                         lpTXDAT <= asciiLF;
                         lpLFCNT <= lpLFCNT - 1'b1;
@@ -777,7 +721,12 @@ module LP26 (
                //
 
                stateVFUOFFLN:
-                 state <= stateVFUNOTRDY;
+                 begin
+                    lpCCTR  <= 0;
+                    lpCOUNT <= 0;
+                    lpLFCNT <= 0;
+                    state   <= stateVFUNOTRDY;
+                 end
 
                //
                // stateVFUNOTRDY
@@ -793,17 +742,10 @@ module LP26 (
 
                stateVFURDY:
                  begin
-                    lpLCTR <= 0;
-                    state  <= stateWAIT;
+                    lpLCTR    <= 0;
+                    lpDVFULEN <= lpDVFULEN - 1'b1;
+                    state     <= stateWAIT;
                  end
-
-               //
-               // stateLPROFFLN
-               //  Take printer off-line
-               //
-
-               stateLPROFFLN:
-                 state <= stateWAIT;
 
                //
                //  Wait for UART to finish
@@ -867,7 +809,7 @@ module LP26 (
         if (rst)
           lpONLINE <= 0;
         else
-          if (lpSETOFFLN | (state == stateVFUOFFLN) | (state == stateLPROFFLN))
+          if (lpSETOFFLN | (state == stateVFUOFFLN))
             lpONLINE <= 0;
           else if (lpSETONLN)
             lpONLINE <= 1;
@@ -940,7 +882,7 @@ module LP26 (
    UART_TX TX (
        .clk    (clk),
        .rst    (rst),
-       .clr    (lpINIT),
+       .clr    (1'b0),
        .clken  (clken),
        .length (lpCONFIG[11:12]),
        .parity (lpCONFIG[13:14]),
@@ -959,7 +901,7 @@ module LP26 (
    UART_RX RX (
        .clk    (clk),
        .rst    (rst),
-       .clr    (lpINIT),
+       .clr    (1'b0),
        .clken  (clken),
        .length (lpCONFIG[11:12]),
        .parity (lpCONFIG[13:14]),

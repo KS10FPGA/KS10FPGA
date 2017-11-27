@@ -807,36 +807,36 @@ module testbench;
                   // SMMON (DECSYSTEM 2020 DIAGNOSTIC MONITOR) Responses
                   //
 
-                  expect("UBA # - ",                                  "1\015",      state[0]);
-                  expect("DISK:<DIRECTORY> OR DISK:[P,PN] - ",        "PS:\015",    state[1]);
-                  expect("SMMON CMD - ",                              "SMCPU\015",  state[2]);
-                  expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",   "Y\015",      state[3]);
-                  expect("LH SWITCHES <# OR ?> - ",                   "0\015",      state[4]);
-                  expect("RH SWITCHES <# OR ?> - ",                   "40\015",     state[5]);
+                  expect("UBA # - ",                                                    "1\015",       state[0]);
+                  expect("DISK:<DIRECTORY> OR DISK:[P,PN] - ",                          "PS:\015",     state[1]);
+                  expect("SMMON CMD - ",                                                "SMCPU\015",   state[2]);
+                  expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",                     "Y\015",       state[3]);
+                  expect("LH SWITCHES <# OR ?> - ",                                     "0\015",       state[4]);
+                  expect("RH SWITCHES <# OR ?> - ",                                     "40\015",      state[5]);
 
                   //
                   // DSRPA (RP06-RH11 BASIC DRIVE DIAGNOSTIC) Responses
                   //
 
-                  expect("LIST PGM SWITCH OPTIONS ?  Y OR N <CR> - ", "N\015",      state[6]);
-                  expect("SELECT DRIVES (0-7 OR \"A\") - ",           "0\015",      state[7]);
-                  expect("HEADS LOADED CORRECTLY ?  Y OR N <CR> - ",  "Y\015",      state[8]);
-                  expect("PUT DRIVE ON LINE. HIT <CR> WHEN READY",    "\015",       state[9]);
+                  expect("LIST PGM SWITCH OPTIONS ?  Y OR N <CR> - ",                   "N\015",       state[6]);
+                  expect("SELECT DRIVES (0-7 OR \"A\") - ",                             "0\015",       state[7]);
+                  expect("HEADS LOADED CORRECTLY ?  Y OR N <CR> - ",                    "Y\015",       state[8]);
+                  expect("PUT DRIVE ON LINE. HIT <CR> WHEN READY",                      "\015",        state[9]);
 
                   //
                   // DSLPA (DECSYSTEM 2020 LINE PRINTER DIAGNOSTIC) Responses
                   //
 
                   expect("IS THIS AN LP05 OR LP14 LINE PRINTER ? Y OR N <CR> - ",       "Y\015",       state[10]);
-                  expect("IS THIS AN LP07 LINE PRINTER ? Y OR N <CR> - ",               "Y\015",       state[11]);
-                  expect("IS THIS AN LP05, LP14 OR LP26 LINE PRINTER ? Y OR N <CR> - ", "Y\015",       state[12]);
+                  expect("IS THIS AN LP05, LP14 OR LP26 LINE PRINTER ? Y OR N <CR> - ", "Y\015",       state[11]);
+                  expect("IS THIS AN LP07 LINE PRINTER ? Y OR N <CR> - ",               "Y\015",       state[12]);
                   expect("IS THIS AN LP20 CONTROLLER WITH NO PRINTER ? Y OR N <CR> - ", "Y\015",       state[13]);
                   expect("TYPE ALTMODE WHEN READY - ",                                  "\033",        state[14]);
                   expect("DOES THIS LPT HAVE A DAVFU ? Y OR N <CR> - ",                 "Y\015",       state[15]);
-                  expect("CHANNEL-PASS NUMBER: (1-16, CR=ALL CHANNELS) ",               "1\015",       state[16]);
-                  expect("CHANNEL NUMBER: (1-12, CR=ALL CHANNELS) ",                    "1\015",       state[17]);
-                  expect("CHANNEL NUMBER: (2-12, CR=ALL CHANNELS) ",                    "2\015",       state[18]);
-                  expect("*",                                                           "111\015",     state[19]);
+                  expect("CHANNEL-PASS NUMBER: (1-16, CR=ALL CHANNELS) ",               "\015",        state[16]);
+                  expect("CHANNEL NUMBER: (1-12, CR=ALL CHANNELS) ",                    "\015",        state[17]);
+                  expect("CHANNEL NUMBER: (2-12, CR=ALL CHANNELS) ",                    "\015",        state[18]);
+                  expect("*",                                                           "*\015",       state[19]);
 
                   charout();
 
