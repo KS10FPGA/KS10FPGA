@@ -118,6 +118,7 @@ class lp20_t {
         static void initialize(void);
         static void testRegs(void);
         static void dumpRegs(void);
+        static void printFile(const char *filename);
 };
 
 #endif

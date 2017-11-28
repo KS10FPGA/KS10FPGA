@@ -41,6 +41,7 @@
 #include "string.h"
 #include "uba.hpp"
 #include "lp20.hpp"
+#include "fatfslib/ff.h"
 #include "SafeRTOS/SafeRTOS_API.h"
 
 //!
@@ -143,45 +144,26 @@ void lp20_t::initialize(void) {
 //!    16, 17, 34, and 35 are not used.
 //!
 
-void packBytes(ks10_t::addr_t addr, const char *s) {
+void packBytes(ks10_t::addr_t addr, const char *s, unsigned int size) {
 
-    ks10_t::data_t mask0 = ~(0xff << 18);
-    ks10_t::data_t mask1 = ~(0xff << 26);
-    ks10_t::data_t mask2 = ~(0xff <<  0);
-    ks10_t::data_t mask3 = ~(0xff <<  8);
-    ks10_t::data_t temp;
-
-    for (unsigned int i = 0; i < strlen(s) - 1; i++) {
-        switch (i % 4) {
-            case 0:
-                temp = ks10_t::readMem(addr);
-                ks10_t::writeMem(addr, (temp & mask0) | ((ks10_t::data_t)s[i] << 18));
-                break;
-            case 1:
-                temp = ks10_t::readMem(addr);
-                ks10_t::writeMem(addr, (temp & mask1) | ((ks10_t::data_t)s[i] << 26));
-                break;
-            case 2:
-                temp = ks10_t::readMem(addr);
-                ks10_t::writeMem(addr, (temp & mask2) | ((ks10_t::data_t)s[i] <<  0));
-                break;
-            case 3:
-                temp = ks10_t::readMem(addr);
-                ks10_t::writeMem(addr, (temp & mask3) | ((ks10_t::data_t)s[i] <<  8));
-                addr++;
-                break;
-        }
+    for (unsigned int i = 0; i < size; i += 4) {
+        ks10_t::data_t data = (((ks10_t::data_t)s[i+0] << 18) |
+                               ((ks10_t::data_t)s[i+1] << 26) |
+                               ((ks10_t::data_t)s[i+2] <<  0) |
+                               ((ks10_t::data_t)s[i+3] <<  8));
+        ks10_t::writeMem(addr++, data);
     }
 }
 
-//
-// Print a test message
-//
+//!
+//! \brief
+//!    Print a test message
+//!
 
 void lp20_t::testRegs(void) {
     static const char test_msg[] =
         "Hello! Test.\r\n"
-        "One.  Two.  Three.  Four.  Five.\r\n ";
+        "One.  Two.  Three.  Four.  Five.\r\n";
 
     const ks10_t::addr_t vaddr = 004000;        // Virtual address (in UBA address space)
     const ks10_t::addr_t paddr = 070000;        // Physical address (in KS10 memory)
@@ -209,7 +191,7 @@ void lp20_t::testRegs(void) {
     // Stuff message in KS10 memory for DMA
     //
 
-    packBytes(paddr, test_msg);
+    packBytes(paddr, test_msg, sizeof(test_msg));
 
     //
     // Set Unibus mapping
@@ -217,7 +199,10 @@ void lp20_t::testRegs(void) {
     //
 
     uba_t uba3(uba_t::uba3);
-    uba3.pag_write(1, /*uba_t::pag_ftm |*/ uba_t::pag_vld | uba_t::addr2page(paddr));
+    uba3.pag_write(1, uba_t::pag_vld | (0 + uba_t::addr2page(paddr)));
+    uba3.pag_write(2, uba_t::pag_vld | (1 + uba_t::addr2page(paddr)));
+    uba3.pag_write(3, uba_t::pag_vld | (2 + uba_t::addr2page(paddr)));
+    uba3.pag_write(4, uba_t::pag_vld | (3 + uba_t::addr2page(paddr)));
 
     //
     // Initialize
@@ -226,25 +211,65 @@ void lp20_t::testRegs(void) {
     ks10_t::writeIO(csra_addr, csra_init);
 
     //
-    // Set Byte Count
+    // DMA is limited to 4K words (BCTR is 12-bits)
     //
 
-    printf("--- sizeof(test_msg) = %d\n", sizeof(test_msg)-1);
-    ks10_t::writeIO(bctr_addr, -(sizeof(test_msg) - 0));
+    unsigned int bytes_sent = 0;
+    unsigned int msg_size = sizeof(test_msg);
 
-    //
-    // Set destination address
-    //
+    while (msg_size > 0) {
 
-   ks10_t::writeIO(bar_addr, vaddr);
+        const unsigned int bytes_per_dma = 4092;
+        unsigned int bytes_to_send = msg_size;
 
-   //
-   // Start DMA
-   //
+        //
+        // Set Byte Count
+        //
 
-   ks10_t::writeIO(csra_addr, csra_go);
+        if (bytes_to_send > bytes_per_dma) {
+            bytes_to_send = bytes_per_dma;
+        }
+
+        ks10_t::writeIO(bctr_addr, -bytes_to_send);
+        printf("DMA %d bytes\n", bytes_to_send);
+
+        //
+        // Set destination address
+        //
+
+        ks10_t::writeIO(bar_addr, vaddr + bytes_sent);
+
+        //
+        // Start DMA
+        //
+
+        ks10_t::writeIO(csra_addr, csra_go);
+
+        //
+        // Wait for DMA to complete
+        //
+
+        while ((ks10_t::readIO(csra_addr) & csra_go) != 0) {
+            ;
+        }
+
+        printf("DMA Completed\n");
+
+        //
+        // Adjust size
+        //
+
+        msg_size   -= bytes_to_send;
+        bytes_sent += bytes_to_send;
+
+    }
 
 }
+
+//!
+//! \brief
+//!    Dump LP20 registers
+//!
 
 void lp20_t::dumpRegs(void) {
 
@@ -275,4 +300,110 @@ void lp20_t::dumpRegs(void) {
            mask08 & (ks10_t::readIO(cbuf_addr) >> 0),
            mask08 & (ks10_t::readIO(pdat_addr) >> 8),
            mask08 & (ks10_t::readIO(pdat_addr) >> 0));
+}
+
+//!
+//! \brief
+//!    Read a file from the SD card an print it.
+//!
+
+void lp20_t::printFile(const char *filename) {
+
+    const ks10_t::addr_t vaddr = 004000;        // Virtual address (in UBA address space)
+    const ks10_t::addr_t paddr = 070000;        // Physical address (in KS10 memory)
+
+    FIL fp;
+    FRESULT status = f_open(&fp, filename, FA_READ);
+    if (status != FR_OK) {
+        printf("KS10: f_open() returned %d\n", status);
+        return;
+    }
+
+    //
+    // Is printer online?
+    //
+
+    ks10_t::data_t temp = ks10_t::readIO(csra_addr);
+    if ((temp & csra_onln) == 0) {
+        printf("KS10: Printer is offline.\n");
+        return;
+    }
+
+    //
+    // Clear tranlation RAM
+    //
+
+    for (int i = 0; i < 256; i++) {
+        ks10_t::writeIO(cbuf_addr, i);
+        ks10_t::writeIO(ramd_addr, 0);
+    }
+
+    //
+    // Create buffer
+    //
+
+    char buffer[128];
+
+    //
+    // Read file from SD Card into buffer
+    //
+
+    while (!f_eof(&fp)) {
+
+        unsigned int numbytes;
+        FRESULT status = f_read(&fp, buffer, sizeof(buffer), &numbytes);
+        if (status != FR_OK) {
+            printf("KS10: f_read() returned %d\n", status);
+        }
+
+        //
+        // Stuff message in KS10 memory for DMA
+        //
+
+        packBytes(paddr, buffer, numbytes);
+
+        //
+        // Set Unibus mapping
+        //  This will page the destination to 070000
+        //
+
+        uba_t uba3(uba_t::uba3);
+        uba3.pag_write(1, uba_t::pag_vld | (0 + uba_t::addr2page(paddr)));
+        uba3.pag_write(2, uba_t::pag_vld | (1 + uba_t::addr2page(paddr)));
+        uba3.pag_write(3, uba_t::pag_vld | (2 + uba_t::addr2page(paddr)));
+        uba3.pag_write(4, uba_t::pag_vld | (3 + uba_t::addr2page(paddr)));
+
+        //
+        // Reset LP20
+        //
+
+        ks10_t::writeIO(csra_addr, csra_init);
+
+        //
+        // Set byte counter
+        //
+
+        ks10_t::writeIO(bctr_addr, -numbytes);
+
+        //
+        // Set destination address
+        //
+
+        ks10_t::writeIO(bar_addr, vaddr);
+
+        //
+        // Start DMA
+        //
+
+        ks10_t::writeIO(csra_addr, csra_go);
+
+        //
+        // Wait for DMA to complete
+        //
+
+        while ((ks10_t::readIO(csra_addr) & csra_go) != 0) {
+            ;
+        }
+
+    }
 }

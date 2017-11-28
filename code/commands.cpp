@@ -260,7 +260,7 @@ void consoleOutput(void) {
     void printPCIR(uint64_t data);
 
     const char cntl_e = 0x05;   // ^E
-    const char cntl_l = 0x0c;	// ^L
+    const char cntl_l = 0x0c;   // ^L
     const char cntl_t = 0x14;   // ^T
 
     running = true;
@@ -2049,6 +2049,7 @@ static void cmdLP(int argc, char *argv[]) {
     const char *usage =
         "Usage: LP {OVFU | DAVFU}, {ONLINE | OFFLINE}} \n"
         "       LP BREAK\n"
+		"       LP PRINT filename\n"
         "       LP SAVE\n"
         "       LP STATUS\n";
 
@@ -2082,6 +2083,9 @@ static void cmdLP(int argc, char *argv[]) {
         return;
     } else if ((argc == 2) && (strnicmp(argv[1], "test", 4) == 0)) {
         lp20_t::testRegs();
+        return;
+    } else if ((argc == 3) && (strnicmp(argv[1], "print", 4) == 0)) {
+        lp20_t::printFile(argv[2]);
         return;
     }
 
