@@ -215,6 +215,7 @@ module LPPDAT (
                     stateWAIT   =  6,   // Wait for UART to finish
                     stateDELAY  =  7;   // Delay
 
+   reg [2:0] lpTABCNT;
    reg [3:0] state;
 
    always @(posedge clk or posedge rst)
@@ -227,6 +228,7 @@ module LPPDAT (
              lpCLRCCTR <= 0;
              lpINCCCTR <= 0;
              lpSETUNDC <= 0;
+             lpTABCNT  <= 0;
              lpPDAT    <= 0;
              state     <= stateIDLE;
           end
@@ -360,6 +362,7 @@ module LPPDAT (
                              lpDATA    <= lpPDAT;
                              lpSTROBE  <= 1;
                              lpCLRCCTR <= 1;
+                             lpTABCNT  <= 0;
                              state     <= stateWAIT;
                           end
                      end
@@ -376,6 +379,7 @@ module LPPDAT (
                           lpDATA    <= asciiSP;
                           lpSTROBE  <= 1;
                           lpINCCCTR <= 1;
+                          lpTABCNT  <= lpTABCNT + 1'b1;
                           state     <= stateTAB;
                        end
 `else
@@ -402,6 +406,7 @@ module LPPDAT (
                             lpDATA    <= asciiCR;
                             lpSTROBE  <= 1;
                             lpCLRCCTR <= 1;
+                            lpTABCNT  <= 0;
                             state     <= stateWRAPLF;
                          end
                        else
@@ -410,6 +415,7 @@ module LPPDAT (
                             lpDATA    <= lpPDAT;
                             lpSTROBE  <= 1;
                             lpINCCCTR <= 1;
+                            lpTABCNT  <= lpTABCNT + 1'b1;
                             state     <= stateWAIT;
                          end
 
@@ -426,6 +432,7 @@ module LPPDAT (
                       lpDATA    <= asciiLF;
                       lpSTROBE  <= 1;
                       lpCLRCCTR <= 1;
+                      lpTABCNT  <= 0;
                       state     <= stateWRAPCH;
                    end
 
@@ -441,6 +448,7 @@ module LPPDAT (
                       lpDATA    <= lpPDAT;
                       lpSTROBE  <= 1;
                       lpINCCCTR <= 1;
+                      lpTABCNT  <= lpTABCNT + 1'b1;
                       state     <= stateWAIT;
                    end
 
@@ -450,16 +458,16 @@ module LPPDAT (
                //
 
                stateTAB:
-                 if (lpDEMAND)
-                   if (lpCCTR[2:0] == 0)
-                     state <= stateWAIT;
-                   else
-                     begin
-                        lpPI      <= 0;
-                        lpDATA    <= asciiSP;
-                        lpSTROBE  <= 1;
-                        lpINCCCTR <= 1;
-                     end
+                 if (lpTABCNT == 0)
+                   state <= stateWAIT;
+                 else if (lpDEMAND)
+                   begin
+                      lpPI      <= 0;
+                      lpDATA    <= asciiSP;
+                      lpSTROBE  <= 1;
+                      lpINCCCTR <= 1;
+                      lpTABCNT  <= lpTABCNT + 1'b1;
+                   end
 
                //
                // stateDVFU:
@@ -478,6 +486,7 @@ module LPPDAT (
                       lpDATA    <= {1'b0, lpPDAT[6:0]};
                       lpSTROBE  <= 1;
                       lpCLRCCTR <= 1;
+                      lpTABCNT  <= 0;
                       state     <= stateWAIT;
                    end
 
