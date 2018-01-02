@@ -29,5 +29,16 @@ be moved between SIMH and the target hardware without modification. Universal
 Serial Bus (USB) and Ethernet devices are provided in addition to standard
 legacy RS-232 devices.
 
+<p>The following peripheral devices have been implemented:</p>
+<ul>
+<li>1024 KW Memory</li>
+<li>RH11 Massbus Controller</li>
+<li>DZ11 Terminal Multiplexer</li>
+<li>RP06 Disk Drives (x8)</li>
+<li>LP20 Printer Interface</li>
+<li>LP26 Printer</li>
+<li>DUP11 Synchronous Serial Interface</li>
+</ul>
+
 More details can be found on the wiki pages at
 <a href="https://github.com/KS10FPGA/KS10FPGA/wiki">https://github.com/KS10FPGA/KS10FPGA/wiki</a>
