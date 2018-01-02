@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2017 Rob Doyle
+// Copyright (C) 2013-2018 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -414,7 +414,31 @@ void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
 
 //!
 //! \brief
-//!    This function reads a 64-bit value from the DZCCR
+//!    This function reads a 32-bit value from the DUPCCR
+//!
+//! \returns
+//!    contents of the DUPCCR register
+//!
+
+uint32_t ks10_t::readDUPCCR(void) {
+    return *regDUPCCR;
+}
+
+//!
+//! \brief
+//!    This function writes a 32-bit value to the DUPCCR
+//!
+//! \param data -
+//!    data is the data to be written to the DUPCCR
+//!
+
+void ks10_t::writeDUPCCR(uint32_t data) {
+    *regDUPCCR = data;
+}
+
+//!
+//! \brief
+//!    This function reads a 32-bit value from the DZCCR
 //!
 //! \returns
 //!    contents of the DZCCR register
@@ -426,7 +450,7 @@ uint32_t ks10_t::readDZCCR(void) {
 
 //!
 //! \brief
-//!    This function writes a 64-bit value to the DZCCR
+//!    This function writes a 32-bit value to the DZCCR
 //!
 //! \param data -
 //!    data is the data to be written to the DZCCR
@@ -438,7 +462,7 @@ void ks10_t::writeDZCCR(uint32_t data) {
 
 //!
 //! \brief
-//!    This function reads a 64-bit value from the LPCCR
+//!    This function reads a 32-bit value from the LPCCR
 //!
 //! \returns
 //!    contents of the LPCCR register
@@ -450,7 +474,7 @@ uint32_t ks10_t::readLPCCR(void) {
 
 //!
 //! \brief
-//!    This function writes a 64-bit value to the LPCCR
+//!    This function writes a 32-bit value to the LPCCR
 //!
 //! \param data -
 //!    data is the data to be written to the LPCCR
@@ -462,25 +486,25 @@ void ks10_t::writeLPCCR(uint32_t data) {
 
 //!
 //! \brief
-//!    This function reads a 64-bit value from the RPCCR
+//!    This function reads a 32-bit value from the RPCCR
 //!
 //! \returns
 //!    contents of the RPCCR register
 //!
 
-uint64_t ks10_t::readRPCCR(void) {
+uint32_t ks10_t::readRPCCR(void) {
     return *regRPCCR;
 }
 
 //!
 //! \brief
-//!    This function writes a 64-bit value to the RPCCR
+//!    This function writes a 32-bit value to the RPCCR
 //!
 //! \param data -
 //!    data is the data to be written to the RPCCR
 //!
 
-void ks10_t::writeRPCCR(uint64_t data) {
+void ks10_t::writeRPCCR(uint32_t data) {
     *regRPCCR = data;
 }
 
@@ -1162,6 +1186,67 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, bool debug, uint6
 
 //!
 //! \brief
+//!    This function tests a 32-bit console interface register.
+//!
+//! \details
+//!    This test performs a 32-bit "walking ones test" on the the register.
+//!    This verified both the register and the bus interface between the MCU and
+//!    the FPGA.
+//!
+//! \param addr -
+//!    address of the register in the EPI address space.
+//!
+//! \param name -
+//!    name of the register used in verbose debugging messages
+//!
+//! \param debug -
+//!    enables debugging messages
+//!
+//! \param mask -
+//!    allows masking unimplemented register bits.  This is used to test 36-bit
+//!    registers using the 64-bit interface.
+//!
+//! \returns
+//!    True if test pass, false otherwise.
+//!
+
+bool ks10_t::testReg32(volatile void * addr, const char *name, bool debug, uint32_t mask) {
+
+    debug_printf(debug, "KS10:  %s: Checking 32-bit accesses.\n", name);
+
+    //
+    // Save register contents
+    //
+
+    uint32_t save = readReg32(addr);
+
+    //
+    // Perform test
+    //
+
+    bool success = true;
+    volatile uint32_t * reg32 = reinterpret_cast<volatile uint32_t *>(addr);
+
+    for (unsigned long write32 = 1; write32 != 0; write32 <<= 1) {
+        *reg32 = write32;
+        uint32_t read32 = *reg32;
+        if ((read32 & mask) != (write32 & mask)) {
+            debug_printf(debug, "KS10:  %s: Register failure.  Was 0x%08lx.  Should be 0x%08lx\n", name, read32, write32);
+            success = false;
+        }
+    }
+
+    //
+    // Restore register contents
+    //
+
+    writeReg32(addr, save);
+
+    return success;
+}
+
+//!
+//! \brief
 //!    Test all of the KS10 Registers
 //!
 //! \returns
@@ -1173,13 +1258,15 @@ void ks10_t::testRegs(bool debug) {
     if (debug) {
         printf("KS10: Console Interface Register test.\n");
     }
-    success &= testReg64(regAddr,  "regADDR ", debug, 0xfffffffff);
-    success &= testReg64(regData,  "regDATA ", debug, 0xfffffffff);
-    success &= testReg64(regCIR,   "regCIR  ", debug, 0xfffffffff);
-    success &= testReg64(regDZCCR, "regDZCCR", debug, 0xfffffff0ffffffff);
-    success &= testReg64(regRPCCR, "regRPCCR", debug);
-    success &= testReg64(regDBAR,  "regDBAR ", debug, 0xfffffffff);
-    success &= testReg64(regDBMR,  "regDBMR ", debug, 0xfffffffff);
+    success &= testReg64(regAddr,   "regADDR  ", debug, 0xfffffffff);
+    success &= testReg64(regData,   "regDATA  ", debug, 0xfffffffff);
+    success &= testReg64(regCIR,    "regCIR   ", debug, 0xfffffffff);
+    success &= testReg32(regDZCCR,  "regDZCCR ", debug, 0xffffffff);
+    success &= testReg32(regLPCCR,  "regLPCCR ", debug, 0xfffffff0);
+    success &= testReg32(regRPCCR,  "regRPCCR ", debug, 0xffffffff);
+    success &= testReg32(regDUPCCR, "regDUPCCR", debug, 0x7f001fff);
+    success &= testReg64(regDBAR,   "regDBAR  ", debug, 0xfffffffff);
+    success &= testReg64(regDBMR,   "regDBMR  ", debug, 0xfffffffff);
     if (success) {
         printf("KS10: Console Interface Register test completed successfully.\n");
     } else {

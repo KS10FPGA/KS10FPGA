@@ -30,7 +30,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2018 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -642,10 +642,21 @@ module LP20 (
 
 `ifndef SYNTHESIS
 
+   //
+   // String sizes in bytes
+   //
+
+   localparam DEVNAME_SZ = 4,
+              REGNAME_SZ = 4;
+
+   //
+   // Initialize log file
+   //
+
    initial
      begin
         file = $fopen("lpstatus.txt", "w");
-        $fwrite(file, "[%11.3f] LP20: Debug Mode.\n", $time/1.0e3);
+        $fwrite(file, "[%11.3f] LP20: Initialized.\n", $time/1.0e3);
         $fflush(file);
      end
 
@@ -653,47 +664,345 @@ module LP20 (
      begin
         if (lpGO & devREQO & devACKI)
           $fwrite(file, "[%11.3f] LP20: Read %012o from Memory.  BAR was %06o.\n", $time/1.0e3, lpDATAI[35:0], regBAR);
-        if (csraWRITE)
-          $fwrite(file, "[%11.3f] LP20: Wrote %06o to CSRA.  CSRA is %06o.\n", $time/1.0e3, lpDATAI[15:0], regCSRA);
-        if (csraREAD)
-          $fwrite(file, "[%11.3f] LP20: Read %06o from CSRA.\n", $time/1.0e3, regCSRA);
-        if (csrbWRITE)
-          $fwrite(file, "[%11.3f] LP20: Wrote %06o to CSRB.  CSRB is %06o.\n", $time/1.0e3, lpDATAI[15:0], regCSRB);
-        if (csrbREAD)
-          $fwrite(file, "[%11.3f] LP20: Read %06o from CSRB.\n", $time/1.0e3, regCSRB);
-        if (barWRITE)
-          $fwrite(file, "[%11.3f] LP20: Wrote %06o to BAR.  BAR is %06o.\n", $time/1.0e3, lpDATAI[15:0], regBAR);
-        if (barREAD)
-          $fwrite(file, "[%11.3f] LP20: Read %06o from BAR.\n", $time/1.0e3, regBAR);
-        if (bctrWRITE)
-          $fwrite(file, "[%11.3f] LP20: Wrote %06o to BCTR.  BCTR is %06o.\n", $time/1.0e3, lpDATAI[15:0], regBCTR);
-        if (bctrREAD)
-          $fwrite(file, "[%11.3f] LP20: Read %06o from BCTR.\n", $time/1.0e3, regBCTR);
-        if (pctrWRITE)
-          $fwrite(file, "[%11.3f] LP20: Wrote %06o to PCTR.  PCTR is %06o.\n", $time/1.0e3, lpDATAI[15:0], regPCTR);
-        if (pctrREAD)
-          $fwrite(file, "[%11.3f] LP20: Read %06o from PCTR.\n", $time/1.0e3, regPCTR);
-        if (ramdWRITE)
-          $fwrite(file, "[%11.3f] LP20: Wrote %06o to RAMD.  RAMD is %06o.\n", $time/1.0e3, lpDATAI[15:0], regRAMD);
-        if (ramdREAD)
-          $fwrite(file, "[%11.3f] LP20: Read %06o from RAMD.\n", $time/1.0e3, regRAMD);
-        if (cctrWRITE)
-          $fwrite(file, "[%11.3f] LP20: Wrote %06o to CCTR.  CCTR is %06o.\n", $time/1.0e3, lpDATAI[15:0], regCCTR);
-        if (cctrREAD)
-          $fwrite(file, "[%11.3f] LP20: Read %06o from CCTR.\n", $time/1.0e3, regCCTR);
-        if (cbufWRITE)
-          $fwrite(file, "[%11.3f] LP20: Wrote %06o to CBUF.  CBUF is %06o.\n", $time/1.0e3, lpDATAI[15:0], regCBUF);
-        if (cbufREAD)
-          $fwrite(file, "[%11.3f] LP20: Read %06o from CBUF.\n", $time/1.0e3, regCBUF);
-        if (cksmWRITE)
-          $fwrite(file, "[%11.3f] LP20: Wrote %06o to CKSM.  CKSM is %06o.\n", $time/1.0e3, lpDATAI[15:0], regCKSM);
-        if (cksmREAD)
-          $fwrite(file, "[%11.3f] LP20: Read %06o from CKSM.\n", $time/1.0e3, regCKSM);
-        if (pdatWRITE)
-          $fwrite(file, "[%11.3f] LP20: Wrote %06o to PDAT.  PDAT is %06o.\n", $time/1.0e3, lpDATAI[15:0], regPDAT);
-        if (pdatREAD)
-          $fwrite(file, "[%11.3f] LP20: Read %06o from PDAT.\n", $time/1.0e3, regPDAT);
      end
+
+   //
+   // Read CSRA
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) CSRA_RD (
+       .clk             (clk),
+       .devRD           (csraREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          (regCSRA),
+       .devNAME         ("LP20"),
+       .regNAME         ("CSRA"),
+       .file            (file)
+   );
+
+   //
+   // Read CSRB
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) CSRB_RD (
+       .clk             (clk),
+       .devRD           (csrbREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          (regCSRB),
+       .devNAME         ("LP20"),
+       .regNAME         ("CSRB"),
+       .file            (file)
+   );
+
+   //
+   // Read BAR
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) BAR_RD (
+       .clk             (clk),
+       .devRD           (barREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          (regBAR[15:0]),
+       .devNAME         ("LP20"),
+       .regNAME         ("BAR "),
+       .file            (file)
+   );
+
+   //
+   // Read BCTR
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) BCTR_RD (
+       .clk             (clk),
+       .devRD           (bctrREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          (regBCTR),
+       .devNAME         ("LP20"),
+       .regNAME         ("BCTR"),
+       .file            (file)
+   );
+
+   //
+   // Read PCTR
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) PCTR_RD (
+       .clk             (clk),
+       .devRD           (pctrREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          (regPCTR),
+       .devNAME         ("LP20"),
+       .regNAME         ("PCTR"),
+       .file            (file)
+   );
+
+   //
+   // Read RAMD
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) RAMD_RD (
+       .clk             (clk),
+       .devRD           (ramdREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          (regRAMD),
+       .devNAME         ("LP20"),
+       .regNAME         ("RAMD"),
+       .file            (file)
+   );
+
+   //
+   // Read CCTR
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .TYPE            ("H"),
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) CCTR_RD (
+       .clk             (clk),
+       .devRD           (cctrREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          ({8'b0, regCCTR}),
+       .devNAME         ("LP20"),
+       .regNAME         ("CCTR"),
+       .file            (file)
+   );
+
+   //
+   // Read CBUF
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .TYPE            ("L"),
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) CBUF_RD (
+       .clk             (clk),
+       .devRD           (cbufREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          ({8'b0, regCBUF}),
+       .devNAME         ("LP20"),
+       .regNAME         ("CBUF"),
+       .file            (file)
+   );
+
+   //
+   // Read CKSM
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .TYPE            ("H"),
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) CKSM_RD (
+       .clk             (clk),
+       .devRD           (cksmREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          ({8'b0, regCKSM}),
+       .devNAME         ("LP20"),
+       .regNAME         ("CKSM"),
+       .file            (file)
+   );
+
+   //
+   // Read PDAT
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .TYPE            ("L"),
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) PDAT_RD (
+       .clk             (clk),
+       .devRD           (pdatREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          ({8'b0, regPDAT}),
+       .devNAME         ("LP20"),
+       .regNAME         ("PDAT"),
+       .file            (file)
+   );
+
+   //
+   // Write CSRA
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) CSRA_WR (
+       .clk             (clk),
+       .devWR           (csraWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (lpDATAI[15:0]),
+       .regVAL          (regCSRA),
+       .devNAME         ("LP20"),
+       .regNAME         ("CSRA"),
+       .file            (file)
+   );
+
+   //
+   // Write CSRB
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) CSRB_WR (
+       .clk             (clk),
+       .devWR           (csrbWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (lpDATAI[15:0]),
+       .regVAL          (regCSRB),
+       .devNAME         ("LP20"),
+       .regNAME         ("CSRB"),
+       .file            (file)
+   );
+
+   //
+   // Write BAR
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) BAR_WR (
+       .clk             (clk),
+       .devWR           (barWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (lpDATAI[15:0]),
+       .regVAL          (regBAR[15:0]),
+       .devNAME         ("LP20"),
+       .regNAME         ("BAR "),
+       .file            (file)
+   );
+
+   //
+   // Write BCTR
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) BCTR_WR (
+       .clk             (clk),
+       .devWR           (bctrWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (lpDATAI[15:0]),
+       .regVAL          (regBCTR),
+       .devNAME         ("LP20"),
+       .regNAME         ("BCTR"),
+       .file            (file)
+   );
+
+   //
+   // Write PCTR
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) PCTR_WR (
+       .clk             (clk),
+       .devWR           (pctrWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (lpDATAI[15:0]),
+       .regVAL          (regPCTR),
+       .devNAME         ("LP20"),
+        .regNAME         ("PCTR"),
+       .file            (file)
+   );
+
+   //
+   // Write RAMD
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) RAMD_WR (
+       .clk             (clk),
+       .devWR           (ramdWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (lpDATAI[15:0]),
+       .regVAL          (regRAMD),
+       .devNAME         ("LP20"),
+       .regNAME         ("RAMD"),
+       .file            (file)
+   );
+
+   //
+   // Write CCTR
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .TYPE            ("H"),
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) CCTR_WR (
+       .clk             (clk),
+       .devWR           (cctrWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (lpDATAI[15:0]),
+       .regVAL          ({8'b0, regCCTR}),
+       .devNAME         ("LP20"),
+       .regNAME         ("CCTR"),
+       .file            (file)
+   );
+
+   //
+   // Write CBUF
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .TYPE            ("L"),
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) CBUF_WR (
+       .clk             (clk),
+       .devWR           (cbufWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (lpDATAI[15:0]),
+       .regVAL          ({8'b0, regCBUF}),
+       .devNAME         ("LP20"),
+       .regNAME         ("CBUF"),
+       .file            (file)
+   );
 
 `endif
 

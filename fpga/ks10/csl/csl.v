@@ -164,7 +164,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2018 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -228,6 +228,15 @@ module CSL (
       output wire         cslCACHEEN,   // Cache Enable
       output wire         cslINTR,      // Interrupt KS10
       output wire         cslRESET,     // Reset KS10
+      // DUP11 Interfaces
+      input  wire [ 7: 0] dupTXFIFO,    // DUP11 TX FIFO
+      input  wire         dupTXEMPTY,   // DUP11 TX FIFO Empty
+      output wire         dupTXFIFO_RD, // DUP11 TX FIFO Read
+      input  wire         dupRXFULL,    // DUP11 RX FIFO Full
+      output wire         dupRXFIFO_WR, // DUP11 RX FIFO Write
+      input  wire         dupRTS,       // DUP11 Request to Send
+      input  wire         dupDTR,       // DUP11 Data Terminal Ready
+      output reg  [ 0:31] dupCCR,       // DUP11 Console Control Register
       // DZ11 Interfaces
       output reg  [ 0:31] dzCCR,        // DZ11 Console Control Register
       // LP20/LP26 Interfaces
@@ -235,7 +244,7 @@ module CSL (
       input  wire         lpONLINE,     // LP26 status
       input  wire         lpSIXLPI,     // LP26 line spacing
       // RPXX Interfaces
-      output reg  [ 0:63] rpCCR,        // RPXX Console Control Register
+      output reg  [ 0:31] rpCCR,        // RPXX Console Control Register
       // SD Interfaces
       input  wire [ 0:63] rhDEBUG,      // RH Debug Info
       // Debug Interfaces
@@ -359,6 +368,7 @@ module CSL (
              regADDR         <= 0;
              dzCCR           <= 0;
              lpCCR[0:28]     <= 0;
+             dupCCR          <= 0;
              rpCCR           <= 0;
              regCTRL_NXMNXD  <= 0;
              regCTRL_TIMEREN <= 0;
@@ -407,11 +417,15 @@ module CSL (
 
                  //
                  // DZ11 Console Control Register
-                 // LP20 Console Control Register
                  //
 
                  8'h20 : dzCCR[16:23] <= conDATA[15:8];
                  8'h22 : dzCCR[ 0: 7] <= conDATA[15:8];
+
+                 //
+                 // LP20 Console Control Register
+                 //
+
                  8'h24 : lpCCR[16:23] <= conDATA[15:8];
                  8'h26 : lpCCR[ 0: 7] <= conDATA[15:8];
 
@@ -419,10 +433,15 @@ module CSL (
                  // RPXX Console Control Register
                  //
 
-                 8'h28 : rpCCR[48:55] <= conDATA[15:8];
-                 8'h2a : rpCCR[32:39] <= conDATA[15:8];
-                 8'h2c : rpCCR[16:23] <= conDATA[15:8];
-                 8'h2e : rpCCR[ 0: 7] <= conDATA[15:8];
+                 8'h28 : rpCCR[16:23] <= conDATA[15:8];
+                 8'h2a : rpCCR[ 0: 7] <= conDATA[15:8];
+
+                 //
+                 // DUP11 Console Control Register
+                 //
+
+                 8'h2c : dupCCR[16:23] <= conDATA[15:8];
+                 8'h2e : dupCCR[ 0: 7] <= conDATA[15:8];
 
                  //
                  // Debug Breakpoint Address Register
@@ -482,11 +501,15 @@ module CSL (
 
                  //
                  // DZ11 Console Control Register
-                 // LP20 Console Control Register
                  //
 
                  8'h20 : dzCCR[24:31] <= conDATA[7:0];
                  8'h22 : dzCCR[ 8:15] <= conDATA[7:0];
+
+                 //
+                 // LP20 Console Control Register
+                 //
+
                  8'h24 : lpCCR[24:28] <= conDATA[7:3];
                  8'h26 : lpCCR[ 8:15] <= conDATA[7:0];
 
@@ -494,10 +517,15 @@ module CSL (
                  // RPXX Console Control Register
                  //
 
-                 8'h28 : rpCCR[56:63] <= conDATA[7:0];
-                 8'h2a : rpCCR[40:47] <= conDATA[7:0];
-                 8'h2c : rpCCR[24:31] <= conDATA[7:0];
-                 8'h2e : rpCCR[ 8:15] <= conDATA[7:0];
+                 8'h28 : rpCCR[24:31] <= conDATA[7:0];
+                 8'h2a : rpCCR[ 8:15] <= conDATA[7:0];
+
+                 //
+                 // DUP11 Console Control Register
+                 //
+
+                 8'h2c : dupCCR[24:31] <= conDATA[7:0];
+                 8'h2e : dupCCR[ 8:15] <= conDATA[7:0];
 
                  //
                  // Debug Control/Status Register
@@ -607,11 +635,15 @@ module CSL (
 
           //
           // DZ11 Console Control Register
-          // LP20 Console Control Register
           //
 
           8'h20 : dout <= dzCCR[16:31];
           8'h22 : dout <= dzCCR[ 0:15];
+
+          //
+          // LP20 Console Control Register
+          //
+
           8'h24 : dout <= {lpCCR[16:27], lpSIXLPI, lpONLINE, 2'b0};
           8'h26 : dout <= lpCCR[ 0:15];
 
@@ -619,10 +651,15 @@ module CSL (
           // RPXX Console Control Register
           //
 
-          8'h28 : dout <= rpCCR[48:63];
-          8'h2a : dout <= rpCCR[32:47];
-          8'h2c : dout <= rpCCR[16:31];
-          8'h2e : dout <= rpCCR[ 0:15];
+          8'h28 : dout <= rpCCR[16:31];
+          8'h2a : dout <= rpCCR[ 0:15];
+
+          //
+          // DUP11 Console Control Register
+          //
+
+          8'h2c : dout <= {dupRXFULL, dupDTR, dupRTS, dupCCR[19:31]};
+          8'h2e : dout <= {dupTXEMPTY, dupCCR[1:7], dupTXFIFO};
 
           //
           // RH11 Debug Register
@@ -872,6 +909,13 @@ module CSL (
      begin
         lpCCR[29:31] <= {1'b0, wrLPCCR & conDATA[1], wrLPCCR & conDATA[0]};
      end
+
+   //
+   // DUP11 Outputs
+   //
+
+   assign dupTXFIFO_RD = cslRD & (cslADDR == 8'h2e) & cslBLE;
+   assign dupRXFIFO_WR = cslWR & (cslADDR == 8'h2c) & cslBLE;
 
    //
    // Debug Outputs

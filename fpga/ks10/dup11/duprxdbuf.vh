@@ -3,17 +3,20 @@
 // KS-10 Processor
 //
 // Brief
-//   Debug Register Definitions
+//   DUP Receiver Data Buffer (RXDBUF)
+//
+// Details
+//   This file contains the bit definitions for the DUP11 RXDBUF register.
 //
 // File
-//   brkpt.vh
+//   duprxdbuf.vh
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2018 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -35,21 +38,19 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifndef __BRKPT_VH
-`define __BRKPT_VH
+`ifndef __DUPRXDBUF_VH
+`define __DUPRXDBUF_VH
 
 //
-// Debug Control/Status Register Bits
+// RXDBUF Register Bits
 //
 
-`define debug_BRKDIS 2'b00      // Breakpoint Disable
-`define debug_BRKMAT 2'b01      // Breakpoint on Address Match
-`define debug_BRKTBF 2'b10      // Breakpoint on Trace Buffer Full
-`define debug_BRKRES 2'b11      // Reserved
-
-`define debug_TRCDIS 2'b00      // Trace Disable
-`define debug_TRCMAT 2'b01      // Trace on Address Match
-`define debug_TRCEN  2'b10      // Trace Enable
-`define debug_TRCRES 2'b11      // Reserved
+`define dupRXDBUF_RXERR(bus)  (bus[15])         // Receiver Error
+`define dupRXDBUF_RXOVR(bus)  (bus[14])         // Receiver Overrun Error
+`define dupRXDBUF_RXCRC(bus)  (bus[12])         // Receiver CRC Error
+`define dupRXDBUF_RXABRT(bus) (bus[10])         // Receiver Abort Error
+`define dupRXDBUF_RXEOM(bus)  (bus[ 9])         // Receiver End of Message
+`define dupRXDBUF_RXSOM(bus)  (bus[ 8])         // Receiver Start of Message
+`define dupRXDBUF_RXDAT(bus)  (bus[7:0])        // Receiver Data
 
 `endif

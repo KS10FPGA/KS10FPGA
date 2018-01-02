@@ -13,7 +13,7 @@
 #
 #******************************************************************************
 #
-# Copyright (C) 2013-2017 Rob Doyle
+# Copyright (C) 2013-2018 Rob Doyle
 #
 # This file is part of the KS10 FPGA Project
 #
@@ -38,6 +38,7 @@
 
 T10BACKUP   := ../../../tools/tapeutils-0.6.mods/t10backup.exe
 DIAGTAPE    := ../../../Tape\ and\ Disk\ Images/KS10\ Diagnostics/ks_diag_gs.tap
+REDPACK     := ../../../Tape\ and\ Disk\ Images/RED\ PACK\ 405A2/red405a2.tap
 SAV2VERILOG := ../../../tools/sav2verilog/sav2verilog.exe
 MERGE_AWK   := ../../../tools/merge/merge.awk
 
@@ -118,6 +119,22 @@ DSRPA.temp.DAT : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQ
 	$(SAV2VERILOG) DSRPA.SAV tempfile
 	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH DSRPA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSRPA.DAT > DSRPA.temp.DAT
 
+DSLPA.temp.DAT : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
+	$(T10BACKUP) -i -x diagnostics..dslpa.sav -f $(DIAGTAPE)
+	mv dslpa.sav DSLPA.SAV
+	$(SAV2VERILOG) DSLPA.SAV tempfile
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSLPA.DAT > DSLPA.temp.DAT
+
+DSDUA.temp.DAT : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
+	$(T10BACKUP) -i -x diagnostics..dsdua.sav -f $(DIAGTAPE)
+	mv dsdua.sav DSDUA.SAV
+	$(SAV2VERILOG) DSDUA.SAV tempfile
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSDUA.DAT > DSDUA.temp.DAT
+
+dslpa_v0_7a.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
+	awk -f ssram.awk < dslpa_v0_7a.seq > dslpa_v0_7a.tmp
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT dslpa_v0_7a.tmp DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSLPA.DAT > dslpa_v0_7a.dat
+
 #
 # Diagnostic Programs and Subroutines
 #
@@ -183,6 +200,10 @@ rp06_disk : makefile $(UNIT0) $(UNIT1) $(UNIT2)
         else \
 		echo "You must answer YES to write to SD Card!"; \
         fi
+
+crc16_tb: crc16_tb.v ../../ks10/utils/crc16.v
+	iverilog -W all -g2012 -s crc16_tb -o crc16_tb.vvp $?
+	vvp crc16_tb.vvp
 
 #
 # The SD Card Simulator uses a seperate file for each of the devices

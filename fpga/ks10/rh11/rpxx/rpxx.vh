@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2018 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -180,5 +180,18 @@
                                (((type) == `rpRM05) ? `rm05LAST_CYL : \
                                 (((type) == `rpRM80) ? `rm80LAST_CYL : \
                                  `rp06LAST_CYL)))))))
+
+//
+// getTYPE(unit)
+//
+
+`define getTYPE(unit) (((unit) == 0) ? `rpRP06 : \
+                       (((unit) == 1) ? `rpRP06 : \
+                        (((unit) == 2) ? `rpRP06 : \
+                         (((unit) == 3) ? `rpRP06 : \
+                          (((unit) == 4) ? `rpRP06 : \
+                           (((unit) == 5) ? `rpRP06 : \
+                            (((unit) == 6) ? `rpRP06 : \
+                             `rpRM03)))))))
 
 `endif

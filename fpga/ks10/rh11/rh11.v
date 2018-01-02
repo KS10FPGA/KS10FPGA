@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2018 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -100,7 +100,6 @@ module RH11 (
    parameter [18:35] rhADDR  = `rh1ADDR;        // RH11 Base Address
    parameter [18:35] rhVECT  = `rh1VECT;        // RH11 Interrupt Vector
    parameter [ 7: 4] rhINTR  = `rh1INTR;        // RH11 Interrupt
-   parameter [15: 0] drvTYPE = `rpRP06;         // Drive type
 
    //
    // RH Register Addresses
@@ -613,7 +612,7 @@ module RH11 (
       for (i = 0; i < 8; i = i + 1)
         begin : disk_loop
            RPXX #(
-              .drvTYPE  (`rpRP06)
+              .drvTYPE  (`getTYPE(i))
            )
            uRPXX (
               .clk      (clk),

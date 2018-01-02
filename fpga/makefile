@@ -13,7 +13,7 @@
 #
 #******************************************************************************
 #
-# Copyright (C) 2013-2017 Rob Doyle
+# Copyright (C) 2013-2018 Rob Doyle
 #
 # This file is part of the KS10 FPGA Project
 #
@@ -200,6 +200,8 @@ SIM_ARGS := \
 #   -D RPXX_SIMSEEK	Simulate RPXX seek accurately but slowly
 #   -D RPXX_SIMSEARCH	Simulate RPXX search accurately bus slowly
 #   -D RPXX_SIMDMD	Simulate RPXX diagnostic mode
+#   -D DUP11            Include a DUP11 Synchronous Interface
+#   -D DUP11_FASTCLK    Run the synchronous serial clock at 100 KHz instead of 10 KHz
 #   -D CHIPSCOPE_CPU    Instrument the CPU
 #   -D CHIPSCOPE_UBA    Instrument the UBA
 #   -D CHIPSCOPE_SD     Instrument the SD Controller
@@ -208,7 +210,10 @@ SIM_ARGS := \
 #   -D PAGE_FAIL_TEST   Stress test PAGE FAIL logic
 #
 
+
 SYN_ARGS := \
+	-D DUP11 \
+	-D DUP11_FASTCLK \
 	-D RPXX_SIMSEEK \
 	-D RPXX_SIMDMD \
 #	-D RPXX_SIMSEARCH \
@@ -297,6 +302,15 @@ RTL_FILES := \
 	ks10/cpu/useq/dispatch.v \
 	ks10/cpu/useq/useq.v \
 	ks10/debug/debug.v \
+	ks10/dup11/dup11.v \
+	ks10/dup11/dupclk.v \
+	ks10/dup11/dupintr.v \
+	ks10/dup11/dupparcsr.v \
+	ks10/dup11/duprx.v \
+	ks10/dup11/duprxcsr.v \
+	ks10/dup11/duptx.v \
+	ks10/dup11/duptxcsr.v \
+	ks10/dup11/duptxdbuf.v \
 	ks10/dz11/dzcsr.v \
 	ks10/dz11/dzmsr.v \
 	ks10/dz11/dztcr.v \
@@ -353,10 +367,13 @@ RTL_FILES := \
 	ks10/uba/ubapage.v \
 	ks10/uba/ubatmo.v \
 	ks10/uba/ubaintr.v \
+	ks10/utils/crc16.v \
 	ks10/utils/fifo.v \
 	ks10/utils/sync.v \
 	ks10/utils/clkfwd.v \
 	ks10/utils/edgetrig.v \
+	ks10/utils/usrt/usrt_rx.v \
+	ks10/utils/usrt/usrt_tx.v \
 	ks10/utils/uart/uart_brg.v \
 	ks10/utils/uart/uart_rx.v \
 	ks10/utils/uart/uart_tx.v
@@ -445,6 +462,7 @@ DISKS := \
 SIM_FILES := \
 	$(TESTBENCH)/cy7c1460av33.v \
 	$(TESTBENCH)/testbench.v \
+	$(TESTBENCH)/dumpregs.v \
 	$(TESTBENCH)/sdsim.v
 
 #
@@ -495,6 +513,12 @@ INC_FILES := \
 	ks10/debug/debug_dsdza.vh \
 	ks10/debug/debug_smmon.vh \
 	ks10/debug/debug_default.vh \
+	ks10/dup11/dup11.vh \
+	ks10/dup11/duprxcsr.vh \
+	ks10/dup11/duprxdbuf.vh \
+	ks10/dup11/dupparcsr.vh \
+	ks10/dup11/duptxcsr.vh \
+	ks10/dup11/duptxdbuf.vh \
 	ks10/dz11/dz11.vh \
 	ks10/dz11/dzcsr.vh \
 	ks10/dz11/dzlpr.vh \
@@ -541,6 +565,7 @@ INC_FILES := \
 	ks10/uba/ubabus.vh \
 	ks10/uba/ubapage.vh \
 	ks10/utils/ascii.vh \
+	ks10/utils/crc16.vh \
 	ks10/utils/uart/uart.vh \
 	ks10/ks10.vh
 
@@ -715,7 +740,9 @@ FUSE_ARGS := \
 	-d UNIT5_DSK=\"\"../../$(UNIT5_DSK)\"\" \
 	-d UNIT6_DSK=\"\"../../$(UNIT6_DSK)\"\" \
 	-d UNIT7_DSK=\"\"../../$(UNIT7_DSK)\"\" \
+	-i ../../ks10/utils/ \
 	-i ../../ks10/utils/uart \
+	-i ../../ks10/utils/usrt \
 	-intstyle $(INTSTYLE) \
 	-incremental \
 	-o   $(PROJECT)_isim.exe \
@@ -976,6 +1003,156 @@ WAVE_UBA3 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2DATAI}            {/testbench/uKS10/uKS10/UBA3/dev2DATAI}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2DATAO}            {/testbench/uKS10/uKS10/UBA3/dev2DATAO}"
 
+WAVE_DUP11 :=\
+	"add wave -noupdate -divider {DUP11}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI}              {/testbench/uKS10/uKS10/uDUP11/devREQI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO}              {/testbench/uKS10/uKS10/uDUP11/devREQO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI}              {/testbench/uKS10/uKS10/uDUP11/devACKI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO}              {/testbench/uKS10/uKS10/uDUP11/devACKO}" \
+	"add wave -noupdate -radix binary   -radixshowbase 0 -label {devINTR}              {/testbench/uKS10/uKS10/uDUP11/devINTR}" \
+	"add wave -noupdate -radix binary   -radixshowbase 0 -label {devINTA}              {/testbench/uKS10/uKS10/uDUP11/devINTA}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAI}             {/testbench/uKS10/uKS10/uDUP11/devDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAO}             {/testbench/uKS10/uKS10/uDUP11/devDATAO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devADDRI}             {/testbench/uKS10/uKS10/uDUP11/devADDRI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devADDRO}             {/testbench/uKS10/uKS10/uDUP11/devADDRO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREAD}              {/testbench/uKS10/uKS10/uDUP11/devREAD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devWRITE}             {/testbench/uKS10/uKS10/uDUP11/devWRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devIO}                {/testbench/uKS10/uKS10/uDUP11/devIO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devIOBYTE}            {/testbench/uKS10/uKS10/uDUP11/devIOBYTE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devWRU}               {/testbench/uKS10/uKS10/uDUP11/devWRU}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devHIBYTE}            {/testbench/uKS10/uKS10/uDUP11/devHIBYTE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devLOBYTE}            {/testbench/uKS10/uKS10/uDUP11/devLOBYTE}" \
+	"add wave -noupdate -divider {DUP11 REGS}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RXCSR  REG}           {/testbench/uKS10/uKS10/uDUP11/regRXCSR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RXDBUF REG}           {/testbench/uKS10/uKS10/uDUP11/regRXDBUF}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {TXCSR  REG}           {/testbench/uKS10/uKS10/uDUP11/regTXCSR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {TXDBUF REG}           {/testbench/uKS10/uKS10/uDUP11/regTXDBUF}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {PARCSR REG}           {/testbench/uKS10/uKS10/uDUP11/regPARCSR}" \
+	"add wave -noupdate -divider {DUP11 MODEM}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupW3}                {/testbench/uKS10/uKS10/uDUP11/RXCSR/dupW3}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupW5}                {/testbench/uKS10/uKS10/uDUP11/RXCSR/dupW5}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupW6}                {/testbench/uKS10/uKS10/uDUP11/RXCSR/dupW6}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupDSCA}              {/testbench/uKS10/uKS10/uDUP11/RXCSR/dupDSCA}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupSECTX}             {/testbench/uKS10/uKS10/uDUP11/RXCSR/dupSECTX}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupSECRX}             {/testbench/uKS10/uKS10/uDUP11/RXCSR/dupSECRX}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRI}                {/testbench/uKS10/uKS10/uDUP11/dupRI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupCTS}               {/testbench/uKS10/uKS10/uDUP11/dupCTS}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupDCD}               {/testbench/uKS10/uKS10/uDUP11/dupDCD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupDSR}               {/testbench/uKS10/uKS10/uDUP11/dupDSR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRTS}               {/testbench/uKS10/uKS10/uDUP11/dupRTS}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupDTR}               {/testbench/uKS10/uKS10/uDUP11/dupDTR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupDSCB}              {/testbench/uKS10/uKS10/uDUP11/RXCSR/dupDSCB}" \
+	"add wave -noupdate -divider {DUP11 CLKS}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupMSEL}              {/testbench/uKS10/uKS10/uDUP11/uDUPCLK/dupMSEL}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clk10KHz}             {/testbench/uKS10/uKS10/uDUP11/uDUPCLK/clk10KHz}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clk5KHz}              {/testbench/uKS10/uKS10/uDUP11/uDUPCLK/clk5KHz}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupMCO}               {/testbench/uKS10/uKS10/uDUP11/uDUPCLK/dupMCO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupMNTT}              {/testbench/uKS10/uKS10/uDUP11/uDUPCLK/dupMNTT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXCEN}             {/testbench/uKS10/uKS10/uDUP11/uDUPCLK/dupRXCEN}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupTXCEN}             {/testbench/uKS10/uKS10/uDUP11/uDUPCLK/dupTXCEN}" \
+	"add wave -noupdate -divider {DUP11 TX}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupDECMD}             {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupDECMD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupCRCI}              {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupCRCI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupMSEL}              {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupMSEL}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupSEND}              {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupSEND}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupTXABRT}            {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupTXABRT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupTXEOM}             {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupTXEOM}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupTXSOM}             {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupTXSOM}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupTXCEN}             {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupTXCEN}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupTXDONE}            {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupTXDONE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupTXACT}             {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupTXACT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupTXDLE}             {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupTXDLE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupTXD}               {/testbench/uKS10/uKS10/uDUP11/uDUPTX/dupTXD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {txdbufWRITE}          {/testbench/uKS10/uKS10/uDUP11/txdbufWRITE}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {state}                {/testbench/uKS10/uKS10/uDUP11/uDUPTX/state}" \
+	"add wave -noupdate -divider {DUP11 USRT TX}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clr}                  {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/clr}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clken}                {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/clken}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {abort}                {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/abort}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {flag}                 {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/flag}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {data}                 {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/data}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {zbi}                  {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/zbi}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {load}                 {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/load}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {last}                 {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/last}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {empty}                {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/empty}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {txd}                  {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/txd}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {txdat}                {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/txdat}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {txlen}                {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/txlen}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {txzbi}                {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/txzbi}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {count}                {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/count}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {state}                {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/state}" \
+	"add wave -noupdate -divider {DUP11 TXCRC}" \
+	"add wave -noupdate -radix hex      -radixshowbase 0 -label {din}                  {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uCRC16/din}" \
+	"add wave -noupdate -radix hex      -radixshowbase 0 -label {poly}                 {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uCRC16/poly}" \
+	"add wave -noupdate -radix hex      -radixshowbase 0 -label {init}                 {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uCRC16/init}" \
+	"add wave -noupdate -radix hex      -radixshowbase 0 -label {crc}                  {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uCRC16/crc}" \
+	"add wave -noupdate -divider {DUP11 RX}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupMCO}               {/testbench/uKS10/uKS10/uDUP11/uDUPCLK/dupMCO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupMDI}               {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupMDI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXIN}              {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXIN}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupINIT}              {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupINIT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupCRCI}              {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupCRCI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupMSEL}              {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupMSEL}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXEN}              {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXEN}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXACT}             {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXACT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXSOM}             {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXSOM}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXEOM}             {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXEOM}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXCRCE}            {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXCRCE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXABRT}            {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXABRT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXDONE}            {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXDONE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupCRCINIT}           {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupCRCINIT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupDECMD}             {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupDECMD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupSSM}               {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupSSM}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXCEN}             {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXCEN}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXD}               {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXDAT}             {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXDAT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXCRCE}            {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXCRCE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupRXABRT}            {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupRXABRT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupCRCERR}            {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupCRCERR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dupCRCLO}             {/testbench/uKS10/uKS10/uDUP11/uDUPRX/dupCRCLO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {state}                {/testbench/uKS10/uKS10/uDUP11/uDUPRX/state}" \
+	"add wave -noupdate -divider {DUP11 USRT RX}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clr}                  {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/clr}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clken}                {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/clken}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rxd}                  {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/rxd}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {decmode}              {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/decmode}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {synchr}               {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/synchr}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {stat}                 {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/stat}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {bitcnt}               {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/bitcnt}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {ones}                 {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/ones}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {zbd}                  {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/zbd}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {sync}                 {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/sync}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {flag}                 {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/flag}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {abort}                {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/abort}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {valid}                {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/valid}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {data}                 {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/data}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {full}                 {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/full}" \
+	"add wave -noupdate -divider {DUP11 RX CRC16}" \
+	"add wave -noupdate -radix hex      -radixshowbase 0 -label {din}                  {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uCRC16/din}" \
+	"add wave -noupdate -radix hex      -radixshowbase 0 -label {poly}                 {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uCRC16/poly}" \
+	"add wave -noupdate -radix hex      -radixshowbase 0 -label {init}                 {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uCRC16/init}" \
+	"add wave -noupdate -radix hex      -radixshowbase 0 -label {crc}                  {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uCRC16/crc}" \
+	"add wave -noupdate -divider {DUP11 REG READ/WRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAI}             {/testbench/uKS10/uKS10/uDUP11/devDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAO}             {/testbench/uKS10/uKS10/uDUP11/devDATAO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rxcsrREAD}            {/testbench/uKS10/uKS10/uDUP11/rxcsrREAD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rxcsrWRITE}           {/testbench/uKS10/uKS10/uDUP11/rxcsrWRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rxdbufREAD}           {/testbench/uKS10/uKS10/uDUP11/rxdbufREAD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {parcsrWRITE}          {/testbench/uKS10/uKS10/uDUP11/parcsrWRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {txcsrREAD}            {/testbench/uKS10/uKS10/uDUP11/txcsrREAD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {txcsrWRITE}           {/testbench/uKS10/uKS10/uDUP11/txcsrWRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {txdbufREAD}           {/testbench/uKS10/uKS10/uDUP11/txdbufREAD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {txdbufWRITE}          {/testbench/uKS10/uKS10/uDUP11/txdbufWRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {vectREAD}             {/testbench/uKS10/uKS10/uDUP11/vectREAD}" \
+	"add wave -noupdate -divider {DUP11 BARF}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0                               {/testbench/uKS10/uKS10/uDUP11/uDUPTX/*}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0                               {/testbench/uKS10/uKS10/uDUP11/uDUPTX/uUSRT_TX/*}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0                               {/testbench/uKS10/uKS10/uDUP11/uDUPRX/*}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0                               {/testbench/uKS10/uKS10/uDUP11/uDUPRX/uUSRT_RX/*}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0                               {/testbench/uKS10/uKS10/uDUP11/uRXINTR/*}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0                               {/testbench/uKS10/uKS10/uDUP11/uTXINTR/*}" \
+
+
 WAVE_RH11 := \
 	"add wave -noupdate -divider {RH11}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI}              {/testbench/uKS10/uKS10/uRH11/devREQI}" \
@@ -1193,6 +1370,7 @@ VLOG_ARGS := \
 	+incdir+ks10/cpu \
 	+incdir+ks10/cpu/useq \
 	+incdir+ks10/debug \
+	+incdir+ks10/dup11 \
 	+incdir+ks10/dz11 \
 	+incdir+ks10/dz11/uart \
 	+incdir+ks10/lp20 \
@@ -1223,7 +1401,7 @@ WAVE_LIST := \
 	$(WAVE_ARB) \
 	$(WAVE_KS10) \
 	$(WAVE_UBA3) \
-	$(WAVE_LP20) \
+	$(WAVE_DUP11) \
 	$(WAVE_LAST)
 
 $(QUESTA_DIR)/wave.do: makefile
@@ -1244,8 +1422,10 @@ questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBE
 	$(VLIB) $(QUESTA_DIR)/work
 	$(VMAP) work $(QUESTA_DIR)/work
 	$(VLOG) $(SIM_FILES) $(RTL_FILES) $(VLOG_ARGS)
-	$(VOPT) testbench +acc=npr3+LP20+LP26+CPU -o testbench_opt -debugdb
+	$(VOPT) testbench +acc=npr3+CPU+DUP11+USRT_TX+USRT_RX+CRC16+DUPINTR+DEBUG -o testbench_opt -debugdb
 	$(VSIM) -i -debugdb testbench_opt -do $(QUESTA_DIR)/wave.do  &
+
+#	$(VOPT) testbench +acc=npr3+LP20+LP26+CPU -o testbench_opt -debugdb
 
 #
 # Vivado
@@ -1720,6 +1900,7 @@ iverilog : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TES
 	-I ks10/cpu \
 	-I ks10/cpu/useq \
 	-I ks10/debug \
+	-I ks10/dup11 \
 	-I ks10/dz11 \
 	-I ks10/dz11/uart \
 	-I ks10/lp20 \
@@ -1901,8 +2082,8 @@ rcsclean_rtl: clean_rtl
 	-rcsclean ks10/cpu/useq/*
 	-rcsclean ks10/csl/*
 	-rcsclean ks10/debug/*
+	-rcsclean ks10/dup11/*
 	-rcsclean ks10/dz11/*
-	-rcsclean ks10/dz11/uart/*
 	-rcsclean ks10/lp20/*
 	-rcsclean ks10/lp26/*
 	-rcsclean ks10/mem/*
@@ -1911,7 +2092,8 @@ rcsclean_rtl: clean_rtl
 	-rcsclean ks10/rh11/rpxx/*
 	-rcsclean ks10/uba/*
 	-rcsclean ks10/utils/*
-	-rcsclean ks10/utils/UART/*
+	-rcsclean ks10/utils/uart/*
+	-rcsclean ks10/utils/usrt/*
 	-rcsclean ks10/xilinx/*
 	-rcsclean ks10/xilinx/chipscope_cpu_ila/*
 	-rcsclean ks10/xilinx/chipscope_cpu_iocon/*

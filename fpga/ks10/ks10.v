@@ -18,7 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2018 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -45,6 +45,7 @@
 
 `include "ks10.vh"
 `include "uba/uba.vh"
+`include "dup11/dup11.vh"
 `include "dz11/dz11.vh"
 `include "rh11/rh11.vh"
 `include "lp20/lp20.vh"
@@ -123,6 +124,10 @@ module KS10 (
    wire         cslINTR;                // Console Interrupt to KS10
    wire         cslINTRO;               // KS10 Interrupt to Console
    wire         cpuRST;                 // KS10 Reset
+   wire         cslDUPCTS;              // DUP11 Clear to Send
+   wire         cslDUPDSR;              // DUP11 Data Terminal Ready
+   wire         cslDUPDCD;              // DUP11 Data Carrier Detect
+   wire         cslDUPRI;               // DUP11 Ring Indication.
 
    //
    // CPU Signals
@@ -137,6 +142,33 @@ module KS10 (
    wire         cpuRUN;                 // CPU Run Status
    wire         cpuEXEC;                // CPU Exec Status
    wire         cpuCONT;                // CPU Cont Status
+
+   //
+   // DUP11 Signals
+   //
+
+   reg          dupRI;                  // DUP11 Ring Indication
+   reg          dupCTS;                 // DUP11 Clear To Send
+   reg          dupDCD;                 // DUP11 Data Carrier Detect
+   reg          dupDSR;                 // DUP11 Data Set Ready
+   wire         dupRTS;                 // DUP11 Request to Send
+   wire         dupDTR;                 // DUP11 Data Terminal Ready
+   wire         dupCLK;                 // DUP11 Test Clock
+   reg          dupRXC;                 // DUP11 Receiver Clock
+   reg          dupRXD;                 // DUP11 Receiver Data
+   reg          dupTXC;                 // DUP11 Transmitter Clock
+   wire         dupTXD;                 // DUP11 Transmitter Data
+   wire [ 7: 0] dupTXFIFO = 0;          // FIXME
+   wire         dupTXFIFO_RD;           // DUP11 RX FIFO Read
+   wire         dupTXEMPTY = 0;         // FIXME
+   wire [ 7: 0] dupRXFIFO = 0;          // FIXME
+   wire         dupRXFULL = 0;          // FIXME
+   wire         dupRXFIFO_WR;           // DUP11 RX FIFO Write
+   wire         dupH325;                // DUP11 H325 Loopback
+   wire         dupW3;                  // DUP11 Config Wire 3
+   wire         dupW5;                  // DUP11 Config Wire 5
+   wire         dupW6;                  // DUP11 Config Wire 6
+   wire [ 0:31] dupCCR;                 // DUP11 Console Configuration Register
 
    //
    // DZ11 Signals
@@ -177,7 +209,7 @@ module KS10 (
    // RPxx Interfaces
    //
 
-   wire [ 0:63] rpCCR;                  // RPXX Console Control Register
+   wire [ 0:31] rpCCR;                  // RPXX Console Control Register
    wire [ 7: 0] rpWRL;                  // RPXX Write Lock
    wire [ 7: 0] rpMOL;                  // RPXX Media on-line
    wire [ 7: 0] rpDPR;                  // RPXX Drive Present
@@ -243,6 +275,48 @@ module KS10 (
    wire         debugHALT;              // Breakpoint the CPU
 
    //
+   // Synchronize the DUPCCR
+   //
+
+   SYNC #(
+      .WIDTH (16)
+   ) syncDUP (
+      .clk   (cpuCLK),
+      .rst   (rst),
+      .i     ({dupCCR[4:7], dupCCR[20:31]}),
+      .o     ({cslDUPRI, cslDUPCTS, cslDUPDSR, cslDUPDCD, dupH325, dupW3, dupW5, dupW6, dupRXFIFO})
+   );
+
+   //
+   // This simulates the H325 Loopback Connector which is required for the
+   // DUP11 diagnostics.
+   //
+
+   always @*
+     begin
+        if (dupH325)
+          begin
+             dupCTS <= dupRTS;
+             dupDSR <= dupDTR;
+             dupDCD <= dupRTS;
+             dupRI  <= dupDTR;
+             dupRXD <= dupTXD;
+             dupRXC <= dupCLK;
+             dupTXC <= dupCLK;
+          end
+        else
+          begin
+             dupCTS <= cslDUPCTS;
+             dupDSR <= cslDUPDSR;
+             dupDCD <= cslDUPDCD;
+             dupRI  <= cslDUPRI;
+             dupRXD <= dupTXD;
+             dupRXC <= dupCLK;
+             dupTXC <= dupCLK;
+          end
+     end
+
+   //
    // Synchronize the DZCCR
    //
 
@@ -277,7 +351,7 @@ module KS10 (
    ) syncRPCCR (
       .clk   (cpuCLK),
       .rst   (rst),
-      .i     (rpCCR[40:63]),
+      .i     (rpCCR[8:31]),
       .o     ({rpDPR, rpMOL, rpWRL})
    );
 
@@ -421,6 +495,15 @@ module KS10 (
       .cslCACHEEN       (cslCACHEEN),
       .cslINTR          (cslINTR),
       .cslRESET         (cpuRST),
+      // DUP11 Interface
+      .dupTXFIFO        (dupTXFIFO),
+      .dupTXEMPTY       (dupTXEMPTY),
+      .dupTXFIFO_RD     (dupTXFIFO_RD),
+      .dupRXFULL        (dupRXFULL),
+      .dupRXFIFO_WR     (dupRXFIFO_WR),
+      .dupRTS           (dupRTS),
+      .dupDTR           (dupDTR),
+      .dupCCR           (dupCCR),
       // DZ11 Interfaces
       .dzCCR            (dzCCR),
       // LP20/LP26 Interfaces
@@ -589,8 +672,7 @@ module KS10 (
       .rhDEV            (`rh1DEV),
       .rhADDR           (`rh1ADDR),
       .rhVECT           (`rh1VECT),
-      .rhINTR           (`rh1INTR),
-      .drvTYPE          (`rpRP06)
+      .rhINTR           (`rh1INTR)
    )
    uRH11 (
       .rst              (cpuRST),
@@ -719,6 +801,64 @@ module KS10 (
       .lpDEMAND         (lpDEMAND)
    );
 
+`ifdef DUP11
+
+   //
+   // DUP11 #1 is connected to IO Bridge 3 Device 3
+   //
+
+   DUP11 #(
+      .dupDEV           (`dup1DEV),
+      .dupADDR          (`dup1ADDR),
+      .dupVECT          (`dup1VECT),
+      .dupINTR          (`dup1INTR)
+   ) uDUP11 (
+      .clk              (cpuCLK),
+      .rst              (cpuRST),
+      // DUP Configuration
+      .dupW3            (dupW3),
+      .dupW5            (dupW5),
+      .dupW6            (dupW6),
+      // Device Interface
+      .devRESET         (devRESET[3]),
+      .devINTR          (devINTR[3][3]),
+      .devINTA          (devINTA[3][3]),
+      .devREQI          (devREQI[3][3]),
+      .devREQO          (devREQO[3][3]),
+      .devACKI          (devACKI[3][3]),
+      .devACKO          (devACKO[3][3]),
+      .devADDRI         (devADDRI[3][3]),
+      .devADDRO         (devADDRO[3][3]),
+      .devDATAI         (devDATAI[3][3]),
+      .devDATAO         (devDATAO[3][3]),
+      // DUP Interfaces
+      .dupRI            (dupRI),
+      .dupCTS           (dupCTS),
+      .dupDCD           (dupDCD),
+      .dupDSR           (dupDSR),
+      .dupRTS           (dupRTS),
+      .dupDTR           (dupDTR),
+      .dupCLK           (dupCLK),
+      .dupRXC           (dupRXC),
+      .dupRXD           (dupRXD),
+      .dupTXC           (dupTXC),
+      .dupTXD           (dupTXD)
+   );
+
+`else
+
+   //
+   // IO Bridge #3, Device 3 is not connected. Tie inputs
+   //
+
+   assign devINTR[3][3] = 0;
+   assign devREQO[3][3] = 0;
+   assign devACKO[3][3] = 0;
+   assign devADDRO[3][3] = 0;
+   assign devDATAO[3][3] = 0;
+
+`endif
+
    //
    // Debug Interface
    //
@@ -811,16 +951,6 @@ module KS10 (
    assign devACKO[1][4] = 0;
    assign devADDRO[1][4] = 0;
    assign devDATAO[1][4] = 0;
-
-   //
-   // IO Bridge #3, Device 3 is not implemented. Tie inputs
-   //
-
-   assign devINTR[3][3] = 0;
-   assign devREQO[3][3] = 0;
-   assign devACKO[3][3] = 0;
-   assign devADDRO[3][3] = 0;
-   assign devDATAO[3][3] = 0;
 
    //
    // IO Bridge #3, Device 4 is not implemented. Tie inputs

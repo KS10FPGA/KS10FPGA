@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2018 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -138,33 +138,34 @@ module testbench;
    // Register Addresses from Console Interface
    //
 
-   localparam [ 7: 0] addrREGADDR   = 8'h00;
-   localparam [ 7: 0] addrREGDATA   = 8'h08;
-   localparam [ 7: 0] addrREGSTATUS = 8'h10;
-   localparam [ 7: 0] addrREGCIR    = 8'h18;
-   localparam [ 7: 0] addrREGDZCCR  = 8'h20;
-   localparam [ 7: 0] addrREGLPCCR  = 8'h24;
-   localparam [ 7: 0] addrREGRHCCR  = 8'h28;
-   localparam [ 7: 0] addrRH11DEB   = 8'h30;
-   localparam [ 7: 0] addrDCSR      = 8'h38;
-   localparam [ 7: 0] addrDBAR      = 8'h40;
-   localparam [ 7: 0] addrDBMR      = 8'h48;
-   localparam [ 7: 0] addrDITR      = 8'h50;
-   localparam [ 7: 0] addrVersion   = 8'h78;
+   localparam [ 7: 0] addrREGADDR   = 8'h00,
+                      addrREGDATA   = 8'h08,
+                      addrREGSTATUS = 8'h10,
+                      addrREGCIR    = 8'h18,
+                      addrREGDZCCR  = 8'h20,
+                      addrREGLPCCR  = 8'h24,
+                      addrREGRHCCR  = 8'h28,
+                      addrREGDPCCR  = 8'h2c,
+                      addrRH11DEB   = 8'h30,
+                      addrDCSR      = 8'h38,
+                      addrDBAR      = 8'h40,
+                      addrDBMR      = 8'h48,
+                      addrDITR      = 8'h50,
+                      addrVersion   = 8'h78;
 
    //
    // KS10 Addresses
    //
 
-   localparam [18:35] addrSWITCH    = 18'o000030;
-   localparam [18:35] addrKASW      = 18'o000031;
-   localparam [18:35] addrCIN       = 18'o000032;
-   localparam [18:35] addrCOUT      = 18'o000033;
-   localparam [18:35] addrKIN       = 18'o000034;
-   localparam [18:35] addrKOUT      = 18'o000035;
-   localparam [18:35] addrRHBASE    = 18'o000036;
-   localparam [18:35] addrBOOTDSK   = 18'o000037;
-   localparam [18:35] addrBOOTMAG   = 18'o000040;
+   localparam [18:35] addrSWITCH    = 18'o000030,
+                      addrKASW      = 18'o000031,
+                      addrCIN       = 18'o000032,
+                      addrCOUT      = 18'o000033,
+                      addrKIN       = 18'o000034,
+                      addrKOUT      = 18'o000035,
+                      addrRHBASE    = 18'o000036,
+                      addrBOOTDSK   = 18'o000037,
+                      addrBOOTMAG   = 18'o000040;
 
    //
    // Halt Status
@@ -689,10 +690,23 @@ module testbench;
         conWRITE32(addrREGDZCCR, 32'h0000ff00);
 
         //
+        // Put the printer on-line.  Set the baud rate
+        //
+
+        conWRITE32(addrREGLPCCR, 32'h02590002);
+
+        //
         // Enable UNIT0, UNIT1, and UNIT2 disk drives
         //
 
-        conWRITE64(addrREGRHCCR, 64'h00000000_07070700);
+        conWRITE32(addrREGRHCCR, 32'h07070700);
+
+        //
+        // Set jumper W3 and W6 of the DPCCR
+        // Enable the H325 loopback connector
+        //
+
+        conWRITE32(addrREGDPCCR, 32'h00000d00);
 
         //
         // Initialize the Debug Registers
@@ -722,12 +736,6 @@ module testbench;
 
         conREAD36(addrREGCIR, temp);
         $display("[%11.3f] KS10: CIR is \"%12o\"", $time/1.0e3, temp);
-
-        //
-        // Put the printer on-line.  Set the baud rate
-        //
-
-        conWRITE32(addrREGLPCCR, 32'h02590002);
 
         //
         // Handle Startup.
@@ -810,9 +818,9 @@ module testbench;
                   expect("UBA # - ",                                                    "1\015",       state[0]);
                   expect("DISK:<DIRECTORY> OR DISK:[P,PN] - ",                          "PS:\015",     state[1]);
                   expect("SMMON CMD - ",                                                "SMCPU\015",   state[2]);
-                  expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",                     "Y\015",       state[3]);
+                  expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",                     "0\015",       state[3]);
                   expect("LH SWITCHES <# OR ?> - ",                                     "0\015",       state[4]);
-                  expect("RH SWITCHES <# OR ?> - ",                                     "40\015",      state[5]);
+                  expect("RH SWITCHES <# OR ?> - ",                                     "0\015",       state[5]);
 
                   //
                   // DSRPA (RP06-RH11 BASIC DRIVE DIAGNOSTIC) Responses
@@ -836,8 +844,16 @@ module testbench;
                   expect("CHANNEL-PASS NUMBER: (1-16, CR=ALL CHANNELS) ",               "\015",        state[16]);
                   expect("CHANNEL NUMBER: (1-12, CR=ALL CHANNELS) ",                    "\015",        state[17]);
                   expect("CHANNEL NUMBER: (2-12, CR=ALL CHANNELS) ",                    "\015",        state[18]);
-                  expect("*",                                                           "*\015",       state[19]);
+//                expect("*",                                                           "A\015",       state[19]);
 
+                  //
+                  // DSDUA (DSDUA DECSYSTEM 2020 DUP-11 DIAGNOSTICS)
+                  //
+
+                  expect("IS THE DUP-11 UNIT #1 OR #2 ?",                               " 1\015",      state[20]);
+                  expect("DO YOU WANT A MAP OF THE DUP-11 STATUS ? Y OR N <CR> - ",     "N\015",       state[21]);
+                  expect("IS THE H325 TURN AROUND CONNECTER IN PLACE ? Y OR N <CR> - ", "Y\015",       state[22]);
+                  expect("*",                                                           "65-75\015",      state[23]);
                   charout();
 
 `endif
@@ -1011,7 +1027,6 @@ module testbench;
              $fflush(file);
           end
      end
-
 
 `endif
 

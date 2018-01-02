@@ -16,7 +16,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2017 Rob Doyle
+// Copyright (C) 2013-2018 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -89,6 +89,17 @@ static enum access_t {
 
 //!
 //! \brief
+//!    DUP11 non-volatile configuration
+//!
+
+static struct dupcfg_t {
+    uint32_t dupccr;
+} dupcfg;
+
+static const char *dupcfg_file = "DUP11CFG.DAT";
+
+//!
+//! \brief
 //!    DZ11 non-volatile configuration
 //!
 
@@ -131,6 +142,27 @@ static struct rpcfg_t {
 } rpcfg;
 
 static const char *rpcfg_file = "RPXXCFG.DAT";
+
+//!
+//! \brief
+//!    Initialize DUP Console Control Register
+//!
+
+void initDUPCCR(void) {
+    //
+    // Read DUPCCR
+    //
+
+    uint32_t dupccr = ks10_t::readDUPCCR();
+
+    dupccr |= ks10_t::dupH325 | ks10_t::dupW3 | ks10_t::dupW6;
+
+    //
+    // Write DUPCCR back
+    //
+
+    ks10_t::writeDUPCCR(dupccr);
+}
 
 //!
 //! \brief
@@ -190,14 +222,19 @@ void recallConfig(bool debug) {
     // be read.
     //
 
+    if (!config_t::read(debug, dupcfg_file, &dupcfg, sizeof(dupcfg))) {
+        printf("KS10: Unable to read \"%s\".  Using defaults.\n", dupcfg_file);
+        dupcfg.dupccr = 0x00000d00;
+    }
+
     if (!config_t::read(debug, dzcfg_file, &dzcfg, sizeof(dzcfg))) {
         printf("KS10: Unable to read \"%s\".  Using defaults.\n", dzcfg_file);
-        dzcfg.dzccr = 0x0000ff00U;
+        dzcfg.dzccr = 0x0000ff00;
     }
 
     if (!config_t::read(debug, lpcfg_file, &lpcfg, sizeof(lpcfg))) {
         printf("KS10: Unable to read \"%s\".  Using defaults.\n", lpcfg_file);
-        lpcfg.lpccr = 0x00000001U;
+        lpcfg.lpccr = 0x00000001;
     }
 
     if (!config_t::read(debug, rhcfg_file, &rhcfg, sizeof(rhcfg))) {
@@ -236,10 +273,7 @@ void recallConfig(bool debug) {
     ks10_t::writeDBAR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Address Register
     ks10_t::writeDBMR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Mask Register
 
-    //
-    // Initialize RPCCR
-    //
-
+    initDUPCCR();                                               // Initialize the DUP11 Console Control Register
     initLPCCR();                                                // Initialize the LP20 Console Control Registrer
 
 }
@@ -1353,6 +1387,26 @@ static void cmdDN(int argc, char *argv[]) {
     }
 }
 
+#ifdef CUSTOM_CMD
+
+//!
+//! \brief
+//!    Configure DUP11 Synchronous Serial Interface
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the argument.
+//!
+
+static void cmdDP(int argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
+}
+
+#endif
+
 //!
 //! \brief
 //!    Disk Select
@@ -2049,7 +2103,7 @@ static void cmdLP(int argc, char *argv[]) {
     const char *usage =
         "Usage: LP {OVFU | DAVFU}, {ONLINE | OFFLINE}} \n"
         "       LP BREAK\n"
-		"       LP PRINT filename\n"
+                "       LP PRINT filename\n"
         "       LP SAVE\n"
         "       LP STATUS\n";
 
@@ -3039,6 +3093,9 @@ void taskCommand(void * param) {
         {"DI", cmdDI},          // Deposit IO
         {"DM", cmdDM},          // Deposit Memory
         {"DN", cmdDN},
+#ifdef CUSTOM_CMD
+        {"DP", cmdDP},          // DUP11 Test
+#endif
         {"DR", cmdXX},          // Not implemented.
         {"DS", cmdDS},
 #ifdef CUSTOM_CMD

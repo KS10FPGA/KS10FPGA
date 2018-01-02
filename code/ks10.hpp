@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2017 Rob Doyle
+// Copyright (C) 2013-2018 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -198,12 +198,14 @@ class ks10_t {
         static void writeIO(addr_t addr, data_t data);
         static uint16_t readIObyte(addr_t addr);
         static void writeIObyte(addr_t addr, uint16_t data);
+        static uint32_t readDUPCCR(void);
+        static void writeDUPCCR(uint32_t data);
         static uint32_t readDZCCR(void);
         static void writeDZCCR(uint32_t data);
         static uint32_t readLPCCR(void);
         static void writeLPCCR(uint32_t data);
-        static uint64_t readRPCCR(void);
-        static void writeRPCCR(uint64_t data);
+        static uint32_t readRPCCR(void);
+        static void writeRPCCR(uint32_t data);
         static data_t readDCSR(void);
         static void writeDCSR(data_t data);
         static data_t readDBAR(void);
@@ -283,7 +285,10 @@ class ks10_t {
         static constexpr volatile uint32_t * regLPCCR = reinterpret_cast<uint32_t *>(epiOffset + 0x24);
 
         //!< RH11 Console Control Register
-        static constexpr volatile uint64_t * regRPCCR = reinterpret_cast<uint64_t *>(epiOffset + 0x28);
+        static constexpr volatile uint32_t * regRPCCR = reinterpret_cast<uint32_t *>(epiOffset + 0x28);
+
+        //!< DUP11 Console Control Register
+        static constexpr volatile uint32_t * regDUPCCR = reinterpret_cast<uint32_t *>(epiOffset + 0x2c);
 
         //!< RH11 Debug Register
         static constexpr volatile uint64_t * regRH11Debug = reinterpret_cast<uint64_t *>(epiOffset + 0x30);
@@ -311,8 +316,11 @@ class ks10_t {
         //
 
         static void go(void);
-        static data_t readReg64(volatile void * reg);
-        static void writeReg64(volatile void * reg, data_t data);
+        static uint32_t readReg32(volatile void * reg);
+        static uint64_t readReg64(volatile void * reg);
+        static void writeReg32(volatile void * reg, uint32_t data);
+        static void writeReg64(volatile void * reg, uint64_t data);
+        static bool testReg32(volatile void * addr, const char *name, bool verbose, uint32_t mask = 0xfffffffful);
         static bool testReg64(volatile void * addr, const char *name, bool verbose, uint64_t mask = 0xffffffffffffffffull);
 
         //
@@ -390,6 +398,25 @@ class ks10_t {
         static const uint8_t rh11INFAIL = 126;
 
         //
+        // DUP11 Configuration Bits
+        //
+
+        static const uint32_t dupTXE     = 0x80000000;
+        static const uint32_t dupRI      = 0x08000000;
+        static const uint32_t dupCTS     = 0x04000000;
+        static const uint32_t dupDSR     = 0x02000000;
+        static const uint32_t dupDCD     = 0x01000000;
+        static const uint32_t dupTXFIFO  = 0x00ff0000;
+        static const uint32_t dupRXF     = 0x00008000;
+        static const uint32_t dupDTR     = 0x00004000;
+        static const uint32_t dupRTS     = 0x00002000;
+        static const uint32_t dupH325    = 0x00000800;
+        static const uint32_t dupW3      = 0x00000400;
+        static const uint32_t dupW5      = 0x00000200;
+        static const uint32_t dupW6      = 0x00000100;
+        static const uint32_t dupRXFIFO  = 0x000000ff;
+
+        //
         // LPCCR Configuration Bits
         //
 
@@ -433,7 +460,7 @@ inline uint32_t ks10_t::rh(data_t data) {
 
 //!
 //! \brief
-//!    This function reads a 36-bit register from FPGA.
+//!    This function reads a 64-bit (or 36-bit) register from FPGA.
 //!
 //! \details
 //!    The address is the register address mapped through the EPI.
@@ -445,13 +472,13 @@ inline uint32_t ks10_t::rh(data_t data) {
 //!    Register contents.
 //!
 
-inline ks10_t::data_t ks10_t::readReg64(volatile void * reg) {
-    return *reinterpret_cast<volatile data_t*>(reg);
+inline uint64_t ks10_t::readReg64(volatile void * reg) {
+    return *reinterpret_cast<volatile uint64_t *>(reg);
 }
 
 //!
 //! \brief
-//!    This function writes to a 36-bit register in the FPGA.
+//!    This function writes to a 64-bit (or 36-bit) register in the FPGA.
 //!
 //! \details
 //!    The address is the register address mapped through the EPI.
@@ -463,8 +490,44 @@ inline ks10_t::data_t ks10_t::readReg64(volatile void * reg) {
 //!    data is the data to be written to the register.
 //!
 
-inline void ks10_t::writeReg64(volatile void * reg, data_t data) {
-    *reinterpret_cast<volatile data_t *>(reg) = data;
+inline void ks10_t::writeReg64(volatile void * reg, uint64_t data) {
+    *reinterpret_cast<volatile uint64_t *>(reg) = data;
+}
+
+//!
+//! \brief
+//!    This function reads a 32-bit register from FPGA.
+//!
+//! \details
+//!    The address is the register address mapped through the EPI.
+//!
+//! \param reg -
+//!    base address of the register.
+//!
+//! \returns
+//!    Register contents.
+//!
+
+inline uint32_t ks10_t::readReg32(volatile void * reg) {
+    return *reinterpret_cast<volatile uint32_t*>(reg);
+}
+
+//!
+//! \brief
+//!    This function writes to a 32-bit register in the FPGA.
+//!
+//! \details
+//!    The address is the register address mapped through the EPI.
+//!
+//! \param reg -
+//!    base address of the register.
+//!
+//! \param data -
+//!    data is the data to be written to the register.
+//!
+
+inline void ks10_t::writeReg32(volatile void * reg, uint32_t data) {
+    *reinterpret_cast<volatile uint32_t *>(reg) = data;
 }
 
 #endif
