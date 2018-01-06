@@ -31,13 +31,14 @@ legacy RS-232 devices.
 
 <p>The following peripheral devices have been implemented:</p>
 <ul>
-<li>1024 KW Memory</li>
-<li>RH11 Massbus Controller</li>
-<li>DZ11 Terminal Multiplexer</li>
-<li>RP06 Disk Drives (x8)</li>
-<li>LP20 Printer Interface</li>
-<li>LP26 Printer</li>
-<li>DUP11 Synchronous Serial Interface</li>
+  <li>1024 KW Memory</li>
+  <li>RH11 Massbus Controller</li>
+  <li>DZ11 Terminal Multiplexer</li>
+  <li>RP06 Disk Drives (x8)</li>
+  <li>LP20 Printer Interface</li>
+  <li>LP26 Printer</li>
+  <li>DUP11 Synchronous Serial Interface</li>
+  <li>KMC11 General Purpose Processor</li>
 </ul>
 
 More details can be found on the wiki pages at
