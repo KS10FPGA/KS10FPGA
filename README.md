@@ -38,7 +38,7 @@ legacy RS-232 devices.
   <li>LP20 Printer Interface</li>
   <li>LP26 Printer</li>
   <li>DUP11 Synchronous Serial Interface</li>
-  <li>KMC11 General Purpose Processor</li>
+  <li>KMC11 General Purpose Processor (in work)</li>
 </ul>
 
 More details can be found on the wiki pages at
