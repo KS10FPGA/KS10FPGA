@@ -33,10 +33,10 @@ legacy RS-232 devices.
 <ul>
   <li>1024 KW Memory</li>
   <li>RH11 Massbus Controller</li>
-  <li>DZ11 Terminal Multiplexer</li>
   <li>RP06 Disk Drives (x8)</li>
+  <li>DZ11 Terminal Multiplexer</li>
   <li>LP20 Printer Interface</li>
-  <li>LP26 Printer</li>
+  <li>LP26 Printer with Direct Access Vertical Format Unit</li>
   <li>DUP11 Synchronous Serial Interface</li>
   <li>KMC11 General Purpose Processor (in work)</li>
 </ul>
