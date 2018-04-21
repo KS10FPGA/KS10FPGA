@@ -45,4 +45,4 @@ More details can be found on the wiki pages at
 <a href="https://github.com/KS10FPGA/KS10FPGA/wiki">https://github.com/KS10FPGA/KS10FPGA/wiki</a>
 
 <p>Rob Doyle</p>
-<p>doyle at cox dot net</p>
+<p>email: doyle at cox dot net</p>
