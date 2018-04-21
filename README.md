@@ -43,3 +43,6 @@ legacy RS-232 devices.
 
 More details can be found on the wiki pages at
 <a href="https://github.com/KS10FPGA/KS10FPGA/wiki">https://github.com/KS10FPGA/KS10FPGA/wiki</a>
+
+Rob Doyle
+doyle at cox dot net
