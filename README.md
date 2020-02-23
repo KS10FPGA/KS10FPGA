@@ -27,8 +27,8 @@ legacy RS-232 devices.
 
 I have selected the 
 <a href="https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=1046">Terasic DE10-Nano Kit</a>
-as the basic platform for the system.  To that I've added a custom IO card
-which provides SSRAM-based KS10 main memory, 8x USB RS-232 ports, SD Card, and
+as the basic platform for the system.  To that I've added a custom Daughter Board
+which provides SSRAM-based main memory, 8x USB RS-232 ports, SD Card, and
 front panel interface. The DE10-Nano Kit is readily available on Amazon, Digikey
 and Mouser.
 
