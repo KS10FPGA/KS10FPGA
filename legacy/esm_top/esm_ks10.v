@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -49,17 +49,17 @@ module ESM_KS10 (
       input  wire         MR_N,         // Master Reset push button
       output wire         MR,           // Master Reset out
       // DZ11 Interfaces
-      input  wire [ 1: 0] ttyTXD,       // DZ RS-232 Transmitted Data
-      output wire [ 1: 0] ttyRXD,       // DZ RS-232 Received Data
+      input  wire [ 1: 0] DZ_TXD,       // DZ RS-232 Transmitted Data
+      output wire [ 1: 0] DZ_RXD,       // DZ RS-232 Received Data
       // LP20 Interfaces
-      input  wire         lprTXD,       // LP20 RS-232 Transmitted Data
-      output wire         lprRXD,       // LP20 RS-232 Received Data
+      input  wire         LP_TXD,       // LP20 RS-232 Transmitted Data
+      output wire         LP_RXD,       // LP20 RS-232 Received Data
       // RH11 Interfaces
-      input  wire         sdCD_N,       // SD Card Detect
-      input  wire         sdMISO,       // SD Data In
-      output wire         sdMOSI,       // SD Data Out
-      output wire         sdSCLK,       // SD Clock
-      output wire         sdCS,         // SD Chip Select
+      input  wire         SD_CD_N,      // SD Card Detect
+      input  wire         SD_MISO,      // SD Data In
+      output wire         SD_MOSI,      // SD Data Out
+      output wire         SD_SCLK,      // SD Clock
+      output wire         SD_SS_N,      // SD Chip Select
       // RPXX Interfaces
       output wire [ 7: 0] rpLEDS_N,     // RPXX Status LEDS
       // Console Microcontroller Interfaces
@@ -102,8 +102,8 @@ module ESM_KS10 (
    // SD Interfaces
    //
 
-   wire [7:0] sdWP = {7{1'b0}};         // SD Write Protect
-   wire [7:0] sdCD = {7{1'b1}};         // SD Card Detect
+   wire [7:0] SD_WP = {7{1'b0}};        // SD Write Protect
+   wire [7:0] SD_CD = {7{1'b1}};        // SD Card Detect
 
    //
    // LP20 Interface
@@ -120,19 +120,19 @@ module ESM_KS10 (
       .RESET_N      (RESET_N),
       .CLK50MHZ     (CLK50MHZ),
       // DZ11
-      .dzTXD        (dzTXD),
-      .dzRXD        (dzRXD),
-      .dzDTR        (dzDTR),
+      .DZ_TXD       (dzTXD),
+      .DZ_RXD       (dzRXD),
+      .DZ_DTR       (dzDTR),
       // LP20
-      .lpRXD        (lpRXD),
-      .lpTXD        (lpTXD),
+      .LP_RXD       (lpRXD),
+      .LP_TXD       (lpTXD),
       // SD
-      .sdCD         (sdCD),
-      .sdWP         (sdWP),
-      .sdMISO       (sdMISO),
-      .sdMOSI       (sdMOSI),
-      .sdSCLK       (sdSCLK),
-      .sdCS         (sdCS),
+      .SD_CD        (SD_CD),
+      .SD_WP        (SD_WP),
+      .SD_MISO      (SD_MISO),
+      .SD_MOSI      (SD_MOSI),
+      .SD_SCLK      (SD_SCLK),
+      .SD_SS_N      (SD_SS_N),
       // RPXX
       .rpLEDS       (rpLEDS),
       // Console
@@ -164,20 +164,15 @@ module ESM_KS10 (
    // TTY3 - TTY7 are not pinned out
    //
 
-   assign ttyRXD[0] = dzTXD[0];
-   assign dzRXD[0] = ttyTXD[0];
-
-   assign ttyRXD[1] = dzTXD[1];
-   assign dzRXD[1] = ttyTXD[1];
-
-   assign dzRXD[7:2] = 6'b0;
+   assign DZ_RXD[1:0] = dzTXD[1:0];
+   assign dzRXD       = {6'b0, DZ_TXD[1:0]};
 
    //
    // Like the TTY RS-232, the LPR RS-232 lines get twised here.
    //
 
-   assign lpRXD = lprTXD;
-   assign lprRXD = lpTXD;
+   assign LP_RXD = lpTXD;
+   assign lpRXD  = LP_TXD;
 
    //
    // MR needs to be an input for the system to work.  We assign it to an

@@ -1,7 +1,7 @@
 Microcode V130 was the last revision of DEC microcode for the KS10.  Because
 the DEC KS10 only provided 2K words of microcode memory, DEC shipped 3 variants
 of this microcode because a unified version was too large to fit the KS10's
-limited amount microcode memory.   These were:
+limited amount of microcode memory.   These were:
 
 1. KS10.MCR  - KI10 Paging and KL10 Paging.  No UBABLT.  Used for diagnostics.
 2. T10KI.MCR - KI10 Paging and UBABLT.  No KL10 Paging.  Used for TOPS10.

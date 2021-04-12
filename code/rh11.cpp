@@ -40,10 +40,8 @@
 #include "stdio.h"
 #include "uba.hpp"
 #include "rh11.hpp"
-#include "debug.hpp"
 #include "vt100.hpp"
 #include "commands.hpp"
-#include "SafeRTOS/SafeRTOS_API.h"
 
 //!
 //! \brief
@@ -88,7 +86,7 @@ bool rh11_t::wait(bool verbose) {
     // Verify that disk goes busy
     //
 
-    if (!cs1_read() & cs1_rdy) {
+    if (!(cs1_read() & cs1_rdy)) {
         success = false;
         if (verbose) {
             printf("KS10: Error: Disk should be busy.\n");
@@ -103,14 +101,14 @@ bool rh11_t::wait(bool verbose) {
         if (cs1_read() & cs1_rdy) {
             break;
         }
-        xTaskDelay(1);
+        usleep(100);
     }
 
     //
     // Check ready status
     //
 
-    if (!cs1_read() & cs1_rdy) {
+    if (!(cs1_read() & cs1_rdy)) {
         success = false;
         if (verbose) {
             printf("KS10: Error: Disk Timeout.\n");
@@ -314,7 +312,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
     // Read the Home Block
     //
 
-    debug_printf(debug, "KS10: Reading Home Block.\n");
+    printf("KS10: Reading Home Block.\n");
     bool success = readBlock(vaddr, daddr);
     if (success) {
         if (isHomBlock(paddr)) {
@@ -331,7 +329,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                 // Read the FE File Page (a.k.a. Page of Pointers).
                 //
 
-                debug_printf(debug, "KS10: Reading FE File Page.\n");
+                printf("KS10: Reading FE File Page.\n");
                 success = readBlock(vaddr, daddr);
                 if (success) {
 
@@ -347,7 +345,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                         // Read the Monitor Pre-boot.
                         //
 
-                        debug_printf(debug, "KS10: Reading Monitor Pre-Boot Page.\n");
+                        printf("KS10: Reading Monitor Pre-Boot Page.\n");
                         success = readBlock(vaddr, daddr);
                         if (success) {
 #if 0
@@ -356,9 +354,9 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                             }
 #endif
                             if (ks10_t::readMem(paddr) != 0) {
-                                debug_printf(debug, "KS10: Monitor Pre-Boot read successfully.\n");
+                                printf("KS10: Monitor Pre-Boot read successfully.\n");
                                 ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
-                                ks10_t::begin();
+                                ks10_t::startRUN();
                                 consoleOutput();
                                 return true;
                             } else {
@@ -425,7 +423,7 @@ void rh11_t::testFIFO(void) {
 
         switch (i) {
             case 0:
-                if (!cs2 & cs2_ir) {
+                if (!(cs2 & cs2_ir)) {
                     fail = true;
                     printf("KS10: CS2[IR] should be set after reset\n");
                 }
@@ -435,11 +433,11 @@ void rh11_t::testFIFO(void) {
                 }
                 break;
             case 1 ... 65:
-                if (!cs2 & cs2_ir) {
+                if (!(cs2 & cs2_ir)) {
                     fail = true;
                     printf("KS10: CS2[IR] should be set after %d entries.\n", i);
                 }
-                if (!cs2 & cs2_or) {
+                if (!(cs2 & cs2_or)) {
                     fail = true;
                     printf("KS10: CS2[OR] Should be set after %d entries.\n", i);
                 }
@@ -449,7 +447,7 @@ void rh11_t::testFIFO(void) {
                     fail = true;
                     printf("KS10: CS2[IR] should be clear after %d entries.\n", i);
                 }
-                if (!cs2 & cs2_or) {
+                if (!(cs2 & cs2_or)) {
                     fail = true;
                     printf("KS10: CS2[OR] Should be set after %d entries.\n", i);
                 }
@@ -893,7 +891,7 @@ void rh11_t::testInit(ks10_t::data_t unit) {
         if (ds_read() & ds_mol) {
             break;
         }
-        xTaskDelay(1);
+        usleep(100);
     }
 
     if (!(ds_read() & ds_mol)) {
@@ -1048,7 +1046,7 @@ void rh11_t::testRead(ks10_t::data_t unit) {
     if (wc_read() != 0) {
         pass = false;
         printf("KS10: RH11 Word Count Register (RHWC) should be 0.\n"
-               "      RH11 Word Count Register (RHWC) was 0x%04llx\n",
+               "      RH11 Word Count Register (RHWC) was 0x%04x\n",
                wc_read());
     }
 
@@ -1059,7 +1057,7 @@ void rh11_t::testRead(ks10_t::data_t unit) {
     if (ba_read() != vaddr + 4 * words) {
         pass = false;
         printf("KS10: RH11 Bus Address Register (RHBA) should be %06llo.\n"
-               "      RH11 Bus Address Register (RHBA) was %06llo\n",
+               "      RH11 Bus Address Register (RHBA) was %06o\n",
                vaddr + 4 * words, ba_read());
     }
 
@@ -1208,7 +1206,7 @@ void rh11_t::testWrite(ks10_t::data_t unit) {
     if (wc_read() != 0) {
         pass = false;
         printf("KS10: RH11 Word Count Register (RHWC) should be 0.\n"
-               "      RH11 Word Count Register (RHWC) was 0x%04llx\n",
+               "      RH11 Word Count Register (RHWC) was 0x%04x\n",
                wc_read());
     }
 
@@ -1219,7 +1217,7 @@ void rh11_t::testWrite(ks10_t::data_t unit) {
     if (ba_read() != vaddr + 4 * words) {
         pass = false;
         printf("KS10: RH11 Bus Address Register (RHBA) should be %06llo.\n"
-               "      RH11 Bus Address Register (RHBA) was %06llo\n",
+               "      RH11 Bus Address Register (RHBA) was %06o\n",
                vaddr + 4 * words, ba_read());
     }
 
@@ -1279,7 +1277,7 @@ void rh11_t::testWrchk(ks10_t::data_t unit) {
             if (cs1_read() & cs1_rdy) {
                 break;
             }
-            xTaskDelay(1);
+            usleep(100);
         }
     }
 
@@ -1380,7 +1378,7 @@ void rh11_t::testWrchk(ks10_t::data_t unit) {
         printf("KS10: Write check error on matching data.\n");
     }
 
-    printf("KS10: CS2 Register is 0x%04llx (1)\n", cs2_read());
+    printf("KS10: CS2 Register is 0x%04x (1)\n", cs2_read());
 
     //
     // Change the pattern on one word.  This should create a CS2[WCE].
@@ -1410,12 +1408,12 @@ void rh11_t::testWrchk(ks10_t::data_t unit) {
     // CS2[WCE] should be asserted.
     //
 
-    if (!cs2_read() & cs2_wce) {
+    if (!(cs2_read() & cs2_wce)) {
         pass = false;
         printf("KS10: No write check error on mismatching data.\n");
     }
 
-    printf("KS10: CS2 Register is 0x%04llx (2)\n", cs2_read());
+    printf("KS10: CS2 Register is 0x%04x (2)\n", cs2_read());
 
     //
     // Print results
@@ -1459,6 +1457,19 @@ void rh11_t::boot(ks10_t::data_t unit, bool diagmode) {
 
     ks10_t::addr_t offset = diagmode ? diagPrebootOffset : monPrebootOffset;
 
+#if 0
+
+    printf("RPCS1 = %06o\n"
+           "RPDT  = %06o\n"
+           "RPSN  = %06o\n"
+           "RPDS  = %06o\n",
+           cs1_read(),
+           dt_read(),
+           sn_read(),
+           ds_read());
+
+#endif
+
     //
     // Controller clear
     //
@@ -1483,6 +1494,7 @@ void rh11_t::boot(ks10_t::data_t unit, bool diagmode) {
     //
     // Set Unibus mapping
     //  This will page the destination to 01000
+
     //
 
     uba.pag_write(1, uba_t::pag_ftm | uba_t::pag_vld | uba_t::addr2page(paddr));

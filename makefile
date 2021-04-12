@@ -13,7 +13,7 @@
 #
 #******************************************************************************
 #
-# Copyright (C) 2013-2016 Rob Doyle
+# Copyright (C) 2013-2021 Rob Doyle
 #
 # This file is part of the KS10 FPGA Project
 #
@@ -33,26 +33,27 @@
 #******************************************************************************
 
 FPGA_LIST := \
-	ks10/fpga \
-	ks10/code \
-	ks10/makefile
+	fpga* \
+	code \
+	makefile
 
 ALL_LIST := \
-	ks10/fpga \
-	ks10/code \
-	ks10/makefile \
-	ks10/doc/Manual \
-	ks10/doc/Website 
+	fpga* \
+	code \
+	makefile \
+	doc/Manual \
+	doc/Website
 
 ARGS :=\
-	--directory=.. \
-	--exclude ks10/fpga/esm_top/ise/isim/* \
-	--exclude ks10/fpga/esm_top/ise/*.wdb \
-	--exclude ks10/fpga/esm_top/testbench/*.dsk \
-	--exclude ks10/fpga/esm_top/testbench/*.rp06 \
-	--exclude ks10/fpga/esm_top/testbench/RCS/*.dsk,v \
-	--exclude ks10/fpga/esm_top/testbench/RCS/*.rp06,v \
-	--exclude ks10/fpga/results/*
+	--exclude=fpga/esm_top/ise/isim/* \
+	--exclude=fpga/esm_top/ise/*.wdb \
+	--exclude=fpga*/testbench/*.dsk \
+	--exclude=fpga*/testbench/*.rp06.gz \
+	--exclude=fpga*/testbench/RCS/*.rp06.gz,v \
+	--exclude=fpga*/results/* \
+	--exclude=fpga*/*.wlf \
+	--exclude=fpga*/wlf* \
+	--exclude=fpga*/transcript
 
 all:
 	${MAKE} -C code console.bin

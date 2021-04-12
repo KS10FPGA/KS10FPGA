@@ -1,0 +1,11 @@
+{ "" "" "" "Variable or input pin \"data_b\" is defined but never used." {  } {  } 0 287013 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Verilog HDL or VHDL warning at alu.v(621): object \"bb\" assigned a value but never read" {  } {  } 0 10036 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "soc_system_hps_hps_io_border.sdc" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "CPU:uCPU\|USEQ:uUSEQ\|STACK:uSTACK\|* from synchronous design logic.  Pass-through logic has been added to match the read-during-write behavior of the original design." {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "alt_vipitc131_*" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "altera_*" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "hps_sdram_*" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "altera_mem_*" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "\"DROM.*\" at drom.v(*) has no driver or initial value, using a default initial value '0'" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "\"CROM.*\" at crom.v(*) has no driver or initial value, using a default initial value '0'" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "alt_vipvfr131*" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}

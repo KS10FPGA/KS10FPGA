@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2018 Rob Doyle
+// Copyright (C) 2013-2020 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -40,127 +40,120 @@
 //! @{
 //
 
-#include "epi.hpp"
-#include "stdio.h"
+#include <stdio.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <sys/mman.h>
+
 #include "ks10.hpp"
-#include "debug.hpp"
-#include "fatal.hpp"
-#include "fatfslib/ff.h"
-#include "driverlib/rom.h"
-#include "driverlib/gpio.h"
-#include "driverlib/sysctl.h"
-#include "driverlib/inc/hw_gpio.h"
-#include "driverlib/inc/hw_ints.h"
-#include "driverlib/inc/hw_types.h"
-#include "driverlib/inc/hw_memmap.h"
-#include "SafeRTOS/SafeRTOS_API.h"
 
-//
-// GPIO Bit Definitions
-//
+int ks10_t::fd;                                         //!< /dev/mem file descriptor
+ bool ks10_t::debug;                                    //!< Debug mode
+pthread_mutex_t ks10_t::lock;                           //!< FPGA access mutex
+char *ks10_t::fpgaAddrVirt;                             //!< FPGA Base Virtual Address
 
-#define GPIO_HALT_LED  GPIO_PIN_7       // PD7
-
-//
-// Pointers to interrupt handler functions
-//
-
-void (*ks10_t::consIntrHandler)(void);
-void (*ks10_t::haltIntrHandler)(void);
+volatile ks10_t::addr_t *ks10_t::regAddr;               //!< Console Address Register
+volatile ks10_t::data_t *ks10_t::regData;               //!< Console Data Register
+volatile ks10_t::data_t *ks10_t::regCIR;                //!< KS10 Console Instruction Register
+volatile uint32_t *ks10_t::regStat;                     //!< Console Control/Status Register
+volatile uint32_t *ks10_t::regDZCCR;                    //!< DZ11 Console Control Register
+volatile uint32_t *ks10_t::regLPCCR;                    //!< LP20 Console Control Register
+volatile uint32_t *ks10_t::regRPCCR;                    //!< RPxx Console Control Register
+volatile uint32_t *ks10_t::regDUPCCR;                   //!< DUP11 Console Control Register
+volatile uint32_t *ks10_t::regDEBCSR ;                  //!< Debug Control/Status Register
+volatile ks10_t::addr_t *ks10_t::regDEBBAR;             //!< Debug Breakpoint Address Register
+volatile ks10_t::addr_t *ks10_t::regDEBBMR;             //!< Debug Breakpoint Mask Register
+volatile uint64_t *ks10_t::regDEBITR;                   //!< Debug Instruction Trace Register
+volatile uint64_t *ks10_t::regDEBPCIR ;                 //!< Debug Program Counter and Instruction Register
+volatile const uint64_t *ks10_t::regRH11Debug;          //!< RH11 Debug Register
+const char *ks10_t::regVers;                            //!< Firmware Version Register
 
 //!
 //! \brief
 //!    Constructor
 //!
-//! \details
-//!    The constructor initializes this object.  For the most part, this
-//!    function initializes the EPI object.
-//!
-
-ks10_t::ks10_t(void) {
-    EPIInitialize();
-    printf("KS10: EPI interface initialized.\n");
-}
-
-//!
-//! \brief
-//!    This function configures the GPIO for the interrupts and enables the
-//!    interrupts.
+//! \param debug
+//!    <b>True</b> enables debug mode.
 //!
 //! \details
-//!    We use PB7 for the Console Interrupt from the KS10.  Normally PB7 is the
-//!    NMI but we don't want NMI semantics.  Therefore this code configures PB7
-//!    to be a normal active low GPIO-based interrupt.
-//!
-//!    We use PD7 for the Halt Interrupt.  It is triggered on both edges to
-//!    detect Halt transitions.
-//!
-//! \param consIntrHandler -
-//!    pointer to Console Interrupt Handler function
-//!
-//! \param haltIntrHandler -
-//!    pointer to Halt Interrupt Handler function
+//!    The constructor initializes this object. It mmaps the FPGA address space.
 //!
 
-void ks10_t::enableInterrupts(void (*consIntrHandler)(void), void (*haltIntrHandler)(void)) {
-    ks10_t::consIntrHandler = consIntrHandler;
-    ks10_t::haltIntrHandler = haltIntrHandler;
+ks10_t::ks10_t(bool debug) {
 
-    // Enable  GPIOB and GPIOD
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+    ks10_t::debug = debug;
 
-    // Configure the HALT LED input
-    ROM_GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, GPIO_HALT_LED);
+    //
+    // Open /dev/mem
+    //
 
-    // Unlock and change PB7 behavior - default is NMI
-    HWREG(GPIO_PORTB_BASE + GPIO_O_LOCK) = GPIO_LOCK_KEY_DD;
-
-    // Change commit register
-    HWREG(GPIO_PORTB_BASE + GPIO_O_CR) |= 0x00000080;
-
-    // Configure PD7 as an input
-    ROM_GPIODirModeSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_DIR_MODE_IN);
-    ROM_GPIODirModeSet(GPIO_PORTD_BASE, GPIO_PIN_7, GPIO_DIR_MODE_IN);
-
-    //Set max current 2mA and connect weak pull-up resistor
-    ROM_GPIOPadConfigSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
-    ROM_GPIOPadConfigSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
-
-    // Set the interrupt type for Pin B7 and Pin D7
-    ROM_GPIOIntTypeSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_FALLING_EDGE);
-    ROM_GPIOIntTypeSet(GPIO_PORTD_BASE, GPIO_PIN_7, GPIO_BOTH_EDGES);
-
-    // Enable interrupt
-    ROM_GPIOPinIntEnable(GPIO_PORTB_BASE, GPIO_PIN_7);
-    ROM_GPIOPinIntEnable(GPIO_PORTD_BASE, GPIO_PIN_7);
-
-    // Enable interrupts on Port B and Port D
-    ROM_IntEnable(INT_GPIOB);
-    ROM_IntEnable(INT_GPIOD);
-}
-
-//!
-//! \brief
-//!    Halt Interrupt Wrapper
-//!
-
-static bool dispatchHaltInterrupt = true;
-extern "C" void gpiodIntHandler(void) {
-    if (dispatchHaltInterrupt) {
-        (*ks10_t::haltIntrHandler)();
+    int fd;
+    if ((fd = open("/dev/mem", (O_RDWR | O_SYNC))) == -1) {
+        printf("KS10: open(\"/dev/mem\") failed.\n"
+               "      Aborting.\n");
+        if (!debug) {
+            exit(EXIT_FAILURE);
+        }
     }
-    ROM_GPIOPinIntClear(GPIO_PORTD_BASE, GPIO_PIN_7);
+
+    //
+    // Map FPGA Physical Address to Virtual Address
+    //
+
+    char *fpgaAddrVirt = (char *)mmap(NULL, fpgaAddrSize, (PROT_READ | PROT_WRITE), MAP_SHARED, fd, fpgaAddrPhys);
+    if (fpgaAddrVirt == MAP_FAILED) {
+        printf("KS10: mmap(\"/dev/mem\") failed.\n"
+               "      Aborting.\n");
+        if (!debug) {
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    //
+    // Create a pthread mutex
+    //
+
+    if (pthread_mutex_init(&lock, NULL) != 0) {
+        printf("KS10: pthread_mutex_init() failed.\n"
+               "      Aborting.\n");
+        if (!debug) {
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    regAddr      = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regCONAROffset]);    //!< Console Address Register
+    regData      = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONDROffset]);    //!< Console Data Register
+    regCIR       = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONIROffset]);    //!< KS10 Console Instruction Register
+    regStat      = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regCONCSROffset]);   //!< Console Control/Status Register
+    regDZCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDZCCROffset]);    //!< DZ11 Console Control Register
+    regLPCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regLPCCROffset]);    //!< LP20 Console Control Register
+    regRPCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regRPCCROffset]);    //!< RPxx Console Control Register
+    regDUPCCR    = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDUPCCROffset]);   //!< DUP11 Console Control Register
+    regDEBCSR    = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDEBCSROffset]);   //!< Debug Control/Status Register
+    regDEBBAR    = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regDEBBAROffset]);   //!< Debug Breakpoint Address Register
+    regDEBBMR    = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regDEBBMROffset]);   //!< Debug Breakpoint Mask Register
+    regDEBITR    = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regDEBITROffset]);   //!< Debug Instruction Trace Register
+    regDEBPCIR   = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regDEBPCIROffset]);  //!< Debug Program Counter and Instruction Register
+    regRH11Debug = reinterpret_cast<volatile const uint64_t *>(&fpgaAddrVirt[regRH11Offset]);     //!< RH11 Debug Register
+    regVers      = reinterpret_cast<         const char     *>(&fpgaAddrVirt[regVERSOffset]);     //!< Firmware Version Register
 }
 
 //!
 //! \brief
-//!    Console Interrupt Wrapper
+//!    Destructor
+//!
+//! \details
+//!    The destructor destroys this object. This function:
+//!       #.  destroys the mutex, and
+//!       #.  unmmaps the FPGA address space.
 //!
 
-extern "C" void gpiobIntHandler(void) {
-    ROM_GPIOPinIntClear(GPIO_PORTB_BASE, GPIO_PIN_7);
-    (*ks10_t::consIntrHandler)();
+ks10_t::~ks10_t(void) {
+    pthread_mutex_destroy(&lock);
+    if (munmap(fpgaAddrVirt, fpgaAddrSize) != 0) {
+        printf("KS10: munmap() failed.\n");
+    }
+    close(fd);
 }
 
 //!
@@ -173,910 +166,115 @@ extern "C" void gpiobIntHandler(void) {
 //!    The <b>Console Data Register</b> should not be accessed when the
 //!    <b>GO</b> bit is asserted.
 //!
+//! \note
+//!    This function is NOT thread safe.
+//!
 
-void ks10_t::go(void) {
+void ks10_t::__go(void) {
     writeRegStat(readRegStat() | statGO);
     for (int i = 0; i < 100; i++) {
         if ((readRegStat() & statGO) == 0) {
            return;
         }
-        taskYIELD();
+        usleep(1000);
     }
-    printf("GO-bit timeout\n");
+    printf("KS10: GO-bit timeout\n");
 }
 
 //!
 //! \brief
-//!    This function reads from <b>Console Status Register</b>
-//!
-//! \returns
-//!    Contents of the <b>Console Status Register</b>.
-//!
-
-ks10_t::data_t ks10_t::readRegStat(void) {
-    return readReg64(regStat);
-}
-
-//!
-//! \brief
-//!    This function writes to <b>Console Status Register</b>
-//!
-//! \param data -
-//!    data to be written to the <b>Console Status Register</b>.
-//!
-
-void ks10_t::writeRegStat(data_t data) {
-    writeReg64(regStat, data);
-}
-
-//!
-//! \brief
-//!    This function reads from <b>Console Address Register</b>
-//!
-//! \returns
-//!    Contents of the <b>Console Address Register</b>.
-//!
-
-ks10_t::data_t ks10_t::readRegAddr(void) {
-    return readReg64(regAddr);
-}
-
-//!
-//! \brief
-//!    This function writes to <b>Console Address Register</b>
-//!
-//! \param data -
-//!    data to be written to the <b>Console Address Register</b>.
-//!
-
-void ks10_t::writeRegAddr(data_t data) {
-    writeReg64(regAddr, data);
-}
-
-//!
-//! \brief
-//!    This function reads from <b>Console Data Register</b>
-//!
-//! \returns
-//!    Contents of the <b>Console Data Register</b>.
-//!
-
-ks10_t::data_t ks10_t::readRegData(void) {
-    return readReg64(regData);
-}
-
-//!
-//! \brief
-//!    This function writes to <b>Console Data Register</b>
-//!
-//! \param data -
-//!    data to be written to the <b>Console Data Register</b>.
-//!
-
-void ks10_t::writeRegData(data_t data) {
-    writeReg64(regData, data);
-}
-
-//!
-//! \brief
-//!    This function reads the <b>Console Instruction Register</b>
-//!
-//! \returns
-//!    Contents of the <b>Console Instruction Register</b>
-//!
-
-ks10_t::data_t ks10_t::readRegCIR(void) {
-    return readReg64(regCIR);
-}
-
-//!
-//! \brief
-//!    Function to write to the <b>Console Instruction Register</b>
-//!
-//! \param data -
-//!    data is the data to be written to the <b>Console Instruction
-//!    Register.</b>
-//!
-
-void ks10_t::writeRegCIR(data_t data) {
-    writeReg64(regCIR, data);
-}
-
-//!
-//! \brief
-//!    This function to reads a 36-bit word from KS10 memory.
+//!    This function starts and completes a KS10 bus transaction
 //!
 //! \details
-//!    This is a physical address write.  Writes to address 0 to 17 (octal)
-//!    go to memory not to registers.
-//!
-//! \param [in] addr -
-//!    addr is the address in the KS10 memory space which is to be read.
-//!
-//! \see
-//!    readIO() for 36-bit IO reads, and readIObyte() for UNIBUS reads.
-//!
-//! \returns
-//!    Contents of the KS10 memory that was read.
-//!
-
-ks10_t::data_t ks10_t::readMem(addr_t addr) {
-    writeRegAddr((addr & memAddrMask) | flagRead | flagPhys);
-    go();
-    return dataMask & readRegData();
-}
-
-//!
-//! \brief
-//!    This function writes a 36-bit word to KS10 memory.
-//!
-//! \details
-//!    This is a physical address write.  Writes to address 0 to 17 (octal)
-//!    go to memory not to registers.
-//!
-//! \param [in] addr -
-//!    addr is the address in the KS10 memory space which is to be written.
-//!
-//! \param [in] data -
-//!    data is the data to be written to the KS10 memory.
-//!
-//! \see
-//!    writeIO() for 36-bit IO writes, and writeIObyte() for UNIBUS writes.
-//!
-
-void ks10_t::writeMem(addr_t addr, data_t data) {
-    writeRegAddr((addr & memAddrMask) | flagWrite | flagPhys);
-    writeRegData(data);
-    go();
-}
-
-//!
-//! \brief
-//!    This function reads a 36-bit word from KS10 IO.
-//!
-//! \param [in] addr -
-//!    addr is the address in the KS10 IO space which is to be read.
-//!
-//! \see
-//!    readMem() for 36-bit memory reads, and readIObyte() for UNIBUS reads.
-//!
-//! \returns
-//!    Contents of the KS10 IO that was read.
-//!
-
-ks10_t::data_t ks10_t::readIO(addr_t addr) {
-    writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO);
-    go();
-    return dataMask & readRegData();
-}
-
-//!
-//! \brief
-//!    This function writes a 36-bit word to the KS10 IO.
-//!
-//! \details
-//!    This function is used to write to 36-bit KS10 IO and is not to be
-//!    used to write to UNIBUS style IO.
-//!
-//! \param [in] addr -
-//!    addr is the address in the KS10 IO space which is to be written.
-//!
-//! \param [in] data -
-//!    data is the data to be written to the KS10 IO.
-//!
-//! \see
-//!    writeMem() for memory writes, and writeIObyte() for UNIBUS writes.
-//!
-
-void ks10_t::writeIO(addr_t addr, data_t data) {
-    writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO);
-    writeRegData(data);
-    go();
-}
-
-//!
-//! \brief
-//!    This function reads an 8-bit (or 16-bit) byte from KS10 UNIBUS IO.
-//!
-//! \param [in]
-//!    addr is the address in the Unibus IO space which is to be read.
-//!
-//! \see
-//!    readMem() for 36-bit memory reads, and readIObyte() for UNIBUS
-//!    reads.
-//!
-//! \returns
-//!    Contents of the KS10 Unibus IO that was read.
-//!
-
-uint16_t ks10_t::readIObyte(addr_t addr) {
-    writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO | flagByte);
-    go();
-    return 0xffff & readRegData();
-}
-
-//!
-//! \brief
-//!    This function writes 8-bit (or 16-bit) byte to KS10 Unibus IO.
-//!
-//! \param
-//!    addr is the address in the KS10 Unibus IO space which is to be written.
-//!
-//! \param data -
-//!    data is the data to be written to the KS10 Unibus IO.
-//!
-
-void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
-    writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO | flagByte);
-    writeRegData(data);
-    go();
-}
-
-//!
-//! \brief
-//!    This function reads a 32-bit value from the DUPCCR
-//!
-//! \returns
-//!    contents of the DUPCCR register
-//!
-
-uint32_t ks10_t::readDUPCCR(void) {
-    return *regDUPCCR;
-}
-
-//!
-//! \brief
-//!    This function writes a 32-bit value to the DUPCCR
-//!
-//! \param data -
-//!    data is the data to be written to the DUPCCR
-//!
-
-void ks10_t::writeDUPCCR(uint32_t data) {
-    *regDUPCCR = data;
-}
-
-//!
-//! \brief
-//!    This function reads a 32-bit value from the DZCCR
-//!
-//! \returns
-//!    contents of the DZCCR register
-//!
-
-uint32_t ks10_t::readDZCCR(void) {
-    return *regDZCCR;
-}
-
-//!
-//! \brief
-//!    This function writes a 32-bit value to the DZCCR
-//!
-//! \param data -
-//!    data is the data to be written to the DZCCR
-//!
-
-void ks10_t::writeDZCCR(uint32_t data) {
-    *regDZCCR = data;
-}
-
-//!
-//! \brief
-//!    This function reads a 32-bit value from the LPCCR
-//!
-//! \returns
-//!    contents of the LPCCR register
-//!
-
-uint32_t ks10_t::readLPCCR(void) {
-    return *regLPCCR;
-}
-
-//!
-//! \brief
-//!    This function writes a 32-bit value to the LPCCR
-//!
-//! \param data -
-//!    data is the data to be written to the LPCCR
-//!
-
-void ks10_t::writeLPCCR(uint32_t data) {
-    *regLPCCR = data;
-}
-
-//!
-//! \brief
-//!    This function reads a 32-bit value from the RPCCR
-//!
-//! \returns
-//!    contents of the RPCCR register
-//!
-
-uint32_t ks10_t::readRPCCR(void) {
-    return *regRPCCR;
-}
-
-//!
-//! \brief
-//!    This function writes a 32-bit value to the RPCCR
-//!
-//! \param data -
-//!    data is the data to be written to the RPCCR
-//!
-
-void ks10_t::writeRPCCR(uint32_t data) {
-    *regRPCCR = data;
-}
-
-//!
-//! \brief
-//!    This function reads a 36-bit value from the Debug Control/Status Register
-//!
-//! \returns
-//!    contents of the DCSR register
-//!
-
-uint64_t ks10_t::readDCSR(void) {
-    return readReg64(regDCSR);
-}
-
-//!
-//! \brief
-//!    This function writes a 36-bit value to the Debug Control/Status Register
-//!
-//! \param data -
-//!    data is the data to be written to the Debug Control/Status Register
-//!
-
-void ks10_t::writeDCSR(uint64_t data) {
-    writeReg64(regDCSR, data);
-}
-
-//!
-//! \brief
-//!    This function reads a 36-bit value from the Breakpoint Address Register
-//!
-//! \returns
-//!    contents of the DBAR register
-//!
-
-uint64_t ks10_t::readDBAR(void) {
-    return readReg64(regDBAR);
-}
-
-//!
-//! \brief
-//!    This function writes a 36-bit value to the Breakpoint Address Register
-//!
-//! \param data -
-//!    data is the data to be written to the Breakpoint Address Register
-//!
-
-void ks10_t::writeDBAR(uint64_t data) {
-    writeReg64(regDBAR, data);
-}
-
-//!
-//! \brief
-//!   This function reads a 36-bit value from the Breakpoint Mask Register
-//!
-//! \returns
-//!    contents of the DBMR register
-//!
-
-uint64_t ks10_t::readDBMR(void) {
-    return readReg64(regDBMR);
-}
-
-//!
-//! \brief
-//!    This function writes a 36-bit value to the Breakpoint Mask Register
-//!
-//! \param data -
-//!    data is the data to be written to the Breakpoint Mask Register
-//!
-
-void ks10_t::writeDBMR(uint64_t data) {
-    writeReg64(regDBMR, data);
-}
-
-//!
-//! \brief
-//!    This function reads a 36-bit value from the Debug Instruction Trace
-//!    Register.  The trace buffer automatically increments when the trace buffer
-//!    is read.
+//!    A KS10 FPGA bus cycle begins when the <b>GO</b> bit is asserted.  The
+//!    <b>GO</b> bit will remain asserted while the bus cycle is still active.
+//!    The <b>Console Data Register</b> should not be accessed when the
+//!    <b>GO</b> bit is asserted.
 //!
 //! \note
-//!    For some reason, a 64-bit load advances the Trace Buffer FIFO twice.
-//!    This code explicitly peforms four 16-bit loads across the 16-bit EPI bus.
-//!
-//! \returns
-//!    contents of the DITR register
+//!    This function is thread safe.
 //!
 
-#if 1
-
-uint64_t ks10_t::readDITR(void) {
-
-    static constexpr volatile uint16_t * temp = reinterpret_cast<volatile uint16_t *>(regDITR);
-    return ((static_cast<uint64_t>(temp[0]) <<  0) |
-            (static_cast<uint64_t>(temp[1]) << 16) |
-            (static_cast<uint64_t>(temp[2]) << 32) |
-            (static_cast<uint64_t>(temp[3]) << 48));
-
-}
-
-#else
-
-uint64_t ks10_t::readDITR(void) {
-    return *regDITR;
-}
-
-#endif
-
-//!
-//! \brief
-//!    This function reads a 36-bit value from the Debug Program Counter and
-//!    Instruction Register.
-//!
-//! \returns
-//!    contents of the DPCIR register
-//!
-
-uint64_t ks10_t::readDPCIR(void) {
-    return *regDPCIR;
-}
-
-//!
-//! \brief
-//!    This function controls the <b>RUN</b> mode of the KS10.
-//!
-//! \param enable -
-//!    <b>True</b> puts the KS10 in <b>RUN</b> mode.
-//!    <b>False</b> puts the KS10 in <b>HALT</b> mode.
-//!
-
-void ks10_t::run(bool enable) {
-    data_t status = readRegStat();
-    if (enable) {
-        writeRegStat(status | statRUN);
-    } else {
-        writeRegStat(status & ~statRUN);
+void ks10_t::go(void) {
+    lockMutex();
+    writeRegStat(readRegStat() | statGO);
+    unlockMutex();
+    for (int i = 0; i < 100; i++) {
+        if ((readRegStat() & statGO) == 0) {
+           return;
+        }
+        usleep(1000);
     }
-}
-
-//!
-//! \brief
-//!    This function checks the KS10 <b>RUN</b> status.
-//!
-//! \details
-//!    This function examines the <b>RUN</b> bit in the <b>Console Control/Status
-//!    Register</b>.
-//!
-//! \returns
-//!    <b>true</b> if the KS10 is in <b>RUN</b> mode, <b>false</b> if the KS10
-//!    is in <b>HALT</b> mode..
-//!
-
-bool ks10_t::run(void) {
-    return readRegStat() & statRUN;
-}
-
-//!
-//! \brief
-//!    This function checks the KS10 <b>CONT</b> status.
-//!
-//! \details
-//!    This function examines the <b>CONT</b> bit in the <b>Console Control/Status
-//!    Register</b>.
-//!
-//! \returns
-//!    <b>true</b> if the KS10 is in <b>CONT</b> mode, false otherwise.
-//!
-//!
-
-bool ks10_t::cont(void) {
-    return readRegStat() & statCONT;
-}
-
-//!
-//! \brief
-//!    Execute a single instruction in the CIR
-//!
-
-void ks10_t::execute(void) {
-    writeRegStat(statCONT | statEXEC | readRegStat());
-}
-
-//!
-//! \brief
-//!    Execute a single instruction at the current PC
-//!
-
-void ks10_t::step(void) {
-    writeRegStat(statCONT | readRegStat());
-}
-
-//!
-//! \brief
-//!    Continue execution at the current PC.
-//!
-
-void ks10_t::contin(void) {
-    writeRegStat(statRUN | statCONT | readRegStat());
-}
-
-//!
-//! \brief
-//!    Begin execution with instruction in the CIR.
-//!
-
-void ks10_t::begin(void) {
-    writeRegStat(statRUN | statCONT | statEXEC | readRegStat());
-}
-
-//!
-//! \brief
-//!    This function checks the KS10 <b>EXEC</b> status.
-//!
-//! \details
-//!    This function examines the <b>EXEC</b> bit in the <b>Console Control/Status
-//!    Register</b>.
-//!
-//! \returns
-//!    <b>true</b> if the KS10 is in <b>EXEC</b> mode, false otherwise.
-//!
-
-bool ks10_t::exec(void) {
-    return readRegStat() & statEXEC;
-}
-
-//!
-//! \brief
-//!    This checks the KS10 in <b>HALT</b> status.
-//!
-//! \details
-//!    This function examines the <b>HALT</b> bit in the <b>Console Control/Status
-//!    Register</b>
-//!
-//! \returns
-//!    This function returns true if the KS10 is halted, false otherwise.
-//!
-
-bool ks10_t::halt(void) {
-    return ROM_GPIOPinRead(GPIO_PORTD_BASE, GPIO_HALT_LED) == GPIO_HALT_LED;
+    printf("KS10: GO-bit timeout\n");
 }
 
 //!
 //! \brief
 //!    Boot (Unreset) the KS10
 //!
-//! \param debug
-//!    <b>True</b> enables debug mode.
+//! \note
+//!    This function is thread safe.
 //!
 
-void ks10_t::boot(bool debug) {
+void ks10_t::boot(void) {
 
-    if (!ks10_t::cpuReset()) {
-        printf("KS10: CPU should be reset.\n");
-        if (!debug) {
-            fatal();
+    if (!cpuReset()) {
+        cpuReset(true);
+        if (!cpuReset()) {
+            printf("KS10: CPU reset failed.\n");
+            if (!debug) {
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
-    if (ks10_t::halt()) {
+    if (__halt()) {
         printf("KS10: CPU should not be halted.\n");
         if (!debug) {
-            fatal();
+            exit(EXIT_FAILURE);
         }
     }
 
-    if (ks10_t::run()) {
+    if (run()) {
         printf("KS10: CPU should not be running.\n");
         if (!debug) {
-            fatal();
+            exit(EXIT_FAILURE);
         }
     }
 
-    ks10_t::cpuReset(false);
+    cpuReset(false);
 
-    if (ks10_t::cpuReset()) {
+    if (cpuReset()) {
         printf("KS10: CPU should be not be reset.\n");
         if (!debug) {
-            fatal();
+            exit(EXIT_FAILURE);
         }
     }
 
-    if (ks10_t::halt()) {
+    if (__halt()) {
         printf("KS10: CPU should not be halted.\n");
         if (!debug) {
-            fatal();
+            exit(EXIT_FAILURE);
         }
     }
 
-    if (ks10_t::run()) {
+    if (run()) {
         printf("KS10: CPU should not be running.\n");
         if (!debug) {
-            fatal();
+            exit(EXIT_FAILURE);
         }
     }
-}
 
-//!
-//! \brief
-//!    Wait for halt to be asserted.
-//!
-//! \details
-//!    This function waits for upto one second for halt to be asserted.
-//!
-//! \returns
-//!    This function returns true if halt is asserted within one second,
-//!    false otherwise.
-//!
-
-void ks10_t::waitHalt(bool debug) {
-    for (int i = 0; i < 1000; i++) {
-        if (ks10_t::halt()) {
+    for (int i = 0; i < 100; i++) {
+        if (__halt()) {
             return;
         }
-        taskYIELD();
+        usleep(1000);
     }
+
     printf("KS10: Timeout waiting for KS10 to initialize.\n");
     if (!debug) {
-        fatal();
-    }
-}
-
-//!
-//! \brief
-//! Report the state of the KS10's interval timer.
-//!
-//! \returns
-//!    Returns <b>true</b> if the KS10 interval timer enabled and <b>false</b>
-//!    otherwise.
-//!
-
-bool ks10_t::timerEnable(void) {
-    return readRegStat() & statTIMEREN;
-}
-
-//!
-//! \brief
-//! Control the KS10 interval timer operation
-//!
-//! \param
-//!     enable is <b>true</b> to enable the KS10 intervale timer or
-//!     <b>false</b> to disable the KS10 timer.
-//!
-
-void ks10_t::timerEnable(bool enable) {
-    data_t status = readRegStat();
-    if (enable) {
-        writeRegStat(status | statTIMEREN);
-    } else {
-        writeRegStat(status & ~statTIMEREN);
-    }
-}
-
-//!
-//! \brief
-//!    Report the state of the KS10's traps.
-//!
-//! \returns
-//!    Returns <b>true</b> if the KS10 traps enabled and <b>false</b>
-//!    otherwise.
-//!
-
-bool ks10_t::trapEnable(void) {
-    return readRegStat() & statTRAPEN;
-}
-
-//!
-//! \brief
-//!    Control the KS10 traps operation
-//!
-//! \details
-//!    This function controls whether the KS10's trap are enabled.
-//!
-//! \param
-//!    enable is <b>true</b> to enable the KS10 traps or <b>false</b> to
-//!    disable the KS10 traps.
-//!
-
-void ks10_t::trapEnable(bool enable) {
-    data_t status = readRegStat();
-    if (enable) {
-        writeRegStat(status | statTRAPEN);
-    } else {
-        writeRegStat(status & ~statTRAPEN);
-    }
-}
-
-//!
-//! \brief
-//!    Report the state of the KS10's cache memory.
-//!
-//! \returns
-//!    Returns <b>true</b> if the KS10 cache enabled and <b>false</b>
-//!    otherwise.
-//!
-
-bool ks10_t::cacheEnable(void) {
-    return readRegStat() & statCACHEEN;
-}
-
-//!
-//! \brief
-//!    Control the KS10 cache memory operation
-//!
-//! \details
-//!    This function controls whether the KS10's cache is enabled.
-//!
-//! \param
-//!    enable is <b>true</b> to enable the KS10 cache or <b>false</b> to
-//!    disable the KS10 cache.
-//!
-
-void ks10_t::cacheEnable(bool enable) {
-    data_t status = readRegStat();
-    if (enable) {
-        writeRegStat(status | statCACHEEN);
-    } else {
-        writeRegStat(status & ~statCACHEEN);
-    }
-}
-
-//!
-//! \brief
-//!    Report the state of the KS10's reset signal.
-//!
-//! \returns
-//!    Returns <b>true</b> if the KS10 is <b>reset</b> and <b>false</b>
-//!    otherwise.
-//!
-
-bool ks10_t::cpuReset(void) {
-    return readRegStat() & statRESET;
-}
-
-//!
-//! \brief
-//!    Reset the KS10
-//!
-//! \details
-//!    This function controls whether the KS10's is reset.  When reset, the KS10 will
-//!    reset on next clock cycle without completing the current operation.
-//!
-//! \param
-//!    enable is <b>true</b> to assert <b>reset</b> to the KS10 or <b>false</b> to
-//!    negate <b>reset</b> to the KS10.
-//!
-//!
-
-void ks10_t::cpuReset(bool enable) {
-    data_t status = readRegStat();
-    if (enable) {
-        writeRegStat(status | statRESET);
-    } else {
-        writeRegStat(status & ~statRESET);
-    }
-}
-
-//!
-//! \brief
-//!    This function creates a KS10 interrupt.
-//!
-//! \details
-//!    This function momentarily pulses the <b>KS10INTR</b> bit of the <b>Console
-//!    Control/Status Register</b>.
-//!
-//!    The <b>KS10INTR</b> bit only need to be asserted for a single FPGA clock
-//!    cycle in order to create an interrupt.
-//!
-
-void ks10_t::cpuIntr(void) {
-    data_t status = readRegStat();
-    writeRegStat(status | statINTR);
-    ROM_SysCtlDelay(10);
-    writeRegStat(status);
-}
-
-//!
-//! \brief
-//!    This function returns the state of the <b>NXM/NXD</b> bit of the
-//!    <b>Console Control/Status Register</b>.
-//!
-//! \details
-//!    The NXM/NXD bit is volatile.  This function will reset the state of the
-//!    <b>NXM/NXD</b> bit when it is read.
-//!
-
-bool ks10_t::nxmnxd(void) {
-    data_t reg = readRegStat();
-    writeRegStat(reg & ~statNXMNXD);
-    return reg & statNXMNXD;
-}
-
-//!
-//! \brief
-//!    Program the FPGA with firmware using the Serial Flash Device
-//!
-//! \param debug -
-//!    <b>True</b> enables debug mode.
-//!
-
-void ks10_t::programFirmware(bool debug) {
-
-    //
-    // Construct FPGA object
-    //
-
-    fpga_t fpga;
-
-    //
-    // Program the FPGA
-    //
-
-    bool success = fpga.program();
-    if (!success && !debug) {
-        fatal();
-    }
-
-}
-
-//!
-//! \brief
-//!    Program the FPGA with firmware using the data from the SDHC card.
-//!
-//! \param debug -
-//!    <b>True</b> enables debug mode.
-//!
-//! \param filename -
-//!    Filename of the firmware to load into the FPGA.
-//!
-
-void ks10_t::programFirmware(bool debug, const char *filename) {
-
-    //
-    // Attempt to open the firmware file
-    //
-
-    FIL fp;
-    FRESULT status = f_open(&fp, filename, FA_READ);
-    if (status != FR_OK) {
-        printf("KS10: Unable to open firmware file \"%s\".  Status was %d\n", filename, status);
-        return;
-    } else {
-        debug_printf(debug, "KS10: Opened firmware file \"%s\" for reading.\n", filename);
-    }
-
-    //
-    // Construct FPGA object
-    //
-
-    fpga_t fpga;
-
-    //
-    // Program the FPGA
-    //
-
-    bool success = fpga.program(&fp);
-
-    //
-    // Close the file
-    //
-
-    status = f_close(&fp);
-    if (status != FR_OK) {
-        printf("KS10: Unable to close firmware file \"%s\".  Status was %d\n", filename, status);
-    }
-
-    //
-    // Check status
-    //
-
-    if (!success && !debug) {
-        fatal();
+        exit(EXIT_FAILURE);
     }
 
 }
@@ -1089,43 +287,29 @@ void ks10_t::programFirmware(bool debug, const char *filename) {
 //!    The FPGA should respond with "REVxx.yy" where xx is the major revision
 //!    and yy is the minor revision.
 //!
+//! \note
+//!    This function is thread safe.
 //!
 
-void ks10_t::checkFirmware(bool debug) {
+void ks10_t::checkFirmware(void) {
     const char *buf = regVers;
-    if ((buf[0] == 'R') && (buf[1] == 'E') && (buf[2] == 'V') && (buf[5] == 0xae)) {
+    if ((buf[0] == 'R') && (buf[1] == 'E') && (buf[2] == 'V') && (buf[5] == '.')) {
         printf("KS10: FPGA Firmware is %c%c%c %c%c%c%c%c\n",
-               buf[0] & 0x7f, buf[1] & 0x7f, buf[2] & 0x7f, buf[3] & 0x7f,
-               buf[4] & 0x7f, buf[5] & 0x7f, buf[6] & 0x7f, buf[7] & 0x7f);
+               buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
     } else if (debug) {
         printf("KS10: FPGA Firmware is %02x%02x%02x%02x%02x%02x%02x%02x\n",
                buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
     } else {
-        printf("KS10: Unable to communicate with the KS10 FPGA.\n");
-        fatal();
+        printf("KS10: Unable to communicate with the KS10 FPGA.\n"
+               "KS10: Is the FPGA programmed?\n"
+               "KS10: Console exiting.\n");
+        exit(EXIT_FAILURE);
     }
 }
 
 //!
 //! \brief
-//!    This function return the contents of the Halt Status Word.
-//!
-//! \returns
-//!     Contents of the Halt Status Word
-//!
-
-ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
-    static haltStatusWord_t haltStatusWord;
-
-    haltStatusWord.status = readMem(0);
-    haltStatusWord.pc     = readMem(1);
-
-    return haltStatusWord;
-}
-
-//!
-//! \brief
-//!    This function tests on a console interface register.
+//!    This function tests 64-bit console interface registers.
 //!
 //! \details
 //!    This test performs a 64-bit "walking ones test" on the the register.
@@ -1138,9 +322,6 @@ ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
 //! \param name -
 //!    name of the register used in verbose debugging messages
 //!
-//! \param debug -
-//!    enables debugging messages
-//!
 //! \param mask -
 //!    allows masking unimplemented register bits.  This is used to test 36-bit
 //!    registers using the 64-bit interface.
@@ -1148,10 +329,15 @@ ks10_t::haltStatusWord_t &ks10_t::getHaltStatusWord(void) {
 //! \returns
 //!    True if test pass, false otherwise.
 //!
+//! \note
+//!    This function is NOT thread safe.  Selftest should be performed as a
+//!    single thread application.
+//!
 
-bool ks10_t::testReg64(volatile void * addr, const char *name, bool debug, uint64_t mask) {
-
-    debug_printf(debug, "KS10:  %s: Checking 64-bit accesses.\n", name);
+bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
+    if (debug) {
+        printf("KS10:  %s: Checking 64-bit accesses.\n", name);
+    }
 
     //
     // Save register contents
@@ -1170,7 +356,9 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, bool debug, uint6
         *reg64 = write64;
         uint64_t read64 = *reg64;
         if ((read64 & mask) != (write64 & mask)) {
-            debug_printf(debug, "KS10:  %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
+            if (debug) {
+                printf("KS10:  %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
+            }
             success = false;
         }
     }
@@ -1186,7 +374,7 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, bool debug, uint6
 
 //!
 //! \brief
-//!    This function tests a 32-bit console interface register.
+//!    This function tests 32-bit console interface registers.
 //!
 //! \details
 //!    This test performs a 32-bit "walking ones test" on the the register.
@@ -1199,9 +387,6 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, bool debug, uint6
 //! \param name -
 //!    name of the register used in verbose debugging messages
 //!
-//! \param debug -
-//!    enables debugging messages
-//!
 //! \param mask -
 //!    allows masking unimplemented register bits.  This is used to test 36-bit
 //!    registers using the 64-bit interface.
@@ -1209,10 +394,16 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, bool debug, uint6
 //! \returns
 //!    True if test pass, false otherwise.
 //!
+//! \note
+//!    This function is NOT thread safe.  Selftest should be performed as a
+//!    single thread application.
+//!
 
-bool ks10_t::testReg32(volatile void * addr, const char *name, bool debug, uint32_t mask) {
+bool ks10_t::testReg32(volatile void * addr, const char *name, uint32_t mask) {
 
-    debug_printf(debug, "KS10:  %s: Checking 32-bit accesses.\n", name);
+    if (debug) {
+        printf("KS10:  %s: Checking 32-bit accesses.\n", name);
+    }
 
     //
     // Save register contents
@@ -1227,11 +418,13 @@ bool ks10_t::testReg32(volatile void * addr, const char *name, bool debug, uint3
     bool success = true;
     volatile uint32_t * reg32 = reinterpret_cast<volatile uint32_t *>(addr);
 
-    for (unsigned long write32 = 1; write32 != 0; write32 <<= 1) {
+    for (uint32_t write32 = 1; write32 != 0; write32 <<= 1) {
         *reg32 = write32;
         uint32_t read32 = *reg32;
         if ((read32 & mask) != (write32 & mask)) {
-            debug_printf(debug, "KS10:  %s: Register failure.  Was 0x%08lx.  Should be 0x%08lx\n", name, read32, write32);
+            if (debug) {
+                printf("KS10:  %s: Register failure.  Was 0x%08x.  Should be 0x%08x\n", name, read32, write32);
+            }
             success = false;
         }
     }
@@ -1252,82 +445,35 @@ bool ks10_t::testReg32(volatile void * addr, const char *name, bool debug, uint3
 //! \returns
 //!    True if all of the tests pass, false otherwise.
 //!
+//! \note
+//!    This function is NOT thread safe.  Selftest should be performed as a
+//!    single thread application.
+//!
 
-void ks10_t::testRegs(bool debug) {
+void ks10_t::testRegs(void) {
     bool success = true;
     if (debug) {
         printf("KS10: Console Interface Register test.\n");
     }
-    success &= testReg64(regAddr,   "regADDR  ", debug, 0xfffffffff);
-    success &= testReg64(regData,   "regDATA  ", debug, 0xfffffffff);
-    success &= testReg64(regCIR,    "regCIR   ", debug, 0xfffffffff);
-    success &= testReg32(regDZCCR,  "regDZCCR ", debug, 0xffffffff);
-    success &= testReg32(regLPCCR,  "regLPCCR ", debug, 0xfffffff0);
-    success &= testReg32(regRPCCR,  "regRPCCR ", debug, 0xffffffff);
-    success &= testReg32(regDUPCCR, "regDUPCCR", debug, 0x7f001fff);
-    success &= testReg64(regDBAR,   "regDBAR  ", debug, 0xfffffffff);
-    success &= testReg64(regDBMR,   "regDBMR  ", debug, 0xfffffffff);
+    success &= testReg64(regAddr,   "regADDR  ", 0xfffffffff);
+    success &= testReg64(regData,   "regDATA  ", 0xfffffffff);
+    success &= testReg64(regCIR,    "regCIR   ", 0xfffffffff);
+    success &= testReg32(regStat,   "regStat  ", 0x0000021d);
+    success &= testReg32(regDZCCR,  "regDZCCR ", 0xffffffff);
+    success &= testReg32(regLPCCR,  "regLPCCR ", 0x03ff0002);
+    success &= testReg32(regRPCCR,  "regRPCCR ", 0xffffffff);
+    success &= testReg32(regDUPCCR, "regDUPCCR", 0x0f000e00);
+    success &= testReg32(regDEBCSR, "regDEBCSR", 0x007000e0);
+    success &= testReg64(regDEBBAR, "regDEBBAR", 0xfffffffff);
+    success &= testReg64(regDEBBMR, "regDEBBMR", 0xfffffffff);
     if (success) {
         printf("KS10: Console Interface Register test completed successfully.\n");
     } else {
         printf("KS10: Fatal - Console Interface Register test failed.\n");
         if (!debug) {
-            fatal();
+            exit(EXIT_FAILURE);
         }
     }
-}
-
-//!
-//! \brief
-//!    Get Halt Status Word.
-//!
-//! \details
-//!    This function return the contents of the Halt Status Block.
-//!
-//! \returns
-//!    Contents of the Halt Status Block.
-//!
-//! \note
-//!    The KS10 Technical Manual shows that the Halt Status Block include the
-//!    FE and SC register.  This is incorrect.   See ksrefRev2 document.
-//!
-
-ks10_t::haltStatusBlock_t &ks10_t::getHaltStatusBlock(addr_t addr) {
-    static haltStatusBlock_t haltStatusBlock;
-
-    haltStatusBlock.mag  = readMem(addr +  0);
-    haltStatusBlock.pc   = readMem(addr +  1);
-    haltStatusBlock.hr   = readMem(addr +  2);
-    haltStatusBlock.ar   = readMem(addr +  3);
-    haltStatusBlock.arx  = readMem(addr +  4);
-    haltStatusBlock.br   = readMem(addr +  5);
-    haltStatusBlock.brx  = readMem(addr +  6);
-    haltStatusBlock.one  = readMem(addr +  7);
-    haltStatusBlock.ebr  = readMem(addr +  8);
-    haltStatusBlock.ubr  = readMem(addr +  9);
-    haltStatusBlock.mask = readMem(addr + 10);
-    haltStatusBlock.flg  = readMem(addr + 11);
-    haltStatusBlock.pi   = readMem(addr + 12);
-    haltStatusBlock.x1   = readMem(addr + 13);
-    haltStatusBlock.t0   = readMem(addr + 14);
-    haltStatusBlock.t1   = readMem(addr + 15);
-    haltStatusBlock.vma  = readMem(addr + 16);
-    return haltStatusBlock;
-}
-
-//!
-//! \brief
-//!    Get Contents of RH11 Debug Register
-//!
-//! \brief
-//!    This function return the contents of the RH11 Debug Register
-//!
-//! \returns
-//!     Contents of the RH11 Debug Register
-//!
-
-uint64_t ks10_t::getRH11debug(void) {
-    return *regRH11Debug;
 }
 
 //!
@@ -1337,13 +483,20 @@ uint64_t ks10_t::getRH11debug(void) {
 //! \param ch -
 //!    Character to write to the KS10
 //!
+//! \note
+//!    This function is thread safe.
+//!
 
 void ks10_t::putchar(int ch) {
-    data_t cty_in = readMem(ctyin_addr);
-    if ((cty_in & cty_valid) == 0) {
-        ks10_t::writeMem(ctyin_addr, cty_valid | (ch & 0xff));
-        ks10_t::cpuIntr();
+    lockMutex();
+    data_t data = __readMem(ctyinADDR);
+    if ((data & ctyVALID) == 0) {
+        __writeMem(ctyinADDR, ctyVALID | (ch & 0xff));
+        unlockMutex();
+        cpuIntr();
+        return;
     }
+    unlockMutex();
 }
 
 //!
@@ -1353,50 +506,20 @@ void ks10_t::putchar(int ch) {
 //! \returns
 //!    Character from the KS10
 //!
+//! \note
+//!    This function is thread safe.
+//!
 
 int ks10_t::getchar(void) {
-    data_t cty_out = readMem(ctyout_addr);
-    if ((cty_out & cty_valid) != 0) {
-        writeMem(ctyout_addr, 0);
-        return cty_out & 0x7f;
-    } else {
-        return -1;
+    lockMutex();
+    data_t ch = __readMem(ctyoutADDR);
+    if ((ch & ctyVALID) != 0) {
+        __writeMem(ctyoutADDR, 0);
+        unlockMutex();
+        return ch & 0x7f;
     }
-}
-
-//!
-//! \brief
-//!    Execute a single instruction
-//!
-//! \param insn -
-//!    Instruction to execute
-//!
-//! \note
-//!    This mucks with the halt interrupt so we don't get halt messages
-//!    displayed during this.
-//!
-
-void ks10_t::executeInstruction(data_t insn) {
-    dispatchHaltInterrupt = false;
-
-    //
-    // Stuff the instruction in the Console Instruction Register and
-    // execute it.
-    //
-
-    ks10_t::writeRegCIR(insn);
-    ks10_t::execute();
-
-    //
-    // Wait for the processor to HALT.
-    //
-
-    while (!ks10_t::halt()) {
-        ;
-    }
-
-    dispatchHaltInterrupt = true;
-
+    unlockMutex();
+    return -1;
 }
 
 //!
@@ -1418,12 +541,17 @@ void ks10_t::executeInstruction(data_t insn) {
 //! \param data -
 //!    Data to store in temporary memory location
 //!
+//! \note
+//!    This function is thread safe.
+//!
 
 void ks10_t::setDataAndExecuteInstruction(data_t insn, data_t data, addr_t tempAddr) {
-    const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
-    ks10_t::writeMem(tempAddr, data);
-    ks10_t::executeInstruction(insn);
-    ks10_t::writeMem(tempAddr, tempData);
+    lockMutex();
+    const data_t tempData = __readMem(tempAddr);
+    __writeMem(tempAddr, data);
+    __executeInstruction(insn);
+    __writeMem(tempAddr, tempData);
+    unlockMutex();
 }
 
 //!
@@ -1444,14 +572,411 @@ void ks10_t::setDataAndExecuteInstruction(data_t insn, data_t data, addr_t tempA
 //! \returns
 //!    Returns data from instruction execution.
 //!
+//! \note
+//!    This function is NOT thread safe.
+//!
 
-ks10_t::data_t ks10_t::executeInstructionAndGetData(data_t insn, addr_t tempAddr) {
-    const ks10_t::data_t tempData = ks10_t::readMem(tempAddr);
-    ks10_t::executeInstruction(insn);
-    ks10_t::addr_t data = ks10_t::readMem(tempAddr);
-    ks10_t::writeMem(tempAddr, tempData);
+#if 1
+ks10_t::data_t ks10_t::__executeInstructionAndGetData(data_t insn, addr_t tempAddr) {
+    const data_t tempData = __readMem(tempAddr);
+    __executeInstruction(insn);
+    data_t data = __readMem(tempAddr);
+    __writeMem(tempAddr, tempData);
     return data;
 }
+#endif
+
+//!
+//! \brief
+//!    Execute a single instruction and return data
+//!
+//! \details
+//!    This function executes an instruction that modifies memory.  The
+//!    contents of the destination address are saved prior to executing the
+//!    instruction and restored after executing the instruction.
+//!
+//! \param insn -
+//!    Instruction to execute
+//!
+//! \param tempAddr -
+//!    Temporary address for results.
+//!
+//! \returns
+//!    Returns data from instruction execution.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::executeInstructionAndGetData(data_t insn, addr_t tempAddr) {
+    lockMutex();
+    const data_t tempData = __readMem(tempAddr);
+    __executeInstruction(insn);
+    data_t data = __readMem(tempAddr);
+    __writeMem(tempAddr, tempData);
+    unlockMutex();
+    return data;
+}
+
+//!
+//! \brief
+//!   Function to print APRID
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdAPRID(void) {
+    const addr_t tempAddr  = 0100;
+    const data_t insnAPRID = (opAPRID << 18) | tempAddr;
+    return executeInstructionAndGetData(insnAPRID, tempAddr);
+}
+
+//!
+//! \brief
+//!   Function to return RDAPR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdAPR(void) {
+    const addr_t tempAddr  = 0100;
+    const data_t insnRDAPR = (opRDAPR << 18) | tempAddr;
+    return executeInstructionAndGetData(insnRDAPR, tempAddr);
+}
+
+//!
+//! \brief
+//!   Function to return RDPI
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdPI(void) {
+    const addr_t tempAddr = 0100;
+    const data_t insnRDPI = (opRDPI << 18) | tempAddr;
+    return executeInstructionAndGetData(insnRDPI, tempAddr);
+}
+
+//!
+//! \brief
+//!   Function to return RDUBR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdUBR(void) {
+    const addr_t tempAddr  = 0100;
+    const data_t insnRDUBR = (opRDUBR << 18) | tempAddr;
+    return executeInstructionAndGetData(insnRDUBR, tempAddr);
+}
+
+//!
+//! \brief
+//!   Function to return RDEBR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdEBR(void) {
+    const addr_t tempAddr  = 0100;
+    const data_t insnRDEBR = (opRDEBR << 18) | tempAddr;
+    return executeInstructionAndGetData(insnRDEBR, tempAddr);
+}
+
+//!
+//! \brief
+//!   Function to return RDEBR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdSPB(void) {
+    const addr_t tempAddr  = 0100;
+    const data_t insnRDSPB = (opRDSPB << 18) | tempAddr;
+    return executeInstructionAndGetData(insnRDSPB, tempAddr);
+}
+
+//!
+//! \brief
+//!   Function to return RDCSB
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdCSB(void) {
+    const addr_t tempAddr  = 0100;
+    const data_t insnRDCSB = (opRDCSB << 18) | tempAddr;
+    return executeInstructionAndGetData(insnRDCSB, tempAddr);
+}
+
+//!
+//! \brief
+//!   Function to return RDCSTM
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdCSTM(void) {
+    const addr_t tempAddr   = 0100;
+    const data_t insnRDCSTM = (opRDCSTM << 18) | tempAddr;
+    return executeInstructionAndGetData(insnRDCSTM, tempAddr);
+}
+
+//!
+//! \brief
+//!   Function to return RDPUR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdPUR(void) {
+    const addr_t tempAddr  = 0100;
+    const data_t insnRDPUR = (opRDPUR << 18) | tempAddr;
+    return executeInstructionAndGetData(insnRDPUR, tempAddr);
+}
+
+//!
+//! \brief
+//!   Function to return RDTIM
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdTIM(void) {
+    const addr_t tempAddr  = 0100;
+    const data_t insnRDTIM = (opRDTIM << 18) | tempAddr;
+    return executeInstructionAndGetData(insnRDTIM, tempAddr);
+}
+
+//!
+//! \brief
+//!   Function to return RDINT
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdINT(void) {
+    const addr_t tempAddr  = 0100;
+    const data_t insnRDINT = (opRDINT << 18) | tempAddr;
+    return executeInstructionAndGetData(insnRDINT, tempAddr);
+}
+
+//!
+//! \brief
+//!   Function to return RDHSB
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::rdHSB(void) {
+    const addr_t tempAddr  = 0100;
+    const data_t insnRDHSB = (opRDHSB << 18) | tempAddr;
+    return executeInstructionAndGetData(insnRDHSB, tempAddr);
+}
+
+//!
+//! \brief
+//!    Read an AC from the KS10.
+//!
+//! \details
+//!    Reading a register is a convoluted process.
+//!
+//!    -# Create a temporary memory location in the KS10 memory in which may be
+//!       used to stash the contents AC.  Read the data at that location
+//!       (addr 0100) and save the data in the  MCU.  We'll restore it when
+//!       we're done.
+//!    -# Execute a MOVEM instruction to move the register contents to the
+//!       temporary memory location.
+//!    -# The MCU can read the contents of the AC from the temporary memoy
+//!       location.
+//!    -# Restore the contents of the temporary memory locaction
+//!
+//! \param regAC -
+//!    AC number
+//!
+//! \returns
+//!    contents of the register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+ks10_t::data_t ks10_t::readAC(ks10_t::data_t regAC) {
+    regAC &= 017;
+    const addr_t tempAddr  = 0100;
+    const data_t insnMOVEM = (opMOVEM << 18) | (regAC << 23) | tempAddr;
+    return executeInstructionAndGetData(insnMOVEM, tempAddr);
+}
+
+//!
+//! \brief
+//!    Print Halt Status Word
+//!
+//! \details
+//!    This function prints the Halt Status Word
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+void ks10_t::printHaltStatusWord(void) {
+    lockMutex();
+    data_t hswStatus = __readMem(0);
+    data_t hswPC     = __readMem(1);
+
+    printf("KS10: Halt Cause: %s (PC=%06llo)\n",
+           (hswStatus== 00000 ? "Microcode Startup."                     :
+            (hswStatus== 00001 ? "Halt Instruction."                     :
+             (hswStatus== 00002 ? "Console Halt."                        :
+              (hswStatus== 00100 ? "IO Page Failure."                    :
+               (hswStatus== 00101 ? "Illegal Interrupt Instruction."     :
+                (hswStatus== 00102 ? "Pointer to Unibus Vector is zero." :
+                 (hswStatus== 01000 ? "Illegal Microcode Dispatch."      :
+                  (hswStatus== 01005 ? "Microcode Startup Check Failed." :
+                   "Unknown.")))))))),
+           hswPC);
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    Print Halt Status Block
+//!
+//! \details
+//!    This function prints the Halt Status Word and the Halt Status Block.
+//!
+//!    The code executes a RDHSB instruction in the Console Instruction
+//!    Register to get the address of the Halt Status Block from the CPU.
+//!
+//! \note
+//!    The KS10 Technical Manual shows that the Halt Status Block include the
+//!    FE and SC register.  This is incorrect.   See ksrefRev2 document.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+void ks10_t::printHaltStatusBlock(void) {
+
+    lockMutex();
+    data_t hswStatus = __readMem(0);
+    data_t hswPC     = __readMem(1);
+
+    printf("KS10: Halt Cause: %s (PC=%06llo)\n",
+           (hswStatus== 00000 ? "Microcode Startup."                     :
+            (hswStatus== 00001 ? "Halt Instruction."                     :
+             (hswStatus== 00002 ? "Console Halt."                        :
+              (hswStatus== 00100 ? "IO Page Failure."                    :
+               (hswStatus== 00101 ? "Illegal Interrupt Instruction."     :
+                (hswStatus== 00102 ? "Pointer to Unibus Vector is zero." :
+                 (hswStatus== 01000 ? "Illegal Microcode Dispatch."      :
+                  (hswStatus== 01005 ? "Microcode Startup Check Failed." :
+                   "Unknown.")))))))),
+           hswPC);
+
+#if 1
+
+    //
+    // Check CPU status
+    //
+
+    if (!ks10_t::__halt()) {
+        printf("KS10: CPU is running. Halt it first.\n");
+        return;
+    }
+
+    //
+    // Read the address of the Halt Status Block
+    //
+
+    const addr_t tempAddr  = 0100;
+    const data_t insnRDHSB = opRDHSB << 18 | tempAddr;
+    ks10_t::addr_t hsbAddr = __executeInstructionAndGetData(insnRDHSB, tempAddr);
+
+#else
+
+    ks10_t::addr_t hsbAddr = 0376000ULL;
+
+#endif
+
+    //
+    // Print the Halt Status Block
+    //
+
+    printf("  Halt Status Block Address is %06llo\n"
+           "  PC  is %012llo     HR  is %012llo\n"
+           "  MAG is %012llo     ONE is %012llo\n"
+           "  AR  is %012llo     ARX is %012llo\n"
+           "  BR  is %012llo     BRX is %012llo\n"
+           "  EBR is %012llo     UBR is %012llo\n"
+           "  MSK is %012llo     FLG is %012llo\n"
+           "  PI  is %012llo     X1  is %012llo\n"
+           "  TO  is %012llo     T1  is %012llo \n"
+           "  VMA is %012llo\n",
+           hsbAddr,
+           __readMem(hsbAddr +  1),     // PC
+           __readMem(hsbAddr +  2),     // HR
+           __readMem(hsbAddr +  0),     // MAG
+           __readMem(hsbAddr +  7),     // ONE
+           __readMem(hsbAddr +  3),     // AR
+           __readMem(hsbAddr +  4),     // ARX
+           __readMem(hsbAddr +  5),     // BR
+           __readMem(hsbAddr +  6),     // BRX
+           __readMem(hsbAddr +  8),     // EBR
+           __readMem(hsbAddr +  9),     // UBR
+           __readMem(hsbAddr + 10),     // MASK
+           __readMem(hsbAddr + 11),     // FLG
+           __readMem(hsbAddr + 12),     // PI
+           __readMem(hsbAddr + 13),     // X1
+           __readMem(hsbAddr + 14),     // T0
+           __readMem(hsbAddr + 15),     // T1
+           __readMem(hsbAddr + 16));    // VMA
+    unlockMutex();
+}
+
+
+//!
+//! \brief
+//!    Print RH11 Debug Word
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+void ks10_t::printRH11Debug(void) {
+
+    uint64_t rh11stat = getRH11debug();
+    rh11debug_t *rh11debug = reinterpret_cast<rh11debug_t *>(&rh11stat);
+
+    printf("KS10: RH11 status is 0x%016llx\n"
+           "  State  = %d\n"
+           "  ErrNum = %d\n"
+           "  ErrVal = %d\n"
+           "  WrCnt  = %d\n"
+           "  RdCnt  = %d\n"
+           "  LEDs   = 0x%02x\n"
+           "",
+           rh11stat,
+           rh11debug->state,
+           rh11debug->errnum,
+           rh11debug->errval,
+           rh11debug->wrcnt,
+           rh11debug->rdcnt,
+           rh11debug->LEDs);
+}
+
 
 //
 //! @}

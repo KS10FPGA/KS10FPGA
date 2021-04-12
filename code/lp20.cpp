@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2017 Rob Doyle
+// Copyright (C) 2013-2020 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -41,8 +41,6 @@
 #include "string.h"
 #include "uba.hpp"
 #include "lp20.hpp"
-#include "fatfslib/ff.h"
-#include "SafeRTOS/SafeRTOS_API.h"
 
 //!
 //! \brief
@@ -312,10 +310,9 @@ void lp20_t::printFile(const char *filename) {
     const ks10_t::addr_t vaddr = 004000;        // Virtual address (in UBA address space)
     const ks10_t::addr_t paddr = 070000;        // Physical address (in KS10 memory)
 
-    FIL fp;
-    FRESULT status = f_open(&fp, filename, FA_READ);
-    if (status != FR_OK) {
-        printf("KS10: f_open() returned %d\n", status);
+    FILE *fp = fopen(filename, "r");
+    if (fp == NULL) {
+        printf("KS10: fopen(%s) failed.\n", filename);
         return;
     }
 
@@ -348,13 +345,9 @@ void lp20_t::printFile(const char *filename) {
     // Read file from SD Card into buffer
     //
 
-    while (!f_eof(&fp)) {
+    while (!feof(fp)) {
 
-        unsigned int numbytes;
-        FRESULT status = f_read(&fp, buffer, sizeof(buffer), &numbytes);
-        if (status != FR_OK) {
-            printf("KS10: f_read() returned %d\n", status);
-        }
+        size_t numbytes = fread(buffer, 1, sizeof(buffer), fp);
 
         //
         // Stuff message in KS10 memory for DMA

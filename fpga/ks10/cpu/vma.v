@@ -57,7 +57,8 @@ module VMA (
       input  wire [ 0: 17] pcFLAGS,     // PC Flags
       input  wire          pageFAIL,    // Page fail
       output reg  [ 0: 35] vmaREG,      // VMA register
-      output reg           vmaLOAD      // VMA load
+      output reg           vmaLOAD,     // VMA load
+      output reg           writeEN      // Write Enable
    );
 
    //
@@ -161,16 +162,49 @@ module VMA (
     end
 
    //
-   // Memory Cycle Control
+   // Memory Cycle Decoder
    //
    // Details
    //  The type of memory cycle can controlled by the microcode or can be
-   //  controlled by the Dispatch ROM.  The Cycle Control is loaded when
-   //  cromMEM_CYCLE is active.
+   //  controlled by the Dispatch ROM.
    //
    // Trace
    //  DPM5/E48
    //  DPM5/E66
+
+   reg readEN;
+   reg wrtestEN;
+   reg cacheinhEN;
+   wire [1:0] sel = {`cromMEM_CYCLE_SEL};
+
+   always @*
+     begin
+        case (sel)
+          0 : begin
+                readEN     <= `cromMEM_READCYCLE;
+                wrtestEN   <= `cromMEM_WRTESTCYCLE;
+                writeEN    <= `cromMEM_WRITECYCLE;
+                cacheinhEN <= `cromMEM_CACHEINH;
+              end
+          1 : begin
+                readEN     <= `vmaREAD(dp);
+                wrtestEN   <= `vmaWRTEST(dp);
+                writeEN    <= `vmaWRITE(dp);
+                cacheinhEN <= `vmaCACHEINH(dp);
+              end
+          2 : begin
+                readEN     <= `dromREADCYCLE;
+                wrtestEN   <= `dromWRTESTCYCLE;
+                writeEN    <= `dromWRITECYCLE;
+                cacheinhEN <= 0;
+              end
+        endcase
+     end
+
+   //
+   //  The Cycle Control is loaded when cromMEM_CYCLE is active.
+   //
+   // Trace
    //  DPM5/E33
    //  DPM5/E110
    //
@@ -187,30 +221,12 @@ module VMA (
              `vmaWRITE(vmaREG)    <= 0;
              `vmaCACHEINH(vmaREG) <= 0;
           end
-        else if (clken & memEN & !pageFAIL)
+        else if (clken & memEN & !pageFAIL)  // FIXME (why !pageFAIL?)
           begin
-             if (`cromMEM_AREAD)
-               begin
-                  `vmaREAD(vmaREG)     <= `dromREADCYCLE;
-                  `vmaWRTEST(vmaREG)   <= `dromWRTESTCYCLE;
-                  `vmaWRITE(vmaREG)    <= `dromWRITECYCLE;
-                  `vmaCACHEINH(vmaREG) <= 0;
-               end
-             else
-               if (`cromMEM_DPFUNC)
-                 begin
-                    `vmaREAD(vmaREG)     <= `vmaREAD(dp);
-                    `vmaWRTEST(vmaREG)   <= `vmaWRTEST(dp);
-                    `vmaWRITE(vmaREG)    <= `vmaWRITE(dp);
-                    `vmaCACHEINH(vmaREG) <= `vmaCACHEINH(dp);
-                 end
-               else
-                 begin
-                    `vmaREAD(vmaREG)     <= `cromMEM_READCYCLE;
-                    `vmaWRTEST(vmaREG)   <= `cromMEM_WRTESTCYCLE;
-                    `vmaWRITE(vmaREG)    <= `cromMEM_WRITECYCLE;
-                    `vmaCACHEINH(vmaREG) <= `cromMEM_CACHEINH;
-                 end
+             `vmaREAD(vmaREG)     <= readEN;
+             `vmaWRTEST(vmaREG)   <= wrtestEN;
+             `vmaWRITE(vmaREG)    <= writeEN;
+             `vmaCACHEINH(vmaREG) <= cacheinhEN;
           end
      end
 

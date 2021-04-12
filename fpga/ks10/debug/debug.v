@@ -52,74 +52,69 @@ module DEBUG (
       input  wire [ 0:35] cpuHR,        // Instruction register
       input  wire         regsLOAD,     // Load registers
       input  wire         vmaLOAD,      // Load VMA
-      input  wire         regTRCMD_WR,  // DCSR trace command write
-      input  wire [ 0: 2] regTRCMD,     // DCSR trace command
-      input  wire         regBRCMD_WR,  // DCSR breakpoint command write
-      input  wire [ 0: 2] regBRCMD,     // DCSR breakpoint command
-      output wire [ 0:35] regDCSR,      // DCSR register
-      input  wire [ 0:35] regDBAR,      // Breakpoint address register
-      input  wire [ 0:35] regDBMR,      // DBAR register
-      input  wire         regDITR_RD,   // DITR read
-      output wire [ 0:63] regDITR,      // DITR register
-      output reg  [ 0:63] regDPCIR,     // DPCIR register
+      input  wire [ 0: 2] debBRCMD,     // Breakpoint command
+      output reg  [13:15] debBRSTATE,   // Breakpoint state
+      input  wire [24:26] debTRCMD,     // Trace command
+      output reg  [27:29] debTRSTATE,   // Trace state
+      output wire         debTRFULL,    // Trace full
+      output wire         debTREMPTY,   // Trace empty
+      input  wire [ 0:35] debBAR,       // Breakpoint address register
+      input  wire [ 0:35] debBMR,       // Breakpoint mask register
+      output wire [ 0:63] debITR,       // ITR register
+      output reg  [ 0:63] debPCIR,      // PCIR register
+      input  wire         debBRCMD_WR,  // DCSR breakpoint command write
+      input  wire         debTRCMD_WR,  // DCSR trace command write
+      input  wire         debITR_RD,    // ITR read
       output wire         debugHALT     // Halt signal to CPU
    );
-
-   //
-   // Full/empty flags
-   //
-
-   wire trfull;
-   wire trempty;
 
    //
    // Match and mask
    //
 
-   wire match = (cpuADDR & regDBMR) == (regDBAR & regDBMR);
+   wire match = (cpuADDR & debBMR) == (debBAR & debBMR);
 
    //
    // Trace Trigger State Machine
    //
 
-   localparam [2:0] regTRCMD_RESET   = 0,
-                    regTRCMD_TRIGGER = 1,
-                    regTRCMD_ADDRMAT = 2,
-                    regTRCMD_STOP    = 3;
+   localparam [2:0] trcmdRESET   = 0,
+                    trcmdTRIGGER = 1,
+                    trcmdADDRMAT = 2,
+                    trcmdSTOP    = 3;
 
    localparam [2:0] trstateIDLE   = 0,
                     trstateARMED  = 1,
                     trstateACTIVE = 2,
                     trstateDONE   = 3;
 
-   reg [2:0] trstate;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
-          trstate <= trstateIDLE;
+          debTRSTATE <= trstateIDLE;
         else
-          if ((regTRCMD == regTRCMD_RESET) & regTRCMD_WR)
-            trstate <= trstateIDLE;
+          if ((debTRCMD == trcmdRESET) & debTRCMD_WR)
+            debTRSTATE <= trstateIDLE;
           else
-            case (trstate)
+            case (debTRSTATE)
               trstateIDLE:
-                if (regTRCMD_WR)
-                  case (regTRCMD)
-                    regTRCMD_TRIGGER:
-                      trstate <= trstateACTIVE;
-                    regTRCMD_ADDRMAT:
-                      trstate <= trstateARMED;
+                if (debTRCMD_WR)
+                  case (debTRCMD)
+                    trcmdTRIGGER:
+                      debTRSTATE <= trstateACTIVE;
+                    trcmdADDRMAT:
+                      debTRSTATE <= trstateARMED;
                   endcase
               trstateARMED:
                 if (match)
-                  trstate <= trstateACTIVE;
-                else if ((regTRCMD == regTRCMD_STOP) & regTRCMD_WR)
-                  trstate <= trstateDONE;
+                  debTRSTATE <= trstateACTIVE;
+                else if ((debTRCMD == trcmdSTOP) & debTRCMD_WR)
+                  debTRSTATE <= trstateDONE;
               trstateACTIVE:
-                if (trfull | ((regTRCMD == regTRCMD_STOP) & regTRCMD_WR))
-                  trstate <= trstateDONE;
+                if (debTRFULL | ((debTRCMD == trcmdSTOP) & debTRCMD_WR))
+                  debTRSTATE <= trstateDONE;
               trstateDONE:
-                trstate <= trstateDONE;
+                debTRSTATE <= trstateDONE;
             endcase
      end
 
@@ -127,41 +122,40 @@ module DEBUG (
    // Breakpoint Trigger State Machine
    //
 
-   localparam [2:0] regBRCMD_DISABLE = 0,
-                    regBRCMD_TRIG    = 1,
-                    regBRCMD_FULL    = 2,
-                    regBRCMD_EITHER  = 3;
+   localparam [2:0] brcmdDISABLE = 0,
+                    brcmdTRIG    = 1,
+                    brcmdFULL    = 2,
+                    brcmdEITHER  = 3;
 
    localparam [2:0] brstateIDLE  = 0,
                     brstateARMED = 1,
                     brstateBREAK = 2;
 
-  reg [2:0] brstate;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
-          brstate <= trstateIDLE;
+          debBRSTATE <= trstateIDLE;
         else
-          if ((regBRCMD == regBRCMD_DISABLE) & regBRCMD_WR)
-            brstate <= brstateIDLE;
+          if ((debBRCMD == brcmdDISABLE) & debBRCMD_WR)
+            debBRSTATE <= brstateIDLE;
           else
-            case (brstate)
+            case (debBRSTATE)
               brstateIDLE:
-                if (regBRCMD_WR)
-                  case (regBRCMD)
-                    regBRCMD_TRIG,
-                    regBRCMD_FULL,
-                    regBRCMD_EITHER:
-                      brstate <= brstateARMED;
+                if (debBRCMD_WR)
+                  case (debBRCMD)
+                    brcmdTRIG,
+                    brcmdFULL,
+                    brcmdEITHER:
+                      debBRSTATE <= brstateARMED;
                   endcase
               brstateARMED:
-                if (((regBRCMD == regBRCMD_TRIG)   & match ) |
-                    ((regBRCMD == regBRCMD_FULL)   & trfull) |
-                    ((regBRCMD == regBRCMD_EITHER) & match ) |
-                    ((regBRCMD == regBRCMD_EITHER) & trfull))
-                  brstate <= brstateBREAK;
+                if (((debBRCMD == brcmdTRIG)   & match ) |
+                    ((debBRCMD == brcmdFULL)   & debTRFULL) |
+                    ((debBRCMD == brcmdEITHER) & match ) |
+                    ((debBRCMD == brcmdEITHER) & debTRFULL))
+                  debBRSTATE <= brstateBREAK;
               brstateBREAK:
-                brstate <= brstateIDLE;
+                debBRSTATE <= brstateIDLE;
             endcase
      end
 
@@ -180,7 +174,7 @@ module DEBUG (
       .clk        (clk),
       .rst        (rst),
       .clken      (1'b1),
-      .i          (regDITR_RD),
+      .i          (debITR_RD),
       .o          (fifo_rd)
    );
 
@@ -190,56 +184,49 @@ module DEBUG (
       .clk        (clk),
       .rst        (rst),
       .clken      (1'b1),
-      .i          (regsLOAD & (trstate == trstateACTIVE)),
+      .i          (regsLOAD & (debTRSTATE == trstateACTIVE)),
       .o          (fifo_wr)
    );
 
    FIFO #(
-      .SIZE       (16*1024),
+      .SIZE       (1*1024),
       .WIDTH      (54)
    ) TRACE_BUFFER (
       .clk        (clk),
       .rst        (rst),
-      .clr        (trstate == trstateIDLE),
+      .clr        (debTRSTATE == trstateIDLE),
       .clken      (1'b1),
       .rd         (fifo_rd),
       .wr         (fifo_wr),
       .in         ({cpuPC, cpuHR}),
       .out        ({fifoPC, fifoHR}),
-      .full       (trfull),
-      .empty      (trempty)
+      .full       (debTRFULL),
+      .empty      (debTREMPTY)
    );
 
    //
-   // Build Control/Status Register
+   // Instruction Trace Register
    //
 
-   assign regDCSR = {12'b0, regBRCMD, brstate, 10'b0, regTRCMD, trstate, trfull, trempty};
+   assign debITR = {10'b0, fifoPC, fifoHR};
 
    //
-   // Build Instruction Trace Register
+   // Program Counter and Instruction Register
    //
 
-   assign regDITR = {10'b0, fifoPC, fifoHR};
-
-   //
-   // DPCIR Register
-   //
-
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
-          regDPCIR <= 0;
-        else
-          if (regsLOAD)
-            regDPCIR <= {cpuPC, cpuHR};
+          debPCIR <= 0;
+        else if (regsLOAD)
+          debPCIR <= {cpuPC, cpuHR};
      end
 
    //
    // Breakpoint Halt
    //
 
-   assign debugHALT = brstate == brstateBREAK;
+   assign debugHALT = debBRSTATE == brstateBREAK;
 
    //
    // Simulation Support
@@ -275,13 +262,12 @@ module DEBUG (
    //
 
    time lastVMA;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastVMA = 0;
-        else
-          if (vmaLOAD)
-            lastVMA = $time;
+        else if (vmaLOAD)
+          lastVMA = $time;
      end
 
    //
@@ -289,13 +275,12 @@ module DEBUG (
    //
 
    time lastIR;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastIR = 0;
-        else
-          if (regsLOAD)
-            lastIR = $time;
+        else if (regsLOAD)
+          lastIR = $time;
 
           //
           // Whine if the PC but not the VMA gets stuck for 1 ms
@@ -325,7 +310,7 @@ module DEBUG (
    // Print out Program Counter in the Simulator
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin
@@ -333,44 +318,43 @@ module DEBUG (
              PC   = 0;
              test = "";
           end
-        else
-          if (regsLOAD)
-            begin
-               IR     = cpuHR;
-               PC     = cpuPC;
-               lastIR = $time;
+        else if (regsLOAD)
+          begin
+             IR     = cpuHR;
+             PC     = cpuPC;
+             lastIR = $time;
 
-               if (PC == 18'o030057)
-                 begin
-                    $display("Test Completed.");
+             if (PC == 18'o030057)
+               begin
+                  $display("Test Completed.");
 `ifdef STOP_ON_COMPLETE
-                    $stop;
+                  $stop;
 `endif
-                 end
+               end
 
-                 `ifdef DEBUG_DSKAH
-                    `include "debug_dskah.vh"
-                 `elsif DEBUG_DSKBA
-                    `include "debug_dskba.vh"
-                 `elsif DEBUG_DSKCG
-                   `include "debug_dskcg.vh"
-                 `elsif DEBUG_DSKEA
-                    `include "debug_dskea.vh"
-                 `elsif DEBUG_DSKEB
-                    `include "debug_dskeb.vh"
-                 `elsif DEBUG_DSKEC
-                    `include "debug_dskec.vh"
-                 `elsif DEBUG_DSDZA
-                    `include "debug_dsdza.vh"
-                 `elsif DEBUG_DSUBA
-                    `include "debug_dsuba.vh"
-                 `else
-                    `include "debug_default.vh"
-                 `endif
-                 `include "debug_smmon.vh"
+`ifdef DEBUG_DSKAH
+               `include "debug_dskah.vh"
+               `elsif DEBUG_DSKBA
+                  `include "debug_dskba.vh"
+               `elsif DEBUG_DSKCG
+                 `include "debug_dskcg.vh"
+               `elsif DEBUG_DSKEA
+                  `include "debug_dskea.vh"
+               `elsif DEBUG_DSKEB
+                  `include "debug_dskeb.vh"
+               `elsif DEBUG_DSKEC
+                  `include "debug_dskec.vh"
+               `elsif DEBUG_DSDZA
+                  `include "debug_dsdza.vh"
+               `elsif DEBUG_DSUBA
+                  `include "debug_dsuba.vh"
+               `else
+                  `include "debug_default.vh"
+               `endif
+//             `include "debug_smmon.vh"
 
-                 $display("[%11.3f] %15s: PC is %06o", $time/1.0e3, test, PC);
-            end
+               $display("[%11.3f] %15s: PC is %06o", $time/1.0e3, test, PC);
+          end
      end
 
 `endif

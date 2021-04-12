@@ -37,17 +37,17 @@
 //       The Console Control/Status register controls the operation of the KS10
 //       and allows the Console to be cognizant of the status of the KS10 CPU.
 //
-//             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
-//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//     (LH)  |           |                                         |
-//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (LH)  |           |                                |GO|
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
-//            18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
-//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//     (RH)  |  |GO|                 |NX|HA|SR|SC|SE|TE|RE|CE|KI|KR|
-//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//            16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+//     (RH)  |                 |NX|HA|SR|SC|SE|TE|RE|CE|KI|KR|
+//           +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
-//           GO : BUSY.  Start Read or Write Transaction
+//           GO : BUSY. Start Read or Write Transaction
 //           NX : Non-existant memory timeout
 //           HA : Halt Status
 //           SR : Run Switch
@@ -148,14 +148,6 @@
 //       limited to 16-bits and therefore Unibus IO addresses bits 18 and 19
 //       must be zero.
 //
-// Note:
-//   ALL OUTPUT SIGNALS TO THE KS10 MUST BE SYNCHRONIZED TO THE KS10 CLOCK.
-//
-// Note:
-//   The Stellaris Microcontroller use little-endian notation where bit 0 is
-//   the LSB.  All of the KS10 signal use big-endian notation where bit 0 is
-//   the MSB.
-//
 // File
 //   csl.v
 //
@@ -189,22 +181,40 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`include "../ks10.vh"
+`include "csl.vh"
+`include "dzccr.vh"
+`include "lpccr.vh"
+`include "rpccr.vh"
+`include "dupccr.vh"
+`include "debcsr.vh"
 `include "../uba/uba.vh"
 `include "../cpu/bus.vh"
 
 module CSL (
-      // Clock/Reset
+      // Clock and Reset
       input  wire         clk,          // Clock
       input  wire         rst,          // Reset
-      // Console Microcontroller Intefaces
-      inout  wire [15: 0] conDATA,      // Console Address Bus
-      input  wire [ 7: 1] conADDR,      // Console Data Bus
-      input  wire         conBLE_N,     // Console Bus Lane
-      input  wire         conBHE_N,     // Console Bus Lane
-      input  wire         conRD_N,      // Console Read Strobe
-      input  wire         conWR_N,      // Console Write Strobe
-      // Bus Interfaces
+      // AXI Interface
+      input  wire [ 7: 0] axiAWADDR,    // Write address
+      input  wire         axiAWVALID,   // Write address valid
+      output reg          axiAWREADY,   // Write address ready
+      input  wire [ 2: 0] axiAWPROT,    // Write protections
+      input  wire [31: 0] axiWDATA,     // Write data
+      input  wire [ 3: 0] axiWSTRB,     // Write data strobe
+      input  wire         axiWVALID,    // Write data valid
+      output reg          axiWREADY,    // Write data ready
+      input  wire [ 7: 0] axiARADDR,    // Read  address
+      input  wire         axiARVALID,   // Read  address valid
+      output reg          axiARREADY,   // Read  address ready
+      input  wire [ 2: 0] axiARPROT,    // Read  protections
+      output reg  [31: 0] axiRDATA,     // Read  data
+      output wire [ 1: 0] axiRRESP,     // Read  data response
+      output reg          axiRVALID,    // Read  data valid
+      input  wire         axiRREADY,    // Read  data ready
+      output wire [ 1: 0] axiBRESP,     // Write response
+      output reg          axiBVALID,    // Write response valid
+      input  wire         axiBREADY,    // Write response ready
+      // Bus Interface
       input  wire         busREQI,      // Bus Request In
       output wire         busREQO,      // Bus Request Out
       input  wire         busACKI,      // Bus Acknowledge In
@@ -212,52 +222,68 @@ module CSL (
       input  wire [ 0:35] busADDRI,     // Bus Address In
       output wire [ 0:35] busADDRO,     // Bus Address Out
       input  wire [ 0:35] busDATAI,     // Bus Data In
-      output reg  [ 0:35] busDATAO,     // Bus Data Out
+      output wire [ 0:35] busDATAO,     // Bus Data Out
       // CPU Interfaces
       input  wire         cpuRUN,       // CPU Run Status
       input  wire         cpuCONT,      // CPU Cont Status
       input  wire         cpuEXEC,      // CPU Exec Status
       input  wire         cpuHALT,      // CPU Halt Status
       // Console Interfaces
-      output wire         cslSET,       // Set Switches
-      output wire         cslRUN,       // Run Switch
-      output wire         cslCONT,      // Continue Switch
-      output wire         cslEXEC,      // Execute Switch
+      output reg          cslRUN,       // Run Switch
+      output reg          cslHALT,      // Halt Switch
+      output reg          cslCONT,      // Continue Switch
+      output reg          cslEXEC,      // Execute Switch
       output wire         cslTIMEREN,   // Timer Enable
       output wire         cslTRAPEN,    // Trap Enable
       output wire         cslCACHEEN,   // Cache Enable
-      output wire         cslINTR,      // Interrupt KS10
+      output reg          cslINTR,      // Interrupt KS10
       output wire         cslRESET,     // Reset KS10
       // DUP11 Interfaces
+      input  wire         dupTXE,       // DUP11 TX FIFO Empty
+      output wire         dupRI,        // DUP11 Ring Indication
+      output wire         dupCTS,       // DUP11 Clear to Send
+      output wire         dupDSR,       // DUP11 Data Set Ready
+      output wire         dupDCD,       // DUP11 Data Carrier Detect
       input  wire [ 7: 0] dupTXFIFO,    // DUP11 TX FIFO
-      input  wire         dupTXEMPTY,   // DUP11 TX FIFO Empty
-      output wire         dupTXFIFO_RD, // DUP11 TX FIFO Read
-      input  wire         dupRXFULL,    // DUP11 RX FIFO Full
-      output wire         dupRXFIFO_WR, // DUP11 RX FIFO Write
-      input  wire         dupRTS,       // DUP11 Request to Send
+      input  wire         dupRXF,       // DUP11 RX FIFO Full
       input  wire         dupDTR,       // DUP11 Data Terminal Ready
-      output reg  [ 0:31] dupCCR,       // DUP11 Console Control Register
+      input  wire         dupRTS,       // DUP11 Request to Send
+      output wire         dupH325,      // DUP11 H325 Loopback
+      output wire         dupW3,        // DUP11 Jumper Wire #3
+      output wire         dupW5,        // DUP11 Jumper Wire #3
+      output wire         dupW6,        // DUP11 Jumper Wire #3
+      output wire [ 7: 0] dupRXFIFO,    // DUP11 RX FIFO
+      output reg          dupRXFIFO_WR, // DUP11 RX FIFO Write
+      output reg          dupTXFIFO_RD, // DUP11 TX FIFO Read
       // DZ11 Interfaces
-      output reg  [ 0:31] dzCCR,        // DZ11 Console Control Register
+      output wire [ 7: 0] dzCO,         // DZ11 Carrier Sense
+      output wire [ 7: 0] dzRI,         // DZ11 Ring Indication
       // LP20/LP26 Interfaces
-      output reg  [ 0:31] lpCCR,        // LP20 Console Control Register
-      input  wire         lpONLINE,     // LP26 status
-      input  wire         lpSIXLPI,     // LP26 line spacing
+      output wire [ 6:15] lpCONFIG,     // LP26 Serial Configuration
+      input  wire         lpSIXLPI,     // LP26 Line spacing
+      output wire         lpOVFU,       // LP26 Optical Vertial Format Unit
+      input  wire         lpSETOFFLN,   // LP26 Set offline
+      output reg          lpONLINE,     // LP26 Status
       // RPXX Interfaces
-      output reg  [ 0:31] rpCCR,        // RPXX Console Control Register
+      output wire [ 7: 0] rpDPR,        // RPXX Drive Present
+      output wire [ 7: 0] rpMOL,        // RPXX Media On-line
+      output wire [ 7: 0] rpWRL,        // RPXX Write Lock
       // SD Interfaces
       input  wire [ 0:63] rhDEBUG,      // RH Debug Info
       // Debug Interfaces
-      output wire         regTRCMD_WR,  // Debug Control/Status Trace Command Write
-      output reg  [ 0: 2] regTRCMD,     // Debug Control/Status Trace Command
-      output wire         regBRCMD_WR,  // Debug Control/Status Breakpoint Command Write
-      output reg  [ 0: 2] regBRCMD,     // Debug Control/Status Breakpoint Command
-      input  wire [ 0:35] regDCSR,      // Debug Control/Status Register
-      output reg  [ 0:35] regDBAR,      // Debug Breakpoint Address Register
-      output reg  [ 0:35] regDBMR,      // Debug Breakpoint Mask Register
-      output wire         regDITR_RD,   // Debug Instruction Trace Register Read
-      input  wire [ 0:63] regDITR,      // Debug Instruction Trace Register
-      input  wire [ 0:63] regDPCIR      // Debug Program Counter and Instruction Register
+      output wire [ 9:11] debBRCMD,     // Debug Breakpoint command
+      input  wire [13:15] debBRSTATE,   // Debug Breakpoint state
+      output wire [24:26] debTRCMD,     // Debug Trace command
+      input  wire [27:29] debTRSTATE,   // Debug Trace state
+      input  wire         debTRFULL,    // Debug Trace full
+      input  wire         debTREMPTY,   // Debug Trace empty
+      output wire [ 0:35] debBAR,       // Debug Breakpoint Address Register
+      output wire [ 0:35] debBMR,       // Debug Breakpoint Mask Register
+      input  wire [ 0:63] debITR,       // Debug Instruction Trace Register
+      input  wire [ 0:63] debPCIR,      // Debug Program Counter and Instruction Register
+      output reg          debTRCMD_WR,  // Debug Trace command write
+      output reg          debBRCMD_WR,  // Debug Breakpoint command write
+      output reg          debITR_RD     // Debug Instruction Trace Register Read
    );
 
    //
@@ -266,7 +292,7 @@ module CSL (
 
    localparam [0:15] major  = `MAJOR_VER;
    localparam [0:15] minor  = `MINOR_VER;
-   localparam [0:63] regREV = {"REV", major, 8'hae, minor};
+   localparam [0:63] regREV = {"REV", major, ".", minor};
 
    //
    // The Console is Device 0
@@ -285,7 +311,6 @@ module CSL (
    //
 
    wire         busREAD  = `busREAD(busADDRI);
-   wire         busWRITE = `busWRITE(busADDRI);
    wire         busIO    = `busIO(busADDRI);
    wire         busPHYS  = `busPHYS(busADDRI);
    wire [14:17] busDEV   = `busDEV(busADDRI);
@@ -298,9 +323,10 @@ module CSL (
    wire cirREAD = busREAD & busIO & busPHYS & (busDEV == cslDEV) & (busADDR == addrCIR);
 
    //
-   // State Machine States
+   // State Machine
    //
 
+   reg [0:2] state;
    localparam [0:2] stateIDLE        = 0,
                     stateREADWAITGO  = 1,
                     stateREADWAITIO  = 2,
@@ -311,253 +337,192 @@ module CSL (
                     stateFAIL        = 7;
 
    //
-   // Synchronize bus interface to KS10 clock
+   // axiAWREADY
+   //
+   // axiAWREADY is asserted for one clock cycle when both axiAWVALID and
+   // axiWVALID are asserted.  When this occurs, the write address is
+   // registered.
    //
 
-   wire cslWR;
-   wire cslRD;
-   wire cslBLE;
-   wire cslBHE;
-   SYNC syncRD (clk, rst, cslRD,  !conRD_N);
-   SYNC syncWR (clk, rst, cslWR,  !conWR_N);
-   SYNC syncBLE(clk, rst, cslBLE, !conBLE_N);
-   SYNC syncBHE(clk, rst, cslBHE, !conBHE_N);
+   always @(posedge clk)
+     begin
+        if (rst)
+          axiAWREADY <= 0;
+        else
+          begin
+             if (!axiAWREADY & axiAWVALID & axiWVALID)
+               axiAWREADY <= 1;
+             else
+               axiAWREADY <= 0;
+          end
+     end
 
    //
-   // Fixup addresses for byte addressing
+   // axiWREADY
+   //
+   // axiWREADY is asserted for one clock cycle when both axiAWVALID and
+   // axiWVALID are asserted.
    //
 
-   wire [7:0] cslADDR = {conADDR[7:1], 1'b0};
+   always @(posedge clk)
+     begin
+        if (rst)
+          axiWREADY <= 0;
+        else
+          begin
+             if (!axiWREADY & axiWVALID & axiAWVALID)
+               axiWREADY <= 1;
+             else
+               axiWREADY <= 0;
+          end
+     end
 
    //
-   // State Register
+   // axiBVALID
+   //
+   // axiBVALID signals is asserted for one clock cycle when axiWREADY,
+   // axiWVALID, axiWREADY and axiWVALID are asserted.
    //
 
-   reg [0:2] state;
+   always @(posedge clk)
+     begin
+        if (rst)
+          axiBVALID <= 0;
+        else
+          begin
+             if (axiAWREADY & axiAWVALID & !axiBVALID & axiWREADY & axiWVALID)
+               axiBVALID <= 1;
+             else if (axiBREADY & axiBVALID)
+               axiBVALID <= 0;
+          end
+     end
 
    //
-   // Write Decoder
+   // Register write
    //
-   // Details:
-   //  This device decodes writes from the Console Microcontroller and builds
-   //  the console registers.
-   //
-   // Note:
-   //  The status register is inititalized at power-up with the KS10 reset.
-   //
-   // Note:
-   //  This code contains an endian swap.  The Console Microcontroller is
-   //  little-endian while the KS10 is big-endian.
+   // The write data is accepted and written to memory mapped registers when
+   // axiAWREADY, axiWVALID, axiWREADY and axiWVALID are asserted.
    //
 
-   reg [0:35] regCIR;
-   reg [0:35] regDATA;
-   reg [0:35] regADDR;
-   reg        regCTRL_NXMNXD;
-   reg        regCTRL_TIMEREN;
-   reg        regCTRL_TRAPEN;
-   reg        regCTRL_CACHEEN;
-   reg        regCTRL_RESET;
+   reg [0:35] regCONAR;         // 0x00: Console Address Register
+   reg [0:35] regCONDR;         // 0x08: Console Data Register
+   reg [0:35] regCONIR;         // 0x10: Console Instruction Register
+   reg [0:31] regCONCSR;        // 0x18: Console Control/Status Register
+   reg [0:31] regDZCCR;         // 0x1c: DZ11  Console Control Register
+   reg [0:31] regLPCCR;         // 0x20: LP20  Console Control Register
+   reg [0:31] regRPCCR;         // 0x24: RPXX  Console Control Register
+   reg [0:31] regDUPCCR;        // 0x28: DUP11 Console Control Register
+                                // 0x2c: Spare
+                                // 0x30: Spare
+                                // 0x34: Spare
+                                // 0x38: Spare
+   reg [0:31] regDCSR;          // 0x3c: Debug Control/Status Register
+   reg [0:35] regDBAR;          // 0x40: Debug Breakpoint Address Register
+   reg [0:35] regDBMR;          // 0x48: Debug Breakpoint Mask Register
+                                // 0x50: Debug Instruction Trace Register (read-only)
+                                // 0x58: Debug Program Counter and Instruction Register (read-only)
+                                // 0x60: Spare
+                                // 0x64: Spare
+                                // 0x68: Spare
+                                // 0x6c: Spare
+                                // 0x70: RH11 Debug Regsister (read-only)
+                                // 0x78: Firmware Version Register (read-only
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin
-             regCIR          <= 0;
-             regDATA         <= 0;
-             regADDR         <= 0;
-             dzCCR           <= 0;
-             lpCCR[0:28]     <= 0;
-             dupCCR          <= 0;
-             rpCCR           <= 0;
-             regCTRL_NXMNXD  <= 0;
-             regCTRL_TIMEREN <= 0;
-             regCTRL_TRAPEN  <= 0;
-             regCTRL_CACHEEN <= 0;
-             regCTRL_RESET   <= 1;
-             regTRCMD        <= 0;
-             regBRCMD        <= 0;
-             regDBAR         <= 0;
-             regDBMR         <= 0;
+             regCONAR  <= 0;
+             regCONDR  <= 0;
+             regCONCSR <= 32'h00000001;                // KS10 Reset is asserted at power-up
+             regCONIR  <= 0;
+             regDZCCR  <= 0;
+             regLPCCR  <= 0;
+             regRPCCR  <= 0;
+             regDUPCCR <= 0;
+             regDCSR   <= 0;
+             regDBAR   <= 0;
+             regDBMR   <= 0;
           end
 
-        else if (cslWR)
+        else if (axiWREADY & axiWVALID & axiAWREADY & axiAWVALID)
           begin
 
-             if (cslBHE)
+             if (axiWSTRB[0])
 
-               case (cslADDR)
-
-                 //
-                 // Address Register
-                 //
-
-                 8'h00 : regADDR[20:27] <= conDATA[15:8];
-                 8'h02 : regADDR[ 4:11] <= conDATA[15:8];
-
-                 //
-                 // Data Register
-                 //
-
-                 8'h08 : regDATA[20:27] <= conDATA[15:8];
-                 8'h0a : regDATA[ 4:11] <= conDATA[15:8];
-
-                 //
-                 // Control Register
-                 //
-
-                 8'h10 : regCTRL_NXMNXD <= conDATA[  10];
-
-                 //
-                 // Console Instruction Register
-                 //
-
-                 8'h18 : regCIR[20:27]  <= conDATA[15:8];
-                 8'h1a : regCIR[ 4:11]  <= conDATA[15:8];
-
-                 //
-                 // DZ11 Console Control Register
-                 //
-
-                 8'h20 : dzCCR[16:23] <= conDATA[15:8];
-                 8'h22 : dzCCR[ 0: 7] <= conDATA[15:8];
-
-                 //
-                 // LP20 Console Control Register
-                 //
-
-                 8'h24 : lpCCR[16:23] <= conDATA[15:8];
-                 8'h26 : lpCCR[ 0: 7] <= conDATA[15:8];
-
-                 //
-                 // RPXX Console Control Register
-                 //
-
-                 8'h28 : rpCCR[16:23] <= conDATA[15:8];
-                 8'h2a : rpCCR[ 0: 7] <= conDATA[15:8];
-
-                 //
-                 // DUP11 Console Control Register
-                 //
-
-                 8'h2c : dupCCR[16:23] <= conDATA[15:8];
-                 8'h2e : dupCCR[ 0: 7] <= conDATA[15:8];
-
-                 //
-                 // Debug Breakpoint Address Register
-                 //
-
-                 8'h40 : regDBAR[20:27] <= conDATA[15:8];
-                 8'h42 : regDBAR[ 4:11] <= conDATA[15:8];
-
-                 //
-                 // Debug Breakpoint Mask Register
-                 //
-
-                 8'h48 : regDBMR[20:27] <= conDATA[15:8];
-                 8'h4a : regDBMR[ 4:11] <= conDATA[15:8];
-
+               case ({axiAWADDR[7:2], 2'b0})
+                 8'h00 : regCONAR [28:35] <= axiWDATA[ 7: 0];        // Console Address Register
+                 8'h04 : regCONAR [ 0: 3] <= axiWDATA[ 3: 0];        // Console Address Register (HI)
+                 8'h08 : regCONDR [28:35] <= axiWDATA[ 7: 0];        // Console Data Register
+                 8'h0c : regCONDR [ 0: 3] <= axiWDATA[ 3: 0];        // Console Data Register (HI)
+                 8'h10 : regCONIR [28:35] <= axiWDATA[ 7: 0];        // Console Instruction Register
+                 8'h14 : regCONIR [ 0: 3] <= axiWDATA[ 3: 0];        // Console Instruction Register
+                 8'h18 : regCONCSR[24:31] <= axiWDATA[ 7: 0];        // Console Control/Status Register
+                 8'h1c : regDZCCR [24:31] <= axiWDATA[ 7: 0];        // DZ11 Console Control Register
+                 8'h20 : regLPCCR [24:31] <= axiWDATA[ 7: 0];        // LP20 Console Control Register
+                 8'h24 : regRPCCR [24:31] <= axiWDATA[ 7: 0];        // RPXX Console Control Register
+                 8'h28 : regDUPCCR[24:31] <= axiWDATA[ 7: 0];        // DUP11 Console Control Register
+                 8'h3c : regDCSR  [24:31] <= axiWDATA[ 7: 0];        // Debug Control/Status Register
+                 8'h40 : regDBAR  [28:35] <= axiWDATA[ 7: 0];        // Debug Breakpoint Address Register
+                 8'h44 : regDBAR  [ 0: 3] <= axiWDATA[ 3: 0];        // Debug Breakpoint Address Register (HI)
+                 8'h48 : regDBMR  [28:35] <= axiWDATA[ 7: 0];        // Debug Breakpoint Mask Register
+                 8'h4c : regDBMR  [ 0: 3] <= axiWDATA[ 3: 0];        // Debug Breakpoint Mask Register (HI)
                endcase
 
-             if (cslBLE)
+             if (axiWSTRB[1])
 
-               case (cslADDR)
-
-                 //
-                 // Address Register
-                 //
-
-                 8'h00 : regADDR[28:35] <= conDATA[7:0];
-                 8'h02 : regADDR[12:19] <= conDATA[7:0];
-                 8'h04 : regADDR[ 0: 3] <= conDATA[3:0];
-
-                 //
-                 // Data Register
-                 //
-
-                 8'h08 : regDATA[28:35] <= conDATA[7:0];
-                 8'h0a : regDATA[12:19] <= conDATA[7:0];
-                 8'h0c : regDATA[ 0: 3] <= conDATA[3:0];
-
-                 //
-                 // Control Register
-                 //
-
-                 8'h10 :
-                   begin
-                      regCTRL_RESET     <= conDATA[  0];
-                      regCTRL_CACHEEN   <= conDATA[  2];
-                      regCTRL_TRAPEN    <= conDATA[  3];
-                      regCTRL_TIMEREN   <= conDATA[  4];
-                   end
-
-                 //
-                 // Console Instruction Register
-                 //
-
-                 8'h18 : regCIR[28:35]  <= conDATA[7:0];
-                 8'h1a : regCIR[12:19]  <= conDATA[7:0];
-                 8'h1c : regCIR[ 0: 3]  <= conDATA[3:0];
-
-                 //
-                 // DZ11 Console Control Register
-                 //
-
-                 8'h20 : dzCCR[24:31] <= conDATA[7:0];
-                 8'h22 : dzCCR[ 8:15] <= conDATA[7:0];
-
-                 //
-                 // LP20 Console Control Register
-                 //
-
-                 8'h24 : lpCCR[24:28] <= conDATA[7:3];
-                 8'h26 : lpCCR[ 8:15] <= conDATA[7:0];
-
-                 //
-                 // RPXX Console Control Register
-                 //
-
-                 8'h28 : rpCCR[24:31] <= conDATA[7:0];
-                 8'h2a : rpCCR[ 8:15] <= conDATA[7:0];
-
-                 //
-                 // DUP11 Console Control Register
-                 //
-
-                 8'h2c : dupCCR[24:31] <= conDATA[7:0];
-                 8'h2e : dupCCR[ 8:15] <= conDATA[7:0];
-
-                 //
-                 // Debug Control/Status Register
-                 //
-
-                 8'h38 : regTRCMD <= conDATA[7:5];
-                 8'h3a : regBRCMD <= conDATA[7:5];
-
-                 //
-                 // Debug Breakpoint Address Register
-                 //
-
-                 8'h40 : regDBAR[28:35] <= conDATA[7:0];
-                 8'h42 : regDBAR[12:19] <= conDATA[7:0];
-                 8'h44 : regDBAR[ 0: 3] <= conDATA[3:0];
-
-                 //
-                 // Debug Breakpoint Mask Register
-                 //
-
-                 8'h48 : regDBMR[28:35] <= conDATA[7:0];
-                 8'h4a : regDBMR[12:19] <= conDATA[7:0];
-                 8'h4c : regDBMR[ 0: 3] <= conDATA[3:0];
-
+               case ({axiAWADDR[7:2], 2'b0})
+                 8'h00 : regCONAR [20:27] <= axiWDATA[15: 8];        // Console Address Register
+                 8'h08 : regCONDR [20:27] <= axiWDATA[15: 8];        // Console Data Register
+                 8'h10 : regCONIR [20:27] <= axiWDATA[15: 8];        // Console Instruction Register
+                 8'h18 : regCONCSR[16:23] <= axiWDATA[15: 8];        // Console Control/Status Register
+                 8'h1c : regDZCCR [16:23] <= axiWDATA[15: 8];        // DZ11 Console Control Register
+                 8'h20 : regLPCCR [16:23] <= axiWDATA[15: 8];        // LP20 Console Control Register
+                 8'h24 : regRPCCR [16:23] <= axiWDATA[15: 8];        // RPXX Console Control Register
+                 8'h28 : regDUPCCR[16:23] <= axiWDATA[15: 8];        // DUP11 Console Control Register
+                 8'h3c : regDCSR  [16:23] <= axiWDATA[15: 8];        // Debug Control/Status Register
+                 8'h40 : regDBAR  [20:27] <= axiWDATA[15: 8];        // Debug Breakpoint Address Register
+                 8'h48 : regDBMR  [20:27] <= axiWDATA[15: 8];        // Debug Breakpoint Mask Register
                endcase
+
+            if (axiWSTRB[2])
+
+              case ({axiAWADDR[7:2], 2'b0})
+                 8'h00 : regCONAR [12:19] <= axiWDATA[23:16];        // Console Address Register
+                 8'h08 : regCONDR [12:19] <= axiWDATA[23:16];        // Console Data Register
+                 8'h10 : regCONIR [12:19] <= axiWDATA[23:16];        // Console Instruction Register
+                 8'h18 : regCONCSR[ 8:15] <= axiWDATA[23:16];        // Console Control/Status Register
+                 8'h1c : regDZCCR [ 8:15] <= axiWDATA[23:16];        // DZ11 Console Control Register
+                 8'h20 : regLPCCR [ 8:15] <= axiWDATA[23:16];        // LP20 Console Control Register
+                 8'h24 : regRPCCR [ 8:15] <= axiWDATA[23:16];        // RPXX Console Control Register
+                 8'h28 : regDUPCCR[ 8:15] <= axiWDATA[23:16];        // DUP11 Console Control Register
+                 8'h3c : regDCSR  [ 8:15] <= axiWDATA[23:16];        // Debug Control/Status Register
+                 8'h40 : regDBAR  [12:19] <= axiWDATA[23:16];        // Debug Breakpoint Address Register
+                 8'h48 : regDBMR  [12:19] <= axiWDATA[23:16];        // Debug Breakpoint Mask Register
+               endcase
+
+             if (axiWSTRB[3])
+
+               case ({axiAWADDR[7:2], 2'b0})
+                 8'h00 : regCONAR [ 4:11] <= axiWDATA[31:24];        // Console Address Register
+                 8'h08 : regCONDR [ 4:11] <= axiWDATA[31:24];        // Console Data Register
+                 8'h10 : regCONIR [ 4:11] <= axiWDATA[31:24];        // Console Instruction Register
+                 8'h18 : regCONCSR[ 0: 7] <= axiWDATA[31:24];        // Console Control/Status Register
+                 8'h1c : regDZCCR [ 0: 7] <= axiWDATA[31:24];        // DZ11 Console Control Register
+                 8'h20 : regLPCCR [ 0: 7] <= axiWDATA[31:24];        // LP20 Console Control Register
+                 8'h24 : regRPCCR [ 0: 7] <= axiWDATA[31:24];        // RPXX Console Control Register
+                 8'h28 : regDUPCCR[ 0: 7] <= axiWDATA[31:24];        // DUP11 Console Control Register
+                 8'h3c : regDCSR  [ 0: 7] <= axiWDATA[31:24];        // Debug Control/Status Register
+                 8'h40 : regDBAR  [ 4:11] <= axiWDATA[31:24];        // Debug Breakpoint Address Register
+                 8'h48 : regDBMR  [ 4:11] <= axiWDATA[31:24];        // Debug Breakpoint Mask Register
+                endcase
           end
 
         else if (state == stateREAD)
-          regDATA <= busDATAI;
+           regCONDR <= busDATAI;
 
         else if (state == stateFAIL)
-          regCTRL_NXMNXD <= 1;
+          regCONCSR[22] <= 1;           // NXMNXD
 
      end
 
@@ -565,182 +530,216 @@ module CSL (
    // 'GO' bit
    //
 
-   wire regCTRL_GO = (state != stateIDLE);
+   wire regGO = (state != stateIDLE);
 
    //
-   // Console Status Register
+   // axiARREADY
+   //
+   // axiARREADY is asserted for one clock cycle when axiARVALID is
+   // asserted.  When this occurs, the read address is also registered.
    //
 
-   wire [0:35] regSTAT = {4'b0,
-                          15'b0, regCTRL_GO,
-                          6'b0, regCTRL_NXMNXD, cpuHALT,
-                          cpuRUN, cpuCONT, cpuEXEC, regCTRL_TIMEREN,
-                          regCTRL_TRAPEN, regCTRL_CACHEEN, 1'b0, regCTRL_RESET};
-
-   //
-   // Read Decoder
-   //
-   // Details:
-   //  This device decodes reads from the Console Microcontroller and
-   //  multiplexes the registers.
-   //
-   // Note:
-   //  The console processor read operation is asynchronous.
-   //
-   // Note:
-   //  This code contains an endian swap.
-   //
-
-   reg [15:0] dout;
-
-   always @*
+   always @(posedge clk)
      begin
-        case (cslADDR)
-
-          //
-          // Address Register
-          //
-
-          8'h00 : dout <= regADDR[20:35];
-          8'h02 : dout <= regADDR[ 4:19];
-          8'h04 : dout <= {12'b0, regADDR[0:3]};
-          8'h06 : dout <= 0;
-
-          //
-          // Data Register
-          //
-
-          8'h08 : dout <= regDATA[20:35];
-          8'h0a : dout <= regDATA[ 4:19];
-          8'h0c : dout <= {12'b0, regDATA[0:3]};
-          8'h0e : dout <= 0;
-
-          //
-          // Status Register
-          //
-
-          8'h10 : dout <= regSTAT[20:35];
-          8'h12 : dout <= regSTAT[ 4:19];
-          8'h14 : dout <= {12'b0, regSTAT[0:3]};
-          8'h16 : dout <= 0;
-
-          //
-          // Console Instruction Register
-          //
-
-          8'h18 : dout <= regCIR[20:35];
-          8'h1a : dout <= regCIR[ 4:19];
-          8'h1c : dout <= {12'b0, regCIR[0:3]};
-          8'h1e : dout <= 0;
-
-          //
-          // DZ11 Console Control Register
-          //
-
-          8'h20 : dout <= dzCCR[16:31];
-          8'h22 : dout <= dzCCR[ 0:15];
-
-          //
-          // LP20 Console Control Register
-          //
-
-          8'h24 : dout <= {lpCCR[16:27], lpSIXLPI, lpONLINE, 2'b0};
-          8'h26 : dout <= lpCCR[ 0:15];
-
-          //
-          // RPXX Console Control Register
-          //
-
-          8'h28 : dout <= rpCCR[16:31];
-          8'h2a : dout <= rpCCR[ 0:15];
-
-          //
-          // DUP11 Console Control Register
-          //
-
-          8'h2c : dout <= {dupRXFULL, dupDTR, dupRTS, dupCCR[19:31]};
-          8'h2e : dout <= {dupTXEMPTY, dupCCR[1:7], dupTXFIFO};
-
-          //
-          // RH11 Debug Register
-          //
-
-          8'h30 : dout <= rhDEBUG[48:63];
-          8'h32 : dout <= rhDEBUG[32:47];
-          8'h34 : dout <= rhDEBUG[16:31];
-          8'h36 : dout <= rhDEBUG[ 0:15];
-
-          //
-          // Debug Control/Status Register
-          //
-
-          8'h38 : dout <= regDCSR[20:35];
-          8'h3a : dout <= regDCSR[ 4:19];
-          8'h3c : dout <= {12'b0, regDCSR[0:3]};
-          8'h3e : dout <= 0;
-
-          //
-          // Breakpoint Address Register
-          //
-
-          8'h40 : dout <= regDBAR[20:35];
-          8'h42 : dout <= regDBAR[ 4:19];
-          8'h44 : dout <= {12'b0, regDBAR[0:3]};
-          8'h46 : dout <= 0;
-
-          //
-          // Breakpoint Mask Register
-          //
-
-          8'h48 : dout <= regDBMR[20:35];
-          8'h4a : dout <= regDBMR[ 4:19];
-          8'h4c : dout <= {12'b0, regDBMR[0:3]};
-          8'h4e : dout <= 0;
-
-          //
-          // Instruction Trace Register
-          //
-
-          8'h50 : dout <= regDITR[48:63];
-          8'h52 : dout <= regDITR[32:47];
-          8'h54 : dout <= regDITR[16:31];
-          8'h56 : dout <= regDITR[ 0:15];
-
-          //
-          // Debug Program Counter and Intruction Register
-          //
-
-          8'h60 : dout <= regDPCIR[48:63];
-          8'h62 : dout <= regDPCIR[32:47];
-          8'h64 : dout <= regDPCIR[16:31];
-          8'h66 : dout <= regDPCIR[ 0:15];
-
-          //
-          // Firmware Version Register
-          //
-
-          8'h78 : dout <= {regREV[ 8:15], regREV[ 0: 7]};
-          8'h7a : dout <= {regREV[24:31], regREV[16:23]};
-          8'h7c : dout <= {regREV[40:47], regREV[32:39]};
-          8'h7e : dout <= {regREV[56:63], regREV[48:55]};
-
-          //
-          // Everything else
-          //
-
-          default : dout <= 16'b0;
-
-        endcase
+        if (rst)
+          axiARREADY <= 0;
+        else
+          begin
+             if (!axiARREADY & axiARVALID)
+               axiARREADY <= 1;
+             else
+               axiARREADY <= 0;
+          end
      end
 
    //
-   // Handle bi-directional bus output to Console Microcontroller
+   // axiRVALID and axiRDATA
+   //
+   // axiRVALID is asserted for one clock cycle when both axiARVALID and
+   // axiARREADY are asserted. When this occurs, the data should also be
+   // asserted onto the axiRDATA
    //
 
-   assign conDATA[15: 0] = !conRD_N ? dout : 16'bz;
+   wire [0:31] regSTAT   = {15'b0, regGO, 6'b0, regCONCSR[22], cpuHALT, cpuRUN, cpuCONT, cpuEXEC, cslTIMEREN, cslTRAPEN, cslCACHEEN, 1'b0, cslRESET};
+   wire [0:31] regLPRD   = {6'b0, lpCONFIG, 13'b0, lpSIXLPI, lpOVFU, lpONLINE};
+   wire [0:31] regDUPRD  = {dupTXE, 3'b0, dupRI, dupCTS, dupDSR, dupDCD, dupTXFIFO, dupRXF, dupDTR, dupRTS, 1'b0, dupH325, dupW3, dupW5, dupW6, 8'b0};
+   wire [0:31] regDEBCSR = {9'b0, debBRCMD, 1'b0, debBRSTATE, 8'b0, debTRCMD, debTRSTATE, debTRFULL, debTREMPTY};
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          begin
+             axiRDATA  <= 0;
+             axiRVALID <= 0;
+          end
+        else
+          begin
+             if (axiARREADY & axiARVALID & !axiRVALID)
+               begin
+                  case ({axiARADDR[7:2], 2'b00})
+                    8'h00   : axiRDATA <= regCONAR[4:35];            // Console Address Register
+                    8'h04   : axiRDATA <= {28'b0, regCONAR[0:3]};    // Console Address Register (HI)
+                    8'h08   : axiRDATA <= regCONDR[4:35];            // Console Data Register
+                    8'h0c   : axiRDATA <= {28'b0, regCONDR[0:3]};    // Console Data Register (HI)
+                    8'h10   : axiRDATA <= regCONIR[4:35];            // Console Instruction Register
+                    8'h14   : axiRDATA <= {28'b0, regCONIR[0:3]};    // Console Instruction Register (HI)
+                    8'h18   : axiRDATA <= regSTAT;                   // Console Control/Status Register
+                    8'h1c   : axiRDATA <= regDZCCR;                  // DZ11 Console Control Register
+                    8'h20   : axiRDATA <= regLPRD;                   // LP20 Console Control Register
+                    8'h24   : axiRDATA <= regRPCCR;                  // RPXX Console Control Register
+                    8'h28   : axiRDATA <= regDUPRD;                  // DUP11 Console Control Register
+                    8'h3c   : axiRDATA <= regDEBCSR;                 // Debug Control/Status Register
+                    8'h40   : axiRDATA <= regDBAR[4:35];             // Breakpoint Address Register
+                    8'h44   : axiRDATA <= {28'b0, regDBAR[0:3]};     // Breakpoint Address Register (HI)
+                    8'h48   : axiRDATA <= regDBMR[4:35];             // Breakpoint Mask Register
+                    8'h4c   : axiRDATA <= {28'b0, regDBMR[0:3]};     // Breakpoint Mask Register (HI)
+                    8'h50   : axiRDATA <= debITR[32:63];             // Instruction Trace Register
+                    8'h54   : axiRDATA <= debITR[0 :31];             // Instruction Trace Register (HI)
+                    8'h58   : axiRDATA <= debPCIR[32:63];            // Debug Program Counter and Intruction Register
+                    8'h5c   : axiRDATA <= debPCIR[ 0:31];            // Debug Program Counter and Intruction Register (HI)
+                    8'h70   : axiRDATA <= rhDEBUG[32:63];            // RH11 Debug Register
+                    8'h74   : axiRDATA <= rhDEBUG[ 0:31];            // RH11 Debug Register (HI)
+                    8'h78   : axiRDATA <= {regREV[24:31], regREV[16:23], regREV[ 8:15], regREV[ 0: 7]};// Firmware Version Register
+                    8'h7c   : axiRDATA <= {regREV[56:63], regREV[48:55], regREV[40:47], regREV[32:39]};// Firmware Version Register (HI)
+                    default : axiRDATA <= 32'b0;
+                  endcase
+                  axiRVALID <= 1;
+               end
+             else if (axiRVALID & axiRREADY)
+               axiRVALID <= 0;
+          end
+     end
 
    //
-   // Read/Write State Machine
+   // Read and Write
+   //
+
+   wire rdPULSE = axiARREADY & axiARVALID & !axiRVALID;
+   wire wrPULSE = axiAWREADY & axiAWVALID &  axiWVALID & axiWREADY;
+
+   //
+   // CSL Outputs
+   //
+
+   assign cslTIMEREN = `cslTIMEREN(regCONCSR);
+   assign cslTRAPEN  = `cslTRAPEN(regCONCSR);
+   assign cslCACHEEN = `cslCACHEEN(regCONCSR);
+   assign cslRESET   = `cslRESET(regCONCSR);
+
+   reg cslGO;
+   always @(posedge clk)
+     begin
+        if (rst)
+          begin
+             cslGO   <= 0;
+             cslRUN  <= 0;
+             cslHALT <= 0;
+             cslCONT <= 0;
+             cslEXEC <= 0;
+             cslINTR <= 0;
+          end
+        else
+          begin
+             cslGO   <= wrPULSE & axiWSTRB[2] & (axiAWADDR[7:0] == 8'h18) &  axiWDATA[16]; // axiWDATA is endian swapped
+             cslRUN  <= wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h18) &  axiWDATA[ 7]; // axiWDATA is endian swapped
+             cslHALT <= wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h18) & !axiWDATA[ 7]; // axiWDATA is endian swapped
+             cslCONT <= wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h18) &  axiWDATA[ 6]; // axiWDATA is endian swapped
+             cslEXEC <= wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h18) &  axiWDATA[ 5]; // axiWDATA is endian swapped
+             cslINTR <= wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h18) &  axiWDATA[ 1]; // axiWDATA is endian swapped
+          end
+     end
+
+   //
+   // DZ11 Outputs
+   //
+   assign dzCO  = `dzccrCO(regDZCCR);
+   assign dzRI  = `dzccrRI(regDZCCR);
+
+   //
+   // RH11 Outputs
+   //
+
+   assign rpDPR = `rpccrDPR(regRPCCR);
+   assign rpMOL = `rpccrMOL(regRPCCR);
+   assign rpWRL = `rpccrWRL(regRPCCR);
+
+   //
+   // LP26 Ouputs
+   //
+
+   assign lpCONFIG = `lpccrCONFIG(regLPCCR);
+   assign lpOVFU   = `lpccrOVFU(regLPCCR);
+
+   //
+   // LP26 Online
+   //
+   
+   wire lpCLR = wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h20) & (axiWDATA[0] == 1'b0);   // axiWDATA is endian swapped
+   wire lpSET = wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h20) & (axiWDATA[0] == 1'b1);   // axiWDATA is endian swapped
+   
+   always @(posedge clk)
+     begin
+        if (rst | lpSETOFFLN | lpCLR)
+          lpONLINE <= 0;
+        else if (lpSET)
+          lpONLINE <= 1;
+     end
+
+   //
+   // DUP11 Outputs
+   //
+
+   assign dupRI      = `dupccrRI(regDUPCCR);
+   assign dupCTS     = `dupccrCTS(regDUPCCR);
+   assign dupDSR     = `dupccrDSR(regDUPCCR);
+   assign dupDCD     = `dupccrDCD(regDUPCCR);
+   assign dupH325    = `dupccrH325(regDUPCCR);
+   assign dupW3      = `dupccrW3(regDUPCCR);
+   assign dupW5      = `dupccrW5(regDUPCCR);
+   assign dupW6      = `dupccrW6(regDUPCCR);
+   assign dupRXFIFO  = `dupccrRXFIFO(regDUPCCR);
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          begin
+             dupTXFIFO_RD <= 0;
+             dupRXFIFO_WR <= 0;
+          end
+        else
+          begin
+             dupTXFIFO_RD <= rdPULSE & axiWSTRB[0] & (axiARADDR[7:0] == 8'h28);
+             dupRXFIFO_WR <= wrPULSE & axiWSTRB[2] & (axiAWADDR[7:0] == 8'h28);
+          end
+     end
+
+   //
+   // Debug Outputs
+   //
+
+   assign debBAR   = regDBAR;
+   assign debBMR   = regDBMR;
+   assign debBRCMD = `dcsrBRCMD(regDCSR);
+   assign debTRCMD = `dcsrTRCMD(regDCSR);
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          begin
+             debITR_RD   <= 0;
+             debTRCMD_WR <= 0;
+             debBRCMD_WR <= 0;
+          end
+        else
+          begin
+             debITR_RD   <= rdPULSE & axiWSTRB[3] & (axiARADDR[7:0] == 8'h54);                   // FIFO advances on MSB
+             debTRCMD_WR <= wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h3c);
+             debBRCMD_WR <= wrPULSE & axiWSTRB[2] & (axiAWADDR[7:0] == 8'h3c);
+          end
+     end
+
+   //
+   // Backplane Bus Read/Write State Machine
    //
    // Details
    //  This creates 'backplane' bus cycles for the console to read or write to
@@ -751,11 +750,9 @@ module CSL (
    //
 
    reg [0:9] timer;
-   wire cslGO = cslWR & (cslADDR == 8'h12) & cslBLE & conDATA[0];
-
    localparam [0:9] timeout = 511;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin
@@ -765,9 +762,9 @@ module CSL (
         else
           case (state)
             stateIDLE:
-              if (cslGO & regADDR[3])
+              if (cslGO & regCONAR[3])
                 state <= stateREADWAITGO;
-              else if (cslGO & regADDR[5])
+              else if (cslGO & regCONAR[5])
                 state <= stateWRITEWAITGO;
             stateREADWAITGO:
               if (!cslGO)
@@ -810,15 +807,7 @@ module CSL (
    // KS10 Bus Mux
    //
 
-   always @*
-     begin
-        if (cirREAD)
-          busDATAO = regCIR;
-        else if (state == stateWRITE)
-          busDATAO = regDATA;
-        else
-          busDATAO = 36'bx;
-     end
+   assign busDATAO = cirREAD ? regCONIR : regCONDR;
 
    //
    // Bus REQ
@@ -837,93 +826,14 @@ module CSL (
    // Bus Address Out is always set by Address Register
    //
 
-   assign busADDRO = regADDR;
-
-`ifdef SYNTHESIS
-`ifdef CHIPSCOPE_CSL
+   assign busADDRO = regCONAR;
 
    //
-   // ChipScope Pro Integrated Controller (ICON)
+   // This AXI slave always responds with "OK".
    //
 
-   wire [35:0] control0;
-
-   chipscope_csl_icon uICON (
-      .CONTROL0  (control0)
-   );
-
-   //
-   // ChipScope Pro Integrated Logic Analyzer (ILA)
-   //
-
-   wire [255:0] TRIG0 = {
-       cslRESET,                // dataport[    255]
-       regDATA[0:35],           // dataport[219:254]
-       regADDR[0:35],           // dataport[183:218]
-       regCIR[0:35],            // dataport[147:182]
-       busDATAO[0:35],          // dataport[111:146]
-       busADDRO[0:35],          // dataport[ 75:110]
-       state[0:2],              // dataport[ 72: 74]
-       busREQO,                 // dataport[     71]
-       busACKI,                 // dataport[     70]
-       conBLE_N,                // dataport[     69]
-       conBHE_N,                // dataport[     68]
-       conRD_N,                 // dataport[     67]
-       conWR_N,                 // dataport[     66]
-       conDATA[15:0],           // dataport[ 50: 65]
-       conADDR[5:1],            // dataport[ 45: 49]
-       regSTAT[0:35],           // dataport[  9: 44]
-       9'b0                     // dataport[  0:  8]
-   };
-
-   chipscope_csl_ila uILA (
-      .CLK       (clk),
-      .CONTROL   (control0),
-      .TRIG0     (TRIG0)
-   );
-
-`endif
-`endif
-
-   //
-   // CPU Outputs
-   //
-
-   assign cslSET     = cslWR & (cslADDR == 8'h10) & cslBLE;
-   assign cslRUN     = conDATA[7];
-   assign cslCONT    = conDATA[6];
-   assign cslEXEC    = conDATA[5];
-   assign cslTIMEREN = regCTRL_TIMEREN;
-   assign cslTRAPEN  = regCTRL_TRAPEN;
-   assign cslCACHEEN = regCTRL_CACHEEN;
-   assign cslINTR    = cslWR & (cslADDR == 8'h10) & cslBLE & conDATA[1];
-   assign cslRESET   = regCTRL_RESET;
-
-   //
-   // LP20 Outputs
-   //
-
-   wire wrLPCCR = cslWR & (cslADDR == 8'h24) & cslBLE;
-
-   always @*
-     begin
-        lpCCR[29:31] <= {1'b0, wrLPCCR & conDATA[1], wrLPCCR & conDATA[0]};
-     end
-
-   //
-   // DUP11 Outputs
-   //
-
-   assign dupTXFIFO_RD = cslRD & (cslADDR == 8'h2e) & cslBLE;
-   assign dupRXFIFO_WR = cslWR & (cslADDR == 8'h2c) & cslBLE;
-
-   //
-   // Debug Outputs
-   //
-
-   assign regDITR_RD  = cslRD & (cslADDR == 8'h56);
-   assign regTRCMD_WR = cslWR & (cslADDR == 8'h38) & cslBLE;
-   assign regBRCMD_WR = cslWR & (cslADDR == 8'h3a) & cslBLE;
+   assign axiRRESP = 2'b0;
+   assign axiBRESP = 2'b0;
 
 `ifndef SYNTHESIS
 
@@ -943,4 +853,4 @@ module CSL (
 
 `endif
 
- endmodule
+endmodule

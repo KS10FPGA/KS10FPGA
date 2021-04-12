@@ -47,13 +47,12 @@
 module CPU (
       input  wire         rst,          // Reset
       input  wire         clk,          // Clock
-      input  wire         memCLK,       // Memory Clock
-      input  wire [ 1: 4] clkPHS,       // Clock Phase
+      input  wire [ 1: 4] clkT,         // Clock
       // Breakpoint
       input  wire         debugHALT,    // Breakpoint
       // Console
-      input  wire         cslSET,       // Set Console RUN, EXEC, CONT
       input  wire         cslRUN,       // Run
+      input  wire         cslHALT,      // Halt
       input  wire         cslCONT,      // Continue
       input  wire         cslEXEC,      // Execute
       input  wire         cslTIMEREN,   // Timer Enable
@@ -77,7 +76,8 @@ module CPU (
       output wire [18:35] cpuPC,        // Program Counter Register
       output wire [ 0:35] cpuHR,        // Instruction Register
       output wire         regsLOAD,     // Register update
-      output wire         vmaLOAD       // VMA update
+      output wire         vmaLOAD,      // VMA update
+      output wire         writeEN       // Write Enable
    );
 
    //
@@ -197,11 +197,35 @@ module CPU (
    wire         clkenCR;        // Clock Enable for Control ROM
 
    //
+   //
+   //
+
+   reg [0:35] dpreg;
+
+`define REGISTER_DPBUS
+`ifdef REGISTER_DPBUS
+
+   always @*
+     if (clkT[1])
+     begin
+        dpreg <= dp;
+     end
+
+`else
+
+   always @*
+     begin
+        dpreg <= dp;
+     end
+
+`endif
+
+   //
    // Timing and Wait States
    //
 
    TIMING uTIMING (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .crom             (crom),
       .feSIGN           (feSIGN),
@@ -215,7 +239,7 @@ module CPU (
    //
 
    ALU uALU (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -231,7 +255,7 @@ module CPU (
    //
 
    APR uAPR (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -256,7 +280,7 @@ module CPU (
    //
 
    DISP_NI uDISP_NI (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -274,7 +298,7 @@ module CPU (
    //
 
    DISP_PF uDISP_PF (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -295,7 +319,7 @@ module CPU (
    //
 
    BUS uBUS (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .dp               (dp),
       .crom             (crom),
@@ -314,8 +338,7 @@ module CPU (
 
    DBM uDBM (
       .rst              (rst),
-      .memCLK           (memCLK),
-      .clkPHS           (clkPHS),
+      .clk              (clkT[4]),
       .crom             (crom),
       .dp               (dp),
       .scad             (scad),
@@ -336,7 +359,7 @@ module CPU (
       .piREQPRI         (piREQPRI),
       .vmaREG           (vmaREG),
       .pcFLAGS          (pcFLAGS),
-      .dp               (dp),
+      .dp               (dpreg),
       .ramfile          (ramfile),
       .dbm              (dbm),
       .dbus             (dbus)
@@ -347,7 +370,7 @@ module CPU (
    //
 
    DROM uDROM (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .clken            (clkenDP),
       .dbus             (dbus),
       .crom             (crom),
@@ -360,13 +383,13 @@ module CPU (
    //
 
    INTF uINTF (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
       .debugHALT        (debugHALT),
-      .cslSET           (cslSET),
       .cslRUN           (cslRUN),
+      .cslHALT          (cslHALT),
       .cslCONT          (cslCONT),
       .cslEXEC          (cslEXEC),
       .cpuRUN           (cpuRUN),
@@ -380,7 +403,7 @@ module CPU (
    //
 
    PI uPI (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -397,7 +420,7 @@ module CPU (
    //
 
    REGIR uIR (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -414,7 +437,7 @@ module CPU (
    //
 
    USEQ uUSEQ (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenCR),
       .dp               (dp),
@@ -445,7 +468,7 @@ module CPU (
    //
 
    NXD uNXD (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .crom             (crom),
       .cpuADDRO         (cpuADDRO),
@@ -460,7 +483,7 @@ module CPU (
    //
 
    NXM uNXM (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .cpuADDRO         (cpuADDRO),
       .cpuREQO          (cpuREQO),
@@ -474,7 +497,7 @@ module CPU (
    //
 
    PAGER uPAGER (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -490,7 +513,7 @@ module CPU (
    //
 
    PCFLAGS uPCFLAGS (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -507,7 +530,7 @@ module CPU (
    //  Previous context
 
    PXCT uPXCT (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -521,7 +544,7 @@ module CPU (
    //
 
    RAMFILE uRAMFILE (
-      .clk              (clk),
+      .clk              (clkT[2]),
       .rst              (rst),
       .clken            (1'b1),
       .crom             (crom),
@@ -538,7 +561,7 @@ module CPU (
    //
 
    SCAD uSCAD (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -554,7 +577,7 @@ module CPU (
    //
 
    TIMER uTIMER (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -568,7 +591,7 @@ module CPU (
    //
 
    VMA uVMA (
-      .clk              (clk),
+      .clk              (clkT[1]),
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
@@ -579,7 +602,8 @@ module CPU (
       .pcFLAGS          (pcFLAGS),
       .pageFAIL         (pageFAIL),
       .vmaREG           (vmaREG),
-      .vmaLOAD          (vmaLOAD)
+      .vmaLOAD          (vmaLOAD),
+      .writeEN          (writeEN)
    );
 
    //

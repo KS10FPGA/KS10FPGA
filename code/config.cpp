@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2017 Rob Doyle
+// Copyright (C) 2013-2020 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -36,37 +36,34 @@
 //
 //******************************************************************************
 
-#include "debug.hpp"
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "config.hpp"
 
 //!
 //! \brief
-//!    Write configuration data into SD Card.
-//!
-//! \param debug -
-//!    <b>True</b> enables debug mode.
+//!    Write configuration data.
 //!
 //! \param filename
 //!    Filename to write
 //!
 //! \param [in] buf
-//!    Buffer to be written to SD Card.
+//!    Buffer to be written.
 //!
 //! \param [in] size
-//!    Size of buffer to be written to SD Card.
+//!    Size of buffer to be written.
 //!
 
-bool config_t::write(bool debug, const char *filename, const void *buf, unsigned int size) {
+bool config_t::write(const char *filename, const void *buf, size_t size) {
 
     //
     // Open the configuration file
     //
 
-    FIL fp;
-    bool success = true;
-    FRESULT status = f_open(&fp, filename, FA_CREATE_ALWAYS | FA_WRITE);
-    if (status != FR_OK) {
-        debug_printf(debug, "KS10: f_open() returned %d\n", status);
+    FILE *fp = fopen(filename, "w");
+    if (fp == NULL) {
+        printf("KS10: config_t::write() - fopen(%s) failed.\n", filename);
         return false;
     }
 
@@ -74,88 +71,63 @@ bool config_t::write(bool debug, const char *filename, const void *buf, unsigned
     // Write the data.  Check the status.
     //
 
-    unsigned int bytes;
-    status = f_write(&fp, buf, size, &bytes);
-    if (status != FR_OK) {
-        debug_printf(debug, "KS10: f_write() returned %d.\n", status);
-        success = false;
-    }
-
+    size_t bytes = fwrite(buf, 1, size, fp);
     if (bytes != size) {
-        debug_printf(debug, "KS10: f_write() wrote partial buffer.\n");
-        success = false;
+        printf("KS10: config_t::write() - write() failed.\n");
+        fclose(fp);
+        return false;
     }
 
     //
     // Close the file.
     //
 
-    status = f_close(&fp);
-    if (status != FR_OK) {
-        debug_printf(debug, "KS10: f_close() returned %d\n", status);
-        success = false;
-    }
-
-    return success;
+    fclose(fp);
+    return true;
 }
 
 //!
 //! \brief
-//!    Read configuration data from SD Card.
-//!
-//! \param debug -
-//!    <b>True</b> enables debug mode.
+//!    Read configuration data.
 //!
 //! \param filename
 //!    Filename to read
 //!
 //! \param [in] buf
-//!    Buffer to be read from SD Card.
+//!    Buffer to be read.
 //!
 //! \param [in] size
-//!    Size of buffer to be read from SD Card.
+//!    Size of buffer to be read.
 //!
 
-bool config_t::read(bool debug, const char *filename, void *buf, unsigned int size) {
+bool config_t::read(const char *filename, void *buf, unsigned int size) {
 
     //
     // Open the configuration file
     //
 
-    FIL fp;
-    bool success = true;
-    FRESULT status = f_open(&fp, filename, FA_READ);
-    if (status != FR_OK) {
-        debug_printf(debug, "KS10: f_open() returned %d\n", status);
+    FILE *fp = fopen(filename, "r");
+    if (fp == NULL) {
+        printf("KS10: config_t::write() - fopen(%s) failed.\n", filename);
         return false;
     }
 
     //
-    // Write the data.  Check the status.
+    // Reade the data.  Check the status.
     //
 
-    unsigned int bytes;
-    status = f_read(&fp, buf, size, &bytes);
-    if (status != FR_OK) {
-        debug_printf(debug, "KS10: f_read() returned %d.\n", status);
-        success = false;
-    }
-
+    size_t bytes = fread(buf, 1, size, fp);
     if (bytes != size) {
-        debug_printf(debug, "KS10: f_read() read partial buffer.\n");
-        success = false;
+        printf("KS10: config_t::read() - read() failed.\n");
+        fclose(fp);
+        return false;
     }
 
     //
     // Close the file.
     //
 
-    status = f_close(&fp);
-    if (status != FR_OK) {
-        debug_printf(debug, "KS10: f_close() returned %d\n", status);
-        success = false;
-    }
-
-    return success;
+    fclose(fp);
+    return true;
 }
 

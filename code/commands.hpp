@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2017 Rob Doyle
+// Copyright (C) 2013-2020 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -39,12 +39,8 @@
 #ifndef __COMMANDS_HPP
 #define __COMMANDS_HPP
 
-#include "SafeRTOS/SafeRTOS_API.h"
-
-void consoleOutput(void);
-void printHaltStatus(void);
-void printRH11Debug(void);
-void recallConfig(bool debug);
-void startCommandTask(char *lineBuffer, xTaskHandle &taskHandle);
+void recallConfig(void);
+bool consoleOutput(void);
+bool executeCommand(char *buf);
 
 #endif

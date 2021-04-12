@@ -73,25 +73,25 @@ module testbench;
    // DZ11 Serial Interface
    //
 
-   wire [ 1: 2] ttyTXD = 2'b11; // DZ11 RS-232 Received Data
-   wire [ 1: 2] ttyRXD;         // DZ11 RS-232 Transmitted Data
+   wire [ 1: 2] DZ_TXD = 2'b11; // DZ11 RS-232 Received Data
+   wire [ 1: 2] DZ_RXD;         // DZ11 RS-232 Transmitted Data
 
    //
    // LP26 Serial Interface
    //
 
-   wire lprTXD = 1'b1;          // LP26 RS-232 Received Data
-   wire lprRXD;                 // LP26 RS-232 Transmitted Data
+   wire LP_TXD = 1'b1;          // LP26 RS-232 Received Data
+   wire LP_RXD;                 // LP26 RS-232 Transmitted Data
 
    //
    // RH11 Secure Digital Interface
    //
 
-   wire         sdCD_N = 0;     // SD Card Detect
-   wire         sdMISO;         // SD Data In
-   wire         sdMOSI;         // SD Data Out
-   wire         sdSCLK;         // SD Clock
-   wire         sdCS;           // SD Chip Select
+   wire         SD_CD_N = 0;    // SD Card Detect
+   wire         SD_MISO;        // SD Data In
+   wire         SD_MOSI;        // SD Data Out
+   wire         SD_SCLK;        // SD Clock
+   wire         SD_SS_N;        // SD Chip Select
 
    //
    // RPXX Interface
@@ -141,17 +141,17 @@ module testbench;
 
    localparam [ 7: 0] addrREGADDR   = 8'h00,
                       addrREGDATA   = 8'h08,
-                      addrREGSTATUS = 8'h10,
-                      addrREGCIR    = 8'h18,
-                      addrREGDZCCR  = 8'h20,
-                      addrREGLPCCR  = 8'h24,
-                      addrREGRHCCR  = 8'h28,
-                      addrREGDPCCR  = 8'h2c,
-                      addrRH11DEB   = 8'h30,
-                      addrDCSR      = 8'h38,
+                      addrREGCIR    = 8'h10,
+                      addrREGSTATUS = 8'h18,
+                      addrREGDZCCR  = 8'h1c,
+                      addrREGLPCCR  = 8'h20,
+                      addrREGRHCCR  = 8'h24,
+                      addrREGDPCCR  = 8'h28,
+                      addrDCSR      = 8'h3c,
                       addrDBAR      = 8'h40,
                       addrDBMR      = 8'h48,
                       addrDITR      = 8'h50,
+                      addrRH11DEB   = 8'h70,
                       addrVersion   = 8'h78;
 
    //
@@ -728,7 +728,7 @@ module testbench;
         // Release RESET and set RUN.
         //
 
-        conWRITE36(addrREGSTATUS, statRUN);
+        conWRITE32(addrREGSTATUS, statRUN);
         $display("[%11.3f] KS10: Starting KS10", $time/1.0e3);
 
         //
@@ -773,9 +773,9 @@ module testbench;
              //
 
 `ifdef ENABLE_TIMER
-             conWRITE36(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN | statTIMEREN));
+             conWRITE32(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN | statTIMEREN));
 `else
-             conWRITE36(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN));
+             conWRITE32(addrREGSTATUS, (statEXEC | statCONT | statRUN | statTRAPEN));
 `endif
           end
 
@@ -818,15 +818,22 @@ module testbench;
 
                   expect("UBA # - ",                                                    "1\015",       state[0]);
                   expect("DISK:<DIRECTORY> OR DISK:[P,PN] - ",                          "PS:\015",     state[1]);
-                  expect("SMMON CMD - ",                                                "SMCPU\015",   state[2]);
+                  expect("SMMON CMD - ",                                                "DSRPA\015",   state[2]);
+`ifdef SIM_SMMON
                   expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",                     "0\015",       state[3]);
                   expect("LH SWITCHES <# OR ?> - ",                                     "0\015",       state[4]);
                   expect("RH SWITCHES <# OR ?> - ",                                     "0\015",       state[5]);
+`endif
 
                   //
                   // DSRPA (RP06-RH11 BASIC DRIVE DIAGNOSTIC) Responses
                   //
 
+`ifndef SIM_SMMON
+                  expect("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",                     "Y\015",       state[3]);
+                  expect("LH SWITCHES <# OR ?> - ",                                     "400000\015",  state[4]);
+                  expect("RH SWITCHES <# OR ?> - ",                                     "400000\015",  state[5]);
+`endif
                   expect("LIST PGM SWITCH OPTIONS ?  Y OR N <CR> - ",                   "N\015",       state[6]);
                   expect("SELECT DRIVES (0-7 OR \"A\") - ",                             "0\015",       state[7]);
                   expect("HEADS LOADED CORRECTLY ?  Y OR N <CR> - ",                    "Y\015",       state[8]);
@@ -888,17 +895,17 @@ module testbench;
       .MR_N             (1'b0),
       .MR               (),
       // DZ11 Interfaces
-      .ttyTXD           (ttyTXD),
-      .ttyRXD           (ttyRXD),
+      .DZ_RXD           (DZ_RXD),
+      .DZ_TXD           (DZ_TXD),
       // LP26 Interface
-      .lprTXD           (lprTXD),
-      .lprRXD           (lprRXD),
+      .LP_TXD           (LP_TXD),
+      .LP_RXD           (LP_RXD),
       // SD Interfaces
-      .sdCD_N           (sdCD_N),
-      .sdMISO           (sdMISO),
-      .sdMOSI           (sdMOSI),
-      .sdSCLK           (sdSCLK),
-      .sdCS             (sdCS),
+      .SD_CD_N          (SD_CD_N),
+      .SD_MISO          (SD_MISO),
+      .SD_MOSI          (SD_MOSI),
+      .SD_SCLK          (SD_SCLK),
+      .SD_SS_N          (SD_SS_N),
       // RPXX Interfaces
       .rpLEDS_N         (rpLEDS_N),
       // Console Interfaces
@@ -952,10 +959,10 @@ module testbench;
    SDSIM SD (
       .clk              (clk),
       .rst              (reset),
-      .sdMISO           (sdMISO),
-      .sdMOSI           (sdMOSI),
-      .sdSCLK           (sdSCLK),
-      .sdCS             (sdCS)
+      .SD_MISO          (SD_MISO),
+      .SD_MOSI          (SD_MOSI),
+      .SD_SCLK          (SD_SCLK),
+      .SD_SS_N          (SD_SS_N)
    );
 
 `else
@@ -997,7 +1004,7 @@ module testbench;
       .length (`UARTLEN_8),
       .parity (`UARTPAR_NONE),
       .stop   (`UARTSTOP_1),
-      .rxd    (lprRXD),
+      .rxd    (LP_RXD),
       .rfull  (1'b0),
       .full   (),
       .intr   (intr),

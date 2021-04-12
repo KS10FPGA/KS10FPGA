@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2017 Rob Doyle
+// Copyright (C) 2013-2020 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -39,8 +39,6 @@
 #ifndef __CONFIG_HPP
 #define __CONFIG_HPP
 
-#include "fatfslib/ff.h"
-
 //!
 //! \brief
 //!    Configuration Object
@@ -48,8 +46,8 @@
 
 class config_t {
     public:
-        static bool read(bool debug, const char *filename, void *buf, unsigned int size);
-        static bool write(bool debug, const char *filename, const void *buf, unsigned int size);
+        static bool read(const char *filename, void *buf, size_t size);
+        static bool write(const char *filename, const void *buf, size_t size);
 };
 
 #endif

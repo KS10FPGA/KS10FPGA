@@ -48,8 +48,8 @@ module INTF (
       input  wire         clken,        // clock enable
       input  wire [0:107] crom,         // Control ROM Data
       input  wire         debugHALT,    // Breakpoint
-      input  wire         cslSET,       // Console modify RUN, CONT, EXEC
       input  wire         cslRUN,       // Console Run Switch
+      input  wire         cslHALT,      // Console Halt Switch
       input  wire         cslCONT,      // Console Continue Switch
       input  wire         cslEXEC,      // Console Execute Switch
       output reg          cpuRUN,       // CPU Run Status
@@ -74,7 +74,7 @@ module INTF (
    //  CSL4/E168
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           cpuHALT <= 0;
@@ -95,16 +95,16 @@ module INTF (
    //  CSL4/E135
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           cpuRUN <= 0;
         else if (clken)
           begin
-             if ((specCONS & `cromCONS_CLR_RUN) | debugHALT)
+             if ((specCONS & `cromCONS_CLR_RUN) | cslHALT | debugHALT)
                cpuRUN <= 0;
-             else if (cslSET)
-               cpuRUN <= cslRUN;
+             else if (cslRUN)
+               cpuRUN <= 1;
           end
      end
 
@@ -116,7 +116,7 @@ module INTF (
    //  CSL4/E168
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           cpuEXEC <= 0;
@@ -124,8 +124,8 @@ module INTF (
           begin
              if (specCONS & `cromCONS_CLR_EXEC)
                cpuEXEC <= 0;
-             else if (cslSET)
-               cpuEXEC <= cslEXEC;
+             else if (cslEXEC)
+               cpuEXEC <= 1;
           end
      end
 
@@ -137,7 +137,7 @@ module INTF (
    //  CSL4/E171
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           cpuCONT <= 0;
@@ -145,8 +145,8 @@ module INTF (
           begin
              if (specCONS & `cromCONS_CLR_CONT)
                cpuCONT <= 0;
-             else if (cslSET)
-               cpuCONT <= cslCONT;
+             else if (cslCONT)
+               cpuCONT <= 1;
           end
      end
 

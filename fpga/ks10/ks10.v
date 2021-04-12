@@ -46,60 +46,249 @@
 `include "uba/uba.vh"
 `include "dup11/dup11.vh"
 `include "dz11/dz11.vh"
+`include "kmc11/kmc11.vh"
 `include "rh11/rh11.vh"
 `include "lp20/lp20.vh"
 `include "rh11/rpxx/rpxx.vh"
 
 module KS10 (
       // Clock/Reset
-      input  wire         RESET_N,      // Reset
-      input  wire         CLK50MHZ,     // Clock
+      input  wire         memRST,       // Reset
+      input  wire         memCLK,       // Memory Clock
+      output wire         cpuCLK,       // CPU clock
+      output wire         cpuRST,       // CPU reset
+      // AXI4-Lite Interface
+      input  wire [ 7: 0] axiAWADDR,    // AXI Write address
+      input  wire         axiAWVALID,   // AXI Write address valid
+      input  wire [ 2: 0] axiAWPROT,    // AXI Write protections
+      output wire         axiAWREADY,   // AXI Write address ready
+      input  wire [31: 0] axiWDATA,     // AXI Write data
+      input  wire [ 3: 0] axiWSTRB,     // AXI Write data strobe
+      input  wire         axiWVALID,    // AXI Write data valid
+      output wire         axiWREADY,    // AXI Write data ready
+      input  wire [ 7: 0] axiARADDR,    // AXI Read  address
+      input  wire         axiARVALID,   // AXI Read  address valid
+      input  wire [ 2: 0] axiARPROT,    // AXI Read  protections
+      output wire         axiARREADY,   // AXI Read  address ready
+      output wire [31: 0] axiRDATA,     // AXI Read  data
+      output wire [ 1: 0] axiRRESP,     // AXI Read  data response
+      output wire         axiRVALID,    // AXI Read  data valid
+      input  wire         axiRREADY,    // AXI Read  data ready
+      output wire [ 1: 0] axiBRESP,     // AXI Write response
+      output wire         axiBVALID,    // AXI Write response valid
+      input  wire         axiBREADY,    // AXI Write response ready
+      // Front Panel
+      input  wire         SW_RESET_N,   // Reset switch
+      input  wire         SW_BOOT_N,    // Boot switch
+      input  wire         SW_HALT_N,    // Halt switch
+      output wire         LED_PWR_N,    // Power LED
+      output wire         LED_RESET_N,  // Reset LED
+      output wire         LED_BOOT_N,   // Boot LED
+      output wire         LED_HALT_N,   // Halt LED
+      input  wire         SPARE0,       // Spare 0
+      input  wire         SPARE1,       // Spare 1
+      input  wire         SPARE2,       // Spare 2
+      // External SD Card
+      output wire         ESD_SCLK,     // External SD serial clock
+      input  wire         ESD_DI,       // External SD serial data in
+      output wire         ESD_DO,       // External SD serial data out
+      output wire         ESD_CS_N,     // External SD serial data chip select
+      output wire         ESD_RST_N,    // External config reset
+      output wire         ESD_RD_N,     // External config read
+      output wire         ESD_WR_N,     // External config write
+      output wire [ 4: 0] ESD_ADDR,     // External config address
+      inout  wire         ESD_DIO,      // External config data inout
       // DZ11 Interfaces
-      input  wire [ 7: 0] dzRXD,        // DZ Receiver Serial Data
-      output wire [ 7: 0] dzTXD,        // DZ Transmitter Serial Data
-      output wire [ 7: 0] dzDTR,        // DZ Data Terminal Ready
+      input  wire [ 7: 0] DZ_RXD,       // DZ Receiver Serial Data
+      output wire [ 7: 0] DZ_TXD,       // DZ Transmitter Serial Data
+      output wire [ 7: 0] DZ_DTR,       // DZ Data Terminal Ready
       // LP20 Interface
-      input  wire         lpRXD,        // LP Receiver Serial Data
-      output wire         lpTXD,        // LP Transmitter Serial Data
+      input  wire         LP_RXD,       // LP Receiver Serial Data
+      output wire         LP_TXD,       // LP Transmitter Serial Data
       // SD Interfaces
-      input  wire [ 7: 0] sdCD,         // SD Card Detect
-      input  wire [ 7: 0] sdWP,         // SD Write Protect
-      input  wire         sdMISO,       // SD Data In
-      output wire         sdMOSI,       // SD Data Out
-      output wire         sdSCLK,       // SD Clock
-      output wire         sdCS,         // SD Chip Select
+      input  wire [ 7: 0] SD_CD,        // SD Card Detect
+      input  wire [ 7: 0] SD_WP,        // SD Write Protect
+      input  wire         SD_MISO,      // SD Data In
+      output wire         SD_MOSI,      // SD Data Out
+      output wire         SD_SCLK,      // SD Clock
+      output wire         SD_SS_N,      // SD Slave Select
       // RPXX Interfaces
-      output wire [ 7: 0] rpLEDS,       // RPXX LEDs
-      // Console Interfaces
-      inout  wire [15: 0] conDATA,      // Console Data Bus
-      input  wire [ 7: 1] conADDR,      // Console Address Bus
-      input  wire         conBLE_N,     // Console Bus Lane
-      input  wire         conBHE_N,     // Console Bus Lane
-      input  wire         conRD_N,      // Console Read Strobe
-      input  wire         conWR_N,      // Console Write Strobe
-      output wire         conINTR_N,    // KS10 Interrupt to Console
+      output wire [ 7: 0] RP_LEDS,      // RPXX LEDs
       // SSRAM Interfaces
-      output wire         ssramCLK,     // SSRAM Clock
-      output wire         ssramCLKEN_N, // SSRAM CLKEN#
-      output wire         ssramADV,     // SSRAM Advance
-      output wire [ 1: 4] ssramBW_N,    // SSRAM BW#
-      output wire         ssramOE_N,    // SSRAM OE#
-      output wire         ssramWE_N,    // SSRAM WE#
-      output wire         ssramCE,      // SSRAM CE
-      output wire [ 0:19] ssramADDR,    // SSRAM Address Bus
-      inout  wire [ 0:35] ssramDATA,    // SSRAM Data Bus
-      output wire         haltLED,      // Halt LED
-      output wire [ 0:19] test          // Test signals
+      output wire         SSRAM_CLK,    // SSRAM Clock
+      output wire         SSRAM_WE_N,   // SSRAM WE#
+      output wire         SSRAM_ADV,    // SSRAM Advance
+`ifdef SSRAMx36
+      output wire [19: 0] SSRAM_A,      // SSRAM Address Bus
+      inout  wire [35: 0] SSRAM_D,      // SSRAM Data Bus
+`else
+      output wire [21: 0] SSRAM_A,      // SSRAM Address Bus
+      inout  wire [17: 0] SSRAM_D,      // SSRAM Data Bus
+`endif
+      // DE10-Nano Interfaces
+      input  wire [ 1: 0] KEY,
+      input  wire [ 3: 0] SW
    );
 
    //
-   // Clock Generator Signals
+   // Clock generator
    //
 
-   wire rst;                            // Reset
-   wire cpuCLK;                         // CPU clock
-   wire memCLK;                         // Memory clock
-   wire [1:4] clkPHS;                   // Clock phase
+`ifdef SYNTHESIS
+
+   //
+   // PLL Locked
+   //
+
+   wire [1:4] clkT;
+   wire locked;
+
+`ifdef XILINX
+
+   //
+   // The following code is Xilinx Spartan 6 specific.
+   //
+
+   wire clkfbout;
+   wire clkfbout_buf;
+
+   //
+   // Phase locked loop.  PLL is 400 MHz
+   //
+
+   PLL_BASE #(
+       .BANDWIDTH          ("OPTIMIZED"),
+       .CLK_FEEDBACK       ("CLKFBOUT"),
+       .COMPENSATION       ("SYSTEM_SYNCHRONOUS"),
+       .DIVCLK_DIVIDE      (1),
+       .CLKFBOUT_MULT      (8),
+       .CLKFBOUT_PHASE     (0.000),
+       .CLKOUT0_DIVIDE     (32),
+       .CLKOUT0_PHASE      (0.000),
+       .CLKOUT0_DUTY_CYCLE (0.500),
+       .CLKOUT1_DIVIDE     (32),
+       .CLKOUT1_PHASE      (90.000),
+       .CLKOUT1_DUTY_CYCLE (0.500),
+       .CLKOUT2_DIVIDE     (32),
+       .CLKOUT2_PHASE      (180.000),
+       .CLKOUT2_DUTY_CYCLE (0.500),
+       .CLKOUT3_DIVIDE     (32),
+       .CLKOUT3_PHASE      (270.000),
+       .CLKOUT3_DUTY_CYCLE (0.500),
+       .CLKIN_PERIOD       (20.0),
+       .REF_JITTER         (0.010)
+   )
+   iPLL_BASE (
+       .RST                (memRST),
+       .CLKIN              (memCLK),
+       .CLKFBIN            (clkfbout_buf),
+       .CLKOUT0            (clkPHS[1]),
+       .CLKOUT1            (clkPHS[2]),
+       .CLKOUT2            (clkPHS[3]),
+       .CLKOUT3            (clkPHS[4]),
+       .CLKFBOUT           (clkfbout),
+       .LOCKED             (locked)
+   );
+
+   //
+   // Output clock buffers
+   //
+
+   BUFG bufgCLKF (
+       .I                  (clkfbout),
+       .O                  (clkfbout_buf)
+   );
+
+`else
+
+   //
+   // FIXME:
+   //   The inputs should be clk and rst
+   //
+   //   The output should be:
+   //   MEMCLK_P
+   //   MEMCLK_N
+   //   clkT1
+   //   clkT2
+   //   clkT3
+   //   clkT4
+   //
+
+   altera_pll #(
+      .fractional_vco_multiplier("false"),
+      .reference_clock_frequency("50.0 MHz"),
+      .operation_mode           ("direct"),
+      .number_of_clocks         (4),
+      .output_clock_frequency0  ("12.500000 MHz"),
+      .phase_shift0             ("0 ps"),
+      .duty_cycle0              (50),
+      .output_clock_frequency1  ("12.500000 MHz"),
+      .phase_shift1             ("20000 ps"),
+      .duty_cycle1              (50),
+      .output_clock_frequency2  ("12.500000 MHz"),
+      .phase_shift2             ("40000 ps"),
+      .duty_cycle2              (50),
+      .output_clock_frequency3  ("12.500000 MHz"),
+      .phase_shift3             ("60000 ps"),
+      .duty_cycle3              (50),
+      .pll_type                 ("General"),
+      .pll_subtype              ("General")
+    ) PLL (
+      .rst                      (memRST),
+      .outclk                   ({clkT[4], clkT[3], clkT[2], clkT[1]}),
+      .locked                   (locked),
+      .fboutclk                 (),
+      .fbclk                    (1'b0),
+      .refclk                   (memCLK)
+    );
+
+`endif
+
+   //
+   // Synchronize Reset
+   //
+
+   reg [2:0] d;
+   always @(posedge clkT[1])
+     begin
+        if (memRST)
+          d <= 3'b111;
+        else
+          d <= {d[1:0], !locked};
+     end
+
+   wire cslRST = d[2];
+
+`else
+
+   reg       cslRST;
+   reg [1:4] clkT;
+   localparam [1:4] t1 = 4'b1001,
+                    t2 = 4'b1100,
+                    t3 = 4'b0110,
+                    t4 = 4'b0011;
+
+   always @(posedge memCLK)
+     begin
+        if (memRST)
+          begin
+             clkT   <= t1;
+             cslRST <= 1;
+          end
+        else
+          case (clkT)
+            t1: clkT <= t2;
+            t2: clkT <= t3;
+            t3: clkT <= t4;
+            t4: begin
+               clkT   <= t1;
+               cslRST <= 0;
+            end
+          endcase
+     end
+`endif
+
+   assign cpuCLK = clkT[1];
 
    //
    // Console Signals
@@ -113,8 +302,8 @@ module KS10 (
    wire [ 0:35] cslADDRO;               // Console Address Out
    wire [ 0:35] cslDATAI;               // Console Data In
    wire [ 0:35] cslDATAO;               // Console Data Out
-   wire         cslSET;                 // Console Set State
    wire         cslRUN;                 // Console Run Switch
+   wire         cslHALT;                // Console Halt Switch
    wire         cslCONT;                // Console Continue Switch
    wire         cslEXEC;                // Console Exec Switch
    wire         cslTRAPEN;              // Console Trap Enable
@@ -122,11 +311,6 @@ module KS10 (
    wire         cslCACHEEN;             // Console Cache Enable
    wire         cslINTR;                // Console Interrupt to KS10
    wire         cslINTRO;               // KS10 Interrupt to Console
-   wire         cpuRST;                 // KS10 Reset
-   wire         cslDUPCTS;              // DUP11 Clear to Send
-   wire         cslDUPDSR;              // DUP11 Data Terminal Ready
-   wire         cslDUPDCD;              // DUP11 Data Carrier Detect
-   wire         cslDUPRI;               // DUP11 Ring Indication.
 
    //
    // CPU Signals
@@ -146,34 +330,36 @@ module KS10 (
    // DUP11 Signals
    //
 
+   wire         dupTXE;                 // DUP11 TX Empty
    reg          dupRI;                  // DUP11 Ring Indication
+   wire         dupRIO;                 // DUP11 Ring Indication Output from CSL
    reg          dupCTS;                 // DUP11 Clear To Send
-   reg          dupDCD;                 // DUP11 Data Carrier Detect
+   wire         dupCTSO;                // DUP11 Clear To Send Output from CSL
    reg          dupDSR;                 // DUP11 Data Set Ready
-   wire         dupRTS;                 // DUP11 Request to Send
+   wire         dupDSRO;                // DUP11 Data Set Ready Output from CSL
+   reg          dupDCD;                 // DUP11 Data Carrier Detect
+   wire         dupDCDO;                // DUP11 Data Carrier Detect Output from CSL
+   wire [ 7: 0] dupTXFIFO;              // DUP11 TX FIFO
+   wire         dupRXF;                 // DUP11 RX Full
    wire         dupDTR;                 // DUP11 Data Terminal Ready
+   wire         dupRTS;                 // DUP11 Request to Send
+   wire         dupH325;                // DUP11 H325 Loopback
+   wire         dupW3;                  // DUP11 Config Wire 3
+   wire         dupW5;                  // DUP11 Config Wire 5
+   wire         dupW6;                  // DUP11 Config Wire 6
+   wire [ 7: 0] dupRXFIFO;              // DUP11 RX FIFO
    wire         dupCLK;                 // DUP11 Test Clock
    reg          dupRXC;                 // DUP11 Receiver Clock
    reg          dupRXD;                 // DUP11 Receiver Data
    reg          dupTXC;                 // DUP11 Transmitter Clock
    wire         dupTXD;                 // DUP11 Transmitter Data
-   wire [ 7: 0] dupTXFIFO = 0;          // FIXME
    wire         dupTXFIFO_RD;           // DUP11 RX FIFO Read
-   wire         dupTXEMPTY = 0;         // FIXME
-   wire [ 7: 0] dupRXFIFO = 0;          // FIXME
-   wire         dupRXFULL = 0;          // FIXME
    wire         dupRXFIFO_WR;           // DUP11 RX FIFO Write
-   wire         dupH325;                // DUP11 H325 Loopback
-   wire         dupW3;                  // DUP11 Config Wire 3
-   wire         dupW5;                  // DUP11 Config Wire 5
-   wire         dupW6;                  // DUP11 Config Wire 6
-   wire [ 0:31] dupCCR;                 // DUP11 Console Configuration Register
 
    //
    // DZ11 Signals
    //
 
-   wire [ 0:31] dzCCR;                  // DZ11 Console Control Register
    wire [ 0: 7] dzRI;                   // DZ11 Ring Indicator
    wire [ 0: 7] dzCO;                   // DZ11 Carrier Sense
 
@@ -181,12 +367,11 @@ module KS10 (
    // LP20/LP26 Signals
    //
 
-   wire [ 0:31] lpCCR;                  // LP20 Console Control Register
-   wire         lpSETONLN;              // LP20 set online
-   wire         lpSETOFFLN;             // LP20 set offline
-   wire         lpONLINE;               // LP20 status
-   wire         lpOVFU;                 // LP20 has optical vertical format unit
-   wire [ 6:15] lpCONFIG;               // LP20 serial configuration
+   wire [ 0:31] lpCCR;                  // LP26 Console Control Register
+   wire         lpSETOFFLN;             // LP26 set offline
+   wire         lpONLINE;               // LP26 status
+   wire         lpOVFU;                 // LP26 has optical vertical format unit
+   wire [ 6:15] lpCONFIG;               // LP26 serial configuration
    wire         lpINIT;                 // LP26 initialization
    wire         lpPARERR;               // LP26 data parity error
    wire         lpDPAR;                 // LP26 data parity
@@ -208,7 +393,6 @@ module KS10 (
    // RPxx Interfaces
    //
 
-   wire [ 0:31] rpCCR;                  // RPXX Console Control Register
    wire [ 7: 0] rpWRL;                  // RPXX Write Lock
    wire [ 7: 0] rpMOL;                  // RPXX Media on-line
    wire [ 7: 0] rpDPR;                  // RPXX Drive Present
@@ -222,6 +406,7 @@ module KS10 (
    wire [ 0:35] memDATAI;               // Memory Data In
    wire [ 0:35] memDATAO;               // Memory Data Out
    wire [ 0:35] memADDRI;               // Memory Address In
+   wire         writeEN;                // Memory Write Enable
 
    //
    // Buses between Backplane Bus Arbiter and UBA Adapters (x4)
@@ -261,30 +446,20 @@ module KS10 (
    wire [ 0:35] cpuHR;                  // Instruction Register
    wire         regsLOAD;               // Update registers
    wire         vmaLOAD;                // Update VMA
-   wire         regTRCMD_WR;            // Control/Status Trace Command Write
-   wire [ 0: 2] regTRCMD;               // Control/Status Trace Command
-   wire         regBRCMD_WR;            // Control/Status Breakpoint Command Write
-   wire [ 0: 2] regBRCMD;               // Control/Status Breakpoint Command
-   wire [ 0:35] regDCSR;                // Control/Status Register
-   wire [ 0:35] regDBAR;                // Breakpoint Address Register
-   wire [ 0:35] regDBMR;                // Breakpoint Mask Register
-   wire         regDITR_RD;             // Read Instruction Trace Register
-   wire [ 0:63] regDITR;                // Instruction Trace Register
-   wire [ 0:63] regDPCIR;               // Program counter and instruction register
+   wire [ 9:11] debBRCMD;               // Breakpoint Command
+   wire [13:15] debBRSTATE;             // Breakpoint state
+   wire [24:26] debTRCMD;               // Trace Command
+   wire [27:29] debTRSTATE;             // Trace state
+   wire         debTRFULL;              // Trace full
+   wire         debTREMPTY;             // Trace empty
+   wire [ 0:35] debBAR;                 // Breakpoint Address Register
+   wire [ 0:35] debBMR;                 // Breakpoint Mask Register
+   wire [ 0:63] debITR;                 // Instruction Trace Register
+   wire [ 0:63] debPCIR;                // Program counter and instruction register
+   wire         debTRCMD_WR;            // Trace Command Write
+   wire         debBRCMD_WR;            // Breakpoint Command Write
+   wire         debITR_RD;              // Read Instruction Trace Register
    wire         debugHALT;              // Breakpoint the CPU
-
-   //
-   // Synchronize the DUPCCR
-   //
-
-   SYNC #(
-      .WIDTH (16)
-   ) syncDUP (
-      .clk   (cpuCLK),
-      .rst   (rst),
-      .i     ({dupCCR[4:7], dupCCR[20:31]}),
-      .o     ({cslDUPRI, cslDUPCTS, cslDUPDSR, cslDUPDCD, dupH325, dupW3, dupW5, dupW6, dupRXFIFO})
-   );
 
    //
    // This simulates the H325 Loopback Connector which is required for the
@@ -305,67 +480,15 @@ module KS10 (
           end
         else
           begin
-             dupCTS <= cslDUPCTS;
-             dupDSR <= cslDUPDSR;
-             dupDCD <= cslDUPDCD;
-             dupRI  <= cslDUPRI;
+             dupCTS <= dupCTSO;
+             dupDSR <= dupDSRO;
+             dupDCD <= dupDCDO;
+             dupRI  <= dupRIO;
              dupRXD <= dupTXD;
              dupRXC <= dupCLK;
              dupTXC <= dupCLK;
           end
      end
-
-   //
-   // Synchronize the DZCCR
-   //
-
-   SYNC #(
-      .WIDTH (16)
-   ) syncDZCCR (
-      .clk   (cpuCLK),
-      .rst   (rst),
-      .i     (dzCCR[16:31]),
-      .o     ({dzCO, dzRI})
-   );
-
-   //
-   // Synchronize the LPCCR
-   //
-
-   SYNC #(
-      .WIDTH (13)
-   ) syncLPCCR (
-      .clk   (cpuCLK),
-      .rst   (rst),
-      .i     ({lpCCR[6:15], lpCCR[27], lpCCR[30], lpCCR[31]}),
-      .o     ({lpCONFIG, lpOVFU, lpSETONLN, lpSETOFFLN})
-   );
-
-   //
-   // Synchronize the RPCCR
-   //
-
-   SYNC #(
-      .WIDTH (24)
-   ) syncRPCCR (
-      .clk   (cpuCLK),
-      .rst   (rst),
-      .i     (rpCCR[8:31]),
-      .o     ({rpDPR, rpMOL, rpWRL})
-   );
-
-   //
-   // Clock Generator and Reset Synchronization
-   //
-
-   CLK uCLK (
-      .RESET_N          (RESET_N),
-      .CLK50MHZ         (CLK50MHZ),
-      .cpuCLK           (cpuCLK),
-      .memCLK           (memCLK),
-      .rst              (rst),
-      .clkPHS           (clkPHS)
-   );
 
    //
    // Bus Arbiter
@@ -423,13 +546,12 @@ module KS10 (
    CPU uCPU (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      .memCLK           (memCLK),
-      .clkPHS           (clkPHS),
+      .clkT             (clkT),
       // Breakpoint
       .debugHALT        (debugHALT),
       // Console
-      .cslSET           (cslSET),
       .cslRUN           (cslRUN),
+      .cslHALT          (cslHALT),
       .cslCONT          (cslCONT),
       .cslEXEC          (cslEXEC),
       .cslTIMEREN       (cslTIMEREN),
@@ -453,7 +575,8 @@ module KS10 (
       .cpuPC            (cpuPC),
       .cpuHR            (cpuHR),
       .regsLOAD         (regsLOAD),
-      .vmaLOAD          (vmaLOAD)
+      .vmaLOAD          (vmaLOAD),
+      .writeEN          (writeEN)
    );
 
    //
@@ -461,16 +584,29 @@ module KS10 (
    //
 
    CSL uCSL (
-      .rst              (rst),
+      .rst              (cslRST),
       .clk              (cpuCLK),
-      // Console Microcontroller Interfaces
-      .conADDR          (conADDR),
-      .conDATA          (conDATA),
-      .conBLE_N         (conBLE_N),
-      .conBHE_N         (conBHE_N),
-      .conRD_N          (conRD_N),
-      .conWR_N          (conWR_N),
-      // Bus Interfaces
+      // AXI Interface to ARM Core
+      .axiAWADDR        (axiAWADDR),
+      .axiAWVALID       (axiAWVALID),
+      .axiAWPROT        (axiAWPROT),
+      .axiAWREADY       (axiAWREADY),
+      .axiWDATA         (axiWDATA),
+      .axiWSTRB         (axiWSTRB),
+      .axiWVALID        (axiWVALID),
+      .axiWREADY        (axiWREADY),
+      .axiARADDR        (axiARADDR),
+      .axiARVALID       (axiARVALID),
+      .axiARPROT        (axiARPROT),
+      .axiARREADY       (axiARREADY),
+      .axiRDATA         (axiRDATA),
+      .axiRRESP         (axiRRESP),
+      .axiRVALID        (axiRVALID),
+      .axiRREADY        (axiRREADY),
+      .axiBRESP         (axiBRESP),
+      .axiBVALID        (axiBVALID),
+      .axiBREADY        (axiBREADY),
+        // Bus Interfaces
       .busREQI          (cslREQI),
       .busREQO          (cslREQO),
       .busACKI          (cslACKI),
@@ -485,8 +621,8 @@ module KS10 (
       .cpuEXEC          (cpuEXEC),
       .cpuCONT          (cpuCONT),
       // Console Interfaces
-      .cslSET           (cslSET),
       .cslRUN           (cslRUN),
+      .cslHALT          (cslHALT),
       .cslCONT          (cslCONT),
       .cslEXEC          (cslEXEC),
       .cslTIMEREN       (cslTIMEREN),
@@ -495,35 +631,51 @@ module KS10 (
       .cslINTR          (cslINTR),
       .cslRESET         (cpuRST),
       // DUP11 Interface
+      .dupTXE           (dupTXE),
+      .dupRI            (dupRIO),
+      .dupCTS           (dupCTSO),
+      .dupDCD           (dupDCDO),
+      .dupDSR           (dupDSRO),
       .dupTXFIFO        (dupTXFIFO),
-      .dupTXEMPTY       (dupTXEMPTY),
-      .dupTXFIFO_RD     (dupTXFIFO_RD),
-      .dupRXFULL        (dupRXFULL),
-      .dupRXFIFO_WR     (dupRXFIFO_WR),
-      .dupRTS           (dupRTS),
+      .dupRXF           (dupRXF),
       .dupDTR           (dupDTR),
-      .dupCCR           (dupCCR),
+      .dupRTS           (dupRTS),
+      .dupH325          (dupH325),
+      .dupW3            (dupW3),
+      .dupW5            (dupW5),
+      .dupW6            (dupW6),
+      .dupRXFIFO        (dupRXFIFO),
+      .dupTXFIFO_RD     (dupTXFIFO_RD),
+      .dupRXFIFO_WR     (dupRXFIFO_WR),
       // DZ11 Interfaces
-      .dzCCR            (dzCCR),
+      .dzCO             (dzCO),
+      .dzRI             (dzRI),
       // LP20/LP26 Interfaces
-      .lpCCR            (lpCCR),
-      .lpONLINE         (lpONLINE),
+      .lpCONFIG         (lpCONFIG),
       .lpSIXLPI         (lpSIXLPI),
+      .lpOVFU           (lpOVFU),
+      .lpSETOFFLN       (lpSETOFFLN),
+      .lpONLINE         (lpONLINE),
       // RPXX Interfaces
-      .rpCCR            (rpCCR),
+      .rpDPR            (rpDPR),
+      .rpMOL            (rpMOL),
+      .rpWRL            (rpWRL),
       // RH11 Interfaces
       .rhDEBUG          (rhDEBUG),
       // Debug Interface
-      .regTRCMD_WR      (regTRCMD_WR),
-      .regTRCMD         (regTRCMD),
-      .regBRCMD_WR      (regBRCMD_WR),
-      .regBRCMD         (regBRCMD),
-      .regDCSR          (regDCSR),
-      .regDBAR          (regDBAR),
-      .regDBMR          (regDBMR),
-      .regDITR_RD       (regDITR_RD),
-      .regDITR          (regDITR),
-      .regDPCIR         (regDPCIR)
+      .debTRCMD         (debTRCMD),
+      .debBRCMD         (debBRCMD),
+      .debBRSTATE       (debBRSTATE),
+      .debTRSTATE       (debTRSTATE),
+      .debTRFULL        (debTRFULL),
+      .debTREMPTY       (debTREMPTY),
+      .debBAR           (debBAR),
+      .debBMR           (debBMR),
+      .debITR           (debITR),
+      .debPCIR          (debPCIR),
+      .debTRCMD_WR      (debTRCMD_WR),
+      .debBRCMD_WR      (debBRCMD_WR),
+      .debITR_RD        (debITR_RD)
    );
 
    //
@@ -531,24 +683,20 @@ module KS10 (
    //
 
    MEM uMEM (
-      .rst              (cpuRST),
-      .cpuCLK           (cpuCLK),
+      .rst              (memRST),
       .memCLK           (memCLK),
-      .clkPHS           (clkPHS),
+      .clkT             (clkT),
+      .writeEN          (writeEN),
       .busREQI          (memREQI),
       .busACKO          (memACKO),
       .busADDRI         (memADDRI),
       .busDATAI         (memDATAI),
       .busDATAO         (memDATAO),
-      .ssramCLK         (ssramCLK),
-      .ssramCLKEN_N     (ssramCLKEN_N),
-      .ssramADV         (ssramADV),
-      .ssramBW_N        (ssramBW_N),
-      .ssramOE_N        (ssramOE_N),
-      .ssramWE_N        (ssramWE_N),
-      .ssramCE          (ssramCE),
-      .ssramADDR        (ssramADDR),
-      .ssramDATA        (ssramDATA)
+      .SSRAM_CLK        (SSRAM_CLK),
+      .SSRAM_WE_N       (SSRAM_WE_N),
+      .SSRAM_A          (SSRAM_A),
+      .SSRAM_D          (SSRAM_D),
+      .SSRAM_ADV        (SSRAM_ADV)
    );
 
    //
@@ -599,12 +747,12 @@ module KS10 (
       .dev3DATAI        (devDATAO[1][3]),
       .dev3DATAO        (devDATAI[1][3]),
       // IO Bridge 1, Device #4
-      .dev4INTR         (devINTR[1][1]),
-      .dev4INTA         (devINTA[1][1]),
-      .dev4ADDRI        (devADDRO[1][1]),
-      .dev4ADDRO        (devADDRI[1][1]),
-      .dev4DATAI        (devDATAO[1][1]),
-      .dev4DATAO        (devDATAI[1][1])
+      .dev4INTR         (devINTR[1][4]),
+      .dev4INTA         (devINTA[1][4]),
+      .dev4ADDRI        (devADDRO[1][4]),
+      .dev4ADDRO        (devADDRI[1][4]),
+      .dev4DATAI        (devDATAO[1][4]),
+      .dev4DATAO        (devDATAI[1][4])
    );
 
    //
@@ -677,17 +825,17 @@ module KS10 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
       // SD Interfaces
-      .sdMISO           (sdMISO),
-      .sdMOSI           (sdMOSI),
-      .sdSCLK           (sdSCLK),
-      .sdCS             (sdCS),
+      .SD_MISO          (SD_MISO),
+      .SD_MOSI          (SD_MOSI),
+      .SD_SCLK          (SD_SCLK),
+      .SD_SS_N          (SD_SS_N),
       // RH11 Interfaces
       .rhDEBUG          (rhDEBUG),
       // RPXX Interfaces
       .rpMOL            (rpMOL),
       .rpWRL            (rpWRL),
       .rpDPR            (rpDPR),
-      .rpLEDS           (rpLEDS),
+      .rpLEDS           (RP_LEDS),
       // Device
       .devRESET         (devRESET[1]),
       .devINTR          (devINTR[1][1]),
@@ -706,6 +854,8 @@ module KS10 (
    // DZ11 #1 Connected to IO Bridge 3 Device 1
    //
 
+`ifdef DZ11
+
    DZ11 #(
       .dzDEV            (`dz1DEV),
       .dzADDR           (`dz1ADDR),
@@ -716,11 +866,11 @@ module KS10 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
       // DZ11 IO
-      .dzTXD            (dzTXD),
-      .dzRXD            (dzRXD),
+      .dzTXD            (DZ_TXD),
+      .dzRXD            (DZ_RXD),
       .dzCO             (dzCO),
       .dzRI             (dzRI),
-      .dzDTR            (dzDTR),
+      .dzDTR            (DZ_DTR),
       // Device
       .devRESET         (devRESET[3]),
       .devINTR          (devINTR[3][1]),
@@ -735,9 +885,27 @@ module KS10 (
       .devDATAO         (devDATAO[3][1])
    );
 
+`else
+
+   //
+   // IO Bridge #3, Device 2 is not connected. Tie inputs
+   //
+
+   assign devINTR[3][1]  = 0;
+   assign devREQO[3][1]  = 0;
+   assign devACKO[3][1]  = 0;
+   assign devADDRO[3][1] = 0;
+   assign devDATAO[3][1] = 0;
+   assign DZ_TXD = 0;
+   assign DZ_DTR = 0;
+
+`endif
+
    //
    // LP20 #1 is connected to IO Bridge 3 Device 2
    //
+
+`ifdef LP20
 
    LP20 #(
       .lpDEV            (`lp1DEV),
@@ -782,29 +950,42 @@ module KS10 (
       .clk              (cpuCLK),
       .rst              (cpuRST),
       .lpINIT           (lpINIT),
-      .lpSETONLN        (lpSETONLN),
-      .lpSETOFFLN       (lpSETOFFLN),
       .lpCONFIG         (lpCONFIG),
       .lpOVFU           (lpOVFU),
-      .lpRXD            (lpRXD),
-      .lpTXD            (lpTXD),
+      .lpRXD            (LP_RXD),
+      .lpTXD            (LP_TXD),
       .lpSTROBE         (lpSTROBE),
       .lpDATA           (lpDATA),
       .lpDPAR           (lpDPAR),
       .lpPI             (lpPI),
       .lpTOF            (lpTOF),
       .lpPARERR         (lpPARERR),
-      .lpONLINE         (lpONLINE),
+      .lpSETOFFLN       (lpSETOFFLN),
       .lpVFURDY         (lpVFURDY),
       .lpSIXLPI         (lpSIXLPI),
       .lpDEMAND         (lpDEMAND)
    );
 
-`ifdef DUP11
+`else
+
+   //
+   // IO Bridge #3, Device 2 is not connected. Tie inputs
+   //
+
+   assign devINTR[3][2]  = 0;
+   assign devREQO[3][2]  = 0;
+   assign devACKO[3][2]  = 0;
+   assign devADDRO[3][2] = 0;
+   assign devDATAO[3][2] = 0;
+   assign LP_TXD         = 0;
+
+`endif
 
    //
    // DUP11 #1 is connected to IO Bridge 3 Device 3
    //
+
+`ifdef DUP11
 
    DUP11 #(
       .dupDEV           (`dup1DEV),
@@ -850,11 +1031,53 @@ module KS10 (
    // IO Bridge #3, Device 3 is not connected. Tie inputs
    //
 
-   assign devINTR[3][3] = 0;
-   assign devREQO[3][3] = 0;
-   assign devACKO[3][3] = 0;
+   assign devINTR[3][3]  = 0;
+   assign devREQO[3][3]  = 0;
+   assign devACKO[3][3]  = 0;
    assign devADDRO[3][3] = 0;
    assign devDATAO[3][3] = 0;
+
+`endif
+
+   //
+   // KMC11 #1 is connected to IO Bridge 3 Device 4
+   //
+
+`ifdef KMC11
+
+   KMC11 #(
+      .kmcDEV           (`kmcDEV),
+      .kmcADDR          (`kmcADDR),
+      .kmcVECT          (`kmcVECT),
+      .kmcINTR          (`kmcINTR)
+   ) uKMC11 (
+      .clk              (cpuCLK),
+      .rst              (cpuRST),
+      // Device Interface
+      .devRESET         (devRESET[3]),
+      .devINTR          (devINTR[3][4]),
+      .devINTA          (devINTA[3][4]),
+      .devREQI          (devREQI[3][4]),
+      .devREQO          (devREQO[3][4]),
+      .devACKI          (devACKI[3][4]),
+      .devACKO          (devACKO[3][4]),
+      .devADDRI         (devADDRI[3][4]),
+      .devADDRO         (devADDRO[3][4]),
+      .devDATAI         (devDATAI[3][4]),
+      .devDATAO         (devDATAO[3][4])
+   );
+
+`else
+
+   //
+   // IO Bridge #3, Device 4 is not connected. Tie inputs
+   //
+
+   assign devINTR[3][4]  = 0;
+   assign devREQO[3][4]  = 0;
+   assign devACKO[3][4]  = 0;
+   assign devADDRO[3][4] = 0;
+   assign devDATAO[3][4] = 0;
 
 `endif
 
@@ -870,36 +1093,21 @@ module KS10 (
       .cpuHR            (cpuHR),
       .regsLOAD         (regsLOAD),
       .vmaLOAD          (vmaLOAD),
-      .regTRCMD_WR      (regTRCMD_WR),
-      .regTRCMD         (regTRCMD),
-      .regBRCMD_WR      (regBRCMD_WR),
-      .regBRCMD         (regBRCMD),
-      .regDCSR          (regDCSR),
-      .regDBAR          (regDBAR),
-      .regDBMR          (regDBMR),
-      .regDITR_RD       (regDITR_RD),
-      .regDITR          (regDITR),
-      .regDPCIR         (regDPCIR),
+      .debBRCMD         (debBRCMD),
+      .debBRSTATE       (debBRSTATE),
+      .debTRCMD         (debTRCMD),
+      .debTRSTATE       (debTRSTATE),
+      .debTRFULL        (debTRFULL),
+      .debTREMPTY       (debTREMPTY),
+      .debBAR           (debBAR),
+      .debBMR           (debBMR),
+      .debITR           (debITR),
+      .debPCIR          (debPCIR),
+      .debBRCMD_WR      (debBRCMD_WR),
+      .debTRCMD_WR      (debTRCMD_WR),
+      .debITR_RD        (debITR_RD),
       .debugHALT        (debugHALT)
    );
-
-   //
-   // Console Interrupt fixup
-   //
-
-   assign conINTR_N = ~cslINTRO;
-
-   //
-   // Halt LED
-   //
-
-   assign haltLED = cpuHALT;
-
-   //
-   // Test
-   //
-
-   assign test = 0;
 
    //
    // IO Bridge #2 is not implemented. Tie inputs.
@@ -952,13 +1160,26 @@ module KS10 (
    assign devDATAO[1][4] = 0;
 
    //
-   // IO Bridge #3, Device 4 is not implemented. Tie inputs
+   // LEDs
    //
 
-   assign devINTR[3][4] = 0;
-   assign devREQO[3][4] = 0;
-   assign devACKO[3][4] = 0;
-   assign devADDRO[3][4] = 0;
-   assign devDATAO[3][4] = 0;
+   assign LED_HALT_N  = !cpuHALT;
+   assign LED_PWR_N   = 0;
+   assign LED_RESET_N = SW_RESET_N;
+   assign LED_BOOT_N  = SW_BOOT_N;
+
+   //
+   // External SD Array Interface
+   //  Not implemented
+   //
+
+   assign ESD_SCLK  = 0;
+   assign ESD_DO    = 0;
+   assign ESD_DIO   = 0;
+   assign ESD_RST_N = 1;
+   assign ESD_RD_N  = 1;
+   assign ESD_WR_N  = 1;
+   assign ESD_CS_N  = 1;
+   assign ESD_ADDR  = 0;
 
 endmodule

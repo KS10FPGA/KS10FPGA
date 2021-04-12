@@ -1,0 +1,5 @@
+br fetch 30057
+br match
+wr 30047 0
+go diag/dskaa.sav 30001
+rd 30047

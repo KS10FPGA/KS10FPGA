@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2016 Rob Doyle
+// Copyright (C) 2013-2020 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -178,7 +178,7 @@ void dz11_t::testRX(char line) {
             }
 
             printf("%c", ch);
-
+            fflush(stdout);
         }
     }
 }
@@ -217,7 +217,7 @@ void dz11_t::testECHO(char line) {
             // Wait for Transmitter Ready (TRDY) to be asserted
             //
 
-            while (!ks10_t::readIO(csr_addr) & csr_trdy) {
+            while (!(ks10_t::readIO(csr_addr) & csr_trdy)) {
                 ;
             }
 

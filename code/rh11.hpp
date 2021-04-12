@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2016 Rob Doyle
+// Copyright (C) 2013-2020 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -40,6 +40,8 @@
 #define __RH11_HPP
 
 #include <stdio.h>
+#include <stdint.h>
+
 #include "uba.hpp"
 #include "ks10.hpp"
 
@@ -68,6 +70,8 @@ class rh11_t {
         const ks10_t::addr_t la_addr;
         const ks10_t::addr_t db_addr;
         const ks10_t::addr_t mr_addr;
+        const ks10_t::addr_t dt_addr;
+        const ks10_t::addr_t sn_addr;
         const ks10_t::addr_t of_addr;
         const ks10_t::addr_t dc_addr;
 
@@ -81,10 +85,10 @@ class rh11_t {
         // Register offsets
         //
 
-        static const ks10_t::addr_t cs1_offset = 00;
-        static const ks10_t::addr_t wc_offset  = 02;
-        static const ks10_t::addr_t ba_offset  = 04;
-        static const ks10_t::addr_t da_offset  = 06;
+        static const ks10_t::addr_t cs1_offset = 000;
+        static const ks10_t::addr_t wc_offset  = 002;
+        static const ks10_t::addr_t ba_offset  = 004;
+        static const ks10_t::addr_t da_offset  = 006;
         static const ks10_t::addr_t cs2_offset = 010;
         static const ks10_t::addr_t ds_offset  = 012;
         static const ks10_t::addr_t er1_offset = 014;
@@ -92,6 +96,8 @@ class rh11_t {
         static const ks10_t::addr_t la_offset  = 020;
         static const ks10_t::addr_t db_offset  = 022;
         static const ks10_t::addr_t mr_offset  = 024;
+        static const ks10_t::addr_t dt_offset  = 026;
+        static const ks10_t::addr_t sn_offset  = 030;
         static const ks10_t::addr_t of_offset  = 032;
         static const ks10_t::addr_t dc_offset  = 034;
 
@@ -109,6 +115,7 @@ class rh11_t {
     public:
 
         static const ks10_t::addr_t rh11_offset = 0763000;
+        static const uint32_t regMask           = 0x0000ffff;
 
         //
         // RH11 Control and Status Register #1 (CS1)
@@ -197,6 +204,8 @@ class rh11_t {
             la_addr ((base_addr & 07777700) + la_offset ),
             db_addr ((base_addr & 07777700) + db_offset ),
             mr_addr ((base_addr & 07777700) + mr_offset ),
+            dt_addr ((base_addr & 07777700) + dt_offset ),
+            sn_addr ((base_addr & 07777700) + sn_offset ),
             of_addr ((base_addr & 07777700) + of_offset ),
             dc_addr ((base_addr & 07777700) + dc_offset ),
             uba(base_addr) {
@@ -223,8 +232,8 @@ class rh11_t {
         //!    Contents of CS1 register
         //!
 
-        ks10_t::data_t cs1_read(void) {
-            return ks10_t::readIO(cs1_addr);
+        uint32_t cs1_read(void) {
+            return ks10_t::readIO(cs1_addr) & regMask;
         }
 
         //!
@@ -248,8 +257,8 @@ class rh11_t {
         //!    Contents of WC register
         //!
 
-        ks10_t::data_t wc_read(void) {
-            return ks10_t::readIO(wc_addr);
+        uint32_t wc_read(void) {
+            return ks10_t::readIO(wc_addr) & regMask;
         }
 
         //!
@@ -272,8 +281,8 @@ class rh11_t {
         //!    Contents of BA register
         //!
 
-        ks10_t::data_t ba_read(void) {
-            return ks10_t::readIO(ba_addr);
+        uint32_t ba_read(void) {
+            return ks10_t::readIO(ba_addr) & regMask;
         }
 
         //!
@@ -296,8 +305,8 @@ class rh11_t {
         //!    Contents of DA register
         //!
 
-        ks10_t::data_t da_read(void) {
-            return ks10_t::readIO(da_addr);
+        uint32_t da_read(void) {
+            return ks10_t::readIO(da_addr) & regMask;
         }
 
         //!
@@ -320,8 +329,8 @@ class rh11_t {
         //!    Contents of CS2 register
         //!
 
-        ks10_t::data_t cs2_read(void) {
-            return ks10_t::readIO(cs2_addr);
+        uint32_t cs2_read(void) {
+            return ks10_t::readIO(cs2_addr) & regMask;
         }
 
         //!
@@ -344,8 +353,8 @@ class rh11_t {
         //!    Contents of DS register
         //!
 
-        ks10_t::data_t ds_read(void) {
-            return ks10_t::readIO(ds_addr);
+        uint32_t ds_read(void) {
+            return ks10_t::readIO(ds_addr) & regMask;
         }
 
         //!
@@ -368,8 +377,8 @@ class rh11_t {
         //!    Contents of AS register
         //!
 
-        ks10_t::data_t as_read(void) {
-            return ks10_t::readIO(as_addr);
+        uint32_t as_read(void) {
+            return ks10_t::readIO(as_addr) & regMask;
         }
 
         //!
@@ -392,8 +401,8 @@ class rh11_t {
         //!    Contents of LA register
         //!
 
-        ks10_t::data_t la_read(void) {
-            return ks10_t::readIO(la_addr);
+        uint32_t la_read(void) {
+            return ks10_t::readIO(la_addr) & regMask;
         }
 
         //!
@@ -416,8 +425,8 @@ class rh11_t {
         //!    Contents of DB register
         //!
 
-        ks10_t::data_t db_read(void) {
-            return ks10_t::readIO(db_addr);
+        uint32_t db_read(void) {
+            return ks10_t::readIO(db_addr) & regMask;
         }
 
         //!
@@ -434,14 +443,38 @@ class rh11_t {
 
         //!
         //! \brief
+        //!    Read from DT register
+        //!
+        //! \returns
+        //!    Contents of DT register
+        //!
+
+        uint32_t dt_read(void) {
+            return ks10_t::readIO(dt_addr) & regMask;
+        }
+
+        //!
+        //! \brief
+        //!    Read from SN register
+        //!
+        //! \returns
+        //!    Contents of SN register
+        //!
+
+        uint32_t sn_read(void) {
+            return ks10_t::readIO(sn_addr) & regMask;
+        }
+
+        //!
+        //! \brief
         //!    Read from MR register
         //!
         //! \returns
         //!    Contents of MR register
         //!
 
-        ks10_t::data_t mr_read(void) {
-            return ks10_t::readIO(mr_addr);
+        uint32_t mr_read(void) {
+            return ks10_t::readIO(mr_addr) & regMask;
         }
 
         //!
@@ -464,8 +497,8 @@ class rh11_t {
         //!    Contents of OF register
         //!
 
-        ks10_t::data_t of_read(void) {
-            return ks10_t::readIO(of_addr);
+        uint32_t of_read(void) {
+            return ks10_t::readIO(of_addr) & regMask;
         }
 
         //!
@@ -488,8 +521,8 @@ class rh11_t {
         //!    Contents of DC register
         //!
 
-        ks10_t::data_t dc_read(void) {
-            return ks10_t::readIO(dc_addr);
+        uint32_t dc_read(void) {
+            return ks10_t::readIO(dc_addr) & regMask;
         }
 
 };

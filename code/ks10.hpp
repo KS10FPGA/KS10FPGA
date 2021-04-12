@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2018 Rob Doyle
+// Copyright (C) 2013-2020 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -40,8 +40,9 @@
 #define __KS10_H
 
 #include <stdint.h>
-
-#include "fpga.hpp"
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
 
 //!
 //! KS10 Interface Object
@@ -54,317 +55,154 @@ class ks10_t {
         // KS10 Address and Data Type
         //
 
-        typedef uint64_t addr_t;                        //!< KS10 Address Typedef
-        typedef uint64_t data_t;                        //!< KS10 Data Typedef
-
-        //
-        //! Halt Status Word Type
-        //
-
-        struct haltStatusWord_t {
-            data_t status;                              //!< Halt Status
-            data_t pc;                                  //!< Halt Program Counter
-        };
-
-        //
-        //! Halt Status Block Type
-        //
-
-        struct haltStatusBlock_t {
-            data_t mag;                                 //!< Magnitude Mask
-            data_t pc;                                  //!< Program Counter
-            data_t hr;                                  //!< Instruction Register
-            data_t ar;                                  //!< AR Register
-            data_t arx;                                 //!< ARX Register
-            data_t br;                                  //!< BR Register
-            data_t brx;                                 //!< BRX Register
-            data_t one;                                 //!< ONE Register
-            data_t ebr;                                 //!< EBR Register
-            data_t ubr;                                 //!< UBR Register
-            data_t mask;                                //!< Mask Register
-            data_t flg;                                 //!< Flag Register
-            data_t pi;                                  //!< PI Register
-            data_t x1;                                  //!< X1 Register
-            data_t t0;                                  //!< T0 Register
-            data_t t1;                                  //!< T1 Register
-            data_t vma;                                 //!< VMA Register
-        };
+        typedef uint64_t addr_t;                                //!< KS10 Address Typedef
+        typedef uint64_t data_t;                                //!< KS10 Data Typedef
 
         //
         //! RH11 Debug Register
         //
 
         struct rh11debug_t {
-            uint8_t res3;                               //!< Reserved
-            uint8_t res2;                               //!< Reserved
-            uint8_t res1;                               //!< Reserved
-            uint8_t rdcnt;                              //!< Read count
-            uint8_t wrcnt;                              //!< Write count
-            uint8_t errval;                             //!< Error value
-            uint8_t errnum;                             //!< Error number
-            uint8_t state;                              //!< Controller state
-        };
+            uint16_t rdcnt;                                     //!< Read count
+            uint16_t wrcnt;                                     //!< Write count
+            uint8_t  LEDs;                                      //!< LED status
+            uint8_t  errval;                                    //!< Error value
+            uint8_t  errnum;                                    //!< Error number
+            uint8_t  state;                                     //!< Controller state
+        } __attribute__((packed));
 
         //
         // Opcodes
         //
 
-        static const data_t opJRST   = 0254000;         //!< JRST
-        static const data_t opHALT   = 0254200;         //!< HALT
-        static const data_t opMOVEM  = 0202000;         //!< MOVEM
-
-        static const data_t opAPRID  = 0700000;         //!< APRID
-        static const data_t opWRAPR  = 0700200;         //!< WRAPR
-        static const data_t opRDAPR  = 0700240;         //!< RDAPR
-        static const data_t opWRPI   = 0700600;         //!< WRPI
-        static const data_t opRDPI   = 0700640;         //!< RDPI
-        static const data_t opRDUBR  = 0701040;         //!< RDUBR
-        static const data_t opCLRPT  = 0701100;         //!< CLRPT
-        static const data_t opWRUBR  = 0701140;         //!< WRUBR
-        static const data_t opWREBR  = 0701200;         //!< WREBR
-        static const data_t opRDEBR  = 0701240;         //!< RDEBR
-        static const data_t opRDSPB  = 0702000;         //!< RDSPB
-        static const data_t opRDCSB  = 0702040;         //!< RDCSB
-        static const data_t opRDPUR  = 0702100;         //!< RDPUR
-        static const data_t opRDCSTM = 0702140;         //!< RDCSTM
-        static const data_t opRDTIM  = 0702200;         //!< RDTIM
-        static const data_t opRDINT  = 0702240;         //!< RDINT
-        static const data_t opRDHSB  = 0702300;         //!< RDHSB
-        static const data_t opWRSPB  = 0702400;         //!< WRSPB
-        static const data_t opWRCSB  = 0702440;         //!< WRCSB
-        static const data_t opWRPUR  = 0702500;         //!< WRPUR
-        static const data_t opWRCSTM = 0702540;         //!< WRCSTM
-        static const data_t opWRTIM  = 0702600;         //!< WRTIM
-        static const data_t opWRINT  = 0702640;         //!< WRINT
-        static const data_t opWRHSB  = 0702700;         //!< WRHSB
+        static const data_t opJRST        = 0254000;            //!< JRST
+        static const data_t opHALT        = 0254200;            //!< HALT
+        static const data_t opMOVEM       = 0202000;            //!< MOVEM
+        static const data_t opAPRID       = 0700000;            //!< APRID
+        static const data_t opWRAPR       = 0700200;            //!< WRAPR
+        static const data_t opRDAPR       = 0700240;            //!< RDAPR
+        static const data_t opWRPI        = 0700600;            //!< WRPI
+        static const data_t opRDPI        = 0700640;            //!< RDPI
+        static const data_t opRDUBR       = 0701040;            //!< RDUBR
+        static const data_t opCLRPT       = 0701100;            //!< CLRPT
+        static const data_t opWRUBR       = 0701140;            //!< WRUBR
+        static const data_t opWREBR       = 0701200;            //!< WREBR
+        static const data_t opRDEBR       = 0701240;            //!< RDEBR
+        static const data_t opRDSPB       = 0702000;            //!< RDSPB
+        static const data_t opRDCSB       = 0702040;            //!< RDCSB
+        static const data_t opRDPUR       = 0702100;            //!< RDPUR
+        static const data_t opRDCSTM      = 0702140;            //!< RDCSTM
+        static const data_t opRDTIM       = 0702200;            //!< RDTIM
+        static const data_t opRDINT       = 0702240;            //!< RDINT
+        static const data_t opRDHSB       = 0702300;            //!< RDHSB
+        static const data_t opWRSPB       = 0702400;            //!< WRSPB
+        static const data_t opWRCSB       = 0702440;            //!< WRCSB
+        static const data_t opWRPUR       = 0702500;            //!< WRPUR
+        static const data_t opWRCSTM      = 0702540;            //!< WRCSTM
+        static const data_t opWRTIM       = 0702600;            //!< WRTIM
+        static const data_t opWRINT       = 0702640;            //!< WRINT
+        static const data_t opWRHSB       = 0702700;            //!< WRHSB
 
         //
         // KS10 addresses
         //
 
-        static const addr_t invalidAddr = (addr_t) -1;  //!< Guaranteed invalid address
-        static const addr_t memStart    = 0;            //!< Start of memory.
-        static const addr_t maxVirtAddr = 000777777;    //!< Last virtual address (18-bit)
-        static const addr_t maxMemAddr  = 003777777;    //!< Last memory address (20-bit)
-        static const addr_t maxIOAddr   = 017777777;    //!< Last IO address (22-bit)
-        static const data_t dataMask    = 0777777777777;//!< 36-bit mask
+        static const addr_t invalidAddr   = (addr_t) -1;        //!< Guaranteed invalid address
+        static const addr_t memStart      = 0;                  //!< Start of memory.
+        static const addr_t maxVirtAddr   = 000777777;          //!< Last virtual address (18-bit)
+        static const addr_t maxMemAddr    = 003777777;          //!< Last memory address (20-bit)
+        static const addr_t maxIOAddr     = 017777777;          //!< Last IO address (22-bit)
+        static const data_t dataMask      = 0777777777777;      //!< 36-bit mask
+        static const addr_t memAddrMask   = 003777777ULL;       //!< KS10 20-bit Address Mask
+        static const addr_t ioAddrMask    = 017777777ULL;       //!< KS10 22-bit Address Mask
+
+        //
+        // Console Addressable Register Offsets
+        //
+
+        static const int regCONAROffset   = 0x00;               //!< CONS  Address Register Offset
+        static const int regCONDROffset   = 0x08;               //!< CONS  Data Register Offset
+        static const int regCONIROffset   = 0x10;               //!< CONS  Instruction Register Offset
+        static const int regCONCSROffset  = 0x18;               //!< CONS  Control/Status Register Offset
+        static const int regDZCCROffset   = 0x1c;               //!< DZ11  Console Control Register
+        static const int regLPCCROffset   = 0x20;               //!< LP20  Console Control Register
+        static const int regRPCCROffset   = 0x24;               //!< RPxx  Console Control Register
+        static const int regDUPCCROffset  = 0x28;               //!< DUP11 Console Control Register
+        static const int regDEBCSROffset  = 0x3c;               //!< DEBUG Control/Status Register
+        static const int regDEBBAROffset  = 0x40;               //!< DEBUG Breakpoint Address Register
+        static const int regDEBBMROffset  = 0x48;               //!< DEBUG Breakpoint Mask Register
+        static const int regDEBITROffset  = 0x50;               //!< DEBUG Instruction Trace Register
+        static const int regDEBPCIROffset = 0x58;               //!< DEBUG Program Counter and Instruction Register
+        static const int regRH11Offset    = 0x70;               //!< RH11  Debug Register
+        static const int regVERSOffset    = 0x78;               //!< FPGA  Version Register
 
         //
         // Communications block addresses
         //
 
-        static const addr_t switch_addr = 000030;       //!< Switch address
-        static const addr_t kasw_addr   = 000031;       //!< Keep alive address
-        static const addr_t ctyin_addr  = 000032;       //!< CTY input address
-        static const addr_t ctyout_addr = 000033;       //!< CTY output address
-        static const addr_t klnin_addr  = 000034;       //!< KLINIK input address
-        static const addr_t klnout_addr = 000035;       //!< KLINIK output address
-        static const addr_t rhbase_addr = 000036;       //!< RH11 base address
-        static const addr_t rhunit_addr = 000037;       //!< RH11 unit number
-        static const addr_t mtparm_addr = 000040;       //!< Magtape parameters
+        static const addr_t switchADDR    = 000030;             //!< Switch address
+        static const addr_t kaswADDR      = 000031;             //!< Keep alive address
+        static const addr_t ctyinADDR     = 000032;             //!< CTY input address
+        static const addr_t ctyoutADDR    = 000033;             //!< CTY output address
+        static const addr_t klninADDR     = 000034;             //!< KLINIK input address
+        static const addr_t klnoutADDR    = 000035;             //!< KLINIK output address
+        static const addr_t rhbaseADDR    = 000036;             //!< RH11 base address
+        static const addr_t rhunitADDR    = 000037;             //!< RH11 unit number
+        static const addr_t mtparmADDR    = 000040;             //!< Magtape parameters
 
-        static const data_t cty_valid   = 0x100;        //!< Input/Output character valid
+        static const data_t ctyVALID      = 0x100;              //!< Input/Output character valid
 
         //
         // KS10 Read/Write Address Modes
         //
 
-        static const addr_t flagFetch = 0x200000000ULL; //!< Fetch flags
-        static const addr_t flagRead  = 0x100000000ULL; //!< Read flags
-        static const addr_t flagWrite = 0x040000000ULL; //!< Write flags
-        static const addr_t flagPhys  = 0x008000000ULL; //!< Phys
-        static const addr_t flagIO    = 0x002000000ULL; //!< IO flag
-        static const addr_t flagByte  = 0x000400000ULL; //!< BYTE IO flag
-
-        //
-        // Functions
-        //
-
-        ks10_t(void);
-        static void enableInterrupts (void (*consIntrHandler)(void), void (*haltIntrHandler)(void));
-        static uint32_t lh(data_t data);
-        static uint32_t rh(data_t data);
-        static data_t readRegStat(void);
-        static void writeRegStat(data_t data);
-        static data_t readRegAddr(void);
-        static void writeRegAddr(data_t data);
-        static data_t readRegData(void);
-        static void writeRegData(data_t data);
-        static data_t readRegCIR(void);
-        static void writeRegCIR(data_t data);
-        static data_t readMem(addr_t addr);
-        static void writeMem(addr_t addr, data_t data);
-        static data_t readIO(addr_t addr);
-        static void writeIO(addr_t addr, data_t data);
-        static uint16_t readIObyte(addr_t addr);
-        static void writeIObyte(addr_t addr, uint16_t data);
-        static uint32_t readDUPCCR(void);
-        static void writeDUPCCR(uint32_t data);
-        static uint32_t readDZCCR(void);
-        static void writeDZCCR(uint32_t data);
-        static uint32_t readLPCCR(void);
-        static void writeLPCCR(uint32_t data);
-        static uint32_t readRPCCR(void);
-        static void writeRPCCR(uint32_t data);
-        static data_t readDCSR(void);
-        static void writeDCSR(data_t data);
-        static data_t readDBAR(void);
-        static void writeDBAR(data_t data);
-        static data_t readDBMR(void);
-        static void writeDBMR(data_t data);
-        static data_t readDITR(void);
-        static data_t readDPCIR(void);
-        static bool run(void);
-        static void run(bool);
-        static bool cont(void);
-        static bool exec(void);
-        static bool halt(void);
-        static void execute(void);
-        static void step(void);
-        static void contin(void);
-        static void begin(void);
-        static void boot(bool debug);
-        static void waitHalt(bool debug);
-        static bool timerEnable(void);
-        static void timerEnable(bool enable);
-        static bool trapEnable(void);
-        static void trapEnable(bool enable);
-        static bool cacheEnable(void);
-        static void cacheEnable(bool enable);
-        static bool cpuReset(void);
-        static void cpuReset(bool enable);
-        static void cpuIntr(void);
-        static bool nxmnxd(void);
-        static void testRegs(bool debug);
-        static haltStatusWord_t &getHaltStatusWord(void);
-        static haltStatusBlock_t &getHaltStatusBlock(addr_t addr);
-        static uint64_t getRH11debug(void);
-        static void programFirmware(bool debug);
-        static void programFirmware(bool debug, const char *filename);
-        static void checkFirmware(bool debug);
-        static void (*consIntrHandler)(void);
-        static void (*haltIntrHandler)(void);
-        static void putchar(int ch);
-        static int getchar(void);
-        static void executeInstruction(data_t insn);
-        static void setDataAndExecuteInstruction(data_t insn, data_t data, addr_t tempAddr);
-        static data_t executeInstructionAndGetData(data_t insn, addr_t tempAddr);
-
-    private:
-
-        fpga_t fpga;
-
-        //
-        // Misc constants
-        //
-
-        static const uint32_t epiOffset   = 0x60000000;         //!< EPI Address Offset
-        static const addr_t   memAddrMask = 003777777ULL;       //!< KS10 20-bit Address Mask
-        static const addr_t   ioAddrMask  = 017777777ULL;       //!< KS10 22-bit Address Mask
-
-        //
-        // KS10 FPGA Register Addresses
-        //
-
-        //!< KS10 Address Register
-        static constexpr volatile void * regAddr = reinterpret_cast<void *>(epiOffset + 0x00);
-
-        //!< KS10 Data Register
-        static constexpr volatile void * regData = reinterpret_cast<volatile void *>(epiOffset + 0x08);
-
-        //!< KS10 Status Register
-        static constexpr volatile void * regStat = reinterpret_cast<void *>(epiOffset + 0x10);
-
-        //!< KS10 Console Instruction Register
-        static constexpr volatile void * regCIR  = reinterpret_cast<void *>(epiOffset + 0x18);
-
-        //!< DZ11 Console Control Register
-        static constexpr volatile uint32_t * regDZCCR = reinterpret_cast<uint32_t *>(epiOffset + 0x20);
-
-        //!< LP20 Console Control Register
-        static constexpr volatile uint32_t * regLPCCR = reinterpret_cast<uint32_t *>(epiOffset + 0x24);
-
-        //!< RH11 Console Control Register
-        static constexpr volatile uint32_t * regRPCCR = reinterpret_cast<uint32_t *>(epiOffset + 0x28);
-
-        //!< DUP11 Console Control Register
-        static constexpr volatile uint32_t * regDUPCCR = reinterpret_cast<uint32_t *>(epiOffset + 0x2c);
-
-        //!< RH11 Debug Register
-        static constexpr volatile uint64_t * regRH11Debug = reinterpret_cast<uint64_t *>(epiOffset + 0x30);
-
-        //!< Debug Control/Status Register
-        static constexpr volatile uint64_t * regDCSR = reinterpret_cast<uint64_t *>(epiOffset + 0x38);
-
-        //!< Debug Breakpoint Address Register
-        static constexpr volatile uint64_t * regDBAR = reinterpret_cast<uint64_t *>(epiOffset + 0x40);
-
-        //!< Debug Breakpoint Mask Register
-        static constexpr volatile uint64_t * regDBMR = reinterpret_cast<uint64_t *>(epiOffset + 0x48);
-
-        //!< Debug Instruction Trace Register
-        static constexpr volatile uint64_t * regDITR = reinterpret_cast<uint64_t *>(epiOffset + 0x50);
-
-        //!< Debug Program Counter and Instruction Register
-        static constexpr volatile uint64_t * regDPCIR = reinterpret_cast<uint64_t *>(epiOffset + 0x60);
-
-        //!< Firmware Version Register
-        static constexpr const char * regVers = reinterpret_cast<const char *>(epiOffset + 0x78);
-
-        //
-        // Low level interface functions
-        //
-
-        static void go(void);
-        static uint32_t readReg32(volatile void * reg);
-        static uint64_t readReg64(volatile void * reg);
-        static void writeReg32(volatile void * reg, uint32_t data);
-        static void writeReg64(volatile void * reg, uint64_t data);
-        static bool testReg32(volatile void * addr, const char *name, bool verbose, uint32_t mask = 0xfffffffful);
-        static bool testReg64(volatile void * addr, const char *name, bool verbose, uint64_t mask = 0xffffffffffffffffull);
+        static const addr_t flagFetch     = 0x200000000ULL;     //!< Fetch flags
+        static const addr_t flagRead      = 0x100000000ULL;     //!< Read flags
+        static const addr_t flagWrite     = 0x040000000ULL;     //!< Write flags
+        static const addr_t flagPhys      = 0x008000000ULL;     //!< Phys
+        static const addr_t flagIO        = 0x002000000ULL;     //!< IO flag
+        static const addr_t flagByte      = 0x000400000ULL;     //!< BYTE IO flag
 
         //
         // Control/Status Register Bits
         //
 
-        static const data_t statGO      = 0x00010000UL;
-        static const data_t statNXMNXD  = 0x00000200UL;
-        static const data_t statHALT    = 0x00000100UL;
-        static const data_t statRUN     = 0x00000080UL;
-        static const data_t statCONT    = 0x00000040UL;
-        static const data_t statEXEC    = 0x00000020UL;
-        static const data_t statTIMEREN = 0x00000010UL;
-        static const data_t statTRAPEN  = 0x00000008UL;
-        static const data_t statCACHEEN = 0x00000004UL;
-        static const data_t statINTR    = 0x00000002UL;
-        static const data_t statRESET   = 0x00000001UL;
-
-    public:
+        static const uint32_t statGO      = 0x00010000;         //!< GO
+        static const uint32_t statNXMNXD  = 0x00000200;         //!< NXM/NXD
+        static const uint32_t statHALT    = 0x00000100;         //!< HALT
+        static const uint32_t statRUN     = 0x00000080;         //!< RUN
+        static const uint32_t statCONT    = 0x00000040;         //!< CONT
+        static const uint32_t statEXEC    = 0x00000020;         //!< EXEC
+        static const uint32_t statTIMEREN = 0x00000010;         //!< Timer Enable
+        static const uint32_t statTRAPEN  = 0x00000008;         //!< Trap Enable
+        static const uint32_t statCACHEEN = 0x00000004;         //!< Cache Enable
+        static const uint32_t statINTR    = 0x00000002;         //!< Interrupt
+        static const uint32_t statRESET   = 0x00000001;         //!< Reset
 
         //
         // Debug Control/Status Register Constants
         //
 
-        static const data_t dcsrBRCMD          = 0x000e00000ULL;
-        static const data_t dcsrBRCMD_BOTH     = 0x000600000ULL;
-        static const data_t dcsrBRCMD_FULL     = 0x000400000ULL;
-        static const data_t dcsrBRCMD_MATCH    = 0x000200000ULL;
-        static const data_t dcsrBRCMD_DISABLE  = 0x000000000ULL;
-        static const data_t dcsrBRSTATE        = 0x0001c0000ULL;
-        static const data_t dcsrBRSTATE_ARMED  = 0x000040000ULL;
-        static const data_t dcsrBRSTATE_IDLE   = 0x000000000ULL;
-        static const data_t dcsrTRCMD          = 0x0000000e0ULL;
-        static const data_t dcsrTRCMD_STOP     = 0x000000060ULL;
-        static const data_t dcsrTRCMD_MATCH    = 0x000000040ULL;
-        static const data_t dcsrTRCMD_TRIG     = 0x000000020ULL;
-        static const data_t dcsrTRCMD_RESET    = 0x000000000ULL;
-        static const data_t dcsrTRSTATE        = 0x00000001cULL;
-        static const data_t dcsrTRSTATE_DONE   = 0x00000000cULL;
-        static const data_t dcsrTRSTATE_ACTIVE = 0x000000008ULL;
-        static const data_t dcsrTRSTATE_ARMED  = 0x000000004ULL;
-        static const data_t dcsrTRSTATE_IDLE   = 0x000000000ULL;
-        static const data_t dcsrFULL           = 0x000000002ULL;
-        static const data_t dcsrEMPTY          = 0x000000001ULL;
+        static const uint32_t dcsrBRCMD          = 0x00700000;
+        static const uint32_t dcsrBRCMD_BOTH     = 0x00300000;
+        static const uint32_t dcsrBRCMD_FULL     = 0x00200000;
+        static const uint32_t dcsrBRCMD_MATCH    = 0x00100000;
+        static const uint32_t dcsrBRCMD_DISABLE  = 0x00000000;
+        static const uint32_t dcsrBRSTATE        = 0x00070000;
+        static const uint32_t dcsrBRSTATE_ARMED  = 0x00010000;
+        static const uint32_t dcsrBRSTATE_IDLE   = 0x00000000;
+        static const uint32_t dcsrTRCMD          = 0x000000e0;
+        static const uint32_t dcsrTRCMD_STOP     = 0x00000060;
+        static const uint32_t dcsrTRCMD_MATCH    = 0x00000040;
+        static const uint32_t dcsrTRCMD_TRIG     = 0x00000020;
+        static const uint32_t dcsrTRCMD_RESET    = 0x00000000;
+        static const uint32_t dcsrTRSTATE        = 0x0000001c;
+        static const uint32_t dcsrTRSTATE_DONE   = 0x0000000c;
+        static const uint32_t dcsrTRSTATE_ACTIVE = 0x00000008;
+        static const uint32_t dcsrTRSTATE_ARMED  = 0x00000004;
+        static const uint32_t dcsrTRSTATE_IDLE   = 0x00000000;
+        static const uint32_t dcsrFULL           = 0x00000002;
+        static const uint32_t dcsrEMPTY          = 0x00000001;
 
         //
         // Debug Breakpoint Address Register Constants
@@ -419,14 +257,189 @@ class ks10_t {
         //
         // LPCCR Configuration Bits
         //
+ 
+        static const uint32_t lpSTOPBITS = 0x00010000;
+        static const uint32_t lpPARITY   = 0x00060000;
+        static const uint32_t lpLENGTH   = 0x00180000;
+        static const uint32_t lpBAUDRATE = 0x03e00000;
+        static const uint32_t lpSIXLPI   = 0x00000004;
+        static const uint32_t lpOVFU     = 0x00000002;
+        static const uint32_t lpONLINE   = 0x00000001;
 
-        static const uint32_t lpOVFU     = 0x00000010;
-        static const uint32_t lpSIXLPI   = 0x00000008;
-        static const uint32_t lpONLINE   = 0x00000004;
-        static const uint32_t lpSETONLN  = 0x00000002;
-        static const uint32_t lpSETOFFLN = 0x00000001;
+        //
+        // Functions
+        //
 
+        ks10_t(bool debug);
+        ~ks10_t(void);
+        static uint32_t lh(data_t data);
+        static uint32_t rh(data_t data);
+        static uint32_t readRegStat(void);
+        static void writeRegStat(uint32_t data);
+        static data_t readRegAddr(void);
+        static void writeRegAddr(data_t data);
+        static data_t readRegData(void);
+        static void writeRegData(data_t data);
+        static data_t readRegCIR(void);
+        static void writeRegCIR(data_t data);
+        static data_t readMem(addr_t addr);
+        static void writeMem(addr_t addr, data_t data);
+        static data_t readIO(addr_t addr);
+        static void writeIO(addr_t addr, data_t data);
+        static uint16_t readIObyte(addr_t addr);
+        static void writeIObyte(addr_t addr, uint16_t data);
+        static uint32_t readDUPCCR(void);
+        static void writeDUPCCR(uint32_t data);
+        static uint32_t readDZCCR(void);
+        static void writeDZCCR(uint32_t data);
+        static uint32_t readLPCCR(void);
+        static void writeLPCCR(uint32_t data);
+        static uint32_t readRPCCR(void);
+        static void writeRPCCR(uint32_t data);
+        static uint32_t readDCSR(void);
+        static void writeDCSR(uint32_t data);
+        static data_t readDBAR(void);
+        static void writeDBAR(data_t data);
+        static data_t readDBMR(void);
+        static void writeDBMR(data_t data);
+        static data_t readDITR(void);
+        static data_t readDPCIR(void);
+        static bool run(void);
+        static void run(bool);
+        static bool halt(void);
+        static void boot(void);
+        static bool timerEnable(void);
+        static void timerEnable(bool enable);
+        static bool trapEnable(void);
+        static void trapEnable(bool enable);
+        static bool cacheEnable(void);
+        static void cacheEnable(bool enable);
+        static bool cpuReset(void);
+        static void cpuReset(bool enable);
+        static void cpuIntr(void);
+        static bool nxmnxd(void);
+        static void startRUN(void);
+        static void startSTEP(void);
+        static void startEXEC(void);
+        static void startCONT(void);
+        static void testRegs(void);
+        static void printHaltStatusWord(void);
+        static void printHaltStatusBlock(void);
+        static uint64_t getRH11debug(void);
+        static void printRH11Debug(void);
+        static void checkFirmware(void);
+        static void putchar(int ch);
+        static int getchar(void);
+        static void executeInstruction(data_t insn);
+        static void setDataAndExecuteInstruction(data_t insn, data_t data, addr_t tempAddr);
+        static data_t executeInstructionAndGetData(data_t insn, addr_t tempAddr);
+        static data_t rdAPRID(void);
+        static data_t rdAPR(void);
+        static data_t rdPI(void);
+        static data_t rdUBR(void);
+        static data_t rdEBR(void);
+        static data_t rdSPB(void);
+        static data_t rdCSB(void);
+        static data_t rdCSTM(void);
+        static data_t rdPUR(void);
+        static data_t rdTIM(void);
+        static data_t rdINT(void);
+        static data_t rdHSB(void);
+        static data_t readAC(data_t regAC);
+        static void lockMutex(void);
+        static void unlockMutex(void);
+
+    private:
+
+        static int fd;                                          //!< /dev/mem file descriptor
+        static bool debug;                                      //!< debug mode
+        static pthread_mutex_t lock;                            //!< FPGA access mutex
+
+        //
+        // Misc constants
+        //
+
+        static char *fpgaAddrVirt;                              //!< FPGA Base Virtual Address
+        static const uint32_t fpgaAddrPhys = 0xff200000;        //!< FPGA Base Physical Address
+        static const uint32_t fpgaAddrSize = 0x00010000;        //!< FPGA Region Size
+
+        //
+        // KS10 FPGA Register Addresses
+        //
+
+        static volatile       addr_t   *regAddr;                //!< Console Address Register
+        static volatile       data_t   *regData;                //!< Console Data Register
+        static volatile       data_t   *regCIR;                 //!< KS10 Console Instruction Register
+        static volatile       uint32_t *regStat;                //!< Console Control/Status Register
+        static volatile       uint32_t *regDZCCR;               //!< DZ11 Console Control Register
+        static volatile       uint32_t *regLPCCR;               //!< LP20 Console Control Register
+        static volatile       uint32_t *regRPCCR;               //!< RPxx Console Control Register
+        static volatile       uint32_t *regDUPCCR;              //!< DUP11 Console Control Register
+        static volatile       uint32_t *regDEBCSR;              //!< Debug Control/Status Register
+        static volatile       addr_t   *regDEBBAR;              //!< Debug Breakpoint Address Register
+        static volatile       addr_t   *regDEBBMR;              //!< Debug Breakpoint Mask Register
+        static volatile       uint64_t *regDEBITR;              //!< Debug Instruction Trace Register
+        static volatile       uint64_t *regDEBPCIR;             //!< Debug Program Counter and Instruction Register
+        static volatile const uint64_t *regRH11Debug;           //!< RH11 Debug Register
+        static          const char     *regVers;                //!< Firmware Version Register
+
+        //
+        // Low level interface functions
+        //
+
+        static void go(void);
+        static uint32_t readReg32(volatile void * reg);
+        static void writeReg32(volatile void * reg, uint32_t data);
+        static uint64_t readReg64(volatile void * reg);
+        static void writeReg64(volatile void * reg, uint64_t data);
+        static bool testReg32(volatile void * addr, const char *name, uint32_t mask = 0xfffffffful);
+        static bool testReg64(volatile void * addr, const char *name, uint64_t mask = 0xffffffffffffffffull);
+
+        //
+        // Private functions without mutex locks
+        //  Use these with care.
+        //
+
+        static void   __go(void);
+        static bool   __halt(void);
+        static data_t __readRegAddr(void);
+        static void   __writeRegAddr(data_t data);
+        static data_t __readRegData(void);
+        static void   __writeRegData(data_t data);
+        static data_t __readRegCIR(void);
+        static void   __writeRegCIR(data_t data);
+        static data_t __readMem(addr_t addr);
+        static void   __writeMem(addr_t addr, data_t data);
+        static void   __startEXEC(void);
+        static void   __executeInstruction(data_t insn);
+        static data_t __executeInstructionAndGetData(data_t insn, addr_t tempAddr);
 };
+
+//!
+//! \brief
+//!    This function locks the FPGA mutex
+//!
+//! \details
+//!    The Console software is multi-threaded and therefore accesses to the
+//!    FPGA IO must be protected by mutexes.
+//!
+
+inline void ks10_t::lockMutex(void) {
+    pthread_mutex_lock(&lock);
+}
+
+//!
+//! \brief
+//!    This function unlocks the FPGA mutex
+//!
+//! \details
+//!    The Console software is multi-threaded and therefore accesses to the
+//!    FPGA IO must be protected by mutexes.
+//!
+
+inline void ks10_t::unlockMutex(void) {
+    pthread_mutex_unlock(&lock);
+}
 
 //!
 //! \brief
@@ -460,42 +473,6 @@ inline uint32_t ks10_t::rh(data_t data) {
 
 //!
 //! \brief
-//!    This function reads a 64-bit (or 36-bit) register from FPGA.
-//!
-//! \details
-//!    The address is the register address mapped through the EPI.
-//!
-//! \param reg -
-//!    base address of the register.
-//!
-//! \returns
-//!    Register contents.
-//!
-
-inline uint64_t ks10_t::readReg64(volatile void * reg) {
-    return *reinterpret_cast<volatile uint64_t *>(reg);
-}
-
-//!
-//! \brief
-//!    This function writes to a 64-bit (or 36-bit) register in the FPGA.
-//!
-//! \details
-//!    The address is the register address mapped through the EPI.
-//!
-//! \param reg -
-//!    base address of the register.
-//!
-//! \param data -
-//!    data is the data to be written to the register.
-//!
-
-inline void ks10_t::writeReg64(volatile void * reg, uint64_t data) {
-    *reinterpret_cast<volatile uint64_t *>(reg) = data;
-}
-
-//!
-//! \brief
 //!    This function reads a 32-bit register from FPGA.
 //!
 //! \details
@@ -506,6 +483,9 @@ inline void ks10_t::writeReg64(volatile void * reg, uint64_t data) {
 //!
 //! \returns
 //!    Register contents.
+//!
+//! \note
+//!    This function is thread safe.
 //!
 
 inline uint32_t ks10_t::readReg32(volatile void * reg) {
@@ -525,9 +505,1040 @@ inline uint32_t ks10_t::readReg32(volatile void * reg) {
 //! \param data -
 //!    data is the data to be written to the register.
 //!
+//! \note
+//!    This function is thread safe.
+//!
 
 inline void ks10_t::writeReg32(volatile void * reg, uint32_t data) {
     *reinterpret_cast<volatile uint32_t *>(reg) = data;
+}
+
+//!
+//! \brief
+//!    This function reads a 64-bit (or 36-bit) register from FPGA.
+//!
+//! \details
+//!    The address is the register address mapped through the EPI.
+//!
+//! \param reg -
+//!    base address of the register.
+//!
+//! \returns
+//!    Register contents.
+//!
+//! \note
+//!    This function is NOT thread safe.
+//!
+
+inline uint64_t ks10_t::readReg64(volatile void * reg) {
+    return *reinterpret_cast<volatile uint64_t *>(reg);
+}
+
+//!
+//! \brief
+//!    This function writes to a 64-bit (or 36-bit) register in the FPGA.
+//!
+//! \details
+//!    The address is the register address mapped through the EPI.
+//!
+//! \param reg -
+//!    base address of the register.
+//!
+//! \param data -
+//!    data is the data to be written to the register.
+//!
+//! \note
+//!    This function is NOT thread safe.
+//!
+
+inline void ks10_t::writeReg64(volatile void * reg, uint64_t data) {
+    *reinterpret_cast<volatile uint64_t *>(reg) = data;
+}
+
+//!
+//! \brief
+//!    This function reads from <b>Console Address Register</b>
+//!
+//! \returns
+//!    Contents of the <b>Console Address Register</b>.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline ks10_t::data_t ks10_t::__readRegAddr(void) {
+    return *regAddr;
+}
+
+inline ks10_t::data_t ks10_t::readRegAddr(void) {
+    lockMutex();
+    data_t ret = __readRegAddr();
+    unlockMutex();
+    return ret;
+}
+
+//!
+//! \brief
+//!    This function writes to <b>Console Address Register</b>
+//!
+//! \param data -
+//!    data to be written to the <b>Console Address Register</b>.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::__writeRegAddr(data_t data) {
+    *regAddr = data;
+}
+
+inline void ks10_t::writeRegAddr(data_t data) {
+    lockMutex();
+    __writeRegAddr(data);
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    This function reads from <b>Console Data Register</b>
+//!
+//! \returns
+//!    Contents of the <b>Console Data Register</b>.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline ks10_t::data_t ks10_t::__readRegData(void) {
+    return *regData;
+    unlockMutex();
+}
+
+inline ks10_t::data_t ks10_t::readRegData(void) {
+    lockMutex();
+    data_t ret = __readRegData();
+    unlockMutex();
+    return ret;
+}
+
+//!
+//! \brief
+//!    This function writes to <b>Console Data Register</b>
+//!
+//! \param data -
+//!    data to be written to the <b>Console Data Register</b>.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::__writeRegData(data_t data) {
+    *regData = data;
+}
+
+inline void ks10_t::writeRegData(data_t data) {
+    lockMutex();
+    __writeRegData(data);
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    This function reads the <b>Console Instruction Register</b>
+//!
+//! \returns
+//!    Contents of the <b>Console Instruction Register</b>
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline ks10_t::data_t ks10_t::__readRegCIR(void) {
+    return *regCIR;
+}
+
+inline ks10_t::data_t ks10_t::readRegCIR(void) {
+    lockMutex();
+    data_t ret = __readRegCIR();
+    unlockMutex();
+    return ret;
+}
+
+//!
+//! \brief
+//!    Function to write to the <b>Console Instruction Register</b>
+//!
+//! \param data -
+//!    data is the data to be written to the <b>Console Instruction
+//!    Register.</b>
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::__writeRegCIR(data_t data) {
+    *regCIR = data;
+}
+
+inline void ks10_t::writeRegCIR(data_t data) {
+    lockMutex();
+    __writeRegCIR(data);
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    This function reads from <b>Console Status Register</b>
+//!
+//! \returns
+//!    Contents of the <b>Console Status Register</b>.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint32_t ks10_t::readRegStat(void) {
+    return *regStat;
+}
+
+//!
+//! \brief
+//!    This function writes to <b>Console Status Register</b>
+//!
+//! \param data -
+//!    data to be written to the <b>Console Status Register</b>.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::writeRegStat(uint32_t data) {
+    *regStat = data;
+}
+
+
+//!
+//! \brief
+//!    This function reads a 32-bit value from the DZCCR
+//!
+//! \returns
+//!    contents of the DZCCR register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint32_t ks10_t::readDZCCR(void) {
+    return *regDZCCR;
+}
+
+//!
+//! \brief
+//!    This function writes a 32-bit value to the DZCCR
+//!
+//! \param data -
+//!    data is the data to be written to the DZCCR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::writeDZCCR(uint32_t data) {
+    *regDZCCR = data;
+}
+
+//!
+//! \brief
+//!    This function reads a 32-bit value from the LPCCR
+//!
+//! \returns
+//!    contents of the LPCCR register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint32_t ks10_t::readLPCCR(void) {
+    return *regLPCCR;
+}
+
+//!
+//! \brief
+//!    This function writes a 32-bit value to the LPCCR
+//!
+//! \param data -
+//!    data is the data to be written to the LPCCR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::writeLPCCR(uint32_t data) {
+    *regLPCCR = data;
+}
+
+//!
+//! \brief
+//!    This function reads a 32-bit value from the RPCCR
+//!
+//! \returns
+//!    contents of the RPCCR register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint32_t ks10_t::readRPCCR(void) {
+    return *regRPCCR;
+}
+
+//!
+//! \brief
+//!    This function writes a 32-bit value to the RPCCR
+//!
+//! \param data -
+//!    data is the data to be written to the RPCCR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::writeRPCCR(uint32_t data) {
+    *regRPCCR = data;
+}
+
+//!
+//! \brief
+//!    This function reads a 32-bit value from the DUPCCR
+//!
+//! \returns
+//!    contents of the DUPCCR register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint32_t ks10_t::readDUPCCR(void) {
+    return *regDUPCCR;
+}
+
+//!
+//! \brief
+//!    This function writes a 32-bit value to the DUPCCR
+//!
+//! \param data -
+//!    data is the data to be written to the DUPCCR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::writeDUPCCR(uint32_t data) {
+    *regDUPCCR = data;
+}
+
+//!
+//! \brief
+//!    This function reads a 32-bit value from the Debug Control/Status Register
+//!
+//! \returns
+//!    contents of the DCSR register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint32_t ks10_t::readDCSR(void) {
+    return *regDEBCSR;
+}
+
+//!
+//! \brief
+//!    This function writes a 36-bit value to the Debug Control/Status Register
+//!
+//! \param data -
+//!    data is the data to be written to the Debug Control/Status Register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::writeDCSR(uint32_t data) {
+    *regDEBCSR = data;
+}
+
+//!
+//! \brief
+//!    This function reads a 36-bit value from the Breakpoint Address Register
+//!
+//! \returns
+//!    contents of the DBAR register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint64_t ks10_t::readDBAR(void) {
+    lockMutex();
+    uint64_t ret = *regDEBBAR;
+    unlockMutex();
+    return ret;
+}
+
+//!
+//! \brief
+//!    This function writes a 36-bit value to the Breakpoint Address Register
+//!
+//! \param data -
+//!    data is the data to be written to the Breakpoint Address Register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::writeDBAR(uint64_t data) {
+    lockMutex();
+    *regDEBBAR = data;
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!   This function reads a 36-bit value from the Breakpoint Mask Register
+//!
+//! \returns
+//!    contents of the DBMR register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint64_t ks10_t::readDBMR(void) {
+    lockMutex();
+    uint64_t ret = *regDEBBMR;
+    unlockMutex();
+    return ret;
+}
+
+//!
+//! \brief
+//!    This function writes a 36-bit value to the Breakpoint Mask Register
+//!
+//! \param data -
+//!    data is the data to be written to the Breakpoint Mask Register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::writeDBMR(uint64_t data) {
+    lockMutex();
+    *regDEBBMR = data;
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    This function reads a 36-bit value from the Debug Instruction Trace
+//!    Register.  The trace buffer automatically increments when the trace buffer
+//!    is read.
+//!
+//! \note
+//!    For some reason, a 64-bit load advances the Trace Buffer FIFO twice.
+//!
+//! \returns
+//!    Contents of the DITR register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint64_t ks10_t::readDITR(void) {
+    lockMutex();
+    uint64_t ret = *regDEBITR;
+    unlockMutex();
+    return ret;
+}
+
+//!
+//! \brief
+//!    This function reads a 64-bit value from the Debug Program Counter and
+//!    Instruction Register.
+//!
+//! \returns
+//!    contents of the DPCIR register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint64_t ks10_t::readDPCIR(void) {
+    lockMutex();
+    uint64_t ret = *regDEBPCIR;
+    unlockMutex();
+    return ret;
+}
+
+//!
+//! \brief
+//!    Get Contents of RH11 Debug Register
+//!
+//! \brief
+//!    This function return the contents of the RH11 Debug Register
+//!
+//! \returns
+//!     Contents of the RH11 Debug Register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint64_t ks10_t::getRH11debug(void) {
+    lockMutex();
+    uint64_t ret = *regRH11Debug;
+    unlockMutex();
+    return ret;
+}
+
+//!
+//! \brief
+//!    This function controls the <b>RUN</b> mode of the KS10.
+//!
+//! \param enable -
+//!    <b>True</b> puts the KS10 in <b>RUN</b> mode.
+//!    <b>False</b> puts the KS10 in <b>HALT</b> mode.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::run(bool enable) {
+    if (enable) {
+        lockMutex();
+        writeRegStat(readRegStat() | statRUN);
+        unlockMutex();
+    } else {
+        lockMutex();
+        writeRegStat(readRegStat() & ~statRUN);
+        unlockMutex();
+    }
+}
+
+//!
+//! \brief
+//!    This function checks the KS10 <b>RUN</b> status.
+//!
+//! \details
+//!    This function examines the <b>RUN</b> bit in the <b>Console Control/Status
+//!    Register</b>.
+//!
+//! \returns
+//!    <b>true</b> if the KS10 is in <b>RUN</b> mode, <b>false</b> if the KS10
+//!    is in <b>HALT</b> mode..
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline bool ks10_t::run(void) {
+    return readRegStat() & statRUN;
+}
+
+//!
+//! \brief
+//!    Execute a single instruction in the CIR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::__startEXEC(void) {
+    writeRegStat(statCONT | statEXEC | readRegStat());
+}
+
+inline void ks10_t::startEXEC(void) {
+    lockMutex();
+    __startEXEC();
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    Execute a single instruction at the current PC
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::startSTEP(void) {
+    lockMutex();
+    writeRegStat(statCONT | readRegStat());
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    Continue execution at the current PC.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::startCONT(void) {
+    lockMutex();
+    writeRegStat(statRUN | statCONT | readRegStat());
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    Begin execution with instruction in the CIR.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::startRUN(void) {
+    lockMutex();
+    writeRegStat(statRUN | statCONT | statEXEC | readRegStat());
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    This checks the KS10 in <b>HALT</b> status.
+//!
+//! \details
+//!    This function examines the <b>HALT</b> bit in the <b>Console Control/Status
+//!    Register</b>
+//!
+//! \returns
+//!    This function returns true if the KS10 is halted, false otherwise.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline bool ks10_t::__halt(void) {
+    return readRegStat() & statHALT;
+}
+
+inline bool ks10_t::halt(void) {
+    lockMutex();
+    bool ret =  __halt();
+    unlockMutex();
+    return ret;
+}
+
+
+
+//!
+//! \brief
+//! Report the state of the KS10's interval timer.
+//!
+//! \returns
+//!    Returns <b>true</b> if the KS10 interval timer enabled and <b>false</b>
+//!    otherwise.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline bool ks10_t::timerEnable(void) {
+    return readRegStat() & statTIMEREN;
+}
+
+//!
+//! \brief
+//! Control the KS10 interval timer operation
+//!
+//! \param
+//!     enable is <b>true</b> to enable the KS10 intervale timer or
+//!     <b>false</b> to disable the KS10 timer.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::timerEnable(bool enable) {
+    if (enable) {
+        lockMutex();
+        writeRegStat(readRegStat() | statTIMEREN);
+        unlockMutex();
+    } else {
+        lockMutex();
+        writeRegStat(readRegStat() & ~statTIMEREN);
+        unlockMutex();
+    }
+}
+
+//!
+//! \brief
+//!    Report the state of the KS10's traps.
+//!
+//! \returns
+//!    Returns <b>true</b> if the KS10 traps enabled and <b>false</b>
+//!    otherwise.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline bool ks10_t::trapEnable(void) {
+    return readRegStat() & statTRAPEN;
+}
+
+//!
+//! \brief
+//!    Control the KS10 traps operation
+//!
+//! \details
+//!    This function controls whether the KS10's trap are enabled.
+//!
+//! \param
+//!    enable is <b>true</b> to enable the KS10 traps or <b>false</b> to
+//!    disable the KS10 traps.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::trapEnable(bool enable) {
+    if (enable) {
+        lockMutex();
+        writeRegStat(readRegStat() | statTRAPEN);
+        unlockMutex();
+    } else {
+        lockMutex();
+        writeRegStat(readRegStat() & ~statTRAPEN);
+        unlockMutex();
+    }
+}
+
+//!
+//! \brief
+//!    Report the state of the KS10's cache memory.
+//!
+//! \returns
+//!    Returns <b>true</b> if the KS10 cache enabled and <b>false</b>
+//!    otherwise.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline bool ks10_t::cacheEnable(void) {
+    return readRegStat() & statCACHEEN;
+}
+
+//!
+//! \brief
+//!    Control the KS10 cache memory operation
+//!
+//! \details
+//!    This function controls whether the KS10's cache is enabled.
+//!
+//! \param
+//!    enable is <b>true</b> to enable the KS10 cache or <b>false</b> to
+//!    disable the KS10 cache.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::cacheEnable(bool enable) {
+    if (enable) {
+        lockMutex();
+        writeRegStat(readRegStat() | statCACHEEN);
+        unlockMutex();
+    } else {
+        lockMutex();
+        writeRegStat(readRegStat() & ~statCACHEEN);
+        unlockMutex();
+    }
+}
+
+//!
+//! \brief
+//!    Report the state of the KS10's reset signal.
+//!
+//! \returns
+//!    Returns <b>true</b> if the KS10 is <b>reset</b> and <b>false</b>
+//!    otherwise.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline bool ks10_t::cpuReset(void) {
+    return readRegStat() & statRESET;
+}
+
+//!
+//! \brief
+//!    Reset the KS10
+//!
+//! \details
+//!    This function controls whether the KS10's is reset.  When reset, the KS10 will
+//!    reset on next clock cycle without completing the current operation.
+//!
+//! \param
+//!    enable is <b>true</b> to assert <b>reset</b> to the KS10 or <b>false</b> to
+//!    negate <b>reset</b> to the KS10.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::cpuReset(bool enable) {
+    if (enable) {
+        lockMutex();
+        writeRegStat(readRegStat() | statRESET);
+        unlockMutex();
+    } else {
+        lockMutex();
+        writeRegStat(readRegStat() & ~statRESET);
+        unlockMutex();
+    }
+}
+
+//!
+//! \brief
+//!    This function creates a KS10 interrupt.
+//!
+//! \details
+//!    This function momentarily pulses the <b>KS10INTR</b> bit of the <b>Console
+//!    Control/Status Register</b>.
+//!
+//!    The <b>KS10INTR</b> bit only need to be asserted for a single FPGA clock
+//!    cycle in order to create an interrupt.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::cpuIntr(void) {
+    lockMutex();
+    writeRegStat(readRegStat() | statINTR);
+    unlockMutex();
+    usleep(10);
+    lockMutex();
+    writeRegStat(readRegStat() & ~statINTR);
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    This function returns the state of the <b>NXM/NXD</b> bit of the
+//!    <b>Console Control/Status Register</b>.
+//!
+//! \details
+//!    The NXM/NXD bit is volatile.  This function will reset the state of the
+//!    <b>NXM/NXD</b> bit when it is read.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline bool ks10_t::nxmnxd(void) {
+    lockMutex();
+    uint32_t reg = readRegStat();
+    writeRegStat(reg & ~statNXMNXD);
+    unlockMutex();
+    return reg & statNXMNXD;
+}
+
+//!
+//! \brief
+//!    Execute a single instruction
+//!
+//! \param insn -
+//!    Instruction to execute
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::__executeInstruction(data_t insn) {
+    __writeRegCIR(insn);
+    __startEXEC();
+}
+
+inline void ks10_t::executeInstruction(data_t insn) {
+    writeRegCIR(insn);
+    startEXEC();
+}
+
+//!
+//! \brief
+//!    This function to reads a 36-bit word from KS10 memory.
+//!
+//! \details
+//!    This is a physical address write.  Writes to address 0 to 17 (octal)
+//!    go to memory not to registers.
+//!
+//! \param [in] addr -
+//!    addr is the address in the KS10 memory space which is to be read.
+//!
+//! \see
+//!    readIO() for 36-bit IO reads, and readIObyte() for UNIBUS reads.
+//!
+//! \returns
+//!    Contents of the KS10 memory that was read.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+//!    writeRegAddr(), readRegData(), and go() each grab the mutex
+//!
+
+inline ks10_t::data_t ks10_t::__readMem(addr_t addr) {
+    __writeRegAddr((addr & memAddrMask) | flagRead | flagPhys);
+    __go();
+    return dataMask & __readRegData();
+}
+
+inline ks10_t::data_t ks10_t::readMem(addr_t addr) {
+    writeRegAddr((addr & memAddrMask) | flagRead | flagPhys);
+    go();
+    return dataMask & readRegData();
+}
+
+//!
+//! \brief
+//!    This function writes a 36-bit word to KS10 memory.
+//!
+//! \details
+//!    This is a physical address write.  Writes to address 0 to 17 (octal)
+//!    go to memory not to registers.
+//!
+//! \param [in] addr -
+//!    addr is the address in the KS10 memory space which is to be written.
+//!
+//! \param [in] data -
+//!    data is the data to be written to the KS10 memory.
+//!
+//! \see
+//!    writeIO() for 36-bit IO writes, and writeIObyte() for UNIBUS writes.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+//!    writeRegAddr(), writeRegData(), and go() each grab the mutex
+//!
+
+inline void ks10_t::__writeMem(addr_t addr, data_t data) {
+    __writeRegAddr((addr & memAddrMask) | flagWrite | flagPhys);
+    __writeRegData(data);
+    __go();
+}
+
+inline void ks10_t::writeMem(addr_t addr, data_t data) {
+    writeRegAddr((addr & memAddrMask) | flagWrite | flagPhys);
+    writeRegData(data);
+    go();
+}
+
+//!
+//! \brief
+//!    This function reads a 36-bit word from KS10 IO.
+//!
+//! \param [in] addr -
+//!    addr is the address in the KS10 IO space which is to be read.
+//!
+//! \see
+//!    readMem() for 36-bit memory reads, and readIObyte() for UNIBUS reads.
+//!
+//! \returns
+//!    Contents of the KS10 IO that was read.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+//!    writeRegAddr(), readRegData(), and go() each grab the mutex
+//!
+
+inline ks10_t::data_t ks10_t::readIO(addr_t addr) {
+    writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO);
+    go();
+    return dataMask & readRegData();
+}
+
+//!
+//! \brief
+//!    This function writes a 36-bit word to the KS10 IO.
+//!
+//! \details
+//!    This function is used to write to 36-bit KS10 IO and is not to be
+//!    used to write to UNIBUS style IO.
+//!
+//! \param [in] addr -
+//!    addr is the address in the KS10 IO space which is to be written.
+//!
+//! \param [in] data -
+//!    data is the data to be written to the KS10 IO.
+//!
+//! \see
+//!    writeMem() for memory writes, and writeIObyte() for UNIBUS writes.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+//!    writeRegAddr(), writeRegData(), and go() each grab the mutex
+//!
+
+inline void ks10_t::writeIO(addr_t addr, data_t data) {
+    writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO);
+    writeRegData(data);
+    go();
+}
+
+//!
+//! \brief
+//!    This function reads an 8-bit (or 16-bit) byte from KS10 UNIBUS IO.
+//!
+//! \param [in]
+//!    addr is the address in the Unibus IO space which is to be read.
+//!
+//! \see
+//!    readMem() for 36-bit memory reads, and readIObyte() for UNIBUS
+//!    reads.
+//!
+//! \returns
+//!    Contents of the KS10 Unibus IO that was read.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+//!    writeRegAddr(), readRegData(), and go() each grab the mutex
+//!
+
+inline uint16_t ks10_t::readIObyte(addr_t addr) {
+    writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO | flagByte);
+    go();
+    return 0xffff & readRegData();
+}
+
+//!
+//! \brief
+//!    This function writes 8-bit (or 16-bit) byte to KS10 Unibus IO.
+//!
+//! \param
+//!    addr is the address in the KS10 Unibus IO space which is to be written.
+//!
+//! \param data -
+//!    data is the data to be written to the KS10 Unibus IO.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+//!    writeRegAddr(), writeRegData(), and go() each grab the mutex
+//!
+
+inline void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
+    writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO | flagByte);
+    writeRegData(data);
+    go();
 }
 
 #endif

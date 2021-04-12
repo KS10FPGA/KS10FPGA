@@ -36,18 +36,18 @@
 # Programs
 #
 
-T10BACKUP   := ../../../tools/tapeutils-0.6.mods/t10backup.exe
-DIAGTAPE    := ../../../Tape\ and\ Disk\ Images/KS10\ Diagnostics/ks_diag_gs.tap
-REDPACK     := ../../../Tape\ and\ Disk\ Images/RED\ PACK\ 405A2/red405a2.tap
-SAV2VERILOG := ../../../tools/sav2verilog/sav2verilog.exe
-MERGE_AWK   := ../../../tools/merge/merge.awk
+T10BACKUP   := ../../tools/tapeutils-0.6.mods/t10backup.exe
+DIAGTAPE    := ../../Tape\ and\ Disk\ Images/KS10\ Diagnostics/ks_diag_gs.tap
+REDPACK     := ../../Tape\ and\ Disk\ Images/RED\ PACK\ 405A2/red405a2.tap
+SAV2VERILOG := ../../tools/sav2verilog/sav2verilog.exe
+MERGE_AWK   := ../../tools/merge/merge.awk
 
 #
 # Read SD Card to file so it can be examined.
 #  This assumes that a 8GB card is installed.
 #
 
-DEV   := sdf
+DEV   := sdi
 UNIT0 := dskb.rp06.gz
 UNIT1 := dskc.rp06.gz
 UNIT2 := red405a2.rp06.gz

@@ -3,20 +3,20 @@
 // KS-10 Processor
 //
 // Brief
-//   KS10 definitions
+//   RPxx Console Control/Status Register Header File
 //
 // Details
-//   This file contains definitions that are global to the KS10.
+//   This file contains the RPxx Control/Status Register bit definitions.
 //
 // File
-//   ks10.vh
+//   rpccr.vh
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2020-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -38,21 +38,15 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifndef __KS10_VH
-`define __KS10_VH
+`ifndef __RPCCR_VH
+`define __RPCCR_VH
 
 //
-// Firmware Version
+// RPCCR bits
 //
 
-`define MAJOR_VER "00"                  // Two ASCII characters
-`define MINOR_VER "12"                  // Two ASCII characters
-
-//
-// CPU Clock Frequency
-//  50.0 MHz divided by 4, for now.
-//
-
-`define CLKFRQ    12500000              // Clock Frequency
+`define rpccrDPR(reg) (reg[ 8:15])  // Drive Present
+`define rpccrMOL(reg) (reg[16:23])  // Media On-line
+`define rpccrWRL(reg) (reg[24:31])  // Write Locked
 
 `endif

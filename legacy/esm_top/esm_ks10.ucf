@@ -16,7 +16,7 @@
 ##
 ################################################################################
 ##
-## Copyright (C) 2012-2017 Rob Doyle
+## Copyright (C) 2012-2021 Rob Doyle
 ##
 ## This source file may be used and distributed without restriction provided
 ## that this copyright statement is not removed from the file and that any
@@ -171,22 +171,22 @@ NET "conINTR_N"         LOC = "R26"  | IOSTANDARD = LVCMOS33;   // PB7/NMI
 # RS232 Interfaces
 #
 
-NET "ttyTXD<0>"         LOC = "D24"  | IOSTANDARD = LVCMOS33;
-NET "ttyTXD<1>"         LOC = "B2"   | IOSTANDARD = LVCMOS33;   // VA31
-NET "lprTXD"            LOC = "L25"  | IOSTANDARD = LVCMOS33;
-NET "ttyRXD<0>"         LOC = "J26"  | IOSTANDARD = LVCMOS33;
-NET "ttyRXD<1>"         LOC = "C1"   | IOSTANDARD = LVCMOS33;   // VA30
-NET "lprRXD"            LOC = "K26"  | IOSTANDARD = LVCMOS33;
+NET "DZ_TXD<0>"         LOC = "D24"  | IOSTANDARD = LVCMOS33;
+NET "DZ_TXD<1>"         LOC = "B2"   | IOSTANDARD = LVCMOS33;   // VA31
+NET "LP_TXD"            LOC = "L25"  | IOSTANDARD = LVCMOS33;
+NET "DZ_RXD<0>"         LOC = "J26"  | IOSTANDARD = LVCMOS33;
+NET "DZ_RXD<1>"         LOC = "C1"   | IOSTANDARD = LVCMOS33;   // VA30
+NET "LP_RXD"            LOC = "K26"  | IOSTANDARD = LVCMOS33;
 
 #
 # SD Card Interfaces
 #
 
-NET "sdCD_N"            LOC = "D26"  | IOSTANDARD = LVCMOS33;
-NET "sdCS"              LOC = "B25"  | IOSTANDARD = LVCMOS33;
-NET "sdMISO"            LOC = "C25"  | IOSTANDARD = LVCMOS33;
-NET "sdMOSI"            LOC = "A25"  | IOSTANDARD = LVCMOS33;
-NET "sdSCLK"            LOC = "C26"  | IOSTANDARD = LVCMOS33;
+NET "SD_CD_N"           LOC = "D26"  | IOSTANDARD = LVCMOS33;
+NET "SD_SS_N"           LOC = "B25"  | IOSTANDARD = LVCMOS33;
+NET "SD_MISO"           LOC = "C25"  | IOSTANDARD = LVCMOS33;
+NET "SD_MOSI"           LOC = "A25"  | IOSTANDARD = LVCMOS33;
+NET "SD_SCLK"           LOC = "C26"  | IOSTANDARD = LVCMOS33;
 
 #
 # Disk Activity LEDs
