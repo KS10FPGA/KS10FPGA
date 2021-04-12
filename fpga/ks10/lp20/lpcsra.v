@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -114,7 +114,7 @@ module LPCSRA (
    //
 
    reg lastONLINE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastONLINE <= 0;
@@ -132,7 +132,7 @@ module LPCSRA (
    //
 
    reg lastVFURDY;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastVFURDY <= 0;
@@ -150,7 +150,7 @@ module LPCSRA (
    //
 
    reg lastLPE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastLPE <= 0;
@@ -179,17 +179,12 @@ module LPCSRA (
    //
 
    reg lpERR;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpECLR)
           lpERR <= 0;
-        else
-          begin
-             if (lpECLR)
-               lpERR <= 0;
-             else if (lpSETERR)
-               lpERR <= 1;
-          end
+        else if (lpSETERR)
+          lpERR <= 1;
      end
 
    //
@@ -203,17 +198,12 @@ module LPCSRA (
    //
 
    reg lpPCZ;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT | pctrWRITE)
           lpPCZ <= 0;
-        else
-          begin
-             if (lpINIT | pctrWRITE)
-               lpPCZ <= 0;
-             else if (lpSETPCZ)
-               lpPCZ <= 1;
-          end
+        else if (lpSETPCZ)
+          lpPCZ <= 1;
      end
 
    //
@@ -224,17 +214,12 @@ module LPCSRA (
    //
 
    reg lpUNDC;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpCMDGO)
           lpUNDC <= 0;
-        else
-          begin
-             if (lpCMDGO)
-               lpUNDC <= 0;
-             else if (lpSETUNDC)
-               lpUNDC <= 1;
-          end
+        else if (lpSETUNDC)
+          lpUNDC <= 1;
      end
 
    //
@@ -248,19 +233,14 @@ module LPCSRA (
    //
 
    reg lpDHLD;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT | lpCLRDHLD)
           lpDHLD <= 0;
-        else
-          begin
-             if (lpINIT | lpCLRDHLD)
-               lpDHLD <= 0;
-             else if (lpSETDHLD)
-               lpDHLD <= 1;
-             else if (csraWRITE & devHIBYTE)
-               lpDHLD <= `lpCSRA_DHLD(lpDATAI);
-          end
+        else if (lpSETDHLD)
+          lpDHLD <= 1;
+        else if (csraWRITE & devHIBYTE)
+          lpDHLD <= `lpCSRA_DHLD(lpDATAI);
      end
 
    //
@@ -273,15 +253,12 @@ module LPCSRA (
    //
 
    reg lpDONE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | bctrWRITE)
           lpDONE <= 0;
-        else
-          if (bctrWRITE)
-            lpDONE <= 0;
-          else if (lpINIT | lpSETDONE)
-            lpDONE <= 1;
+        else if (lpINIT | lpSETDONE)
+          lpDONE <= 1;
      end
 
    //
@@ -292,17 +269,12 @@ module LPCSRA (
    //
 
    reg lpIE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT)
           lpIE <= 0;
-        else
-          begin
-             if (lpINIT)
-               lpIE <= 0;
-             else if (csraWRITE & devLOBYTE)
-               lpIE <= `lpCSRA_IE(lpDATAI);
-          end
+        else if (csraWRITE & devLOBYTE)
+          lpIE <= `lpCSRA_IE(lpDATAI);
      end
 
    //
@@ -314,17 +286,12 @@ module LPCSRA (
    //
 
    reg [1:0] lpMODE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT)
           lpMODE <= 0;
-        else
-          begin
-             if (lpINIT)
-               lpMODE <= 0;
-             else if (csraWRITE & devLOBYTE)
-               lpMODE <= `lpCSRA_MODE(lpDATAI);
-          end
+        else if (csraWRITE & devLOBYTE)
+          lpMODE <= `lpCSRA_MODE(lpDATAI);
      end
 
    //
@@ -335,17 +302,12 @@ module LPCSRA (
    //
 
    reg lpPAR;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT)
           lpPAR <= 0;
-        else
-          begin
-             if (lpINIT)
-               lpPAR <= 0;
-             else if (csraWRITE & devLOBYTE)
-               lpPAR <= `lpCSRA_PAR(lpDATAI);
-          end
+        else if (csraWRITE & devLOBYTE)
+          lpPAR <= `lpCSRA_PAR(lpDATAI);
      end
 
    //

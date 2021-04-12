@@ -15,7 +15,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -110,7 +110,7 @@ module VMA (
                  (`cromMEM_CYCLE & `cromMEM_AREAD   & `dromVMA) |
                  (cacheSWEEP));
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin
@@ -128,6 +128,7 @@ module VMA (
           end
         else if (clken & vmaEN & !pageFAIL)
           begin
+             `vmaEXEC(vmaREG) <= 0;
              `vmaEXTD(vmaREG) <= `cromMEM_EXTADDR;
              `vmaADDR(vmaREG) <= `vmaADDR(dp);
              if (`cromMEM_DPFUNC)
@@ -177,7 +178,7 @@ module VMA (
    wire memEN = ((`cromMEM_CYCLE  & `cromMEM_WAIT                   ) |
                  (`cromMEM_CYCLE  & `cromMEM_BWRITE & `dromCOND_FUNC));
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin
@@ -214,12 +215,13 @@ module VMA (
      end
 
    //
+   // Memory Cycle Control
    // Debug output
    //
    //  This is asserted when the VMA has a new value.
    //
 
-    always @(posedge clk or posedge rst)
+    always @(posedge clk)
      begin
         if (rst)
           vmaLOAD <= 0;

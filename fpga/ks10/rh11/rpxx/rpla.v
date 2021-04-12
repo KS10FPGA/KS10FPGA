@@ -67,7 +67,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -93,9 +93,19 @@
 `timescale 1ns/1ps
 
 `include "rpmr.vh"
-`include "../../ks10.vh"
+
+//
+// Sector Clock Frequency
+//  This can be either 800 KHz or 1.6 MHz.
+//
 
 `define FAST_SEARCH
+
+`ifdef FAST_SEARCH
+   `define SECFRQ 1600000                       // Sector clock frequency (1.6 MHz)
+`else
+   `define SECFRQ 800000                        // Sector clock frequency (800 KHz)
+`endif
 
 module RPLA (
       input  wire         clk,                  // Clock
@@ -110,17 +120,6 @@ module RPLA (
    );
 
    //
-   // Fractional-N divider constants
-   //
-
-   localparam CLKFRQ = `CLKFRQ;                 // Clock frequency
-`ifdef FAST_SEARCH
-   localparam SECFRQ = 1600000;                 // Sector clock frequency (1.6 MHz)
-`else
-   localparam SECFRQ =  800000;                 // Sector clock frequency (800 KHz)
-`endif
-
-   //
    // "Nomal Mode" Sector Extension Counter clock generator.
    //
    // This simulates what real RP06 would generate for synchronous transfers.
@@ -128,11 +127,11 @@ module RPLA (
    // This is a Fractional-N divider.
    //
 
-   wire [0:31] incr = $rtoi((2.0**32.0) * SECFRQ / CLKFRQ + 0.5);
+   localparam [0:31] incr = ((2.0**32.0) * `SECFRQ / `CLKFRQ + 0.5);
    reg  [0:31] accum;
    reg         carry;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           {carry, accum} <= 33'b0;
@@ -171,20 +170,19 @@ module RPLA (
    wire      sect_inc;
    reg [9:0] sect_ext;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           sect_ext <= 0;
-        else
-          if (sect_clken)
-            begin
-               if (rpDMD & rpDIND)
-                 sect_ext <= 0;
-               else if (sect_inc)
-                 sect_ext <= 0;
-               else
-                 sect_ext <= sect_ext + 1'b1;
-            end
+        else if (sect_clken)
+          begin
+             if (rpDMD & rpDIND)
+               sect_ext <= 0;
+             else if (sect_inc)
+               sect_ext <= 0;
+             else
+               sect_ext <= sect_ext + 1'b1;
+          end
      end
 
    //
@@ -245,24 +243,23 @@ module RPLA (
 
    reg [11:6] sect_cnt;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           sect_cnt <= 0;
-        else
-          if (sect_clken)
-            begin
-               if (rpDMD & rpDIND)
-                 sect_cnt <= 0;
-               else if (sect_inc)
-                 if (sect_cnt == rpSECNUM)
-                   begin
-                      if (!rpDMD)
-                        sect_cnt <= 0;
-                   end
-                 else
-                   sect_cnt <= sect_cnt + 1'b1;
-            end
+        else if (sect_clken)
+          begin
+             if (rpDMD & rpDIND)
+               sect_cnt <= 0;
+             else if (sect_inc)
+               if (sect_cnt == rpSECNUM)
+                 begin
+                    if (!rpDMD)
+                      sect_cnt <= 0;
+                 end
+               else
+                 sect_cnt <= sect_cnt + 1'b1;
+          end
      end
 
    //

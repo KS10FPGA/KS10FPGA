@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -73,17 +73,14 @@ module RPER1 (
    //
 
    reg rpDCK;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpDCK <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpDCK <= 0;
-          else if (rpSETDCK)
-            rpDCK <= 1;
-          else if (rper1WRITE & rpDRY)
-            rpDCK <= `rpER1_DCK(rpDATAI);
+        else if (rpSETDCK)
+          rpDCK <= 1;
+        else if (rper1WRITE & rpDRY)
+          rpDCK <= `rpER1_DCK(rpDATAI);
      end
 
    //
@@ -94,15 +91,12 @@ module RPER1 (
    //
 
    reg rpUNS;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpUNS <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpUNS <= 0;
-          else if (rper1WRITE & rpDRY)
-            rpUNS <= `rpER1_UNS(rpDATAI);
+        else if (rper1WRITE & rpDRY)
+          rpUNS <= `rpER1_UNS(rpDATAI);
      end
 
    //
@@ -113,17 +107,14 @@ module RPER1 (
    //
 
    reg rpOPI;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpOPI <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpOPI <= 0;
-          else if (rpSETOPI)
-            rpOPI <= 1;
-          else if (rper1WRITE & rpDRY)
-            rpOPI <= `rpER1_OPI(rpDATAI);
+        else if (rpSETOPI)
+          rpOPI <= 1;
+        else if (rper1WRITE & rpDRY)
+          rpOPI <= `rpER1_OPI(rpDATAI);
      end
 
    //
@@ -134,17 +125,14 @@ module RPER1 (
    //
 
    reg rpDTE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpDTE <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpDTE <= 0;
-          else if (rpSETDTE)
-            rpDTE <= 1;
-          else if (rper1WRITE & rpDRY)
-            rpDTE <= `rpER1_DTE(rpDATAI);
+        else if (rpSETDTE)
+          rpDTE <= 1;
+        else if (rper1WRITE & rpDRY)
+          rpDTE <= `rpER1_DTE(rpDATAI);
      end
 
    //
@@ -155,17 +143,14 @@ module RPER1 (
    //
 
    reg rpWLE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpWLE <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpWLE <= 0;
-          else if (rpSETWLE)
-            rpWLE <= 1;
-          else if (rper1WRITE & rpDRY)
-            rpWLE <= `rpER1_WLE(rpDATAI);
+        else if (rpSETWLE)
+          rpWLE <= 1;
+        else if (rper1WRITE & rpDRY)
+          rpWLE <= `rpER1_WLE(rpDATAI);
      end
 
    //
@@ -176,17 +161,14 @@ module RPER1 (
    //
 
    reg rpIAE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpIAE <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpIAE <= 0;
-          else if (rpSETIAE)
-            rpIAE <= 1;
-          else if (rper1WRITE & rpDRY)
-            rpIAE <= `rpER1_IAE(rpDATAI);
+        else if (rpSETIAE)
+          rpIAE <= 1;
+        else if (rper1WRITE & rpDRY)
+          rpIAE <= `rpER1_IAE(rpDATAI);
      end
 
    //
@@ -197,17 +179,15 @@ module RPER1 (
    //
 
    reg rpAOE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+
+        if (rst | clr | rpDRVCLR)
           rpAOE <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpAOE <= 0;
-          else if (rpSETAOE)
-            rpAOE <= 1;
-          else if (rper1WRITE & rpDRY)
-            rpAOE <= `rpER1_AOE(rpDATAI);
+        else if (rpSETAOE)
+          rpAOE <= 1;
+        else if (rper1WRITE & rpDRY)
+          rpAOE <= `rpER1_AOE(rpDATAI);
      end
 
    //
@@ -218,17 +198,14 @@ module RPER1 (
    //
 
    reg rpHCRC;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpHCRC <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpHCRC <= 0;
-          else if (rpSETHCRC & !rpHCI)
-            rpHCRC <= 1;
-          else if (rper1WRITE & rpDRY)
-            rpHCRC <= `rpER1_HCRC(rpDATAI);
+        else if (rpSETHCRC & !rpHCI)
+          rpHCRC <= 1;
+        else if (rper1WRITE & rpDRY)
+          rpHCRC <= `rpER1_HCRC(rpDATAI);
      end
 
    //
@@ -239,15 +216,12 @@ module RPER1 (
    //
 
    reg rpHCE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpHCE <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpHCE <= 0;
-          else if (rper1WRITE & rpDRY)
-            rpHCE <= `rpER1_HCE(rpDATAI);
+        else if (rper1WRITE & rpDRY)
+          rpHCE <= `rpER1_HCE(rpDATAI);
      end
 
    //
@@ -258,15 +232,12 @@ module RPER1 (
    //
 
    reg rpECH;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpECH <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpECH <= 0;
-          else if (rper1WRITE & rpDRY)
-            rpECH <= `rpER1_ECH(rpDATAI);
+        else if (rper1WRITE & rpDRY)
+          rpECH <= `rpER1_ECH(rpDATAI);
      end
 
    //
@@ -277,15 +248,12 @@ module RPER1 (
    //
 
    reg rpWCF;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpWCF <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpWCF <= 0;
-          else if (rper1WRITE & rpDRY)
-            rpWCF <= `rpER1_WCF(rpDATAI);
+        else if (rper1WRITE & rpDRY)
+          rpWCF <= `rpER1_WCF(rpDATAI);
      end
 
    //
@@ -296,15 +264,12 @@ module RPER1 (
    //
 
    reg rpFER;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpFER <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpFER <= 0;
-          else if (rper1WRITE & rpDRY)
-            rpFER <= `rpER1_FER(rpDATAI);
+        else if (rper1WRITE & rpDRY)
+          rpFER <= `rpER1_FER(rpDATAI);
      end
 
    //
@@ -315,17 +280,14 @@ module RPER1 (
    //
 
    reg rpPAR;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpPAR <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpPAR <= 0;
-          else if (rpSETPAR)
-            rpPAR <= 1;
-          else if (rper1WRITE & rpDRY)
-            rpPAR <= `rpER1_PAR(rpDATAI);
+        else if (rpSETPAR)
+          rpPAR <= 1;
+        else if (rper1WRITE & rpDRY)
+          rpPAR <= `rpER1_PAR(rpDATAI);
      end
 
    //
@@ -336,17 +298,14 @@ module RPER1 (
    //
 
    reg rpRMR;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpRMR <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpRMR <= 0;
-          else if (rpSETRMR)
-            rpRMR <= 1;
-          else if (rper1WRITE & rpDRY)
-            rpRMR <= `rpER1_RMR(rpDATAI);
+        else if (rpSETRMR)
+          rpRMR <= 1;
+        else if (rper1WRITE & rpDRY)
+          rpRMR <= `rpER1_RMR(rpDATAI);
      end
 
    //
@@ -357,15 +316,12 @@ module RPER1 (
    //
 
    reg rpILR;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpILR <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpILR <= 0;
-          else if (rper1WRITE & rpDRY)
-            rpILR <= `rpER1_ILR(rpDATAI);
+        else if (rper1WRITE & rpDRY)
+          rpILR <= `rpER1_ILR(rpDATAI);
      end
 
    //
@@ -376,17 +332,14 @@ module RPER1 (
    //
 
    reg rpILF;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpILF <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpILF <= 0;
-          else if (rpSETILF)
-            rpILF <= 1;
-          else if (rper1WRITE & rpDRY)
-            rpILF <= `rpER1_ILF(rpDATAI);
+        else if (rpSETILF)
+          rpILF <= 1;
+        else if (rper1WRITE & rpDRY)
+          rpILF <= `rpER1_ILF(rpDATAI);
      end
 
    //

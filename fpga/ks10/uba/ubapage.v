@@ -94,7 +94,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -121,12 +121,10 @@
 
 `include "uba.vh"
 `include "ubapage.vh"
-`include "../ks10.vh"
 
 module UBAPAGE (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         regUBAMR,             // Maintenance Register
       input  wire         busREQO,              // IO Device Request In
       input  wire [ 0:35] busADDRI,             // KS10 Bus Address In
       input  wire [ 0:35] busDATAI,             // KS10 Bus Data In
@@ -146,6 +144,7 @@ module UBAPAGE (
 
    //
    // UBA Paging RAM
+   //  This is how the KS10 write to the Page Memories
    //
 
    reg [0:14] pageRAM[0:63];
@@ -155,10 +154,16 @@ module UBAPAGE (
           pageRAM[pageADDR] <= {busDATAI[18:21], busDATAI[25:35]};
      end
 
+   //
+   // UBA Paging RAM
+   //  This is how the KS10 reads from the Page Memories.
+   //
+   
    assign pageDATAO = {5'b0, pageRAM[pageADDR][0:3], 7'b0, pageRAM[pageADDR][4:14], 9'b0};
 
    //
-   // IO Bus Paging
+   // UBA Paging RAM
+   //  This is where the IO Paging actually occurs
    //  ADDR Flags were already added by the device
    //
 

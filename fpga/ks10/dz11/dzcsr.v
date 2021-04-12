@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -43,7 +43,6 @@
 
 `include "dzcsr.vh"
 `include "dztcr.vh"
-`include "../ks10.vh"
 
 module DZCSR (
       input  wire         clk,                  // Clock
@@ -70,9 +69,10 @@ module DZCSR (
    //  diagnostic will fail when it measures this period.  The DZ11 doesn't
    //  care.  The clear only takes a single clock cycle.
    //
+   //  Set the one-shot for 3 microseconds.  
+   //
 
-   localparam        CSRPER = 3.0;              // 3.0 microseconds
-   localparam [63:0] CSRCNT = CSRPER * `CLKFRQ / 1000000;
+   localparam [63:0] CSRCNT = (0.000003 * `CLKFRQ);
 
    //
    // Big-endian to little-endian data bus swap
@@ -94,19 +94,14 @@ module DZCSR (
    //
 
    reg [9:0] clrCOUNT;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET)
           clrCOUNT <= 0;
-        else
-          begin
-             if (devRESET)
-               clrCOUNT <= 0;
-             if (csrWRITE & devLOBYTE & `dzCSR_CLR(dzDATAI))
-               clrCOUNT <= CSRCNT[9:0];
-             else if (clrCOUNT != 0)
-               clrCOUNT <= clrCOUNT - 1'b1;
-          end
+        if (csrWRITE & devLOBYTE & `dzCSR_CLR(dzDATAI))
+          clrCOUNT <= CSRCNT[9:0];
+        else if (clrCOUNT != 0)
+          clrCOUNT <= clrCOUNT - 1'b1;
      end
 
    wire csrCLR = (clrCOUNT != 0);
@@ -124,9 +119,9 @@ module DZCSR (
    reg csrMSE;
    reg csrMAINT;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | csrCLR | devRESET)
           begin
              csrTIE   <= 0;
              csrSAE   <= 0;
@@ -134,29 +129,18 @@ module DZCSR (
              csrMSE   <= 0;
              csrMAINT <= 0;
           end
-        else
+        else if (csrWRITE)
           begin
-             if (csrCLR | devRESET)
+             if (devHIBYTE)
                begin
-                  csrTIE   <= 0;
-                  csrSAE   <= 0;
-                  csrRIE   <= 0;
-                  csrMSE   <= 0;
-                  csrMAINT <= 0;
+                  csrTIE   <= `dzCSR_TIE(dzDATAI);
+                  csrSAE   <= `dzCSR_SAE(dzDATAI);
                end
-             else if (csrWRITE)
+             if (devLOBYTE)
                begin
-                  if (devHIBYTE)
-                    begin
-                       csrTIE   <= `dzCSR_TIE(dzDATAI);
-                       csrSAE   <= `dzCSR_SAE(dzDATAI);
-                    end
-                  if (devLOBYTE)
-                    begin
-                       csrRIE   <= `dzCSR_RIE(dzDATAI);
-                       csrMSE   <= `dzCSR_MSE(dzDATAI);
-                       csrMAINT <= `dzCSR_MAINT(dzDATAI);
-                    end
+                  csrRIE   <= `dzCSR_RIE(dzDATAI);
+                  csrMSE   <= `dzCSR_MSE(dzDATAI);
+                  csrMAINT <= `dzCSR_MAINT(dzDATAI);
                end
           end
      end
@@ -177,107 +161,98 @@ module DZCSR (
    reg [1:0] state;
    reg [2:0] csrTLINE;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | csrCLR | devRESET)
           begin
              scan     <= 0;
              csrTLINE <= 0;
              state    <= stateSCAN;
           end
         else
-          begin
-             if (csrCLR | devRESET)
-               begin
-                  scan     <= 0;
-                  csrTLINE <= 0;
-                  state    <= stateSCAN;
-               end
-             else
 
-               case (state)
+          case (state)
+
+            //
+            // Scan for an empty UART transmitter that is enabled.
+            //
+
+            stateSCAN:
+              begin
+                 if (csrMSE)
+
+                   //
+                   // Check for a line that is enabled that has an empty
+                   // UART Transmitter.  Save the line in csrTLINE.
+                   //
+
+                   if (((scan == 0) & tcrLIN[0] & uartTXEMPTY[0]) |
+                       ((scan == 1) & tcrLIN[1] & uartTXEMPTY[1]) |
+                       ((scan == 2) & tcrLIN[2] & uartTXEMPTY[2]) |
+                       ((scan == 3) & tcrLIN[3] & uartTXEMPTY[3]) |
+                       ((scan == 4) & tcrLIN[4] & uartTXEMPTY[4]) |
+                       ((scan == 5) & tcrLIN[5] & uartTXEMPTY[5]) |
+                       ((scan == 6) & tcrLIN[6] & uartTXEMPTY[6]) |
+                       ((scan == 7) & tcrLIN[7] & uartTXEMPTY[7]))
+                     begin
+                        csrTLINE <= scan;
+                        state    <= stateHOLD;
+                     end
+                   else
+                     begin
+                        scan <= scan + 1'b1;
+                     end
+              end
+
+            //
+            // Hold the TLINE until data is written to the UART
+            // transmitter.
+            //
+
+            stateHOLD:
+              begin
 
                  //
-                 // Scan for an empty UART transmitter that is enabled.
+                 // If the line is disabled while we are holding it
+                 // (i.e., tcrLIN ia modified), just dump it and go back
+                 // to scanning.
                  //
 
-                 stateSCAN:
+                 if (((csrTLINE == 0) & !tcrLIN[0]) |
+                     ((csrTLINE == 1) & !tcrLIN[1]) |
+                     ((csrTLINE == 2) & !tcrLIN[2]) |
+                     ((csrTLINE == 3) & !tcrLIN[3]) |
+                     ((csrTLINE == 4) & !tcrLIN[4]) |
+                     ((csrTLINE == 5) & !tcrLIN[5]) |
+                     ((csrTLINE == 6) & !tcrLIN[6]) |
+                     ((csrTLINE == 7) & !tcrLIN[7]))
                    begin
-                      if (csrMSE)
-
-                        //
-                        // Check for a line that is enabled that has an empty
-                        // UART Transmitter.  Save the line in csrTLINE.
-                        //
-
-                        if (((scan == 0) & tcrLIN[0] & uartTXEMPTY[0]) |
-                            ((scan == 1) & tcrLIN[1] & uartTXEMPTY[1]) |
-                            ((scan == 2) & tcrLIN[2] & uartTXEMPTY[2]) |
-                            ((scan == 3) & tcrLIN[3] & uartTXEMPTY[3]) |
-                            ((scan == 4) & tcrLIN[4] & uartTXEMPTY[4]) |
-                            ((scan == 5) & tcrLIN[5] & uartTXEMPTY[5]) |
-                            ((scan == 6) & tcrLIN[6] & uartTXEMPTY[6]) |
-                            ((scan == 7) & tcrLIN[7] & uartTXEMPTY[7]))
-                          begin
-                             csrTLINE <= scan;
-                             state    <= stateHOLD;
-                          end
-                        else
-                          begin
-                             scan <= scan + 1'b1;
-                          end
+                      state <= stateSCAN;
                    end
 
                  //
-                 // Hold the TLINE until data is written to the UART
-                 // transmitter.
+                 // Data is being written to the UART transmitter.
                  //
 
-                 stateHOLD:
+                 else if (tdrWRITE & devLOBYTE)
                    begin
-
-                      //
-                      // If the line is disabled while we are holding it
-                      // (i.e., tcrLIN ia modified), just dump it and go back
-                      // to scanning.
-                      //
-
-                      if (((csrTLINE == 0) & !tcrLIN[0]) |
-                          ((csrTLINE == 1) & !tcrLIN[1]) |
-                          ((csrTLINE == 2) & !tcrLIN[2]) |
-                          ((csrTLINE == 3) & !tcrLIN[3]) |
-                          ((csrTLINE == 4) & !tcrLIN[4]) |
-                          ((csrTLINE == 5) & !tcrLIN[5]) |
-                          ((csrTLINE == 6) & !tcrLIN[6]) |
-                          ((csrTLINE == 7) & !tcrLIN[7]))
-                        begin
-                           state <= stateSCAN;
-                        end
-
-                      //
-                      // Data is being written to the UART transmitter.
-                      //
-
-                      else if (tdrWRITE & devLOBYTE)
-                        begin
-                           state <= stateWAIT;
-                        end
+                      state <= stateWAIT;
                    end
+              end
 
-                 //
-                 // Wait for the UART transmitter write cycle to complete
-                 // before resuming the scan.
-                 //
+            //
+            // Wait for the UART transmitter write cycle to complete
+            // before resuming the scan.
+            //
 
-                 stateWAIT:
-                   begin
-                      if (!(tdrWRITE & devLOBYTE))
-                        state <= stateSCAN;
-                   end
+            stateWAIT:
+              begin
+                 if (!(tdrWRITE & devLOBYTE))
+                   state <= stateSCAN;
+              end
 
-               endcase
+          endcase
 
-          end
      end
 
    wire csrTRDY = (state != stateSCAN);

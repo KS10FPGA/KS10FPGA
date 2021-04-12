@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -77,23 +77,20 @@ module RHWC (
    //  M7295/BCTD/E54
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rhCLR)
           rhWC <= 0;
         else
-          if (devRESET | rhCLR)
-            rhWC <= 0;
-          else
-            if (rhwcWRITE)
-              begin
-                 if (devHIBYTE)
-                   rhWC[15:8] <= `rhWC_HI(rhDATAI);
-                 if (devLOBYTE)
-                   rhWC[ 7:0] <= `rhWC_LO(rhDATAI);
-              end
-            else if (rhINCWC)
-              rhWC <= rhWC + 2'b10;
+          if (rhwcWRITE)
+            begin
+               if (devHIBYTE)
+                 rhWC[15:8] <= `rhWC_HI(rhDATAI);
+               if (devLOBYTE)
+                 rhWC[ 7:0] <= `rhWC_LO(rhDATAI);
+            end
+          else if (rhINCWC)
+            rhWC <= rhWC + 2'b10;
      end
 
 endmodule

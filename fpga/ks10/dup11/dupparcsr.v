@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -59,15 +59,12 @@ module DUPPARCSR (
    //
 
    reg dupDECMD;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupDECMD <= 0;
-        else
-          if (dupINIT)
-            dupDECMD <= 0;
-          else if (parcsrWRITE & devHIBYTE)
-            dupDECMD <= `dupPARCSR_DECMD(dupDATAI);
+        else if (parcsrWRITE & devHIBYTE)
+          dupDECMD <= `dupPARCSR_DECMD(dupDATAI);
      end
 
    //
@@ -79,15 +76,12 @@ module DUPPARCSR (
    //
 
    reg dupSSM;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupSSM <= 0;
-        else
-          if (dupINIT)
-            dupSSM <= 0;
-          else if (parcsrWRITE & devHIBYTE)
-            dupSSM <= `dupPARCSR_SSM(dupDATAI);
+        else if (parcsrWRITE & devHIBYTE)
+          dupSSM <= `dupPARCSR_SSM(dupDATAI);
      end
 
    //
@@ -99,15 +93,12 @@ module DUPPARCSR (
    //
 
    reg dupCRCI;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupCRCI <= 0;
-        else
-          if (dupINIT)
-            dupCRCI <= 0;
-          else if (parcsrWRITE & devHIBYTE)
-            dupCRCI <= `dupPARCSR_CRCI(dupDATAI);
+        else if (parcsrWRITE & devHIBYTE)
+          dupCRCI <= `dupPARCSR_CRCI(dupDATAI);
      end
 
    //
@@ -119,15 +110,12 @@ module DUPPARCSR (
    //
 
    reg [7:0] dupSYNADR;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupSYNADR <= 0;
-        else
-          if (dupINIT)
-            dupSYNADR <= 0;
-          else if (parcsrWRITE & devLOBYTE)
-            dupSYNADR <= `dupPARCSR_SYNADR(dupDATAI);
+        else if (parcsrWRITE & devLOBYTE)
+          dupSYNADR <= `dupPARCSR_SYNADR(dupDATAI);
      end
 
    //

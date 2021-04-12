@@ -25,7 +25,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2009-2017 Rob Doyle
+// Copyright (C) 2009-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -96,7 +96,7 @@ module UART_RX (
 
    reg temp;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           temp <= 1;
@@ -106,7 +106,7 @@ module UART_RX (
 
    reg din;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           din <= 1;
@@ -146,10 +146,10 @@ module UART_RX (
    reg [7:0] rxREG;
    reg [3:0] state;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
 
-        if (rst)
+        if (rst | clr)
           begin
              brdiv <= 0;
              rxREG <= 0;
@@ -161,321 +161,304 @@ module UART_RX (
 
         else
 
-          if (clr)
-            begin
-               brdiv <= 0;
-               rxREG <= 0;
-               pare  <= 0;
-               frme  <= 0;
-               ovre  <= 0;
-               state <= stateIDLE;
-            end
+          case (state)
 
-          else
+            //
+            // Wait for edge of Start bit
+            //
 
-            case (state)
+            stateIDLE:
+              if (clken & !din)
+                begin
+                   state <= stateSTART;
+                   brdiv <= 7;
+                end
 
-              //
-              // Wait for edge of Start bit
-              //
+            //
+            // Receive start bit
+            //
 
-              stateIDLE:
-                if (clken & !din)
+            stateSTART:
+              if (clken)
+                if (!din)
+                  if (brdiv == 0)
+                    begin
+                       brdiv <= 15;
+                       rxREG <= 0;
+                       pare  <= 0;
+                       frme  <= 0;
+                       ovre  <= 0;
+                       state <= stateBIT0;
+                    end
+                  else
+                    brdiv <= brdiv - 1'b1;
+                else
+                  state <= stateIDLE;
+
+            //
+            // Receive data bit 0 (LSB)
+            //
+
+            stateBIT0:
+              if (clken)
+                if (brdiv == 0)
                   begin
-                     state <= stateSTART;
-                     brdiv <= 7;
+                     brdiv <= 15;
+                     rxREG <= {din, rxREG[7:1]};
+                     state <= stateBIT1;
                   end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Receive start bit
-              //
+            //
+            // Receive data bit 1
+            //
 
-              stateSTART:
-                if (clken)
-                  if (!din)
-                    if (brdiv == 0)
-                      begin
-                         brdiv <= 15;
-                         rxREG <= 0;
-                         pare  <= 0;
-                         frme  <= 0;
-                         ovre  <= 0;
-                         state <= stateBIT0;
-                      end
-                    else
-                      brdiv <= brdiv - 1'b1;
-                  else
-                    state <= stateIDLE;
+            stateBIT1:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     rxREG <= {din, rxREG[7:1]};
+                     state <= stateBIT2;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Receive data bit 0 (LSB)
-              //
+            //
+            // Receive data bit 2
+            //
 
-              stateBIT0:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       rxREG <= {din, rxREG[7:1]};
-                       state <= stateBIT1;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateBIT2:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     rxREG <= {din, rxREG[7:1]};
+                     state <= stateBIT3;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Receive data bit 1
-              //
+            //
+            // Receive data bit 3
+            //
 
-              stateBIT1:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       rxREG <= {din, rxREG[7:1]};
-                       state <= stateBIT2;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateBIT3:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     rxREG <= {din, rxREG[7:1]};
+                     state <= stateBIT4;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Receive data bit 2
-              //
+            //
+            // Receive Bit 4
+            //
 
-              stateBIT2:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       rxREG <= {din, rxREG[7:1]};
-                       state <= stateBIT3;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateBIT4:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     if (length == `UARTLEN_5)
+                       begin
+                          rxREG <= {3'b000, din, rxREG[7:4]};
+                          if ((parity == `UARTPAR_EVEN) ||
+                              (parity == `UARTPAR_ODD ))
+                            state <= statePARITY;
+                          else
+                            state <= stateSTOP1;
+                       end
+                     else
+                       begin
+                          rxREG <= {din, rxREG[7:1]};
+                          state <= stateBIT5;
+                       end
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Receive data bit 3
-              //
+            //
+            // Receive data bit 5
+            //
 
-              stateBIT3:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       rxREG <= {din, rxREG[7:1]};
-                       state <= stateBIT4;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateBIT5:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     if (length == `UARTLEN_6)
+                       begin
+                          rxREG <= {2'b00, din, rxREG[7:3]};
+                          if ((parity == `UARTPAR_EVEN) ||
+                              (parity == `UARTPAR_ODD ))
+                            state <= statePARITY;
+                          else
+                            state <= stateSTOP1;
+                       end
+                     else
+                       begin
+                          rxREG <= {din, rxREG[7:1]};
+                          state <= stateBIT6;
+                       end
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Receive Bit 4
-              //
+            //
+            // Receive data bit 6
+            //
 
-              stateBIT4:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       if (length == `UARTLEN_5)
-                         begin
-                            rxREG <= {3'b000, din, rxREG[7:4]};
-                            if ((parity == `UARTPAR_EVEN) ||
-                                (parity == `UARTPAR_ODD ))
-                              state <= statePARITY;
-                            else
-                              state <= stateSTOP1;
-                         end
-                       else
-                         begin
-                            rxREG <= {din, rxREG[7:1]};
-                            state <= stateBIT5;
-                         end
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateBIT6:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     if (length == `UARTLEN_7)
+                       begin
+                          rxREG <= {1'b0, din, rxREG[7:2]};
+                          if ((parity == `UARTPAR_EVEN) ||
+                              (parity == `UARTPAR_ODD ))
+                            state <= statePARITY;
+                          else
+                            state <= stateSTOP1;
+                       end
+                     else
+                       begin
+                          rxREG <= {din, rxREG[7:1]};
+                          state <= stateBIT7;
+                       end
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Receive data bit 5
-              //
+            //
+            // Receive data bit 7 (MSB)
+            //
 
-              stateBIT5:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       if (length == `UARTLEN_6)
-                         begin
-                            rxREG <= {2'b00, din, rxREG[7:3]};
-                            if ((parity == `UARTPAR_EVEN) ||
-                                (parity == `UARTPAR_ODD ))
-                              state <= statePARITY;
-                            else
-                              state <= stateSTOP1;
-                         end
-                       else
-                         begin
-                            rxREG <= {din, rxREG[7:1]};
-                            state <= stateBIT6;
-                         end
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
-
-              //
-              // Receive data bit 6
-              //
-
-              stateBIT6:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       if (length == `UARTLEN_7)
-                         begin
-                            rxREG <= {1'b0, din, rxREG[7:2]};
-                            if ((parity == `UARTPAR_EVEN) ||
-                                (parity == `UARTPAR_ODD ))
-                              state <= statePARITY;
-                            else
-                              state <= stateSTOP1;
-                         end
-                       else
-                         begin
-                            rxREG <= {din, rxREG[7:1]};
-                            state <= stateBIT7;
-                         end
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
-
-              //
-              // Receive data bit 7 (MSB)
-              //
-
-              stateBIT7:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       rxREG <= {din, rxREG[7:1]};
-                       if ((parity == `UARTPAR_EVEN) ||
-                           (parity == `UARTPAR_ODD ))
-                         state <= statePARITY;
-                       else
-                         state <= stateSTOP1;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
-
-              //
-              // Receive parity bit
-              //  Check parity
-              //
-
-              statePARITY:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       if (parity == `UARTPAR_EVEN)
-                         pare <= (din == (rxREG[0] ^ rxREG[1] ^ rxREG[2] ^
-                                          rxREG[3] ^ rxREG[4] ^ rxREG[5] ^
-                                          rxREG[6] ^ rxREG[7]));
-                       else
-                         pare <= (din != (rxREG[0] ^ rxREG[1] ^ rxREG[2] ^
-                                          rxREG[3] ^ rxREG[4] ^ rxREG[5] ^
-                                          rxREG[6] ^ rxREG[7]));
-                       brdiv <= 15;
+            stateBIT7:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     rxREG <= {din, rxREG[7:1]};
+                     if ((parity == `UARTPAR_EVEN) ||
+                         (parity == `UARTPAR_ODD ))
+                       state <= statePARITY;
+                     else
                        state <= stateSTOP1;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Receive Stop Bit 1
-              //  Check framing error
-              //
+            //
+            // Receive parity bit
+            //  Check parity
+            //
 
-              stateSTOP1:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       if (!din)
-                         frme <= 1;
-                       if (stop == `UARTSTOP_2)
-                         begin
-                            brdiv <= 15;
-                            state <= stateSTOP2;
-                         end
-                       else
-                         begin
-                            brdiv <= 7;
-                            state <= stateWAIT;
-                         end
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            statePARITY:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     if (parity == `UARTPAR_EVEN)
+                       pare <= (din == (rxREG[0] ^ rxREG[1] ^ rxREG[2] ^
+                                        rxREG[3] ^ rxREG[4] ^ rxREG[5] ^
+                                        rxREG[6] ^ rxREG[7]));
+                     else
+                       pare <= (din != (rxREG[0] ^ rxREG[1] ^ rxREG[2] ^
+                                        rxREG[3] ^ rxREG[4] ^ rxREG[5] ^
+                                        rxREG[6] ^ rxREG[7]));
+                     brdiv <= 15;
+                     state <= stateSTOP1;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Receive Stop Bit 2
-              //  Check framing error
-              //
+            //
+            // Receive Stop Bit 1
+            //  Check framing error
+            //
 
-              stateSTOP2:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       if (!din)
-                         frme <= 1;
-                       brdiv <= 7;
-                       state <= stateWAIT;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateSTOP1:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     if (!din)
+                       frme <= 1;
+                     if (stop == `UARTSTOP_2)
+                       begin
+                          brdiv <= 15;
+                          state <= stateSTOP2;
+                       end
+                     else
+                       begin
+                          brdiv <= 7;
+                          state <= stateWAIT;
+                       end
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Delay to end of last stop bit
-              //  This is half of a bit period
-              //
+            //
+            // Receive Stop Bit 2
+            //  Check framing error
+            //
 
-              stateWAIT:
-                if (clken)
-                  if (brdiv == 0)
-                    state <= stateDONE;
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateSTOP2:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     if (!din)
+                       frme <= 1;
+                     brdiv <= 7;
+                     state <= stateWAIT;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Generate Interrupt
-              //
+            //
+            // Delay to end of last stop bit
+            //  This is half of a bit period
+            //
 
-              stateDONE:
-                state <= stateIDLE;
+            stateWAIT:
+              if (clken)
+                if (brdiv == 0)
+                  state <= stateDONE;
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Everything else
-              //
+            //
+            // Generate Interrupt
+            //
 
-              default:
-                state <= stateIDLE;
+            stateDONE:
+              state <= stateIDLE;
 
-            endcase
+            //
+            // Everything else
+            //
+
+            default:
+              state <= stateIDLE;
+
+          endcase
      end
 
    //
    // Full flag
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rfull)
           full <= 0;
-        else
-          begin
-             if (rfull | clr)
-               full <= 0;
-             else if (state == stateDONE)
-               full <= 1;
-          end
+        else if (state == stateDONE)
+          full <= 1;
      end
 
    //

@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -71,7 +71,7 @@ module RPDS (
 
    reg lastMOL;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastMOL <= 0;
@@ -104,15 +104,12 @@ module RPDS (
 
    wire dsERR;
    reg  dsATA;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpCLRATA | rpDRVCLR)
           dsATA <= 0;
-        else
-          if (clr | rpCLRATA | rpDRVCLR)
-            dsATA <= 0;
-          else if (rpSETATA | (rpMOL != lastMOL) | (rpGO & dsERR))
-            dsATA <= 1;
+        else if (rpSETATA | (rpMOL != lastMOL) | (rpGO & dsERR))
+          dsATA <= 1;
      end
 
    //
@@ -175,15 +172,12 @@ module RPDS (
    //
 
    reg dsLST;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpdaWRITE)
           dsLST <= 0;
-        else
-          if (clr | rpdaWRITE)
-            dsLST <= 0;
-          else if (rpSETLST)
-            dsLST <= 1;
+        else if (rpSETLST)
+          dsLST <= 1;
      end
 
    //
@@ -234,16 +228,13 @@ module RPDS (
    //
 
    reg dsVV;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | (rpMOL & !lastMOL))
           dsVV <= 0;
-        else
-          if (rpMOL & !lastMOL)
-            dsVV <= 0;
-          else if ((rpPRESET & !dsERR) |
-                   (rpPAKACK & !dsERR))
-            dsVV <= 1;
+        else if ((rpPRESET & !dsERR) |
+                 (rpPAKACK & !dsERR))
+          dsVV <= 1;
      end
 
    //

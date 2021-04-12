@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -91,19 +91,14 @@ module LPCBUF (
    //  M8587/LPD2/E15
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT)
           regCBUF <= 0;
-        else
-          begin
-             if (lpINIT)
-               regCBUF <= 0;
-             else if (cbufWRITE)
-               regCBUF <= `lpCBUF_DAT(lpDATAI);
-             else if (!lpMODELDRAM & devREQO & devACKI)
-               regCBUF <= byteDATAI;
-          end
+        else if (cbufWRITE)
+          regCBUF <= `lpCBUF_DAT(lpDATAI);
+        else if (!lpMODELDRAM & devREQO & devACKI)
+          regCBUF <= byteDATAI;
      end
 
 endmodule

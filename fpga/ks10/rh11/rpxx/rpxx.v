@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -147,7 +147,6 @@ module RPXX (
    // Device Address and Flags
    //
 
-   wire         devREAD  = `devREAD(devADDRI);                  // Read Cycle
    wire         devWRITE = `devWRITE(devADDRI);                 // Write Cycle
    wire         devIO    = `devIO(devADDRI);                    // IO Cycle
    wire         devPHYS  = `devPHYS(devADDRI);                  // Physical reference
@@ -193,22 +192,22 @@ module RPXX (
    //
 
    wire rpGO       = !rpPAT & rpcs1WRITE &                                        `rpCS1_GO(rpDATAI);   // Go command
-   wire rpUNLOAD   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funUNLOAD ) & `rpCS1_GO(rpDATAI);   // Unload command
+// wire rpUNLOAD   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funUNLOAD ) & `rpCS1_GO(rpDATAI);   // Unload command
    wire rpSEEK     = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funSEEK   ) & `rpCS1_GO(rpDATAI);   // Seek command
    wire rpRECAL    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funRECAL  ) & `rpCS1_GO(rpDATAI);   // Recalibrate command
    wire rpDRVCLR   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funCLEAR  ) & `rpCS1_GO(rpDATAI);   // Drive clear command
-   wire rpRELEASE  = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funRELEASE) & `rpCS1_GO(rpDATAI);   // Release command
-   wire rpOFFSET   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funOFFSET ) & `rpCS1_GO(rpDATAI);   // Offset command
+// wire rpRELEASE  = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funRELEASE) & `rpCS1_GO(rpDATAI);   // Release command
+// wire rpOFFSET   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funOFFSET ) & `rpCS1_GO(rpDATAI);   // Offset command
    wire rpCENTER   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funCENTER ) & `rpCS1_GO(rpDATAI);   // Return to center command
    wire rpPRESET   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funPRESET ) & `rpCS1_GO(rpDATAI);   // Read-in preset command
    wire rpPAKACK   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funPAKACK ) & `rpCS1_GO(rpDATAI);   // Pack acknowledge command
-   wire rpSEARCH   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funSEARCH ) & `rpCS1_GO(rpDATAI);   // Search command
-   wire rpWRCHK    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHK  ) & `rpCS1_GO(rpDATAI);   // Write check command
-   wire rpWRCHKH   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHKH ) & `rpCS1_GO(rpDATAI);   // Write check header command
+// wire rpSEARCH   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funSEARCH ) & `rpCS1_GO(rpDATAI);   // Search command
+// wire rpWRCHK    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHK  ) & `rpCS1_GO(rpDATAI);   // Write check command
+// wire rpWRCHKH   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHKH ) & `rpCS1_GO(rpDATAI);   // Write check header command
    wire rpWRITE    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITE  ) & `rpCS1_GO(rpDATAI);   // Write command
    wire rpWRITEH   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITEH ) & `rpCS1_GO(rpDATAI);   // Write header command
-   wire rpREAD     = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREAD   ) & `rpCS1_GO(rpDATAI);   // Read command
-   wire rpREADH    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREADH  ) & `rpCS1_GO(rpDATAI);   // Read header command
+// wire rpREAD     = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREAD   ) & `rpCS1_GO(rpDATAI);   // Read command
+// wire rpREADH    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREADH  ) & `rpCS1_GO(rpDATAI);   // Read header command
 
    //
    // Illegal Function Decoder

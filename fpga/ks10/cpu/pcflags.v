@@ -54,7 +54,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -197,7 +197,7 @@ module PCFLAGS (
    //  DPE8/E98
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           flagAOV <= 0;
@@ -236,7 +236,7 @@ module PCFLAGS (
    //  DPE9/E32
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           flagCRY0 <= 0;
@@ -266,7 +266,7 @@ module PCFLAGS (
    //  DPE9/E32
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           flagCRY1 <= 0;
@@ -297,7 +297,7 @@ module PCFLAGS (
    //  DPE9/E78
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           flagFOV <= 0;
@@ -330,7 +330,7 @@ module PCFLAGS (
    //  DPE8/E54
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
            flagFPD <= 0;
@@ -355,7 +355,7 @@ module PCFLAGS (
    //  DPE9/E33
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           flagUSER <= 0;
@@ -382,7 +382,7 @@ module PCFLAGS (
    //  DPE9/E60
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           flagUSERIO <= 0;
@@ -401,7 +401,7 @@ module PCFLAGS (
    //  DPE9/E68
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           flagTRAP2 <= 0;
@@ -431,7 +431,7 @@ module PCFLAGS (
    //  DPE9/E98
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           flagTRAP1 <= 0;
@@ -463,7 +463,7 @@ module PCFLAGS (
    //  DPE9/E78
    //  DPE9/E84
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           flagFXU <= 0;
@@ -490,7 +490,7 @@ module PCFLAGS (
    //  DPE9/E69
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           flagNODIV <= 0;

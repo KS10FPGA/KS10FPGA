@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -149,22 +149,17 @@ module LPRAMD (
    //
 
    reg [8:0] lpADDR;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | (lpCMDGO & lpMODELDRAM))
           lpADDR <= 0;
-        else
-          begin
-             if (lpCMDGO & lpMODELDRAM)
-               lpADDR <= 0;
-             else if (cbufWRITE)
-               lpADDR <= {`lpCBUF_DAT(lpDATAI), 1'b0};
-             else if ((lpMODEPRINT & devREQO & devACKI) |
-                      (lpMODETEST  & devREQO & devACKI))
-               lpADDR <= {byteDATAI, 1'b0};
-             else if (lpINCADDR & lpMODELDRAM)
-               lpADDR <= lpADDR + 1'b1;
-          end
+        else if (cbufWRITE)
+          lpADDR <= {`lpCBUF_DAT(lpDATAI), 1'b0};
+        else if ((lpMODEPRINT & devREQO & devACKI) |
+                 (lpMODETEST  & devREQO & devACKI))
+          lpADDR <= {byteDATAI, 1'b0};
+        else if (lpINCADDR & lpMODELDRAM)
+          lpADDR <= lpADDR + 1'b1;
      end
 
    wire [7:0] ramADDR = lpADDR[8:1];
@@ -174,11 +169,12 @@ module LPRAMD (
    //  The RAM is write enabled in pieces.  We use two RAMS
    //  to accomplish this.
    //
-   //  ram[0] contains data and parity
-   //  ram[1] contains control bits
+   //  ramDATA contains data and parity
+   //  ramCTRL contains control bits
    //
 
-   reg [8:0] ram[1:0][0:255];
+   reg [8:0] ramDATA[0:255];
+   reg [8:0] ramCTRL[0:255];
 
    //
    // RAM write port
@@ -213,8 +209,8 @@ module LPRAMD (
      begin
         for (i = 0; i < 256; i = i + 1)
           begin
-             ram[0][i] = 0;
-             ram[1][i] = 0;
+             ramDATA[i] = 0;
+             ramCTRL[i] = 0;
           end
      end
 
@@ -226,18 +222,18 @@ module LPRAMD (
 
    always @(posedge clk)
      begin
-        if (ramWRITE & !lpMODELDVFU)
-          ram[1][ramADDR] <= {5'b0, wordDATAI[11:8]};
+        if (ramWRITE)
+          ramDATA[ramADDR] <= {ram_parity_in, wordDATAI[7:0]};
      end
 
    //
-   // Writes to control port
+   // Writes to Control port
    //
 
    always @(posedge clk)
      begin
-        if (ramWRITE)
-          ram[0][ramADDR] <= {ram_parity_in, wordDATAI[7:0]};
+        if (ramWRITE & !lpMODELDVFU)
+          ramCTRL[ramADDR] <= {5'b0, wordDATAI[11:8]};
      end
 
    //
@@ -249,8 +245,8 @@ module LPRAMD (
    //  3.  The RAM Data bits (bits 7:0) are always read.
    //
 
-   wire [8:0] ram_ctrl = ram[1][ramADDR];
-   wire [8:0] ram_data = ram[0][ramADDR];
+   wire [8:0] ram_ctrl = ramCTRL[ramADDR];
+   wire [8:0] ram_data = ramDATA[ramADDR];
 
    always @*
      begin
@@ -267,7 +263,7 @@ module LPRAMD (
    //
 
    reg lpRPEEN;
-    always @(posedge clk or posedge rst)
+    always @(posedge clk)
      begin
         if (rst)
           lpRPEEN <= 0;
@@ -283,7 +279,7 @@ module LPRAMD (
    //
 
    reg lpDHLDEN;
-    always @(posedge clk or posedge rst)
+    always @(posedge clk)
      begin
         if (rst)
           lpDHLDEN <= 0;

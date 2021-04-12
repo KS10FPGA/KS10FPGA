@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -40,7 +40,6 @@
 
 `default_nettype none
 `timescale 1ns/1ps
-
 
 module LPINTR (
       input  wire         clk,          // Clock
@@ -77,7 +76,7 @@ module LPINTR (
 
    reg [2:0] state;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           state <= stateIDLE;

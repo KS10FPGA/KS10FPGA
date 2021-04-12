@@ -25,7 +25,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -71,32 +71,29 @@ module CRC16 (
    //
 
    wire fb;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | init)
           crc <= decmode ? 16'h0000 : 16'hffff;
-        else
-          if (init)
-            crc <= decmode ? 16'h0000 : 16'hffff;
-          else if (clken)
-            begin
-               crc[ 0] <=           (poly[ 0] & fb);
-               crc[ 1] <= crc[ 0] ^ (poly[ 1] & fb);
-               crc[ 2] <= crc[ 1] ^ (poly[ 2] & fb);
-               crc[ 3] <= crc[ 2] ^ (poly[ 3] & fb);
-               crc[ 4] <= crc[ 3] ^ (poly[ 4] & fb);
-               crc[ 5] <= crc[ 4] ^ (poly[ 5] & fb);
-               crc[ 6] <= crc[ 5] ^ (poly[ 6] & fb);
-               crc[ 7] <= crc[ 6] ^ (poly[ 7] & fb);
-               crc[ 8] <= crc[ 7] ^ (poly[ 8] & fb);
-               crc[ 9] <= crc[ 8] ^ (poly[ 9] & fb);
-               crc[10] <= crc[ 9] ^ (poly[10] & fb);
-               crc[11] <= crc[10] ^ (poly[11] & fb);
-               crc[12] <= crc[11] ^ (poly[12] & fb);
-               crc[13] <= crc[12] ^ (poly[13] & fb);
-               crc[14] <= crc[13] ^ (poly[14] & fb);
-               crc[15] <= crc[14] ^ (poly[15] & fb);
-            end
+        else if (clken)
+          begin
+             crc[ 0] <=           (poly[ 0] & fb);
+             crc[ 1] <= crc[ 0] ^ (poly[ 1] & fb);
+             crc[ 2] <= crc[ 1] ^ (poly[ 2] & fb);
+             crc[ 3] <= crc[ 2] ^ (poly[ 3] & fb);
+             crc[ 4] <= crc[ 3] ^ (poly[ 4] & fb);
+             crc[ 5] <= crc[ 4] ^ (poly[ 5] & fb);
+             crc[ 6] <= crc[ 5] ^ (poly[ 6] & fb);
+             crc[ 7] <= crc[ 6] ^ (poly[ 7] & fb);
+             crc[ 8] <= crc[ 7] ^ (poly[ 8] & fb);
+             crc[ 9] <= crc[ 8] ^ (poly[ 9] & fb);
+             crc[10] <= crc[ 9] ^ (poly[10] & fb);
+             crc[11] <= crc[10] ^ (poly[11] & fb);
+             crc[12] <= crc[11] ^ (poly[12] & fb);
+             crc[13] <= crc[12] ^ (poly[13] & fb);
+             crc[14] <= crc[13] ^ (poly[14] & fb);
+             crc[15] <= crc[14] ^ (poly[15] & fb);
+          end
      end
 
    //

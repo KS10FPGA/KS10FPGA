@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -50,5 +50,13 @@
 `define spiFAST   3'd3
 `define spiSLOW   3'd4
 `define spiTR     3'd5
+
+//
+// SPI Speeds
+//  Slow = 400 KHz
+//  Fast = CPU Clock
+//
+
+`define SLOW_CLK 400000
 
 `endif

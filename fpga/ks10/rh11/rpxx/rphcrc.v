@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -90,22 +90,21 @@ module RPHCRC (
    //  M7786/SS7/E89
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           crc <= 0;
-        else
-          if (clken)
-            case (opHCRC)
-              `opHCRC_RST:
-                crc <= 0;
-              `opHCRC_IN:
-                crc <= crc16(in, crc);
-              `opHCRC_OUT:
-                crc <= crc16(1'b0, crc);
-              `opHCRC_IDLE:
-                crc <= crc;
-            endcase
+        else if (clken)
+          case (opHCRC)
+            `opHCRC_RST:
+              crc <= 0;
+            `opHCRC_IN:
+              crc <= crc16(in, crc);
+            `opHCRC_OUT:
+              crc <= crc16(1'b0, crc);
+            `opHCRC_IDLE:
+              crc <= crc;
+          endcase
      end
 
 endmodule

@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -62,22 +62,19 @@ module RPDA (
    //
 
    reg [5:0] rpSA;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | rpPRESET)
           rpSA <= 0;
-        else
-          if (rpPRESET)
-            rpSA <= 0;
-          else if (rpdaWRITE & rpDRY)
-            rpSA <= `rpDA_SA(rpDATAI);
-          else if (rpINCSECT)
-            begin
-               if (rpSA == rpSECNUM)
-                 rpSA <= 0;
-               else
-                 rpSA <= rpSA + 1'b1;
-            end
+        else if (rpdaWRITE & rpDRY)
+          rpSA <= `rpDA_SA(rpDATAI);
+        else if (rpINCSECT)
+          begin
+             if (rpSA == rpSECNUM)
+               rpSA <= 0;
+             else
+               rpSA <= rpSA + 1'b1;
+          end
      end
 
    //
@@ -89,22 +86,19 @@ module RPDA (
    //
 
    reg [5:0] rpTA;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | rpPRESET)
           rpTA <= 0;
-        else
-          if (rpPRESET)
-            rpTA <= 0;
-          else if (rpdaWRITE & rpDRY)
-            rpTA <= `rpDA_TA(rpDATAI);
-          else if (rpINCSECT & (rpSA == rpSECNUM))
-            begin
-               if (rpTA == rpTRKNUM)
-                 rpTA <= 0;
-               else
-                 rpTA <= rpTA + 1'b1;
-            end
+        else if (rpdaWRITE & rpDRY)
+          rpTA <= `rpDA_TA(rpDATAI);
+        else if (rpINCSECT & (rpSA == rpSECNUM))
+          begin
+             if (rpTA == rpTRKNUM)
+               rpTA <= 0;
+             else
+               rpTA <= rpTA + 1'b1;
+          end
      end
 
    //

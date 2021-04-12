@@ -28,7 +28,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2009-2018 Rob Doyle
+// Copyright (C) 2009-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -83,15 +83,12 @@ module USRT_RX (
    //
 
    reg [15:0] stat;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           stat <= 0;
-        else
-          if (clr)
-            stat <= 0;
-          else if (clken)
-            stat <= {rxd, stat[15:1]};
+        else if (clken)
+          stat <= {rxd, stat[15:1]};
      end
 
    //
@@ -101,17 +98,14 @@ module USRT_RX (
    // performed.
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           data <= 0;
         else
-          if (clr)
-            data <= 0;
-          else
-            if (clken)
-              if (!zbd)
-                data <= {rxd, data[7:1]};
+          if (clken)
+            if (!zbd)
+              data <= {rxd, data[7:1]};
      end
 
    //
@@ -141,7 +135,7 @@ module USRT_RX (
    //
 
    reg special;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           special <= 0;
@@ -156,7 +150,7 @@ module USRT_RX (
    //
 
    reg [3:0] ones;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           ones <= 0;
@@ -198,16 +192,15 @@ module USRT_RX (
    //
 
    reg [2:0] bitcnt;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           bitcnt <= 0;
-        else
-          if (clken)
-            if (sync)
-              bitcnt <= 1'b1;
-            else if (!zbd)
-              bitcnt <= bitcnt + 1'b1;
+        else if (clken)
+          if (sync)
+            bitcnt <= 1'b1;
+          else if (!zbd)
+            bitcnt <= bitcnt + 1'b1;
      end
 
    //
@@ -217,15 +210,12 @@ module USRT_RX (
    //
 
    reg valid;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           valid <= 0;
-        else
-          if (clr)
-            valid <= 0;
-          else if (clken & sync)
-            valid <= 1;
+        else if (clken & sync)
+          valid <= 1;
      end
 
    //

@@ -18,7 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -88,20 +88,6 @@ module STACK #(
    localparam BUFSZ = 2**ADDR_WIDTH;
 
    //
-   // Registers
-   //
-
-   reg  [ADDR_WIDTH-1:0] rd_addr;
-   wire [ADDR_WIDTH-1:0] wr_addr = rd_addr + 1'b1;
-
-   //
-   // Stack Status
-   //
-
-   assign empty = (wr_addr == 0);
-   assign full  = (wr_addr == BUFSZ - 1);
-
-   //
    // Read Address
    //
    // Details
@@ -109,16 +95,28 @@ module STACK #(
    //  operation - otherwise the stack pointer does not change.
    //
 
-   always @(posedge clk or posedge rst)
+   reg  [ADDR_WIDTH-1:0] rd_addr;
+   wire [ADDR_WIDTH-1:0] wr_addr;
+
+   always @(posedge clk)
      begin
         if (rst)
-          rd_addr <= BUFSZ-1;
+          begin
+             rd_addr <= BUFSZ-1;
+             wr_addr <= 0;
+          end
         else if (clken)
           begin
              if (push)
-               rd_addr <= rd_addr + 1'b1;
+               begin
+                  rd_addr <= rd_addr + 1'b1;
+                  wr_addr <= wr_addr + 1'b1;
+               end
              else if (pop)
-               rd_addr <= rd_addr - 1'b1;
+               begin
+                  rd_addr <= rd_addr - 1'b1;
+                  wr_addr <= wr_addr - 1'b1;
+               end
           end
      end
 
@@ -128,18 +126,25 @@ module STACK #(
    // Details
    //
 
-   reg [WIDTH-1:0] mem[BUFSZ-1:0];
+   reg [WIDTH-1:0] stack[BUFSZ-1:0];
 
    always @(posedge clk)
      begin
         if (clken & push)
-          mem[wr_addr] <= in;
+          stack[wr_addr] <= in;
      end
 
    //
    // The stack read is synchronous from rd_addr
    //
 
-   assign out = mem[rd_addr];
+   assign out = stack[rd_addr];
+
+   //
+   // Stack Status
+   //
+
+   assign empty = (wr_addr == 0);
+   assign full  = (wr_addr == BUFSZ - 1);
 
 endmodule

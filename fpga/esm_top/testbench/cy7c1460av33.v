@@ -35,7 +35,7 @@
 module CY7C1460(d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode);
 
    inout [35:0] d;
-   input        clk,            // clock input (R)
+   input wire   clk,            // clock input (R)
                 we_b,           // byte write enable(L)
                 adv_lb,         // burst(H)/load(L) address
                 ce1b,           // chip enable(L)

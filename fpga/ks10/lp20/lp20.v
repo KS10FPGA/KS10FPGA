@@ -30,7 +30,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -64,7 +64,6 @@
 `include "lpramd.vh"
 `include "lpcbuf.vh"
 `include "lpcksm.vh"
-`include "../ks10.vh"
 `include "../uba/ubabus.vh"
 
 module LP20 (
@@ -625,7 +624,7 @@ module LP20 (
         if (csrbREAD)
           devDATAO = {20'b0, regCSRB};
         if (barREAD)
-          devDATAO = {20'b0, regBAR};
+          devDATAO = {20'b0, regBAR[15:0]};
         if (bctrREAD)
           devDATAO = {20'b0, regBCTR};
         if (pctrREAD)
@@ -637,7 +636,7 @@ module LP20 (
         if (cksmREAD | pdatREAD)
           devDATAO = {20'b0, regCKSM, regPDAT};
         if (vectREAD)
-          devDATAO = {20'b0, lpVECT};
+          devDATAO = {20'b0, lpVECT[20:35]};
      end
 
 `ifndef SYNTHESIS

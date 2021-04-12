@@ -68,7 +68,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -154,13 +154,12 @@ module PAGER (
 
    reg pageWRITE;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           pageWRITE <= 0;
-        else
-          if (clken)
-            pageWRITE <= specPAGEWRITE;
+        else if (clken)
+          pageWRITE <= specPAGEWRITE;
      end
 
    //
@@ -175,13 +174,12 @@ module PAGER (
 
    reg pageSWEEP;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           pageSWEEP <= 0;
-        else
-          if (clken)
-            pageSWEEP <= specPAGESWEEP;
+        else if (clken)
+          pageSWEEP <= specPAGESWEEP;
      end
 
    //
@@ -372,48 +370,46 @@ module PAGER (
    reg [14:35] vma;
    reg [0 :14] pageTABLE;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin
              vma       <= 0;
              pageTABLE <= 0;
           end
-        else
-          if (clken & pageWRITE)
-            begin
-               if (pageSWEEP)
-                 begin
-                    vma       <= 0;
-                    pageTABLE <= 0;
-                 end
-               else
-                 begin
-                    vma       <= vmaREG[14:35];
-                    pageTABLE <= {pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI};
-                 end
-            end
+        else if (clken & pageWRITE)
+          begin
+             if (pageSWEEP)
+               begin
+                  vma       <= 0;
+                  pageTABLE <= 0;
+               end
+             else
+               begin
+                  vma       <= vmaREG[14:35];
+                  pageTABLE <= {pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI};
+               end
+          end
      end
 
    //
    // Page Table Read
    //
 
-  always @(posedge clk or posedge rst)
+  always @(posedge clk)
     begin
        if (rst)
          begin
             pageFLAGS <= 0;
             pageADDR  <= 0;
          end
-       else
-         if (clken & vmaEN)
-           begin
-              if (`vmaADDR(dp) == vma)
-                {pageFLAGS, pageADDR} <= pageTABLE;
-              else
-                {pageFLAGS, pageADDR} <= 0;
-           end
+       else if (clken & vmaEN)
+         begin
+            if (`vmaADDR(dp) == vma)
+              {pageFLAGS, pageADDR} <= pageTABLE;
+            else
+              {pageFLAGS, pageADDR} <= 0;
+         end
     end
 
 `endif // !`ifndef PAGE_FAIL_TEST

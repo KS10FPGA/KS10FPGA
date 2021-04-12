@@ -30,7 +30,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -59,7 +59,6 @@
 `include "dzcsr.vh"
 `include "dztcr.vh"
 `include "dztdr.vh"
-`include "../ks10.vh"
 `include "../uba/ubabus.vh"
 
 module DZ11 (
@@ -114,7 +113,7 @@ module DZ11 (
    //
 
    localparam [18:35] rxVECT = dzVECT;                  // DZ11 RX Interrupt Vector
-   localparam [18:35] txVECT = dzVECT + 4;              // DZ11 TX Interrupt Vector
+   localparam [18:35] txVECT = dzVECT + 18'd4;          // DZ11 TX Interrupt Vector
 
    //
    // Device Address and Flags
@@ -126,7 +125,6 @@ module DZ11 (
    wire         devIO     = `devIO(devADDRI);           // IO Cycle
    wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
    wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
-   wire         devIOBYTE = `devIOBYTE(devADDRI);       // Byte IO Operation
    wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
    wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
    wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
@@ -179,7 +177,6 @@ module DZ11 (
    wire        rbufRDONE;
    wire        rbufSA;
    wire [ 2:0] scan;
-   wire [ 7:0] tcrLIN   = `dzTCR_LIN(regTCR);
    wire [ 7:0] uartTXEMPTY;
    wire [ 7:0] uartTXLOAD;
    wire [ 7:0] uartRXFULL;
@@ -189,6 +186,8 @@ module DZ11 (
    wire [ 7:0] uartRXPARE;
    wire [ 7:0] uartRXOVRE;
    wire [ 7:0] uartTXDATA = `dzTDR_TBUF(regTDR);
+
+   wire        dzINIT = devRESET | csrCLR;
 
    //
    // Control/Status Register (CSR)
@@ -263,7 +262,7 @@ module DZ11 (
    DZSCAN SCAN (
       .clk        (clk),
       .rst        (rst),
-      .clr        (csrCLR | devRESET),
+      .clr        (dzINIT),
       .csrMSE     (csrMSE),
       .scan       (scan)
    );
@@ -294,7 +293,7 @@ module DZ11 (
            DZUART UART (
               .clk      (clk),
               .rst      (rst),
-              .clr      (csrCLR | devRESET),
+              .clr      (dzINIT),
               .num      (i[2:0]),
               .lprWRITE (lprWRITE),
               .dzDATAI  (dzDATAI),
@@ -322,7 +321,7 @@ module DZ11 (
    DZRBUF RBUF (
       .clk        (clk),
       .rst        (rst),
-      .clr        (csrCLR | devRESET),
+      .clr        (dzINIT),
       .csrMSE     (csrMSE),
       .csrSAE     (csrSAE),
       .scan       (scan),
@@ -360,7 +359,7 @@ module DZ11 (
    DZINTR INTR (
       .clk        (clk),
       .rst        (rst),
-      .clr        (csrCLR | devRESET),
+      .clr        (dzINIT),
       .iack       (devWRU & (devINTA == dzINTR)),
       .vectREAD   (vectREAD),
       .rxVECTOR   (rxVECTOR),
@@ -390,17 +389,20 @@ module DZ11 (
 
    always @*
      begin
-        devDATAO = 36'bx;
-        if (csrREAD | csrWRITE)
+        devDATAO = 0;
+        if (csrREAD)
           devDATAO = {20'b0, regCSR};
-        if (rbufREAD | lprWRITE)
+        if (rbufREAD)
           devDATAO = {20'b0, regRBUF};
-        if (tcrREAD | tcrWRITE)
+        if (tcrREAD)
           devDATAO = {20'b0, regTCR};
-        if (msrREAD | tdrWRITE)
+        if (msrREAD)
           devDATAO = {20'b0, regMSR};
         if (vectREAD)
-          devDATAO = rxVECTOR ? rxVECT : txVECT;
+          if (rxVECTOR)
+            devDATAO = {20'b0, rxVECT[20:35]};
+          else
+            devDATAO = {20'b0, txVECT[20:35]};
      end
 
    //
@@ -411,10 +413,202 @@ module DZ11 (
 
    //
    // DZ11 Device Interface
-   //  The DZ11 is not a KS10 bus initiator.
+   //  The DZ11 is not a KS10 bus initiator.  Tie unused outputs.
+   //
 
    assign devINTR  = (rxINTR | txINTR) ? dzINTR : 4'b0;
    assign devADDRO = 0;
    assign devREQO  = 0;
+
+
+`ifndef SYNTHESIS
+
+   //
+   // String sizes in bytes
+   //
+
+   localparam DEVNAME_SZ = 4,
+              REGNAME_SZ = 4;
+
+   //
+   // Initialize log file
+   //
+
+   integer file;
+
+   initial
+     begin
+        file = $fopen("dzstatus.txt", "w");
+        $fwrite(file, "[%11.3f] DZ11: Initialized.\n", $time/1.0e3);
+        $fflush(file);
+     end
+
+   //
+   // Read CSR
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) CSR_RD (
+       .clk             (clk),
+       .devRD           (csrREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          (regCSR),
+       .devNAME         ("DZ11"),
+       .regNAME         ("CSR "),
+       .file            (file)
+   );
+
+   //
+   // Read RBUF
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) RBUF_RD (
+       .clk             (clk),
+       .devRD           (rbufREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          (regRBUF),
+       .devNAME         ("DZ11"),
+       .regNAME         ("RBUF"),
+       .file            (file)
+   );
+
+   //
+   // Read TCR
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) TCR_RD (
+       .clk             (clk),
+       .devRD           (tcrREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          (regTCR),
+       .devNAME         ("DZ11"),
+       .regNAME         ("TCR "),
+       .file            (file)
+   );
+
+   //
+   // Read MSR
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) MSR_RD (
+       .clk             (clk),
+       .devRD           (msrREAD),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .regVAL          (regMSR),
+       .devNAME         ("DZ11"),
+       .regNAME         ("MSR "),
+       .file            (file)
+   );
+
+   //
+   // Read Interrupt Vector
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) VECT_RD (
+       .clk             (clk),
+       .devRD           (vectREAD),
+       .devHIBYTE       (1'b0),
+       .devLOBYTE       (1'b0),
+       .regVAL          (rxVECTOR ? rxVECT[20:35] : txVECT[20:35]),
+       .devNAME         ("DZ11"),
+       .regNAME         ("VECT"),
+       .file            (file)
+   );
+
+   //
+   // Write CSR
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) CSR_WR (
+       .clk             (clk),
+       .devWR           (csrWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (dzDATAI[15:0]),
+       .regVAL          (regCSR),
+       .devNAME         ("DZ11"),
+       .regNAME         ("CSR "),
+       .file            (file)
+   );
+
+   //
+   // Write LPR
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) LPR_WR (
+       .clk             (clk),
+       .devWR           (lprWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (dzDATAI[15:0]),
+       .regVAL          (16'bx),
+       .devNAME         ("DZ11"),
+       .regNAME         ("LPR "),
+       .file            (file)
+   );
+
+   //
+   // Write TCR
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) TCR_WR (
+       .clk             (clk),
+       .devWR           (tcrWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (dzDATAI[15:0]),
+       .regVAL          (regTCR),
+       .devNAME         ("DZ11"),
+       .regNAME         ("TCR "),
+       .file            (file)
+   );
+
+   //
+   // Write TDR
+   //
+
+   PRINT_DEV_REG_ON_WR #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) TDR_WR (
+       .clk             (clk),
+       .devWR           (tdrWRITE),
+       .devHIBYTE       (devHIBYTE),
+       .devLOBYTE       (devLOBYTE),
+       .devDATA         (dzDATAI[15:0]),
+       .regVAL          (regTDR),
+       .devNAME         ("DZ11"),
+       .regNAME         ("TDR "),
+       .file            (file)
+   );
+
+`endif
 
 endmodule

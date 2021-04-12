@@ -28,7 +28,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -92,7 +92,7 @@ module PI (
    reg       piSYSEN;                   // PI System is enabled
    reg [1:7] piENABLED;                 // PI Enabled (Interrupt Mask)
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin
@@ -183,7 +183,7 @@ module PI (
    //  DPEB/E167
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           piINTR <= 0;

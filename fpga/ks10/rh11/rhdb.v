@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -90,37 +90,30 @@ module RHDB (
    // FIFO State
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rhCLR | rhCLRTRE | rhCLRGO)
           begin
              depth  <= 0;
              rd_ptr <= 0;
              wr_ptr <= 0;
           end
-        else
-          if (devRESET | rhCLR | rhCLRTRE | rhCLRGO)
-            begin
-               depth  <= 0;
+        else if (rd & !wr & !empty)
+          begin
+             depth <= depth - 1'b1;
+             if (rd_ptr == 7'd127)
                rd_ptr <= 0;
+             else
+               rd_ptr <= rd_ptr + 1'b1;
+          end
+        else if (wr & !rd & !full)
+          begin
+             depth <= depth + 1'b1;
+             if (wr_ptr == 7'd127)
                wr_ptr <= 0;
-            end
-          else if (rd & !wr & !empty)
-            begin
-               depth <= depth - 1'b1;
-               if (rd_ptr == 7'd127)
-                 rd_ptr <= 0;
-               else
-                 rd_ptr <= rd_ptr + 1'b1;
-            end
-          else if (wr & !rd & !full)
-            begin
-               depth <= depth + 1'b1;
-               if (wr_ptr == 7'd127)
-                 wr_ptr <= 0;
-               else
-                 wr_ptr <= wr_ptr + 1'b1;
-            end
+             else
+               wr_ptr <= wr_ptr + 1'b1;
+          end
      end
 
    //
@@ -135,7 +128,7 @@ module RHDB (
 
    reg [15:0] mem[0:127];
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin

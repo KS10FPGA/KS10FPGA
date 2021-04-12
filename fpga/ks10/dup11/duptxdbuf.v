@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -82,15 +82,12 @@ module DUPTXDBUF (
    //
 
    reg dupTXABRT;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupTXABRT <= 0;
-        else
-          if (dupINIT)
-            dupTXABRT <= 0;
-          else if (txdbufWRITE & devHIBYTE)
-            dupTXABRT <= `dupTXDBUF_TXABRT(dupDATAI);
+        else if (txdbufWRITE & devHIBYTE)
+          dupTXABRT <= `dupTXDBUF_TXABRT(dupDATAI);
      end
 
    //
@@ -98,15 +95,12 @@ module DUPTXDBUF (
    //
 
    reg dupTXEOM;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupTXEOM <= 0;
-        else
-          if (dupINIT)
-            dupTXEOM <= 0;
-          else if (txdbufWRITE & devHIBYTE)
-            dupTXEOM <= `dupTXDBUF_TXEOM(dupDATAI);
+        else if (txdbufWRITE & devHIBYTE)
+          dupTXEOM <= `dupTXDBUF_TXEOM(dupDATAI);
      end
 
    //
@@ -114,15 +108,12 @@ module DUPTXDBUF (
    //
 
    reg dupTXSOM;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupTXSOM <= 0;
-        else
-          if (dupINIT)
-            dupTXSOM <= 0;
-          else if (txdbufWRITE & devHIBYTE)
-            dupTXSOM <= `dupTXDBUF_TXSOM(dupDATAI);
+        else if (txdbufWRITE & devHIBYTE)
+          dupTXSOM <= `dupTXDBUF_TXSOM(dupDATAI);
      end
 
    //
@@ -130,15 +121,12 @@ module DUPTXDBUF (
    //
 
    reg [7:0] dupTXDAT;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupTXDAT <= 0;
-        else
-          if (dupINIT)
-            dupTXDAT <= 0;
-          else if (txdbufWRITE & devLOBYTE)
-            dupTXDAT <= `dupTXDBUF_TXDAT(dupDATAI);
+        else if (txdbufWRITE & devLOBYTE)
+          dupTXDAT <= `dupTXDBUF_TXDAT(dupDATAI);
      end
 
    //

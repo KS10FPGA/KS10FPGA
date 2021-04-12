@@ -64,7 +64,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -208,16 +208,15 @@ module DISP_PF (
 
    reg pfEN;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           pfEN <= 0;
-        else
-          if (clken)
-            if (!pfEN)
-              pfEN <= pfCYCLE;
-            else
-              pfEN <= 0;
+        else if (clken)
+          if (!pfEN)
+            pfEN <= pfCYCLE;
+          else
+            pfEN <= 0;
      end
 
    //
@@ -226,13 +225,12 @@ module DISP_PF (
 
    reg intrEN;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           intrEN <= 0;
-        else
-          if (clken)
-            intrEN <= fetchCYCLE;
+        else if (clken)
+          intrEN <= fetchCYCLE;
      end
 
    //
@@ -294,16 +292,15 @@ module DISP_PF (
    // Page fail dispatch register
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           dispPF <= 0;
-        else
-          if (clken)
-            if (pageFAIL)
-              dispPF <= dispatch;
-            else if (specMEMCLR)
-              dispPF <= 0;
+        else if (clken)
+          if (pageFAIL)
+            dispPF <= dispatch;
+          else if (specMEMCLR)
+            dispPF <= 0;
      end
 
 endmodule

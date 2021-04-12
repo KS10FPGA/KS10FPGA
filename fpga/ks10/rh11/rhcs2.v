@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -78,7 +78,7 @@ module RHCS2 (
    //  M7296/CSRB/E11
    //
 
-   wire errCLR = devRESET | rhCLR | rhCLRTRE | rhCLRGO;
+   wire clr = rst | devRESET | rhCLR | rhCLRTRE | rhCLRGO;
 
    //
    // CS2 Device Late
@@ -94,15 +94,12 @@ module RHCS2 (
    //
 
    reg rhcs2DLT;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (clr)
           rhcs2DLT <= 0;
-        else
-          if (errCLR)
-            rhcs2DLT <= 0;
-          else if (rhSETDLT)
-            rhcs2DLT <= 1;
+        else if (rhSETDLT)
+          rhcs2DLT <= 1;
      end
 
    //
@@ -118,15 +115,12 @@ module RHCS2 (
    //
 
    reg rhcs2WCE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (clr)
           rhcs2WCE <= 0;
-        else
-          if (errCLR)
-            rhcs2WCE <= 0;
-          else if (rhSETWCE)
-            rhcs2WCE <= 1;
+        else if (rhSETWCE)
+          rhcs2WCE <= 1;
      end
 
    //
@@ -138,15 +132,12 @@ module RHCS2 (
    //
 
    reg rhcs2UPE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (clr)
           rhcs2UPE <= 0;
-        else
-          if (errCLR)
-            rhcs2UPE <= 0;
-          else if (rhcs2WRITE & devHIBYTE)
-            rhcs2UPE <= `rhCS2_UPE(rhDATAI);
+        else if (rhcs2WRITE & devHIBYTE)
+          rhcs2UPE <= `rhCS2_UPE(rhDATAI);
      end
 
    //
@@ -163,15 +154,12 @@ module RHCS2 (
    //
 
    reg rhcs2NED;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (clr)
           rhcs2NED <= 0;
-        else
-          if (errCLR)
-            rhcs2NED <= 0;
-          else if (rhSETNED)
-            rhcs2NED <= 1;
+        else if (rhSETNED)
+          rhcs2NED <= 1;
      end
 
    //
@@ -185,15 +173,12 @@ module RHCS2 (
    //
 
    reg rhcs2NEM;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (clr)
           rhcs2NEM <= 0;
-        else
-          if (errCLR)
-            rhcs2NEM <= 0;
-          else if (rhSETNEM)
-            rhcs2NEM <= 1;
+        else if (rhSETNEM)
+          rhcs2NEM <= 1;
      end
 
    //
@@ -205,15 +190,12 @@ module RHCS2 (
    //
 
    reg rhcs2PGE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rhCLR | rhCLRTRE)
           rhcs2PGE <= 0;
-        else
-          if (devRESET | rhCLR | rhCLRTRE)
-            rhcs2PGE <= 0;
-          else if (rhCMDGO & !rhRDY)
-            rhcs2PGE <= 1;
+        else if (rhCMDGO & !rhRDY)
+          rhcs2PGE <= 1;
      end
 
    //
@@ -228,15 +210,12 @@ module RHCS2 (
    //
 
    reg rhcs2MXF;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (clr)
           rhcs2MXF <= 0;
-        else
-          if (errCLR)
-            rhcs2MXF <= 0;
-          else if (rhcs2WRITE & devHIBYTE)
-            rhcs2MXF <= `rhCS2_MXF(rhDATAI);
+        else if (rhcs2WRITE & devHIBYTE)
+          rhcs2MXF <= `rhCS2_MXF(rhDATAI);
      end
 
    //
@@ -289,15 +268,12 @@ module RHCS2 (
    //
 
    reg rhcs2PAT;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rhcs2CLR)
           rhcs2PAT <= 0;
-        else
-          if (devRESET | rhcs2CLR)
-            rhcs2PAT <= 0;
-          else if (rhcs2WRITE & devLOBYTE)
-            rhcs2PAT <= `rhCS2_PAT(rhDATAI);
+        else if (rhcs2WRITE & devLOBYTE)
+          rhcs2PAT <= `rhCS2_PAT(rhDATAI);
      end
 
    //
@@ -310,15 +286,12 @@ module RHCS2 (
    //
 
    reg rhcs2BAI;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rhcs2CLR)
           rhcs2BAI <= 0;
-        else
-          if (devRESET | rhcs2CLR)
-            rhcs2BAI <= 0;
-          else if (rhcs2WRITE & devLOBYTE & rhRDY)
-            rhcs2BAI <= `rhCS2_BAI(rhDATAI);
+        else if (rhcs2WRITE & devLOBYTE & rhRDY)
+          rhcs2BAI <= `rhCS2_BAI(rhDATAI);
      end
 
    //
@@ -329,15 +302,12 @@ module RHCS2 (
    //
 
    reg [2:0] rhcs2UNIT;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rhcs2CLR)
           rhcs2UNIT <= 0;
-        else
-          if (devRESET | rhcs2CLR)
-            rhcs2UNIT <= 0;
-          else if (rhcs2WRITE & devLOBYTE)
-            rhcs2UNIT <= `rhCS2_UNIT(rhDATAI);
+        else if (rhcs2WRITE & devLOBYTE)
+          rhcs2UNIT <= `rhCS2_UNIT(rhDATAI);
      end
 
    //

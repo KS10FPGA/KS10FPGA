@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -63,10 +63,10 @@ module RH11 (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
       // SD Interfaces
-      input  wire         sdMISO,               // SD Data In
-      output wire         sdMOSI,               // SD Data Out
-      output wire         sdSCLK,               // SD Clock
-      output wire         sdCS,                 // SD Chip Select
+      input  wire         SD_MISO,              // SD Data In
+      output wire         SD_MOSI,              // SD Data Out
+      output wire         SD_SCLK,              // SD Clock
+      output wire         SD_SS_N,              // SD Slave Select
       // RH11 Interfaces
       output wire [ 0:63] rhDEBUG,              // RH11 Debug Output
       // RPXX Interfaces
@@ -168,7 +168,6 @@ module RH11 (
    wire         devIO     = `devIO(devADDRI);           // IO Cycle
    wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
    wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
-   wire         devIOBYTE = `devIOBYTE(devADDRI);       // Byte IO Operation
    wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
    wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
    wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
@@ -286,8 +285,6 @@ module RH11 (
    wire rhPGE = `rhCS2_PGE(rhCS2);
    wire rhMXF = `rhCS2_MXF(rhCS2);
    wire rhDPE = `rhCS2_DPE(rhCS2);
-   wire rhOR  = `rhCS2_OR (rhCS2);
-   wire rhIR  = `rhCS2_IR (rhCS2);
    wire rhCLR = `rhCS2_CLR(rhCS2);
    wire rhPAT = `rhCS2_PAT(rhCS2);
    wire rhBAI = `rhCS2_BAI(rhCS2);
@@ -659,10 +656,10 @@ module RH11 (
 `ifndef SYNTHESIS
       .file       (file),
 `endif
-      .sdMISO     (sdMISO),
-      .sdMOSI     (sdMOSI),
-      .sdSCLK     (sdSCLK),
-      .sdCS       (sdCS),
+      .SD_MISO    (SD_MISO),
+      .SD_MOSI    (SD_MOSI),
+      .SD_SCLK    (SD_SCLK),
+      .SD_SS_N    (SD_SS_N),
       // Device interface
       .devDATAI   (devDATAI),
       .devDATAO   (sdDATAO),
@@ -785,7 +782,7 @@ module RH11 (
         if (rpec2READ & rpPRES)
           devDATAO = {20'b0, rpEC2};
         if (vectREAD)
-          devDATAO = {20'b0, rhVECT};
+          devDATAO = {20'b0, rhVECT[20:35]};
      end
 
    //

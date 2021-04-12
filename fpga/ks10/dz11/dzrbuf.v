@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -136,7 +136,7 @@ module DZRBUF (
    reg rd_dly;
    reg wr_dly;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin
@@ -163,42 +163,31 @@ module DZRBUF (
    wire empty = (depth == 0);
    wire full  = (depth == FIFO_SIZE - 1);
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           begin
              depth  <= 0;
              rd_ptr <= 0;
              wr_ptr <= 0;
           end
-        else
+        else if (rd & !wr & !empty)
           begin
-             if (clr)
-               begin
-                  depth  <= 0;
-                  rd_ptr <= 0;
-                  wr_ptr <= 0;
-               end
-             else if (rd & !wr & !empty)
-               begin
-                  depth <= depth - 1'b1;
-                  if (rd_ptr == FIFO_SIZE - 1)
-                    rd_ptr <= 0;
-                  else
-                    rd_ptr <= rd_ptr + 1'b1;
-               end
-             else if (wr & !rd & !full)
-               begin
-                  depth <= depth + 1'b1;
-                  if (wr_ptr == FIFO_SIZE - 1)
-                    wr_ptr <= 0;
-                  else
-                    wr_ptr <= wr_ptr + 1'b1;
-               end
+             depth <= depth - 1'b1;
+             if (rd_ptr == FIFO_SIZE - 1)
+               rd_ptr <= 0;
+             else
+               rd_ptr <= rd_ptr + 1'b1;
+          end
+        else if (wr & !rd & !full)
+          begin
+             depth <= depth + 1'b1;
+             if (wr_ptr == FIFO_SIZE - 1)
+               wr_ptr <= 0;
+             else
+               wr_ptr <= wr_ptr + 1'b1;
           end
      end
-
-
 
    //
    // RBUF[RDONE]
@@ -217,17 +206,12 @@ module DZRBUF (
 
    reg rbufOVRE;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           rbufOVRE <= 0;
-        else
-          begin
-             if (clr)
-               rbufOVRE <= 0;
-             else if (wr | rd_dly)
-               rbufOVRE <= full;
-          end
+        else if (wr | rd_dly)
+          rbufOVRE <= full;
      end
 
    //
@@ -236,17 +220,12 @@ module DZRBUF (
 
    reg rbufDVAL;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
-          rbufDVAL  <= 0;
-        else
-          begin
-             if (clr)
-               rbufDVAL <= 0;
-             else if (rd | wr_dly)
-               rbufDVAL <= !empty;
-          end
+        if (rst | clr)
+          rbufDVAL <= 0;
+        else if (rd | wr_dly)
+          rbufDVAL <= !empty;
      end
 
    //
@@ -264,7 +243,7 @@ module DZRBUF (
 
    reg [0:4] countSA;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           countSA <= 0;
@@ -284,17 +263,12 @@ module DZRBUF (
    // The Silo Alarm is cleared after reading the RBUF or clearing SAE.
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rd | !csrSAE)
           rbufSA <= 0;
-        else
-          begin
-             if (clr | rd | !csrSAE)
-               rbufSA <= 0;
-             else if (countSA == 16)
-               rbufSA <= 1;
-          end
+        else if (countSA == 16)
+          rbufSA <= 1;
      end
 
    //
@@ -312,7 +286,7 @@ module DZRBUF (
    reg [14:0] fifoDATA;
    reg [14:0] DPRAM[BUF_SIZE-1:0];
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
 `ifdef SYNTHESIS

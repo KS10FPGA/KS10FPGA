@@ -18,7 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -227,7 +227,7 @@ module SCAD (
    //  DPM4/E52
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
     begin
         if (rst)
           fe <= 9'b0;
@@ -246,7 +246,7 @@ module SCAD (
    //  DPM4/E43
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
     begin
         if (rst)
           sc <= 9'b0;

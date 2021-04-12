@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -70,21 +70,16 @@ module LPBAR (
    //  M8585/LPR2/E12
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT)
           regBAR <= 0;
-        else
-          begin
-             if (lpINIT)
-               regBAR <= 0;
-             else if (csraWRITE & devLOBYTE)
-               regBAR[17:16] <= `lpCSRA_ADDR(lpDATAI);
-             else if (barWRITE)
-               regBAR[15: 0] <= `lpBAR_ADDR(lpDATAI);
-             else if (lpINCBAR)
-               regBAR <= regBAR + 1'b1;
-          end
+        else if (csraWRITE & devLOBYTE)
+          regBAR[17:16] <= `lpCSRA_ADDR(lpDATAI);
+        else if (barWRITE)
+          regBAR[15: 0] <= `lpBAR_ADDR(lpDATAI);
+        else if (lpINCBAR)
+          regBAR <= regBAR + 1'b1;
      end
 
 endmodule

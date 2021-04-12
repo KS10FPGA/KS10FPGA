@@ -18,14 +18,14 @@
 //   This UART transmitter is compatible with the DZ11.
 //
 // File
-//   uart_tx.vhd
+//   uart_tx.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2009-2016 Rob Doyle
+// Copyright (C) 2009-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -120,10 +120,10 @@ module UART_TX (
    reg [7:0] txREG;
    reg [3:0] brdiv;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
 
-        if (rst)
+        if (rst | clr)
           begin
              txREG <= 0;
              brdiv <= 0;
@@ -132,256 +132,247 @@ module UART_TX (
 
         else
 
-          if (clr)
-            begin
-               txREG <= 0;
-               brdiv <= 0;
-               state <= stateIDLE;
-            end
+          case (state)
 
-          else
+            //
+            // Transmitter is idle
+            //
 
-            case (state)
+            stateIDLE:
+              if (load)
+                begin
+                   txREG <= data;
+                   state <= stateSYNC;
+                end
 
-              //
-              // Transmitter is idle
-              //
+            //
+            // Wait for clock
+            //
 
-              stateIDLE:
-                if (load)
+            stateSYNC:
+              if (clken)
+                begin
+                   brdiv <= 15;
+                   state <= stateSTART;
+                end
+
+            //
+            // Transmit Start Bit
+            //
+
+            stateSTART:
+              if (clken)
+                if (brdiv == 0)
                   begin
-                     txREG <= data;
-                     state <= stateSYNC;
+                     brdiv <= 15;
+                     state <= stateBIT0;
                   end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Wait for clock
-              //
+            //
+            // Transmit Bit 0 (LSB)
+            //
 
-              stateSYNC:
-               if (clken)
-                 begin
-                    brdiv <= 15;
-                    state <= stateSTART;
-                 end
+            stateBIT0:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     state <= stateBIT1;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Transmit Start Bit
-              //
+            //
+            // Transmit Bit 1
+            //
 
-              stateSTART:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       state <= stateBIT0;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateBIT1:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     state <= stateBIT2;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Transmit Bit 0 (LSB)
-              //
+            //
+            // Transmit Bit 2
+            //
 
-              stateBIT0:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       state <= stateBIT1;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateBIT2:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     state <= stateBIT3;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Transmit Bit 1
-              //
+            //
+            // Transmit Bit 3
+            //
 
-              stateBIT1:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       state <= stateBIT2;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateBIT3:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     state <= stateBIT4;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Transmit Bit 2
-              //
+            //
+            // Transmit Bit 4
+            //
 
-              stateBIT2:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       state <= stateBIT3;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateBIT4:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     if (length == `UARTLEN_5)
+                       begin
+                          if ((parity == `UARTPAR_EVEN) ||
+                              (parity == `UARTPAR_ODD ))
+                            state <= statePARITY;
+                          else
+                            state <= stateSTOP1;
+                       end
+                     else
+                       state <= stateBIT5;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Transmit Bit 3
-              //
+            //
+            // Transmit Bit 5
+            //
 
-              stateBIT3:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       state <= stateBIT4;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateBIT5:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     if (length == `UARTLEN_6)
+                       begin
+                          if ((parity == `UARTPAR_EVEN) ||
+                              (parity == `UARTPAR_ODD ))
+                            state <= statePARITY;
+                          else
+                            state <= stateSTOP1;
+                       end
+                     else
+                       state <= stateBIT6;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Transmit Bit 4
-              //
+            //
+            // Transmit Bit 6
+            //
 
-              stateBIT4:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       if (length == `UARTLEN_5)
-                         begin
-                            if ((parity == `UARTPAR_EVEN) ||
-                                (parity == `UARTPAR_ODD ))
-                              state <= statePARITY;
-                            else
-                              state <= stateSTOP1;
-                         end
-                       else
-                         state <= stateBIT5;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            stateBIT6:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     if (length == `UARTLEN_7)
+                       begin
+                          if ((parity == `UARTPAR_EVEN) ||
+                              (parity == `UARTPAR_ODD ))
+                            state <= statePARITY;
+                          else
+                            state <= stateSTOP1;
+                       end
+                     else
+                       state <= stateBIT7;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Transmit Bit 5
-              //
+            //
+            // Transmit Bit 7 (MSB)
+            //
 
-              stateBIT5:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       if (length == `UARTLEN_6)
-                         begin
-                            if ((parity == `UARTPAR_EVEN) ||
-                                (parity == `UARTPAR_ODD ))
-                              state <= statePARITY;
-                            else
-                              state <= stateSTOP1;
-                         end
-                       else
-                         state <= stateBIT6;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
-
-              //
-              // Transmit Bit 6
-              //
-
-              stateBIT6:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       if (length == `UARTLEN_7)
-                         begin
-                            if ((parity == `UARTPAR_EVEN) ||
-                                (parity == `UARTPAR_ODD ))
-                              state <= statePARITY;
-                            else
-                              state <= stateSTOP1;
-                         end
-                       else
-                         state <= stateBIT7;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
-
-              //
-              // Transmit Bit 7 (MSB)
-              //
-
-              stateBIT7:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       if ((parity == `UARTPAR_EVEN) ||
-                           (parity == `UARTPAR_ODD ))
-                         state <= statePARITY;
-                       else
-                         state <= stateSTOP1;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
-
-              //
-              // Parity
-              //
-
-              statePARITY:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
+            stateBIT7:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     if ((parity == `UARTPAR_EVEN) ||
+                         (parity == `UARTPAR_ODD ))
+                       state <= statePARITY;
+                     else
                        state <= stateSTOP1;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Transmit Stop Bit 1
-              //
+            //
+            // Parity
+            //
 
-              stateSTOP1:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
-                       if (stop == `UARTSTOP_2)
-                         state <= stateSTOP2;
-                       else
-                         state <= stateDONE;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+            statePARITY:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     state <= stateSTOP1;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Transmit Stop Bit 2
-              //
+            //
+            // Transmit Stop Bit 1
+            //
 
-              stateSTOP2:
-                if (clken)
-                  if (brdiv == 0)
-                    begin
-                       brdiv <= 15;
+            stateSTOP1:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     if (stop == `UARTSTOP_2)
+                       state <= stateSTOP2;
+                     else
                        state <= stateDONE;
-                    end
-                  else
-                    brdiv <= brdiv - 1'b1;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Generate Interrupt
-              //
+            //
+            // Transmit Stop Bit 2
+            //
 
-              stateDONE:
-                state <= stateIDLE;
+            stateSTOP2:
+              if (clken)
+                if (brdiv == 0)
+                  begin
+                     brdiv <= 15;
+                     state <= stateDONE;
+                  end
+                else
+                  brdiv <= brdiv - 1'b1;
 
-              //
-              // Everything else
-              //
+            //
+            // Generate Interrupt
+            //
 
-              default:
-                state <= stateIDLE;
+            stateDONE:
+              state <= stateIDLE;
 
-            endcase
+            //
+            // Everything else
+            //
+
+            default:
+              state <= stateIDLE;
+
+          endcase
      end
 
    //

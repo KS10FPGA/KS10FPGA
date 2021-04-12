@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2015 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -88,10 +88,10 @@
  module SDSIM (
       input  wire rst,                  // Reset
       input  wire clk,                  // Clock
-      output wire sdMISO,               // MISO
-      input  wire sdMOSI,               // MOSI
-      input  wire sdSCLK,               // SCLK
-      input  wire sdCS                  // CS
+      output wire SD_MISO,              // MISO
+      input  wire SD_MOSI,              // MOSI
+      input  wire SD_SCLK,              // SCLK
+      input  wire SD_SS_N               // SS
    );
 
    //
@@ -214,7 +214,7 @@
      end
 
    //
-   // Syncrhonize sdSCLK
+   // Syncrhonize SD_SCLK
    //
 
    reg [0: 1] clkstat;
@@ -224,7 +224,7 @@
         if (rst)
           clkstat <= 0;
         else
-          clkstat <= {clkstat[1], sdSCLK};
+          clkstat <= {clkstat[1], SD_SCLK};
      end
 
    //
@@ -257,10 +257,10 @@
         else
           begin
 
-             if (sdCS)
+             if (SD_SS_N)
                spiRX <= {56{1'b1}};
              else if (clkstat == 2'b01)
-               spiRX <= {spiRX[1:55], sdMOSI};
+               spiRX <= {spiRX[1:55], SD_MOSI};
 
              case (state)
 
@@ -432,7 +432,7 @@
                stateREAD1:
                  if (clkstat == 2'b10)
                    begin
-                      if (sdCS)
+                      if (SD_SS_N)
                         begin
                            spiTX <= 56'hff_ff_ff_ff_ff_ff_ff;
                            state <= stateRESET;
@@ -504,7 +504,7 @@
                stateWRITE1:
                  if (clkstat == 2'b10)
                    begin
-                      if (sdCS)
+                      if (SD_SS_N)
                         begin
                            spiTX <= 56'hff_ff_ff_ff_ff_ff_ff;
                            state <= stateRESET;
@@ -540,7 +540,7 @@
                stateWRITE2:
                  if (clkstat == 2'b10)
                    begin
-                      if ((bitcnt == 0) || sdCS)
+                      if ((bitcnt == 0) || SD_SS_N)
                         begin
                            $fflush(fd[disk]);
                            state  <= stateRESET;
@@ -560,6 +560,6 @@
    // Create output serial data
    //
 
-   assign sdMISO = spiTX[0];
+   assign SD_MISO = spiTX[0];
 
 endmodule

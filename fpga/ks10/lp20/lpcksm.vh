@@ -9,14 +9,14 @@
 //   This file contains the bit definitions for the LP20 CKSM register.
 //
 // File
-//   lppctr.vh
+//   lpcksm.vh
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any

@@ -25,7 +25,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -52,7 +52,6 @@
 
 `include "uba.vh"
 `include "ubasr.vh"
-`include "../ks10.vh"
 `include "../cpu/bus.vh"
 
 module UBA (
@@ -125,7 +124,7 @@ module UBA (
    wire         busIO     = `busIO(busADDRI);           // IO Cycle
    wire         busWRU    = `busWRU(busADDRI);          // Read interrupting controller number
    wire         busVECT   = `busVECT(busADDRI);         // Read interrupt vector
-   wire         busIOBYTE = `busIOBYTE(busADDRI);       // IO Bridge Byte IO Operation
+   wire         busIOBYTE = `busIOBYTE(busADDRI);       // IO Byte Cycle
    wire [15:17] busPI     = `busPI(busADDRI);           // IO Bridge PI Request
    wire [14:17] busDEV    = `busDEV(busADDRI);          // IO Bridge Device Number
    wire [18:35] busADDR   = `busIOADDR(busADDRI);       // IO Address
@@ -150,7 +149,6 @@ module UBA (
    wire pageWRITE  = busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
    wire statREAD   = busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
    wire statWRITE  = busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
-   wire maintREAD  = busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
    wire maintWRITE = busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
    wire ubaREAD    = busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] == ubaADDR[18:28]);
    wire ubaWRITE   = busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] == ubaADDR[18:28]);
@@ -419,14 +417,13 @@ module UBA (
    UBAPAGE PAGE (
       .rst        (rst),
       .clk        (clk),
-      .regUBAMR   (regUBAMR),
       .busREQO    (busREQO),
       .busADDRI   (busADDRI),
       .busDATAI   (busDATAI),
       .busADDRO   (busADDRO),
       .pageWRITE  (pageWRITE),
       .pageDATAO  (pageDATAO),
-      .pageADDRI  (devADDRI),
+      .pageADDRI  (regUBAMR ? 0 : devADDRI),
       .pageFAIL   (pageFAIL)
    );
 
@@ -480,7 +477,7 @@ module UBA (
 
    reg [0:35] addr;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           addr <= 0;
@@ -503,9 +500,11 @@ module UBA (
              if (busACKI)
                begin
                   if (`busREAD(busADDRO))
-                    $display("[%11.3f] UBA%d: Read %012o from address %012o.", $time/1.0e3, ubaNUM, busDATAI, busADDRO);
+                    $display("[%11.3f] UBA%d: Read %012o from address %012o.",
+                             $time/1.0e3, ubaNUM, busDATAI, busADDRO);
                   else
-                    $display("[%11.3f] UBA%d: Wrote %012o to address %012o.", $time/1.0e3, ubaNUM, busDATAO, busADDRO);
+                    $display("[%11.3f] UBA%d: Wrote %012o to address %012o.",
+                             $time/1.0e3, ubaNUM, busDATAO, busADDRO);
                end
 
           end

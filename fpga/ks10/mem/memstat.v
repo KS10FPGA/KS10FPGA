@@ -54,7 +54,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -103,13 +103,12 @@ module MEMSTAT (
 
    reg statPE;
 
-   always @(negedge clk or posedge rst)
+   always @(negedge clk)
      begin
         if (rst)
           statPE <= 0;
-        else
-          if (msrWRITE)
-            statPE <= `memSTAT_PE(busDATAI);
+        else if (msrWRITE)
+          statPE <= `memSTAT_PE(busDATAI);
      end
 
    //
@@ -127,13 +126,12 @@ module MEMSTAT (
 
    reg statPF;
 
-   always @(negedge clk or posedge rst)
+   always @(negedge clk)
      begin
         if (rst)
           statPF <= 1'b1;
-        else
-          if (msrWRITE)
-            statPF <= statPF & `memSTAT_PF(busDATAI);
+        else if (msrWRITE)
+          statPF <= statPF & `memSTAT_PF(busDATAI);
      end
 
    //
@@ -146,13 +144,12 @@ module MEMSTAT (
 
    reg statEE;
 
-   always @(negedge clk or posedge rst)
+   always @(negedge clk)
      begin
         if (rst)
           statEE <= 1'b1;
-        else
-          if (msrWRITE)
-            statEE <= !`memSTAT_ED(busDATAI);
+        else if (msrWRITE)
+          statEE <= !`memSTAT_ED(busDATAI);
      end
 
    //

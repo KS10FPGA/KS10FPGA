@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -62,19 +62,14 @@ module LPCCTR (
    //  M8587/LPD5/E48
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT | lpCLRCCTR)
           regCCTR <= 0;
-        else
-          begin
-             if (lpINIT | lpCLRCCTR)
-               regCCTR <= 0;
-             else if (cctrWRITE)
-               regCCTR <= `lpCCTR_DAT(lpDATAI);
-             else if (lpINCCCTR)
-               regCCTR <= regCCTR + 1'b1;
-          end
+        else if (cctrWRITE)
+          regCCTR <= `lpCCTR_DAT(lpDATAI);
+        else if (lpINCCCTR)
+          regCCTR <= regCCTR + 1'b1;
      end
 
 endmodule

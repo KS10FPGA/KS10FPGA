@@ -22,7 +22,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -49,6 +49,7 @@
 
 `include "lpcsra.vh"
 `include "lpramd.vh"
+`include "../utils/ascii.vh"
 
 `define EXPAND_TABS
 
@@ -84,12 +85,6 @@ module LPPDAT (
       output reg          lpSTROBE,     // Printer strobe
       output reg  [ 8: 1] lpDATA        // Printer data
    );
-
-   //
-   // Get ASCII character definitions
-   //
-
-`include "ascii.vh"
 
    //
    // DMA write
@@ -161,7 +156,7 @@ module LPPDAT (
    //
 
    reg [2:0] strobe;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           strobe <= 0;
@@ -189,17 +184,12 @@ module LPPDAT (
    //  M8586/LPC9/E58
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT | lpCMDGO)
           lpVAL <= 0;
-        else
-          if (lpINIT)
-            lpVAL <= 0;
-          else if (lpCMDGO)
-            lpVAL <= 0;
-          else if (lpSTROBE)
-            lpVAL <= !lpVAL;
+        else if (lpSTROBE)
+          lpVAL <= !lpVAL;
      end
 
    //
@@ -218,7 +208,7 @@ module LPPDAT (
    reg [2:0] lpTABCNT;
    reg [3:0] state;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin
@@ -336,7 +326,7 @@ module LPPDAT (
                    //  M8587/LPD6/E51
                    //
 
-                   asciiNUL:
+                   `asciiNUL:
                      state <= stateWAIT;
 
                    //
@@ -351,10 +341,10 @@ module LPPDAT (
                    //   M8587/LPD5/E67
                    //
 
-                   asciiCR,
-                   asciiVT,
-                   asciiLF,
-                   asciiFF:
+                   `asciiCR,
+                   `asciiVT,
+                   `asciiLF,
+                   `asciiFF:
                      begin
                         if (lpDEMAND)
                           begin
@@ -371,12 +361,12 @@ module LPPDAT (
                    // Tab character
                    //
 
-                   asciiTAB:
+                   `asciiTAB:
                      if (lpDEMAND)
 `ifdef EXPAND_TABS
                        begin
                           lpPI      <= 0;
-                          lpDATA    <= asciiSP;
+                          lpDATA    <= `asciiSP;
                           lpSTROBE  <= 1;
                           lpINCCCTR <= 1;
                           lpTABCNT  <= lpTABCNT + 1'b1;
@@ -403,7 +393,7 @@ module LPPDAT (
                        if (lpCCTR == 132)
                          begin
                             lpPI      <= 0;
-                            lpDATA    <= asciiCR;
+                            lpDATA    <= `asciiCR;
                             lpSTROBE  <= 1;
                             lpCLRCCTR <= 1;
                             lpTABCNT  <= 0;
@@ -429,7 +419,7 @@ module LPPDAT (
                  if (lpDEMAND)
                    begin
                       lpPI      <= 0;
-                      lpDATA    <= asciiLF;
+                      lpDATA    <= `asciiLF;
                       lpSTROBE  <= 1;
                       lpCLRCCTR <= 1;
                       lpTABCNT  <= 0;
@@ -463,7 +453,7 @@ module LPPDAT (
                  else if (lpDEMAND)
                    begin
                       lpPI      <= 0;
-                      lpDATA    <= asciiSP;
+                      lpDATA    <= `asciiSP;
                       lpSTROBE  <= 1;
                       lpINCCCTR <= 1;
                       lpTABCNT  <= lpTABCNT + 1'b1;

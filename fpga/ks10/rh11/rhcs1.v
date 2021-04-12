@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -90,7 +90,7 @@ module RHCS1 (
 
    reg lastTRE;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastTRE <= 0;
@@ -116,17 +116,12 @@ module RHCS1 (
 
    reg cs1TRE;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rhCLR | rhCLRTRE | rhCLRGO)
           cs1TRE <= 0;
-        else
-          begin
-             if (devRESET | rhCLR | rhCLRTRE | rhCLRGO)
-               cs1TRE <= 0;
-             else if (statTRE & !lastTRE)
-               cs1TRE <= 1;
-          end
+        else if (statTRE & !lastTRE)
+          cs1TRE <= 1;
      end
 
    //
@@ -158,15 +153,12 @@ module RHCS1 (
    //
 
    reg cs1PSEL;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rhCLR)
           cs1PSEL <= 0;
-        else
-          if (devRESET | rhCLR)
-            cs1PSEL <= 0;
-          else if (rhcs1WRITE & devHIBYTE & cs1RDY)
-            cs1PSEL <= `rhCS1_PSEL(rhDATAI);
+        else if (rhcs1WRITE & devHIBYTE & cs1RDY)
+          cs1PSEL <= `rhCS1_PSEL(rhDATAI);
      end
 
    //
@@ -179,15 +171,12 @@ module RHCS1 (
    //
 
    reg cs1IE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rhCLR | rhIACK)
           cs1IE <= 0;
-        else
-          if (devRESET | rhCLR | rhIACK)
-            cs1IE <= 0;
-          else if (rhcs1WRITE & devLOBYTE)
-            cs1IE <= `rhCS1_IE(rhDATAI);
+        else if (rhcs1WRITE & devLOBYTE)
+          cs1IE <= `rhCS1_IE(rhDATAI);
      end
 
    //

@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -56,17 +56,12 @@ module DZSCAN (
    //  This just increments the scan signal.
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           scan <= 0;
-        else
-          begin
-             if (clr)
-               scan <= 0;
-             else if (csrMSE)
-               scan <= scan + 1'b1;
-          end
+        else if (csrMSE)
+          scan <= scan + 1'b1;
      end
 
 endmodule

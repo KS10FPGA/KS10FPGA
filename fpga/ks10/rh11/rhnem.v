@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -60,18 +60,17 @@ module RHNEM (
    localparam [0:5] nxmTimeout = 63;
    reg        [0:5] nxmCount;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           nxmCount <= nxmTimeout;
+        else if (devREQO & !devACKI)
+          begin
+             if (nxmCount != 0)
+               nxmCount <= nxmCount - 1'b1;
+          end
         else
-          if (devREQO & !devACKI)
-            begin
-               if (nxmCount != 0)
-                 nxmCount <= nxmCount - 1'b1;
-            end
-          else
-            nxmCount <= nxmTimeout;
+          nxmCount <= nxmTimeout;
      end
 
    assign setNEM = (nxmCount == 1);

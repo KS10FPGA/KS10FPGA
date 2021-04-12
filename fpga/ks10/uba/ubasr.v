@@ -45,7 +45,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -71,7 +71,6 @@
 `timescale 1ns/1ps
 
 `include "ubasr.vh"
-`include "../ks10.vh"
 `include "../cpu/bus.vh"
 
 module UBASR (
@@ -96,7 +95,7 @@ module UBASR (
    reg [0:2] statPIH;
    reg [0:2] statPIL;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin
@@ -106,34 +105,31 @@ module UBASR (
              statPIH <= 0;
              statPIL <= 0;
           end
-        else
+        else if (statWRITE)
           begin
-             if (statWRITE)
+             if (`statINI(busDATAI))
                begin
-                  if (`statINI(busDATAI))
-                    begin
-                       statTMO <= 0;
-                       statNXD <= 0;
-                       statDXF <= 0;
-                       statPIH <= 0;
-                       statPIL <= 0;
-                    end
-                  else
-                    begin
-                       statTMO <= statTMO & !`statTMO(busDATAI);
-                       statNXD <= statNXD & !`statNXD(busDATAI);
-                       statDXF <= `statDXF(busDATAI);
-                       statPIH <= `statPIH(busDATAI);
-                       statPIL <= `statPIL(busDATAI);
-                    end
+                  statTMO <= 0;
+                  statNXD <= 0;
+                  statDXF <= 0;
+                  statPIH <= 0;
+                  statPIL <= 0;
                end
              else
                begin
-                  if (setTMO | setNXD)
-                    statTMO <= 1;
-                  if (setNXD)
-                    statNXD <= 1;
+                  statTMO <= statTMO & !`statTMO(busDATAI);
+                  statNXD <= statNXD & !`statNXD(busDATAI);
+                  statDXF <= `statDXF(busDATAI);
+                  statPIH <= `statPIH(busDATAI);
+                  statPIL <= `statPIL(busDATAI);
                end
+          end
+        else
+          begin
+             if (setTMO | setNXD)
+               statTMO <= 1;
+             if (setNXD)
+               statNXD <= 1;
           end
      end
 
@@ -143,13 +139,14 @@ module UBASR (
    //
 
    reg [0:4] rstCount;
+   localparam [0:4] rstVal = 0.000001 * `CLKFRQ;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           rstCount <= 0;
         else if (statWRITE & `statINI(busDATAI))
-          rstCount <=  1 * `CLKFRQ / 1000000;
+          rstCount <=  rstVal;
         else if (rstCount != 0)
           rstCount <= rstCount - 1'b1;
      end

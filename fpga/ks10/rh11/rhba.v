@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -84,24 +84,21 @@ module RHBA (
 
    reg [17:1] addr;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rhCLR)
           addr <= 0;
-        else
-          if (devRESET | rhCLR)
-            addr <= 0;
-          else if (rhcs1WRITE & devHIBYTE & rhRDY)
-            addr[17:16] <= `rhCS1_BAE(rhDATAI);
-          else if (rhbaWRITE)
-            begin
-               if (devHIBYTE)
-                 addr[15: 8] <= `rhBA_HI(rhDATAI);
-               if (devLOBYTE)
-                 addr[ 7: 1] <= `rhBA_LO(rhDATAI);
-            end
-          else if (rhINCBA & !rhBAI)
-            addr <= addr + 2'b10;
+        else if (rhcs1WRITE & devHIBYTE & rhRDY)
+          addr[17:16] <= `rhCS1_BAE(rhDATAI);
+        else if (rhbaWRITE)
+          begin
+             if (devHIBYTE)
+               addr[15: 8] <= `rhBA_HI(rhDATAI);
+             if (devLOBYTE)
+               addr[ 7: 1] <= `rhBA_LO(rhDATAI);
+          end
+        else if (rhINCBA & !rhBAI)
+          addr <= addr + 2'b10;
      end
 
    //

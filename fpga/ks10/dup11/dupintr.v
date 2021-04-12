@@ -6,7 +6,7 @@
 //   DUP11 Interrupt Controller
 //
 // Details
-//   This file provides the implementation of the Interrupt Controller
+//   This module implements the DUP11 Interrupt Controller
 //
 // File
 //   dupintr.v
@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -74,65 +74,60 @@ module DUPINTR (
 
    reg [2:0] state;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | init)
           state <= stateIDLE;
         else
-          begin
-             if (init)
-               state <= stateIDLE;
-             else
-               case (state)
+          case (state)
 
-                 //
-                 // stateIDLE
-                 //  Wait for a interrupt
-                 //
+            //
+            // stateIDLE
+            //  Wait for a interrupt
+            //
 
-                 stateIDLE:
-                   if (trig)
-                     state <= stateACTIVE;
+            stateIDLE:
+              if (trig)
+                state <= stateACTIVE;
 
-                 //
-                 // stateACTIVE
-                 //  Interrupt request is active.
-                 //  Waiting for an interrupt vector read
-                 //
+            //
+            // stateACTIVE
+            //  Interrupt request is active.
+            //  Waiting for an interrupt vector read
+            //
 
-                 stateACTIVE:
-                   if (vect & !secinh)
-                     state <= stateVECTREAD;
+            stateACTIVE:
+              if (vect & !secinh)
+                state <= stateVECTREAD;
 
-                 //
-                 // stateVECTREAD
-                 //  Interrupt vector read.  Waiting for it to clear.
-                 //
+            //
+            // stateVECTREAD
+            //  Interrupt vector read.  Waiting for it to clear.
+            //
 
-                 stateVECTREAD:
-                   if (!vect)
-                     state <= stateWAIT;
+            stateVECTREAD:
+              if (!vect)
+                state <= stateWAIT;
 
-                 //
-                 // stateWAIT
-                 //  Wait for status to be read.
-                 //
+            //
+            // stateWAIT
+            //  Wait for status to be read.
+            //
 
-                 stateWAIT:
-                   if (statrw)
-                     state <= stateDONE;
+            stateWAIT:
+              if (statrw)
+                state <= stateDONE;
 
-                 //
-                 // stateDONE
-                 //  Status read. Wait for read to complete.
-                 //
+            //
+            // stateDONE
+            //  Status read. Wait for read to complete.
+            //
 
-                 stateDONE:
-                   if (!statrw)
-                     state <= stateIDLE;
+            stateDONE:
+              if (!statrw)
+                state <= stateIDLE;
 
-               endcase
-          end
+          endcase
      end
 
    //

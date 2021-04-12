@@ -3,26 +3,20 @@
 // KS-10 Processor
 //
 // Brief
-//   DZ11 Interrupt
+//   DZ11 Interrupt Controller
 //
 // Details
-//   The module implements the DZ11 interrupt controller.
+//   This module implements the DZ11 Interrupt Controller.
 //
 // File
 //   dzintr.v
-//
-// Notes
-//   DZ11 interrupts are a little strange.
-//
-//   Please read the white pager entitled "PDP-11 Interrupts: Variations On A
-//   Theme", Bob Supnik, 03-Feb-2002 [revised 20-Feb-2004]
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -90,30 +84,25 @@ module DZINTR (
    wire      rxclr;
    reg [3:0] rxstate;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           rxstate <= stateIDLE;
         else
-          begin
-             if (clr)
-               rxstate <= stateIDLE;
-             else
-               case (rxstate)
-                 stateIDLE:
-                   if (csrRRDY & csrRIE)
-                     rxstate <= stateACT;
-                 stateACT:
-                   if (rxclr)
-                     rxstate <= stateWAIT;
-                 stateWAIT:
-                   if (rbufREAD)
-                     rxstate <= stateDONE;
-                 stateDONE:
-                   if (!rbufREAD)
-                     rxstate <= stateIDLE;
-               endcase
-          end
+          case (rxstate)
+            stateIDLE:
+              if (csrRRDY & csrRIE)
+                rxstate <= stateACT;
+            stateACT:
+              if (rxclr)
+                rxstate <= stateWAIT;
+            stateWAIT:
+              if (rbufREAD)
+                rxstate <= stateDONE;
+            stateDONE:
+              if (!rbufREAD)
+                rxstate <= stateIDLE;
+          endcase
      end
 
    assign rxINTR = (rxstate == stateACT) & csrRIE;
@@ -134,30 +123,25 @@ module DZINTR (
    wire      txclr;
    reg [3:0] txstate;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           txstate <= stateIDLE;
         else
-          begin
-             if (clr)
-               txstate <= stateIDLE;
-             else
-               case (txstate)
-                 stateIDLE:
-                   if (csrTRDY & csrTIE)
-                     txstate <= stateACT;
-                 stateACT:
-                   if (txclr)
-                     txstate <= stateWAIT;
-                 stateWAIT:
-                   if (tdrWRITE)
-                     txstate <= stateDONE;
-                 stateDONE:
-                   if (!tdrWRITE)
-                     txstate <= stateIDLE;
-               endcase
-          end
+          case (txstate)
+            stateIDLE:
+              if (csrTRDY & csrTIE)
+                txstate <= stateACT;
+            stateACT:
+              if (txclr)
+                txstate <= stateWAIT;
+            stateWAIT:
+              if (tdrWRITE)
+                txstate <= stateDONE;
+            stateDONE:
+              if (!tdrWRITE)
+                txstate <= stateIDLE;
+          endcase
      end
 
    assign txINTR = (txstate == stateACT) & csrTIE;
@@ -192,43 +176,35 @@ module DZINTR (
 
    reg [3:0] arbstate;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           begin
              rxVECTOR <= 0;
              arbstate <= stateIDLE;
           end
         else
-          begin
-             if (clr)
-               begin
-                  rxVECTOR <= 0;
-                  arbstate <= stateIDLE;
-               end
-             else
-               case (arbstate)
-                 stateIDLE:
-                   if ((rxstate == stateACT) | (txstate == stateACT))
-                     arbstate <= stateIACK;
-                 stateIACK:
-                   if (iack)
-                     begin
-                        rxVECTOR <= rxINTR;
-                        arbstate <= stateVECTREAD;
-                     end
-                 stateVECTREAD:
-                   if (vectREAD)
-                     arbstate <= stateVECTCLR;
-                 stateVECTCLR:
-                   if (!vectREAD)
-                     arbstate <= rxVECTOR ? stateRXDONE : stateTXDONE;
-                 stateRXDONE:
-                   arbstate <= stateIDLE;
-                 stateTXDONE:
-                   arbstate <= stateIDLE;
-               endcase
-          end
+          case (arbstate)
+            stateIDLE:
+              if ((rxstate == stateACT) | (txstate == stateACT))
+                arbstate <= stateIACK;
+            stateIACK:
+              if (iack)
+                begin
+                   rxVECTOR <= rxINTR;
+                   arbstate <= stateVECTREAD;
+                end
+            stateVECTREAD:
+              if (vectREAD)
+                arbstate <= stateVECTCLR;
+            stateVECTCLR:
+              if (!vectREAD)
+                arbstate <= rxVECTOR ? stateRXDONE : stateTXDONE;
+            stateRXDONE:
+              arbstate <= stateIDLE;
+            stateTXDONE:
+              arbstate <= stateIDLE;
+          endcase
      end
 
    assign rxclr = (arbstate == stateRXDONE);

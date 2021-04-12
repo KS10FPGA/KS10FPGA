@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -75,15 +75,12 @@ module DUPTXCSR (
    //
 
    reg dupMCO;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupMCO <= 0;
-        else
-          if (dupINIT)
-            dupMCO <= 0;
-          else if (txcsrWRITE & devHIBYTE)
-            dupMCO <= `dupTXCSR_MCO(dupDATAI);
+        else if (txcsrWRITE & devHIBYTE)
+          dupMCO <= `dupTXCSR_MCO(dupDATAI);
      end
 
    //
@@ -91,15 +88,12 @@ module DUPTXCSR (
    //
 
    reg [12:11] dupMSEL;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupMSEL <= 0;
-        else
-          if (dupINIT)
-            dupMSEL <= 0;
-          else if (txcsrWRITE & devHIBYTE)
-            dupMSEL <= `dupTXCSR_MSEL(dupDATAI);
+        else if (txcsrWRITE & devHIBYTE)
+          dupMSEL <= `dupTXCSR_MSEL(dupDATAI);
      end
 
    //
@@ -107,15 +101,12 @@ module DUPTXCSR (
    //
 
    reg dupMDI;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupMDI <= 0;
-        else
-          if (dupINIT)
-            dupMDI <= 0;
-          else if (txcsrWRITE & devHIBYTE)
-            dupMDI <= `dupTXCSR_MDI(dupDATAI);
+        else if (txcsrWRITE & devHIBYTE)
+          dupMDI <= `dupTXCSR_MDI(dupDATAI);
      end
 
    //
@@ -138,15 +129,12 @@ module DUPTXCSR (
    //
 
    reg dupTXIE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupTXIE <= 0;
-        else
-          if (dupINIT)
-            dupTXIE <= 0;
-          else if (txcsrWRITE & devLOBYTE)
-            dupTXIE <= `dupTXCSR_TXIE(dupDATAI);
+        else if (txcsrWRITE & devLOBYTE)
+          dupTXIE <= `dupTXCSR_TXIE(dupDATAI);
      end
 
    //
@@ -158,15 +146,12 @@ module DUPTXCSR (
    //
 
    reg dupSEND;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupSEND <= 0;
-        else
-          if (dupINIT)
-            dupSEND <= 0;
-          else if (txcsrWRITE & devLOBYTE)
-            dupSEND <= `dupTXCSR_SEND(dupDATAI);
+        else if (txcsrWRITE & devLOBYTE)
+          dupSEND <= `dupTXCSR_SEND(dupDATAI);
      end
 
    //
@@ -174,15 +159,12 @@ module DUPTXCSR (
    //
 
    reg dupHDX;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupHDX <= 0;
-        else
-          if (dupINIT)
-            dupHDX <= 0;
-          else if (txcsrWRITE & devLOBYTE)
-            dupHDX <= `dupTXCSR_HDX(dupDATAI);
+        else if (txcsrWRITE & devLOBYTE)
+          dupHDX <= `dupTXCSR_HDX(dupDATAI);
      end
 
    //

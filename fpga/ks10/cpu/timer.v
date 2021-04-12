@@ -24,11 +24,8 @@
 //   and another clocked every 1 ms, supported by updated microcode.
 //
 // Note
-//   This timer code has been extensively re-written to remove the 4.1 MHz
-//   clock and use the 50 MHz master clock.
-//
-//   IF YOU CHANGE THE CLOCK FREQUENCY FROM 50 MHZ YOU MUST CHANGE THE
-//   CONSTANTS in ks10.vh FOR THE TIMER TO WORK CORRECTLY.
+//   This timer code uses a Fractional-N divider to accurately create the 
+//   4.1 MHz timer clock.  Set the CLKFRQ macro correctly.
 //
 // File
 //   timer.v
@@ -38,7 +35,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -64,7 +61,12 @@
 `timescale 1ns/1ps
 
 `include "useq/crom.vh"
-`include "../ks10.vh"
+
+//
+// Timer clock frequency is 4.1 MHz
+//
+
+`define TIMERFRQ 4100000
 
 module TIMER (
       input  wire         clk,          // Clock
@@ -75,13 +77,6 @@ module TIMER (
       output reg          timerINTR,    // Timer Interrupt
       output wire [18:35] timerCOUNT    // Timer output
    );
-
-   //
-   // Timer clock frequencies
-   //
-
-   parameter CLKFRQ = `CLKFRQ;
-   parameter TIMFRQ = 4.1e6;
 
    //
    // Microcode Decode
@@ -114,9 +109,9 @@ module TIMER (
 
    reg  [0:31] accum;
    reg         carry;
-   wire [0:31] incr = (2.0**32.0) * TIMFRQ / CLKFRQ;
+   wire [0:31] incr = (2.0**32.0) * `TIMERFRQ / `CLKFRQ;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           {carry, accum} <= 33'b0;
@@ -145,7 +140,7 @@ module TIMER (
 
    reg [0:11] count;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           count <= 12'b0;
@@ -164,7 +159,7 @@ module TIMER (
    reg  lastMSB;
    wire currMSB = count[0];
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastMSB <= 0;
@@ -187,7 +182,7 @@ module TIMER (
    //  DPMC/E3
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           timerINTR <= 0;

@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -64,26 +64,21 @@ module LPCKSM (
    //  M8585/LPC10/E57
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpCMDGO)
           regCKSM <= 0;
-        else
-          begin
-             if (lpCMDGO)
-               regCKSM <= 0;
-             else if (devREQO & devACKI)
-               case (regBAR[1:0])
-                 2'b00: // Even word, low byte
-                   regCKSM <= regCKSM + lpDATAI[25:18];
-                 2'b01: // Even word, high byte
-                   regCKSM <= regCKSM + lpDATAI[33:26];
-                 2'b10: // Odd word, low byte
-                   regCKSM <= regCKSM + lpDATAI[ 7: 0];
-                 2'b11: // Odd word, high byte
-                   regCKSM <= regCKSM + lpDATAI[15: 8];
-               endcase
-          end
+        else if (devREQO & devACKI)
+          case (regBAR[1:0])
+            2'b00: // Even word, low byte
+              regCKSM <= regCKSM + lpDATAI[25:18];
+            2'b01: // Even word, high byte
+              regCKSM <= regCKSM + lpDATAI[33:26];
+            2'b10: // Odd word, low byte
+              regCKSM <= regCKSM + lpDATAI[ 7: 0];
+            2'b11: // Odd word, high byte
+              regCKSM <= regCKSM + lpDATAI[15: 8];
+          endcase
      end
 
 endmodule

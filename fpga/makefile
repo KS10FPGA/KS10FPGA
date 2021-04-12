@@ -13,7 +13,7 @@
 #
 #******************************************************************************
 #
-# Copyright (C) 2013-2018 Rob Doyle
+# Copyright (C) 2013-2021 Rob Doyle
 #
 # This file is part of the KS10 FPGA Project
 #
@@ -1413,7 +1413,7 @@ $(QUESTA_DIR)/wave.do: makefile
 	done
 
 vsim:   $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBENCH)/ssram.dat $(DISKS) makefile $(QUESTA_DIR)/wave.do
-	test -d $(QUESTA_DIR)/work || $(VLIB) $(QUESTA_DIR)/workx
+	test -d $(QUESTA_DIR)/work || $(VLIB) $(QUESTA_DIR)/work
 	$(VMAP) work $(QUESTA_DIR)/work
 	$(VLOG) $(SIM_FILES) $(RTL_FILES) $(VLOG_ARGS)
 	$(VSIM) -i testbench -do $(QUESTA_DIR)/wave.do

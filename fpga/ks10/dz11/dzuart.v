@@ -19,7 +19,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -75,17 +75,12 @@ module DZUART (
 
    reg [12:3] lprREG;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           lprREG <= 0;
-        else
-          begin
-             if (clr)
-               lprREG <= 0;
-             else if (lprWRITE & (`dzLPR_LINE(dzDATAI) == num))
-               lprREG <= `dzLPR_DATA(dzDATAI);
-          end
+        else if (lprWRITE & (`dzLPR_LINE(dzDATAI) == num))
+          lprREG <= `dzLPR_DATA(dzDATAI);
      end
 
    //

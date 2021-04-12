@@ -28,7 +28,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2009-2018 Rob Doyle
+// Copyright (C) 2009-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -89,18 +89,15 @@ module USRT_TX (
    //
 
    reg [2:0] count;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           count <= 0;
-        else
-          if (clr)
+        else if (clken)
+          if (!txdat[0])
             count <= 0;
-          else if (clken)
-            if (!txdat[0])
-              count <= 0;
-            else
-              count <= count + 1'b1;
+          else
+            count <= count + 1'b1;
      end
 
    //
@@ -118,7 +115,7 @@ module USRT_TX (
    reg       txzbi;
    reg [2:0] txlen;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin

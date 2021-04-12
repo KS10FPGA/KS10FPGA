@@ -15,7 +15,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -72,7 +72,7 @@ module APR (
    //
 
    reg aprFLAG24;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           aprFLAG24 <= 1'b0;
@@ -92,7 +92,7 @@ module APR (
    //
 
    reg aprFLAG25;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           aprFLAG25 <= 1'b0;
@@ -112,7 +112,7 @@ module APR (
    //
 
    reg aprFLAG26;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           aprFLAG26 <= 1'b0;
@@ -132,7 +132,7 @@ module APR (
    //
 
    reg aprFLAG27;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           aprFLAG27 <= 1'b0;
@@ -154,7 +154,7 @@ module APR (
    //
 
    reg aprFLAG28;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           aprFLAG28 <= 1'b0;
@@ -174,7 +174,7 @@ module APR (
    //
 
    reg aprFLAG29;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           aprFLAG29 <= 1'b0;
@@ -194,7 +194,7 @@ module APR (
    //
 
    reg aprFLAG30;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           aprFLAG30 <= 1'b0;
@@ -214,7 +214,7 @@ module APR (
    //
 
    reg aprFLAG31;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           aprFLAG31 <= 1'b0;
@@ -239,7 +239,7 @@ module APR (
    reg         aprSWINT;        // Software Interrupt
    reg [ 0: 2] aprPRI;          // APR Interrupt Request
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin

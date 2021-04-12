@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -52,7 +52,7 @@ module SDSPI (
       input  wire       spiMISO,        // SD Data In
       output wire       spiMOSI,        // SD Data Out
       output wire       spiSCLK,        // SD Clock
-      output reg        spiCS,          // SD Chip Select
+      output reg        spiSS_N,        // SD Slave Select
       output reg        spiDONE         // Done
    );
 
@@ -71,8 +71,8 @@ module SDSPI (
    // Clock Speed Divisors
    //
 
-   parameter [5:0] slowDiv = 63;
-   parameter [5:0] fastDiv =  1;
+   localparam [63:0] slowDiv = (1 + (`CLKFRQ / `SLOW_CLK));
+   localparam [63:0] fastDiv =  1;
 
    //
    // State Variables
@@ -92,10 +92,10 @@ module SDSPI (
              spiDONE <= 0;
              txd     <= 8'hff;
              rxd     <= 8'hff;
-             spiCS   <= 1;
+             spiSS_N <= 1;
              bitcnt  <= 0;
              clkcnt  <= 0;
-             clkdiv  <= slowDiv;
+             clkdiv  <= slowDiv[5:0];
              state   <= stateRESET;
           end
         else
@@ -108,7 +108,7 @@ module SDSPI (
 
             stateRESET:
               begin
-                 clkdiv <= slowDiv;
+                 clkdiv <= slowDiv[5:0];
                  state  <= stateIDLE;
               end
 
@@ -124,13 +124,13 @@ module SDSPI (
                    `spiNOP:
                      ;
                    `spiCSL:
-                     spiCS <= 0;
+                     spiSS_N <= 0;
                    `spiCSH:
-                     spiCS <= 1;
+                     spiSS_N <= 1;
                    `spiFAST:
-                     clkdiv <= fastDiv;
+                     clkdiv <= fastDiv[5:0];
                    `spiSLOW:
-                     clkdiv <= slowDiv;
+                     clkdiv <= slowDiv[5:0];
                    `spiTR:
                      begin
                         clkcnt <= clkdiv;

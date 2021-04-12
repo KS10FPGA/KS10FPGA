@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -64,15 +64,14 @@ module RPOF (
    //
 
    reg ofFMT22;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           ofFMT22 <= 0;
-        else
-          if (rpPRESET)
-            ofFMT22 <= 0;
-          else if (rpofWRITE & rpDRY)
-            ofFMT22 <= `rpOF_FMT22(rpDATAI);
+        else if (rpPRESET)
+          ofFMT22 <= 0;
+        else if (rpofWRITE & rpDRY)
+          ofFMT22 <= `rpOF_FMT22(rpDATAI);
      end
 
    //
@@ -84,15 +83,14 @@ module RPOF (
    //
 
    reg ofECI;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           ofECI <= 0;
-        else
-          if (rpPRESET)
-            ofECI <= 0;
-          else if (rpofWRITE & rpDRY)
-            ofECI <= `rpOF_ECI(rpDATAI);
+        else if (rpPRESET)
+          ofECI <= 0;
+        else if (rpofWRITE & rpDRY)
+          ofECI <= `rpOF_ECI(rpDATAI);
      end
 
    //
@@ -104,15 +102,14 @@ module RPOF (
    //
 
    reg ofHCI;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           ofHCI <= 0;
-        else
-          if (rpPRESET)
-            ofHCI <= 0;
-          else if (rpofWRITE & rpDRY)
-            ofHCI <= `rpOF_HCI(rpDATAI);
+        else if (rpPRESET)
+          ofHCI <= 0;
+        else if (rpofWRITE & rpDRY)
+          ofHCI <= `rpOF_HCI(rpDATAI);
      end
 
    //
@@ -124,15 +121,14 @@ module RPOF (
    //
 
    reg ofOFD;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           ofOFD <= 0;
-        else
-          if (clr | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
-            ofOFD <= 0;
-          else if (rpofWRITE & rpDRY)
-            ofOFD <= `rpOF_OFD(rpDATAI);
+        else if (clr | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
+          ofOFD <= 0;
+        else if (rpofWRITE & rpDRY)
+          ofOFD <= `rpOF_OFD(rpDATAI);
      end
 
    //
@@ -145,15 +141,14 @@ module RPOF (
    //
 
    reg [6:0] ofOFS;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           ofOFS <= 0;
-        else
-          if (clr | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
-            ofOFS <= 0;
-          else if (rpofWRITE & rpDRY)
-            ofOFS <= `rpOF_OFS(rpDATAI);
+        else if (clr | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
+          ofOFS <= 0;
+        else if (rpofWRITE & rpDRY)
+          ofOFS <= `rpOF_OFS(rpDATAI);
      end
 
    //

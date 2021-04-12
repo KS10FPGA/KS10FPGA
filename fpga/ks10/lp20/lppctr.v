@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -83,19 +83,14 @@ module LPPCTR (
    //
 
    reg [11:0] count;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT)
           count <= 0;
-        else
-          begin
-             if (lpINIT)
-               count <= 0;
-             else if (pctrWRITE)
-               count <= `lpPCTR_DAT(lpDATAI);
-             else if (decrement)
-               count <= count - 1'b1;
-          end
+        else if (pctrWRITE)
+          count <= `lpPCTR_DAT(lpDATAI);
+        else if (decrement)
+          count <= count - 1'b1;
      end
 
    //

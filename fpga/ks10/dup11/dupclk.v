@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -41,8 +41,19 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`include "../ks10.vh"
 `include "duptxcsr.vh"
+
+//
+// Serial clock parameters
+//  This is for a 10KHz clock for a 'real' DUP11.  This has an optio fro 100 KHz clock
+//  for other applications or to just speed the simulation.
+//
+
+`ifdef DUP11_FASTCLK
+   `define DUPCLKFREQ 100000
+`else
+   `define DUPCLKFREQ 10000
+`endif
 
 module DUPCLK (
       input  wire         clk,          // Clock
@@ -57,17 +68,7 @@ module DUPCLK (
       output wire         dupTXCEN      // Transmitter clock enable
    );
 
-   //
-   // Serial clock parameters
-   //  This is for a 10KHz clock
-   //
-
-`ifdef DUP11_FASTCLK
-   parameter CLKFREQ = 100000;
-`else
-   parameter CLKFREQ = 10000;
-`endif
-   parameter [10:0] clkdiv  = `CLKFRQ / CLKFREQ / 2;
+   parameter [10:0] clkdiv  = `CLKFRQ / `DUPCLKFREQ / 2;
 
    //
    // Clock divider
@@ -77,18 +78,14 @@ module DUPCLK (
    //
 
    reg [10:0] count;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | (dupMSEL == `dupTXCSR_MSEL_DIAG))
+          count <= clkdiv;
+        else if (count == 0)
           count <= clkdiv;
         else
-          if (dupMSEL == `dupTXCSR_MSEL_DIAG)
-            count <= clkdiv;
-          else
-            if (count == 0)
-              count <= clkdiv;
-            else
-              count <= count - 1'b1;
+          count <= count - 1'b1;
      end
 
    //
@@ -96,15 +93,12 @@ module DUPCLK (
    //
 
    reg clk10KHz;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | (dupMSEL == `dupTXCSR_MSEL_DIAG))
           clk10KHz <= 0;
-        else
-          if (dupMSEL == `dupTXCSR_MSEL_DIAG)
-            clk10KHz <= 0;
-          else if (count == 0)
-            clk10KHz <= !clk10KHz;
+        else if (count == 0)
+          clk10KHz <= !clk10KHz;
      end
 
    //
@@ -112,15 +106,12 @@ module DUPCLK (
    //
 
    reg clk5KHz;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
-          clk5KHz  <= 0;
-        else
-          if (dupMSEL == `dupTXCSR_MSEL_DIAG)
-            clk5KHz <= 0;
-          else if ((count == 0) & clk10KHz)
-            clk5KHz <= !clk5KHz;
+        if (rst | (dupMSEL == `dupTXCSR_MSEL_DIAG))
+          clk5KHz <= 0;
+        else if ((count == 0) & clk10KHz)
+          clk5KHz <= !clk5KHz;
      end
 
    //
@@ -143,7 +134,7 @@ module DUPCLK (
    //
 
    reg lastTXC;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastTXC <= 0;
@@ -160,7 +151,7 @@ module DUPCLK (
    //
 
    reg lastRXC;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastRXC <= 0;

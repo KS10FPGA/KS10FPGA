@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -14,31 +14,29 @@
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
-// This source file may be used and distributed without
-// restriction provided that this copyright statement is not
-// removed from the file and that any derivative work contains
-// the original copyright notice and the associated disclaimer.
+// This source file may be used and distributed without restriction provided
+// that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
 //
-// This source file is free software; you can redistribute it
-// and/or modify it under the terms of the GNU Lesser General
-// Public License as published by the Free Software Foundation;
-// version 2.1 of the License.
+// This source file is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; version 2.1 of the License.
 //
-// This source is distributed in the hope that it will be
-// useful, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-// PURPOSE. See the GNU Lesser General Public License for more
-// details.
+// This source is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+// for more details.
 //
-// You should have received a copy of the GNU Lesser General
-// Public License along with this source; if not, download it
-// from http://www.gnu.org/licenses/lgpl.txt
+// You should have received a copy of the GNU Lesser General Public License
+// along with this source; if not, download it from
+// http://www.gnu.org/licenses/lgpl.txt
 //
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `ifndef __DZ11_VH
 `define __DZ11_VH
@@ -51,7 +49,7 @@
 
 `define dz1DEV    (`devUBA3)            // Device 3
 `define dz1INTR   (`ubaINTR5)           // Interrupt 5
-`define dz1VECT   (36'o000000_000340)   // Interrupt Vector
+`define dz1VECT   (18'o000340)          // Interrupt Vector
 `define dz1ADDR   (18'o760010)          // Base Address
 
 //
@@ -60,7 +58,7 @@
 
 `define dz2DEV    (`devUBA3)            // Device 3
 `define dz2INTR   (`ubaINTR5)           // Interrupt 5
-`define dz2VECT   (36'o000000_000350)   // Interrupt Vector
+`define dz2VECT   (18'o000350)          // Interrupt Vector
 `define dz2ADDR   (18'o760020)          // Base Address
 
 //
@@ -69,7 +67,7 @@
 
 `define dz3DEV    (`devUBA3)            // Device 3
 `define dz3INTR   (`ubaINTR5)           // Interrupt 5
-`define dz3VECT   (36'o000000_000360)   // Interrupt Vector
+`define dz3VECT   (18'o000360)          // Interrupt Vector
 `define dz3ADDR   (18'o760030)          // Base Address
 
 //
@@ -78,7 +76,7 @@
 
 `define dz4DEV    (`devUBA3)            // Device 3
 `define dz4INTR   (`ubaINTR5)           // Interrupt 5
-`define dz4VECT   (36'o000000_000370)   // Interrupt Vector
+`define dz4VECT   (18'o000370)          // Interrupt Vector
 `define dz4ADDR   (18'o760040)          // Base Address
 
 //

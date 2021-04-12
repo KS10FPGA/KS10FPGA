@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -41,7 +41,9 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-`include "crc16.vh"
+`include "duprxcsr.vh"
+`include "duptxcsr.vh"
+`include "dupparcsr.vh"
 
 module DUPRX (
       input  wire         clk,          // Clock
@@ -118,7 +120,7 @@ module DUPRX (
    //
 
    reg lastRXDBUFRD;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastRXDBUFRD <= 0;
@@ -158,15 +160,12 @@ module DUPRX (
    //
 
    reg [7:0] dupRXDAT;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupRXDAT <= 0;
-        else
-          if (dupINIT)
-            dupRXDAT <= 0;
-          else if (dupTXCEN & dupFULL)
-            dupRXDAT <= dupDATA;
+        else if (dupTXCEN & dupFULL)
+          dupRXDAT <= dupDATA;
      end
 
    //
@@ -193,19 +192,16 @@ module DUPRX (
    //
 
    reg dupCRCERR;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupCRCERR <= 0;
-        else
-          if (dupINIT)
-            dupCRCERR <= 0;
-          else if (dupTXCEN & dupFULL)
-            begin
-               if (dupDECMD)
-                 dupCRCERR <= (dupCRCREG != dupDEC_CRC);
-               else
-                 dupCRCERR <= (dupCRCREG != dupSDLC_CRC);
+        else if (dupTXCEN & dupFULL)
+          begin
+             if (dupDECMD)
+               dupCRCERR <= (dupCRCREG != dupDEC_CRC);
+             else
+               dupCRCERR <= (dupCRCREG != dupSDLC_CRC);
             end
      end
 
@@ -230,253 +226,240 @@ module DUPRX (
    reg       dupRXOVR;
    reg       dupRXABRT;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT | !dupRXEN)
           begin
              dupRXACT   <= 0;
              dupRXSOM   <= 0;
              dupRXEOM   <= 0;
              dupRXOVR   <= 0;
              dupRXCRCE  <= 0;
-             dupCRCINIT <= 0;
              dupRXABRT  <= 0;
+             dupCRCINIT <= 0;
              dupRXDONE  <= 0;
              state      <= stateIDLE;
           end
         else
-          if (dupINIT | !dupRXEN)
-            begin
-               dupRXACT   <= 0;
-               dupRXSOM   <= 0;
-               dupRXEOM   <= 0;
-               dupRXOVR   <= 0;
-               dupRXCRCE  <= 0;
-               dupRXABRT  <= 0;
+          begin
+
+             //
+             // Clear RXABRT and RXDONE after reading character
+             //
+
+             if (!rxdbufREAD & lastRXDBUFRD)
+               begin
+                  dupRXDONE <= 0;
+                  dupRXABRT <= 0;
+               end
+
+             //
+             // Initialize CRC on Flag Character
+             //
+
+             if (dupTXCEN & dupFLAG)
+               dupCRCINIT <= 1;
+             else
                dupCRCINIT <= 0;
-               dupRXDONE  <= 0;
-               state      <= stateIDLE;
-            end
-          else
-            begin
+
+             case (state)
 
                //
-               // Clear RXABRT and RXDONE after reading character
+               // stateIDLE
+               //
+               // Wait for a sync sequence in whatever mode the receiver is
+               // configured.
                //
 
-               if (!rxdbufREAD & lastRXDBUFRD)
+               stateIDLE:
+                 if (dupTXCEN)
+                   begin
+                      dupRXEOM <= 0;
+                      dupRXOVR <= 0;
+                      if (dupDECMD)
+                        begin
+                           if (dupDECSYN)
+                             begin
+                                dupRXACT <= 1;
+                                state    <= stateDEC_SYNC;
+                             end
+                        end
+                      else
+                        begin
+                           if (dupFLAG)
+                             begin
+                                dupRXACT <= 1;
+                                if (dupSSM)
+                                  state <= stateSDLC_SSM;
+                                else
+                                  state <= stateSDLC_SYNC;
+                             end
+                        end
+                   end
+
+               //
+               // stateSDLC_SSM
+               //
+               // Found the flag character.
+               // 1. If this is an abort character, then abort.
+               // 2. If this is another flag, then resync.
+               // 3. If this character matches the secondary address, then
+               //    the synchronization is complete. Go to the next state.
+               //    a.  Reception of the secondary address sets RXSOM.
+               //    b.  Reception of the secondary address does not assert
+               //        RXDONE.
+               //
+
+               stateSDLC_SSM:
+                 if (dupABRT)
+                   state <= stateSDLC_ABRT;
+                 else if (dupTXCEN)
+                   if (dupFLAG)
+                     state <= stateSDLC_SSM;
+                   else if (dupFULL)
+                     if (dupDATA == dupRXSYNADR)
+                       begin
+                          dupRXSOM <= 1;
+                          state    <= stateSDLC_RECV;
+                       end
+                     else
+                       state <= stateIDLE;
+
+               //
+               // stateSDLC_SYNC
+               //
+               // Found the flag character.
+               // 1. If this is an abort character, then abort.
+               // 2. If this is another flag, then resync.
+               // 3. If this is a normal character, put the character in the
+               //    RXDBUF[RXDAT] buffer.  Reception of the first message
+               //    character does the following:
+               //    a. Set RXOVR if we overran the buffer (RXDONE still
+               //       asserted)
+               //    a. Set RXSOM
+               //    b. Set RXDONE
+               //
+
+               stateSDLC_SYNC:
+                 if (dupABRT)
+                   state <= stateSDLC_ABRT;
+                 else if (dupTXCEN)
+                   if (dupFLAG)
+                     state  <= stateSDLC_SYNC;
+                   else if (dupFULL)
+                     begin
+                        dupRXOVR  <= dupRXDONE;
+                        dupRXSOM  <= 1;
+                        dupRXDONE <= 1;
+                        state     <= stateSDLC_RECV;
+                     end
+
+               //
+               // stateSDLC_RECV
+               //
+               // Continue processing the message.
+               //
+               // In this state, we've processed at least one character that
+               // is not a flag character.  If the character is a flag
+               // character, we're done with the message.
+               //
+               // If the CRC Check is enabled and we get a CRC Error, don't
+               // set RXEOM.
+               //
+
+               stateSDLC_RECV:
+                 if (dupABRT)
+                   state <= stateSDLC_ABRT;
+                 else if (dupTXCEN)
+                   if (dupFLAG)
+                     begin
+                        dupRXACT  <= 0;
+                        dupRXEOM  <=  dupCRCI | !dupCRCERR;
+                        dupRXCRCE <= !dupCRCI &  dupCRCERR;
+                        dupRXDONE <= 1;
+                        state     <= stateIDLE;
+                     end
+                   else if (dupFULL)
+                     begin
+                        dupRXOVR  <= dupRXDONE;
+                        dupRXDONE <= 1;
+                        state     <= stateSDLC_CLRSOM;
+                     end
+
+               //
+               // stateSDLC_CLRSOM
+               //
+               // Clear RXSOM on the first bit of the second message
+               // character.
+               //
+
+               stateSDLC_CLRSOM:
+                 if (dupTXCEN)
+                   begin
+                      dupRXSOM <= 0;
+                      state    <= stateSDLC_RECV;
+                   end
+
+               //
+               // stateSDLC_ABRT
+               //
+               // Cleanup after an abort
+               //
+
+               stateSDLC_ABRT:
                  begin
-                    dupRXDONE <= 0;
-                    dupRXABRT <= 0;
+                    dupRXACT  <= 0;
+                    dupRXABRT <= 1;
+                    dupRXDONE <= 1;
+                    state     <= stateIDLE;
                  end
 
                //
-               // Initialize CRC on Flag Character
+               // stateDEC_SYNC
+               //
+               // Found a SYN character pair.
+               // 1. If this is another SYN charcter pair, then resync.
+               // 2. If this is a normal character, put the character in the
+               //    RXDBUF[RXDAT] buffer.  Reception of the first message
+               //    character does the following:
+               //    a. Set RXOVR if we overran the buffer (RXDONE still
+               //       asserted)
+               //    b. Set RXACT
+               //    c. Set RXDONE
                //
 
-               if (dupTXCEN & dupFLAG)
-                 dupCRCINIT <= 1;
-               else
-                 dupCRCINIT <= 0;
-
-               case (state)
-
-                 //
-                 // stateIDLE
-                 //
-                 // Wait for a sync sequence in whatever mode the receiver is
-                 // configured.
-                 //
-
-                 stateIDLE:
-                   if (dupTXCEN)
+               stateDEC_SYNC:
+                 if (dupTXCEN)
+                   if (dupDECSYN)
+                     state <= stateDEC_SYNC;
+                   else if (dupFULL)
                      begin
-                        dupRXEOM <= 0;
-                        dupRXOVR <= 0;
-                        if (dupDECMD)
-                          begin
-                             if (dupDECSYN)
-                               begin
-                                  dupRXACT <= 1;
-                                  state    <= stateDEC_SYNC;
-                               end
-                          end
-                        else
-                          begin
-                             if (dupFLAG)
-                               begin
-                                  dupRXACT <= 1;
-                                  if (dupSSM)
-                                    state <= stateSDLC_SSM;
-                                  else
-                                    state <= stateSDLC_SYNC;
-                               end
-                          end
+                        dupRXOVR  <= dupRXDONE;
+                        dupRXACT  <= 1;
+                        dupRXDONE <= 1;
+                        state     <= stateDEC_RECV;
                      end
 
-                 //
-                 // stateSDLC_SSM
-                 //
-                 // Found the flag character.
-                 // 1. If this is an abort character, then abort.
-                 // 2. If this is another flag, then resync.
-                 // 3. If this character matches the secondary address, then
-                 //    the synchronization is complete. Go to the next state.
-                 //    a.  Reception of the secondary address sets RXSOM.
-                 //    b.  Reception of the secondary address does not assert
-                 //        RXDONE.
-                 //
+               //
+               // stateDEC_RECV
+               //
+               // In this state, we've processed at least one character that
+               // is not a SYN character.  If the character is a another SYN
+               // character, start a new message.
+               //
 
-                 stateSDLC_SSM:
-                   if (dupABRT)
-                     state <= stateSDLC_ABRT;
-                   else if (dupTXCEN)
-                     if (dupFLAG)
-                          state <= stateSDLC_SSM;
-                     else if (dupFULL)
-                       if (dupDATA == dupRXSYNADR)
-                         begin
-                            dupRXSOM <= 1;
-                            state    <= stateSDLC_RECV;
-                         end
-                       else
-                         state <= stateIDLE;
-
-                 //
-                 // stateSDLC_SYNC
-                 //
-                 // Found the flag character.
-                 // 1. If this is an abort character, then abort.
-                 // 2. If this is another flag, then resync.
-                 // 3. If this is a normal character, put the character in the
-                 //    RXDBUF[RXDAT] buffer.  Reception of the first message
-                 //    character does the following:
-                 //    a. Set RXOVR if we overran the buffer (RXDONE still
-                 //       asserted)
-                 //    a. Set RXSOM
-                 //    b. Set RXDONE
-                 //
-
-                 stateSDLC_SYNC:
-                   if (dupABRT)
-                     state <= stateSDLC_ABRT;
-                   else if (dupTXCEN)
-                     if (dupFLAG)
-                       state  <= stateSDLC_SYNC;
-                     else if (dupFULL)
-                       begin
-                          dupRXOVR  <= dupRXDONE;
-                          dupRXSOM  <= 1;
-                          dupRXDONE <= 1;
-                          state     <= stateSDLC_RECV;
-                       end
-
-                 //
-                 // stateSDLC_RECV
-                 //
-                 // Continue processing the message.
-                 //
-                 // In this state, we've processed at least one character that
-                 // is not a flag character.  If the character is a flag
-                 // character, we're done with the message.
-                 //
-                 // If the CRC Check is enabled and we get a CRC Error, don't
-                 // set RXEOM.
-                 //
-
-                stateSDLC_RECV:
-                  if (dupABRT)
-                    state <= stateSDLC_ABRT;
-                  else if (dupTXCEN)
-                    if (dupFLAG)
-                      begin
-                         dupRXACT  <= 0;
-                         dupRXEOM  <=  dupCRCI | !dupCRCERR;
-                         dupRXCRCE <= !dupCRCI &  dupCRCERR;
-                         dupRXDONE <= 1;
-                         state     <= stateIDLE;
-                      end
-                    else if (dupFULL)
-                      begin
-                         dupRXOVR  <= dupRXDONE;
-                         dupRXDONE <= 1;
-                         state     <= stateSDLC_CLRSOM;
-                      end
-
-                 //
-                 // stateSDLC_CLRSOM
-                 //
-                 // Clear RXSOM on the first bit of the second message
-                 // character.
-                 //
-
-                 stateSDLC_CLRSOM:
-                   if (dupTXCEN)
+               stateDEC_RECV:
+                 if (dupTXCEN)
+                   if (dupDECSYN)
+                     state <= stateDEC_SYNC;
+                   else if (dupFULL)
                      begin
-                        dupRXSOM <= 0;
-                        state    <= stateSDLC_RECV;
+                        dupRXACT  <= dupRXDONE;
+                        dupRXDONE <= 1;
                      end
 
-                 //
-                 // stateSDLC_ABRT
-                 //
-                 // Cleanup after an abort
-                 //
-
-                 stateSDLC_ABRT:
-                   begin
-                      dupRXACT  <= 0;
-                      dupRXABRT <= 1;
-                      dupRXDONE <= 1;
-                      state     <= stateIDLE;
-                   end
-
-                 //
-                 // stateDEC_SYNC
-                 //
-                 // Found a SYN character pair.
-                 // 1. If this is another SYN charcter pair, then resync.
-                 // 2. If this is a normal character, put the character in the
-                 //    RXDBUF[RXDAT] buffer.  Reception of the first message
-                 //    character does the following:
-                 //    a. Set RXOVR if we overran the buffer (RXDONE still
-                 //       asserted)
-                 //    b. Set RXACT
-                 //    c. Set RXDONE
-                 //
-
-                 stateDEC_SYNC:
-                   if (dupTXCEN)
-                     if (dupDECSYN)
-                       state <= stateDEC_SYNC;
-                     else if (dupFULL)
-                       begin
-                          dupRXOVR  <= dupRXDONE;
-                          dupRXACT  <= 1;
-                          dupRXDONE <= 1;
-                          state     <= stateDEC_RECV;
-                       end
-
-                 //
-                 // stateDEC_RECV
-                 //
-                 // In this state, we've processed at least one character that
-                 // is not a SYN character.  If the character is a another SYN
-                 // character, start a new message.
-                 //
-
-                 stateDEC_RECV:
-                   if (dupTXCEN)
-                     if (dupDECSYN)
-                       state <= stateDEC_SYNC;
-                     else if (dupFULL)
-                       begin
-                          dupRXACT  <= dupRXDONE;
-                          dupRXDONE <= 1;
-                       end
-
-               endcase
-            end
+             endcase
+          end
      end
 
    //

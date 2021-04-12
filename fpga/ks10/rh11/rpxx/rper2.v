@@ -18,7 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -71,15 +71,12 @@ module RPER2 (
    //  M7776/EC6/E79
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpER2 <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpER2 <= 0;
-          else if (rper2WRITE & rpDRY)
-            rpER2 <= rpDATAI[15:0];
+        else if (rper2WRITE & rpDRY)
+          rpER2 <= rpDATAI[15:0];
      end
 
 endmodule

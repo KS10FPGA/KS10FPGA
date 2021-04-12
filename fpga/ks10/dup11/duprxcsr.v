@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -74,7 +74,7 @@ module DUPRXCSR (
    //
 
    reg lastRI;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastRI <= 0;
@@ -87,7 +87,7 @@ module DUPRXCSR (
    //
 
    reg lastCTS;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastCTS <= 0;
@@ -100,7 +100,7 @@ module DUPRXCSR (
    //
 
    reg lastDCD;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastDCD <= 0;
@@ -113,7 +113,7 @@ module DUPRXCSR (
    //
 
    reg lastSECRX;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastSECRX <= 0;
@@ -126,7 +126,7 @@ module DUPRXCSR (
    //
 
    reg lastDSR;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastDSR <= 0;
@@ -140,7 +140,7 @@ module DUPRXCSR (
    //
 
    reg [2:0] lastCSRRD;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastCSRRD <= 0;
@@ -155,19 +155,16 @@ module DUPRXCSR (
    //
 
    reg dupDSCA;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT | dupCSRCLR)
           dupDSCA <= 0;
-        else
-          if (dupINIT | dupCSRCLR)
-            dupDSCA <= 0;
-          else if ((         (dupRI    != lastRI   )) |
-                   (         (dupCTS   != lastCTS  )) |
-                   ( dupW5 & (dupDCD   != lastDCD  )) |
-                   ( dupW5 & (dupDSR   != lastDSR  )) |
-                   ( dupW5 & (dupSECRX != lastSECRX)))
-            dupDSCA <= 1;
+        else if ((         (dupRI    != lastRI   )) |
+                 (         (dupCTS   != lastCTS  )) |
+                 ( dupW5 & (dupDCD   != lastDCD  )) |
+                 ( dupW5 & (dupDSR   != lastDSR  )) |
+                 ( dupW5 & (dupSECRX != lastSECRX)))
+          dupDSCA <= 1;
      end
 
    //
@@ -199,15 +196,12 @@ module DUPRXCSR (
    //
 
    reg dupSTRSYN;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupSTRSYN <= 0;
-        else
-          if (dupINIT)
-            dupSTRSYN <= 0;
-          else if (rxcsrWRITE & devHIBYTE)
-            dupSTRSYN <= `dupRXCSR_STRSYN(dupDATAI);
+        else if (rxcsrWRITE & devHIBYTE)
+          dupSTRSYN <= `dupRXCSR_STRSYN(dupDATAI);
      end
 
    //
@@ -219,15 +213,12 @@ module DUPRXCSR (
    //
 
    reg dupRXIE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupRXIE <= 0;
-        else
-          if (dupINIT)
-            dupRXIE <= 0;
-          else if (rxcsrWRITE & devLOBYTE)
-            dupRXIE <= `dupRXCSR_RXIE(dupDATAI);
+        else if (rxcsrWRITE & devLOBYTE)
+          dupRXIE <= `dupRXCSR_RXIE(dupDATAI);
      end
 
    //
@@ -235,15 +226,12 @@ module DUPRXCSR (
    //
 
    reg dupDSCIE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupDSCIE <= 0;
-        else
-          if (dupINIT)
-            dupDSCIE <= 0;
-          else if (rxcsrWRITE & devLOBYTE)
-            dupDSCIE <= `dupRXCSR_DSCIE(dupDATAI);
+        else if (rxcsrWRITE & devLOBYTE)
+          dupDSCIE <= `dupRXCSR_DSCIE(dupDATAI);
      end
 
    //
@@ -251,15 +239,12 @@ module DUPRXCSR (
    //
 
    reg dupRXEN;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT)
           dupRXEN <= 0;
-        else
-          if (dupINIT)
-            dupRXEN <= 0;
-          else if (rxcsrWRITE & devLOBYTE)
-            dupRXEN <= `dupRXCSR_RXEN(dupDATAI);
+        else if (rxcsrWRITE & devLOBYTE)
+          dupRXEN <= `dupRXCSR_RXEN(dupDATAI);
      end
 
    //
@@ -267,15 +252,12 @@ module DUPRXCSR (
    //
 
    reg dupSECTX;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | (dupW3 & dupINIT))
           dupSECTX <= 0;
-        else
-          if (dupW3 & dupINIT)
-            dupSECTX <= 0;
-          else if (rxcsrWRITE & devLOBYTE)
-            dupSECTX <= `dupRXCSR_SECTX(dupDATAI);
+        else if (rxcsrWRITE & devLOBYTE)
+          dupSECTX <= `dupRXCSR_SECTX(dupDATAI);
      end
 
    assign dupSECRX = dupSECTX;
@@ -284,30 +266,24 @@ module DUPRXCSR (
    // Bit 2:  Request To Send (RTS)
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | (dupW3 & dupINIT))
           dupRTS <= 0;
-        else
-          if (dupW3 & dupINIT)
-            dupRTS <= 0;
-          else if (rxcsrWRITE & devLOBYTE)
-            dupRTS <= `dupRXCSR_RTS(dupDATAI);
+        else if (rxcsrWRITE & devLOBYTE)
+          dupRTS <= `dupRXCSR_RTS(dupDATAI);
      end
 
    //
    // Bit 1: Data Terminal Ready (DTR)
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | (dupW3 & dupINIT))
           dupDTR <= 0;
-        else
-          if (dupW3 & dupINIT)
-            dupDTR <= 0;
-          else if (rxcsrWRITE & devLOBYTE)
-            dupDTR <= `dupRXCSR_DTR(dupDATAI);
+        else if (rxcsrWRITE & devLOBYTE)
+          dupDTR <= `dupRXCSR_DTR(dupDATAI);
      end
 
    //
@@ -315,17 +291,14 @@ module DUPRXCSR (
    //
 
    reg dupDSCB;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT | dupCSRCLR)
           dupDSCB <= 0;
-        else
-          if (dupINIT | dupCSRCLR)
-            dupDSCB <= 0;
-          else if ((dupW6 & (dupDCD   != lastDCD   )) |
-                   (dupW6 & (dupDSR   != lastDSR   )) |
-                   (dupW6 & (dupSECRX != lastSECRX)))
-            dupDSCB <= 1;
+        else if ((dupW6 & (dupDCD   != lastDCD   )) |
+                 (dupW6 & (dupDSR   != lastDSR   )) |
+                 (dupW6 & (dupSECRX != lastSECRX)))
+          dupDSCB <= 1;
      end
 
    //

@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -65,15 +65,14 @@ module RPMR (
    //
 
    reg rpDMD;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           rpDMD <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpDMD <= 0;
-          else if (rpmrWRITE & rpDRY)
-            rpDMD <= `rpMR_DMD(rpDATAI);
+        else if (clr | rpDRVCLR)
+          rpDMD <= 0;
+        else if (rpmrWRITE & rpDRY)
+          rpDMD <= `rpMR_DMD(rpDATAI);
      end
 
    //
@@ -84,15 +83,14 @@ module RPMR (
    //
 
    reg rpDRDD;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           rpDRDD <= 0;
-        else
-          if (!rpDMD)
-            rpDRDD <= 0;
-          else if (rpmrWRITE)
-            rpDRDD <= `rpMR_DRDD(rpDATAI);
+        else if (!rpDMD)
+          rpDRDD <= 0;
+        else if (rpmrWRITE)
+          rpDRDD <= `rpMR_DRDD(rpDATAI);
      end
 
    //
@@ -103,15 +101,14 @@ module RPMR (
    //
 
    reg rpDSCK;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           rpDSCK <= 0;
-        else
-          if (!rpDMD)
-            rpDSCK <= 0;
-          else if (rpmrWRITE)
-            rpDSCK <= `rpMR_DSCK(rpDATAI);
+        else if (!rpDMD)
+          rpDSCK <= 0;
+        else if (rpmrWRITE)
+          rpDSCK <= `rpMR_DSCK(rpDATAI);
      end
 
    //
@@ -122,15 +119,14 @@ module RPMR (
    //
 
    reg rpDIND;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           rpDIND <= 0;
-        else
-          if (!rpDMD)
-            rpDIND <= 0;
-          else if (rpmrWRITE)
-            rpDIND <= `rpMR_DIND(rpDATAI);
+        else if (!rpDMD)
+          rpDIND <= 0;
+        else if (rpmrWRITE)
+          rpDIND <= `rpMR_DIND(rpDATAI);
      end
 
    //
@@ -141,15 +137,14 @@ module RPMR (
    //
 
    reg rpDCLK;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           rpDCLK <= 0;
-        else
-          if (!rpDMD)
-            rpDCLK <= 0;
-          else if (rpmrWRITE)
-            rpDCLK <= `rpMR_DCLK(rpDATAI);
+        else if (!rpDMD)
+          rpDCLK <= 0;
+        else if (rpmrWRITE)
+          rpDCLK <= `rpMR_DCLK(rpDATAI);
      end
 
    //

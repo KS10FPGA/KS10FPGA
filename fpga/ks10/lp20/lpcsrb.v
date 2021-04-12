@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -94,17 +94,12 @@ module LPCSRB (
    //
 
    reg [2:0] lpTEST;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT)
           lpTEST <= 0;
-        else
-          begin
-             if (lpINIT)
-               lpTEST <= 0;
-             else if (csrbWRITE & devHIBYTE)
-               lpTEST <= `lpCSRB_TEST(lpDATAI);
-          end
+        else if (csrbWRITE & devHIBYTE)
+          lpTEST <= `lpCSRB_TEST(lpDATAI);
      end
 
    //
@@ -127,17 +122,12 @@ module LPCSRB (
    //
 
    reg lpMPE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT)
           lpMPE <= 0;
-        else
-          begin
-             if (lpINIT)
-               lpMPE <= 0;
-             else if (lpSETMPE)
-               lpMPE <= 1;
-          end
+        else if (lpSETMPE)
+          lpMPE <= 1;
      end
 
    //
@@ -148,17 +138,12 @@ module LPCSRB (
    //
 
    reg lpRPE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT)
           lpRPE <= 0;
-        else
-          begin
-             if (lpINIT)
-               lpRPE <= 0;
-             else if (lpSETRPE)
-               lpRPE <= 1;
-          end
+        else if (lpSETRPE)
+          lpRPE <= 1;
      end
 
    //
@@ -170,17 +155,12 @@ module LPCSRB (
    //
 
    reg lpMSYN;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpECLR)
           lpMSYN <= 0;
-        else
-          begin
-             if (lpECLR)
-               lpMSYN <= 0;
-             else if (lpSETMSYN)
-               lpMSYN <= 1;
-          end
+        else if (lpSETMSYN)
+          lpMSYN <= 1;
      end
 
    //
@@ -192,17 +172,12 @@ module LPCSRB (
    //
 
    reg lpDTE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpECLR)
           lpDTE <= 0;
-        else
-          begin
-             if (lpECLR)
-               lpDTE <= 0;
-             else if (lpSETDTE)
-               lpDTE <= 1;
-          end
+        else if (lpSETDTE)
+          lpDTE <= 1;
      end
 
    //
@@ -213,17 +188,12 @@ module LPCSRB (
    //
 
    reg lpGOE;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT)
           lpGOE <= 0;
-        else
-          begin
-             if (lpINIT)
-               lpGOE <= 0;
-             else if (lpSETGOE)
-               lpGOE <= 1;
-          end
+        else if (lpSETGOE)
+          lpGOE <= 1;
      end
 
    //

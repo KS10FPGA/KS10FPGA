@@ -18,7 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -108,7 +108,7 @@ module FIFO #(
    // Note: This relies on the rd_addr wrapping back to zero.
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           rd_addr <= 0;
@@ -125,7 +125,7 @@ module FIFO #(
    // Note: This relies on the wr_addr wrapping back to zero.
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           wr_addr <= 0;
@@ -142,7 +142,7 @@ module FIFO #(
    // Note: The FIFO Depth is not allowed to wrap.
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           depth <= 0;
@@ -165,7 +165,7 @@ module FIFO #(
 
    reg [WIDTH-1:0] mem[0:BUFSZ-1];
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin

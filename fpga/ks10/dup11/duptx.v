@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -99,7 +99,7 @@ module DUPTX (
    reg [7:0] dupCRCLO;
    reg [7:0] dupDATA;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           begin
@@ -505,7 +505,7 @@ module DUPTX (
    //
 
    reg lastTXSOM;
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           lastTXSOM <= 0;
@@ -517,17 +517,14 @@ module DUPTX (
    // Data Late (Underrun) Error
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | dupINIT | (dupTXSOM & !lastTXSOM))
           dupTXDLE <= 0;
-        else
-          if (dupINIT | (dupTXSOM & !lastTXSOM))
-            dupTXDLE <= 0;
-          else if ((dupRXCEN & dupLAST & dupSEND &  dupTXSOM & dupDECMD & (state == stateSTARTSYNC)) |
-                   (dupRXCEN & dupLAST & dupSEND & !dupTXSOM &            (state == stateSTARTSYNC)) |
-                   (dupRXCEN & dupLAST & dupSEND & !dupTXEOM &            (state == statePAYLOAD  )))
-            dupTXDLE <= dupTXDONE;
+        else if ((dupRXCEN & dupLAST & dupSEND &  dupTXSOM & dupDECMD & (state == stateSTARTSYNC)) |
+                 (dupRXCEN & dupLAST & dupSEND & !dupTXSOM &            (state == stateSTARTSYNC)) |
+                 (dupRXCEN & dupLAST & dupSEND & !dupTXEOM &            (state == statePAYLOAD  )))
+          dupTXDLE <= dupTXDONE;
      end
 
    //

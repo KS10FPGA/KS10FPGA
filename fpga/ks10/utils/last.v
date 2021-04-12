@@ -3,22 +3,17 @@
 // KS10 Processor
 //
 // Brief
-//   Xilinx Clock Forwarding
-//
-// Details
-//   Xilinx calls this 'clock forwarding'.  The synthesis tools will
-//   give errors/warning if you attempt to drive a clock output
-//   off-chip without this.
+//   Turn off default_nettype
 //
 // File
-//   clkfwd.v
+//   last.v
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without
 // restriction provided that this copyright statement is not
@@ -42,32 +37,9 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-`default_nettype none
-`timescale 1ns/1ps
+//
+// For some reason, if I don't put this after the last of the KS10
+//  files, the Altera IP files will fail to compile.
+//
 
-`ifdef XILINX
-
-module CLKFWD (
-      output wire O,    // Out
-      input  wire I     // In
-   );
-
-   ODDR2 #(
-       .DDR_ALIGNMENT      ("NONE"),    // Sets output alignment
-       .INIT               (1'b0),      // Initial state of the Q output
-       .SRTYPE             ("SYNC")     // Reset type: "SYNC" or "ASYNC"
-   )
-   DDR (
-       .Q                  (O),         // 1-bit DDR output data
-       .C0                 (I),         // 1-bit clock input
-       .C1                 (!I),        // 1-bit clock input
-       .CE                 (1'b1),      // 1-bit clock enable input
-       .D0                 (1'b1),      // 1-bit data input (associated with C0)
-       .D1                 (1'b0),      // 1-bit data input (associated with C1)
-       .R                  (1'b0),      // 1-bit reset input
-       .S                  (1'b0)       // 1-bit set input
-   );
-
-endmodule
-
-`endif
+`default_nettype wire

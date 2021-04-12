@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -49,7 +49,7 @@
 
 `define rh1DEV    (`devUBA1)            // Device 1
 `define rh1INTR   (`ubaINTR6)           // Interrupt 6
-`define rh1VECT   (36'o000000_000254)   // Interrupt Vector
+`define rh1VECT   (18'o000254)          // Interrupt Vector
 `define rh1ADDR   (18'o776700)          // Base Address
 
 //
@@ -58,7 +58,7 @@
 
 `define rh3DEV    (`devUBA3)            // Device 3
 `define rh3INTR   (`ubaINTR6)           // Interrupt 6
-`define rh3VECT   (18'o000224)          // Interrupt Vector
+`define rh3VECT   (18'o00224)           // Interrupt Vector
 `define rh3ADDR   (18'o772440)          // Base Address
 
 //

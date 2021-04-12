@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -73,31 +73,23 @@ module DZTCR (
    reg [7:0] tcrDTR;
    reg [7:0] tcrLIN;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET)
           begin
              tcrDTR <= 0;
              tcrLIN <= 0;
           end
+        else if (csrCLR)
+          tcrLIN <= 0;
         else
           begin
-             if (devRESET)
+             if (tcrWRITE)
                begin
-                  tcrDTR <= 0;
-                  tcrLIN <= 0;
-               end
-             else if (csrCLR)
-               tcrLIN <= 0;
-             else
-               begin
-                  if (tcrWRITE)
-                    begin
-                       if (devHIBYTE)
-                         tcrDTR <= `dzTCR_DTR(dzDATAI);
-                       if (devLOBYTE)
-                         tcrLIN <= `dzTCR_LIN(dzDATAI);
-                    end
+                  if (devHIBYTE)
+                    tcrDTR <= `dzTCR_DTR(dzDATAI);
+                  if (devLOBYTE)
+                    tcrLIN <= `dzTCR_LIN(dzDATAI);
                end
           end
      end

@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2020 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -42,8 +42,7 @@
 
 module DBM (
       input  wire          rst,         // Reset
-      input  wire          memCLK,      // Memory Clock
-      input  wire [ 1: 4]  clkPHS,      // Clock Phase
+      input  wire          clk,         // Clock
       input  wire [ 0:107] crom,        // Control ROM Data
       input  wire [ 0: 35] dp,          // Datapath
       input  wire [ 0:  9] scad,        // SCAD
@@ -146,29 +145,24 @@ module DBM (
      end
 
    //
-   // Register Enable
+   // Register Mux on T4
    //
 
-   reg enable;
-   always @(negedge memCLK or posedge rst)
+`define REGISTER_DBM
+`ifdef REGISTER_DBM
+
+   always @(posedge clk)
      begin
-        if (rst)
-          enable <= 0;
-        else
-          enable <= clkPHS[3];
+        dbm <= mux;
      end
 
-   //
-   // Register the DBM at rising edge of T3
-   //
+`else
 
-   always @(posedge memCLK or posedge rst)
+   always @*
      begin
-        if (rst)
-          dbm <= 0;
-        else
-          if (enable)
-            dbm <= mux;
+        dbm <= mux;
      end
+
+`endif
 
 endmodule

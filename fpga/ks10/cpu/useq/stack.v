@@ -28,7 +28,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -72,22 +72,36 @@ module STACK (
    //  The stack pointer is incremented on a 'call' and decremented on a 'ret'
    //  instruction - otherwise the stack pointer does not change.
    //
+   //  The write pointer always point to the location after the stack pointer
+   //
    // Trace
    //  CRA3/E32
+   //  CRA3/E16
+   //  CRA3/E17
    //
 
    reg [0:3] sp;
+   reg [0:3] wp;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
-          sp <= 15;
+          begin
+             sp <= 15;
+             wp <=  0;
+          end
         else if (clken)
           begin
              if (call)
-               sp <= sp + 1'b1;
+               begin
+                  sp <= sp + 1'b1;
+                  wp <= wp + 1'b1;
+               end
              else if (ret)
-               sp <= sp - 1'b1;
+               begin
+                  sp <= sp - 1'b1;
+                  wp <= wp - 1'b1;
+               end
           end
      end
 
@@ -109,29 +123,13 @@ module STACK (
 
    reg [0:11] currADDR;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           currADDR <= 12'b0;
         else if (clken)
           currADDR <= addrIN;
      end
-
-   //
-   // Write Pointer
-   //
-   // Details:
-   //  The write pointer is always offset from the stack pointer by 1.
-   //
-   // Note:
-   //  This is different than the KS10.  See below.
-   //
-   // Trace:
-   //  CRA3/E16
-   //  CRA3/E17
-   //
-
-   wire [0: 3] wp = sp + 1'b1;
 
    //
    // Dual Ported Stack

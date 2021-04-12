@@ -3,7 +3,7 @@
 // KS-10 Processor
 //
 // Brief
-//   UBA Interrupt
+//   UBA Interrupt Request Logic
 //
 // File
 //   ubaintr.v
@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -136,7 +136,7 @@ module UBAINTR (
    //  UBA7/E185
    //
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
         if (rst)
           devINTA = `ubaINTNUL;

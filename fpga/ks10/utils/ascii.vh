@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2017 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -38,48 +38,53 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+`ifndef __ASCII_VH
+`define __ASCII_VH
+
 //
 // ASCII character definition
 //
 
-localparam [7:0] asciiNUL  = 8'o000,
-                 asciiSOH  = 8'o001,
-                 asciiSTX  = 8'o002,
-                 asciiETX  = 8'o003,
-                 asciiEOT  = 8'o004,
-                 asciiENQ  = 8'o005,
-                 asciiACK  = 8'o006,
-                 asciiBEL  = 8'o007,
-                 asciiBS   = 8'o010,
-                 asciiTAB  = 8'o011,
-                 asciiLF   = 8'o012,
-                 asciiVT   = 8'o013,
-                 asciiFF   = 8'o014,
-                 asciiCR   = 8'o015,
-                 asciiSO   = 8'o016,
-                 asciiSI   = 8'o017,
-                 asciiDLE  = 8'o020,
-                 asciiDC1  = 8'o021,
-                 asciiDC2  = 8'o022,
-                 asciiDC3  = 8'o023,
-                 asciiDC4  = 8'o024,
-                 asciiNAK  = 8'o025,
-                 asciiSYN  = 8'o026,
-                 asciiETB  = 8'o027,
-                 asciiCAN  = 8'o030,
-                 asciiEM   = 8'o031,
-                 asciiSUB  = 8'o032,
-                 asciiESC  = 8'o033,
-                 asciiFS   = 8'o034,
-                 asciiGS   = 8'o035,
-                 asciiRS   = 8'o036,
-                 asciiUS   = 8'o037,
-                 asciiSP   = 8'o040,
-                 asciiDEL  = 8'o177;
+`define asciiNUL  (8'o000)
+`define asciiSOH  (8'o001)
+`define asciiSTX  (8'o002)
+`define asciiETX  (8'o003)
+`define asciiEOT  (8'o004)
+`define asciiENQ  (8'o005)
+`define asciiACK  (8'o006)
+`define asciiBEL  (8'o007)
+`define asciiBS   (8'o010)
+`define asciiTAB  (8'o011)
+`define asciiLF   (8'o012)
+`define asciiVT   (8'o013)
+`define asciiFF   (8'o014)
+`define asciiCR   (8'o015)
+`define asciiSO   (8'o016)
+`define asciiSI   (8'o017)
+`define asciiDLE  (8'o020)
+`define asciiDC1  (8'o021)
+`define asciiDC2  (8'o022)
+`define asciiDC3  (8'o023)
+`define asciiDC4  (8'o024)
+`define asciiNAK  (8'o025)
+`define asciiSYN  (8'o026)
+`define asciiETB  (8'o027)
+`define asciiCAN  (8'o030)
+`define asciiEM   (8'o031)
+`define asciiSUB  (8'o032)
+`define asciiESC  (8'o033)
+`define asciiFS   (8'o034)
+`define asciiGS   (8'o035)
+`define asciiRS   (8'o036)
+`define asciiUS   (8'o037)
+`define asciiSP   (8'o040)
+`define asciiDEL  (8'o177)
 
 //
 // XON/XOFF handshaking aliases
 //
 
-localparam [7:0] asciiXON  = 8'o021,
-                 asciiXOFF = 8'o023;
+`define asciiXON  (8'o021)
+`define asciiXOFF (8'o023)
+
+`endif

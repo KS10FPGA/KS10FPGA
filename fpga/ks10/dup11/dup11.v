@@ -29,7 +29,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2018 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -61,7 +61,6 @@
 `include "duptxdbuf.vh"
 `include "dupparcsr.vh"
 
-`include "../ks10.vh"
 `include "../uba/ubabus.vh"
 
 module DUP11 (
@@ -143,7 +142,7 @@ module DUP11 (
    //
 
    localparam [18:35] dupRXVECT = dupVECT;              // DUP11 RX Interrupt Vector
-   localparam [18:35] dupTXVECT = dupVECT + 4;          // DUP11 TX Interrupt Vector
+   localparam [18:35] dupTXVECT = dupVECT + 18'd4;      // DUP11 TX Interrupt Vector
 
    //
    // Address Decoding
@@ -469,8 +468,18 @@ module DUP11 (
         if (txdbufREAD)
           devDATAO = {20'b0, regTXDBUF};
         if (vectREAD)
-          devDATAO = {20'b0, dupRXINTR ? dupRXVECT : dupTXVECT};
+          if (dupRXINTR)
+            devDATAO = {20'b0, dupRXVECT[20:35]};
+          else
+            devDATAO = {20'b0, dupTXVECT[20:35]};
      end
+
+   //
+   // The DUP11 doesn't do DMA.  Tie DMA outputs off.
+   //
+
+   assign devADDRO = 0;
+   assign devREQO  = 0;
 
 `ifndef SYNTHESIS
 
@@ -561,6 +570,24 @@ module DUP11 (
        .regVAL          (regTXDBUF),
        .devNAME         ("DUP11"),
        .regNAME         ("TXDBUF"),
+       .file            (file)
+   );
+
+   //
+   // Read Interrupt Vector
+   //
+
+   PRINT_DEV_REG_ON_RD #(
+       .DEVNAME_SZ      (DEVNAME_SZ),
+       .REGNAME_SZ      (REGNAME_SZ)
+   ) VECT_RD (
+       .clk             (clk),
+       .devRD           (vectREAD),
+       .devHIBYTE       (1'b0),
+       .devLOBYTE       (1'b0),
+       .regVAL          (dupRXINTR ? dupRXVECT[20:35] : dupTXVECT[20:35]),
+       .devNAME         ("DUP11"),
+       .regNAME         ("VECT  "),
        .file            (file)
    );
 

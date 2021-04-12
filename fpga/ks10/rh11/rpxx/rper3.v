@@ -18,7 +18,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2016 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -67,15 +67,12 @@ module RPER3 (
 
    reg rpOCE;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpOCE <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpOCE <= 0;
-          else if (rper3WRITE & rpDRY)
-            rpOCE <= `rpER3_OCE(rpDATAI);
+        else if (rper3WRITE & rpDRY)
+          rpOCE <= `rpER3_OCE(rpDATAI);
      end
 
    //
@@ -89,17 +86,14 @@ module RPER3 (
 
    reg rpSKI;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpSKI <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpSKI <= 0;
-          else if (rpSETSKI)
-            rpSKI <= 1;
-          else if (rper3WRITE & rpDRY)
-            rpSKI <= `rpER3_SKI(rpDATAI);
+        else if (rpSETSKI)
+          rpSKI <= 1;
+        else if (rper3WRITE & rpDRY)
+          rpSKI <= `rpER3_SKI(rpDATAI);
      end
 
    //
@@ -114,15 +108,12 @@ module RPER3 (
 
    reg [13:7] rpUN1;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpUN1 <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpUN1 <= 0;
-          else if (rper3WRITE & rpDRY)
-            rpUN1 <= `rpER3_UN1(rpDATAI);
+        else if (rper3WRITE & rpDRY)
+          rpUN1 <= `rpER3_UN1(rpDATAI);
      end
 
    //
@@ -134,15 +125,12 @@ module RPER3 (
 
    reg rpACL;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpACL <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpACL <= 0;
-          else if (rper3WRITE & rpDRY)
-            rpACL <= `rpER3_ACL(rpDATAI);
+        else if (rper3WRITE & rpDRY)
+          rpACL <= `rpER3_ACL(rpDATAI);
      end
 
    //
@@ -154,15 +142,12 @@ module RPER3 (
 
    reg rpDCL;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpDCL <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpDCL <= 0;
-          else if (rper3WRITE & rpDRY)
-            rpDCL <= `rpER3_DCL(rpDATAI);
+        else if (rper3WRITE & rpDRY)
+          rpDCL <= `rpER3_DCL(rpDATAI);
      end
 
    //
@@ -174,15 +159,12 @@ module RPER3 (
 
    reg rpF35;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpF35 <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpF35 <= 0;
-          else if (rper3WRITE & rpDRY)
-            rpF35 <= `rpER3_F35(rpDATAI);
+        else if (rper3WRITE & rpDRY)
+          rpF35 <= `rpER3_F35(rpDATAI);
      end
 
    //
@@ -194,15 +176,12 @@ module RPER3 (
 
    reg [3:2] rpUN2;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpUN2 <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpUN2 <= 0;
-          else if (rper3WRITE & rpDRY)
-            rpUN2 <= `rpER3_UN2(rpDATAI);
+        else if (rper3WRITE & rpDRY)
+          rpUN2 <= `rpER3_UN2(rpDATAI);
      end
 
    //
@@ -214,15 +193,12 @@ module RPER3 (
 
    reg rpVLU;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpVLU <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpVLU <= 0;
-          else if (rper3WRITE & rpDRY)
-            rpVLU <= `rpER3_VLU(rpDATAI);
+        else if (rper3WRITE & rpDRY)
+          rpVLU <= `rpER3_VLU(rpDATAI);
      end
 
    //
@@ -234,15 +210,12 @@ module RPER3 (
 
    reg rpDCU;
 
-   always @(posedge clk or posedge rst)
+   always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rpDRVCLR)
           rpDCU <= 0;
-        else
-          if (clr | rpDRVCLR)
-            rpDCU <= 0;
-          else if (rper3WRITE & rpDRY)
-            rpDCU <= `rpER3_DCU(rpDATAI);
+        else if (rper3WRITE & rpDRY)
+          rpDCU <= `rpER3_DCU(rpDATAI);
      end
 
    //
