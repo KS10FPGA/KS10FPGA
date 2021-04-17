@@ -189,7 +189,6 @@ SYN_ARGS := \
 	MINOR_VER=\"26\" \
         CLKFRQ=12500000 \
 	SSRAMx18 \
-	RPXX_SIMSEARCH \
 	RPXX_SIMSEEK \
 	RPXX_SIMDMD \
 	RH11 \
@@ -534,14 +533,6 @@ DAT_FILES := \
 	$(DROM_DAT)
 
 #
-# Documentation files
-#
-
-DOC_FILES := \
-	status.txt \
-	fixme.txt
-
-#
 # Build the binary firmware image
 #
 
@@ -551,16 +542,15 @@ build: quartus
 # Create the "Control ROM" microcode for microsequencer
 #  Change my serial number from 4097 (default) to 2020.
 
-ks10/cpu/useq/crom.dat: ks10/cpu/useq/ks10.mcr ks10/cpu/useq/crom.awk
-	sed -e s/'U 1700, 0137,3771,0005,4374,4007,0700,0000,0001,0001'/'U 1700, 0137,3771,0005,4374,4007,0700,0000,0000,3744'/ < ks10/cpu/useq/ks10.mcr |\
-	awk -f ks10/cpu/useq/crom.awk > ks10/cpu/useq/crom.dat
+$(CROM_DAT): ks10/cpu/useq/ks10.mcr ks10/cpu/useq/crom.awk
+	awk -f ks10/cpu/useq/crom.awk ks10/cpu/useq/ks10.mcr > $(CROM_DAT)
 
 #
 # Create the "Dispatch ROM" microcode for microsequencer
 #
 
-ks10/cpu/useq/drom.dat: ks10/cpu/useq/ks10.mcr ks10/cpu/useq/drom.awk
-	awk -f ks10/cpu/useq/drom.awk ks10/cpu/useq/ks10.mcr > ks10/cpu/useq/drom.dat
+$(DROM_DAT): ks10/cpu/useq/ks10.mcr ks10/cpu/useq/drom.awk
+	awk -f ks10/cpu/useq/drom.awk ks10/cpu/useq/ks10.mcr > $(DROM_DAT)
 
 #
 # Initialize the SSRAM with MAINDEC (simulation only)
@@ -1686,7 +1676,7 @@ MAP_FILES := \
 	$(QUARTUS_DIR)/soc_system/synthesis/soc_system.qip
 
 .DELETE_ON_ERROR:
-$(QUARTUS_DIR)/output_files/$(PROJECT).map.rpt : $(MAP_FILES) $(RTL_FILES)
+$(QUARTUS_DIR)/output_files/$(PROJECT).map.rpt : $(MAP_FILES) $(RTL_FILES) $(DAT_FILES)
 	quartus_map $(MAP_ARGS) $(QUARTUS_DIR)/$(PROJECT)
 
 #
@@ -1824,7 +1814,9 @@ clean_quartus:
                $(QUARTUS_DIR)/$(PROJECT).*.rpt \
                $(QUARTUS_DIR)/$(PROJECT).map.summary \
                $(QUARTUS_DIR)/files.qsf \
-               $(QUARTUS_DIR)/$(PROJECT).qsf
+               $(QUARTUS_DIR)/$(PROJECT).qsf \
+               ks10/cpu/useq/crom.dat \
+               ks10/cpu/useq/drom.dat \
 
 #
 # rcsclean everything
@@ -1866,12 +1858,6 @@ rcsclean_rtl: clean_rtl
 	-rcsclean ks10/utils/usrt/*
 	-rcsclean ks10/xilinx/*
 	-find . -type f | grep -v RCS | grep -v archive | grep \\.v$$
-
-#
-# Fetch design from RCS
-#
-
-rcsfetch: $(INC_FILES) $(RTL_FILES) $(SIM_FILES) $(BLD_FILES) $(DAT_FILES) $(DOC_FILES) $(DIAG_FILES)
 
 #
 # Archive files
