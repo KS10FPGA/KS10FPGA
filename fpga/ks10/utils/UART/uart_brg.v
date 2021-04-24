@@ -58,7 +58,7 @@
 `else
    `define CLOCKFRQ ((`CLKFRQ)/10)
 `endif
-  
+
 module UART_BRG (
       input  wire       clk,            // Clock
       input  wire       rst,            // Reset

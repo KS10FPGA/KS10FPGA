@@ -133,7 +133,7 @@ module RPCTRL (
    //
    // Seek Delays
    //
-   
+
    localparam [24:0] OFFDELAY = (0.005000 * `CLKFRQ);   // Offset delay (5 ms)
    localparam [24:0] FIXDELAY = (0.000100 * `CLKFRQ);   // Fixed delay (100 us)
    localparam [24:0] DLY_50MS = (0.050000 * `CLKFRQ);
@@ -147,11 +147,11 @@ module RPCTRL (
    localparam [24:0] DLY_10MS = (0.010000 * `CLKFRQ);
    localparam [24:0] DLY_05MS = (0.005000 * `CLKFRQ);
    localparam [24:0] DLY_10US = (0.000010 * `CLKFRQ);
-   
+
    //
    // Activity Timer (for LEDs)
    //
-   
+
    localparam [31:0] ACTTIME  = (0.010000 * `CLKFRQ);   // 0.01 seconds
 
    //

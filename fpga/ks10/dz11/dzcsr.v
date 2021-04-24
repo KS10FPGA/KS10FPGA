@@ -69,7 +69,7 @@ module DZCSR (
    //  diagnostic will fail when it measures this period.  The DZ11 doesn't
    //  care.  The clear only takes a single clock cycle.
    //
-   //  Set the one-shot for 3 microseconds.  
+   //  Set the one-shot for 3 microseconds.
    //
 
    localparam [63:0] CSRCNT = (0.000003 * `CLKFRQ);

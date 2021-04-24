@@ -673,10 +673,10 @@ module CSL (
    //
    // LP26 Online
    //
-   
+
    wire lpCLR = wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h20) & (axiWDATA[0] == 1'b0);   // axiWDATA is endian swapped
    wire lpSET = wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h20) & (axiWDATA[0] == 1'b1);   // axiWDATA is endian swapped
-   
+
    always @(posedge clk)
      begin
         if (rst | lpSETOFFLN | lpCLR)

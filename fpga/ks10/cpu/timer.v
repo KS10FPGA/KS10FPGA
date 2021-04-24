@@ -24,7 +24,7 @@
 //   and another clocked every 1 ms, supported by updated microcode.
 //
 // Note
-//   This timer code uses a Fractional-N divider to accurately create the 
+//   This timer code uses a Fractional-N divider to accurately create the
 //   4.1 MHz timer clock.  Set the CLKFRQ macro correctly.
 //
 // File

@@ -158,7 +158,7 @@ module UBAPAGE (
    // UBA Paging RAM
    //  This is how the KS10 reads from the Page Memories.
    //
-   
+
    assign pageDATAO = {5'b0, pageRAM[pageADDR][0:3], 7'b0, pageRAM[pageADDR][4:14], 9'b0};
 
    //
