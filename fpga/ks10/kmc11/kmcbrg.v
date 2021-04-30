@@ -58,9 +58,16 @@ module KMCBRG (
    // Microcode Decode
    //
 
-   wire kmcLDBRG = ((kmcBRGCLKEN & `kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_BRG) |
-                    (kmcBRGCLKEN & `kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_SPBRG));
-   wire kmcSHBRG = kmcBRGCLKEN & `kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_BRGSHR;
+   wire kmcMOVINST = ((`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_MOV_IMMED) |
+                      (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_MOV_IBUS ) |
+                      (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_MOV_MEM  ) |
+                      (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_MOV_BRG  ) |
+                      (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_MOV_IBUSS));
+
+   wire kmcLDBRG = ((kmcBRGCLKEN & kmcMOVINST & `kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_BRG  ) |
+                    (kmcBRGCLKEN & kmcMOVINST & `kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_SPBRG));
+
+   wire kmcSHBRG =   kmcBRGCLKEN & kmcMOVINST & `kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_BRGSHR;
 
    //
    // BRG Register

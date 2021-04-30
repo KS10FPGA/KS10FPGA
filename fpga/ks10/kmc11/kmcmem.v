@@ -57,6 +57,9 @@ module KMCMEM (
    //
    // The MOV instruction decode is Bit 5 of the "S ROM".
    //
+   // MAR loads only occur on MOV instructions.  Not on branch instructions.
+   // Branch instructions use this field for CRAM paging.
+   //
    // Trace
    //   M8206/D7/E40
    //
@@ -100,7 +103,7 @@ module KMCMEM (
      begin
         if (rst | kmcINIT)
           kmcMAR <= 0;
-        else if (kmcMARCLKEN)
+        else if (kmcMARCLKEN & kmcMOVINST)
           begin
              if (`kmcCRAM_MAR(kmcCRAM) == `kmcCRAM_MAR_LDLO)
                kmcMAR[7:0] <= kmcALU;

@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //
 // KS-10 Processor
 //
@@ -60,7 +60,8 @@ module KMCSEQ (
       input  wire [ 7:0] kmcALU,        // ALU Output
       input  wire [ 7:0] kmcBRG,        // Branch Register
       output reg  [ 9:0] kmcPC,         // Program Counter
-      output wire [ 9:0] kmcMNTADDR,    // Maintenance Address Register
+      output reg  [ 9:0] kmcMNTADDR,    // Maintenance Address Register
+      output reg  [15:0] kmcMNTINST,    // Maintenance Instruction Register
       output reg  [15:0] kmcCRAM        // Control ROM
    );
 
@@ -68,11 +69,40 @@ module KMCSEQ (
    // Microcode Decode
    //
 
-   wire kmcJMP =  ((`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_JMP_IMMED) |
-                   (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_JMP_MEM  ) |
-                   (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_JMP_BRG  ));
+   wire [15:13] kmcSRC  = `kmcCRAM_SRC(kmcCRAM);
+   wire [10: 8] kmcCOND = `kmcCRAM_COND(kmcCRAM);
 
-   wire [10:8] kmcCOND = `kmcCRAM_COND(kmcCRAM);
+   //
+   // Decode branch instructions
+   //
+
+   wire kmcBRINST = ((`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_JMP_IMMED) |
+                     (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_JMP_MEM  ) |
+                     (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_JMP_BRG  ));
+
+   //
+   // Maintenance Address Register
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst | kmcINIT)
+          kmcMNTADDR <= 0;
+        else if (sel4WRITE)
+          kmcMNTADDR <= kmcDATAI[9:0];
+     end
+
+   //
+   // Maintenance Instruction Register
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst | kmcINIT)
+          kmcMNTINST <= 0;
+        else if (sel6WRITE)
+          kmcMNTINST <= kmcDATAI[15:0];
+     end
 
    //
    // Branch Decoder
@@ -115,33 +145,13 @@ module KMCSEQ (
      begin
         if (rst | kmcINIT)
           kmcPC <= 0;
-        else if (kmcCRAMOUT)
+        else if (kmcPCCLKEN)
           begin
-             if (sel4WRITE)
-               kmcPC <= kmcDATAI[9:0];
-          end
-        else if (kmcPCCLKEN & !kmcCRAMIN)
-          begin
-             if (kmcBRANCH & kmcJMP)
+             if (kmcBRANCH & kmcBRINST)
                kmcPC <= {`kmcCRAM_MAR(kmcCRAM), kmcALU};
              else
                kmcPC <= kmcPC + 1'b1;
           end
-     end
-
-   assign kmcMNTADDR = kmcPC;
-
-   //
-   // Maintenance Instruction Register
-   //
-
-   reg [15:0] kmcMNTINST;
-   always @(posedge clk)
-     begin
-        if (rst | kmcINIT)
-          kmcMNTINST <= 0;
-        else if (kmcCRAMIN & sel6WRITE)
-          kmcMNTINST <= kmcDATAI[15:0];
      end
 
    //
@@ -168,19 +178,17 @@ module KMCSEQ (
 
    reg [15:0] kmcCRAMR;
    reg [15:0] kmcCRAM_MEM[0:1023];
+
    always @(posedge clk)
      begin
-        if (kmcCRAMOUT)
-          begin
-             if (kmcCRAMWR)
-               kmcCRAM_MEM[kmcPC] <= kmcMNTINST;
-          end
+        if (kmcCRAMOUT & kmcCRAMWR)
+          kmcCRAM_MEM[kmcMNTADDR] <= kmcMNTINST;
         else if (kmcCRAMCLKEN)
           kmcCRAMR <= kmcCRAM_MEM[kmcPC];
      end
 
    //
-   // Maintenance Instruction Mux and Instruction Register
+   // Maintenance Instruction and Instruction Register Mux
    //
 
    always @*

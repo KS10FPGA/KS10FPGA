@@ -51,12 +51,9 @@ module KMCMAINT (
       input  wire        devRESET,      // Controller Clear
       input  wire        sel0WRITE,     // MAINT Write
       input  wire [35:0] kmcDATAI,      // KMC data
-      output wire        kmcINIT,       // Initialize
+      input  wire        kmcINIT,       // Initialize
       output wire [ 7:0] kmcMAINT       // MAINT register
    );
-
-   wire kmcMCLR;
-   assign kmcINIT = kmcMCLR | devRESET;
 
    //
    // Bit 15: RUN
@@ -86,7 +83,7 @@ module KMCMAINT (
           count <= count - 1'b1;
      end
 
-   assign kmcMCLR = (count != 0);
+   wire kmcMCLR = (count != 0);
 
    //
    // Bit 13: CRAMWR
@@ -95,18 +92,30 @@ module KMCMAINT (
    wire kmcCRAMWR  = sel0WRITE & devHIBYTE & `kmcMAINT_CRAMWR(kmcDATAI);
 
    //
-   // Bit 12: LU STEP.
-   // Not implemented.
+   // Bit 12: LU STEP
    //
 
-   wire kmcLUSTEP = 0;
+   reg kmcLUSTEP;
+   always @(posedge clk)
+     begin
+        if (rst | kmcINIT)
+          kmcLUSTEP <= 0;
+        else if (sel0WRITE & devHIBYTE)
+          kmcLUSTEP <= `kmcMAINT_LUSTEP(kmcDATAI);
+     end
 
    //
    // Bit 11: LU LOOP
-   // Not implemented
    //
 
-   wire kmcLULOOP = 0;
+   reg kmcLULOOP;
+   always @(posedge clk)
+     begin
+        if (rst | kmcINIT)
+          kmcLULOOP <= 0;
+        else if (sel0WRITE & devHIBYTE)
+          kmcLULOOP <= `kmcMAINT_LULOOP(kmcDATAI);
+     end
 
    //
    // Bit 10: CRAMOUT
