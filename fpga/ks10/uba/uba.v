@@ -417,7 +417,7 @@ module UBA (
    UBAPAGE PAGE (
       .rst        (rst),
       .clk        (clk),
-      .busREQO    (busREQO),
+      .devREQI    (devREQI[1] | devREQI[2] | devREQI[3] | devREQI[4]),
       .busADDRI   (busADDRI),
       .busDATAI   (busDATAI),
       .busADDRO   (busADDRO),
@@ -452,7 +452,7 @@ module UBA (
    // Device to KS10 Interface
    //
 
-   assign busREQO = devREQI[1] | devREQI[2] | devREQI[3] | devREQI[4];
+   assign busREQO = !pageFAIL & (devREQI[1] | devREQI[2] | devREQI[3] | devREQI[4]);
 
    //
    // KS10 Bus Data Multiplexer
@@ -475,6 +475,20 @@ module UBA (
 
 `ifndef SYNTHESIS
 
+   integer file;
+
+   initial
+     begin
+        case (ubaNUM)
+          1: file = $fopen("uba1status.txt", "w");
+          2: file = $fopen("uba2status.txt", "w");
+          3: file = $fopen("uba3status.txt", "w");
+          4: file = $fopen("uba4status.txt", "w");
+        endcase
+        $fwrite(file, "[%11.3f] UBA%d: Initialized.\n", $time/1.0e3, ubaNUM);
+        $fflush(file);
+     end
+
    reg [0:35] addr;
 
    always @(posedge clk)
@@ -483,28 +497,33 @@ module UBA (
           addr <= 0;
         else
           begin
+
              if (busREQI)
                addr <= busADDRI;
+
              if (busREQO)
                addr <= devADDRI;
+
              if (setNXD)
-               $display("[%11.3f] UBA%d: Nonexistent device (NXD).  Addr = %012o.",
-                        $time/1.0e3, ubaNUM, addr);
+               $fwrite(file, "[%11.3f] UBA%d: Nonexistent device (NXD). Addr = %012o.\n",
+                       $time/1.0e3, ubaNUM, addr);
+
              if (setTMO)
-               $display("[%11.3f] UBA%d: Nonexistent memory (TMO).  Addr = %012o.",
-                        $time/1.0e3, ubaNUM, addr);
+               $fwrite(file, "[%11.3f] UBA%d: Nonexistent memory (TMO). Addr = %012o.\n",
+                       $time/1.0e3, ubaNUM, addr);
+
              if (pageFAIL)
-               $display("[%11.3f] UBA%d: Page Failure (TMO).  Addr = %012o.",
-                        $time/1.0e3, ubaNUM, addr);
+               $fwrite(file, "[%11.3f] UBA%d: Page Failure (TMO). Addr = %012o.\n",
+                       $time/1.0e3, ubaNUM, addr);
 
              if (busACKI)
                begin
                   if (`busREAD(busADDRO))
-                    $display("[%11.3f] UBA%d: Read %012o from address %012o.",
-                             $time/1.0e3, ubaNUM, busDATAI, busADDRO);
+                    $fwrite(file, "[%11.3f] UBA%d: Read %012o from address %012o.\n",
+                            $time/1.0e3, ubaNUM, busDATAI, busADDRO);
                   else
-                    $display("[%11.3f] UBA%d: Wrote %012o to address %012o.",
-                             $time/1.0e3, ubaNUM, busDATAO, busADDRO);
+                    $fwrite(file, "[%11.3f] UBA%d: Wrote %012o to address %012o.\n",
+                            $time/1.0e3, ubaNUM, busDATAO, busADDRO);
                end
 
           end

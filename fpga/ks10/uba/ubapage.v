@@ -125,7 +125,7 @@
 module UBAPAGE (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         busREQO,              // IO Device Request In
+      input  wire         devREQI,              // IO Device Request In
       input  wire [ 0:35] busADDRI,             // KS10 Bus Address In
       input  wire [ 0:35] busDATAI,             // KS10 Bus Data In
       output wire [ 0:35] busADDRO,             // KS10 Bus Address Out (paged)
@@ -144,7 +144,7 @@ module UBAPAGE (
 
    //
    // UBA Paging RAM
-   //  This is how the KS10 write to the Page Memories
+   //  This is how the KS10 writes to the Page Memories
    //
 
    reg [0:14] pageRAM[0:63];
@@ -177,19 +177,15 @@ module UBAPAGE (
 
    //
    // An NXM generated when:
-   //   - UBA A17 not zero
+   //   - UBA A18 not zero
+   //   - if in FTM and the two LSBs of the address are not zero.  This is
+   //     similar to an 'alignment error'.
    //   - Page not valid
-   //   - if in FTM and the two address LSB are not zero.  This is similar to
-   //     an alignment error.
-   //
-   // Note:
-   //  The RH11 should be configured for FTM (36-bit accesses) while the LP20
-   //  should be configured for byte and word accesses.  The DZ11 doesn't do DMA.
    //
 
-   assign pageFAIL = ((busREQO & pageADDRI[18]) |
-                      (busREQO & `flagsFTM(pageFLAGS) & pageADDRI[34]) |
-                      (busREQO & `flagsFTM(pageFLAGS) & pageADDRI[35]) |
-                      (busREQO & !`flagsVLD(pageFLAGS)));
+   assign pageFAIL = ((devREQI & pageADDRI[18]) |
+                      (devREQI & `flagsFTM(pageFLAGS) & pageADDRI[34]) |
+                      (devREQI & `flagsFTM(pageFLAGS) & pageADDRI[35]) |
+                      (devREQI & !`flagsVLD(pageFLAGS)));
 
 endmodule
