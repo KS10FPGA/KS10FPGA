@@ -39,15 +39,15 @@
 T10BACKUP   := ../../tools/tapeutils-0.6.mods/t10backup.exe
 DIAGTAPE    := ../../Tape\ and\ Disk\ Images/KS10\ Diagnostics/ks_diag_gs.tap
 REDPACK     := ../../Tape\ and\ Disk\ Images/RED\ PACK\ 405A2/red405a2.tap
-SAV2VERILOG := ../../tools/sav2verilog/sav2verilog.exe
-MERGE_AWK   := ../../tools/merge/merge.awk
+SAV2VERILOG := ../../tools/sav2verilog/sav2verilog36.exe
+MERGE_AWK   := ../../tools/merge/merge18.awk
 
 #
 # Read SD Card to file so it can be examined.
 #  This assumes that a 8GB card is installed.
 #
 
-DEV   := sdi
+DEV   := sde
 UNIT0 := dskb.rp06.gz
 UNIT1 := dskc.rp06.gz
 UNIT2 := red405a2.rp06.gz
@@ -62,44 +62,44 @@ all : dsdab.ssram.dat
 dsuba.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH DSUBA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dsuba.sav -f $(DIAGTAPE)
 	mv dsuba.sav DSUBA.SAV
-	$(SAV2VERILOG) DSUBA.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH DSUBA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSUBA.DAT > dsuba.ssram.dat
+	$(SAV2VERILOG) DSUBA.SAV DSDUA.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSDUA.DAT DSQDA.PATCH DSUBA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSUBA.DAT > dsuba.ssram.dat
 
 dskba.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dskba.sav -f $(DIAGTAPE)
 	mv dskba.sav DSKBA.SAV
-	$(SAV2VERILOG) DSKBA.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKBA.DAT > dskba.ssram.dat
+	$(SAV2VERILOG) DSKBA.SAV DSKBA.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSKBA.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKBA.DAT > dskba.ssram.dat
 
 dskda.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dskda.sav -f $(DIAGTAPE)
 	mv dskda.sav DSKDA.SAV
-	$(SAV2VERILOG) DSKDA.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKDA.DAT > dskda.ssram.dat
+	$(SAV2VERILOG) DSKDA.SAV DSKDA.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSKDA.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKDA.DAT > dskda.ssram.dat
 
 dskea.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dskea.sav -f $(DIAGTAPE)
 	mv dskea.sav DSKEA.SAV
-	$(SAV2VERILOG) DSKEA.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKEA.DAT > dskea.ssram.dat
+	$(SAV2VERILOG) DSKEA.SAV DSKEA.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSKEA.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKEA.DAT > dskea.ssram.dat
 
 dskeb.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dskeb.sav -f $(DIAGTAPE)
 	mv dskeb.sav DSKEB.SAV
-	$(SAV2VERILOG) DSKEB.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKEB.DAT > dskeb.ssram.dat
+	$(SAV2VERILOG) DSKEB.SAV DSKEB.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSKEB.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKEB.DAT > dskeb.ssram.dat
 
 dskec.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dskec.sav -f $(DIAGTAPE)
 	mv dskec.sav DSKEC.SAV
-	$(SAV2VERILOG) DSKEC.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKEC.DAT > dskec.ssram.dat
+	$(SAV2VERILOG) DSKEC.SAV DSKEC.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSKEC.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKEC.DAT > dskec.ssram.dat
 
 dsmma.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dsmma.sav -f $(DIAGTAPE)
 	mv dsmma.sav DSMMA.SAV
-	$(SAV2VERILOG) DSMMA.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSMMA.DAT > dsmma.ssram.dat
+	$(SAV2VERILOG) DSMMA.SAV DSMMA.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSMMA.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSMMA.DAT > dsmma.ssram.dat
 
 dsmmb.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dsmmb.sav -f $(DIAGTAPE)
@@ -116,44 +116,44 @@ dsmmc.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DS
 dsmmd.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dsmmd.sav -f $(DIAGTAPE)
 	mv dsmmd.sav DSMMD.SAV
-	$(SAV2VERILOG) DSMMD.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSMMD.DAT > dsmmd.ssram.dat
+	$(SAV2VERILOG) DSMMD.SAV DSMMD.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSMMD.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSMMD.DAT > dsmmd.ssram.dat
 
 dsrpa.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH DSRPA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dsrpa.sav -f $(DIAGTAPE)
 	mv dsrpa.sav DSRPA.SAV
-	$(SAV2VERILOG) DSRPA.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH DSRPA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSRPA.DAT > dsrpa.ssram.dat
+	$(SAV2VERILOG) DSRPA.SAV DSRPA.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSRPA.DAT DSQDA.PATCH DSRPA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSRPA.DAT > dsrpa.ssram.dat
 
 dslpa.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dslpa.sav -f $(DIAGTAPE)
 	mv dslpa.sav DSLPA.SAV
-	$(SAV2VERILOG) DSLPA.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSLPA.DAT > dslpa.ssram.dat
+	$(SAV2VERILOG) DSLPA.SAV DSLPA.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSLPA.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSLPA.DAT > dslpa.ssram.dat
 
 dsdua.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dsdua.sav -f $(DIAGTAPE)
 	mv dsdua.sav DSDUA.SAV
-	$(SAV2VERILOG) DSDUA.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSDUA.DAT > dsdua.ssram.dat
+	$(SAV2VERILOG) DSDUA.SAV DSDUA.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSDUA.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSDUA.DAT > dsdua.ssram.dat
 
 dsdza.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH.PATCH
 	$(T10BACKUP) -i -x diagnostics..dsdza.sav -f $(DIAGTAPE)
 	mv dsdza.sav DSDZA.SAV
-	$(SAV2VERILOG) DSDZA.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSDZA.DAT > dsdza.ssram.dat
+	$(SAV2VERILOG) DSDZA.SAV DSDZA.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSDZA.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSDZA.DAT > dsdza.ssram.dat
 
 dskma.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dskma.sav -f $(DIAGTAPE)
 	mv dskma.sav DSKMA.SAV
-	$(SAV2VERILOG) DSKMA.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKMA.DAT > dskma.ssram.dat
+	$(SAV2VERILOG) DSKMA.SAV DSKMA.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSKMA.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSKMA.DAT > dskma.ssram.dat
 
 dsrmb.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	$(T10BACKUP) -i -x diagnostics..dsrmb.sav -f $(DIAGTAPE)
 	mv dsrmb.sav DSRMB.SAV
-	$(SAV2VERILOG) DSRMB.SAV tempfile
-	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT tempfile DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSRMB.DAT > dsrmb.ssram.dat
+	$(SAV2VERILOG) DSRMB.SAV DSRMB.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSRMB.DAT DSQDA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSRMB.DAT > dsrmb.ssram.dat
 
 dslpa_v0_7a.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH
 	awk -f ssram.awk < dslpa_v0_7a.seq > dslpa_v0_7a.tmp

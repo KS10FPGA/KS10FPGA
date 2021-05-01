@@ -4,11 +4,10 @@
 ##
 ## Brief
 ##   This AWK script reads a DEC listing file and extracts the object code.
-##  
+##
 ## Details
-##   This script is used to initialize 18-bit SSRAM to a known program for
-##   simulation. 36-bit data is written in two sequential 18-bit words.
-##   MSB first.
+##   This script is used to initialize 18-bit SSRAM for simulation. 36-bit
+##   data is written in two sequential 18-bit words - MSB first.
 ##
 ## File
 ##   ssram18.awk
@@ -306,7 +305,7 @@ BEGIN {
 }
 
 #
-# Write Sorted output to file
+# Write 18-bit sorted output to file
 #
 
 END {
@@ -314,13 +313,13 @@ END {
    for (addr = 0; addr <= lastaddr; addr++) {
        if (map[addr] != "") {
            data = strtonum("0" map[addr]);
-           if (addr != prevaddr + 1 ){
-               printf "@%x\n", addr
+           if (addr != prevaddr + 1) {
+               printf "@%x\n", addr * 2;
            }
-           printf "%05x %05x\t\t// mem[%06o] = %012o\n", rshift(data, 18), data % 01000000, addr, data
+           printf "%05x %05x\t\t// mem[%06o] = %012o\n", rshift(data, 18), data % 01000000, addr, data;
            prevaddr = addr;
        } else {
-           printf "%05x %05x\t\t// mem[%06o] = %012o (init)\n", 0, 0, addr, 0
+           printf "%05x %05x\t\t// mem[%06o] = %012o (init)\n", 0, 0, addr, 0;
            prevaddr = addr;
        }
    }

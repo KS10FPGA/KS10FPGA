@@ -917,101 +917,38 @@ module testbench;
 
                   getchar(fd_cty);
 
-                  //
-                  // SMMON (DECSYSTEM 2020 DIAGNOSTIC MONITOR) Responses
-                  //
+                  `ifdef TEST_DSDZA
+                      `include "test_dsdza.vh"
+                  `endif
 
-                  expects("UBA # - ",                                                    "1\015",       state[0]);
-                  expects("DISK:<DIRECTORY> OR DISK:[P,PN] - ",                          "PS:\015",     state[1]);
-                  expects("SMMON CMD - ",                                                "DSRMB\015",   state[2]);
-                  expects("TTY SWITCH CONTROL ? - 0,S OR Y <CR> - ",                     "Y\015",       state[3]);
-                  expects("LH SWITCHES <# OR ?> - ",                                     "100\015",       state[4]);
-                  expects("RH SWITCHES <# OR ?> - ",                                     "0\015",       state[5]);
+                  `ifdef TEST_DSRPA
+                      `include "test_dsrpa.vh"
+                  `endif
 
-                  //
-                  // DSDZA - DECSYSTEM 2020 DZ11 ASYNC. LINE MUX DIAGNOSTICS (DSDZA)
-                  //
+                  `ifdef TEST_DSRMB
+                      `include "test_dsrmb.vh"
+                  `endif
 
-//`define TEST_DSDZA
-`ifdef TEST_DSDZA
-                  expects("TEST NO. (1 - 33 OCTAL) = ",                                  "31\015",      state[6]);
-`endif
+                  `ifdef TEST_DSLPA
+                      `include "test_dslpa.vh"
+                  `endif
 
-                  //
-                  // DSRPA (RP06-RH11 BASIC DRIVE DIAGNOSTIC) Responses
-                  //
+                  `ifdef TEST_DSDUA
+                      `include "test_dsdua.vh"
+                  `endif
 
-`define TEST_DSRPA
-`ifdef TEST_DSRPA
-                  expects("LIST PGM SWITCH OPTIONS ?  Y OR N <CR> - ",                   "N\015",       state[7]);
-                  expects("SELECT DRIVES (0-7 OR \"A\") - ",                             "0\015",       state[8]);
-                  expects("HEADS LOADED CORRECTLY ?  Y OR N <CR> - ",                    "Y\015",       state[9]);
-                  expects("PUT DRIVE ON LINE. HIT <CR> WHEN READY",                      "\015",        state[10]);
-`endif
+                  `define TEST_DSKMA
+                  `ifdef TEST_DSKMA
+                      `include "test_dskma.vh"
+                  `endif
 
-                  //
-                  // DSRMB - DECSYSTEM 2020 RH11 - RM03/RP06 - RELIABILITY DIAGNOSTIC
-                  //
-
-//`define TEST_DSRMB
-`ifdef TEST_DSRMB
-                  expects("WHAT DRIVE(S) TO BE TESTED (00 TO 77, ALL, H=HELP)? - ",      "2\015",       state[11]);
-                  expects("WHAT TEST ? - ",                                              "10\015",      state[12]);
-                  expects("FORMAT A PACK? Y OR N <CR> - ",                               "N\015",       state[13]);
-                  expects("VERIFY A FORMATTED PACK? Y OR N <CR> - ",                     "Y\015",       state[14]);
-                  expects("36 BIT MODE (10 FORMAT)? Y OR N <CR> - ",                     "Y\015",       state[15]);
-                  expects("PROCESS ENTIRE PACK FOR ALL SELECTED DRIVES? Y OR N <CR> - ", "Y\015",       state[16]);
-
-`endif
-
-                  //
-                  // DSLPA (DECSYSTEM 2020 LINE PRINTER DIAGNOSTIC) Responses
-                  //
-
-//`define TEST_DSLPA
-`ifdef TEST_DSLPA
-                  expects("IS THIS AN LP05 OR LP14 LINE PRINTER ? Y OR N <CR> - ",       "Y\015",       state[17]);
-                  expects("IS THIS AN LP05, LP14 OR LP26 LINE PRINTER ? Y OR N <CR> - ", "Y\015",       state[18]);
-                  expects("IS THIS AN LP07 LINE PRINTER ? Y OR N <CR> - ",               "Y\015",       state[19]);
-                  expects("IS THIS AN LP20 CONTROLLER WITH NO PRINTER ? Y OR N <CR> - ", "Y\015",       state[20]);
-                  expects("TYPE ALTMODE WHEN READY - ",                                  "\033",        state[21]);
-                  expects("DOES THIS LPT HAVE A DAVFU ? Y OR N <CR> - ",                 "Y\015",       state[22]);
-                  expects("CHANNEL-PASS NUMBER: (1-16, CR=ALL CHANNELS) ",               "\015",        state[23]);
-                  expects("CHANNEL NUMBER: (1-12, CR=ALL CHANNELS) ",                    "\015",        state[24]);
-                  expects("CHANNEL NUMBER: (2-12, CR=ALL CHANNELS) ",                    "\015",        state[25]);
-                  expects("*",                                                           "A\015",       state[26]);
-`endif
-
-                  //
-                  // DSDUA (DSDUA DECSYSTEM 2020 DUP-11 DIAGNOSTICS)
-                  //
-
-//`define TEST_DSDUA
-`ifdef TEST_DSDUA
-                  expects("IS THE DUP-11 UNIT #1 OR #2 ?",                               " 1\015",      state[27]);
-                  expects("DO YOU WANT A MAP OF THE DUP-11 STATUS ? Y OR N <CR> - ",     "N\015",       state[28]);
-                  expects("IS THE H325 TURN AROUND CONNECTER IN PLACE ? Y OR N <CR> - ", "Y\015",       state[29]);
-                  expects("*",                                                           "A\015",       state[30]);
-`endif
-
-                  //
-                  // DSKMA (DSKMA DECSYSTEM 2020 KMC11 DIAGNOSTICS)
-                  //
-
-//`define TEST_DSKMA
-`ifdef TEST_DSKMA
-                  expects("*",                                                           " 54-57\015",  state[30]);
-`endif
+                  `ifdef TEST_DSUBA
+                      `include "test_dsuba.vh"
+                  `endif
 
                   charout();
 
 `endif //  `ifdef SIM_CTY
-
-
-`define TEST_DSUBA		  
-`ifdef TEST_DSUBA
-                  expects("WHICH UNIBUS ADAPTER? (1,3,4):",                              "1\015",      state[31]);
-`endif		  
 
                end
           end

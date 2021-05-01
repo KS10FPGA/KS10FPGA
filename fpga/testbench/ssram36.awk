@@ -6,10 +6,10 @@
 ##   This AWK script reads a DEC listing file and extracts the object code.
 ##
 ## Details
-##   This script is used to initialize SSRAM to a known program for simulation.
+##   This script is used to initialize 36-bit SSRAM for simulation.
 ##
 ## File
-##   ssram.awk
+##   ssram36.awk
 ##
 ## Author
 ##   Rob Doyle - doyle (at) cox (dot) net
@@ -304,7 +304,7 @@ BEGIN {
 }
 
 #
-# Write Sorted output to file
+# Write 36-bit sorted output to file
 #
 
 END {
@@ -312,13 +312,13 @@ END {
    for (addr = 0; addr <= lastaddr; addr++) {
        if (map[addr] != "") {
            data = strtonum("0" map[addr]);
-           if (addr != prevaddr + 1 ){
-               printf "@%x\n", addr
+           if (addr != prevaddr + 1) {
+               printf "@%x\n", addr;
            }
-           printf "%09x\t\t// mem[%06o] = %012o\n", data, addr, data
+           printf "%09x\t\t// mem[%06o] = %012o\n", data, addr, data;
            prevaddr = addr;
        } else {
-           printf "%09x\t\t// mem[%06o] = %012o (init)\n", 0, addr, 0
+           printf "%09x\t\t// mem[%06o] = %012o (init)\n", 0, addr, 0;
            prevaddr = addr;
        }
    }
