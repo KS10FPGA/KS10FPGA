@@ -124,7 +124,6 @@ module KMC11 (
    wire         devIO     = `devIO(devADDRI);           // IO Cycle
    wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
    wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
-   wire         devIOBYTE = `devIOBYTE(devADDRI);       // Byte IO Operation
    wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
    wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
    wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
@@ -134,7 +133,7 @@ module KMC11 (
    // KMC Interrupt Vectors
    //
 
-   localparam [18:35] kmcVECT0 = kmcVECT + 0;           // KMC11 Vector + 0
+   localparam [18:35] kmcVECT0 = kmcVECT;               // KMC11 Vector
    localparam [18:35] kmcVECT4 = kmcVECT + 18'd4;       // KMC11 Vector + 4
 
    //
@@ -150,7 +149,7 @@ module KMC11 (
    wire sel4WRITE = devWRITE  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
    wire sel6READ  = devREAD   & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
    wire sel6WRITE = devWRITE  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
-   wire csrREAD   = sel0READ  | sel2READ  | sel4READ  | sel6READ;
+// wire csrREAD   = sel0READ  | sel2READ  | sel4READ  | sel6READ;
    wire csrWRITE  = sel0WRITE | sel2WRITE | sel4WRITE | sel6WRITE;
 
    //
@@ -185,10 +184,9 @@ module KMC11 (
    assign kmcLULOOP = `kmcMAINT_LULOOP(kmcMAINT);
 
    //
-   // Misc simple logic
+   // Initialize
    //
 
-   wire kmcRUNSTEP = kmcRUN  | kmcSTEP;
    wire kmcINIT =    kmcMCLR | devRESET;
 
    //

@@ -171,6 +171,7 @@ module VMA (
    // Trace
    //  DPM5/E48
    //  DPM5/E66
+   //
 
    reg readEN;
    reg wrtestEN;
@@ -196,6 +197,12 @@ module VMA (
                 readEN     <= `dromREADCYCLE;
                 wrtestEN   <= `dromWRTESTCYCLE;
                 writeEN    <= `dromWRITECYCLE;
+                cacheinhEN <= 0;
+              end
+          3 : begin
+                readEN     <= 0;
+                wrtestEN   <= 0;
+                writeEN    <= 0;
                 cacheinhEN <= 0;
               end
         endcase

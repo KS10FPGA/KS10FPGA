@@ -69,7 +69,6 @@ module KMCSEQ (
    // Microcode Decode
    //
 
-   wire [15:13] kmcSRC  = `kmcCRAM_SRC(kmcCRAM);
    wire [10: 8] kmcCOND = `kmcCRAM_COND(kmcCRAM);
 
    //

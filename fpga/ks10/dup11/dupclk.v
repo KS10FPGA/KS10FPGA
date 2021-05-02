@@ -68,7 +68,7 @@ module DUPCLK (
       output wire         dupTXCEN      // Transmitter clock enable
    );
 
-   parameter [10:0] clkdiv  = `CLKFRQ / `DUPCLKFREQ / 2;
+   parameter [31:0] clkdiv  = `CLKFRQ / `DUPCLKFREQ / 2;
 
    //
    // Clock divider
@@ -81,9 +81,9 @@ module DUPCLK (
    always @(posedge clk)
      begin
         if (rst | (dupMSEL == `dupTXCSR_MSEL_DIAG))
-          count <= clkdiv;
+          count <= clkdiv[10:0];
         else if (count == 0)
-          count <= clkdiv;
+          count <= clkdiv[10:0];
         else
           count <= count - 1'b1;
      end

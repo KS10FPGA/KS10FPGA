@@ -124,7 +124,6 @@ module UBA (
    wire         busIO     = `busIO(busADDRI);           // IO Cycle
    wire         busWRU    = `busWRU(busADDRI);          // Read interrupting controller number
    wire         busVECT   = `busVECT(busADDRI);         // Read interrupt vector
-   wire         busIOBYTE = `busIOBYTE(busADDRI);       // IO Byte Cycle
    wire [15:17] busPI     = `busPI(busADDRI);           // IO Bridge PI Request
    wire [14:17] busDEV    = `busDEV(busADDRI);          // IO Bridge Device Number
    wire [18:35] busADDR   = `busIOADDR(busADDRI);       // IO Address

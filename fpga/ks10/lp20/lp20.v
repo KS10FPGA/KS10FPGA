@@ -147,7 +147,6 @@ module LP20 (
    wire         devIO     = `devIO(devADDRI);           // IO Cycle
    wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
    wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
-   wire         devIOBYTE = `devIOBYTE(devADDRI);       // Byte IO Operation
    wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
    wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
    wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
@@ -231,10 +230,6 @@ module LP20 (
    // Control/Status Register B Decode
    //
 
-   wire        lpMPE  = `lpCSRB_MPE(regCSRB);
-   wire        lpRPE  = `lpCSRB_RPE(regCSRB);
-   wire        lpDTE  = `lpCSRB_DTE(regCSRB);
-   wire        lpGOE  = `lpCSRB_GOE(regCSRB);
    wire [ 2:0] lpTEST = `lpCSRB_TEST(regCSRB);
 
    //

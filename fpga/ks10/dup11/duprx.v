@@ -74,12 +74,6 @@ module DUPRX (
                      dupDEC_CRC  = 16'o00000;
 
    //
-   // RXCSR Bits
-   //
-
-   wire dupSTRSYN = `dupRXCSR_STRSYN(regRXCSR);
-
-   //
    // PARCSR Bits
    //
 

@@ -131,7 +131,6 @@ module DUP11 (
    wire         devIO     = `devIO(devADDRI);           // IO Cycle
    wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
    wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
-   wire         devIOBYTE = `devIOBYTE(devADDRI);       // Byte IO Operation
    wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
    wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
    wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
@@ -171,7 +170,6 @@ module DUP11 (
    wire [15: 0] regRXCSR;
 
    wire dupDSCA   = `dupRXCSR_DSCA(regRXCSR);
-   wire dupSTRSYN = `dupRXCSR_STRSYN(regRXCSR);
    wire dupRXIE   = `dupRXCSR_RXIE(regRXCSR);
    wire dupDSCIE  = `dupRXCSR_DSCIE(regRXCSR);
    wire dupRXEN   = `dupRXCSR_RXEN(regRXCSR);
@@ -188,9 +186,7 @@ module DUP11 (
 
    wire [15: 0] regPARCSR;
    wire         dupDECMD  = `dupPARCSR_DECMD(regPARCSR);
-   wire         dupSSM    = `dupPARCSR_SSM(regPARCSR);
    wire         dupCRCI   = `dupPARCSR_CRCI(regPARCSR);
-   wire [ 7: 0] dupSYNADR = `dupPARCSR_SYNADR(regPARCSR);
 
    //
    // TXCSR Register

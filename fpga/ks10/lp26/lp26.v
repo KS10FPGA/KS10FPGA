@@ -757,12 +757,6 @@ module LP26 (
      end
 
    //
-   // Lines per page
-   //
-
-   wire [7:0] lpLPP = lpSIXLPI ? 8'd66 : 8'd88;
-
-   //
    // Printer state
    //
 
