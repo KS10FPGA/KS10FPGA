@@ -260,7 +260,7 @@ RTL_FILES := \
 	ks10/cpu/intf.v \
 	ks10/cpu/nxd.v \
 	ks10/cpu/nxm.v \
-	ks10/cpu/pager.v \
+	ks10/cpu/pager.sv \
 	ks10/cpu/pcflags.v \
 	ks10/cpu/pi.v \
 	ks10/cpu/pxct.v \
@@ -933,8 +933,8 @@ WAVE_UBA3 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busDATAO}             {/testbench/uKS10/UBA3/busDATAO}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busINTR}              {/testbench/uKS10/UBA3/busINTR}" \
 	"add wave -noupdate -divider {UBA 3, Demuxed}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devADDRI}             {/testbench/uKS10/UBA3/busADDRI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAI}             {/testbench/uKS10/UBA3/busDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devADDRI}             {/testbench/uKS10/UBA3/devADDRI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAI}             {/testbench/uKS10/UBA3/devDATAI}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {regUBASR}             {/testbench/uKS10/UBA3/regUBASR}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {regUBAMR}             {/testbench/uKS10/UBA3/regUBAMR}" \
 	"add wave -noupdate -divider {UBA 3, Error Stuff}" \
@@ -943,10 +943,10 @@ WAVE_UBA3 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {pageFAIL}             {/testbench/uKS10/UBA3/pageFAIL}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {pageFLAGS}            {/testbench/uKS10/UBA3/PAGE/pageFLAGS}" \
 	"add wave -noupdate -divider {UBA 3, DEV 1}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI}              {/testbench/uKS10/UBA3/devREQI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO}              {/testbench/uKS10/UBA3/devREQO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI}              {/testbench/uKS10/UBA3/devACKI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO}              {/testbench/uKS10/UBA3/devACKO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI[1]}           {/testbench/uKS10/UBA3/devREQI[1]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO[1]}           {/testbench/uKS10/UBA3/devREQO[1]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI[1]}           {/testbench/uKS10/UBA3/devACKI[1]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO[1]}           {/testbench/uKS10/UBA3/devACKO[1]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev1INTR}             {/testbench/uKS10/UBA3/dev1INTR}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev1INTA}             {/testbench/uKS10/UBA3/dev1INTA}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev1ADDRI}            {/testbench/uKS10/UBA3/dev1ADDRI}" \
@@ -954,10 +954,10 @@ WAVE_UBA3 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev1DATAI}            {/testbench/uKS10/UBA3/dev1DATAI}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev1DATAO}            {/testbench/uKS10/UBA3/dev1DATAO}" \
 	"add wave -noupdate -divider {UBA 3, DEV 2}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI}              {/testbench/uKS10/UBA3/devREQI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO}              {/testbench/uKS10/UBA3/devREQO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI}              {/testbench/uKS10/UBA3/devACKI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO}              {/testbench/uKS10/UBA3/devACKO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI[2]}           {/testbench/uKS10/UBA3/devREQI[2]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO[2]}           {/testbench/uKS10/UBA3/devREQO[2]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI[2]}           {/testbench/uKS10/UBA3/devACKI[2]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO[2]}           {/testbench/uKS10/UBA3/devACKO[2]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2INTR}             {/testbench/uKS10/UBA3/dev2INTR}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2INTA}             {/testbench/uKS10/UBA3/dev2INTA}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2ADDRI}            {/testbench/uKS10/UBA3/dev2ADDRI}" \
@@ -965,10 +965,10 @@ WAVE_UBA3 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2DATAI}            {/testbench/uKS10/UBA3/dev2DATAI}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2DATAO}            {/testbench/uKS10/UBA3/dev2DATAO}" \
 	"add wave -noupdate -divider {UBA 3, DEV 3}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI}              {/testbench/uKS10/UBA3/devREQI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO}              {/testbench/uKS10/UBA3/devREQO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI}              {/testbench/uKS10/UBA3/devACKI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO}              {/testbench/uKS10/UBA3/devACKO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI[3]}           {/testbench/uKS10/UBA3/devREQI[3]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO[3]}           {/testbench/uKS10/UBA3/devREQO[3]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI[3]}           {/testbench/uKS10/UBA3/devACKI[3]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO[3]}           {/testbench/uKS10/UBA3/devACKO[3]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev3INTR}             {/testbench/uKS10/UBA3/dev3INTR}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev3INTA}             {/testbench/uKS10/UBA3/dev3INTA}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev3ADDRI}            {/testbench/uKS10/UBA3/dev3ADDRI}" \
@@ -976,10 +976,10 @@ WAVE_UBA3 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev3DATAI}            {/testbench/uKS10/UBA3/dev3DATAI}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev3DATAO}            {/testbench/uKS10/UBA3/dev3DATAO}" \
 	"add wave -noupdate -divider {UBA 3, DEV 4}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI}              {/testbench/uKS10/UBA3/devREQI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO}              {/testbench/uKS10/UBA3/devREQO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI}              {/testbench/uKS10/UBA3/devACKI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO}              {/testbench/uKS10/UBA3/devACKO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI[4]}           {/testbench/uKS10/UBA3/devREQI[4]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO[4]}           {/testbench/uKS10/UBA3/devREQO[4]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI[4]}           {/testbench/uKS10/UBA3/devACKI[4]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO[4]}           {/testbench/uKS10/UBA3/devACKO[4]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev4INTR}             {/testbench/uKS10/UBA3/dev4INTR}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev4INTA}             {/testbench/uKS10/UBA3/dev4INTA}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev4ADDRI}            {/testbench/uKS10/UBA3/dev4ADDRI}" \
@@ -1191,6 +1191,14 @@ WAVE_KMC11 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {kmcNPROA}             {/testbench/uKS10/uKMC11/kmcNPROA}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {kmcMNTADDR}           {/testbench/uKS10/uKMC11/kmcMNTADDR}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {kmcMNTINST}           {/testbench/uKS10/uKMC11/kmcMNTINST}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {sel0READ}             {/testbench/uKS10/uKMC11/sel0READ}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {sel0WRITE}            {/testbench/uKS10/uKMC11/sel0WRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {sel2READ}             {/testbench/uKS10/uKMC11/sel2READ}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {sel2WRITE}            {/testbench/uKS10/uKMC11/sel2WRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {sel4READ}             {/testbench/uKS10/uKMC11/sel4READ}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {sel4WRITE}            {/testbench/uKS10/uKMC11/sel4WRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {sel6READ}             {/testbench/uKS10/uKMC11/sel6READ}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {sel6WRITE}            {/testbench/uKS10/uKMC11/sel6WRITE}" \
 	"add wave -noupdate -divider {KMC11 Memories}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {kmcCRAM_MEM}          {/testbench/uKS10/uKMC11/uSEQ/kmcCRAM_MEM}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {kmcRAM}               {/testbench/uKS10/uKMC11/uMEM/ram}" \
@@ -1581,25 +1589,15 @@ iverilog : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TES
 
 $(QUARTUS_DIR)/files.qsf : makefile
 	@echo "Creating "$@ > /dev/stderr
-	@echo "" > $@
+	@echo "#" > $@
+	@echo "# This file is created by the Makefile." >> $@
+	@echo "# Do not edit." >> $@
+	@echo "#" >> $@
 	@echo 'set_global_assignment -name VERILOG_FILE ./$(PROJECT).v' >> $@;
 	@for FILE in $(RTL_FILES); \
 	do \
 	    echo 'set_global_assignment -name VERILOG_FILE ../../'$$FILE >> $@; \
 	done
-
-#
-# Synthesis options
-#
-
-#(QUARTUS_DIR)/macros.qsf : makefile
-#	@echo "Creating "$@ > /dev/stderr
-#	@echo "" > $@
-#	@echo 'set_global_assignment -name VERILOG_MACRO SYNTHESIS' >> $@;
-#	@for ARG in $(SYN_ARGS); \
-#	do \
-#	    echo 'set_global_assignment -name VERILOG_MACRO' $$ARG >> $@; \
-#	done
 
 #
 # Create project file
@@ -1626,13 +1624,17 @@ PRJ_ARGS:= \
 	'set_global_assignment -name SDC_FILE $(PROJECT).sdc' \
 	'set_global_assignment -name QIP_FILE soc_system/synthesis/soc_system.qip' \
 	'set_global_assignment -name SOURCE_FILE db/$(PROJECT).cmp.rdb' \
-	'set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top '\
+	'set_global_assignment -name VERILOG_INPUT_VERSION SYSTEMVERILOG_2005' \
+	'set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top ' \
 	'source ./files.qsf' \
 	'source ./constraints.qsf'
 
 $(QUARTUS_DIR)/$(PROJECT).qsf : makefile
 	@echo "Creating "$@ > /dev/stderr
-	@echo "" > $@
+	@echo "#" > $@
+	@echo "# This file is created by the Makefile." >> $@
+	@echo "# Do not edit." >> $@
+	@echo "#" >> $@
 	@for ARG in $(PRJ_ARGS); \
 	do \
 	    echo $$ARG >> $@; \
@@ -1737,12 +1739,14 @@ MAP_ARGS := \
 	--read_settings_files=on \
 	--write_settings_files=off \
 	--rev=$(PROJECT) \
+	--verilog_macro=QUARTUS \
 	--verilog_macro=SYNTHESIS \
 	$(addprefix --verilog_macro=, $(SYN_ARGS)) \
 
 MAP_FILES := \
 	$(QUARTUS_DIR)/$(PROJECT).v \
 	$(QUARTUS_DIR)/$(PROJECT).qsf \
+	$(QUARTUS_DIR)/$(PROJECT).srf \
 	$(QUARTUS_DIR)/files.qsf \
 	$(QUARTUS_DIR)/constraints.qsf \
 	$(QUARTUS_DIR)/soc_system/synthesis/soc_system.v \
@@ -1777,7 +1781,6 @@ QSYS_FILES := \
 	$(QUARTUS_DIR)/soc_system_hw.tcl \
 	$(QUARTUS_DIR)/$(PROJECT).qpf \
 	$(QUARTUS_DIR)/$(PROJECT).sdc \
-	$(QUARTUS_DIR)/$(PROJECT).srf \
 	$(QUARTUS_DIR)/$(PROJECT).tcl \
 	$(QUARTUS_DIR)/$(PROJECT).v \
 	$(QUARTUS_DIR)/ks10_hw.tcl
