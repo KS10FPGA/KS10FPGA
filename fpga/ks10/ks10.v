@@ -327,6 +327,14 @@ module KS10 (
    wire         cpuCONT;                // CPU Cont Status
 
    //
+   // KMC11 Signals
+   //
+
+   wire [15: 0] kmcLUIBUS = 0;          // KMC11 Line Unit IBUS (tied for now)
+   wire         kmcLUSTEP;              // KMC11 Line Unit Step
+   wire         kmcLULOOP;              // KMC11 Line Unit Loop
+
+   //
    // DUP11 Signals
    //
 
@@ -1064,7 +1072,10 @@ module KS10 (
       .devADDRI         (devADDRI[3][4]),
       .devADDRO         (devADDRO[3][4]),
       .devDATAI         (devDATAI[3][4]),
-      .devDATAO         (devDATAO[3][4])
+      .devDATAO         (devDATAO[3][4]),
+      .kmcLUIBUS        (kmcLUIBUS),
+      .kmcLUSTEP        (kmcLUSTEP),
+      .kmcLULOOP        (kmcLULOOP)
    );
 
 `else
