@@ -321,6 +321,7 @@ void recallConfig(void) {
 
 bool consoleOutput(void) {
     void printPCIR(uint64_t data);
+    bool escape = false;
 
     const char cntl_e = 0x05;   // ^E
     const char cntl_l = 0x0c;   // ^L
@@ -362,12 +363,16 @@ bool consoleOutput(void) {
 
         if (select(1, &fds, NULL, NULL, &tv) != 0) {
             int ch = getchar();
-            if (ch == cntl_e) {
+            if (ch == '\e') {
+                escape = !escape;
+                continue;
+            }
+            if (!escape && (ch == cntl_e)) {
                 printf("^E\n");
                 break;
-            } else if (ch == cntl_t) {
+            } else if (!escape && (ch == cntl_t)) {
                 printPCIR(ks10_t::readDPCIR());
-            } else if (ch == cntl_l) {
+            } else if (!escape && (ch == cntl_l)) {
                 ks10_t::writeLPCCR(ks10_t::lpONLINE | ks10_t::readLPCCR());
             } else {
 
@@ -380,10 +385,11 @@ bool consoleOutput(void) {
                     ch = '\r';
                 }
                 ks10_t::putchar(ch);
+                escape = false;
             }
         }
 
-	    //
+        //
         // Sleep for 100 us
         //
 
@@ -926,16 +932,16 @@ static bool cmdBT(int argc, char *argv[]) {
     ks10_t::writeMem(ks10_t::rhbaseADDR, rhcfg.rhbase);
     ks10_t::writeMem(ks10_t::rhunitADDR, rhcfg.rhunit);
     rh11_t rh11(rhcfg.rhbase);
-	
-	//
-	// Halt the KS10 if it is already running.
-	//
-	
-	if (ks10_t::run()) {
-	    printf("KS10: Already running. Halting the KS10.\n");
+
+    //
+    // Halt the KS10 if it is already running.
+    //
+
+    if (ks10_t::run()) {
+        printf("KS10: Already running. Halting the KS10.\n");
         ks10_t::run(false);
-	}
-	
+    }
+
     switch (argc) {
         case 1:
             rh11.boot(rhcfg.rhunit, false);
@@ -1563,14 +1569,14 @@ static bool cmdGO(int argc, char *argv[]) {
         "Usage: GO diagname.sav address\n"
         "Run a diagnostic program\n";
 
- 	//
-	// Halt the KS10 if it is already running.
-	//
-	
-	if (ks10_t::run()) {
-	    printf("KS10: Already running. Halting the KS10.\n");
+    //
+    // Halt the KS10 if it is already running.
+    //
+
+    if (ks10_t::run()) {
+        printf("KS10: Already running. Halting the KS10.\n");
         ks10_t::run(false);
-	}
+    }
 
     if (argc == 1) {
 
@@ -2011,14 +2017,14 @@ static bool cmdLI(int argc, char *argv[]) {
 
 static bool cmdLP(int argc, char *argv[]) {
     const char *baudrateTable[] = {
-    	     "50",      "75",     "110",   "134.5",
+             "50",      "75",     "110",   "134.5",
             "150",     "300",     "600",    "1200",
            "1800",    "2000",    "2400",    "3600",
            "4800",    "7200",    "9600",   "19200",
-	  "38400",   "57600",  "115200",  "230400",
-	 "480800",  "921600", "Unknown", "Unknown",
-	"Unknown", "Unknown"," Unknown", "Unknown",
-	"Unknown", "Unknown"," Unknown", "Unknown",
+          "38400",   "57600",  "115200",  "230400",
+         "480800",  "921600", "Unknown", "Unknown",
+        "Unknown", "Unknown"," Unknown", "Unknown",
+        "Unknown", "Unknown"," Unknown", "Unknown",
     };
     const char *parityTable[] = {"N", "E", "O", "*"};
     const char *usage =
@@ -2027,15 +2033,15 @@ static bool cmdLP(int argc, char *argv[]) {
         "       LP PRINT filename\n"
         "       LP SAVE   - Save configuration\n"
         "       LP STATUS - Dump registers\n"
-		"       LP TEST   - Print \"Hello World.\" message.\n";
+        "       LP TEST   - Print \"Hello World.\" message.\n";
 
     if (argc == 1) {
         uint32_t lpccr = ks10_t::readLPCCR();
-	printf("KS10: LPCCR is 0x%08x.\n", lpccr);
+        printf("KS10: LPCCR is 0x%08x.\n", lpccr);
         printf("KS10: LP26 #1 Printer Configuration:\n"
                "      Vertical Format Unit  : %s\n"
                "      Printer Status        : %s, %d LPI\n"
-	       "      Printer Serial Config : \"%s,%s,%1d,%1d,X\"\n"
+               "      Printer Serial Config : \"%s,%s,%1d,%1d,X\"\n"
                "%s",
                (lpccr & ks10_t::lpOVFU  ) != 0 ? "Optical" : "Digital",
                (lpccr & ks10_t::lpONLINE) != 0 ? "Online"  : "Offline",
@@ -3193,5 +3199,4 @@ bool executeCommand(char * buf) {
     sigaction(SIGINT, &sa, NULL);
 
     return ret;
-
 }
