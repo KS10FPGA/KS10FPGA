@@ -398,5 +398,7 @@ void lp20_t::printFile(const char *filename) {
             ;
         }
 
+        usleep(100000);    // FIXME
+
     }
 }

@@ -354,7 +354,8 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                             }
 #endif
                             if (ks10_t::readMem(paddr) != 0) {
-                                printf("KS10: Monitor Pre-Boot read successfully.\n");
+                                printf("KS10: Monitor Pre-Boot read successfully.\n"
+                                       "      Boot address is %06llo.\n", paddr);
                                 ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
                                 ks10_t::startRUN();
                                 consoleOutput();
