@@ -707,7 +707,7 @@ module testbench;
                    #100000;
                    puts(outString);
                    state = 1;
-                   //$display("[%11.3f] KS10: outBuf is \"%s\".", outBuf);x
+                   //$display("[%11.3f] KS10: outBuf is \"%s\".", outBuf);
                 end
            end
          else
@@ -916,6 +916,10 @@ module testbench;
 `ifdef SIM_CTY
 
                   getchar(fd_cty);
+
+                  `ifdef TEST_DSKCG
+                      `include "test_dskcg.vh"
+                  `endif
 
                   `ifdef TEST_DSDZA
                       `include "test_dsdza.vh"
