@@ -1,11 +1,13 @@
 #
 # Clocks
 #
+
 create_clock -period "1.0 MHz"  [get_ports HPS_I2C0_SCL]
 create_clock -period "1.0 MHz"  [get_ports HPS_I2C1_SCL]
 create_clock -period "20.0 MHz" [get_ports SD_SCLK]
 create_clock -period "50.0 MHz" [get_ports FPGA_CLK1_50]
 create_clock -period "60.0 MHz" [get_ports HPS_USB_CLK]
+
 #
 # JTAG
 #
@@ -40,14 +42,14 @@ set_false_path   -from                        [get_ports SD_WP]
 #
 
 # CY7C1463KV33 tCDV
-set_input_delay  -clock [get_clocks SSSRAM_CLK] -max  6.5 [get_ports {SSRAM_D*}]
-set_input_delay  -clock [get_clocks {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -min  0.0 [get_ports {SSRAM_D*}]
+set_input_delay  -clock [get_clocks SSRAM_CLK] -max  6.5 [get_ports {SSRAM_D*}]
+#set_input_delay  -clock [get_clocks {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -min  0.0 [get_ports {SSRAM_D*}]
 # CY7C1463KV33 tAS
-set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -max  1.5 [get_ports {SSRAM_A*}]
-set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -max  1.5 [get_ports {SSRAM_WE_N}]
+#set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -max  1.5 [get_ports {SSRAM_A*}]
+#set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -max  1.5 [get_ports {SSRAM_WE_N}]
 # CY7C1463KV33 tAH
-set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -min -0.5 [get_ports {SSRAM_A*}]
-set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -min -0.5 [get_ports {SSRAM_WE_N}]
+#set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -min -0.5 [get_ports {SSRAM_A*}]
+#set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -min -0.5 [get_ports {SSRAM_WE_N}]
 
 ##
 ## PLL Clocks
