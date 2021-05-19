@@ -40,14 +40,8 @@
 //  The Page Table is interleaved with odd and even memories so that the
 //  memory can be swept two entries at a time.
 //
-//  The Page Table addressing is rearranged from that of the DEC KS10.  On the
-//  DEC KS10 the two memories are interleaved by the MSB of the address. On the
-//  KS10 FPGA, the two memories are interleaved by the LSB of the address.  When
-//  the interleaving is done this way, the Xilinx synthesis tool can infer a
-//  dual port memory with different aspect ratios as follows:
-//
 //  - The write port is 256x30
-//  - The read port is 512x15
+//  - The read port is  512x15
 //
 //  The x30 write port allows the page memory to be swept two entries at a time.
 //  The x15 read port allow for simple page lookups.
@@ -57,11 +51,20 @@
 //  Clearing the "Page Valid" bit is sufficient to invalidate the page memory.
 //  None of the other bits matter if "Page Valid" bit is cleared.
 //
+// Note:
+//   This template for mixed-width dual-port RAM probably only works Quartus
+//
+//   This also requires Verilog 2012 or System Verilog in order to support
+//   multiple packed dimensions.
+//
+//   See Intel Quartus Prime Pro Edition User Guide: Design Recommendations
+//   Section 1.4.1.9 entitled "Mixed-Width Dual-Port RAM".
+//
 // Note
 //  Page parity is not implemented.
 //
 // File
-//   pager.v
+//   pager.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -195,80 +198,94 @@ module PAGER (
    // Page Table Write Addressing
    //
 
-   wire         writeSel      = vmaREG[18];
-   wire [ 0: 7] writeAddr     = vmaREG[19:26];
+   wire [ 0: 8] writeAddr     = vmaREG[18:26];
 
    //
    // Page Table Read Addressing
    //
 
-   wire [ 0: 8] readAddr      = {dp[19:26], dp[18]};
+   wire  [0: 8] readAddr      = dp[18:26];
 
 `ifndef PAGE_FAIL_TEST
 
    //
    // This is the 'normal' Pager
    //
-   // Two variants exist: one is optimized to use a XILINX dual port RAM
+   // Two variants exist: one is optimized to use a QUARTUS dual port RAM
    // and the other is generic which infers RAM from the HDL.
    //
 
-`ifdef XILINX
-
-   wire [31: 0] readData;
-   wire [31: 0] writeData     = pageSWEEP ? 32'b0 : {2{1'b0, pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI}};
-   wire [ 3: 0] writeEnable   = {{2{pageSWEEP | writeSel}}, {2{pageSWEEP | !writeSel}}};
+`undef QUARTUS
+`ifdef QUARTUS
 
    //
-   // Must use 18Kb Block RAM in True Dual-Port Mode to implement the Page Memory
-   // The Dual Port Memory is configured as follows:
+   // The Page Table Dual Port Memory is configured as follows:
    //
-   //   Port A: 256x36  (write port)
-   //   Part B: 512x18  (read  port)
+   //   Port A: 256x32  (write port)
+   //   Part B: 512x16  (read  port)
    //
-   // http://www.xilinx.com/support/documentation/sw_manuals/xilinx11/spartan6_hdl.pdf
+   // Note the actual memory required is x30 and x15. This is right justified
+   // into more standard 32-bit and 16-bit memories. Bit 15 and bit 31 are just
+   // padding and are not used.
+
+   wire [16: 0] readData;
+   wire [31: 0] writeData  = pageSWEEP ? 32'b0 : {2{1'b0, pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI}};
+   wire [ 3: 0] byteEnable = {{2{pageSWEEP | writeSel}}, {2{pageSWEEP | !writeSel}}};
+
+   //
+   // Must use SYNCRAM in True Dual-Port Mode to implement the Page Memory
    //
 
-   RAMB16BWER #(
-      .DATA_WIDTH_A             (36),                           // Port A data width
-      .DATA_WIDTH_B             (18),                           // Port B data width
-      .DOA_REG                  (0),                            // Port A output register not used
-      .DOB_REG                  (0),                            // Port B output register not used
-      .EN_RSTRAM_A              ("FALSE"),                      // Port A output register reset (not used)
-      .EN_RSTRAM_B              ("FALSE"),                      // Port B output register reset (not used)
-      .INIT_A                   (36'b0),                        // Port A output register initial value (not used)
-      .INIT_B                   (36'b0),                        // Port B output register initial value (not used)
-      .INIT_FILE                ("NONE"),                       // Initialization file
-      .RSTTYPE                  ("SYNC"),                       // Type of reset
-      .RST_PRIORITY_A           ("CE"),                         // Port A reset priority
-      .RST_PRIORITY_B           ("CE"),                         // Port B reset priority
-      .SIM_COLLISION_CHECK      ("ALL"),                        // Simulation behavior
-      .SIM_DEVICE               ("SPARTAN6"),                   // Simulation device
-      .SRVAL_A                  (36'b0),                        // Port A register reset value
-      .SRVAL_B                  (36'b0),                        // Port B register reset value
-      .WRITE_MODE_A             ("WRITE_FIRST"),                // Port A write mode
-      .WRITE_MODE_B             ("WRITE_FIRST")                 // Port B write mode
+   altsyncram_component #(
+      .operation_mode           ("DUAL_PORT"),                  // Memory Mode
+      .intended_device_family   ("Cyclone V"),                  // Famility for simulation
+      .lpm_type                 ("altsyncram"),                 // Type of memory for simulation
+      .power_up_uninitialized   ("FALSE"),                      // No initialization
+      .byte_size                (8),                            // For byte-enables
+//
+      .numwords_a               (256),                          // Port A: Words of Memory
+      .width_a                  ( 32),                          // Port A: Data width
+      .widthad_a                (  8),                          // Port A: Address width
+      .width_byteena_a          (  4),                          // Port A: Byte enable width
+      .address_aclr_b           ("NONE"),                       // Port A: No need to clear address registers
+      .clock_enable_input_a     ("BYPASS"),                     // Port A: Clock enable mode
+//
+      .numwords_b               (512),                          // Port B: Words of Memory
+      .width_b                  ( 16),                          // Port B: Data width
+      .widthad_b                (  8),                          // Port B: Address width
+      .address_reg_b            ("CLOCK0"),                     // Port B: Select clock for address reg
+      .clock_enable_input_b     ("BYPASS"),                     // Port B:
+      .outdata_aclr_b           ("NONE"),                       // Port B:
+      .clock_enable_output_b    ("BYPASS"),                     // Port B
+      .outdata_reg_b            ("UNREGISTERED"),               // Port B:
+      .rdcontrol_reg_b          ("CLOCK0"),                     // Port B: Select clock for control reg
+      .read_during_write_mode_mixed_ports("DONT_CARE")
    ) pageTABLE (
-      .DIA                      (writeData),                    // Port A data input
-      .DIPA                     (4'b0),                         // Port A parity input (not used)
-      .DOA                      (),                             // Port A data output (not used)
-      .DOPA                     (),                             // Port A parity output (not used)
-      .ADDRA                    ({1'b0, writeAddr, 5'b0}),      // Port A address input (9 bits)
-      .CLKA                     (clk),                          // Port A clock input
-      .ENA                      (clken & pageWRITE),            // Port A enable input
-      .REGCEA                   (1'b1),                         // Port A register clock enable input
-      .RSTA                     (1'b0),                         // Port A register set/reset input
-      .WEA                      (writeEnable),                  // Port A write enable input (4 bits)
-      .DIB                      (32'b0),                        // Port B data input (not used)
-      .DIPB                     (4'b0),                         // Port B parity input (not used)
-      .DOB                      (readData),                     // Port B data output (32 bit)
-      .DOPB                     (),                             // Port B parity output (not used)
-      .ADDRB                    ({1'b0, readAddr, 4'b0}),       // Port B address input (10 bits)
-      .CLKB                     (clk),                          // Port B clock input
-      .ENB                      (clken & vmaEN),                // Port B enable input
-      .REGCEB                   (1'b1),                         // Port B register clock enable input
-      .RSTB                     (1'b0),                         // Port B register set/reset input
-      .WEB                      (4'b0)                          // Port B write enable input (4 bits)
+      .clock0                   (clk),                          // Clock input
+      .clock1                   (1'b1),                         // Not used
+      .aclr0                    (1'b0),                         // Not used
+      .aclr1                    (1'b0),                         // Not used
+      .clocken0                 (1'b1),                         // Not used
+      .clocken1                 (1'b1),                         // Not used
+      .clocken2                 (1'b1),                         // Not used
+      .clocken3                 (1'b1),                         // Not used
+      .eccstatus                (),                             // Not used
+//
+      .address_a                (writeAddr),                    // Port A: Address input (8 bits)
+      .data_a                   (writeData),                    // Port A: Data input (32 bits)
+      .byteena_a                (byteEnable),                   // Port A: Byte enables (4 bits)
+      .wren_a                   (clken & pageWRITE),            // Port A: Write enable
+      .rden_a                   (1'b1),                         // Port A: Read enable (port is write-only)
+      .q_a                      (),                             // Port A: Data output (port is write-only)
+      .addressstall_a           (1'b0),                         // Port A: Address stall (not used)
+//
+      .address_b                (readAddr),                     // Port B: Address input (9 bits)
+      .data_b                   (16'b0),                        // Port B: Data input (port is read-only)
+      .byteena_b                ({4{1'b1}}),                    // Port B: Byte enables (not used)
+      .wren_b                   (1'b0),                         // Port B: Write enable (port is read-only)
+      .rden_b                   (clken & vmaEN),                // Port B: Read enable
+      .q_b                      (readData),                     // Port b: Data output (16-bits)
+      .addressstall_b           (1'b0)                          // Port B: Address stall (not used)
    );
 
    always @*
@@ -276,77 +293,57 @@ module PAGER (
         {pageFLAGS, pageADDR} <= readData[14:0];
      end
 
-`else // !`ifdef XILINX
+`else // !`ifdef QUARTUS
 
    //
-   // Page Table Write (Even)
+   // Page Table
    //
    // Details
    //  The Page Table is invalidated by writing zeros.  This clears the "Page
-   //  Valid" bit.
+   //  Valid" bit among other bits.
+   //
+   //  The Page Lookup is performed when the VMA is loaded.  See file header.
    //
    // Trace
    //   DPM6/E130
    //   DPM6/E154
    //   DPM6/E162
    //   DPM6/E184
-   //
-
-   reg [0:14] pageTABLE[0:511];
-
-   always @(posedge clk)
-     begin
-        if (clken & pageWRITE)
-          begin
-             if (pageSWEEP)
-               pageTABLE[{writeAddr, 1'b0}] <= 0;
-             else if (!writeSel)
-               pageTABLE[{writeAddr, 1'b0}] <= {pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI};
-          end
-     end
-
-   //
-   // Page Table Write (Odd)
-   //
-   // Details
-   //  The Page Table is invalidated by writing zeros.  This clears the "Page
-   //  Valid" bit.
-   //
-   // Trace
    //   DPM6/E138
    //   DPM6/E146
    //   DPM6/E176
    //   DPM6/E192
    //
 
+   reg [0:1][0:14] pageTABLE[0:255];
+
    always @(posedge clk)
      begin
+
+        //
+        // Page Table Write
+        //
+
         if (clken & pageWRITE)
           begin
              if (pageSWEEP)
-               pageTABLE[{writeAddr, 1'b1}] <= 0;
-             else if (writeSel)
-               pageTABLE[{writeAddr, 1'b1}] <= {pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI};
+               begin
+                  pageTABLE[writeAddr[1:8]][0] <= 15'b0;
+                  pageTABLE[writeAddr[1:8]][1] <= 15'b0;
+               end
+             else
+               pageTABLE[writeAddr[1:8]][writeAddr[0]] <= {pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI};
           end
+
+        //
+        // Page Table Read
+        //
+
+        else if (clken & vmaEN)
+          {pageFLAGS, pageADDR} <= pageTABLE[readAddr[1:8]][readAddr[0]];
      end
 
-   //
-   // Page Table Read
-   //
-   // Details
-   //  The Page Lookup is performed when the VMA is loaded.  See file header.
-   //
-
-
-   always @(posedge clk)
-     begin
-        if (clken & vmaEN)
-          begin
-             {pageFLAGS, pageADDR} <= pageTABLE[readAddr];
-          end
-     end
-
-`endif // !`ifdef XILINX
+`endif // !`ifdef QUARTUS
 
 `else // !`ifndef PAGE_FAIL_TEST
 
