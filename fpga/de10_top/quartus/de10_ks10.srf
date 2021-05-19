@@ -1,11 +1,50 @@
-{ "" "" "" "Variable or input pin \"data_b\" is defined but never used." {  } {  } 0 287013 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "Verilog HDL or VHDL warning at alu.v(621): object \"bb\" assigned a value but never read" {  } {  } 0 10036 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "soc_system_hps_hps_io_border.sdc" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "CPU:uCPU\|USEQ:uUSEQ\|STACK:uSTACK\|* from synchronous design logic.  Pass-through logic has been added to match the read-during-write behavior of the original design." {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "alt_vipitc131_*" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "altera_*" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "hps_sdram_*" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "altera_mem_*" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "\"DROM.*\" at drom.v(*) has no driver or initial value, using a default initial value '0'" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "\"CROM.*\" at crom.v(*) has no driver or initial value, using a default initial value '0'" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "alt_vipvfr131*" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "LP26:uLP26\|lpDVFUDAT*"    {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "LP26:uLP26\|lpLINBUF*"     {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "USEQ:uUSEQ\|STACK:uSTACK*" {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "LPRAMD:RAMD\|ramDATA*"     {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "LPRAMD:RAMD\|ramCTRL*"     {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "lpOVFUDAT"                 {  } {  } 0  10030 "" 0 0 "Design Software" 0 -1 0 ""}
+
+{ "" "" "" "DROM"                      {  } {  } 0  10030 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "DROM"                      {  } {  } 0  14320 "" 0 0 "Design Software" 0 -1 0 ""}
+
+{ "" "" "" "CROM"                      {  } {  } 0  10030 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "CROM"                      {  } {  } 0  14320 "" 0 0 "Design Software" 0 -1 0 ""}
+
+{ "" "" "" "SSRAM_ADV"                 {  } {  } 0  13410 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "SSRAM_A\[21\]"             {  } {  } 0  13410 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "\"bb\""                    {  } {  } 0  10036 "" 0 0 "Design Software" 0 -1 0 ""}
+
+{ "" "" "" "hps_sdram_*"               {  } {  } 0  10030 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "hps_sdram_*"               {  } {  } 0  10034 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "hps_sdram_*"               {  } {  } 0  10036 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "hps_sdram_*"               {  } {  } 0  10230 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "hps_sdram_*"               {  } {  } 0  10236 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "hps_sdram_*"               {  } {  } 0  10858 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "hps_sdram_*"               {  } {  } 0  10936 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "hps_sdram_*"               {  } {  } 0 332049 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "hps_sdram_*"               {  } {  } 0 332098 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "hps_sdram_*"               {  } {  } 0 332172 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "hps_sdram_*"               {  } {  } 0 332174 "" 0 0 "Design Software" 0 -1 0 ""}
+
+{ "" "" "" "altera_mem_*"              {  } {  } 0  10230 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "altera_mem_*"              {  } {  } 0  12158 "" 0 0 "Design Software" 0 -1 0 ""}
+
+{ "" "" "" "altera_merlin_*"           {  } {  } 0  10230 "" 0 0 "Design Software" 0 -1 0 ""}
+
+{ "" "" "" "soc_system_hps_*"          {  } {  } 0 169185 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "soc_system_hps_*"          {  } {  } 0 332049 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "soc_system_hps_*"          {  } {  } 0 332050 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "soc_system_hps_*"          {  } {  } 0 332174 "" 0 0 "Design Software" 0 -1 0 ""}
+
+{ "" "" "" "HPS_*"                     {  } {  } 0  13010 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "HPS_DDR3*"                 {  } {  } 0 169066 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "HPS_DDR3*"                 {  } {  } 0 169185 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "HPS_DDR3*"                 {  } {  } 0 332172 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "HPS_SPI_SS"                {  } {  } 0 169065 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "HDMI_*"                    {  } {  } 0  15706 "" 0 0 "Design Software" 0 -1 0 ""}
+
+{ "" "" "" "*"                         {  } {  } 0  12241 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "*"                         {  } {  } 0  14073 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "*"                         {  } {  } 0  15714 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "*"                         {  } {  } 0 292013 "" 0 0 "Design Software" 0 -1 0 ""}
