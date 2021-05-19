@@ -7,21 +7,30 @@
 //
 // Details
 //
-//        ADDR   HI (ODD) BYTE    LO (EVEN) BYTE
-//             +----------------+----------------+
-//          0  |        1       |        0       |     DMA IN  DATA
-//  IBUS    1  |        3       |        2       |     DMA OUT DATA
-//  OBUS    2  |        5       |        4       |     DMA IN  ADDRESS
-//          3  |        7       |        6       |     DMS OUT ADDRESS
-//             +----------------+----------------+
-//          4  |        1       |        0       |     CSR0
-//  IBUS*   5  |        3       |        2       |     CSR2
-//  OBUS*   6  |        5       |        4       |     CSR4
-//          7  |        7       |        6       |     CSR6
-//             +----------------+----------------+
+//   IBUS[0]  : CSR0
+//   IBUS[1]  : CSR1
+//   IBUS[2]  : CSR2
+//   IBUS[3]  : CSR3
+//   IBUS[4]  : CSR4
+//   IBUS[5]  : CSR5
+//   IBUS[6]  : CSR6
+//   IBUS[7]  : CSR7
+//
+//   IBUSS[0] : NPRIDL       DMA DATA IN  (LO)
+//   IBUSS[1] : NPRIDH       DMA DATA IN  (HI)
+//   IBUSS[2] : NPRODL       DMA DATA OUT (LO)
+//   IBUSS[3] : NPRODH       DMA DATA OUT (HI)
+//   IBUSS[4] : NPRIAL       DMA ADDR IN  (LO)
+//   IBUSS[5] : NPRIAH       DMA ADDR IN  (HI)
+//   IBUSS[6] : NPROAL       DMA ADDR OUT (LO)
+//   IBUSS[7] : NPROAH       DMA ADDR OUT (HI)
 //
 // File
 //   kmcmpram.v
+//
+// Note:
+//   I didn't bother trying to use RAM for this.  It's just simpler to use some
+//   some registers.
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -62,36 +71,25 @@ module KMCMPRAM (
       input  wire        devACKI,       // DMA acknowleget in
       input  wire        devLOBYTE,     // Write low byte
       input  wire        devHIBYTE,     // Write high byte
-      input  wire        csrWRITE,      // Write to CSR
-      input  wire [35:0] kmcADDRI,      // Addr in
+      input  wire        sel0WRITE,     // SEL0 write
+      input  wire        sel2WRITE,     // SEL2 write
+      input  wire        sel4WRITE,     // SEL4 write
+      input  wire        sel6WRITE,     // SEL6 write
       input  wire [35:0] kmcDATAI,      // Data in
       input  wire [15:0] kmcCRAM,       // Control RAM
       input  wire [ 7:0] kmcALU,        // ALU data
       input  wire        kmcRAMCLKEN,   // MPRAM clock enable
       input  wire        kmcNPRO,       // NPR out transaction
       output wire        kmcMPBUSY,     // MPRAM busy
-      output wire [15:0] kmcNPRID,      // NPR in data
-      output wire [15:0] kmcNPROD,      // NPR out data
-      output wire [15:0] kmcNPRIA,      // NPR in address
-      output wire [15:0] kmcNPROA,      // NPR out address
-      output wire [15:0] kmcCSR0,       // CSR0 output
-      output wire [15:0] kmcCSR2,       // CSR2 output
-      output wire [15:0] kmcCSR4,       // CSR4 output
-      output wire [15:0] kmcCSR6        // CSR5 output
+      output reg  [15:0] kmcNPRID,      // NPR in data
+      output reg  [15:0] kmcNPROD,      // NPR out data
+      output reg  [15:0] kmcNPRIA,      // NPR in address
+      output reg  [15:0] kmcNPROA,      // NPR out address
+      output reg  [15:0] kmcCSR0,       // CSR0 output
+      output reg  [15:0] kmcCSR2,       // CSR2 output
+      output reg  [15:0] kmcCSR4,       // CSR4 output
+      output reg  [15:0] kmcCSR6        // CSR5 output
    );
-
-   //
-   // Register Addresses
-   //
-
-   localparam [2:0] NPRID_ADDR = 0,
-                    NPROD_ADDR = 1,
-                    NPRIA_ADDR = 2,
-                    NPROA_ADDR = 3,
-                    CSR0_ADDR  = 4,
-                    CSR2_ADDR  = 5,
-                    CSR4_ADDR  = 6,
-                    CSR6_ADDR  = 7;
 
    //
    // Decode writes to MPRAM
@@ -100,134 +98,221 @@ module KMCMPRAM (
    wire kmcDSTOBUS  = `kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_OBUS;
    wire kmcDSTOBUSS = `kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_OBUSS;
 
-   //
-   //  Port A Data Mux
-   //
-   //  This routes the device data into to the MPRAM write port.
-   //
-   // Trace:
-   //   M8206/D9/E69
-   //   M8206/D9/E77
-   //   M8206/D9/E78
-   //   M8206/D9/E86
-   //
-
-   reg [15:0] kmcDATA;
-   reg [ 2:0] kmcADDR;
-   reg        kmcWRH;
-   reg        kmcWRL;
-   reg        kmcMPWR;
-
-   always @*
-     begin
-
-        kmcDATA <= 0;
-        kmcADDR <= 0;
-        kmcWRL  <= 0;
-        kmcWRH  <= 0;
-        kmcMPWR <= 0;
-
-        //
-        // Microprocessor Writes
-        //
-
-        if ((kmcDSTOBUS  & !kmcCRAM[3]) |
-            (kmcDSTOBUSS & !kmcCRAM[3]))
-          begin
-             kmcDATA <= {kmcALU, kmcALU};
-             kmcWRL  <= !kmcCRAM[0];
-             kmcWRH  <=  kmcCRAM[0];
-             kmcMPWR <=  kmcRAMCLKEN;
-             if (kmcDSTOBUS)
-               kmcADDR <= {1'b0, kmcCRAM[2:1]};
-             else
-               kmcADDR <= {1'b1, kmcCRAM[2:1]};
-          end
-
-        //
-        // IO Bus DMA input goes to NPRIDL
-        //
-
-        else if (devREQO & devACKI & !kmcNPRO)
-          begin
-             kmcDATA <= kmcDATAI[15:0];
-             kmcADDR <= NPRID_ADDR;
-             kmcWRL  <= devLOBYTE;
-             kmcWRH  <= devHIBYTE;
-             kmcMPWR <= 1;
-          end
-
-        //
-        // IO Bus writes to CSRs
-        //
-
-        else if (csrWRITE)
-          begin
-             kmcDATA <= kmcDATAI[15:0];
-             kmcADDR <= {1'b1, kmcADDRI[2:1]};
-             kmcWRL  <= devLOBYTE;
-             kmcWRH  <= devHIBYTE;
-             kmcMPWR <= 1;
-         end
-
-     end
-
    assign kmcMPBUSY = ((kmcDSTOBUS  & kmcRAMCLKEN) |
                        (kmcDSTOBUSS & kmcRAMCLKEN));
 
    //
-   // Multi-port RAM
-   //
-
-   reg [15:0] mpram[0:7];
-
-`ifndef SYNTHESIS
-
-   initial
-     begin
-        mpram[0] = 0;
-        mpram[1] = 0;
-        mpram[2] = 0;
-        mpram[3] = 0;
-        mpram[4] = 0;
-        mpram[5] = 0;
-        mpram[6] = 0;
-        mpram[7] = 0;
-     end
-
-`endif
-
-   //
-   // MPRAM High Byte
+   // NPRIDL
+   //  This stores the results of an NPR read.
    //
 
    always @(posedge clk)
      begin
-        if (kmcMPWR & kmcWRH)
-          mpram[kmcADDR][15:8] <= kmcDATA[15:8];
+        if (rst)
+          kmcNPRID[7:0] <= 0;
+        else if (devLOBYTE & devREQO & devACKI & !kmcNPRO)
+          kmcNPRID[7:0] <= kmcDATAI[7:0];
+        else if (kmcRAMCLKEN & kmcDSTOBUS & (`kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPRIDL))
+          kmcNPRID[7:0] <= kmcALU;
      end
 
    //
-   // MPRAM Low Byte
+   // NPRIDH
+   //  This stores the results of an NPR read.
    //
 
    always @(posedge clk)
      begin
-        if (kmcMPWR & kmcWRL)
-          mpram[kmcADDR][ 7:0] <= kmcDATA[ 7:0];
+        if (rst)
+          kmcNPRID[15:8] <= 0;
+        else if (devHIBYTE & devREQO & devACKI & !kmcNPRO)
+          kmcNPRID[15:8] <= kmcDATAI[15:8];
+        else if (kmcRAMCLKEN & kmcDSTOBUS & (`kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPRIDH))
+          kmcNPRID[15:8] <= kmcALU;
      end
 
    //
-   // Register outputs
+   // NPRODL
    //
 
-   assign kmcNPRID = mpram[NPRID_ADDR];
-   assign kmcNPROD = mpram[NPROD_ADDR];
-   assign kmcNPRIA = mpram[NPRIA_ADDR];
-   assign kmcNPROA = mpram[NPROA_ADDR];
-   assign kmcCSR0  = mpram[CSR0_ADDR];
-   assign kmcCSR2  = mpram[CSR2_ADDR];
-   assign kmcCSR4  = mpram[CSR4_ADDR];
-   assign kmcCSR6  = mpram[CSR6_ADDR];
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcNPROD[7:0] <= 0;
+        else if (kmcRAMCLKEN & kmcDSTOBUS & (`kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPRODL))
+          kmcNPROD[7:0] <= kmcALU;
+     end
+
+   //
+   // NPRODH
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcNPROD[15:8] <= 0;
+        else if (kmcRAMCLKEN & kmcDSTOBUS & (`kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPRODH))
+          kmcNPROD[15:8] <= kmcALU;
+     end
+
+   //
+   // NPRIAL
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcNPRIA[7:0] <= 0;
+        else if (kmcRAMCLKEN & kmcDSTOBUS & (`kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPRIAL))
+          kmcNPRIA[7:0] <= kmcALU;
+     end
+
+   //
+   // NPRIAH
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcNPRIA[15:8] <= 0;
+        else if (kmcRAMCLKEN & kmcDSTOBUS & (`kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPRIAH))
+          kmcNPRIA[15:8] <= kmcALU;
+     end
+
+   //
+   // NPROAL
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcNPROA[7:0] <= 0;
+        else if (kmcRAMCLKEN & kmcDSTOBUS & `kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPROAL)
+          kmcNPROA[7:0] <= kmcALU;
+     end
+
+   //
+   // NPROAH
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcNPROA[15:8] <= 0;
+        else if (kmcRAMCLKEN & kmcDSTOBUS & (`kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPROAH))
+          kmcNPROA[15:8] <= kmcALU;
+     end
+
+   //
+   // CSR0
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcCSR0[7:0] <= 0;
+        else if (devLOBYTE & sel0WRITE)
+          kmcCSR0[7:0] <= kmcDATAI[7:0];
+        else if (kmcRAMCLKEN & kmcDSTOBUSS & (`kmcCRAM_OBUSS(kmcCRAM) == `kmcCRAM_OBUSS_CSR0))
+          kmcCSR0[7:0] <= kmcALU;
+     end
+
+   //
+   // CSR1
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcCSR0[15:8] <= 0;
+        else if (devHIBYTE & sel0WRITE)
+          kmcCSR0[15:8] <= kmcDATAI[15:8];
+        else if (kmcRAMCLKEN & kmcDSTOBUSS & (`kmcCRAM_OBUSS(kmcCRAM) == `kmcCRAM_OBUSS_CSR1))
+          kmcCSR0[15:8] <= kmcALU;
+     end
+
+   //
+   // CSR2
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcCSR2[7:0] <= 0;
+        else if (devLOBYTE & sel2WRITE)
+          kmcCSR2[7:0] <= kmcDATAI[7:0];
+        else if (kmcRAMCLKEN & kmcDSTOBUSS & `kmcCRAM_OBUSS(kmcCRAM) == `kmcCRAM_OBUSS_CSR2)
+          kmcCSR2[7:0] <= kmcALU;
+     end
+
+   //
+   // CSR3
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcCSR2[15:8] <= 0;
+        else if (devHIBYTE & sel2WRITE)
+          kmcCSR2[15:8] <= kmcDATAI[15:8];
+        else if (kmcRAMCLKEN & kmcDSTOBUSS & (`kmcCRAM_OBUSS(kmcCRAM) == `kmcCRAM_OBUSS_CSR3))
+          kmcCSR2[15:8] <= kmcALU;
+     end
+
+   //
+   // CSR4
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcCSR4[7:0] <= 0;
+        else if (devLOBYTE & sel4WRITE)
+          kmcCSR4[7:0] <= kmcDATAI[7:0];
+        else if (kmcRAMCLKEN & kmcDSTOBUSS & (`kmcCRAM_OBUSS(kmcCRAM) == `kmcCRAM_OBUSS_CSR4))
+          kmcCSR4[7:0] <= kmcALU;
+     end
+
+   //
+   // CSR5
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcCSR4[15:8] <= 0;
+        else if (devHIBYTE & sel4WRITE)
+          kmcCSR4[15:8] <= kmcDATAI[15:8];
+        else if (kmcRAMCLKEN & kmcDSTOBUSS & (`kmcCRAM_OBUSS(kmcCRAM) == `kmcCRAM_OBUSS_CSR5))
+          kmcCSR4[15:8] <= kmcALU;
+     end
+
+   //
+   // CSR6
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcCSR6[7:0] <= 0;
+        else if (devLOBYTE & sel6WRITE)
+          kmcCSR6[7:0] <= kmcDATAI[7:0];
+        else if (kmcRAMCLKEN & kmcDSTOBUSS & (`kmcCRAM_OBUSS(kmcCRAM) == `kmcCRAM_OBUSS_CSR6))
+          kmcCSR6[7:0] <= kmcALU;
+     end
+
+   //
+   // CSR7
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          kmcCSR6[15:8] <= 0;
+        else if (devHIBYTE & sel6WRITE)
+          kmcCSR6[15:8] <= kmcDATAI[15:8];
+        else if (kmcRAMCLKEN & kmcDSTOBUSS & (`kmcCRAM_OBUSS(kmcCRAM) == `kmcCRAM_OBUSS_CSR7))
+          kmcCSR6[15:8] <= kmcALU;
+     end
 
 endmodule
