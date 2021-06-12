@@ -149,24 +149,21 @@ module KMC11 (
    wire sel4WRITE = devWRITE  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
    wire sel6READ  = devREAD   & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
    wire sel6WRITE = devWRITE  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
-// wire csrREAD   = sel0READ  | sel2READ  | sel4READ  | sel6READ;
-   wire csrWRITE  = sel0WRITE | sel2WRITE | sel4WRITE | sel6WRITE;
 
    //
    // Big-endian to little-endian data bus swap
    //
 
-   wire [35:0] kmcADDRI = devADDRI[0:35];
    wire [35:0] kmcDATAI = devDATAI[0:35];
 
    //
    // Address Flags (little-endian)
    //
 
-   localparam [35:18] kmcRDMEMFLAGS = 18'b000_100_000_000_000_000,	// Read
-                      kmcWRMEMFLAGS = 18'b000_001_000_000_000_000,	// Write
-                      kmcRDIOFLAGS  = 18'b000_100_001_010_010_000,	// Read Phys IO Byte
-                      kmcWRIOFLAGS  = 18'b000_001_001_010_010_000;	// Write Phys IO Byte
+   localparam [35:18] kmcRDMEMFLAGS = 18'b000_100_000_000_000_000,      // Read memory
+                      kmcWRMEMFLAGS = 18'b000_001_000_000_000_000,      // Write memory
+                      kmcRDIOFLAGS  = 18'b000_100_001_010_010_011,      // Read Phys IO Byte to UBA3
+                      kmcWRIOFLAGS  = 18'b000_001_001_010_010_011;      // Write Phys IO Byte to UBA3
 
    //
    // Maintenance Register Bits
@@ -322,8 +319,10 @@ module KMC11 (
       .devACKI     (devACKI),
       .devLOBYTE   (devLOBYTE),
       .devHIBYTE   (devHIBYTE),
-      .csrWRITE    (csrWRITE),
-      .kmcADDRI    (kmcADDRI),
+      .sel0WRITE   (sel0WRITE),
+      .sel2WRITE   (sel2WRITE),
+      .sel4WRITE   (sel4WRITE),
+      .sel6WRITE   (sel6WRITE),
       .kmcDATAI    (kmcDATAI),
       .kmcCRAM     (kmcCRAM),
       .kmcALU      (kmcALU),
@@ -486,7 +485,7 @@ module KMC11 (
       .rst         (rst),
       .kmcINIT     (kmcINIT),
       .kmcSETIRQ   (kmcSETIRQ),
-      .kmcIACK     (kmcINTR == devINTA),
+      .kmcIACK     (vectREAD),
       .kmcIRQO     (kmcIRQO)
    );
 
@@ -499,8 +498,12 @@ module KMC11 (
    //
    // DMA Address
    //
-
-`ifdef NPR_DOES_IO
+   // The KMC11 can generate IO NPR (aka DMA) operations.  This is tested
+   // in DSKMA Test.65 and Test.66.
+   //
+   // This decodes IO page addresses (0760000 - 0777777) in order to generate
+   // the proper KS10 backplane bus cycles.
+   //
 
    always @*
      begin
@@ -519,18 +522,6 @@ module KMC11 (
                devADDRO = {kmcRDMEMFLAGS[35:18], kmcBAEI[17:16], kmcNPRIA[15:0]};
           end
      end
-
-`else
-
-   always @*
-     begin
-        if (kmcNPRO)
-          devADDRO = {kmcWRMEMFLAGS[35:18], kmcBAEO[17:16], kmcNPROA[15:0]};
-        else
-          devADDRO = {kmcRDMEMFLAGS[35:18], kmcBAEI[17:16], kmcNPRIA[15:0]};
-     end
-
-`endif
 
    //
    // Generate Bus ACK

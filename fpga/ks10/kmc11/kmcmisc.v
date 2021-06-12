@@ -74,7 +74,9 @@ module KMCMISC (
    //
    // Bit 7: Interrupt Request Trigger (OUT)
    //
+   //
 
+   assign kmcSETIRQ = kmcMISCCLKEN & kmcLDMISC & `kmcMISC_IRQO(kmcALU);
 
    //
    // Bit 6: Interrupt Vector Select (VECTXXX4)
@@ -167,11 +169,5 @@ module KMCMISC (
    //
 
    assign kmcMISC = {kmcIRQO, kmcVECTXXX4, kmcLAT, kmcTIMER, kmcBAEO, kmcACLO, kmcNXM};
-
-   //
-   // Edge trigger interrupt
-   //
-
-   assign kmcSETIRQ = kmcMISCCLKEN & kmcLDMISC & `kmcMISC_IRQO(kmcALU);
 
 endmodule

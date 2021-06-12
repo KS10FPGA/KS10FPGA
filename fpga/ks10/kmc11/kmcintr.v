@@ -6,7 +6,7 @@
 //   KMC11 Interrupt Controller
 //
 // Details
-//   This file provides the implementation of the Interrupt Controller
+//   This module implements the KMC11 Interrupt Controller.
 //
 // File
 //   kmcintr.v
@@ -47,15 +47,37 @@ module KMCINTR (
       input  wire kmcINIT,      // Initialize
       input  wire kmcSETIRQ,    // Edge trigger interrupt
       input  wire kmcIACK,      // Interrupt acknowledge
-      output reg  kmcIRQO       // Interrupt request out
+      output wire kmcIRQO       // Interrupt request out
    );
+
+   localparam [1:0] stateIDLE    = 0,
+                    stateACT     = 1,
+                    stateVECTCLR = 2;
+
+   //
+   // The interrupt request MUST clear AFTER the vector cycle is complete.
+   //
+
+   reg [1:0] state;
 
    always @(posedge clk)
      begin
-        if (rst | kmcINIT | kmcIACK)
-          kmcIRQO <= 0;
-        else if (kmcSETIRQ)
-          kmcIRQO <= 1;
+        if (rst | kmcINIT)
+          state <= stateIDLE;
+        else
+          case (state)
+            stateIDLE:
+              if (kmcSETIRQ)
+                state <= stateACT;
+            stateACT:
+              if (kmcIACK)
+                state <= stateVECTCLR;
+            stateVECTCLR:
+              if (!kmcIACK)
+                state <= stateIDLE;
+          endcase
      end
+
+   assign kmcIRQO = state != stateIDLE;
 
 endmodule
