@@ -66,6 +66,9 @@ doxygen : doxyfile
 
 EXCLUDE := \
 	-e RCS \
+	-e libSDL \
+	-e libCONFUSE \
+	-e vt05 \
 
 check :
 	@echo "Tabs in:"
