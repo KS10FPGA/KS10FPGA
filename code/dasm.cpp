@@ -64,12 +64,14 @@ static const char* opSTD(const char *opcode, char *buf, unsigned long long insn)
     unsigned int in = (insn >> 22) &       1;
     unsigned int xr = (insn >> 18) &     017;
     unsigned int ea = (insn >>  0) & 0777777;
+    unsigned int lh = (insn >> 18) & 0777777;
+    unsigned int rh = (insn >>  0) & 0777777;
 
     //
     // Print instruction
     //
 
-    len += sprintf(&ptr[len], "%03o %02o %01o %02o %06o\t", op, ac, in, xr, ea);
+    len += sprintf(&ptr[len], "%06o %06o\t%03o %02o %01o %02o %06o\t", lh, rh, op, ac, in, xr, ea);
 
     //
     // Print opcode
@@ -195,12 +197,14 @@ static const char* opIOT(const char *, char *buf, unsigned long long insn) {
     unsigned int xr = (insn >> 18) &     017;
     unsigned int ea = (insn >>  0) & 0777777;
     unsigned int f  = (insn >> 23) &     077;
+    unsigned int lh = (insn >> 18) & 0777777;
+    unsigned int rh = (insn >>  0) & 0777777;
 
     //
     // Print instruction
     //
 
-    len += sprintf(&ptr[len], "%03o %02o %01o %02o %06o\t", op, ac, in, xr, ea);
+    len += sprintf(&ptr[len], "%06o %06o\t%03o %02o %01o %02o %06o\t", lh, rh, op, ac, in, xr, ea);
 
     //
     // Print opcode
@@ -280,12 +284,14 @@ static const char* opJRST(const char *, char *buf, unsigned long long insn) {
     unsigned int in = (insn >> 22) &       1;
     unsigned int xr = (insn >> 18) &     017;
     unsigned int ea = (insn >>  0) & 0777777;
+    unsigned int lh = (insn >> 18) & 0777777;
+    unsigned int rh = (insn >>  0) & 0777777;
 
     //
     // Print instruction
     //
 
-    len += sprintf(&ptr[len], "%03o %02o %01o %02o %06o\t", op, ac, in, xr, ea);
+    len += sprintf(&ptr[len], "%06o %06o\t%03o %02o %01o %02o %06o\t", lh, rh, op, ac, in, xr, ea);
 
     //
     // Print opcode
@@ -332,7 +338,7 @@ static const char* opJRST(const char *, char *buf, unsigned long long insn) {
 
 const char* dasm(unsigned long long insn) {
 
-    static char buffer[32];
+    static char buffer[80];
 
     static const struct {
         const char *opcode;
