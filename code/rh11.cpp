@@ -197,6 +197,12 @@ bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
 
     if (cs1_read() & cs1_sc) {
         printf("KS10: Disk error reading boot sector\n");
+
+        printf("KS10: RHCS1 is 0x%04x\n"
+               "      RPDS  is 0x%04x\n"
+               "      RPER1 is 0x%04x\n",
+               cs1_read(), ds_read(), er1_read());
+
         return false;
     }
 

@@ -66,6 +66,7 @@ class rh11_t {
         const ks10_t::addr_t da_addr;
         const ks10_t::addr_t cs2_addr;
         const ks10_t::addr_t ds_addr;
+                const ks10_t::addr_t er1_addr;
         const ks10_t::addr_t as_addr;
         const ks10_t::addr_t la_addr;
         const ks10_t::addr_t db_addr;
@@ -200,6 +201,7 @@ class rh11_t {
             da_addr ((base_addr & 07777700) + da_offset ),
             cs2_addr((base_addr & 07777700) + cs2_offset),
             ds_addr ((base_addr & 07777700) + ds_offset ),
+                        er1_addr((base_addr & 07777700) + er1_offset),
             as_addr ((base_addr & 07777700) + as_offset ),
             la_addr ((base_addr & 07777700) + la_offset ),
             db_addr ((base_addr & 07777700) + db_offset ),
@@ -523,6 +525,18 @@ class rh11_t {
 
         uint32_t dc_read(void) {
             return ks10_t::readIO(dc_addr) & regMask;
+        }
+
+        //!
+        //! \brief
+        //!    Read from ER1 register
+        //!
+        //! \returns
+        //!    Contents of ER1 register
+        //!
+
+        uint32_t er1_read(void) {
+            return ks10_t::readIO(er1_addr) & regMask;
         }
 
 };
