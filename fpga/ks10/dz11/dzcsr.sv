@@ -9,7 +9,7 @@
 //   The module implements the DZ11 CSR Register.
 //
 // File
-//   dzcsr.v
+//   dzcsr.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -50,15 +50,16 @@ module DZCSR (
       input  wire         devRESET,             // Device Reset from UBA
       input  wire         devLOBYTE,            // Device Low Byte
       input  wire         devHIBYTE,            // Device High Byte
-      input  wire [ 0:35] devDATAI,             // Device Data In
+      input  wire [35: 0] dzDATAI,              // DZ Data In
       input  wire         csrWRITE,             // Write to CSR
-      input  wire         tdrWRITE,             // Write to TDR
       input  wire         rbufRDONE,            // RBUF Receiver Done
       input  wire         rbufSA,               // RBUF Silo Alarm
-      input  wire [ 7: 0] uartTXEMPTY,          // UART transmitter buffer empty
-      input  wire [15: 0] regTCR,               // TCR Register
+      input  wire         tdrTRDY,		// TDR Transmitter ready
+      input  wire [ 2: 0] tdrTLINE,		// TDR Transmitter line number
       output wire [15: 0] regCSR                // CSR Output
    );
+
+   wire csrCLR;
 
    //
    // CSRPER parameter
@@ -75,26 +76,70 @@ module DZCSR (
    localparam [63:0] CSRCNT = (0.000003 * `CLKFRQ);
 
    //
-   // Big-endian to little-endian data bus swap
+   // CSR Transmitter Interrupt Enable (TIE)
    //
 
-   wire [35:0] dzDATAI = devDATAI[0:35];
+   reg csrTIE;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | csrCLR | devRESET)
+          csrTIE <= 0;
+        else if (csrWRITE & devHIBYTE)
+          csrTIE <= `dzCSR_TIE(dzDATAI);
+     end
 
    //
-   // TCR[LIN] bits
+   // CSR SILO Alarm Enable(SAE)
    //
 
-   wire [ 7:0] tcrLIN  = `dzTCR_LIN(regTCR);
+   reg csrSAE;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | csrCLR | devRESET)
+          csrSAE <= 0;
+        else if (csrWRITE & devHIBYTE)
+          csrSAE <= `dzCSR_SAE(dzDATAI);
+     end
 
    //
-   // CSR[CLR]
+   // CSR Receiver Interrupt Enable (RIE)
+   //
+
+   reg csrRIE;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | csrCLR | devRESET)
+          csrRIE <= 0;
+        else if (csrWRITE & devLOBYTE)
+          csrRIE <= `dzCSR_RIE(dzDATAI);
+     end
+
+   //
+   // CSR Master Scan Enable (MSE)
+   //
+
+   reg csrMSE;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | csrCLR | devRESET)
+          csrMSE <= 0;
+        else if (csrWRITE  & devLOBYTE)
+          csrMSE <= `dzCSR_MSE(dzDATAI);
+     end
+
+   //
+   // CSR Clear (CLR)
    //
    // Details
    //  See note associated with CSRPER parameter
    //
 
    reg [9:0] clrCOUNT;
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | devRESET)
           clrCOUNT <= 0;
@@ -104,164 +149,27 @@ module DZCSR (
           clrCOUNT <= clrCOUNT - 1'b1;
      end
 
-   wire csrCLR = (clrCOUNT != 0);
+   assign csrCLR = (clrCOUNT != 0);
 
    //
-   // CSR Read/Write bits
-   //
-   // Details
-   //  These bits can be written as bytes or words.
+   // CSR Maintenance Mode (MAINT)
    //
 
-   reg csrTIE;
-   reg csrSAE;
-   reg csrRIE;
-   reg csrMSE;
    reg csrMAINT;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | csrCLR | devRESET)
-          begin
-             csrTIE   <= 0;
-             csrSAE   <= 0;
-             csrRIE   <= 0;
-             csrMSE   <= 0;
-             csrMAINT <= 0;
-          end
-        else if (csrWRITE)
-          begin
-             if (devHIBYTE)
-               begin
-                  csrTIE   <= `dzCSR_TIE(dzDATAI);
-                  csrSAE   <= `dzCSR_SAE(dzDATAI);
-               end
-             if (devLOBYTE)
-               begin
-                  csrRIE   <= `dzCSR_RIE(dzDATAI);
-                  csrMSE   <= `dzCSR_MSE(dzDATAI);
-                  csrMAINT <= `dzCSR_MAINT(dzDATAI);
-               end
-          end
+          csrMAINT <= 0;
+        else if (csrWRITE & devLOBYTE)
+          csrMAINT <= `dzCSR_MAINT(dzDATAI);
      end
-
-   //
-   // State Machine states
-   //
-
-   localparam [1:0] stateSCAN =  0,
-                    stateHOLD =  1,
-                    stateWAIT =  2;
-
-   //
-   // Transmitter Scanner
-   //
-
-   reg [2:0] scan;
-   reg [1:0] state;
-   reg [2:0] csrTLINE;
-
-   always @(posedge clk)
-     begin
-        if (rst | csrCLR | devRESET)
-          begin
-             scan     <= 0;
-             csrTLINE <= 0;
-             state    <= stateSCAN;
-          end
-        else
-
-          case (state)
-
-            //
-            // Scan for an empty UART transmitter that is enabled.
-            //
-
-            stateSCAN:
-              begin
-                 if (csrMSE)
-
-                   //
-                   // Check for a line that is enabled that has an empty
-                   // UART Transmitter.  Save the line in csrTLINE.
-                   //
-
-                   if (((scan == 0) & tcrLIN[0] & uartTXEMPTY[0]) |
-                       ((scan == 1) & tcrLIN[1] & uartTXEMPTY[1]) |
-                       ((scan == 2) & tcrLIN[2] & uartTXEMPTY[2]) |
-                       ((scan == 3) & tcrLIN[3] & uartTXEMPTY[3]) |
-                       ((scan == 4) & tcrLIN[4] & uartTXEMPTY[4]) |
-                       ((scan == 5) & tcrLIN[5] & uartTXEMPTY[5]) |
-                       ((scan == 6) & tcrLIN[6] & uartTXEMPTY[6]) |
-                       ((scan == 7) & tcrLIN[7] & uartTXEMPTY[7]))
-                     begin
-                        csrTLINE <= scan;
-                        state    <= stateHOLD;
-                     end
-                   else
-                     begin
-                        scan <= scan + 1'b1;
-                     end
-              end
-
-            //
-            // Hold the TLINE until data is written to the UART
-            // transmitter.
-            //
-
-            stateHOLD:
-              begin
-
-                 //
-                 // If the line is disabled while we are holding it
-                 // (i.e., tcrLIN ia modified), just dump it and go back
-                 // to scanning.
-                 //
-
-                 if (((csrTLINE == 0) & !tcrLIN[0]) |
-                     ((csrTLINE == 1) & !tcrLIN[1]) |
-                     ((csrTLINE == 2) & !tcrLIN[2]) |
-                     ((csrTLINE == 3) & !tcrLIN[3]) |
-                     ((csrTLINE == 4) & !tcrLIN[4]) |
-                     ((csrTLINE == 5) & !tcrLIN[5]) |
-                     ((csrTLINE == 6) & !tcrLIN[6]) |
-                     ((csrTLINE == 7) & !tcrLIN[7]))
-                   begin
-                      state <= stateSCAN;
-                   end
-
-                 //
-                 // Data is being written to the UART transmitter.
-                 //
-
-                 else if (tdrWRITE & devLOBYTE)
-                   begin
-                      state <= stateWAIT;
-                   end
-              end
-
-            //
-            // Wait for the UART transmitter write cycle to complete
-            // before resuming the scan.
-            //
-
-            stateWAIT:
-              begin
-                 if (!(tdrWRITE & devLOBYTE))
-                   state <= stateSCAN;
-              end
-
-          endcase
-
-     end
-
-   wire csrTRDY = (state != stateSCAN);
 
    //
    // Build CSR
    //
 
-   assign regCSR = {csrTRDY,  csrTIE, rbufSA, csrSAE,  1'b0, csrTLINE[2:0],
+   assign regCSR = {tdrTRDY,  csrTIE, rbufSA, csrSAE,  1'b0, tdrTLINE[2:0],
                     rbufRDONE, csrRIE, csrMSE, csrCLR, csrMAINT, 3'b0};
 
 endmodule

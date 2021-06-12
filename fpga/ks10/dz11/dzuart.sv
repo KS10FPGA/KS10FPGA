@@ -12,7 +12,7 @@
 //   way...
 //
 // File
-//   dzuart.v
+//   dzuart.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -59,7 +59,6 @@ module DZUART (
       output wire [ 7: 0] rxdata,               // Received data
       output wire         rxpare,               // Receiver parity error
       output wire         rxfrme,               // Receiver framing error
-      output wire         rxovre,               // Receiver overrun error
       output wire         txd,                  // Transmitter serial data
       output wire         txempty,              // Transmitter empty
       input  wire         txload,               // Transmitter load
@@ -75,7 +74,7 @@ module DZUART (
 
    reg [12:3] lprREG;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | clr)
           lprREG <= 0;
@@ -134,7 +133,7 @@ module DZUART (
        .data   (rxdata),
        .pare   (rxpare),
        .frme   (rxfrme),
-       .ovre   (rxovre)
+       .ovre   ()
    );
 
 endmodule

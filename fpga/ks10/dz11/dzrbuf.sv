@@ -6,11 +6,10 @@
 //   DZ-11 Receiver Buffer (RBUF)
 //
 // Details
-//   This is an implements the DZ11 RBUF Register.  The RBUF contains the
-//   receiver FIFO (aka SILO).
+//   This is an implements the DZ11 RBUF Register.
 //
 // File
-//   dzrbuf.v
+//   dzrbuf.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -48,12 +47,10 @@ module DZRBUF (
       input  wire        clr,                   // Clear
       input  wire        csrMSE,                // CSR[MSE]
       input  wire        csrSAE,                // CSR[SAE]
-      input  wire [ 2:0] scan,                  // Scan
-      input  wire        uartRXOVRE,            // UART overrun error
-      input  wire        uartRXFRME,            // UART framing error
-      input  wire        uartRXPARE,            // UART parity error
-      input  wire [ 7:0] uartRXDATA,            // UART data
-      input  wire        uartRXFULL,            // UART full
+      input  wire [ 7:0] uartRXFRME,            // UART framing error
+      input  wire [ 7:0] uartRXPARE,            // UART parity error
+      input  wire [ 7:0] uartRXDATA[7:0],       // UART data
+      input  wire [ 7:0] uartRXFULL,            // UART full
       output reg  [ 7:0] uartRXCLR,             // UART clear
       input  wire        rbufREAD,              // RBUF read
       output wire        rbufRDONE,             // RBUF is empty
@@ -62,38 +59,97 @@ module DZRBUF (
    );
 
    //
-   // log2() function
+   // UART receiver scanner
+   //
+   // Details
+   //  This just increments the RX scan signal when Master Scan Enable is asserted.
    //
 
-   function integer log2;
-       input [31:0] val;
-       begin
-          val = val - 1;
-          for(log2 = 0; val > 0; log2 = log2 + 1)
-            val = val >> 1;
-       end
-   endfunction
+   reg [2:0] rxSCAN;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst)
+          rxSCAN <= 0;
+        else if (csrMSE)
+          rxSCAN <= rxSCAN + 1'b1;
+     end
 
    //
-   // FIFO Parameters
+   // FIFO read
+   //
+   // Details
+   //  The FIFO state is updated after the read to RBUF.
    //
 
-   localparam FIFO_SIZE      = 65;
-   localparam BUF_ADDR_WIDTH = log2(FIFO_SIZE);
-   localparam BUF_SIZE       = 2**BUF_ADDR_WIDTH;
+   wire rd;
+   EDGETRIG #(
+      .POSEDGE  (0)
+   ) uFIFOREAD (
+       .clk     (clk),
+       .rst     (rst),
+       .clken   (1'b1),
+       .i       (rbufREAD),
+       .o       (rd)
+   );
+
+   //
+   // FIFO write
+   //
+   // Details
+   //  The FIFO written when the scanner detects a receiver full
+   //
+
+   wire wr = uartRXFULL[rxSCAN] & csrMSE;
+
+   //
+   // Delayed read
+   //
+   // Details:
+   //  RBUF[DVAL] is updated after the FIFO read so that the FIFO status
+   //  has been updated.
+   //
+
+   reg rd_dly;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst)
+          rd_dly <= 0;
+        else
+          rd_dly <= rd;
+     end
+
+   //
+   // Delayed write
+   //
+   // Details:
+   //  RBUF[OVRE] is updated after the FIFO write so that the FIFO status
+   //  has been updated.
+   //
+
+   reg wr_dly;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst)
+          wr_dly <= 0;
+        else
+          wr_dly <= wr;
+     end
 
    //
    // UART Receiver Interface
    //
    // Details:
-   //  If the UART receiver is full, empty the UART receiver data into the FIFO
-   //  and clear the UART full flag of the correct UART.
+   //  If the currently scannned UART receiver is full, write the UART receiver
+   //  data into the FIFO, and clear the UART full flag for that UART.
    //
 
-   always @*
+   always_comb
      begin
-        if (uartRXFULL & csrMSE)
-          case (scan)
+        if (uartRXFULL[rxSCAN] & csrMSE)
+          case (rxSCAN)
             0: uartRXCLR <= 8'b0000_0001;
             1: uartRXCLR <= 8'b0000_0010;
             2: uartRXCLR <= 8'b0000_0100;
@@ -108,86 +164,30 @@ module DZRBUF (
      end
 
    //
-   // FIFO write
+   // Receive data SILO
    //
 
-   wire wr = uartRXFULL & csrMSE;
+   wire        full;
+   wire        empty;
+   reg         rbufOVRE;
+   wire [14:0] readDATA;
+   wire [14:0] writeDATA = {rbufOVRE, uartRXFRME[rxSCAN], uartRXPARE[rxSCAN], 1'b0, rxSCAN, uartRXDATA[rxSCAN]};
 
-   //
-   // FIFO read
-   //
-   // Details:
-   //  The FIFO state is updated on the trailing edge of the read pulse; i.e.,
-   //  after the read is completed.
-   //
-
-   wire rd;
-   EDGETRIG #(.POSEDGE(0)) uFIFOREAD(clk, rst, 1'b1, rbufREAD, rd);
-
-   //
-   // Delayed read and write
-   //
-   // Details:
-   //  Some status bits need to be updated after the FIFO read and the FIFO
-   //  write have completed and the FIFO depth has been updated.  See RBUF[OVRE]
-   //  and RBUF[DVAL].
-   //
-
-   reg rd_dly;
-   reg wr_dly;
-
-   always @(posedge clk)
-     begin
-        if (rst)
-          begin
-             rd_dly <= 0;
-             wr_dly <= 0;
-          end
-        else
-          begin
-             rd_dly <= rd;
-             wr_dly <= wr;
-          end
-     end
-
-   //
-   // FIFO State
-   //
-   //  Note: FIFOs have a depth of 65 not 64.  Watch the counter sizes.
-   //
-
-   reg [BUF_ADDR_WIDTH-1:0] depth;
-   reg [BUF_ADDR_WIDTH-1:0] rd_ptr;
-   reg [BUF_ADDR_WIDTH-1:0] wr_ptr;
-
-   wire empty = (depth == 0);
-   wire full  = (depth == FIFO_SIZE - 1);
-
-   always @(posedge clk)
-     begin
-        if (rst | clr)
-          begin
-             depth  <= 0;
-             rd_ptr <= 0;
-             wr_ptr <= 0;
-          end
-        else if (rd & !wr & !empty)
-          begin
-             depth <= depth - 1'b1;
-             if (rd_ptr == FIFO_SIZE - 1)
-               rd_ptr <= 0;
-             else
-               rd_ptr <= rd_ptr + 1'b1;
-          end
-        else if (wr & !rd & !full)
-          begin
-             depth <= depth + 1'b1;
-             if (wr_ptr == FIFO_SIZE - 1)
-               wr_ptr <= 0;
-             else
-               wr_ptr <= wr_ptr + 1'b1;
-          end
-     end
+   FIFO #(
+      .SIZE     (65),
+      .WIDTH    (15)
+   ) RBUF (
+      .clk      (clk),
+      .rst      (rst),
+      .clr      (clr),
+      .clken    (1'b1),
+      .rd       (rd),
+      .wr       (wr),
+      .in       (writeDATA),
+      .out      (readDATA),
+      .full     (full),
+      .empty    (empty)
+   );
 
    //
    // RBUF[RDONE]
@@ -201,12 +201,11 @@ module DZRBUF (
    //
    // RBUF[OVRE]
    //
+   // Details
    //  An overrun error occurs when you write to a full FIFO.
    //
 
-   reg rbufOVRE;
-
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | clr)
           rbufOVRE <= 0;
@@ -220,7 +219,7 @@ module DZRBUF (
 
    reg rbufDVAL;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | clr)
           rbufDVAL <= 0;
@@ -243,27 +242,22 @@ module DZRBUF (
 
    reg [0:4] countSA;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr | rd | !csrSAE)
           countSA <= 0;
-        else
-          begin
-             if (clr | rd | !csrSAE)
-               countSA <= 0;
-             else if (wr)
-               countSA <= countSA + 1'b1;
-          end
+        else if (wr)
+          countSA <= countSA + 1'b1;
      end
 
    //
    // SILO Alarm (SA)
    //
    // The Silo Alarm is a asserted when the 16th word is written to the FIFO.
-   // The Silo Alarm is cleared after reading the RBUF or clearing SAE.
+   // The Silo Alarm is negated after reading the RBUF or clearing SAE.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | clr | rd | !csrSAE)
           rbufSA <= 0;
@@ -272,77 +266,14 @@ module DZRBUF (
      end
 
    //
-   // Dual Port RAM
-   //
-   // Details
-   //  When the FIFO is full, the last character in the FIFO is replaced with
-   //  the current character and the Overrun Error bit (RBUF[OVRE]) is asserted.
-   //
-
-`ifndef SYNTHESIS
-   integer i;
-`endif
-
-   reg [14:0] fifoDATA;
-   reg [14:0] DPRAM[BUF_SIZE-1:0];
-
-   always @(posedge clk)
-     begin
-        if (rst)
-`ifdef SYNTHESIS
-          ;
-`else
-          for (i = 0; i < BUF_SIZE; i = i + 1)
-            DPRAM[i] <= 0;
-`endif
-        else
-          begin
-             if (wr)
-               DPRAM[wr_ptr] <= {rbufOVRE, uartRXFRME, uartRXPARE, 1'b0, scan, uartRXDATA[7:0]};
-             fifoDATA <= DPRAM[rd_ptr];
-          end
-     end
-
-   //
    // RBUF Register
    //
    // Details
-   //  RBUF is read only and can only be read as words.
+   //  RBUF is read only and can only be read as a word.
    //
    //  RBUF[DVAL] is the FIFO Status.  Everything else is read from the FIFO.
    //
 
-   assign regRBUF = {rbufDVAL, fifoDATA};
-
-   //
-   // Status
-   //
-   // Some of the simulations take forever.  Print some status messages.
-   //
-   // Use "tail -f dzstatus.txt" to view the output log
-   //
-
-`ifndef SYNTHESIS
- `ifdef DEBUG_DSDZA
-
-   integer file;
-
-   initial
-     begin
-        file = $fopen("dzstatus.txt",  "w");
-     end
-
-   always @(posedge clk)
-     begin
-        if (wr)
-          begin
-             $fwrite(file, "Received character 0x%02x on channel %d\n",
-                      uartRXDATA[7:0], scan[2:0]);
-             $fflush(file);
-          end
-     end
-
- `endif
-`endif
+   assign regRBUF = {rbufDVAL, readDATA};
 
 endmodule

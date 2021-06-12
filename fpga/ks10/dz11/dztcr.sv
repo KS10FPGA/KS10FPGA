@@ -9,7 +9,7 @@
 //   The module implements the DZ11 TCR Register.
 //
 // File
-//   dztcr.v
+//   dztcr.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -49,49 +49,44 @@ module DZTCR (
       input  wire         devRESET,             // Device Reset from UBA
       input  wire         devLOBYTE,            // Device Low Byte
       input  wire         devHIBYTE,            // Device High Byte
-      input  wire [ 0:35] devDATAI,             // Device Data In
+      input  wire [35: 0] dzDATAI,              // DZ Data In
       input  wire         csrCLR,               // CSR clear bit
       input  wire         tcrWRITE,             // Write to TCR
       output wire [15: 0] regTCR                // TCR Output
    );
 
    //
-   // Big-endian to little-endian data bus swap
-   //
-
-   wire [35:0] dzDATAI = devDATAI[0:35];
-
-   //
-   // TCR Register
+   // Data Terminal Ready Register (DTR)
    //
    // Details
-   //  TCR is read/write and can be accessed as bytes or words
-   //
-   //  The DTR registers are not reset by CSR[CLR].
+   //   The DTR register is not reset by CSR[CLR].
    //
 
    reg [7:0] tcrDTR;
-   reg [7:0] tcrLIN;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | devRESET)
-          begin
-             tcrDTR <= 0;
-             tcrLIN <= 0;
-          end
-        else if (csrCLR)
+          tcrDTR <= 0;
+        else if (tcrWRITE & devHIBYTE)
+          tcrDTR <= `dzTCR_DTR(dzDATAI);
+     end
+
+   //
+   // Line Enable Register (LIN)
+   //
+   // Details
+   //   The DTR register is reset by CSR[CLR].
+   //
+
+   reg [7:0] tcrLIN;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | devRESET | csrCLR)
           tcrLIN <= 0;
-        else
-          begin
-             if (tcrWRITE)
-               begin
-                  if (devHIBYTE)
-                    tcrDTR <= `dzTCR_DTR(dzDATAI);
-                  if (devLOBYTE)
-                    tcrLIN <= `dzTCR_LIN(dzDATAI);
-               end
-          end
+        else if (tcrWRITE & devLOBYTE)
+          tcrLIN <= `dzTCR_LIN(dzDATAI);
      end
 
    assign regTCR = {tcrDTR, tcrLIN};

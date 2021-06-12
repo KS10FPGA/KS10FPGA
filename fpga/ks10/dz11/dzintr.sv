@@ -9,7 +9,7 @@
 //   This module implements the DZ11 Interrupt Controller.
 //
 // File
-//   dzintr.v
+//   dzintr.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -61,12 +61,11 @@ module DZINTR (
    localparam [3:0] stateIDLE     = 0,
                     stateACT      = 1,
                     stateWAIT     = 2,
-                    stateIACK     = 3,
-                    stateVECTREAD = 4,
-                    stateVECTCLR  = 5,
-                    stateRXDONE   = 6,
-                    stateTXDONE   = 7,
-                    stateDONE     = 8;
+                    stateVECTREAD = 3,
+                    stateVECTCLR  = 4,
+                    stateRXDONE   = 5,
+                    stateTXDONE   = 6,
+                    stateDONE     = 7;
 
    //
    // RX Interrupt State Machine
@@ -84,7 +83,7 @@ module DZINTR (
    wire      rxclr;
    reg [3:0] rxstate;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | clr)
           rxstate <= stateIDLE;
@@ -105,8 +104,6 @@ module DZINTR (
           endcase
      end
 
-   assign rxINTR = (rxstate == stateACT) & csrRIE;
-
    //
    // TX Interrupt State Machine
    //
@@ -123,7 +120,7 @@ module DZINTR (
    wire      txclr;
    reg [3:0] txstate;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | clr)
           txstate <= stateIDLE;
@@ -143,8 +140,6 @@ module DZINTR (
                 txstate <= stateIDLE;
           endcase
      end
-
-   assign txINTR = (txstate == stateACT) & csrTIE;
 
    //
    // Arbiter
@@ -176,7 +171,7 @@ module DZINTR (
 
    reg [3:0] arbstate;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | clr)
           begin
@@ -187,16 +182,16 @@ module DZINTR (
           case (arbstate)
             stateIDLE:
               if ((rxstate == stateACT) | (txstate == stateACT))
-                arbstate <= stateIACK;
-            stateIACK:
-              if (iack)
                 begin
-                   rxVECTOR <= rxINTR;
+                   rxVECTOR <= 0;
                    arbstate <= stateVECTREAD;
                 end
             stateVECTREAD:
-              if (vectREAD)
-                arbstate <= stateVECTCLR;
+              begin
+                 rxVECTOR <= rxVECTOR | rxINTR;
+                 if (vectREAD)
+                   arbstate <= stateVECTCLR;
+              end
             stateVECTCLR:
               if (!vectREAD)
                 arbstate <= rxVECTOR ? stateRXDONE : stateTXDONE;
@@ -207,7 +202,10 @@ module DZINTR (
           endcase
      end
 
-   assign rxclr = (arbstate == stateRXDONE);
-   assign txclr = (arbstate == stateTXDONE);
+   assign rxclr  = (arbstate == stateRXDONE);
+   assign txclr  = (arbstate == stateTXDONE);
+
+   assign rxINTR = (rxstate == stateACT) & csrRIE;
+   assign txINTR = (txstate == stateACT) & csrTIE;
 
 endmodule

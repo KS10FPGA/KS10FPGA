@@ -9,7 +9,7 @@
 //   The module implements the DZ11 MSR Register.
 //
 // File
-//   dzmsr.v
+//   dzmsr.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -50,23 +50,29 @@ module DZMSR (
    );
 
    //
-   // The MSR Register is just a synchronizer
+   // Synchronize the inputs
    //
 
    reg [15:0] tmpMSR;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
-          begin
-             tmpMSR <= 16'b0;
-             regMSR <= 16'b0;
-          end
+          tmpMSR <= 16'b0;
         else
-          begin
-             tmpMSR <= {dzCO, dzRI};
-             regMSR <= tmpMSR;
-          end
+          tmpMSR <= {dzCO, dzRI};
+     end
+
+   //
+   // MSR Register
+   //
+
+   always_ff @(posedge clk)
+     begin
+        if (rst)
+          regMSR <= 16'b0;
+        else
+          regMSR <= tmpMSR;
      end
 
 endmodule

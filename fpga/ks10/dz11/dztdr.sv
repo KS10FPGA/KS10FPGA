@@ -42,36 +42,146 @@
 `timescale 1ns/1ps
 
 `include "dztdr.vh"
+`include "dzcsr.vh"
+`include "dztcr.vh"
 
 module DZTDR (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
+      input  wire         clr,			// Clear
       input  wire         devLOBYTE,            // Device Low Byte
       input  wire         devHIBYTE,            // Device High Byte
-      input  wire [ 0:35] devDATAI,             // Device Data In
-      input  wire [ 2: 0] csrTLINE,             // CSR[TLINE] bits
+      input  wire [35: 0] dzDATAI,              // DZ Data In
       input  wire         tdrWRITE,             // Write to TDR
       output reg  [ 7: 0] uartTXLOAD,           // Load UART
+      input  wire [ 7: 0] uartTXEMPTY,		// UART is empty
+      input  wire         csrMSE,		// Master Scan Enable
+      input  wire [ 7: 0] tcrLIN,		// Transmitter Control Register Line
+      output reg  [ 2: 0] tdrTLINE,             // Transmitter Line Bits
+      output wire         tdrTRDY,		// Transmitter Data Ready
       output wire [15: 0] regTDR                // TDR Output
    );
 
    //
-   // Big-endian to little-endian data bus swap
+   // State Machine states
    //
 
-   wire [35:0] dzDATAI = devDATAI[0:35];
+   localparam [1:0] stateSCAN =  0,
+                    stateHOLD =  1,
+                    stateWAIT =  2;
 
    //
-   // TDR Register
-   //
-   // Details
-   //  TDR is write-only and can be accessed as bytes or words
+   // Transmitter Scanner
    //
 
-   always @*
+   reg [2:0] scan;
+   reg [1:0] state;
+
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | clr)
+          begin
+             scan     <= 0;
+             tdrTLINE <= 0;
+             state    <= stateSCAN;
+          end
+        else
+
+          case (state)
+
+            //
+            // Scan for an empty UART transmitter that is enabled.
+            //
+
+            stateSCAN:
+              begin
+                 if (csrMSE)
+
+                   //
+                   // Check for a line that is enabled that has an empty
+                   // UART Transmitter.  Save the line in tdrTLINE.
+                   //
+
+                   if (((scan == 0) & tcrLIN[0] & uartTXEMPTY[0]) |
+                       ((scan == 1) & tcrLIN[1] & uartTXEMPTY[1]) |
+                       ((scan == 2) & tcrLIN[2] & uartTXEMPTY[2]) |
+                       ((scan == 3) & tcrLIN[3] & uartTXEMPTY[3]) |
+                       ((scan == 4) & tcrLIN[4] & uartTXEMPTY[4]) |
+                       ((scan == 5) & tcrLIN[5] & uartTXEMPTY[5]) |
+                       ((scan == 6) & tcrLIN[6] & uartTXEMPTY[6]) |
+                       ((scan == 7) & tcrLIN[7] & uartTXEMPTY[7]))
+                     begin
+                        tdrTLINE <= scan;
+                        state    <= stateHOLD;
+                     end
+                   else
+                     begin
+                        scan <= scan + 1'b1;
+                     end
+              end
+
+            //
+            // Hold the TLINE until data is written to the UART
+            // transmitter.
+            //
+
+            stateHOLD:
+              begin
+
+                 //
+                 // If the line is disabled while we are holding it
+                 // (i.e., tcrLIN is modified), just dump it and go back
+                 // to scanning.
+                 //
+
+                 if (((tdrTLINE == 0) & !tcrLIN[0]) |
+                     ((tdrTLINE == 1) & !tcrLIN[1]) |
+                     ((tdrTLINE == 2) & !tcrLIN[2]) |
+                     ((tdrTLINE == 3) & !tcrLIN[3]) |
+                     ((tdrTLINE == 4) & !tcrLIN[4]) |
+                     ((tdrTLINE == 5) & !tcrLIN[5]) |
+                     ((tdrTLINE == 6) & !tcrLIN[6]) |
+                     ((tdrTLINE == 7) & !tcrLIN[7]))
+                   begin
+                      state <= stateSCAN;
+                   end
+
+                 //
+                 // Data is being written to the UART transmitter.
+                 //
+
+                 else if (tdrWRITE & devLOBYTE)
+                   begin
+                      state <= stateWAIT;
+                   end
+              end
+
+            //
+            // Wait for the UART transmitter write cycle to complete
+            // before resuming the scan.
+            //
+
+            stateWAIT:
+              begin
+                 if (!(tdrWRITE & devLOBYTE))
+                   state <= stateSCAN;
+              end
+
+          endcase
+
+     end
+
+   assign tdrTRDY = (state != stateSCAN);
+
+   //
+   // Load the proper UART when writing to the TBUF
+   //
+
+   always_comb
      begin
         if (tdrWRITE & devLOBYTE)
-          case (csrTLINE)
+          case (tdrTLINE)
             0: uartTXLOAD <= 8'b0000_0001;
             1: uartTXLOAD <= 8'b0000_0010;
             2: uartTXLOAD <= 8'b0000_0100;

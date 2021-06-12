@@ -23,7 +23,7 @@
 //   the IO bus as 36-bit address and 36-bit data just to keep things simple.
 //
 // File
-//   dz11.v
+//   dz11.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -174,17 +174,18 @@ module DZ11 (
    wire        csrRDONE = `dzCSR_RDONE(regCSR);
    wire [ 2:0] csrTLINE = `dzCSR_TLINE(regCSR);
    wire        csrTRDY  = `dzCSR_TRDY(regCSR);
+   wire [ 7:0] tcrLIN   = `dzTCR_LIN(regTCR);
    wire        rbufRDONE;
    wire        rbufSA;
-   wire [ 2:0] scan;
+   wire        tdrTRDY;
+   wire [ 2:0] tdrTLINE;
    wire [ 7:0] uartTXEMPTY;
    wire [ 7:0] uartTXLOAD;
    wire [ 7:0] uartRXFULL;
-   wire [ 7:0] uartRXDATA[0:7];
+   wire [ 7:0] uartRXDATA[7:0];
    wire [ 7:0] uartRXCLR;
    wire [ 7:0] uartRXFRME;
    wire [ 7:0] uartRXPARE;
-   wire [ 7:0] uartRXOVRE;
    wire [ 7:0] uartTXDATA = `dzTDR_TBUF(regTDR);
 
    wire        dzINIT = devRESET | csrCLR;
@@ -199,13 +200,12 @@ module DZ11 (
       .devRESET   (devRESET),
       .devLOBYTE  (devLOBYTE),
       .devHIBYTE  (devHIBYTE),
-      .devDATAI   (devDATAI),
+      .dzDATAI    (dzDATAI),
       .csrWRITE   (csrWRITE),
-      .tdrWRITE   (tdrWRITE),
       .rbufRDONE  (rbufRDONE),
       .rbufSA     (rbufSA),
-      .uartTXEMPTY(uartTXEMPTY),
-      .regTCR     (regTCR),
+      .tdrTRDY    (tdrTRDY),
+      .tdrTLINE   (tdrTLINE),
       .regCSR     (regCSR)
    );
 
@@ -219,7 +219,7 @@ module DZ11 (
       .devRESET   (devRESET),
       .devLOBYTE  (devLOBYTE),
       .devHIBYTE  (devHIBYTE),
-      .devDATAI   (devDATAI),
+      .dzDATAI    (dzDATAI),
       .csrCLR     (csrCLR),
       .tcrWRITE   (tcrWRITE),
       .regTCR     (regTCR)
@@ -237,34 +237,6 @@ module DZ11 (
       .dzCO       (dzCO),
       .dzRI       (dzRI),
       .regMSR     (regMSR)
-   );
-
-   //
-   // TDR Register
-   //
-
-   DZTDR TDR (
-      .clk        (clk),
-      .rst        (rst),
-      .devLOBYTE  (devLOBYTE),
-      .devHIBYTE  (devHIBYTE),
-      .devDATAI   (devDATAI),
-      .csrTLINE   (csrTLINE),
-      .tdrWRITE   (tdrWRITE),
-      .uartTXLOAD (uartTXLOAD),
-      .regTDR     (regTDR)
-   );
-
-   //
-   // Line Scanner
-   //
-
-   DZSCAN SCAN (
-      .clk        (clk),
-      .rst        (rst),
-      .clr        (dzINIT),
-      .csrMSE     (csrMSE),
-      .scan       (scan)
    );
 
    //
@@ -303,7 +275,6 @@ module DZ11 (
               .rxdata   (uartRXDATA[i]),
               .rxpare   (uartRXPARE[i]),
               .rxfrme   (uartRXFRME[i]),
-              .rxovre   (uartRXOVRE[i]),
               .txd      (uartTXD[i]),
               .txempty  (uartTXEMPTY[i]),
               .txload   (uartTXLOAD[i]),
@@ -315,6 +286,27 @@ module DZ11 (
    endgenerate
 
    //
+   // Transmitter Data Register (TDR)
+   //
+
+   DZTDR TDR (
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (dzINIT),
+      .devLOBYTE  (devLOBYTE),
+      .devHIBYTE  (devHIBYTE),
+      .dzDATAI    (dzDATAI),
+      .tdrWRITE   (tdrWRITE),
+      .uartTXLOAD (uartTXLOAD),
+      .uartTXEMPTY(uartTXEMPTY),
+      .csrMSE     (csrMSE),
+      .tcrLIN     (tcrLIN),
+      .tdrTLINE   (tdrTLINE),
+      .tdrTRDY    (tdrTRDY),
+      .regTDR     (regTDR)
+   );
+
+   //
    // Receiver Buffer Register (RBUF)
    //
 
@@ -324,12 +316,10 @@ module DZ11 (
       .clr        (dzINIT),
       .csrMSE     (csrMSE),
       .csrSAE     (csrSAE),
-      .scan       (scan),
-      .uartRXOVRE (uartRXOVRE[scan]),
-      .uartRXFRME (uartRXFRME[scan]),
-      .uartRXPARE (uartRXPARE[scan]),
-      .uartRXDATA (uartRXDATA[scan]),
-      .uartRXFULL (uartRXFULL[scan]),
+      .uartRXFRME (uartRXFRME),
+      .uartRXPARE (uartRXPARE),
+      .uartRXDATA (uartRXDATA),
+      .uartRXFULL (uartRXFULL),
       .uartRXCLR  (uartRXCLR),
       .rbufREAD   (rbufREAD),
       .rbufRDONE  (rbufRDONE),
@@ -364,7 +354,7 @@ module DZ11 (
       .vectREAD   (vectREAD),
       .rxVECTOR   (rxVECTOR),
       .csrRIE     (csrRIE),
-      .csrRRDY    (csrSA | (!csrSAE & csrRDONE)),
+      .csrRRDY    (csrSAE ? csrSA : csrRDONE),
       .rbufREAD   (rbufREAD),
       .rxINTR     (rxINTR),
       .csrTIE     (csrTIE),
@@ -387,7 +377,7 @@ module DZ11 (
    // Bus Mux and little-endian to big-endian bus swap.
    //
 
-   always @*
+   always_comb
      begin
         devDATAO = 0;
         if (csrREAD)
@@ -419,7 +409,6 @@ module DZ11 (
    assign devINTR  = (rxINTR | txINTR) ? dzINTR : 4'b0;
    assign devADDRO = 0;
    assign devREQO  = 0;
-
 
 `ifndef SYNTHESIS
 
