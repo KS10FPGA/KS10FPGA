@@ -48,8 +48,9 @@
 #include "ks10.hpp"
 
 int ks10_t::fd;                                         //!< /dev/mem file descriptor
- bool ks10_t::debug;                                    //!< Debug mode
+bool ks10_t::debug;                                     //!< Debug mode
 pthread_mutex_t ks10_t::lock;                           //!< FPGA access mutex
+pthread_mutexattr_t ks10_t::attr;                       //!< FPGA access mutex attributes
 char *ks10_t::fpgaAddrVirt;                             //!< FPGA Base Virtual Address
 
 volatile ks10_t::addr_t *ks10_t::regAddr;               //!< Console Address Register
@@ -113,9 +114,26 @@ ks10_t::ks10_t(bool debug) {
     // Create a pthread mutex
     //
 
-    if (pthread_mutex_init(&lock, NULL) != 0) {
-        printf("KS10: pthread_mutex_init() failed.\n"
-               "      Aborting.\n");
+    int status;
+    if ((status = pthread_mutexattr_init(&attr)) != 0) {
+        printf("KS10: pthread_mutexattr_init() returned %d.\n"
+               "      Aborting.\n", status);
+        if (!debug) {
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if ((status = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK)) != 0) {
+        printf("KS10: pthread_mutexattr_settype() returned %d.\n"
+               "      Aborting.\n", status);
+        if (!debug) {
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if ((status = pthread_mutex_init(&lock, &attr)) != 0) {
+        printf("KS10: pthread_mutex_init() returned %d.\n"
+               "      Aborting.\n", status);
         if (!debug) {
             exit(EXIT_FAILURE);
         }

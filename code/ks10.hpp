@@ -257,7 +257,7 @@ class ks10_t {
         //
         // LPCCR Configuration Bits
         //
- 
+
         static const uint32_t lpSTOPBITS = 0x00010000;
         static const uint32_t lpPARITY   = 0x00060000;
         static const uint32_t lpLENGTH   = 0x00180000;
@@ -354,6 +354,7 @@ class ks10_t {
         static int fd;                                          //!< /dev/mem file descriptor
         static bool debug;                                      //!< debug mode
         static pthread_mutex_t lock;                            //!< FPGA access mutex
+        static pthread_mutexattr_t attr;                        //!< FPGA mutex attribute
 
         //
         // Misc constants
