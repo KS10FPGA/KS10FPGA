@@ -287,15 +287,14 @@ RTL_FILES := \
 	ks10/dup11/duptx.v \
 	ks10/dup11/duptxcsr.v \
 	ks10/dup11/duptxdbuf.v \
-	ks10/dz11/dzcsr.v \
-	ks10/dz11/dzmsr.v \
-	ks10/dz11/dztcr.v \
-	ks10/dz11/dztdr.v \
-	ks10/dz11/dzintr.v \
-	ks10/dz11/dzrbuf.v \
-	ks10/dz11/dzscan.v \
-	ks10/dz11/dzuart.v \
-	ks10/dz11/dz11.v \
+	ks10/dz11/dzcsr.sv \
+	ks10/dz11/dzmsr.sv \
+	ks10/dz11/dztcr.sv \
+	ks10/dz11/dztdr.sv \
+	ks10/dz11/dzintr.sv \
+	ks10/dz11/dzrbuf.sv \
+	ks10/dz11/dzuart.sv \
+	ks10/dz11/dz11.sv \
 	ks10/kmc11/kmcalu.v \
 	ks10/kmc11/kmcbrg.v \
 	ks10/kmc11/kmcclk.v \
