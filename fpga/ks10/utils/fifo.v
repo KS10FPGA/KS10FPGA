@@ -6,8 +6,8 @@
 //   Parameterized Synchronous Single Clock Dual Port FIFO
 //
 // Details
-//   The FIFO is dual ported.   Writes occur on one port and reads occur on
-//   the other port.   Simultaneous read and writes are supported as long as
+//   The FIFO is dual ported. Writes occur on one port and reads occur on
+//   the other port. Simultaneous read and writes are supported as long as
 //   the FIFO is not empty or full.
 //
 // File
@@ -48,8 +48,8 @@ module FIFO #(
       parameter WIDTH = 16
    ) (
       input  wire             clk,      // Clock
-      input  wire             clr,      // Clear
       input  wire             rst,      // Reset
+      input  wire             clr,      // Clear
       input  wire             clken,    // Clock Enable
       input  wire             rd,       // Read
       input  wire             wr,       // Write
@@ -64,24 +64,24 @@ module FIFO #(
    //
 
    function integer log2;
-       input [31:0] val;
-       begin
-          val = val - 1;
-          for(log2 = 0; val > 0; log2 = log2 + 1)
-            val = val >> 1;
-       end
+      input [31:0] val;
+      begin
+         val = val - 1;
+         for(log2 = 0; val > 0; log2 = log2 + 1)
+           val = val >> 1;
+      end
    endfunction
 
    //
    // Calculate RAM address bus size
    //
 
-   localparam ADDR_WIDTH = log2(SIZE-1);
+   localparam ADDR_WIDTH = log2(SIZE);
 
    //
    // The buffer is the next larger power-of-two than the FIFO size.  For
-   // example: a 100 word FIFO would have a 128 word buffer.  The buffer
-   // pointers would wrap from 127 to zero (on a write) or from 0 to 127 on
+   // example: a 100 word FIFO would have a 128 word buffer. The buffer
+   // pointers would wrap from 99 to zero on a write or from zero to 99 on
    // a read.
    //
 
@@ -100,39 +100,35 @@ module FIFO #(
    //
 
    assign empty = (depth == 0);
-   assign full  = (depth == SIZE-1);
+   assign full  = (depth == SIZE - 1);
 
    //
    // Read Address
    //
-   // Note: This relies on the rd_addr wrapping back to zero.
-   //
 
    always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           rd_addr <= 0;
-        else
-          if (clr)
+        else if (clken & rd & !wr & !empty)
+          if (rd_addr == SIZE - 1)
             rd_addr <= 0;
-          else if (clken & rd & !empty)
+          else
             rd_addr <= rd_addr + 1'b1;
      end
 
    //
    // Write Address
    //
-   // Note: This relies on the wr_addr wrapping back to zero.
-   //
 
    always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           wr_addr <= 0;
-        else
-          if (clr)
+        else if (clken & wr & !rd & !full)
+          if (wr_addr == SIZE - 1)
             wr_addr <= 0;
-          else if (clken & wr & !full)
+          else
             wr_addr <= wr_addr + 1'b1;
      end
 
@@ -144,39 +140,40 @@ module FIFO #(
 
    always @(posedge clk)
      begin
-        if (rst)
+        if (rst | clr)
           depth <= 0;
-        else
-          if (clr)
-            depth <= 0;
-          else if (clken & rd & !wr & !empty)
-            depth <= depth - 1'b1;
-          else if (clken & wr & !rd & !full)
-            depth <= depth + 1'b1;
+        else if (clken & rd & !wr & !empty)
+          depth <= depth - 1'b1;
+        else if (clken & wr & !rd & !full)
+          depth <= depth + 1'b1;
      end
 
    //
-   // Dual Port RAM circular buffer
+   // Dual Port RAM
+   //
+   // Details
+   //  When the FIFO is full, the last element in the FIFO is replaced with the
+   //  current element.
    //
 
 `ifndef SYNTHESIS
    integer i;
 `endif
 
-   reg [WIDTH-1:0] mem[0:BUFSZ-1];
+   reg [WIDTH-1:0] mem[BUFSZ-1:0];
 
    always @(posedge clk)
      begin
         if (rst)
-          begin
-`ifndef SYNTHESIS
-             for (i = 0; i < BUFSZ; i = i + 1)
-               mem[i] <= 0;
+`ifdef SYNTHESIS
+          ;
+`else
+          for (i = 0; i < BUFSZ; i = i + 1)
+            mem[i] <= 0;
 `endif
-          end
         else
           begin
-             if (clken & wr & !full)
+             if (clken & wr)
                mem[wr_addr] <= in;
              out <= mem[rd_addr];
           end
