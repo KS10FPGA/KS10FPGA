@@ -150,17 +150,17 @@ module DZRBUF (
      begin
         if (uartRXFULL[rxSCAN] & csrMSE)
           case (rxSCAN)
-            0: uartRXCLR <= 8'b0000_0001;
-            1: uartRXCLR <= 8'b0000_0010;
-            2: uartRXCLR <= 8'b0000_0100;
-            3: uartRXCLR <= 8'b0000_1000;
-            4: uartRXCLR <= 8'b0001_0000;
-            5: uartRXCLR <= 8'b0010_0000;
-            6: uartRXCLR <= 8'b0100_0000;
-            7: uartRXCLR <= 8'b1000_0000;
+            0: uartRXCLR = 8'b0000_0001;
+            1: uartRXCLR = 8'b0000_0010;
+            2: uartRXCLR = 8'b0000_0100;
+            3: uartRXCLR = 8'b0000_1000;
+            4: uartRXCLR = 8'b0001_0000;
+            5: uartRXCLR = 8'b0010_0000;
+            6: uartRXCLR = 8'b0100_0000;
+            7: uartRXCLR = 8'b1000_0000;
           endcase
         else
-          uartRXCLR <= 8'b0000_0000;
+          uartRXCLR = 8'b0000_0000;
      end
 
    //

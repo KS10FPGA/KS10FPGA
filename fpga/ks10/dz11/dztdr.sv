@@ -182,17 +182,17 @@ module DZTDR (
      begin
         if (tdrWRITE & devLOBYTE)
           case (tdrTLINE)
-            0: uartTXLOAD <= 8'b0000_0001;
-            1: uartTXLOAD <= 8'b0000_0010;
-            2: uartTXLOAD <= 8'b0000_0100;
-            3: uartTXLOAD <= 8'b0000_1000;
-            4: uartTXLOAD <= 8'b0001_0000;
-            5: uartTXLOAD <= 8'b0010_0000;
-            6: uartTXLOAD <= 8'b0100_0000;
-            7: uartTXLOAD <= 8'b1000_0000;
+            0: uartTXLOAD = 8'b0000_0001;
+            1: uartTXLOAD = 8'b0000_0010;
+            2: uartTXLOAD = 8'b0000_0100;
+            3: uartTXLOAD = 8'b0000_1000;
+            4: uartTXLOAD = 8'b0001_0000;
+            5: uartTXLOAD = 8'b0010_0000;
+            6: uartTXLOAD = 8'b0100_0000;
+            7: uartTXLOAD = 8'b1000_0000;
           endcase
         else
-          uartTXLOAD <= 8'b0000_0000;
+          uartTXLOAD = 8'b0000_0000;
      end
 
    //
