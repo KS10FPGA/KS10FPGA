@@ -75,9 +75,9 @@ module ARB (
       input  wire [0:35] uba3ADDRI,     // UBA 3 Address In
       output reg  [0:35] uba3ADDRO,     // UBA 3 Address Out
       input  wire [0:35] uba4DATAI,     // UBA 4 Data In
-      output reg  [0:35] uba4DATAO,     // UBA 3 Data Out
+      output reg  [0:35] uba4DATAO,     // UBA 4 Data Out
       input  wire [0:35] uba4ADDRI,     // UBA 4 Address In
-      output reg  [0:35] uba4ADDRO,     // UBA 3 Address Out
+      output reg  [0:35] uba4ADDRO,     // UBA 4 Address Out
       // Memory Interfaces
       output reg         memREQO,       // MEM Bus Request Out
       input  wire        memACKI,       // MEM Bus Acknowledge In
