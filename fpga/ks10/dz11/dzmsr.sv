@@ -53,7 +53,7 @@ module DZMSR (
    // Synchronize the inputs
    //
 
-   reg [15:0] tmpMSR;
+   logic [15:0] tmpMSR;
 
    always_ff @(posedge clk)
      begin

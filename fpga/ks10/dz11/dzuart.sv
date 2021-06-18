@@ -72,7 +72,7 @@ module DZUART (
    //  There is a LPR register for every UART.
    //
 
-   reg [12:3] lprREG;
+   logic [12:3] lprREG;
 
    always_ff @(posedge clk)
      begin
@@ -86,7 +86,7 @@ module DZUART (
    // UART Baud Rate Generator
    //
 
-   wire clken;
+   logic clken;
 
    UART_BRG ttyBRG (
       .clk     (clk),

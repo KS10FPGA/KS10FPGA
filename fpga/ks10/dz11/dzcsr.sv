@@ -54,12 +54,12 @@ module DZCSR (
       input  wire         csrWRITE,             // Write to CSR
       input  wire         rbufRDONE,            // RBUF Receiver Done
       input  wire         rbufSA,               // RBUF Silo Alarm
-      input  wire         tdrTRDY,		// TDR Transmitter ready
-      input  wire [ 2: 0] tdrTLINE,		// TDR Transmitter line number
+      input  wire         tdrTRDY,              // TDR Transmitter ready
+      input  wire [ 2: 0] tdrTLINE,             // TDR Transmitter line number
       output wire [15: 0] regCSR                // CSR Output
    );
 
-   wire csrCLR;
+   logic csrCLR;
 
    //
    // CSRPER parameter
@@ -79,7 +79,7 @@ module DZCSR (
    // CSR Transmitter Interrupt Enable (TIE)
    //
 
-   reg csrTIE;
+   logic csrTIE;
 
    always_ff @(posedge clk)
      begin
@@ -93,7 +93,7 @@ module DZCSR (
    // CSR SILO Alarm Enable(SAE)
    //
 
-   reg csrSAE;
+   logic csrSAE;
 
    always_ff @(posedge clk)
      begin
@@ -107,7 +107,7 @@ module DZCSR (
    // CSR Receiver Interrupt Enable (RIE)
    //
 
-   reg csrRIE;
+   logic csrRIE;
 
    always_ff @(posedge clk)
      begin
@@ -121,7 +121,7 @@ module DZCSR (
    // CSR Master Scan Enable (MSE)
    //
 
-   reg csrMSE;
+   logic csrMSE;
 
    always_ff @(posedge clk)
      begin
@@ -138,7 +138,7 @@ module DZCSR (
    //  See note associated with CSRPER parameter
    //
 
-   reg [9:0] clrCOUNT;
+   logic [9:0] clrCOUNT;
    always_ff @(posedge clk)
      begin
         if (rst | devRESET)
@@ -155,7 +155,7 @@ module DZCSR (
    // CSR Maintenance Mode (MAINT)
    //
 
-   reg csrMAINT;
+   logic csrMAINT;
 
    always_ff @(posedge clk)
      begin

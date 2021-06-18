@@ -159,14 +159,30 @@ module DZ11 (
    // DZ11 Registers
    //
 
-   wire [15:0] regCSR;
-   wire [15:0] regMSR;
-   wire [15:0] regTCR;
-   wire [15:0] regTDR;
-   wire [15:0] regRBUF;
+   logic [15:0] regCSR;
+   logic [15:0] regMSR;
+   logic [15:0] regTCR;
+   logic [15:0] regTDR;
+   logic [15:0] regRBUF;
 
    //
-   // Signals
+   // UART Array Registers
+   //
+
+   logic        rbufRDONE;
+   logic        rbufSA;
+   logic        tdrTRDY;
+   logic [ 2:0] tdrTLINE;
+   logic [ 7:0] uartTXEMPTY;
+   logic [ 7:0] uartTXLOAD;
+   logic [ 7:0] uartRXFULL;
+   logic [ 7:0] uartRXDATA[7:0];
+   logic [ 7:0] uartRXCLR;
+   logic [ 7:0] uartRXFRME;
+   logic [ 7:0] uartRXPARE;
+
+   //
+   // Control/Status Register Decode
    //
 
    wire        csrCLR   = `dzCSR_CLR(regCSR);
@@ -177,20 +193,10 @@ module DZ11 (
    wire        csrSAE   = `dzCSR_SAE(regCSR);
    wire        csrMAINT = `dzCSR_MAINT(regCSR);
    wire        csrRDONE = `dzCSR_RDONE(regCSR);
-   wire [ 2:0] csrTLINE = `dzCSR_TLINE(regCSR);
+// wire [ 2:0] csrTLINE = `dzCSR_TLINE(regCSR);
    wire        csrTRDY  = `dzCSR_TRDY(regCSR);
    wire [ 7:0] tcrLIN   = `dzTCR_LIN(regTCR);
-   wire        rbufRDONE;
-   wire        rbufSA;
-   wire        tdrTRDY;
-   wire [ 2:0] tdrTLINE;
-   wire [ 7:0] uartTXEMPTY;
-   wire [ 7:0] uartTXLOAD;
-   wire [ 7:0] uartRXFULL;
-   wire [ 7:0] uartRXDATA[7:0];
-   wire [ 7:0] uartRXCLR;
-   wire [ 7:0] uartRXFRME;
-   wire [ 7:0] uartRXPARE;
+
    wire [ 7:0] uartTXDATA = `dzTDR_TBUF(regTDR);
 
    wire        dzINIT = devRESET | csrCLR;
@@ -252,8 +258,10 @@ module DZ11 (
    //  receivers.
    //
 
-   wire [7:0] uartRXD = csrMAINT ? dzTXD[7:0] : dzRXD[7:0];
-   wire [7:0] uartTXD;
+   logic [7:0] uartRXD;
+   logic [7:0] uartTXD;
+
+   assign uartRXD = csrMAINT ? dzTXD[7:0] : dzRXD[7:0];
 
    //
    // Generate an array of eight UARTS
@@ -347,9 +355,9 @@ module DZ11 (
    //  1.  CSR[TRDY] is asserted when CSR[TIE] is asserted.
    //
 
-   wire txINTR;
-   wire rxINTR;
-   wire rxVECTOR;
+   logic txINTR;
+   logic rxINTR;
+   logic rxVECTOR;
 
    DZINTR INTR (
       .clk        (clk),

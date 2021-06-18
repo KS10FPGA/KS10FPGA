@@ -48,17 +48,17 @@
 module DZTDR (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,			// Clear
+      input  wire         clr,                  // Clear
       input  wire         devLOBYTE,            // Device Low Byte
       input  wire         devHIBYTE,            // Device High Byte
       input  wire [35: 0] dzDATAI,              // DZ Data In
       input  wire         tdrWRITE,             // Write to TDR
       output reg  [ 7: 0] uartTXLOAD,           // Load UART
-      input  wire [ 7: 0] uartTXEMPTY,		// UART is empty
-      input  wire         csrMSE,		// Master Scan Enable
-      input  wire [ 7: 0] tcrLIN,		// Transmitter Control Register Line
+      input  wire [ 7: 0] uartTXEMPTY,          // UART is empty
+      input  wire         csrMSE,               // Master Scan Enable
+      input  wire [ 7: 0] tcrLIN,               // Transmitter Control Register Line
       output reg  [ 2: 0] tdrTLINE,             // Transmitter Line Bits
-      output wire         tdrTRDY,		// Transmitter Data Ready
+      output wire         tdrTRDY,              // Transmitter Data Ready
       output wire [15: 0] regTDR                // TDR Output
    );
 
@@ -74,9 +74,8 @@ module DZTDR (
    // Transmitter Scanner
    //
 
-   reg [2:0] scan;
-   reg [1:0] state;
-
+   logic [2:0] scan;
+   logic [1:0] state;
 
    always_ff @(posedge clk)
      begin

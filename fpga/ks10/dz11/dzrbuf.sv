@@ -65,7 +65,7 @@ module DZRBUF (
    //  This just increments the RX scan signal when Master Scan Enable is asserted.
    //
 
-   reg [2:0] rxSCAN;
+   logic [2:0] rxSCAN;
 
    always_ff @(posedge clk)
      begin
@@ -82,7 +82,7 @@ module DZRBUF (
    //  The FIFO state is updated after the read to RBUF.
    //
 
-   wire rd;
+   logic rd;
    EDGETRIG #(
       .POSEDGE  (0)
    ) uFIFOREAD (
@@ -110,7 +110,7 @@ module DZRBUF (
    //  has been updated.
    //
 
-   reg rd_dly;
+   logic rd_dly;
 
    always_ff @(posedge clk)
      begin
@@ -128,7 +128,7 @@ module DZRBUF (
    //  has been updated.
    //
 
-   reg wr_dly;
+   logic wr_dly;
 
    always_ff @(posedge clk)
      begin
@@ -167,11 +167,13 @@ module DZRBUF (
    // Receive data SILO
    //
 
-   wire        full;
-   wire        empty;
-   reg         rbufOVRE;
-   wire [14:0] readDATA;
-   wire [14:0] writeDATA = {rbufOVRE, uartRXFRME[rxSCAN], uartRXPARE[rxSCAN], 1'b0, rxSCAN, uartRXDATA[rxSCAN]};
+   logic        full;
+   logic        empty;
+   logic        rbufOVRE;
+   logic [14:0] readDATA;
+   logic [14:0] writeDATA;
+
+   assign writeDATA = {rbufOVRE, uartRXFRME[rxSCAN], uartRXPARE[rxSCAN], 1'b0, rxSCAN, uartRXDATA[rxSCAN]};
 
    FIFO #(
       .SIZE     (65),
@@ -217,7 +219,7 @@ module DZRBUF (
    // RBUF[DVAL]
    //
 
-   reg rbufDVAL;
+   logic rbufDVAL;
 
    always_ff @(posedge clk)
      begin
@@ -240,7 +242,7 @@ module DZRBUF (
    //  incorrect.
    //
 
-   reg [0:4] countSA;
+   logic [0:4] countSA;
 
    always_ff @(posedge clk)
      begin

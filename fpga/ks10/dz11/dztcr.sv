@@ -62,7 +62,7 @@ module DZTCR (
    //   The DTR register is not reset by CSR[CLR].
    //
 
-   reg [7:0] tcrDTR;
+   logic [7:0] tcrDTR;
 
    always_ff @(posedge clk)
      begin
@@ -79,7 +79,7 @@ module DZTCR (
    //   The DTR register is reset by CSR[CLR].
    //
 
-   reg [7:0] tcrLIN;
+   logic [7:0] tcrLIN;
 
    always_ff @(posedge clk)
      begin
