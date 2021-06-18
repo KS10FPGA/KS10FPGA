@@ -44,15 +44,12 @@
 module LPINTR (
       input  wire         clk,          // Clock
       input  wire         rst,          // Reset
-      input  wire         devWRU,       // Who are you?
-      input  wire [ 7: 4] devINTA,      // Interrupt acknowledge
-      output wire [ 7: 4] devINTR,      // Interrupt request
-      input  wire         vectREAD,     // Read interrupt vector
       input  wire         csraREAD,     // Read CSRA
       input  wire         lpINIT,       // Initialize
-      input  wire [ 7: 4] lpINTR,       // Interrupt number
+      input  wire         lpSETIRQ,     // Interrupt request
+      input  wire         lpIACK,       // Read interrupt vector
       input  wire         lpIE,         // Interrupt enable
-      input  wire         lpSETIRQ      // Interrupt request
+      output wire         lpINT         // Interrupt request
    );
 
    //
@@ -69,7 +66,8 @@ module LPINTR (
    // Interrupt State Machine
    //
    // Notes:
-   //  - The interrupt request clears when the interrupt is acknowledged.
+   //  - The interrupt request clears immediately after the interrupt is
+   //    acknowledged.
    //  - The interrupt is complete and can be retriggered only after
    //    the CSRA has been read.
    //
@@ -103,7 +101,7 @@ module LPINTR (
                  //
 
                  stateACTIVE:
-                   if (vectREAD)
+                   if (lpIACK)
                      state <= stateVECTREAD;
 
                  //
@@ -112,7 +110,7 @@ module LPINTR (
                  //
 
                  stateVECTREAD:
-                   if (!vectREAD)
+                   if (!lpIACK)
                      state <= stateWAIT;
 
                  //
@@ -141,6 +139,6 @@ module LPINTR (
    // Interrupt request
    //
 
-   assign devINTR = (state == stateACTIVE || state == stateVECTREAD) ? lpINTR : 4'b0;
+   assign lpINT = (state == stateACTIVE || state == stateVECTREAD);
 
 endmodule

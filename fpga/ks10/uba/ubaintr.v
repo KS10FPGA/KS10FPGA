@@ -51,8 +51,7 @@ module UBAINTR (
       input  wire [ 0: 2] statPIL,              // Interrupt priority low
       output wire         statINTHI,            // Interrupt status low
       output wire         statINTLO,            // Interrupt status high
-      input  wire [ 7: 4] devINTR,              // IO Device Interrupt Request
-      output reg  [ 7: 4] devINTA               // IO Device Interrupt Acknowledge
+      input  wire [ 7: 4] devINTR               // IO Device Interrupt Request
    );
 
    //
@@ -123,46 +122,5 @@ module UBAINTR (
    //
 
    assign busINTR = devINTRL | devINTRH;
-
-   //
-   // IO Bridge Interrupt Acknowledge
-   //
-   // Trace
-   //  UBA7/E27
-   //  UBA7/E39
-   //  UBA7/E53
-   //  UBA7/E113
-   //  UBA7/E184
-   //  UBA7/E185
-   //
-
-   always @(posedge clk)
-     begin
-        if (rst)
-          devINTA = `ubaINTNUL;
-        else
-          begin
-             if (wruREAD & (busPI == statPIH))
-               begin
-                  if (devINTR[7])
-                    devINTA = `ubaINTR7;
-                  else if (devINTR[6])
-                    devINTA = `ubaINTR6;
-                  else
-                    devINTA = `ubaINTNUL;
-               end
-             else if (wruREAD & (busPI == statPIL))
-               begin
-                  if (devINTR[5])
-                    devINTA = `ubaINTR5;
-                  else if (devINTR[4])
-                    devINTA = `ubaINTR4;
-                  else
-                    devINTA = `ubaINTNUL;
-               end
-             else
-               devINTA = `ubaINTNUL;
-          end
-     end
 
 endmodule

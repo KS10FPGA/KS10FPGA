@@ -72,7 +72,6 @@ module KMC11 (
       input  wire         devRESET,                     // IO Bus Bridge Reset
       // Interrupt
       output wire [ 7: 4] devINTR,                      // Interrupt Request
-      input  wire [ 7: 4] devINTA,                      // Interrupt Acknowledge
       // Target
       input  wire         devREQI,                      // Device Request In
       output wire         devACKO,                      // Device Acknowledge Out

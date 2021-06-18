@@ -444,7 +444,6 @@ module KS10 (
    wire [ 0:35] devDATAI[1:4][1:4];
    wire [ 0:35] devDATAO[1:4][1:4];
    wire [ 7: 4] devINTR [1:4][1:4];
-   wire [ 7: 4] devINTA [1:4][1:4];
 
    //
    // Debug Signals
@@ -735,28 +734,24 @@ module KS10 (
       .devACKO          (devACKI[1]),
       // IO Bridge 1, Device #1
       .dev1INTR         (devINTR[1][1]),
-      .dev1INTA         (devINTA[1][1]),
       .dev1ADDRI        (devADDRO[1][1]),
       .dev1ADDRO        (devADDRI[1][1]),
       .dev1DATAI        (devDATAO[1][1]),
       .dev1DATAO        (devDATAI[1][1]),
       // IO Bridge 1, Device #2
       .dev2INTR         (devINTR[1][2]),
-      .dev2INTA         (devINTA[1][2]),
       .dev2ADDRI        (devADDRO[1][2]),
       .dev2ADDRO        (devADDRI[1][2]),
       .dev2DATAI        (devDATAO[1][2]),
       .dev2DATAO        (devDATAI[1][2]),
       // IO Bridge 1, Device #3
       .dev3INTR         (devINTR[1][3]),
-      .dev3INTA         (devINTA[1][3]),
       .dev3ADDRI        (devADDRO[1][3]),
       .dev3ADDRO        (devADDRI[1][3]),
       .dev3DATAI        (devDATAO[1][3]),
       .dev3DATAO        (devDATAI[1][3]),
       // IO Bridge 1, Device #4
       .dev4INTR         (devINTR[1][4]),
-      .dev4INTA         (devINTA[1][4]),
       .dev4ADDRI        (devADDRO[1][4]),
       .dev4ADDRO        (devADDRI[1][4]),
       .dev4DATAI        (devDATAO[1][4]),
@@ -791,28 +786,24 @@ module KS10 (
       .devACKO          (devACKI[3]),
       // IO Bridge 3, Device #1
       .dev1INTR         (devINTR[3][1]),
-      .dev1INTA         (devINTA[3][1]),
       .dev1ADDRI        (devADDRO[3][1]),
       .dev1ADDRO        (devADDRI[3][1]),
       .dev1DATAI        (devDATAO[3][1]),
       .dev1DATAO        (devDATAI[3][1]),
       // IO Bridge 3, Device #2
       .dev2INTR         (devINTR[3][2]),
-      .dev2INTA         (devINTA[3][2]),
       .dev2ADDRI        (devADDRO[3][2]),
       .dev2ADDRO        (devADDRI[3][2]),
       .dev2DATAI        (devDATAO[3][2]),
       .dev2DATAO        (devDATAI[3][2]),
       // IO Bridge 3, Device #3
       .dev3INTR         (devINTR[3][3]),
-      .dev3INTA         (devINTA[3][3]),
       .dev3ADDRI        (devADDRO[3][3]),
       .dev3ADDRO        (devADDRI[3][3]),
       .dev3DATAI        (devDATAO[3][3]),
       .dev3DATAO        (devDATAI[3][3]),
       // IO Bridge 3, Device #4
       .dev4INTR         (devINTR[3][4]),
-      .dev4INTA         (devINTA[3][4]),
       .dev4ADDRI        (devADDRO[3][4]),
       .dev4ADDRO        (devADDRI[3][4]),
       .dev4DATAI        (devDATAO[3][4]),
@@ -847,7 +838,6 @@ module KS10 (
       // Device
       .devRESET         (devRESET[1]),
       .devINTR          (devINTR[1][1]),
-      .devINTA          (devINTA[1][1]),
       .devREQI          (devREQI[1][1]),
       .devREQO          (devREQO[1][1]),
       .devACKI          (devACKI[1][1]),
@@ -882,7 +872,6 @@ module KS10 (
       // Device
       .devRESET         (devRESET[3]),
       .devINTR          (devINTR[3][1]),
-      .devINTA          (devINTA[3][1]),
       .devREQI          (devREQI[3][1]),
       .devREQO          (devREQO[3][1]),
       .devACKI          (devACKI[3][1]),
@@ -928,7 +917,6 @@ module KS10 (
       // Device Interface
       .devRESET         (devRESET[3]),
       .devINTR          (devINTR[3][2]),
-      .devINTA          (devINTA[3][2]),
       .devREQI          (devREQI[3][2]),
       .devREQO          (devREQO[3][2]),
       .devACKI          (devACKI[3][2]),
@@ -1010,7 +998,6 @@ module KS10 (
       // Device Interface
       .devRESET         (devRESET[3]),
       .devINTR          (devINTR[3][3]),
-      .devINTA          (devINTA[3][3]),
       .devREQI          (devREQI[3][3]),
       .devREQO          (devREQO[3][3]),
       .devACKI          (devACKI[3][3]),
@@ -1064,7 +1051,6 @@ module KS10 (
       // Device Interface
       .devRESET         (devRESET[3]),
       .devINTR          (devINTR[3][4]),
-      .devINTA          (devINTA[3][4]),
       .devREQI          (devREQI[3][4]),
       .devREQO          (devREQO[3][4]),
       .devACKI          (devACKI[3][4]),

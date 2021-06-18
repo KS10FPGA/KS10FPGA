@@ -186,7 +186,7 @@ SIM_ARGS := \
 
 SYN_ARGS := \
 	MAJOR_VER=\"00\" \
-	MINOR_VER=\"26\" \
+	MINOR_VER=\"27\" \
         CLKFRQ=12500000 \
 	SSRAMx18 \
 	RPXX_SIMSEEK \
@@ -947,7 +947,6 @@ WAVE_UBA3 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI[1]}           {/testbench/uKS10/UBA3/devACKI[1]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO[1]}           {/testbench/uKS10/UBA3/devACKO[1]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev1INTR}             {/testbench/uKS10/UBA3/dev1INTR}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev1INTA}             {/testbench/uKS10/UBA3/dev1INTA}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev1ADDRI}            {/testbench/uKS10/UBA3/dev1ADDRI}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev1ADDRO}            {/testbench/uKS10/UBA3/dev1ADDRO}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev1DATAI}            {/testbench/uKS10/UBA3/dev1DATAI}" \
@@ -958,7 +957,6 @@ WAVE_UBA3 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI[2]}           {/testbench/uKS10/UBA3/devACKI[2]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO[2]}           {/testbench/uKS10/UBA3/devACKO[2]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2INTR}             {/testbench/uKS10/UBA3/dev2INTR}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2INTA}             {/testbench/uKS10/UBA3/dev2INTA}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2ADDRI}            {/testbench/uKS10/UBA3/dev2ADDRI}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2ADDRO}            {/testbench/uKS10/UBA3/dev2ADDRO}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev2DATAI}            {/testbench/uKS10/UBA3/dev2DATAI}" \
@@ -969,7 +967,6 @@ WAVE_UBA3 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI[3]}           {/testbench/uKS10/UBA3/devACKI[3]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO[3]}           {/testbench/uKS10/UBA3/devACKO[3]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev3INTR}             {/testbench/uKS10/UBA3/dev3INTR}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev3INTA}             {/testbench/uKS10/UBA3/dev3INTA}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev3ADDRI}            {/testbench/uKS10/UBA3/dev3ADDRI}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev3ADDRO}            {/testbench/uKS10/UBA3/dev3ADDRO}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev3DATAI}            {/testbench/uKS10/UBA3/dev3DATAI}" \
@@ -980,7 +977,6 @@ WAVE_UBA3 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI[4]}           {/testbench/uKS10/UBA3/devACKI[4]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO[4]}           {/testbench/uKS10/UBA3/devACKO[4]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev4INTR}             {/testbench/uKS10/UBA3/dev4INTR}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev4INTA}             {/testbench/uKS10/UBA3/dev4INTA}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev4ADDRI}            {/testbench/uKS10/UBA3/dev4ADDRI}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev4ADDRO}            {/testbench/uKS10/UBA3/dev4ADDRO}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {dev4DATAI}            {/testbench/uKS10/UBA3/dev4DATAI}" \

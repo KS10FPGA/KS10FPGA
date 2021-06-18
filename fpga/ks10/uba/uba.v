@@ -74,25 +74,21 @@ module UBA (
       input  wire [ 1: 4] devACKI,                      // IO Device Acknowledge In
       output reg  [ 1: 4] devACKO,                      // IO Device Acknowledge Out
       input  wire [ 7: 4] dev1INTR,                     // IO Device 1 Interrupt Request
-      output wire [ 7: 4] dev1INTA,                     // IO Device 1 Interrupt Acknowledge
       input  wire [ 0:35] dev1ADDRI,                    // IO Device 1 Address In
       output wire [ 0:35] dev1ADDRO,                    // IO Device 1 Address Out
       input  wire [ 0:35] dev1DATAI,                    // IO Device 1 Data In
       output wire [ 0:35] dev1DATAO,                    // IO Device 1 Data Out
       input  wire [ 7: 4] dev2INTR,                     // IO Device 2 Interrupt Request
-      output wire [ 7: 4] dev2INTA,                     // IO Device 2 Interrupt Acknowledge
       input  wire [ 0:35] dev2ADDRI,                    // IO Device 2 Address In
       output wire [ 0:35] dev2ADDRO,                    // IO Device 2 Address Out
       input  wire [ 0:35] dev2DATAI,                    // IO Device 2 Data In
       output wire [ 0:35] dev2DATAO,                    // IO Device 2 Data Out
       input  wire [ 7: 4] dev3INTR,                     // IO Device 3 Interrupt Request
-      output wire [ 7: 4] dev3INTA,                     // IO Device 3 Interrupt Acknowledge
       input  wire [ 0:35] dev3ADDRI,                    // IO Device 3 Address In
       output wire [ 0:35] dev3ADDRO,                    // IO Device 3 Address Out
       input  wire [ 0:35] dev3DATAI,                    // IO Device 3 Data In
       output wire [ 0:35] dev3DATAO,                    // IO Device 3 Data Out
       input  wire [ 7: 4] dev4INTR,                     // IO Device 4 Interrupt Request
-      output wire [ 7: 4] dev4INTA,                     // IO Device 4 Interrupt Acknowledge
       input  wire [ 0:35] dev4ADDRI,                    // IO Device 4 Address In
       output wire [ 0:35] dev4ADDRO,                    // IO Device 4 Address Out
       input  wire [ 0:35] dev4DATAI,                    // IO Device 4 Data In
@@ -385,7 +381,6 @@ module UBA (
    // Interrupts
    //
 
-   wire [1:4] devINTA;
    wire [1:4] devINTR = dev1INTR | dev2INTR | dev3INTR | dev4INTR;
 
    UBAINTR INTR (
@@ -398,14 +393,8 @@ module UBA (
       .statPIL    (statPIL),
       .statINTHI  (statINTHI),
       .statINTLO  (statINTLO),
-      .devINTR    (devINTR),
-      .devINTA    (devINTA)
+      .devINTR    (devINTR)
    );
-
-   assign dev1INTA = devINTA;
-   assign dev2INTA = devINTA;
-   assign dev3INTA = devINTA;
-   assign dev4INTA = devINTA;
 
    //
    // IO Bus Paging

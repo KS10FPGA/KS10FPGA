@@ -75,7 +75,6 @@ module LP20 (
       input  wire         devRESET,                     // IO Bus Bridge Reset
       // Interrupt
       output wire [ 7: 4] devINTR,                      // Interrupt Request
-      input  wire [ 7: 4] devINTA,                      // Interrupt Acknowledge
       // Target
       input  wire         devREQI,                      // Device Request In
       output wire         devACKO,                      // Device Acknowledge Out
@@ -190,7 +189,13 @@ module LP20 (
    wire [35:0] lpDATAI = devDATAI[0:35];
 
    //
-   // Registers
+   // Interrupt Acknowledge
+   //
+
+   wire lpIACK = vectREAD;
+
+   //
+   // LP20 Registers
    //
 
    wire [15:0] regCSRA;
@@ -551,19 +556,24 @@ module LP20 (
    // Interrupt Controller (LPINTR)
    //
 
+   wire lpINT;
+
    LPINTR INTR (
       .clk        (clk),
       .rst        (rst),
-      .devWRU     (devWRU),
-      .vectREAD   (vectREAD),
       .csraREAD   (csraREAD),
       .lpINIT     (lpINIT),
-      .lpIE       (lpIE),
       .lpSETIRQ   (lpSETIRQ),
-      .lpINTR     (lpINTR),
-      .devINTA    (devINTA),
-      .devINTR    (devINTR)
+      .lpIACK     (lpIACK),
+      .lpIE       (lpIE),
+      .lpINT      (lpINT)
    );
+
+   //
+   // Create Interrupt Request
+   //
+
+   assign devINTR = lpINT ? lpINTR : 4'b0;
 
    //
    // Create DMA address

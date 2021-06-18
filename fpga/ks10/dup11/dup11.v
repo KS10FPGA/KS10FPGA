@@ -73,7 +73,6 @@ module DUP11 (
       // Device Interface
       input  wire         devRESET,                     // IO Bus Bridge Reset
       output wire [ 7: 4] devINTR,                      // Interrupt Request
-      input  wire [ 7: 4] devINTA,                      // Interrupt Acknowledge
       input  wire         devREQI,                      // Device Request In
       output wire         devREQO,                      // Device Request Out
       input  wire         devACKI,                      // Device Acknowledge In

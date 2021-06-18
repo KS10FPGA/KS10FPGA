@@ -50,12 +50,23 @@ module KMCINTR (
       output wire kmcIRQO       // Interrupt request out
    );
 
+   //
+   // State machine
+   //
+
    localparam [1:0] stateIDLE    = 0,
                     stateACT     = 1,
                     stateVECTCLR = 2;
 
    //
-   // The interrupt request MUST clear AFTER the vector cycle is complete.
+   // The interrupt request MUST clear immediately AFTER the interrupt vector
+   // cycle is complete.
+   //
+   //  - If the interrupt clears during the interrupt vector cycle, the vector
+   //    will be mis-read by the microcode.
+   //
+   //  - If the interrupt clears much after the vector cycle is complete, the
+   //    interrupt will be recognized twice.
    //
 
    reg [1:0] state;

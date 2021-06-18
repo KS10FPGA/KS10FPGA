@@ -45,8 +45,7 @@ module DZINTR (
       input  wire clk,                  // Clock
       input  wire rst,                  // Reset
       input  wire clr,                  // Clear
-      input  wire iack,                 // Interrupt acknowledge
-      input  wire vectREAD,             // Interrupt vector cycle
+      input  wire dzIACK,               // Interrupt vector cycle
       output reg  rxVECTOR,             // RX Vector
       input  wire csrRIE,               // RX Interrupt enable
       input  wire csrRRDY,              // RX Interrupt set
@@ -189,11 +188,11 @@ module DZINTR (
             stateVECTREAD:
               begin
                  rxVECTOR <= rxVECTOR | rxINTR;
-                 if (vectREAD)
+                 if (dzIACK)
                    arbstate <= stateVECTCLR;
               end
             stateVECTCLR:
-              if (!vectREAD)
+              if (!dzIACK)
                 arbstate <= rxVECTOR ? stateRXDONE : stateTXDONE;
             stateRXDONE:
               arbstate <= stateIDLE;

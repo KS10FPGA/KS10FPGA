@@ -74,7 +74,6 @@ module DZ11 (
       input  wire         devRESET,                     // IO Bus Bridge Reset
       // Interrupt
       output wire [ 7: 4] devINTR,                      // Interrupt Request
-      input  wire [ 7: 4] devINTA,                      // Interrupt Acknowledge
       // Target
       input  wire         devREQI,                      // Device Request In
       output wire         devACKO,                      // Device Acknowledge Out
@@ -151,7 +150,13 @@ module DZ11 (
    wire [35:0] dzDATAI = devDATAI[0:35];
 
    //
-   // Registers
+   // Interrupt Acknowledge
+   //
+
+   wire dzIACK = vectREAD;
+
+   //
+   // DZ11 Registers
    //
 
    wire [15:0] regCSR;
@@ -350,8 +355,7 @@ module DZ11 (
       .clk        (clk),
       .rst        (rst),
       .clr        (dzINIT),
-      .iack       (devWRU & (devINTA == dzINTR)),
-      .vectREAD   (vectREAD),
+      .dzIACK     (dzIACK),
       .rxVECTOR   (rxVECTOR),
       .csrRIE     (csrRIE),
       .csrRRDY    (csrSAE ? csrSA : csrRDONE),
