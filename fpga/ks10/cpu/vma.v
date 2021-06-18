@@ -83,25 +83,68 @@ module VMA (
    wire selPREVIOUS = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_PREVIOUS);
 
    //
+   // VMA Data Selector
+   //
+   // Trace
+   //  DPM4/E54
+   //  DPM4/E55
+   //  DPM4/E56
+   //  DPM4/E72
+   //  DPM4/E74
+   //  DPM4/E115
+   //
+
+   reg vmaUSER;
+   reg vmaFETCH;
+   reg vmaPHYS;
+   reg vmaPREV;
+   reg vmaIO;
+   reg vmaWRU;
+   reg vmaVECT;
+   reg vmaIOBYTE;
+
+   always @*
+     begin
+        if (`cromMEM_DPFUNC)
+          begin
+             vmaUSER   <= `vmaUSER(dp);
+             vmaFETCH  <= `vmaFETCH(dp);
+             vmaPHYS   <= `vmaPHYS(dp);
+             vmaPREV   <= `vmaPREV(dp);
+             vmaIO     <= `vmaIO(dp);
+             vmaWRU    <= `vmaWRU(dp);
+             vmaVECT   <= `vmaVECT(dp);
+             vmaIOBYTE <= `vmaIOBYTE(dp);
+          end
+        else
+          begin
+             vmaUSER   <= ((~`cromMEM_FORCEEXEC & flagUSER & ~cpuEXEC) |
+                           (`cromMEM_FETCHCYCLE & flagUSER           ) |
+                           (prevEN              & flagPCU            ) |
+                           (selPREVIOUS         & flagPCU            ) |
+                           (`cromMEM_FORCEUSER));
+             vmaFETCH  <= `cromMEM_FETCHCYCLE;
+             vmaPHYS   <= `cromMEM_PHYSICAL;
+             vmaPREV   <= prevEN | selPREVIOUS;
+             vmaIO     <= 0;
+             vmaWRU    <= 0;
+             vmaVECT   <= 0;
+             vmaIOBYTE <= 0;
+          end
+     end
+
+   //
    // VMA Register
    //
    // Details
    //  The VMA is loaded when cromMEM_CYCLE is active and the VMA is loaded.
    //
    // Trace
-   //  DPE5/E53
-   //  DPM4/E55
-   //  DPM4/E56
-   //  DPM4/E74
-   //  DPE5/E76
    //  DPM4/E82
    //  DPM4/E90
-   //  DPM4/E97
    //  DPM4/E103
-   //  DPM4/E115
    //  DPM4/E137
    //  DPM4/E152
-   //  DPM4/E168
    //  DPM4/E175
    //  DPM4/E182
    //  DPM4/E183
@@ -127,39 +170,21 @@ module VMA (
              `vmaVECT(vmaREG)   <= 0;
              `vmaIOBYTE(vmaREG) <= 0;
           end
-        else if (clken & vmaEN & !pageFAIL)
+        else if (clken & vmaEN & !pageFAIL)		// FIXME: Why
           begin
-             `vmaEXEC(vmaREG) <= 0;
-             `vmaEXTD(vmaREG) <= `cromMEM_EXTADDR;
-             `vmaADDR(vmaREG) <= `vmaADDR(dp);
-             if (`cromMEM_DPFUNC)
-               begin
-                  `vmaUSER(vmaREG)   <= `vmaUSER(dp);
-                  `vmaFETCH(vmaREG)  <= `vmaFETCH(dp);
-                  `vmaPHYS(vmaREG)   <= `vmaPHYS(dp);
-                  `vmaPREV(vmaREG)   <= `vmaPREV(dp);
-                  `vmaIO(vmaREG)     <= `vmaIO(dp);
-                  `vmaWRU(vmaREG)    <= `vmaWRU(dp);
-                  `vmaVECT(vmaREG)   <= `vmaVECT(dp);
-                  `vmaIOBYTE(vmaREG) <= `vmaIOBYTE(dp);
-               end
-             else
-               begin
-                  `vmaUSER(vmaREG)   <= ((~`cromMEM_FORCEEXEC & flagUSER & ~cpuEXEC) |
-                                         (`cromMEM_FETCHCYCLE & flagUSER           ) |
-                                         (prevEN              & flagPCU            ) |
-                                         (selPREVIOUS         & flagPCU            ) |
-                                         (`cromMEM_FORCEUSER));
-                  `vmaFETCH(vmaREG)  <= `cromMEM_FETCHCYCLE;
-                  `vmaPHYS(vmaREG)   <= `cromMEM_PHYSICAL;
-                  `vmaPREV(vmaREG)   <= prevEN | selPREVIOUS;
-                  `vmaIO(vmaREG)     <= 0;
-                  `vmaWRU(vmaREG)    <= 0;
-                  `vmaVECT(vmaREG)   <= 0;
-                  `vmaIOBYTE(vmaREG) <= 0;
-               end
+             `vmaEXEC(vmaREG)   <= 0;
+             `vmaEXTD(vmaREG)   <= `cromMEM_EXTADDR;
+             `vmaADDR(vmaREG)   <= `vmaADDR(dp);
+             `vmaUSER(vmaREG)   <= vmaUSER;
+             `vmaFETCH(vmaREG)  <= vmaFETCH;
+             `vmaPHYS(vmaREG)   <= vmaPHYS;
+             `vmaPREV(vmaREG)   <= vmaPREV;
+             `vmaIO(vmaREG)     <= vmaIO;
+             `vmaWRU(vmaREG)    <= vmaWRU;
+             `vmaVECT(vmaREG)   <= vmaVECT;
+             `vmaIOBYTE(vmaREG) <= vmaIOBYTE;
           end
-    end
+     end
 
    //
    // Memory Cycle Decoder
