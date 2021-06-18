@@ -136,6 +136,12 @@ module UBAPAGE (
    );
 
    //
+   // UBA Pager Size
+   //
+
+   localparam RAMSIZ = 64;
+
+   //
    // Paging addresses
    //
 
@@ -147,10 +153,22 @@ module UBAPAGE (
    //  This is how the KS10 writes to the Page Memories
    //
 
-   reg [0:14] pageRAM[0:63];
+`ifndef SYNTHESIS
+   integer i;
+`endif
+
+   reg [0:14] pageRAM[0:RAMSIZ-1];
+
    always @(negedge clk)
      begin
-        if (pageWRITE)
+        if (rst)
+`ifdef SYNTHESIS
+          ;
+`else
+          for (i = 0; i < RAMSIZ; i = i + 1)
+            pageRAM[i] <= 0;
+`endif
+        else if (pageWRITE)
           pageRAM[pageADDR] <= {busDATAI[18:21], busDATAI[25:35]};
      end
 
