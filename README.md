@@ -44,7 +44,7 @@ and Mouser.
   <li>KMC11 General Purpose Processor (in work)</li>
 </ul>
 
-More details can be found on the wiki pages at
+Detailed design information can be found on the wiki pages at:
 <a href="https://github.com/KS10FPGA/KS10FPGA/wiki">https://github.com/KS10FPGA/KS10FPGA/wiki</a>
 
 <p>Rob Doyle</p>
