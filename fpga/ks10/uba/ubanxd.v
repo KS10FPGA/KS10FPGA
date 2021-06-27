@@ -46,151 +46,61 @@ module UBANXD (
       input  wire rst,                          // Reset
       input  wire busREQI,                      // Bus Request
       output wire busACKO,                      // Bus Acknowledge
-      input  wire ubaREQ,                       // UBA Request
-      input  wire ubaACK,                       // UBA Ack
       input  wire devREQ,                       // DEV Request
       input  wire devACK,                       // DEV Ack
-      input  wire wruREQ,                       // WRU Request
+      input  wire ubaACK,                       // UBA Ack
       input  wire wruACK,                       // WRU Ack
       output wire setNXD                        // Set NXD
    );
 
-   localparam [0:3] stateNULL =  0,
-                    stateCNT0 =  1,
-                    stateCNT1 =  2,
-                    stateCNT2 =  3,
-                    stateCNT3 =  4,
-                    stateCNT4 =  5,
-                    stateCNT5 =  6,
-                    stateCNT6 =  7,
-                    stateCNT7 =  8,
-                    stateCNT8 =  9,
-                    stateCNT9 = 10,
-                    stateNXD  = 11,
-                    stateACK  = 12;
+   localparam [0:3] timeout = 4'd15;
 
-   reg uba;
-   reg [0:3] state;
+   localparam [0:1] stateIDLE = 0,
+                    stateDLY  = 1,
+                    stateNXD  = 2,
+                    stateACK  = 3;
+
+   reg [0:3] counter;
+   reg [0:1] state;
 
    always @(posedge clk)
      begin
         if (rst)
           begin
-             uba   <= 0;
-             state <= stateNULL;
+             counter <= 0;
+             state   <= stateIDLE;
           end
         else
           case (state)
-
-            stateNULL:
+            stateIDLE:
               begin
-
-                 //
-                 // Bus requests to the UBA proper
-                 //
-
-                 if (busREQI & ubaREQ)
-                   begin
-                      uba <= 1;
-                      if (ubaACK)
-                        state <= stateACK;
-                      else
-                        state <= stateCNT0;
-                   end
-
-                 //
-                 // Bus requests to the IO device
-                 //
-
-                 else if (busREQI & devREQ)
-                   begin
-                      uba <= 0;
-                      if (devACK)
-                        state <= stateACK;
-                      else
-                        state <= stateCNT0;
-                   end
-
-                 //
-                 // WRU requests
-                 //
-
-                 else if (busREQI & wruREQ & wruACK)
+                 if ((busREQI & ubaACK) | (busREQI & wruACK))
                    state <= stateACK;
-
+                 else if (busREQI & devREQ)
+                   if (devACK)
+                     state <= stateACK;
+                   else
+                     begin
+                        counter <= timeout;
+                        state   <= stateDLY;
+                     end
               end
-
-            stateCNT0:
-              if (uba ? ubaACK : devACK)
+            stateDLY:
+              if (devACK)
                 state <= stateACK;
-              else
-                state <= stateCNT1;
-
-            stateCNT1:
-              if (uba ? ubaACK : devACK)
-                state <= stateACK;
-              else
-                state <= stateCNT2;
-
-            stateCNT2:
-              if (uba ? ubaACK : devACK)
-                state <= stateACK;
-              else
-                state <= stateCNT3;
-
-            stateCNT3:
-              if (uba ? ubaACK : devACK)
-                state <= stateACK;
-              else
-                state <= stateCNT4;
-
-            stateCNT4:
-              if (uba ? ubaACK : devACK)
-                state <= stateACK;
-              else
-                state <= stateCNT5;
-
-            stateCNT5:
-              if (uba ? ubaACK : devACK)
-                state <= stateACK;
-              else
-                state <= stateCNT6;
-
-            stateCNT6:
-              if (uba ? ubaACK : devACK)
-                state <= stateACK;
-              else
-                state <= stateCNT7;
-
-            stateCNT7:
-              if (uba ? ubaACK : devACK)
-                state <= stateACK;
-              else
-                state <= stateCNT8;
-
-            stateCNT8:
-              if (uba ? ubaACK : devACK)
-                state <= stateACK;
-              else
-                state <= stateCNT9;
-
-            stateCNT9:
-              if (uba ? ubaACK : devACK)
-                state <= stateACK;
+              else if (counter != 0)
+                counter <= counter - 1'b1;
               else
                 state <= stateNXD;
-
             stateACK:
               if (!busREQI)
-                state <= stateNULL;
-
+                state <= stateIDLE;
             stateNXD:
-              state <= stateNULL;
-
+              state <= stateIDLE;
           endcase
      end
 
    assign setNXD  = (state == stateNXD);
-   assign busACKO = (state == stateACK) & busREQI;
+   assign busACKO = (state == stateACK);
 
 endmodule

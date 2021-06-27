@@ -132,7 +132,8 @@ module UBAPAGE (
       input  wire         pageWRITE,            // Page RAM write
       output wire [ 0:35] pageDATAO,            // Paging RAM Data Out
       input  wire [ 0:35] pageADDRI,            // IO Device Address In
-      output wire         pageFAIL              // Page NXM
+      output wire [ 0: 3] pageFLAGS,            // Page flags
+      output wire         pageFAIL              // Page fail
    );
 
    //
@@ -150,7 +151,8 @@ module UBAPAGE (
 
    //
    // UBA Paging RAM
-   //  This is how the KS10 writes to the Page Memories
+   //
+   //  This is how the KS10 writes to the UBA Page Memories
    //
 
 `ifndef SYNTHESIS
@@ -174,6 +176,7 @@ module UBAPAGE (
 
    //
    // UBA Paging RAM
+   //
    //  This is how the KS10 reads from the Page Memories.
    //
 
@@ -181,29 +184,26 @@ module UBAPAGE (
 
    //
    // UBA Paging RAM
+   //
    //  This is where the IO Paging actually occurs
    //  ADDR Flags were already added by the device
    //
 
-   assign busADDRO = {pageADDRI[0:15], pageRAM[virtPAGE][4:14], pageADDRI[25:33]};
-
-   //
-   // pageFLAGS
-   //
-
-   wire [0:3] pageFLAGS = pageRAM[virtPAGE][0:3];
+   assign busADDRO  = {pageADDRI[0:15], pageRAM[virtPAGE][4:14], pageADDRI[25:33]};
+   assign pageFLAGS = pageRAM[virtPAGE][0:3];
 
    //
    // An NXM generated when:
+   //
    //   - UBA A18 not zero
    //   - if in FTM and the two LSBs of the address are not zero.  This is
    //     similar to an 'alignment error'.
    //   - Page not valid
    //
 
-   assign pageFAIL = ((devREQI & pageADDRI[18]) |
-                      (devREQI & `flagsFTM(pageFLAGS) & pageADDRI[34]) |
-                      (devREQI & `flagsFTM(pageFLAGS) & pageADDRI[35]) |
-                      (devREQI & !`flagsVLD(pageFLAGS)));
+   assign pageFAIL = ((devREQI & !`busIO(pageADDRI) &                         pageADDRI[18]) |
+                      (devREQI & !`busIO(pageADDRI) &  `flagsFTM(pageFLAGS) & pageADDRI[34]) |
+                      (devREQI & !`busIO(pageADDRI) &  `flagsFTM(pageFLAGS) & pageADDRI[35]) |
+                      (devREQI & !`busIO(pageADDRI) & !`flagsVLD(pageFLAGS)));
 
 endmodule

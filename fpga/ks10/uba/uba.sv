@@ -52,6 +52,7 @@
 
 `include "uba.vh"
 `include "ubasr.vh"
+`include "ubapage.vh"
 `include "../cpu/bus.vh"
 
 module UBA (
@@ -59,7 +60,7 @@ module UBA (
       input  wire         clk,                          // Clock
       // KS10 Backplane Bus Interface
       input  wire         busREQI,                      // Backplane Bus Request In
-      output wire         busREQO,                      // Backplane Bus Request Out
+      output reg          busREQO,                      // Backplane Bus Request Out
       input  wire         busACKI,                      // Backplane Bus Acknowledge In
       output wire         busACKO,                      // Backplane Bus Acknowledge Out
       input  wire [ 0:35] busADDRI,                     // Backplane Bus Address In
@@ -69,30 +70,15 @@ module UBA (
       output wire [ 1: 7] busINTR,                      // Backplane Bus Interrupt Request
       // Device Interface
       output wire         devRESET,                     // IO Device Reset
-      input  wire [ 1: 4] devREQI,                      // IO Device Request In
-      output wire [ 1: 4] devREQO,                      // IO Device Request Out
-      input  wire [ 1: 4] devACKI,                      // IO Device Acknowledge In
-      output reg  [ 1: 4] devACKO,                      // IO Device Acknowledge Out
-      input  wire [ 7: 4] dev1INTR,                     // IO Device 1 Interrupt Request
-      input  wire [ 0:35] dev1ADDRI,                    // IO Device 1 Address In
-      output wire [ 0:35] dev1ADDRO,                    // IO Device 1 Address Out
-      input  wire [ 0:35] dev1DATAI,                    // IO Device 1 Data In
-      output wire [ 0:35] dev1DATAO,                    // IO Device 1 Data Out
-      input  wire [ 7: 4] dev2INTR,                     // IO Device 2 Interrupt Request
-      input  wire [ 0:35] dev2ADDRI,                    // IO Device 2 Address In
-      output wire [ 0:35] dev2ADDRO,                    // IO Device 2 Address Out
-      input  wire [ 0:35] dev2DATAI,                    // IO Device 2 Data In
-      output wire [ 0:35] dev2DATAO,                    // IO Device 2 Data Out
-      input  wire [ 7: 4] dev3INTR,                     // IO Device 3 Interrupt Request
-      input  wire [ 0:35] dev3ADDRI,                    // IO Device 3 Address In
-      output wire [ 0:35] dev3ADDRO,                    // IO Device 3 Address Out
-      input  wire [ 0:35] dev3DATAI,                    // IO Device 3 Data In
-      output wire [ 0:35] dev3DATAO,                    // IO Device 3 Data Out
-      input  wire [ 7: 4] dev4INTR,                     // IO Device 4 Interrupt Request
-      input  wire [ 0:35] dev4ADDRI,                    // IO Device 4 Address In
-      output wire [ 0:35] dev4ADDRO,                    // IO Device 4 Address Out
-      input  wire [ 0:35] dev4DATAI,                    // IO Device 4 Data In
-      output wire [ 0:35] dev4DATAO                     // IO Device 4 Data Out
+      input  wire         devREQI[1:4],                 // IO Device Request In
+      output reg          devREQO[1:4],                 // IO Device Request Out
+      input  wire         devACKI[1:4],                 // IO Device Acknowledge In
+      output reg          devACKO[1:4],                 // IO Device Acknowledge Out
+      input  wire [ 7: 4] devINTR[1:4],                 // IO Device Interrupt Request
+      input  wire [ 0:35] devADDRI[1:4],                // IO Device Address In
+      output wire [ 0:35] devADDRO[1:4],                // IO Device Address Out
+      input  wire [ 0:35] devDATAI[1:4],                // IO Device Data In
+      output reg  [ 0:35] devDATAO[1:4]                // IO Device Data Out
    );
 
    //
@@ -107,7 +93,7 @@ module UBA (
    localparam [ 0:35] wruRESP  = `getWRU(ubaNUM);       // Lookup WRU Response
 
    //
-   // Address Bus
+   // KS10 Address Bus
    //
    // Details:
    //  busADDRI[ 0:13] is flags
@@ -120,6 +106,7 @@ module UBA (
    wire         busIO     = `busIO(busADDRI);           // IO Cycle
    wire         busWRU    = `busWRU(busADDRI);          // Read interrupting controller number
    wire         busVECT   = `busVECT(busADDRI);         // Read interrupt vector
+   wire         busIOBYTE = `busIOBYTE(busADDRI);       // IO Byte Cycle
    wire [15:17] busPI     = `busPI(busADDRI);           // IO Bridge PI Request
    wire [14:17] busDEV    = `busDEV(busADDRI);          // IO Bridge Device Number
    wire [18:35] busADDR   = `busIOADDR(busADDRI);       // IO Address
@@ -128,11 +115,36 @@ module UBA (
    // Signals
    //
 
-   wire regUBAMR;                                       // Maintenance Mode
-   wire setNXD;                                         // Set NXD
-   wire setTMO;                                         // Set TMO
-   wire pageFAIL;                                       // Page fail
-   wire loopACKO;                                       // Loopback acknowledge
+   wire         regUBAMR;                               // Maintenance Mode
+   wire         setNXD;                                 // Set NXD
+   wire         setTMO;                                 // Set TMO
+   wire         pageFAIL;                               // Page failure
+
+   //
+   // Device Address Bus
+   //
+
+   reg  [ 0:35] mdevADDRI;
+   reg  [ 0:35] mdevDATAI;
+// wire         devREAD   = `busREAD(mdevADDRI);         // Read Cycle (IO or Memory)
+// wire         devWRITE  = `busWRITE(mdevADDRI);        // Write Cycle (IO or Memory)
+   wire         devIO     = `busIO(mdevADDRI);           // IO Cycle
+
+   //
+   // Device request on any device input
+   //
+
+   wire         devREQ = devREQI[1] | devREQI[2] | devREQI[3] | devREQI[4];
+
+   //
+   // Paging flags
+   //
+
+   wire [ 0: 3] pageFLAGS;                              // Page flags
+   wire         flagsRPW = `flagsRPW(pageFLAGS);        // Page read/pause/write
+   wire         flagsE16 = `flagsE16(pageFLAGS);        // Page E16
+   wire         flagsFTM = `flagsFTM(pageFLAGS);        // Page fast transfer mode
+   wire         flagsVLD = `flagsFTM(pageFLAGS);        // Page valid
 
    //
    // Address Decoding
@@ -197,7 +209,10 @@ module UBA (
 
    always @*
      begin
-        devACKO  = 0;
+        devACKO[1] = 0;
+        devACKO[2] = 0;
+        devACKO[3] = 0;
+        devACKO[4] = 0;
         if (devREQI[1])
           devACKO[1] = busACKI;
         else if (devREQI[2])
@@ -212,141 +227,211 @@ module UBA (
    // Device arbiter
    //
    //  The address and data bus is enabled to the KS10 backplane bus arbiter
-   //  when:
+   //  with the following prorities from highest to lowest:
    //
-   //  1.  The device is initiating a DMA request.  In this case the device
-   //      (initiator) asserts devREQI[n].  In multiple requests are present,
-   //      this arbiter selects the lowest device.
+   //  1.  The device is reponding to a Interrupt Vector request.  In this case,
+   //      the CPU asserts both busREQI and busVECT.  This is the highest priority.
+   //
    //  2.  The device is the target of either an memory or IO request.  In this
    //      case the initiator asserts busREQI and target, if any, asserts
    //      devACKI[n].
-   //  3.  The device is reponding to a Interrupt Vector request.  In this case,
-   //      the CPU asserts both busREQI and busVECT.  Responding to an interrupt
-   //      vector request has priority over all other types of bus transactions.
    //
-
-   reg [0:35] devADDRI;
-   reg [0:35] devDATAI;
+   //  3.  The device is initiating a memory or IO DMA request. In this case, the
+   //      device (initiator) asserts devREQI[n].  Memory requests are routed
+   //      to the KS10 backplane.  IO requests are routed to other UBA devices.
+   //
 
    always @*
      begin
-        devADDRI = 0;
-        devDATAI = 0;
+        mdevADDRI = 0;
+        mdevDATAI = 0;
 
         //
-        // Interrupt arbitration
+        // INTR 7 vector arbitration (Highest Priority)
         //
 
-        if (busREQI & busVECT)
+        if (busREQI & busVECT & devINTR[1][7])
           begin
-
-             //
-             // INTR 7 (Highest Priority)
-             //
-
-             if (dev1INTR[7])
-               devDATAI = dev1DATAI;
-             else if (dev2INTR[7])
-               devDATAI = dev2DATAI;
-             else if (dev3INTR[7])
-               devDATAI = dev3DATAI;
-             else if (dev4INTR[7])
-               devDATAI = dev3DATAI;
-
-             //
-             // INTR 6
-             //
-
-             else if (dev1INTR[6])
-               devDATAI = dev1DATAI;
-             else if (dev2INTR[6])
-               devDATAI = dev2DATAI;
-             else if (dev3INTR[6])
-               devDATAI = dev3DATAI;
-             else if (dev4INTR[6])
-               devDATAI = dev4DATAI;
-
-             //
-             // INTR 5
-             //
-
-             else if (dev1INTR[5])
-               devDATAI = dev1DATAI;
-             else if (dev2INTR[5])
-               devDATAI = dev2DATAI;
-             else if (dev3INTR[5])
-               devDATAI = dev3DATAI;
-             else if (dev4INTR[5])
-               devDATAI = dev4DATAI;
-
-             //
-             // INTR 4 (Lowest prioity)
-             //
-
-             else if (dev1INTR[4])
-               devDATAI = dev1DATAI;
-             else if (dev2INTR[4])
-               devDATAI = dev2DATAI;
-             else if (dev3INTR[4])
-               devDATAI = dev3DATAI;
-             else if (dev4INTR[4])
-               devDATAI = dev4DATAI;
+             mdevDATAI = devDATAI[1];
+             mdevADDRI = devADDRI[1];
           end
-        else
-
-          //
-          // Device arbitration
-          //
-
+        else if (busREQI & busVECT & devINTR[2][7])
           begin
-
-             //
-             // Device 1
-             //
-
-             if ((busREQI & devACKI[1]) | devREQI[1])
-               begin
-                  devADDRI = dev1ADDRI;
-                  devDATAI = dev1DATAI;
-               end
-
-             //
-             // Device 2
-             //
-
-             else if ((busREQI & devACKI[2]) | devREQI[2])
-               begin
-                  devADDRI = dev2ADDRI;
-                  devDATAI = dev2DATAI;
-               end
-
-             //
-             // Device 3
-             //
-
-             else if ((busREQI & devACKI[3]) | devREQI[3])
-               begin
-                  devADDRI = dev3ADDRI;
-                  devDATAI = dev3DATAI;
-               end
-
-             //
-             //
-             //
-
-             else if ((busREQI & devACKI[4]) | devREQI[4])
-               begin
-                  devADDRI = dev4ADDRI;
-                  devDATAI = dev4DATAI;
-               end
+             mdevDATAI = devDATAI[2];
+             mdevADDRI = devADDRI[2];
           end
-     end
+        else if (busREQI & busVECT & devINTR[3][7])
+          begin
+             mdevDATAI = devDATAI[3];
+             mdevADDRI = devADDRI[3];
+          end
+        else if (busREQI & busVECT & devINTR[4][7])
+          begin
+             mdevDATAI = devDATAI[4];
+             mdevADDRI = devADDRI[4];
+          end
+
+        //
+        // INTR 6 vector arbitration
+        //
+
+        else if (busREQI & busVECT & devINTR[1][6])
+          begin
+             mdevDATAI = devDATAI[1];
+             mdevADDRI = devADDRI[1];
+          end
+        else if (busREQI & busVECT & devINTR[2][6])
+          begin
+             mdevDATAI = devDATAI[2];
+             mdevADDRI = devADDRI[2];
+          end
+        else if (busREQI & busVECT & devINTR[3][6])
+          begin
+             mdevDATAI = devDATAI[3];
+             mdevADDRI = devADDRI[3];
+          end
+        else if (busREQI & busVECT & devINTR[4][6])
+          begin
+             mdevDATAI = devDATAI[4];
+             mdevADDRI = devADDRI[4];
+          end
+
+        //
+        // INTR 5 vector arbitration
+        //
+
+        else if (busREQI & busVECT & devINTR[1][5])
+          begin
+             mdevDATAI = devDATAI[1];
+             mdevADDRI = devADDRI[1];
+          end
+        else if (busREQI & busVECT & devINTR[2][5])
+          begin
+             mdevDATAI = devDATAI[2];
+             mdevADDRI = devADDRI[2];
+          end
+        else if (busREQI & busVECT & devINTR[3][5])
+          begin
+             mdevDATAI = devDATAI[3];
+             mdevADDRI = devADDRI[3];
+          end
+        else if (busREQI & busVECT & devINTR[4][5])
+          begin
+             mdevDATAI = devDATAI[4];
+             mdevADDRI = devADDRI[4];
+          end
+
+        //
+        // INTR 4 vector arbitration (Lowest prioity)
+        //
+
+        else if (busREQI & busVECT & devINTR[1][4])
+          begin
+             mdevDATAI = devDATAI[1];
+             mdevADDRI = devADDRI[1];
+          end
+        else if (busREQI & busVECT & devINTR[2][4])
+          begin
+             mdevDATAI = devDATAI[2];
+             mdevADDRI = devADDRI[2];
+          end
+        else if (busREQI & busVECT & devINTR[3][4])
+          begin
+             mdevDATAI = devDATAI[3];
+             mdevADDRI = devADDRI[3];
+          end
+        else if (busREQI & busVECT & devINTR[4][4])
+          begin
+             mdevDATAI = devDATAI[4];
+             mdevADDRI = devADDRI[4];
+          end
+
+        //
+        // Mem or IO request that is acknowledged by Device 1
+        //
+
+        else if (busREQI & devACKI[1])
+          begin
+             mdevADDRI = devADDRI[1];
+             mdevDATAI = devDATAI[1];
+          end
+
+        //
+        // Mem or IO request that is acknowledged by Device 2
+        //
+
+        else if (busREQI & devACKI[2])
+          begin
+             mdevADDRI = devADDRI[2];
+             mdevDATAI = devDATAI[2];
+          end
+
+        //
+        // Mem or IO request that is acknowledged by Device 3
+        //
+
+        else if (busREQI & devACKI[3])
+          begin
+             mdevADDRI = devADDRI[3];
+             mdevDATAI = devDATAI[3];
+          end
+
+        //
+        // Mem or IO request that is acknowledged by Device 4
+        //
+
+        else if (busREQI & devACKI[4])
+          begin
+             mdevADDRI = devADDRI[4];
+             mdevDATAI = devDATAI[4];
+          end
+
+        //
+        // Mem or IO request from Device 1
+        //
+
+        else if (devREQI[1])
+          begin
+             mdevADDRI = devADDRI[1];
+             mdevDATAI = devDATAI[1];
+          end
+
+        //
+        // Mem or IO request from Device 2
+        //
+
+        else if (devREQI[2])
+          begin
+             mdevADDRI = devADDRI[2];
+             mdevDATAI = devDATAI[2];
+          end
+
+        //
+        // Mem or IO request from Device 3
+        //
+
+        else if (devREQI[3])
+          begin
+             mdevADDRI = devADDRI[3];
+             mdevDATAI = devDATAI[3];
+          end
+
+        //
+        // Mem or IO request from Device 4
+        //
+
+        else if (devREQI[4])
+          begin
+             mdevADDRI = devADDRI[4];
+             mdevDATAI = devDATAI[4];
+          end
+    end
 
    //
    // NXD Bus Monitor
    //
    //  The Bus Monitor acknowledges bus requests to the UBA and devices on the
-   //  IO Bus.  NXD is asserted on an 'un-acked' IO requests to the devices.
+   //  IO Bus. NXD is asserted on an 'un-acked' IO requests to the devices.
    //
 
    UBANXD NXD (
@@ -354,11 +439,9 @@ module UBA (
       .clk        (clk),
       .busREQI    (busREQI),
       .busACKO    (busACKO),
-      .ubaREQ     (ubaREAD  | ubaWRITE | loopREAD | loopWRITE),
-      .ubaACK     (ubaREAD  | ubaWRITE | loopREAD | loopWRITE),
-      .devREQ     (devREAD  | devWRITE | vectREAD),
+      .devREQ     (devREAD | devWRITE | vectREAD),
       .devACK     (devACKI[1] | devACKI[2] | devACKI[3] | devACKI[4]),
-      .wruREQ     (wruREAD),
+      .ubaACK     (ubaREAD | ubaWRITE | loopREAD | loopWRITE),
       .wruACK     (wruREAD & ((busPI == statPIH) | (busPI == statPIL))),
       .setNXD     (setNXD)
    );
@@ -381,7 +464,7 @@ module UBA (
    // Interrupts
    //
 
-   wire [1:4] devINTR = dev1INTR | dev2INTR | dev3INTR | dev4INTR;
+   wire [1:4] mdevINTR = devINTR[1] | devINTR[2] | devINTR[3] | devINTR[4];
 
    UBAINTR INTR (
       .rst        (rst),
@@ -393,11 +476,41 @@ module UBA (
       .statPIL    (statPIL),
       .statINTHI  (statINTHI),
       .statINTLO  (statINTLO),
-      .devINTR    (devINTR)
+      .devINTR    (mdevINTR)
    );
 
    //
+   // Loopback testing
+   //
+
+   reg [0:35] loopDATA;
+   reg [0:35] loopADDR;
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          begin
+             loopDATA <= 0;
+             loopADDR <= 0;
+          end
+        else if (loopWRITE)
+          begin
+             loopDATA <= busDATAI;
+             loopADDR <= busADDRI;
+          end
+     end
+
+   wire ewlb = `busIO(loopADDR) &  `busIOBYTE(loopADDR) & !loopADDR[34] & !loopADDR[35];        // Even word, low  byte.
+   wire ewhb = `busIO(loopADDR) &  `busIOBYTE(loopADDR) & !loopADDR[34] &  loopADDR[35];        // Even word, high byte.
+   wire owlb = `busIO(loopADDR) &  `busIOBYTE(loopADDR) &  loopADDR[34] & !loopADDR[35];        // Odd  word, low byte.
+   wire owhb = `busIO(loopADDR) &  `busIOBYTE(loopADDR) &  loopADDR[34] &  loopADDR[35];        // Odd  word, high byte.
+   wire ew   = `busIO(loopADDR) & !`busIOBYTE(loopADDR) & !loopADDR[34] & !loopADDR[35];        // Even word
+   wire ow   = `busIO(loopADDR) & !`busIOBYTE(loopADDR) &  loopADDR[34] & !loopADDR[35];        // Odd  word
+
+   //
    // IO Bus Paging
+   //
+   //  Don't ever attempt to "page" an IO operation.
    //
 
    wire [0:35] pageDATAO;
@@ -405,13 +518,14 @@ module UBA (
    UBAPAGE PAGE (
       .rst        (rst),
       .clk        (clk),
-      .devREQI    (devREQI[1] | devREQI[2] | devREQI[3] | devREQI[4]),
+      .devREQI    (devREQ),
       .busADDRI   (busADDRI),
       .busDATAI   (busDATAI),
       .busADDRO   (busADDRO),
       .pageWRITE  (pageWRITE),
       .pageDATAO  (pageDATAO),
-      .pageADDRI  (regUBAMR ? 0 : devADDRI),
+      .pageADDRI  (mdevADDRI),
+      .pageFLAGS  (pageFLAGS),
       .pageFAIL   (pageFAIL)
    );
 
@@ -424,23 +538,32 @@ module UBA (
    assign devREQO[3] = busREQI;
    assign devREQO[4] = busREQI;
 
-   assign dev1ADDRO = busADDRI;
-   assign dev2ADDRO = busADDRI;
-   assign dev3ADDRO = busADDRI;
-   assign dev4ADDRO = busADDRI;
+   assign devADDRO[1] = busADDRI;
+   assign devADDRO[2] = busADDRI;
+   assign devADDRO[3] = busADDRI;
+   assign devADDRO[4] = busADDRI;
 
-   assign dev1DATAO = busDATAI;
-   assign dev2DATAO = busDATAI;
-   assign dev3DATAO = busDATAI;
-   assign dev4DATAO = busDATAI;
+   assign devDATAO[1] = busDATAI;
+   assign devDATAO[2] = busDATAI;
+   assign devDATAO[3] = busDATAI;
+   assign devDATAO[4] = busDATAI;
 
-   assign devRESET = statINI;
+  assign devRESET  = statINI;
 
    //
    // Device to KS10 Interface
    //
+   //  Don't do device-to-memory request if there is a page failure.
+   //  IO requests always stay local to this UBA.
+   //
 
-   assign busREQO = !pageFAIL & (devREQI[1] | devREQI[2] | devREQI[3] | devREQI[4]);
+   always @(posedge clk)
+     begin
+        if (rst)
+          busREQO <= 0;
+        else
+          busREQO <= !pageFAIL & !devIO & devREQ;
+     end
 
    //
    // KS10 Bus Data Multiplexer
@@ -448,7 +571,7 @@ module UBA (
 
    always @*
      begin
-        busDATAO = devDATAI;
+        busDATAO = mdevDATAI;
         if (pageREAD)
           busDATAO = pageDATAO;
         if (statREAD)
@@ -490,7 +613,7 @@ module UBA (
                addr <= busADDRI;
 
              if (busREQO)
-               addr <= devADDRI;
+               addr <= mdevADDRI;
 
              if (setNXD)
                $fwrite(file, "[%11.3f] UBA%d: Nonexistent device (NXD). Addr = %012o.\n",

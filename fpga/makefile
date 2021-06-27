@@ -172,6 +172,7 @@ SIM_ARGS := \
 #   RPXX_SIMSEEK          Simulate RPXX seek accurately but slowly
 #   RPXX_SIMSEARCH        Simulate RPXX search accurately bus slowly
 #   RPXX_SIMDMD           Simulate RPXX diagnostic mode
+#   UBA4                  Include UBA4
 #   RH11                  Include a RH11 Disk Controller Interface
 #   DZ11                  Include a DZ11 Terminal Multiplexer Interface
 #   KMC11                 Include a KMC11 Microprocessor
@@ -186,11 +187,12 @@ SIM_ARGS := \
 
 SYN_ARGS := \
 	MAJOR_VER=\"00\" \
-	MINOR_VER=\"27\" \
+	MINOR_VER=\"29\" \
         CLKFRQ=12500000 \
 	SSRAMx18 \
 	RPXX_SIMSEEK \
 	RPXX_SIMDMD \
+	UBA4 \
 	RH11 \
 	DZ11 \
 	DUP11 \
@@ -246,8 +248,8 @@ DIAG_FILES := \
 #
 
 RTL_FILES := \
-	ks10/ks10.v \
-	ks10/arb/arb.v \
+	ks10/ks10.sv \
+	ks10/arb/arb.sv \
 	ks10/csl/csl.v \
 	ks10/cpu/alu.v \
 	ks10/cpu/apr.v \
@@ -270,7 +272,7 @@ RTL_FILES := \
 	ks10/cpu/timer.v \
 	ks10/cpu/timing.v \
 	ks10/cpu/vma.v \
-	ks10/cpu/cpu.v \
+	ks10/cpu/cpu.sv \
 	ks10/cpu/useq/crom.v \
 	ks10/cpu/useq/drom.v \
 	ks10/cpu/useq/skip.v \
@@ -347,7 +349,7 @@ RTL_FILES := \
 	ks10/rh11/rpxx/rpxx.v \
 	ks10/rh11/sd/sd.v \
 	ks10/rh11/sd/sdspi.v \
-	ks10/uba/uba.v \
+	ks10/uba/uba.sv \
 	ks10/uba/ubamr.v \
 	ks10/uba/ubasr.v \
 	ks10/uba/ubanxd.v \
@@ -1963,8 +1965,8 @@ cloc :
 
 check :
 	@echo "Tabs in:"
-	@-find ks10 testbench -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '\t'
+	@-find ks10 testbench -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' -e '\.sv$$' -e '\.svh$$' | xargs grep -P '\t'
 	@echo "Trailing white space in:"
-	@-find ks10 testbench -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -P '[ ]+$$'
+	@-find ks10 testbench -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' -e '\.sv$$' -e '\.svh$$' | xargs grep -P '[ ]+$$'
 	@echo "FIXMEs in:"
-	@-find ks10 testbench -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' | xargs grep -i 'fixme'
+	@-find ks10 testbench -type f | grep -v RCS | grep -e '\.v$$' -e '\.vh$$' -e '\.sv$$' -e '\.svh$$' | xargs grep -i 'fixme'

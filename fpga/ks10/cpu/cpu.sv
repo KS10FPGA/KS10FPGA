@@ -202,18 +202,18 @@ module CPU (
 
    reg [0:35] dpreg;
 
-`define REGISTER_DPBUS
-`ifdef REGISTER_DPBUS
+`define LATCH_DPBUS
+`ifdef LATCH_DPBUS
 
-   always @*
+   always_latch
      if (clkT[1])
-     begin
-        dpreg <= dp;
-     end
+       begin
+          dpreg <= dp;
+       end
 
 `else
 
-   always @*
+   always_comb
      begin
         dpreg <= dp;
      end
