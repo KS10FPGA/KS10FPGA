@@ -69,7 +69,7 @@ module REGIR (
    wire loadXR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_LOADXR);
 
    //
-   // Instruction Register and AC Selection.
+   // Instruction Register
    //
    // Trace
    //  DPEA/E55
@@ -79,26 +79,33 @@ module REGIR (
    //
 
    always @(posedge clk)
-    begin
+     begin
         if (rst)
+          regIR <= 0;
+        else
           begin
-             regIR  <= 0;
-             xrPREV <= 0;
-          end
-        else if (clken)
-          begin
-             if (loadIR)
-               begin
-                  regIR[ 0:12] <= dbus[ 0:12];
-               end
-             if (loadXR)
-               begin
-                  regIR[13:17] <= dbus[13:17];
-                  xrPREV       <= prevEN;
-               end
+             if (clken & loadIR)
+               regIR[ 0:12] <= dbus[ 0:12];
+             if (clken & loadXR)
+               regIR[13:17] <= dbus[13:17];
           end
     end
 
+   //
+   // Instruction Register Previous
+   //
+   // Trace
+   //  DPEA/E99
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          xrPREV <= 0;
+        else if (clken & loadXR)
+          xrPREV <= prevEN;
+     end
+   
    //
    // JRST 0 decode
    //
@@ -117,7 +124,7 @@ module REGIR (
    assign opJRST0 = ((irOPCODE == 9'o254) & (irAC == 0));
 
    //
-   // regsLOAD is used by the trace facility
+   // regsLOAD is used by the instruction trace facility
    //
    // Details
    //  The Instruction Register is updated according to the microcode.  The
