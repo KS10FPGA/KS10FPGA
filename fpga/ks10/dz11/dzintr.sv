@@ -79,8 +79,8 @@ module DZINTR (
    //    (csrRIE) will block the interrupt but not clear the flip-flop.
    //
 
-   wire      rxclr;
-   reg [3:0] rxstate;
+   logic       rxclr;
+   logic [3:0] rxstate;
 
    always_ff @(posedge clk)
      begin
@@ -116,8 +116,8 @@ module DZINTR (
    //    (csrTIE) will block the interrupt but not clear the flip-flop.
    //
 
-   wire      txclr;
-   reg [3:0] txstate;
+   logic       txclr;
+   logic [3:0] txstate;
 
    always_ff @(posedge clk)
      begin
@@ -168,7 +168,7 @@ module DZINTR (
    //   will be processed first.
    //
 
-   reg [3:0] arbstate;
+   logic [3:0] arbstate;
 
    always_ff @(posedge clk)
      begin
