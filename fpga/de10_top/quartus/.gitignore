@@ -1,1 +1,8 @@
 files.qsf
+c5_pin_model_dump.txt
+soc_system.sopcinfo
+db/*
+hps_isw_handoff/*
+incremental_db/*
+output_files/*
+soc_system/*
