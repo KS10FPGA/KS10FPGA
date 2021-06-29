@@ -105,7 +105,7 @@ module REGIR (
         else if (clken & loadXR)
           xrPREV <= prevEN;
      end
-   
+
    //
    // JRST 0 decode
    //

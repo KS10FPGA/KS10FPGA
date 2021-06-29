@@ -170,7 +170,7 @@ module VMA (
              `vmaVECT(vmaREG)   <= 0;
              `vmaIOBYTE(vmaREG) <= 0;
           end
-        else if (clken & vmaEN & !pageFAIL)		// FIXME: Why
+        else if (clken & vmaEN & !pageFAIL)             // FIXME: Why
           begin
              `vmaEXEC(vmaREG)   <= 0;
              `vmaEXTD(vmaREG)   <= `cromMEM_EXTADDR;
