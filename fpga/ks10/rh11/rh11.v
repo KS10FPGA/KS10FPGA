@@ -60,45 +60,46 @@
 `include "../uba/ubabus.vh"
 
 module RH11 (
-      input  wire         clk,                  // Clock
-      input  wire         rst,                  // Reset
-      // SD Interfaces
-      input  wire         SD_MISO,              // SD Data In
-      output wire         SD_MOSI,              // SD Data Out
-      output wire         SD_SCLK,              // SD Clock
-      output wire         SD_SS_N,              // SD Slave Select
-      // RH11 Interfaces
-      output wire [ 0:63] rhDEBUG,              // RH11 Debug Output
-      // RPXX Interfaces
-      input  wire [ 7: 0] rpMOL,                // RPxx Media On-line
-      input  wire [ 7: 0] rpWRL,                // RPxx Write Lock
-      input  wire [ 7: 0] rpDPR,                // RPxx Drive Present
-      output wire [ 7: 0] rpLEDS,               // RPxx Status LEDs
+      input  wire         clk,                          // Clock
+      input  wire         rst,                          // Reset
       // Reset
-      input  wire         devRESET,             // IO Bus Bridge Reset
+      input  wire         devRESET,                     // Device Reset from IO Bus Bridge
+      // AC LO
+      output wire         devACLO,                      // Device Power Fail
       // Interrupt
-      output wire [ 7: 4] devINTR,              // Interrupt Request
+      output wire [ 7: 4] devINTR,                      // Device Interrupt Request
       // Target
-      input  wire         devREQI,              // Device Request In
-      output wire         devACKO,              // Device Acknowledge Out
-      input  wire [ 0:35] devADDRI,             // Device Address In
+      input  wire         devREQI,                      // Device Request In
+      output wire         devACKO,                      // Device Acknowledge Out
+      input  wire [ 0:35] devADDRI,                     // Device Address In
+      input  wire [ 0:35] devDATAI,                     // Device Data In
       // Initiator
-      output wire         devREQO,              // Device Request Out
-      input  wire         devACKI,              // Device Acknowledge In
-      output wire [ 0:35] devADDRO,             // Device Address Out
-      // Data
-      input  wire [ 0:35] devDATAI,             // Data In
-      output reg  [ 0:35] devDATAO              // Data Out
+      output wire         devREQO,                      // Device Request Out
+      input  wire         devACKI,                      // Device Acknowledge In
+      output wire [ 0:35] devADDRO,                     // Device Address Out
+      output reg  [ 0:35] devDATAO,                     // Device Data Out
+      // SD Interfaces
+      input  wire         SD_MISO,                      // SD Data In
+      output wire         SD_MOSI,                      // SD Data Out
+      output wire         SD_SCLK,                      // SD Clock
+      output wire         SD_SS_N,                      // SD Slave Select
+      // RH11 Interfaces
+      output wire [ 0:63] rhDEBUG,                      // RH11 Debug Output
+      // RPXX Interfaces
+      input  wire [ 7: 0] rpMOL,                        // RPxx Media On-line
+      input  wire [ 7: 0] rpWRL,                        // RPxx Write Lock
+      input  wire [ 7: 0] rpDPR,                        // RPxx Drive Present
+      output wire [ 7: 0] rpLEDS                        // RPxx Status LEDs
    );
 
    //
    // RH Parameters
    //
 
-   parameter [14:17] rhDEV   = `devUBA1;        // RH11 Device Number
-   parameter [18:35] rhADDR  = `rh1ADDR;        // RH11 Base Address
-   parameter [18:35] rhVECT  = `rh1VECT;        // RH11 Interrupt Vector
-   parameter [ 7: 4] rhINTR  = `rh1INTR;        // RH11 Interrupt
+   parameter [14:17] rhDEV   = `devUBA1;                // RH11 Device Number
+   parameter [18:35] rhADDR  = `rh1ADDR;                // RH11 Base Address
+   parameter [18:35] rhVECT  = `rh1VECT;                // RH11 Interrupt Vector
+   parameter [ 7: 4] rhINTR  = `rh1INTR;                // RH11 Interrupt
 
    //
    // RH Register Addresses
@@ -795,6 +796,12 @@ module RH11 (
    //
 
    assign devADDRO = sdREADOP ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
+
+   //
+   // Negate ACLO
+   //
+
+   assign devACLO = 0;
 
    //
    // Debug output

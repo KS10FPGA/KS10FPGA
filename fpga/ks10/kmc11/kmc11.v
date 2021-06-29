@@ -69,21 +69,22 @@ module KMC11 (
       input  wire         clk,                          // Clock
       input  wire         rst,                          // Reset
       // Reset
-      input  wire         devRESET,                     // IO Bus Bridge Reset
+      input  wire         devRESET,                     // Device Reset from IO Bus Bridge
+      // AC LO
+      output wire         devACLO,                      // Device Power Fail
       // Interrupt
-      output wire [ 7: 4] devINTR,                      // Interrupt Request
+      output wire [ 7: 4] devINTR,                      // Device Interrupt Request
       // Target
       input  wire         devREQI,                      // Device Request In
       output wire         devACKO,                      // Device Acknowledge Out
       input  wire [ 0:35] devADDRI,                     // Device Address In
+      input  wire [ 0:35] devDATAI,                     // Device Data In
       // Initiator
       output wire         devREQO,                      // Device Request Out
       input  wire         devACKI,                      // Device Acknowledge In
       output reg  [ 0:35] devADDRO,                     // Device Address Out
-      // Data
-      input  wire [ 0:35] devDATAI,                     // Data In
-      output reg  [ 0:35] devDATAO,                     // Data Out
-      // Interfaces
+      output reg  [ 0:35] devDATAO,                     // Device Data Out
+      // KMC11 Interfaces
       input  wire [15: 0] kmcLUIBUS,                    // Line unit input bus
       output wire         kmcLUSTEP,                    // Line unit step
       output wire         kmcLULOOP                     // Line unit loop
@@ -569,6 +570,11 @@ module KMC11 (
             devDATAO = {20'b0, kmcVECT0[20:35]};
      end
 
+   //
+   // Negate ACLO
+   //
+
+   assign devACLO = 0;
 
 //
 // This code write a log kmc11 register accesses to "kmcstatus.txt" in the

@@ -69,24 +69,24 @@
 module LP20 (
       input  wire         clk,                          // Clock
       input  wire         rst,                          // Reset
-      // LP20 Interfaces
-      input  wire         lpOVFU,                       // Optical vertical format unit
       // Reset
-      input  wire         devRESET,                     // IO Bus Bridge Reset
+      input  wire         devRESET,                     // Device Reset from IO Bus Bridge
+      // AC LO
+      output wire         devACLO,                      // Device Power Fail
       // Interrupt
-      output wire [ 7: 4] devINTR,                      // Interrupt Request
+      output wire [ 7: 4] devINTR,                      // Device Interrupt Request
       // Target
       input  wire         devREQI,                      // Device Request In
       output wire         devACKO,                      // Device Acknowledge Out
       input  wire [ 0:35] devADDRI,                     // Device Address In
+      input  wire [ 0:35] devDATAI,                     // Device Data In
       // Initiator
       output wire         devREQO,                      // Device Request Out
       input  wire         devACKI,                      // Device Acknowledge In
       output wire [ 0:35] devADDRO,                     // Device Address Out
-      // Data
-      input  wire [ 0:35] devDATAI,                     // Data In
-      output reg  [ 0:35] devDATAO,                     // Data Out
+      output reg  [ 0:35] devDATAO,                     // Device Data Out
       // LP26 Interfaces
+      input  wire         lpOVFU,                       // Optical vertical format unit
       output wire         lpINIT,                       // LP26 initialize
       input  wire         lpONLINE,                     // LP26 online status
       input  wire         lpPARERR,                     // LP26 printer parity error
@@ -643,6 +643,12 @@ module LP20 (
         if (vectREAD)
           devDATAO = {20'b0, lpVECT[20:35]};
      end
+
+   //
+   // Negate ACLO
+   //
+
+   assign devACLO = 0;
 
 `ifndef SYNTHESIS
 

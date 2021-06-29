@@ -68,17 +68,22 @@ module UBA (
       input  wire [ 0:35] busDATAI,                     // Backplane Bus Data In
       output reg  [ 0:35] busDATAO,                     // Backplane Bus Data Out
       output wire [ 1: 7] busINTR,                      // Backplane Bus Interrupt Request
-      // Device Interface
-      output wire         devRESET,                     // IO Device Reset
-      input  wire         devREQI[1:4],                 // IO Device Request In
-      output reg          devREQO[1:4],                 // IO Device Request Out
-      input  wire         devACKI[1:4],                 // IO Device Acknowledge In
-      output reg          devACKO[1:4],                 // IO Device Acknowledge Out
-      input  wire [ 7: 4] devINTR[1:4],                 // IO Device Interrupt Request
-      input  wire [ 0:35] devADDRI[1:4],                // IO Device Address In
-      output wire [ 0:35] devADDRO[1:4],                // IO Device Address Out
-      input  wire [ 0:35] devDATAI[1:4],                // IO Device Data In
-      output reg  [ 0:35] devDATAO[1:4]                // IO Device Data Out
+      // Device Reset
+      output wire         devRESET,                     // Device Reset
+      // AC LO
+      input  wire         devACLO[1:4],                 // Device AC power failure
+      // Interupt
+      input  wire [ 7: 4] devINTR[1:4],                 // Device Interrupt Request
+      // Device as Target
+      input  wire         devREQI[1:4],                 // Device Request In
+      output reg          devACKO[1:4],                 // Device Acknowledge Out
+      input  wire [ 0:35] devADDRI[1:4],                // Device Address In
+      input  wire [ 0:35] devDATAI[1:4],                // Device Data In
+      // Device as Initiator
+      output reg          devREQO[1:4],                 // Device Request Out
+      input  wire         devACKI[1:4],                 // Device Acknowledge In
+      output wire [ 0:35] devADDRO[1:4],                // Device Address Out
+      output reg  [ 0:35] devDATAO[1:4]                 // Device Data Out
    );
 
    //

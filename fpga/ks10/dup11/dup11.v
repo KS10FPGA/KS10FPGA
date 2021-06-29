@@ -66,22 +66,26 @@
 module DUP11 (
       input  wire         clk,                          // Clock
       input  wire         rst,                          // Reset
-      // DUP Configuration
-      input  wire         dupW3,                        // Configuration Wire 3
-      input  wire         dupW5,                        // Configuration Wire 3
-      input  wire         dupW6,                        // Configuration Wire 3
-      // Device Interface
-      input  wire         devRESET,                     // IO Bus Bridge Reset
-      output wire [ 7: 4] devINTR,                      // Interrupt Request
+      // Reset
+      input  wire         devRESET,                     // Device Reset from IO Bus Bridge
+      // AC LO
+      output wire         devACLO,                      // Device Power Fail
+      // Interrupt
+      output wire [ 7: 4] devINTR,                      // Device Interrupt Request
+      // Target
       input  wire         devREQI,                      // Device Request In
-      output wire         devREQO,                      // Device Request Out
-      input  wire         devACKI,                      // Device Acknowledge In
       output wire         devACKO,                      // Device Acknowledge Out
       input  wire [ 0:35] devADDRI,                     // Device Address In
-      output wire [ 0:35] devADDRO,                     // Device Address Out
       input  wire [ 0:35] devDATAI,                     // Device Data In
+      // Initiator
+      output wire         devREQO,                      // Device Request Out
+      input  wire         devACKI,                      // Device Acknowledge In
+      output wire [ 0:35] devADDRO,                     // Device Address Out
       output reg  [ 0:35] devDATAO,                     // Device Data Out
       // DUP11 Interfaces
+      input  wire         dupW3,                        // Configuration Wire 3
+      input  wire         dupW5,                        // Configuration Wire 5
+      input  wire         dupW6,                        // Configuration Wire 6
       input  wire         dupRI,                        // Ring Indication
       input  wire         dupCTS,                       // Clear To Send
       input  wire         dupDCD,                       // Data Carrier Detect
@@ -475,6 +479,12 @@ module DUP11 (
 
    assign devADDRO = 0;
    assign devREQO  = 0;
+
+   //
+   // Negate ACLO
+   //
+
+   assign devACLO = 0;
 
 `ifndef SYNTHESIS
 

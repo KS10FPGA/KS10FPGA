@@ -64,27 +64,28 @@
 module DZ11 (
       input  wire         clk,                          // Clock
       input  wire         rst,                          // Reset
+      // Reset
+      input  wire         devRESET,                     // Device Reset from IO Bus Bridge
+      // AC LO
+      output wire         devACLO,                      // Device Power Fail
+      // Interrupt
+      output wire [ 7: 4] devINTR,                      // Device Interrupt Request
+      // Target
+      input  wire         devREQI,                      // Device Request In
+      output wire         devACKO,                      // Device Acknowledge Out
+      input  wire [ 0:35] devADDRI,                     // Device Address In
+      input  wire [ 0:35] devDATAI,                     // Device Data In
+      // Initiator
+      output wire         devREQO,                      // Device Request Out
+      input  wire         devACKI,                      // Device Acknowledge In
+      output wire [ 0:35] devADDRO,                     // Device Address Out
+      output reg  [ 0:35] devDATAO,                     // Device Data Out
       // DZ11 Interfaces
       output wire [ 7: 0] dzTXD,                        // DZ11 Transmitter Serial Data
       input  wire [ 7: 0] dzRXD,                        // DZ11 Receiver Serial Data
       input  wire [ 7: 0] dzCO,                         // DZ11 Carrier Detect
       input  wire [ 7: 0] dzRI,                         // DZ11 Ring Indicator
-      output wire [ 7: 0] dzDTR,                        // DZ11 Data Terminal Ready
-      // Reset
-      input  wire         devRESET,                     // IO Bus Bridge Reset
-      // Interrupt
-      output wire [ 7: 4] devINTR,                      // Interrupt Request
-      // Target
-      input  wire         devREQI,                      // Device Request In
-      output wire         devACKO,                      // Device Acknowledge Out
-      input  wire [ 0:35] devADDRI,                     // Device Address In
-      // Initiator
-      output wire         devREQO,                      // Device Request Out
-      input  wire         devACKI,                      // Device Acknowledge In
-      output wire [ 0:35] devADDRO,                     // Device Address Out
-      // Data
-      input  wire [ 0:35] devDATAI,                     // Data In
-      output reg  [ 0:35] devDATAO                      // Data Out
+      output wire [ 7: 0] dzDTR                         // DZ11 Data Terminal Ready
    );
 
    //
@@ -421,6 +422,12 @@ module DZ11 (
    assign devINTR  = (rxINTR | txINTR) ? dzINTR : 4'b0;
    assign devADDRO = 0;
    assign devREQO  = 0;
+
+   //
+   // Negate ACLO
+   //
+
+   assign devACLO = 0;
 
 `ifndef SYNTHESIS
 

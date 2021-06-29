@@ -435,6 +435,7 @@ module KS10 (
    //
 
    wire         devRESET[1:4];
+   wire         devACLO [1:4][1:4];
    wire         devREQI [1:4][1:4];
    wire         devREQO [1:4][1:4];
    wire         devACKI [1:4][1:4];
@@ -715,6 +716,7 @@ module KS10 (
       .busDATAO         (ubaDATAO[1]),
       .busINTR          (ubaINTR[1]),
       .devRESET         (devRESET[1]),
+      .devACLO          (devACLO[1]),
       .devREQI          (devREQO[1]),
       .devREQO          (devREQI[1]),
       .devACKI          (devACKO[1]),
@@ -747,6 +749,7 @@ module KS10 (
       .busDATAO         (ubaDATAO[3]),
       .busINTR          (ubaINTR[3]),
       .devRESET         (devRESET[3]),
+      .devACLO          (devACLO[3]),
       .devREQI          (devREQO[3]),
       .devREQO          (devREQI[3]),
       .devACKI          (devACKO[3]),
@@ -781,6 +784,7 @@ module KS10 (
       .busDATAO         (ubaDATAO[4]),
       .busINTR          (ubaINTR[4]),
       .devRESET         (devRESET[4]),
+      .devACLO          (devACLO[4]),
       .devREQI          (devREQO[4]),
       .devREQO          (devREQI[4]),
       .devACKI          (devACKO[4]),
@@ -820,6 +824,7 @@ module KS10 (
       .rpLEDS           (RP_LEDS),
       // Device
       .devRESET         (devRESET[1]),
+      .devACLO          (devACLO[1][1]),
       .devINTR          (devINTR[1][1]),
       .devREQI          (devREQI[1][1]),
       .devREQO          (devREQO[1][1]),
@@ -854,6 +859,7 @@ module KS10 (
       .dzDTR            (DZ_DTR),
       // Device
       .devRESET         (devRESET[3]),
+      .devACLO          (devACLO[3][1]),
       .devINTR          (devINTR[3][1]),
       .devREQI          (devREQI[3][1]),
       .devREQO          (devREQO[3][1]),
@@ -899,6 +905,7 @@ module KS10 (
       .lpOVFU           (lpOVFU),
       // Device Interface
       .devRESET         (devRESET[3]),
+      .devACLO          (devACLO[3][2]),
       .devINTR          (devINTR[3][2]),
       .devREQI          (devREQI[3][2]),
       .devREQO          (devREQO[3][2]),
@@ -980,6 +987,7 @@ module KS10 (
       .dupW6            (dupW6),
       // Device Interface
       .devRESET         (devRESET[3]),
+      .devACLO          (devACLO[3][3]),
       .devINTR          (devINTR[3][3]),
       .devREQI          (devREQI[3][3]),
       .devREQO          (devREQO[3][3]),
@@ -1033,6 +1041,7 @@ module KS10 (
       .rst              (cpuRST),
       // Device Interface
       .devRESET         (devRESET[3]),
+      .devACLO          (devACLO[3][4]),
       .devINTR          (devINTR[3][4]),
       .devREQI          (devREQI[3][4]),
       .devREQO          (devREQO[3][4]),
@@ -1089,6 +1098,8 @@ module KS10 (
       .debugHALT        (debugHALT)
    );
 
+`ifndef UBA2
+
    //
    // IO Bridge #2 is not implemented. Tie inputs.
    //
@@ -1099,11 +1110,13 @@ module KS10 (
    assign ubaDATAO[2] = 0;
    assign ubaINTR[2]  = 0;
 
+`endif
+
+`ifndef UBA4
+
    //
    // IO Bridge #4 is not implemented. Tie inputs.
    //
-
-`ifndef UBA4
 
    assign ubaREQO[4]  = 0;
    assign ubaACKO[4]  = 0;
@@ -1117,6 +1130,7 @@ module KS10 (
    // IO Bridge #1, Device 2 is not implemented. Tie inputs
    //
 
+   assign devACLO[1][2] = 0;
    assign devINTR[1][2] = 0;
    assign devREQO[1][2] = 0;
    assign devACKO[1][2] = 0;
@@ -1127,6 +1141,7 @@ module KS10 (
    // IO Bridge #1, Device 3 is not implemented. Tie inputs
    //
 
+   assign devACLO[1][3] = 0;
    assign devINTR[1][3] = 0;
    assign devREQO[1][3] = 0;
    assign devACKO[1][3] = 0;
@@ -1137,11 +1152,76 @@ module KS10 (
    // IO Bridge #1, Device 4 is not implemented. Tie inputs
    //
 
+   assign devACLO[1][4] = 0;
    assign devINTR[1][4] = 0;
    assign devREQO[1][4] = 0;
    assign devACKO[1][4] = 0;
    assign devADDRO[1][4] = 0;
    assign devDATAO[1][4] = 0;
+
+`ifdef UBA4
+
+`ifndef UBE1
+
+   //
+   // IO Bridge #4, Device 1 is not implemented. Tie inputs
+   //
+
+   assign devACLO[4][1] = 0;
+   assign devINTR[4][1] = 0;
+   assign devREQO[4][1] = 0;
+   assign devACKO[4][1] = 0;
+   assign devADDRO[4][1] = 0;
+   assign devDATAO[4][1] = 0;
+
+`endif
+
+`ifndef UBE2
+
+   //
+   // IO Bridge #4, Device 2 is not implemented. Tie inputs
+   //
+
+   assign devACLO[4][2] = 0;
+   assign devINTR[4][2] = 0;
+   assign devREQO[4][2] = 0;
+   assign devACKO[4][2] = 0;
+   assign devADDRO[4][2] = 0;
+   assign devDATAO[4][2] = 0;
+
+`endif
+
+`ifndef UBE3
+
+   //
+   // IO Bridge #4, Device 3 is not implemented. Tie inputs
+   //
+
+   assign devACLO[4][3] = 0;
+   assign devINTR[4][3] = 0;
+   assign devREQO[4][3] = 0;
+   assign devACKO[4][3] = 0;
+   assign devADDRO[4][3] = 0;
+   assign devDATAO[4][3] = 0;
+
+`endif
+
+`ifndef UBE4
+
+   //
+   // IO Bridge #4, Device 4 is not implemented. Tie inputs
+   //
+
+   assign devACLO[4][4] = 0;
+   assign devINTR[4][4] = 0;
+   assign devREQO[4][4] = 0;
+   assign devACKO[4][4] = 0;
+   assign devADDRO[4][4] = 0;
+   assign devDATAO[4][4] = 0;
+
+`endif
+
+`endif
 
    //
    // LEDs
