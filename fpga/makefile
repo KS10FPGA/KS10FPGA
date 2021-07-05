@@ -297,18 +297,18 @@ RTL_FILES := \
 	ks10/dz11/dzrbuf.sv \
 	ks10/dz11/dzuart.sv \
 	ks10/dz11/dz11.sv \
-	ks10/kmc11/kmcalu.v \
-	ks10/kmc11/kmcbrg.v \
-	ks10/kmc11/kmcclk.v \
-	ks10/kmc11/kmcdmux.v \
-	ks10/kmc11/kmcintr.v \
-	ks10/kmc11/kmcmaint.v \
-	ks10/kmc11/kmcmem.v \
-	ks10/kmc11/kmcmisc.v \
-	ks10/kmc11/kmcmpram.v \
-	ks10/kmc11/kmcnprc.v \
-	ks10/kmc11/kmcseq.v \
-	ks10/kmc11/kmc11.v \
+	ks10/kmc11/kmcalu.sv \
+	ks10/kmc11/kmcbrg.sv \
+	ks10/kmc11/kmcclk.sv \
+	ks10/kmc11/kmcdmux.sv \
+	ks10/kmc11/kmcintr.sv \
+	ks10/kmc11/kmcmaint.sv \
+	ks10/kmc11/kmcmem.sv \
+	ks10/kmc11/kmcmisc.sv \
+	ks10/kmc11/kmcmpram.sv \
+	ks10/kmc11/kmcnprc.sv \
+	ks10/kmc11/kmcseq.sv \
+	ks10/kmc11/kmc11.sv \
 	ks10/lp20/lpbar.v \
 	ks10/lp20/lpbctr.v \
 	ks10/lp20/lpcbuf.v \
@@ -350,12 +350,12 @@ RTL_FILES := \
 	ks10/rh11/sd/sd.v \
 	ks10/rh11/sd/sdspi.v \
 	ks10/uba/uba.sv \
-	ks10/uba/ubamr.v \
-	ks10/uba/ubasr.v \
-	ks10/uba/ubanxd.v \
-	ks10/uba/ubapage.v \
-	ks10/uba/ubatmo.v \
-	ks10/uba/ubaintr.v \
+	ks10/uba/ubamr.sv \
+	ks10/uba/ubasr.sv \
+	ks10/uba/ubanxd.sv \
+	ks10/uba/ubapage.sv \
+	ks10/uba/ubatmo.sv \
+	ks10/uba/ubaintr.sv \
 	ks10/utils/crc16.v \
 	ks10/utils/fifo.v \
 	ks10/utils/sync.v \
@@ -966,11 +966,8 @@ WAVE_UBA1 := \
 	"add wave -noupdate -divider {UBA1, Interrupts}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busINTR}              {/testbench/uKS10/UBA1/busINTR}" \
 	"add wave -noupdate -divider {UBA1, Error Stuff}" \
-	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {cntNXD}               {/testbench/uKS10/UBA1/cntNXD}" \
-	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {cntTMO}               {/testbench/uKS10/UBA1/cntTMO}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {setNXD}               {/testbench/uKS10/UBA1/setNXD}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {setTMO}               {/testbench/uKS10/UBA1/setTMO}" \
-	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {state}                {/testbench/uKS10/UBA1/state}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {pageFAIL}             {/testbench/uKS10/UBA1/pageFAIL}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {pageFLAGS}            {/testbench/uKS10/UBA1/PAGE/pageFLAGS}" \
 	"add wave -noupdate -divider {UBA1, DEV 1}" \
@@ -1301,8 +1298,6 @@ WAVE_KMC11 := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO}              {/testbench/uKS10/uKMC11/uNPRC/devREQO}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI}              {/testbench/uKS10/uKMC11/uNPRC/devACKI}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {kmcLDNPRC}            {/testbench/uKS10/uKMC11/uNPRC/kmcLDNPRC}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {kmcNPRRQ}             {/testbench/uKS10/uKMC11/uNPRC/kmcNPRRQ}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {kmcGONPR}             {/testbench/uKS10/uKMC11/uNPRC/kmcGONPR}" \
 	"add wave -noupdate -radix decimal  -radixshowbase 0 -label {kmcNXMCNT}            {/testbench/uKS10/uKMC11/uNPRC/kmcNXMCNT}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {kmcSETNXM}            {/testbench/uKS10/uKMC11/uNPRC/kmcSETNXM}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {kmcNPRCLKEN}          {/testbench/uKS10/uKMC11/uNPRC/kmcNPRCLKEN}" \
