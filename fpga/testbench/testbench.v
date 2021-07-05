@@ -732,11 +732,7 @@ module testbench;
 
         $display("[%11.3f] KS10: Simulation Starting", $time/1.0e3);
 
-`ifdef SIM_CTY
-
         fd_cty = $fopen("cty_out.txt", "w");
-
-`endif
 
         //
         // AXI Write Bus Outputs
@@ -913,8 +909,6 @@ module testbench;
                begin
 //                $display("[%11.3f] KS10: Console Interrupted", $time/1.0e3);
 
-`ifdef SIM_CTY
-
                   getchar(fd_cty);
 
                   `ifdef TEST_DSKCG
@@ -941,7 +935,6 @@ module testbench;
                       `include "test_dsdua.vh"
                   `endif
 
-                  `define TEST_DSKMA
                   `ifdef TEST_DSKMA
                       `include "test_dskma.vh"
                   `endif
@@ -951,8 +944,6 @@ module testbench;
                   `endif
 
                   charout();
-
-`endif //  `ifdef SIM_CTY
 
                end
           end
@@ -1087,8 +1078,6 @@ module testbench;
 
 `endif
 
-`ifdef SIM_SDHC
-
    //
    // SD Card Simulation
    //
@@ -1101,16 +1090,6 @@ module testbench;
       .SD_SCLK      (SD_SCLK),
       .SD_SS_N      (SD_SS_N)
    );
-
-`else
-
-   //
-   // Terminate input
-   //
-
-   assign sdMISO = 0;
-
-`endif
 
 `ifdef SIM_LPR
 
