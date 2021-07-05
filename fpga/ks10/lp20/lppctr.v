@@ -65,8 +65,29 @@ module LPPCTR (
    //  M8587/LPD4/E52
    //
 
-   wire decrement  = ((lpTESTPCTR & csrbWRITE & lpDATAI[0]) |
-                      (!lpTESTPCTR & lpTOF));
+   reg lpDECPCTR;
+   always @*
+     begin
+        if (lpTESTPCTR)
+          lpDECPCTR <= csrbWRITE & lpDATAI[0];
+        else
+          lpDECPCTR <= lpTOF;
+     end
+
+   //
+   // Edge detect decrements
+   //
+   //   The magic page decrement test above may decrement multiple times depending
+   //   on the REQ/ACK timing of the csrbWRITE.
+
+   reg lastDECR;
+   always @(posedge clk)
+     begin
+        if (rst)
+          lastDECR <= 0;
+        else
+          lastDECR <= lpDECPCTR;
+     end
 
    //
    // Page Count Register
@@ -82,15 +103,15 @@ module LPPCTR (
    //  M8597/LPD4/E41
    //
 
-   reg [11:0] count;
+   reg [11:0] lpPGCNT;
    always @(posedge clk)
      begin
         if (rst | lpINIT)
-          count <= 0;
+          lpPGCNT <= 0;
         else if (pctrWRITE)
-          count <= `lpPCTR_DAT(lpDATAI);
-        else if (decrement)
-          count <= count - 1'b1;
+          lpPGCNT <= `lpPCTR_DAT(lpDATAI);
+        else if (lpDECPCTR & !lastDECR)
+          lpPGCNT <= lpPGCNT - 1'b1;
      end
 
    //
@@ -102,12 +123,12 @@ module LPPCTR (
    //  M8586/LPC9/E33
    //
 
-   assign lpSETPCZ = (count == 1) & decrement;
+   assign lpSETPCZ = (lpPGCNT == 1) & lpDECPCTR;
 
    //
    // Build PCTR Register
    //
 
-   assign regPCTR = {4'b0, count};
+   assign regPCTR = {4'b0, lpPGCNT};
 
 endmodule
