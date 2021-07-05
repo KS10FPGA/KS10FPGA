@@ -1369,7 +1369,7 @@ module LP26 (
    always @(posedge clk)
      begin
         if (rst)
-          lastLINE0 <= 0;
+          lastLINE0 <= 1;
         else
           lastLINE0 <= lpLINE0;
      end
