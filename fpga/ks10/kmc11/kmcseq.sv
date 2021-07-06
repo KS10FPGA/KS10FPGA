@@ -6,7 +6,7 @@
 //   KMC11 Sequencer
 //
 // File
-//   kmcseq.v
+//   kmcseq.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -42,27 +42,27 @@
 
 module KMCSEQ (
       // Reset
-      input  wire        clk,           // Clock
-      input  wire        rst,           // Reset
-      input  wire        devLOBYTE,     // LO Byte
-      input  wire        devHIBYTE,     // HI Byte
-      input  wire        sel4WRITE,     // Write to CSR4
-      input  wire        sel6WRITE,     // Write to CSR6
-      input  wire        kmcINIT,       // Initialize
-      input  wire [35:0] kmcDATAI,      // Input data
-      input  wire        kmcCRAMIN,     // Control RAM in
-      input  wire        kmcCRAMOUT,    // Control RAM out
-      input  wire        kmcCRAMWR,     // Control RAM write
-      input  wire        kmcPCCLKEN,    // PC clock enable
-      input  wire        kmcCRAMCLKEN,  // CRAM clock enable
-      input  wire        kmcALUZ,       // ALU Zero
-      input  wire        kmcALUC,       // ALU Carry
-      input  wire [ 7:0] kmcALU,        // ALU Output
-      input  wire [ 7:0] kmcBRG,        // Branch Register
-      output reg  [ 9:0] kmcPC,         // Program Counter
-      output reg  [ 9:0] kmcMNTADDR,    // Maintenance Address Register
-      output reg  [15:0] kmcMNTINST,    // Maintenance Instruction Register
-      output reg  [15:0] kmcCRAM        // Control ROM
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         devLOBYTE,    // LO Byte
+      input  wire         devHIBYTE,    // HI Byte
+      input  wire         sel4WRITE,    // Write to CSR4
+      input  wire         sel6WRITE,    // Write to CSR6
+      input  wire         kmcINIT,      // Initialize
+      input  wire  [35:0] kmcDATAI,     // Input data
+      input  wire         kmcCRAMIN,    // Control RAM in
+      input  wire         kmcCRAMOUT,   // Control RAM out
+      input  wire         kmcCRAMWR,    // Control RAM write
+      input  wire         kmcPCCLKEN,   // PC clock enable
+      input  wire         kmcCRAMCLKEN, // CRAM clock enable
+      input  wire         kmcALUZ,      // ALU Zero
+      input  wire         kmcALUC,      // ALU Carry
+      input  wire  [ 7:0] kmcALU,       // ALU Output
+      input  wire  [ 7:0] kmcBRG,       // Branch Register
+      output logic [ 9:0] kmcPC,        // Program Counter
+      output logic [ 9:0] kmcMNTADDR,   // Maintenance Address Register
+      output logic [15:0] kmcMNTINST,   // Maintenance Instruction Register
+      output logic [15:0] kmcCRAM       // Control ROM
    );
 
    //
@@ -83,7 +83,7 @@ module KMCSEQ (
    // Maintenance Address Register
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcMNTADDR <= 0;
@@ -95,7 +95,7 @@ module KMCSEQ (
    // Maintenance Instruction Register
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcMNTINST <= 0;
@@ -110,9 +110,9 @@ module KMCSEQ (
    //  M8206/D2/E37
    //
 
-   reg kmcBRANCH;
+   logic kmcBRANCH;
 
-   always @*
+   always_comb
      begin
         case (kmcCOND)
           `kmcCRAM_COND_RESVD  : kmcBRANCH <= 1;
@@ -140,7 +140,7 @@ module KMCSEQ (
    //   M8206/D2/E49
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcPC <= 0;
@@ -175,10 +175,10 @@ module KMCSEQ (
    //   M8206/D6/E23
    //
 
-   reg [15:0] kmcCRAMR;
-   reg [15:0] kmcCRAM_MEM[0:1023];
+   logic [15:0] kmcCRAMR;
+   logic [15:0] kmcCRAM_MEM[0:1023];
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (kmcCRAMOUT & kmcCRAMWR)
           kmcCRAM_MEM[kmcMNTADDR] <= kmcMNTINST;
@@ -190,7 +190,7 @@ module KMCSEQ (
    // Maintenance Instruction and Instruction Register Mux
    //
 
-   always @*
+   always_ff @*
      begin
         if (kmcCRAMIN)
           kmcCRAM <= kmcMNTINST;

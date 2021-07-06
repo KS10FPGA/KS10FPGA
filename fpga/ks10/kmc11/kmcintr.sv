@@ -9,10 +9,21 @@
 //   This module implements the KMC11 Interrupt Controller.
 //
 // File
-//   kmcintr.v
+//   kmcintr.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
+//
+// Notes:
+//
+//   The interrupt request MUST clear immediately AFTER the interrupt vector
+//   cycle is complete.
+//
+//   - If the interrupt clears during the interrupt vector cycle, the vector
+//     will be mis-read by the microcode.
+//
+//   - If the interrupt clears much after the vector cycle is complete, the
+//     interrupt will be recognized twice.
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -42,36 +53,25 @@
 `timescale 1ns/1ps
 
 module KMCINTR (
-      input  wire clk,          // Clock
-      input  wire rst,          // Reset
-      input  wire kmcINIT,      // Initialize
-      input  wire kmcSETIRQ,    // Edge trigger interrupt
-      input  wire kmcIACK,      // Interrupt acknowledge
-      output wire kmcIRQO       // Interrupt request out
+      input  wire  clk,         // Clock
+      input  wire  rst,         // Reset
+      input  wire  kmcINIT,     // Initialize
+      input  wire  kmcSETIRQ,   // Edge trigger interrupt
+      input  wire  kmcIACK,     // Interrupt acknowledge
+      output logic kmcIRQO      // Interrupt request out
    );
 
    //
-   // State machine
+   // Interrupt State machine
    //
 
    localparam [1:0] stateIDLE    = 0,
                     stateACT     = 1,
                     stateVECTCLR = 2;
 
-   //
-   // The interrupt request MUST clear immediately AFTER the interrupt vector
-   // cycle is complete.
-   //
-   //  - If the interrupt clears during the interrupt vector cycle, the vector
-   //    will be mis-read by the microcode.
-   //
-   //  - If the interrupt clears much after the vector cycle is complete, the
-   //    interrupt will be recognized twice.
-   //
+   logic [1:0] state;
 
-   reg [1:0] state;
-
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           state <= stateIDLE;

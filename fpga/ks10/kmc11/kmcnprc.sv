@@ -10,7 +10,7 @@
 //   Register (NPRC).
 //
 // File
-//   kmcnprc.v
+//   kmcnprc.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -46,26 +46,26 @@
 `include "kmccram.vh"
 
 module KMCNPRC (
-      input  wire        clk,           // Clock
-      input  wire        rst,           // Reset
-      input  wire        devACKI,       // Device acknowledge in
-      output wire        devREQO,       // Device request out
-      input  wire        kmcINIT,       // Initialize
-      input  wire [15:0] kmcCRAM,       // Control ROM
-      input  wire        kmcNPRCLKEN,   // NPR clock enable
-      input  wire [10:0] kmcMAR,        // MAR register
-      input  wire [ 7:0] kmcALU,        // ALU register
-      input  wire        kmcMPBUSY,     // Multiport RAM Busy
-      output wire        kmcSETNXM,     // Non-existent Memory
-      output wire [ 7:0] kmcNPRC        // NPRC register
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         devACKI,      // Device acknowledge in
+      output logic        devREQO,      // Device request out
+      input  wire         kmcINIT,      // Initialize
+      input  wire  [15:0] kmcCRAM,      // Control ROM
+      input  wire         kmcNPRCLKEN,  // NPR clock enable
+      input  wire  [10:0] kmcMAR,       // MAR register
+      input  wire  [ 7:0] kmcALU,       // ALU register
+      input  wire         kmcMPBUSY,    // Multiport RAM Busy
+      output logic        kmcSETNXM,    // Non-existent Memory
+      output logic [ 7:0] kmcNPRC       // NPRC register
    );
 
    //
    // NXM Timeout Timer Time
-   //  20.0 microseconds
+   //  2.0 microseconds
    //
 
-   localparam [11:0] kmcNXMVAL = (0.000020 * `CLKFRQ);
+   localparam [11:0] kmcNXMVAL = (0.000002 * `CLKFRQ);
 
    //
    // Microcode Decode
@@ -77,8 +77,8 @@ module KMCNPRC (
    // Bit 7: Byte Xfer
    //
 
-   reg kmcBYTEXFER;
-   always @(posedge clk)
+   logic kmcBYTEXFER;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcBYTEXFER <= 0;
@@ -98,8 +98,8 @@ module KMCNPRC (
    // Bit 4: NPR Out
    //
 
-   reg kmcNPRO;
-   always @(posedge clk)
+   logic kmcNPRO;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcNPRO <= 0;
@@ -111,8 +111,8 @@ module KMCNPRC (
    // Bit 3:2: Bus Address Extension on NPR In
    //
 
-   reg [3:2] kmcBAEI;
-   always @(posedge clk)
+   logic [3:2] kmcBAEI;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcBAEI <= 0;
@@ -124,8 +124,8 @@ module KMCNPRC (
    // Bit 1: Not Last Xfer (NLXFER)
    //
 
-   reg kmcNLXFER;
-   always @(posedge clk)
+   logic kmcNLXFER;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcNLXFER <= 0;
@@ -141,16 +141,19 @@ module KMCNPRC (
    // before generting the DMA request or the DMA address will be incorrect.
    //
 
-   localparam stateIDLE = 1'b0,
-              stateREQO = 1'b1;
+   localparam [1:0] stateIDLE = 0,
+                    stateREQO = 1,
+                    stateDONE = 2;
 
-   reg state;
-   reg [11:0] kmcNXMCNT;
+   logic [ 1:0] state;
+   logic [11:0] kmcNXMCNT;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
-        if (rst | kmcINIT | devACKI | kmcNPRCLKEN & kmcLDNPRC & !`kmcNPRC_NPRRQ(kmcALU))
+        if (rst | kmcINIT)
           begin
+             devREQO   <= 0;
+             kmcSETNXM <= 0;
              kmcNXMCNT <= kmcNXMVAL;
              state     <= stateIDLE;
           end
@@ -159,19 +162,29 @@ module KMCNPRC (
             stateIDLE:
               if (kmcNPRCLKEN & kmcLDNPRC & `kmcNPRC_NPRRQ(kmcALU))
                 begin
+                   devREQO   <= 1;
                    kmcNXMCNT <= kmcNXMVAL;
                    state     <= stateREQO;
                 end
             stateREQO:
-              if (kmcNXMCNT != 0)
+              if (devACKI)
+                state <= stateDONE;
+              else if (kmcNXMCNT != 0)
                 kmcNXMCNT <= kmcNXMCNT - 1'b1;
               else
-                state <= stateIDLE;
+                begin
+                   kmcSETNXM <= 1;
+                   state     <= stateDONE;
+                end
+            stateDONE:
+              begin
+                 devREQO   <= 0;
+                 kmcSETNXM <= 0;
+                 kmcNXMCNT <= kmcNXMVAL;
+                 state     <= stateIDLE;
+              end
           endcase
      end
-
-   assign devREQO   = (state == stateREQO) & !kmcMPBUSY;
-   assign kmcSETNXM = (kmcNXMCNT == 1);
 
    //
    // Build NPRC Register

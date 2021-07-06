@@ -6,7 +6,7 @@
 //   KMC11 Memory
 //
 // File
-//   kmcmem.v
+//   kmcmem.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -41,15 +41,15 @@
 `include "kmccram.vh"
 
 module KMCMEM (
-      input  wire        clk,           // Clock
-      input  wire        rst,           // Reset
-      input  wire        kmcINIT,       // Initialize
-      input  wire [15:0] kmcCRAM,       // Control ROM
-      input  wire        kmcMARCLKEN,   // MAR clock enable
-      input  wire        kmcMEMCLKEN,   // RAM clock enable
-      input  wire [ 7:0] kmcALU,        // ALU output
-      output reg  [10:0] kmcMAR,        // Memory address register
-      output reg  [ 7:0] kmcMEM         // Memory bus output
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         kmcINIT,      // Initialize
+      input  wire  [15:0] kmcCRAM,      // Control ROM
+      input  wire         kmcMARCLKEN,  // MAR clock enable
+      input  wire         kmcMEMCLKEN,  // RAM clock enable
+      input  wire  [ 7:0] kmcALU,       // ALU output
+      output logic [10:0] kmcMAR,       // Memory address register
+      output logic [ 7:0] kmcMEM        // Memory bus output
    );
 
    //
@@ -99,7 +99,7 @@ module KMCMEM (
    //   M8206/D2/E42
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcMAR <= 0;
@@ -128,24 +128,23 @@ module KMCMEM (
    //   M8206/D3/E29
    //
 
-   reg [9:0] rd_addr;
-   reg [7:0] ram[0:1023];
+   logic [9:0] rd_addr;
+   logic [7:0] ram[0:1023];
 
 `ifndef SYNTHESIS
-
    integer i;
-
-   initial
-     begin
-        for (i = 0; i < 1024; i = i + 1)
-          ram[i] = 0;
-     end
-
 `endif
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
-        if (kmcWRMEM & kmcMOVINST & kmcMEMCLKEN)
+        if (rst)
+`ifdef SYNTHESIS
+          ;
+`else
+        for (i = 0; i < 1024; i = i + 1)
+          ram[i] = 0;
+`endif
+        else if (kmcWRMEM & kmcMOVINST & kmcMEMCLKEN)
           ram[kmcMAR[9:0]] <= kmcALU;
         kmcMEM <= ram[kmcMAR[9:0]];
      end

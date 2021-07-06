@@ -187,7 +187,7 @@ SIM_ARGS := \
 
 SYN_ARGS := \
 	MAJOR_VER=\"00\" \
-	MINOR_VER=\"29\" \
+	MINOR_VER=\"30\" \
         CLKFRQ=12500000 \
 	SSRAMx18 \
 	RPXX_SIMSEEK \
@@ -308,6 +308,7 @@ RTL_FILES := \
 	ks10/kmc11/kmcmpram.sv \
 	ks10/kmc11/kmcnprc.sv \
 	ks10/kmc11/kmcseq.sv \
+	ks10/kmc11/kmcsp.sv \
 	ks10/kmc11/kmc11.sv \
 	ks10/lp20/lpbar.v \
 	ks10/lp20/lpbctr.v \

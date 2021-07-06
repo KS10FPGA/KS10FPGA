@@ -10,7 +10,7 @@
 //   (MISC).
 //
 // File
-//   kmcmisc.v
+//   kmcmisc.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -46,16 +46,16 @@
 `include "kmccram.vh"
 
 module KMCMISC (
-      input  wire        clk,           // Clock
-      input  wire        rst,           // Reset
-      input  wire        kmcINIT,       // Initialize
-      input  wire [15:0] kmcCRAM,       // Control ROM
-      input  wire        kmcMISCCLKEN,  // MISC clock enable
-      input  wire [ 7:0] kmcALU,        // ALU register
-      input  wire        kmcIRQO,       // Interrupt out
-      input  wire        kmcSETNXM,     // Non-existent memory
-      output wire        kmcSETIRQ,     // Edge trigger interrupt
-      output wire [ 7:0] kmcMISC        // MISC register
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         kmcINIT,      // Initialize
+      input  wire  [15:0] kmcCRAM,      // Control ROM
+      input  wire         kmcMISCCLKEN, // MISC clock enable
+      input  wire  [ 7:0] kmcALU,       // ALU register
+      input  wire         kmcIRQO,      // Interrupt out
+      input  wire         kmcSETNXM,    // Non-existent memory
+      output logic        kmcSETIRQ,    // Edge trigger interrupt
+      output logic [ 7:0] kmcMISC       // MISC register
    );
 
    //
@@ -82,8 +82,8 @@ module KMCMISC (
    // Bit 6: Interrupt Vector Select (VECTXXX4)
    //
 
-   reg kmcVECTXXX4;
-   always @(posedge clk)
+   logic kmcVECTXXX4;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcVECTXXX4 <= 0;
@@ -95,8 +95,8 @@ module KMCMISC (
    // Bit 5: Latch (LAT)
    //
 
-   reg kmcLAT;
-   always @(posedge clk)
+   logic kmcLAT;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcLAT <= 0;
@@ -109,8 +109,8 @@ module KMCMISC (
    //  50 microsecond retriggerable one-shot.
    //
 
-   reg [11:0] kmcTIMERCNT;
-   always @(posedge clk)
+   logic [11:0] kmcTIMERCNT;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcTIMERCNT <= 0;
@@ -126,8 +126,8 @@ module KMCMISC (
    // Bit 3:2 Bus Address Extension Out (BAEO)
    //
 
-   reg [3:2] kmcBAEO;
-   always @(posedge clk)
+   logic [3:2] kmcBAEO;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcBAEO <= 0;
@@ -140,8 +140,8 @@ module KMCMISC (
    // This will Reset the KS10, if we hook it up...)
    //
 
-   reg kmcACLO;
-   always @(posedge clk)
+   logic kmcACLO;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcACLO <= 0;
@@ -153,8 +153,8 @@ module KMCMISC (
    // Bit 0: Non-existent Memory
    //
 
-   reg kmcNXM;
-   always @(posedge clk)
+   logic kmcNXM;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcNXM <= 0;

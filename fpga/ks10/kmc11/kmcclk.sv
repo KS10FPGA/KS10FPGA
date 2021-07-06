@@ -9,7 +9,7 @@
 //   This file contains the implementation of the clock generator
 //
 // File
-//   kmcclk.v
+//   kmcclk.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -42,24 +42,26 @@
 `timescale 1ns/1ps
 
 module KMCCLK (
-      input  wire clk,                  // Clock
-      input  wire rst,                  // Reset
-      input  wire kmcINIT,              // Initialize
-      input  wire kmcSTEP,              // Single step
-      input  wire kmcRUN,               // Run
-      output wire kmcCRAMCLKEN,         // CRAM clock enable
-      output wire kmcALUCLKEN,          // ALU clock enable
-      output wire kmcSPCLKEN,           // SP clock enable
-      output wire kmcBRGCLKEN,
-      output wire kmcMARCLKEN,
-      output wire kmcMEMCLKEN,
-      output wire kmcMISCCLKEN,
-      output wire kmcNPRCLKEN,
-      output wire kmcPCCLKEN,
-      output wire kmcREGCLKEN
+      input  wire  clk,                 // Clock
+      input  wire  rst,                 // Reset
+      input  wire  kmcINIT,             // Initialize
+      input  wire  kmcSTEP,             // Single step
+      input  wire  kmcRUN,              // Run
+      output logic kmcCRAMCLKEN,        // CRAM clock enable
+      output logic kmcALUCLKEN,         // ALU clock enable
+      output logic kmcSPCLKEN,          // SP clock enable
+      output logic kmcBRGCLKEN,         // BRG clock enable
+      output logic kmcMARCLKEN,         // MAR clock enable
+      output logic kmcMEMCLKEN,         // MEM clock enable
+      output logic kmcMISCCLKEN,        // MISC clock enable
+      output logic kmcNPRCLKEN,         // NPR clock enable
+      output logic kmcPCCLKEN,          // PC clock enable
+      output logic kmcREGCLKEN          // REG clock enable
    );
 
-
+   //
+   // State Machine
+   //
 
    localparam [3:0] kmcSTATE_IDLE = 0,  // T0
                     kmcSTATE_CRAM = 1,  // T60
@@ -67,9 +69,9 @@ module KMCCLK (
                     kmcSTATE_ALU  = 3,  // T180
                     kmcSTATE_DONE = 4;  // T240
 
-   reg [3:0] state;
+   logic [3:0] state;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           state <= kmcSTATE_IDLE;

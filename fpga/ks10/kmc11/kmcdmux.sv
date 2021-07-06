@@ -9,7 +9,7 @@
 //   This file provides the implementation of the DMUX.
 //
 // File
-//   kmcdmux.v
+//   kmcdmux.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -44,25 +44,25 @@
 `include "kmccram.vh"
 
 module KMCDMUX (
-      input  wire [15:0] kmcCRAM,       // Control ROM
-      input  wire [15:0] kmcNPRID,      // NPR in data
-      input  wire [15:0] kmcNPROD,      // NPR out data
-      input  wire [15:0] kmcNPRIA,      // NPR in address
-      input  wire [15:0] kmcNPROA,      // NPR out address
-      input  wire [15:0] kmcCSR0,       // CSR0
-      input  wire [15:0] kmcCSR2,       // CSR2
-      input  wire [15:0] kmcCSR4,       // CSR4
-      input  wire [15:0] kmcCSR6,       // CSR5
-      input  wire [ 7:0] kmcMISC,       // Misc register
-      input  wire [ 7:0] kmcNPRC,       // DMA Control register
-      input  wire [ 7:0] kmcBRG,        // Branch register
-      input  wire [ 7:0] kmcMEM,        // Memory
-      input  wire [15:0] kmcLUIBUS,     // LUI bus
-      input  wire [ 9:0] kmcPC,         // Program counter
-      input  wire [10:0] kmcMAR,        // Memory Address Register
-      input  wire        kmcALUZ,       // ALU Zero
-      input  wire        kmcALUC,       // ALU Carry
-      output reg  [ 7:0] kmcDMUX        // DMUX Data
+      input  wire  [15:0] kmcCRAM,      // Control ROM
+      input  wire  [15:0] kmcNPRID,     // NPR in data
+      input  wire  [15:0] kmcNPROD,     // NPR out data
+      input  wire  [15:0] kmcNPRIA,     // NPR in address
+      input  wire  [15:0] kmcNPROA,     // NPR out address
+      input  wire  [15:0] kmcCSR0,      // CSR0
+      input  wire  [15:0] kmcCSR2,      // CSR2
+      input  wire  [15:0] kmcCSR4,      // CSR4
+      input  wire  [15:0] kmcCSR6,      // CSR5
+      input  wire  [ 7:0] kmcMISC,      // Misc register
+      input  wire  [ 7:0] kmcNPRC,      // DMA Control register
+      input  wire  [ 7:0] kmcBRG,       // Branch register
+      input  wire  [ 7:0] kmcMEM,       // Memory
+      input  wire  [15:0] kmcLUIBUS,    // LUI bus
+      input  wire  [ 9:0] kmcPC,        // Program counter
+      input  wire  [10:0] kmcMAR,       // Memory Address Register
+      input  wire         kmcALUZ,      // ALU Zero
+      input  wire         kmcALUC,      // ALU Carry
+      output logic [ 7:0] kmcDMUX       // DMUX Data
    );
 
    //
@@ -89,7 +89,7 @@ module KMCDMUX (
    //   M8206/D7/E80
    //
 
-   always @*
+   always_ff @*
      begin
         case (kmcSRC)
           `kmcCRAM_SRC_MOV_IMMED   : kmcDMUX <= kmcCRAM[7:0];

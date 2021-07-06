@@ -10,7 +10,7 @@
 //   Register (BRG).
 //
 // File
-//   kmcbrg.v
+//   kmcbrg.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -45,13 +45,13 @@
 `include "kmccram.vh"
 
 module KMCBRG (
-      input  wire        clk,           // Clock
-      input  wire        rst,           // Reset
-      input  wire        kmcINIT,       // Initialize
-      input  wire [15:0] kmcCRAM,       // Control ROM
-      input  wire        kmcBRGCLKEN,   // NPR clock enable
-      input  wire [ 7:0] kmcALU,        // ALU register
-      output reg  [ 7:0] kmcBRG         // BRG register
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         kmcINIT,      // Initialize
+      input  wire  [15:0] kmcCRAM,      // Control ROM
+      input  wire         kmcBRGCLKEN,  // NPR clock enable
+      input  wire  [ 7:0] kmcALU,       // ALU register
+      output logic [ 7:0] kmcBRG        // BRG register
    );
 
    //
@@ -73,7 +73,7 @@ module KMCBRG (
    // BRG Register
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcBRG <= 0;

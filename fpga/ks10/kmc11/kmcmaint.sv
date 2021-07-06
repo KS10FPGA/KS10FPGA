@@ -10,7 +10,7 @@
 //   This register is write-only but shadows a register in the multiport RAM.
 //
 // File
-//   kmcmaint.v
+//   kmcmaint.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -45,22 +45,22 @@
 `include "kmcmaint.vh"
 
 module KMCMAINT (
-      input  wire        clk,           // Clock
-      input  wire        rst,           // Reset
-      input  wire        devHIBYTE,     // High Byte
-      input  wire        devRESET,      // Controller Clear
-      input  wire        sel0WRITE,     // MAINT Write
-      input  wire [35:0] kmcDATAI,      // KMC data
-      input  wire        kmcINIT,       // Initialize
-      output wire [ 7:0] kmcMAINT       // MAINT register
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         devHIBYTE,    // High Byte
+      input  wire         devRESET,     // Controller Clear
+      input  wire         sel0WRITE,    // MAINT Write
+      input  wire  [35:0] kmcDATAI,     // KMC data
+      input  wire         kmcINIT,      // Initialize
+      output logic [ 7:0] kmcMAINT      // MAINT register
    );
 
    //
    // Bit 15: RUN
    //
 
-   reg kmcRUN;
-   always @(posedge clk)
+   logic kmcRUN;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcRUN <= 0;
@@ -72,8 +72,8 @@ module KMCMAINT (
    // Bit 14: MCLR
    //
 
-   reg [2:0] count;
-   always @(posedge clk)
+   logic [2:0] count;
+   always_ff @(posedge clk)
      begin
         if (rst | devRESET)
           count <= 0;
@@ -95,8 +95,8 @@ module KMCMAINT (
    // Bit 12: LU STEP
    //
 
-   reg kmcLUSTEP;
-   always @(posedge clk)
+   logic kmcLUSTEP;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcLUSTEP <= 0;
@@ -108,8 +108,8 @@ module KMCMAINT (
    // Bit 11: LU LOOP
    //
 
-   reg kmcLULOOP;
-   always @(posedge clk)
+   logic kmcLULOOP;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcLULOOP <= 0;
@@ -121,8 +121,8 @@ module KMCMAINT (
    // Bit 10: CRAMOUT
    //
 
-   reg kmcCRAMOUT;
-   always @(posedge clk)
+   logic kmcCRAMOUT;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcCRAMOUT <= 0;
@@ -134,8 +134,8 @@ module KMCMAINT (
    // Bit 9: CRAMIN
    //
 
-   reg kmcCRAMIN;
-   always @(posedge clk)
+   logic kmcCRAMIN;
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcCRAMIN <= 0;

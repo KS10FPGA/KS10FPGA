@@ -7,12 +7,12 @@
 //
 // Details
 //   This module implements the Arithmetic Logic Unit.  The ALU is 8-bits wide
-//   and implements a subset of the 74181 logic functions.  In the KMC
+//   and implements a subset of the 74181 logic functions.  In the KMC11
 //   implementation, a Function ROM (FROM) sits between the microcode and the
 //   74181 to remap the functions.
 //
 // File
-//   kmcalu.v
+//   kmcalu.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -47,16 +47,16 @@
 `include "kmccram.vh"
 
 module KMCALU (
-      input  wire        clk,           // Clock
-      input  wire        rst,           // Reset
-      input  wire        kmcINIT,       // Initialize
-      input  wire [15:0] kmcCRAM,       // Control ROM Data
-      input  wire [ 7:0] kmcDMUX,       // Data mux
-      input  wire        kmcSPCLKEN,    // SP clock enable
-      input  wire        kmcALUCLKEN,   // ALU clock enable
-      output reg         kmcALUC,       // ALU carry
-      output reg         kmcALUZ,       // ALU zero
-      output reg  [ 7:0] kmcALU         // Unegistered ALU
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         kmcINIT,      // Initialize
+      input  wire  [15:0] kmcCRAM,      // Control ROM Data
+      input  wire  [ 7:0] kmcDMUX,      // Data mux
+      input  wire  [ 7:0] kmcSP,        // Scratch pad
+      input  wire         kmcALUCLKEN,  // ALU clock enable
+      output logic        kmcALUC,      // ALU carry
+      output logic        kmcALUZ,      // ALU zero
+      output logic [ 7:0] kmcALU        // Unegistered ALU
    );
 
    //
@@ -79,28 +79,6 @@ module KMCALU (
                      (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_MOV_MEM  ) |
                      (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_MOV_BRG  ) |
                      (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_MOV_IBUSS));
-
-   //
-   // Microcode Decode
-   //  This decodes instructions with a Scratch Pad (SP) destination
-   //
-   // Trace
-   //   M8206/D1/E65
-   //
-
-   wire kmcDESTSP = ((`kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_SP) |
-                     (`kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_SPBRG));
-
-   //
-   // Microcode Decode
-   //  This decodes instructions with a OBUS or OBUSS destination
-   //
-   // Trace
-   //   M8206/D1/E115
-   //
-
-   wire kmcWROUT = ((`kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_OBUSS) |
-                    (`kmcCRAM_DST(kmcCRAM) == `kmcCRAM_DST_OBUS));
 
    //
    // Microcode Decode
@@ -136,77 +114,7 @@ module KMCALU (
                    (`kmcCRAM_FUN(kmcCRAM) == `kmcCRAM_FUN_SUB   ) |
                    (`kmcCRAM_FUN(kmcCRAM) == `kmcCRAM_FUN_SUBOC ));
 
-   //
-   // Write to Scratch Pad Register (SP)
-   //  Only enabled on MOV instructions with SP destination
-   //
-   // Trace
-   //   M8206/D1/E74
-   //
-
-   wire kmcWRSP = kmcSRCMOV & kmcDESTSP;
-
-   //
-   // Scratchpad Address Mux
-   //
-   // Trace
-   //  M8206/D8/E105
-   //
-
-   reg [3:0] kmcSPADDR;
-   always @*
-     begin
-        if (kmcWROUT)
-          kmcSPADDR <= 0;
-        else
-          kmcSPADDR <= `kmcCRAM_SPADDR(kmcCRAM);
-     end
-
-   //
-   // Scratchpad Memory (8x16)
-   //
-   // Trace
-   //  M8206/D8/E96
-   //  M8206/D8/E97
-   //
-
-   reg [3:0] kmcRDADDR;
-   reg [7:0] kmcSP[0:15];
-
-   always @(posedge clk)
-     begin
-        if (rst)
-          begin
-             kmcSP[ 0] <= 0;
-             kmcSP[ 1] <= 0;
-             kmcSP[ 2] <= 0;
-             kmcSP[ 3] <= 0;
-             kmcSP[ 4] <= 0;
-             kmcSP[ 5] <= 0;
-             kmcSP[ 6] <= 0;
-             kmcSP[ 7] <= 0;
-             kmcSP[ 8] <= 0;
-             kmcSP[ 9] <= 0;
-             kmcSP[10] <= 0;
-             kmcSP[11] <= 0;
-             kmcSP[12] <= 0;
-             kmcSP[13] <= 0;
-             kmcSP[14] <= 0;
-             kmcSP[15] <= 0;
-          end
-        else
-          begin
-             if (kmcWRSP & kmcSPCLKEN)
-               kmcSP[kmcSPADDR] <= kmcALU;
-             kmcRDADDR <= kmcSPADDR;
-          end
-     end
-
-   //
-   // Form ALU inputs
-   //
-
-   wire [7:0] kmcALUA = kmcSP[kmcRDADDR];
+   wire [7:0] kmcALUA = kmcSP;
    wire [7:0] kmcALUB = kmcDMUX;
 
    //
@@ -276,9 +184,9 @@ module KMCALU (
    //  M8206/D8/E114
    //
 
-   reg kmcCY;
+   logic kmcCY;
 
-   always @*
+   always_comb
      begin
         kmcCY <= 0;
         if (`kmcCRAM_SRC(kmcCRAM) == `kmcCRAM_SRC_MOV_IMMED |
@@ -316,7 +224,7 @@ module KMCALU (
    //   M8206/D8/E90
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcALUC <= 0;
@@ -331,7 +239,7 @@ module KMCALU (
    //   M8206/D8/E90
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | kmcINIT)
           kmcALUZ <= 0;

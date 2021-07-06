@@ -26,7 +26,7 @@
 //   IBUSS[7] : NPROAH       DMA ADDR OUT (HI)
 //
 // File
-//   kmcmpram.v
+//   kmcmpram.sv
 //
 // Note:
 //   I didn't bother trying to use RAM for this.  It's just simpler to use some
@@ -65,30 +65,32 @@
 `include "kmccram.vh"
 
 module KMCMPRAM (
-      input  wire        clk,           // Clock
-      input  wire        rst,           // Reset
-      input  wire        devREQO,       // DMA request out
-      input  wire        devACKI,       // DMA acknowleget in
-      input  wire        devLOBYTE,     // Write low byte
-      input  wire        devHIBYTE,     // Write high byte
-      input  wire        sel0WRITE,     // SEL0 write
-      input  wire        sel2WRITE,     // SEL2 write
-      input  wire        sel4WRITE,     // SEL4 write
-      input  wire        sel6WRITE,     // SEL6 write
-      input  wire [35:0] kmcDATAI,      // Data in
-      input  wire [15:0] kmcCRAM,       // Control RAM
-      input  wire [ 7:0] kmcALU,        // ALU data
-      input  wire        kmcRAMCLKEN,   // MPRAM clock enable
-      input  wire        kmcNPRO,       // NPR out transaction
-      output wire        kmcMPBUSY,     // MPRAM busy
-      output reg  [15:0] kmcNPRID,      // NPR in data
-      output reg  [15:0] kmcNPROD,      // NPR out data
-      output reg  [15:0] kmcNPRIA,      // NPR in address
-      output reg  [15:0] kmcNPROA,      // NPR out address
-      output reg  [15:0] kmcCSR0,       // CSR0 output
-      output reg  [15:0] kmcCSR2,       // CSR2 output
-      output reg  [15:0] kmcCSR4,       // CSR4 output
-      output reg  [15:0] kmcCSR6        // CSR5 output
+      input  wire         clk,          // Clock
+      input  wire         rst,          // Reset
+      input  wire         devREQO,      // DMA request out
+      input  wire         devACKI,      // DMA acknowleget in
+      input  wire         devLOBYTE,    // Write low byte
+      input  wire         devHIBYTE,    // Write high byte
+      input  wire         sel0WRITE,    // SEL0 write
+      input  wire         sel2WRITE,    // SEL2 write
+      input  wire         sel4WRITE,    // SEL4 write
+      input  wire         sel6WRITE,    // SEL6 write
+      input  wire  [35:0] kmcDATAI,     // Data in
+      input  wire  [15:0] kmcCRAM,      // Control RAM
+      input  wire         kmcCRAMIN,    // CRAM IN
+      input  wire         kmcCRAMOUT,   // CRAM OUT
+      input  wire  [ 7:0] kmcALU,       // ALU data
+      input  wire         kmcRAMCLKEN,  // MPRAM clock enable
+      input  wire         kmcNPRO,      // NPR out transaction
+      output wire         kmcMPBUSY,    // MPRAM busy
+      output logic [15:0] kmcNPRID,     // NPR in data
+      output logic [15:0] kmcNPROD,     // NPR out data
+      output logic [15:0] kmcNPRIA,     // NPR in address
+      output logic [15:0] kmcNPROA,     // NPR out address
+      output logic [15:0] kmcCSR0,      // CSR0 output
+      output logic [15:0] kmcCSR2,      // CSR2 output
+      output logic [15:0] kmcCSR4,      // CSR4 output
+      output logic [15:0] kmcCSR6       // CSR5 output
    );
 
    //
@@ -103,10 +105,10 @@ module KMCMPRAM (
 
    //
    // NPRIDL
-   //  This stores the results of an NPR read.
+   //  This data from an NPR read is written to NPRID.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcNPRID[7:0] <= 0;
@@ -118,10 +120,10 @@ module KMCMPRAM (
 
    //
    // NPRIDH
-   //  This stores the results of an NPR read.
+   //  This data from an NPR read is written to NPRID.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcNPRID[15:8] <= 0;
@@ -133,33 +135,40 @@ module KMCMPRAM (
 
    //
    // NPRODL
+   //  The contents of NPROD is written on an NPR write.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcNPROD[7:0] <= 0;
+        else if (devLOBYTE & devREQO & devACKI & kmcNPRO & kmcCRAMIN & kmcCRAMOUT)
+          kmcNPROD[7:0] <= kmcDATAI[7:0];
         else if (kmcRAMCLKEN & kmcDSTOBUS & (`kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPRODL))
           kmcNPROD[7:0] <= kmcALU;
      end
 
    //
    // NPRODH
+   //  The contents of NPROD is written on an NPR write.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcNPROD[15:8] <= 0;
+        else if (devHIBYTE & devREQO & devACKI & kmcNPRO & kmcCRAMIN & kmcCRAMOUT)
+          kmcNPROD[15:8] <= kmcDATAI[15:8];
         else if (kmcRAMCLKEN & kmcDSTOBUS & (`kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPRODH))
           kmcNPROD[15:8] <= kmcALU;
      end
 
    //
    // NPRIAL
+   //  The contents of NPRIA provides the address for an NPR read.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcNPRIA[7:0] <= 0;
@@ -169,9 +178,10 @@ module KMCMPRAM (
 
    //
    // NPRIAH
+   //  The contents of NPRIA provides the address for an NPR read.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcNPRIA[15:8] <= 0;
@@ -181,9 +191,10 @@ module KMCMPRAM (
 
    //
    // NPROAL
+   //  The contents of NPROA provides the address for an NPR write.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcNPROA[7:0] <= 0;
@@ -193,9 +204,10 @@ module KMCMPRAM (
 
    //
    // NPROAH
+   //  The contents of NPROA provides the address for an NPR write.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcNPROA[15:8] <= 0;
@@ -207,7 +219,7 @@ module KMCMPRAM (
    // CSR0
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcCSR0[7:0] <= 0;
@@ -221,7 +233,7 @@ module KMCMPRAM (
    // CSR1
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcCSR0[15:8] <= 0;
@@ -235,7 +247,7 @@ module KMCMPRAM (
    // CSR2
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcCSR2[7:0] <= 0;
@@ -249,7 +261,7 @@ module KMCMPRAM (
    // CSR3
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcCSR2[15:8] <= 0;
@@ -263,7 +275,7 @@ module KMCMPRAM (
    // CSR4
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcCSR4[7:0] <= 0;
@@ -277,7 +289,7 @@ module KMCMPRAM (
    // CSR5
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcCSR4[15:8] <= 0;
@@ -291,7 +303,7 @@ module KMCMPRAM (
    // CSR6
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcCSR6[7:0] <= 0;
@@ -305,7 +317,7 @@ module KMCMPRAM (
    // CSR7
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           kmcCSR6[15:8] <= 0;

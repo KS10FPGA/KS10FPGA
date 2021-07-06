@@ -27,7 +27,7 @@
 //   the IO bus as 36-bit address and 36-bit data just to keep things simple.
 //
 // File
-//   kmc11.v
+//   kmc11.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -66,53 +66,47 @@
 `include "../uba/ubabus.vh"
 
 module KMC11 (
-      input  wire         clk,                          // Clock
-      input  wire         rst,                          // Reset
+      input  wire          clk,                         // Clock
+      input  wire          rst,                         // Reset
       // Reset
-      input  wire         devRESET,                     // Device Reset from IO Bus Bridge
+      input  wire          devRESET,                    // Device Reset from IO Bus Bridge
       // AC LO
-      output wire         devACLO,                      // Device Power Fail
+      output logic         devACLO,                     // Device Power Fail
       // Interrupt
-      output wire [ 7: 4] devINTR,                      // Device Interrupt Request
+      output logic [ 7: 4] devINTR,                     // Device Interrupt Request
       // Target
-      input  wire         devREQI,                      // Device Request In
-      output wire         devACKO,                      // Device Acknowledge Out
-      input  wire [ 0:35] devADDRI,                     // Device Address In
-      input  wire [ 0:35] devDATAI,                     // Device Data In
+      input  wire          devREQI,                     // Device Request In
+      output logic         devACKO,                     // Device Acknowledge Out
+      input  wire  [ 0:35] devADDRI,                    // Device Address In
+      input  wire  [ 0:35] devDATAI,                    // Device Data In
       // Initiator
-      output wire         devREQO,                      // Device Request Out
-      input  wire         devACKI,                      // Device Acknowledge In
-      output reg  [ 0:35] devADDRO,                     // Device Address Out
-      output reg  [ 0:35] devDATAO,                     // Device Data Out
+      output wire          devREQO,                     // Device Request Out
+      input  wire          devACKI,                     // Device Acknowledge In
+      output logic [ 0:35] devADDRO,                    // Device Address Out
+      output logic [ 0:35] devDATAO,                    // Device Data Out
       // KMC11 Interfaces
-      input  wire [15: 0] kmcLUIBUS,                    // Line unit input bus
-      output wire         kmcLUSTEP,                    // Line unit step
-      output wire         kmcLULOOP                     // Line unit loop
+      input  wire  [15: 0] kmcLUIBUS,                   // Line unit input bus
+      output logic         kmcLUSTEP,                   // Line unit step
+      output logic         kmcLULOOP                    // Line unit loop
    );
-
-`ifndef SYNTHESIS
-
-   integer file;
-
-`endif
 
    //
    // KMC Parameters
    //
 
-   parameter [14:17] kmcDEV  = `kmcDEV;                 // KMC11 Device Number
-   parameter [18:35] kmcADDR = `kmcADDR;                // KMC11 Base Address
-   parameter [18:35] kmcVECT = `kmcVECT;                // KMC11 Interrupt Vector
-   parameter [ 7: 4] kmcINTR = `kmcINTR;                // KMC11 Interrupt
+   parameter  [14:17] kmcDEV  = `kmcDEV;                // KMC11 Device Number
+   parameter  [18:35] kmcADDR = `kmcADDR;               // KMC11 Base Address
+   parameter  [18:35] kmcVECT = `kmcVECT;               // KMC11 Interrupt Vector
+   parameter  [ 7: 4] kmcINTR = `kmcINTR;               // KMC11 Interrupt
 
    //
    // KMC Register Addresses
    //
 
-   localparam [18:35] sel0ADDR = kmcADDR + `sel0OFFSET; // SEL0 Register
-   localparam [18:35] sel2ADDR = kmcADDR + `sel2OFFSET; // SEL2 Register
-   localparam [18:35] sel4ADDR = kmcADDR + `sel4OFFSET; // SEL4 Register
-   localparam [18:35] sel6ADDR = kmcADDR + `sel6OFFSET; // SEL6 Register
+   localparam [18:35] sel0ADDR = kmcADDR + `sel0OFFSET; // SEL0 Register Address
+   localparam [18:35] sel2ADDR = kmcADDR + `sel2OFFSET; // SEL2 Register Address
+   localparam [18:35] sel4ADDR = kmcADDR + `sel4OFFSET; // SEL4 Register Address
+   localparam [18:35] sel6ADDR = kmcADDR + `sel6OFFSET; // SEL6 Register Address
 
    //
    // Device Address and Flags
@@ -140,65 +134,53 @@ module KMC11 (
    // Address Decoding
    //
 
-   wire vectREAD  = devREAD   & devIO & devPHYS & !devWRU &  devVECT & (devDEV == kmcDEV);
-   wire sel0READ  = devREAD   & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);
-   wire sel0WRITE = devWRITE  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);
-   wire sel2READ  = devREAD   & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel2ADDR[18:34]);
-   wire sel2WRITE = devWRITE  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel2ADDR[18:34]);
-   wire sel4READ  = devREAD   & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
-   wire sel4WRITE = devWRITE  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
-   wire sel6READ  = devREAD   & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
-   wire sel6WRITE = devWRITE  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
+   wire         vectREAD  = devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == kmcDEV);
+   wire         sel0READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);
+   wire         sel0WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);
+   wire         sel2READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel2ADDR[18:34]);
+   wire         sel2WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel2ADDR[18:34]);
+   wire         sel4READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
+   wire         sel4WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
+   wire         sel6READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
+   wire         sel6WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
 
    //
    // Big-endian to little-endian data bus swap
    //
 
-   wire [35:0] kmcDATAI = devDATAI[0:35];
+   wire [35: 0] kmcDATAI = devDATAI[0:35];
 
    //
    // Address Flags (little-endian)
    //
 
-   localparam [35:18] kmcRDMEMFLAGS = 18'b000_100_000_000_000_000,      // Read memory
-                      kmcWRMEMFLAGS = 18'b000_001_000_000_000_000,      // Write memory
-                      kmcRDIOFLAGS  = 18'b000_100_001_010_010_011,      // Read Phys IO Byte to UBA3
-                      kmcWRIOFLAGS  = 18'b000_001_001_010_010_011;      // Write Phys IO Byte to UBA3
+   localparam [35:22] kmcRDMEMFLAGS = 14'b00010000000000,  // Read memory
+                      kmcWRMEMFLAGS = 14'b00000100000000,  // Write memory
+                      kmcRDIOFLAGS  = 14'b00010010101000,  // Read Phys IO Byte to UBA3
+                      kmcWRIOFLAGS  = 14'b00000110101000;  // Write Phys IO Byte to UBA3
 
    //
    // Maintenance Register Bits
    //
 
-   wire [15:8] kmcMAINT;
-   wire kmcRUN     = `kmcMAINT_RUN(kmcMAINT);
-   wire kmcMCLR    = `kmcMAINT_MCLR(kmcMAINT);
-   wire kmcCRAMWR  = `kmcMAINT_CRAMWR(kmcMAINT);
-   wire kmcCRAMOUT = `kmcMAINT_CRAMOUT(kmcMAINT);
-   wire kmcCRAMIN  = `kmcMAINT_CRAMIN(kmcMAINT);
-   wire kmcSTEP    = `kmcMAINT_STEP(kmcMAINT);
-
-   assign kmcLUSTEP = `kmcMAINT_LUSTEP(kmcMAINT);
-   assign kmcLULOOP = `kmcMAINT_LULOOP(kmcMAINT);
+   wire [15: 8] kmcMAINT;
+   wire         kmcRUN     = `kmcMAINT_RUN(kmcMAINT);
+   wire         kmcMCLR    = `kmcMAINT_MCLR(kmcMAINT);
+   wire         kmcCRAMWR  = `kmcMAINT_CRAMWR(kmcMAINT);
+   wire         kmcCRAMOUT = `kmcMAINT_CRAMOUT(kmcMAINT);
+   wire         kmcCRAMIN  = `kmcMAINT_CRAMIN(kmcMAINT);
+   wire         kmcSTEP    = `kmcMAINT_STEP(kmcMAINT);
 
    //
    // Initialize
    //
 
-   wire kmcINIT =    kmcMCLR | devRESET;
-
-   //
-   // Maintenance Register(s)
-   //
-
-   wire [ 9: 0] kmcMNTADDR;
-   wire [15: 0] kmcMNTINST;
+   wire         kmcINIT = kmcMCLR | devRESET;
 
    //
    // Multiport RAM
    //
 
-   wire         kmcREGCLKEN;                            // Multiport RAM clock enable
-   wire         kmcMPBUSY;                              // Multiport RAM is busy
    wire [15: 0] kmcNPRID;                               // NPR output data
    wire [15: 0] kmcNPROD;                               // NPR output data
    wire [15: 0] kmcNPRIA;                               // NPR input address
@@ -207,6 +189,9 @@ module KMC11 (
    wire [15: 0] kmcCSR2;                                // CSR2
    wire [15: 0] kmcCSR4;                                // CSR4
    wire [15: 0] kmcCSR6;                                // CSR6
+   wire [ 9: 0] kmcMNTADDR;                             // Maintenance address register
+   wire [15: 0] kmcMNTINST;                             // Maintenance instruction register
+   wire         kmcMPBUSY;                              // Multiport RAM Busy
 
    //
    // Arithmetic Logic Unit (ALU) Signals
@@ -215,15 +200,12 @@ module KMC11 (
    wire [ 7: 0] kmcALU;                                 // ALU Data
    wire         kmcALUZ;                                // ALU Zero
    wire         kmcALUC;                                // ALU Carry
-   wire         kmcSPCLKEN;                             // SP Clock Enable
-   wire         kmcALUCLKEN;                            // ALU Clock Enable
 
    //
    // Branch Register (BRG) Signals
    //
 
    wire [ 7: 0] kmcBRG;                                 // BRG Register
-   wire         kmcBRGCLKEN;                            // BRG Clock Enable
 
    //
    // Sequencer Signals
@@ -231,8 +213,6 @@ module KMC11 (
 
    wire [ 9: 0] kmcPC;                                  // Program Counter
    wire [15: 0] kmcCRAM;                                // Control RAM (Microcode)
-   wire         kmcPCCLKEN;                             // Program Counter Clock Enable
-   wire         kmcCRAMCLKEN;                           // Control RAM Clock Enable
 
    //
    // MEM Signals
@@ -240,8 +220,6 @@ module KMC11 (
 
    wire [ 7: 0] kmcMEM;                                 // Memory
    wire [10: 0] kmcMAR;                                 // Memory Address Register
-   wire         kmcMEMCLKEN;                            // Memory Clock Enable
-   wire         kmcMARCLKEN;                            // Memory Address Register Clock Enable
 
    //
    // Data Mux Signals
@@ -253,7 +231,6 @@ module KMC11 (
    // Misc Register Signals
    //
 
-   wire         kmcMISCCLKEN;                           // Misc Register Clock Enable
    wire [ 7: 0] kmcMISC;                                // Misc Register
    wire         kmcVECTXXX4 = `kmcMISC_VECTXXX4(kmcMISC);//Interrupt Vector
    wire [17:16] kmcBAEO     = `kmcMISC_BAEO(kmcMISC);   // BA[17:16] for DMA Writes
@@ -265,10 +242,30 @@ module KMC11 (
    // NPR Control Port Signals
    //
 
-   wire         kmcNPRCLKEN;                            // NPR Control Register Clock Enable
    wire [ 7: 0] kmcNPRC;                                // NPR Control Register
    wire         kmcNPRO = `kmcNPRC_NPRO(kmcNPRC);       // NPR Direction
    wire [17:16] kmcBAEI = `kmcNPRC_BAEI(kmcNPRC);       // BA[17:16] for DMA Reads
+
+   //
+   // Scratch Pad Signals
+   //
+
+   wire [ 7: 0] kmcSP;                                  // Scratch Pad Register
+
+   //
+   // Clock enables
+   //
+
+   wire         kmcALUCLKEN;                            // ALU Clock Enable
+   wire         kmcBRGCLKEN;                            // BRG Clock Enable
+   wire         kmcCRAMCLKEN;                           // Control RAM Clock Enable
+   wire         kmcMARCLKEN;                            // Memory Address Register Clock Enable
+   wire         kmcMEMCLKEN;                            // Memory Clock Enable
+   wire         kmcMISCCLKEN;                           // Misc Register Clock Enable
+   wire         kmcNPRCLKEN;                            // NPR Control Register Clock Enable
+   wire         kmcPCCLKEN;                             // Program Counter Clock Enable
+   wire         kmcREGCLKEN;                            // Multiport RAM clock enable
+   wire         kmcSPCLKEN;                             // SP Clock Enable
 
    //
    // Maintenance Register
@@ -325,6 +322,8 @@ module KMC11 (
       .sel6WRITE   (sel6WRITE),
       .kmcDATAI    (kmcDATAI),
       .kmcCRAM     (kmcCRAM),
+      .kmcCRAMIN   (kmcCRAMIN),
+      .kmcCRAMOUT  (kmcCRAMOUT),
       .kmcALU      (kmcALU),
       .kmcRAMCLKEN (kmcREGCLKEN),
       .kmcNPRO     (kmcNPRO),
@@ -337,6 +336,19 @@ module KMC11 (
       .kmcCSR2     (kmcCSR2),
       .kmcCSR4     (kmcCSR4),
       .kmcCSR6     (kmcCSR6)
+   );
+
+   //
+   // Scratch Pad Memory
+   //
+
+   KMCSP uKMCSP (
+      .clk         (clk),
+      .rst         (rst),
+      .kmcSPCLKEN  (kmcSPCLKEN),
+      .kmcCRAM     (kmcCRAM),
+      .kmcALU      (kmcALU),
+      .kmcSP       (kmcSP)
    );
 
    //
@@ -469,7 +481,7 @@ module KMC11 (
       .kmcINIT     (kmcINIT),
       .kmcCRAM     (kmcCRAM),
       .kmcDMUX     (kmcDMUX),
-      .kmcSPCLKEN  (kmcSPCLKEN),
+      .kmcSP       (kmcSP),
       .kmcALUCLKEN (kmcALUCLKEN),
       .kmcALUC     (kmcALUC),
       .kmcALUZ     (kmcALUZ),
@@ -504,22 +516,26 @@ module KMC11 (
    // This decodes IO page addresses (0760000 - 0777777) in order to generate
    // the proper KS10 backplane bus cycles.
    //
+   // Note:
+   //  The addressing here has mixed endian-ness.  The UBA address formed here
+   //  is little endian.  The KS10 address is big-endian.
+   //
 
-   always @*
+   always_comb
      begin
         if (kmcNPRO)
           begin
              if ((kmcBAEO[17:16] == 2'b11) & (kmcNPROA[15:13] == 3'b111))
-               devADDRO = {kmcWRIOFLAGS[35:18],  kmcBAEO[17:16], kmcNPROA[15:0]};
+               devADDRO = {kmcWRIOFLAGS[35:22],  kmcDEV,  kmcBAEO[17:16], kmcNPROA[15:0]};
              else
-               devADDRO = {kmcWRMEMFLAGS[35:18], kmcBAEO[17:16], kmcNPROA[15:0]};
+               devADDRO = {kmcWRMEMFLAGS[35:22], 4'b0000, kmcBAEO[17:16], kmcNPROA[15:0]};
           end
         else
           begin
-             if ((kmcBAEO[17:16] == 2'b11) & (kmcNPRIA[15:13] == 3'b111))
-               devADDRO = {kmcRDIOFLAGS[35:18],  kmcBAEO[17:16], kmcNPRIA[15:0]};
+             if ((kmcBAEI[17:16] == 2'b11) & (kmcNPRIA[15:13] == 3'b111))
+               devADDRO = {kmcRDIOFLAGS[35:22],  kmcDEV,  kmcBAEI[17:16], kmcNPRIA[15:0]};
              else
-               devADDRO = {kmcRDMEMFLAGS[35:18], kmcBAEI[17:16], kmcNPRIA[15:0]};
+               devADDRO = {kmcRDMEMFLAGS[35:22], 4'b0000, kmcBAEI[17:16], kmcNPRIA[15:0]};
           end
      end
 
@@ -527,11 +543,15 @@ module KMC11 (
    // Generate Bus ACK
    //
 
-   assign devACKO = (sel0READ | sel0WRITE |
-                     sel2READ | sel2WRITE |
-                     sel4READ | sel4WRITE |
-                     sel6READ | sel6WRITE |
-                     vectREAD);
+   assign devACKO = (!(devREQO & !kmcNPRO) & sel0WRITE |
+                     !(devREQO & !kmcNPRO) & sel2WRITE |
+                     !(devREQO & !kmcNPRO) & sel4WRITE |
+                     !(devREQO & !kmcNPRO) & sel6WRITE |
+                     !(devREQO &  kmcNPRO) & sel0READ  |
+                     !(devREQO &  kmcNPRO) & sel2READ  |
+                     !(devREQO &  kmcNPRO) & sel4READ  |
+                     !(devREQO &  kmcNPRO) & sel6READ  |
+                     !(devREQO &  kmcNPRO) & vectREAD);
 
    //
    // Bus Mux and little-endian to big-endian bus swap
@@ -544,31 +564,44 @@ module KMC11 (
    //  M8206/D11/E84
    //
 
-   always @*
+   always_comb
      begin
         devDATAO = 0;
-        if (devREQO & devACKI)
-          devDATAO = {2'b0, kmcNPROD, 2'b0, kmcNPROD};
-        if (sel0READ)
-          devDATAO = {20'b0, kmcMAINT[15:8], kmcCSR0[7:0]};
-        if (sel2READ)
-          devDATAO = {20'b0, kmcCSR2};
-        if (sel4READ)
-          if (kmcCRAMOUT)
-            devDATAO = {26'b0, kmcMNTADDR};
-          else
-            devDATAO = {20'b0, kmcCSR4};
-        if (sel6READ)
+        if (devREQO)
           if (kmcCRAMOUT)
             devDATAO = {20'b0, kmcMNTINST};
           else
-            devDATAO = {20'b0, kmcCSR6};
-        if (vectREAD)
-          if (kmcVECTXXX4)
-            devDATAO = {20'b0, kmcVECT4[20:35]};
-          else
-            devDATAO = {20'b0, kmcVECT0[20:35]};
+            devDATAO = {2'b0, kmcNPROD, 2'b0, kmcNPROD};
+        else
+          begin
+             if (sel0READ)
+               devDATAO = {20'b0, kmcMAINT[15:8], kmcCSR0[7:0]};
+             if (sel2READ)
+               devDATAO = {20'b0, kmcCSR2};
+             if (sel4READ)
+               if (kmcCRAMOUT)
+                 devDATAO = {26'b0, kmcMNTADDR};
+               else
+                 devDATAO = {20'b0, kmcCSR4};
+             if (sel6READ)
+               if (kmcCRAMOUT)
+                 devDATAO = {20'b0, kmcMNTINST};
+               else
+                 devDATAO = {20'b0, kmcCSR6};
+             if (vectREAD)
+               if (kmcVECTXXX4)
+                 devDATAO = {20'b0, kmcVECT4[20:35]};
+               else
+                 devDATAO = {20'b0, kmcVECT0[20:35]};
+          end
      end
+
+   //
+   // External Interfaces
+   //
+
+   assign kmcLUSTEP = `kmcMAINT_LUSTEP(kmcMAINT);
+   assign kmcLULOOP = `kmcMAINT_LULOOP(kmcMAINT);
 
    //
    // Negate ACLO
@@ -585,6 +618,8 @@ module KMC11 (
 //
 
 `ifndef SYNTHESIS
+
+   integer file;
 
    //
    // String sizes in bytes
