@@ -86,17 +86,17 @@ module LP20 (
       output wire [ 0:35] devADDRO,                     // Device Address Out
       output reg  [ 0:35] devDATAO,                     // Device Data Out
       // LP26 Interfaces
-      input  wire         lpOVFU,                       // Optical vertical format unit
-      output wire         lpINIT,                       // LP26 initialize
-      input  wire         lpONLINE,                     // LP26 online status
-      input  wire         lpPARERR,                     // LP26 printer parity error
-      input  wire         lpDEMAND,                     // LP26 printer is ready for next character
+      input  wire         lpOVFU,                       // LP26 Optical vertical format unit
+      output wire         lpINIT,                       // LP26 Initialize
+      input  wire         lpONLINE,                     // LP26 Online status
+      input  wire         lpPARERR,                     // LP26 Printer parity error
+      input  wire         lpDEMAND,                     // LP26 Printer is ready for next character
       input  wire         lpVFURDY,                     // LP26 DAVFU is ready
-      output wire         lpPI,                         // LP26 printer paper instruction
-      input  wire         lpTOF,                        // LP26 printer is at top of form
-      output wire [ 8: 1] lpDATA,                       // LP26 printer data
-      output wire         lpDPAR,                       // LP26 printer data parity
-      output wire         lpSTROBE                      // LP26 printer data strobe
+      output wire         lpPI,                         // LP26 Printer paper instruction
+      input  wire         lpTOF,                        // LP26 Printer is at top of form
+      output wire [ 8: 1] lpDATA,                       // LP26 Printer data
+      output wire         lpDPAR,                       // LP26 Printer data parity
+      output wire         lpSTROBE                      // LP26 Printer data strobe
    );
 
 `ifndef SYNTHESIS
