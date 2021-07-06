@@ -6,7 +6,7 @@
 //   UBA Interrupt Request Logic
 //
 // File
-//   ubaintr.v
+//   ubaintr.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -68,9 +68,9 @@ module UBAINTR (
    //  UBA3/E180
    //
 
-   reg [1:7] devINTRH;
+   logic [1:7] devINTRH;
 
-    always @*
+    always_comb
      begin
         if (statINTHI)
           case (statPIH)
@@ -94,9 +94,9 @@ module UBAINTR (
    //  UBA3/E182
    //
 
-   reg [1:7] devINTRL;
+   logic [1:7] devINTRL;
 
-   always @*
+   always_comb
      begin
         if (statINTLO)
           case (statPIL)

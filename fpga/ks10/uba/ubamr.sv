@@ -27,7 +27,7 @@
 //      SIMH does not implement the UBAMR.
 //
 // File
-//   ubamr.v
+//   ubamr.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -63,18 +63,18 @@
 `include "../cpu/bus.vh"
 
 module UBAMR (
-      input  wire         clk,                  // Clock
-      input  wire         rst,                  // Reset
-      input  wire [ 0:35] busDATAI,             // Backplane bus data in
-      input  wire         maintWRITE,           // Write to register
-      output reg          regUBAMR              // Maintenance Register
+      input  wire          clk,                 // Clock
+      input  wire          rst,                 // Reset
+      input  wire  [ 0:35] busDATAI,            // Backplane bus data in
+      input  wire          maintWRITE,          // Write to register
+      output logic         regUBAMR             // Maintenance Register
    );
 
    //
    // Maintenance Register
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           regUBAMR <= 0;

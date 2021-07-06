@@ -353,9 +353,7 @@ RTL_FILES := \
 	ks10/uba/uba.sv \
 	ks10/uba/ubamr.sv \
 	ks10/uba/ubasr.sv \
-	ks10/uba/ubanxd.sv \
 	ks10/uba/ubapage.sv \
-	ks10/uba/ubatmo.sv \
 	ks10/uba/ubaintr.sv \
 	ks10/utils/crc16.v \
 	ks10/utils/fifo.v \

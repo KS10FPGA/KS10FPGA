@@ -28,7 +28,7 @@
 //      NXD : Non-existant Device - Set by NXD. Cleared by writing a 1.
 //      HI  : Hi level intr pend  - IRQ on BR7 or BR6. Writes are ignored.
 //      LO  : Lo level intr pend  - IRQ on BR5 or BR4. Writes are ignored.
-//      PWR : Power Fail          - Always read as 0. Writes are ignored.
+//      PWR : Power Fail          - As reported by IO devices. Writes are ignored.
 //      DXF : Diable Transfer     - Read/Write. Does nothing.
 //      INI : Initialize          - Read/Write. Writing 1 resets all IO
 //                                  Bridge Devices. The bit is cleared after
@@ -38,7 +38,7 @@
 //      PIL : Lo level PIA        - Read/Write. Lo level interrupt priority
 //
 // File
-//   ubasr.v
+//   ubasr.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -74,24 +74,25 @@
 `include "../cpu/bus.vh"
 
 module UBASR (
-      input  wire         clk,                  // Clock
-      input  wire         rst,                  // Reset
-      input  wire [ 0:35] busDATAI,             // Backplane Bus Data In
-      input  wire         statWRITE,            // Write to status register
-      input  wire         statINTHI,            // Interrupt status low
-      input  wire         statINTLO,            // Interrupt status high
-      input  wire         setNXD,               // Set NXD bit
-      input  wire         setTMO,               // Set TMO bit
-      output wire [ 0:35] regUBASR              // Status Register
+      input  wire          clk,                 // Clock
+      input  wire          rst,                 // Reset
+      input  wire  [ 0:35] busDATAI,            // Backplane Bus Data In
+      input  wire          devACLO[1:4],        // Power fail indication from device
+      input  wire          statWRITE,           // Write to status register
+      input  wire          statINTHI,           // Interrupt status low
+      input  wire          statINTLO,           // Interrupt status high
+      input  wire          setNXD,              // Set NXD bit
+      input  wire          setTMO,              // Set TMO bit
+      output logic [ 0:35] regUBASR             // Status Register
    );
 
    //
    // UBA Adapter Timeout - UBASR[TMO]
    //
 
-   reg statTMO;
+   logic statTMO;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           statTMO <= 0;
@@ -107,9 +108,9 @@ module UBASR (
    // UBA Non Existent Device - UBASR[NXD]
    //
 
-   reg statNXD;
+   logic statNXD;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           statNXD <= 0;
@@ -125,9 +126,9 @@ module UBASR (
    // UBA Disable Transfer - UBASR[DXF]
    //
 
-   reg statDXF;
+   logic statDXF;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           statDXF <= 0;
@@ -140,31 +141,26 @@ module UBASR (
    //
    // UBA Initialize - UBASR[INI]
    //
-   //  This is a 1 uS one-shot
+   //  This is a 1 uS one-shot on the KS10 - which is not necessary here.
    //
 
-   reg [0:4] counter;
-   localparam [0:4] timeout = 0.000001 * `CLKFRQ;
+   logic statINI;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
-          counter <= 0;
-        else if (statWRITE & `statINI(busDATAI))
-          counter <= timeout;
-        else if (counter != 0)
-          counter <= counter - 1'b1;
+          statINI <= 0;
+        else
+          statINI <= statWRITE & `statINI(busDATAI);
      end
-
-   wire statINI = (counter != 0);
 
    //
    // UBA High Priority Interrupt Assignment - UBASR[PIH]
    //
 
-   reg [0:2] statPIH;
+   logic [0:2] statPIH;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           statPIH <= 0;
@@ -178,9 +174,9 @@ module UBASR (
    // UBA Low Priority Interrupt Assignment - UBASR[PIL]
    //
 
-   reg [0:2] statPIL;
+   logic [0:2] statPIL;
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           statPIL <= 0;
@@ -194,7 +190,10 @@ module UBASR (
    // Build Status Register
    //
 
+   wire statPWR = devACLO[1] | devACLO[2] | devACLO[3] |devACLO[4];
+
    assign regUBASR = {18'b0, statTMO, 2'b0, statNXD, 2'b0, statINTHI,
-                      statINTLO, 2'b0, statDXF, statINI, statPIH, statPIL};
+                      statINTLO, statPWR, 1'b0, statDXF, statINI, statPIH,
+                      statPIL};
 
 endmodule

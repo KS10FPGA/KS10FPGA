@@ -87,7 +87,7 @@
 //      PPN : Physical Page Number.
 //
 // File
-//      ubapage.v
+//      ubapage.sv
 //
 // Author
 //      Rob Doyle - doyle (at) cox (dot) net
@@ -120,20 +120,21 @@
 `timescale 1ns/1ps
 
 `include "uba.vh"
+`include "ubabus.vh"
 `include "ubapage.vh"
 
 module UBAPAGE (
-      input  wire         clk,                  // Clock
-      input  wire         rst,                  // Reset
-      input  wire         devREQI,              // IO Device Request In
-      input  wire [ 0:35] busADDRI,             // KS10 Bus Address In
-      input  wire [ 0:35] busDATAI,             // KS10 Bus Data In
-      output wire [ 0:35] busADDRO,             // KS10 Bus Address Out (paged)
-      input  wire         pageWRITE,            // Page RAM write
-      output wire [ 0:35] pageDATAO,            // Paging RAM Data Out
-      input  wire [ 0:35] pageADDRI,            // IO Device Address In
-      output wire [ 0: 3] pageFLAGS,            // Page flags
-      output wire         pageFAIL              // Page fail
+      input  wire          clk,                 // Clock
+      input  wire          rst,                 // Reset
+      input  wire          devREQI,             // IO Device Request In
+      input  wire  [ 0:35] busADDRI,            // KS10 Bus Address In
+      input  wire  [ 0:35] busDATAI,            // KS10 Bus Data In
+      output logic [ 0:35] busADDRO,            // KS10 Bus Address Out (paged)
+      input  wire          pageWRITE,           // Page RAM write
+      output logic [ 0:35] pageDATAO,           // Paging RAM Data Out
+      input  wire  [ 0:35] pageADDRI,           // IO Device Address In
+      output logic [ 0: 3] pageFLAGS,           // Page flags
+      output logic         pageFAIL             // Page fail
    );
 
    //
@@ -159,9 +160,9 @@ module UBAPAGE (
    integer i;
 `endif
 
-   reg [0:14] pageRAM[0:RAMSIZ-1];
+   logic [0:14] pageRAM[0:RAMSIZ-1];
 
-   always @(negedge clk)
+   always_ff @(negedge clk)
      begin
         if (rst)
 `ifdef SYNTHESIS
@@ -201,9 +202,9 @@ module UBAPAGE (
    //   - Page not valid
    //
 
-   assign pageFAIL = ((devREQI & !`busIO(pageADDRI) &                         pageADDRI[18]) |
-                      (devREQI & !`busIO(pageADDRI) &  `flagsFTM(pageFLAGS) & pageADDRI[34]) |
-                      (devREQI & !`busIO(pageADDRI) &  `flagsFTM(pageFLAGS) & pageADDRI[35]) |
-                      (devREQI & !`busIO(pageADDRI) & !`flagsVLD(pageFLAGS)));
+   assign pageFAIL = ((devREQI & !`devIO(pageADDRI) &                         pageADDRI[18]) |
+                      (devREQI & !`devIO(pageADDRI) &  `flagsFTM(pageFLAGS) & pageADDRI[34]) |
+                      (devREQI & !`devIO(pageADDRI) &  `flagsFTM(pageFLAGS) & pageADDRI[35]) |
+                      (devREQI & !`devIO(pageADDRI) & !`flagsVLD(pageFLAGS)));
 
 endmodule
