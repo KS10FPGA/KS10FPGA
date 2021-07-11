@@ -129,7 +129,7 @@ module UBA (
    // Device request on any device input
    //
 
-   wire         devREQ = devREQI[1] | devREQI[2] | devREQI[3] | devREQI[4];
+   wire          devREQ   = devREQI[1] | devREQI[2] | devREQI[3] | devREQI[4];
 
    //
    // Paging flags
@@ -139,7 +139,7 @@ module UBA (
    wire          flagsRPW = `flagsRPW(pageFLAGS);       // Page read/pause/write
    wire          flagsE16 = `flagsE16(pageFLAGS);       // Page E16
    wire          flagsFTM = `flagsFTM(pageFLAGS);       // Page fast transfer mode
-   wire          flagsVLD = `flagsFTM(pageFLAGS);       // Page valid
+   wire          flagsVLD = `flagsVLD(pageFLAGS);       // Page valid
 
    //
    // Address Decoding
@@ -163,8 +163,6 @@ module UBA (
    //  The status register is read/write.
    //
 
-   logic         statINTHI;
-   logic         statINTLO;
    logic [ 0:35] regUBASR;
    wire          statINI = `statINI(regUBASR);
    wire  [ 0: 2] statPIH = `statPIH(regUBASR);
@@ -175,9 +173,8 @@ module UBA (
       .clk        (clk),
       .busDATAI   (busDATAI),
       .devACLO    (devACLO),
+      .devINTR    (devINTR),
       .statWRITE  (statWRITE),
-      .statINTHI  (statINTHI),
-      .statINTLO  (statINTLO),
       .setNXD     (setNXD),
       .setTMO     (setTMO | pageFAIL),
       .regUBASR   (regUBASR)
@@ -233,19 +230,14 @@ module UBA (
    // Interrupts
    //
 
-   wire [1:4] devINTRR = devINTR[1] | devINTR[2] | devINTR[3] | devINTR[4];
-
    UBAINTR INTR (
       .rst        (rst),
       .clk        (clk),
       .busPI      (busPI),
       .busINTR    (busINTR),
       .wruREAD    (wruREAD),
-      .statPIH    (statPIH),
-      .statPIL    (statPIL),
-      .statINTHI  (statINTHI),
-      .statINTLO  (statINTLO),
-      .devINTR    (devINTRR)
+      .regUBASR   (regUBASR),
+      .devINTR    (devINTR)
    );
 
    //

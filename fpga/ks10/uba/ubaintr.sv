@@ -47,19 +47,20 @@ module UBAINTR (
       input  wire [15:17] busPI,                // IO Bridge PI Request
       output wire [ 1: 7] busINTR,              // Interrupt to CPU
       input  wire         wruREAD,              // Who are you?
-      input  wire [ 0: 2] statPIH,              // Interrupt priority high
-      input  wire [ 0: 2] statPIL,              // Interrupt priority low
-      output wire         statINTHI,            // Interrupt status low
-      output wire         statINTLO,            // Interrupt status high
-      input  wire [ 7: 4] devINTR               // IO Device Interrupt Request
+      input  wire [ 0:35] regUBASR,             // Status Register
+      input  wire [ 7: 4] devINTR[1:4]          // Interrupt request
    );
 
    //
-   // IO Bridge Interrupt Request
+   // High and Low Interrupt Request
    //
 
-   assign statINTHI = devINTR[7] | devINTR[6];
-   assign statINTLO = devINTR[5] | devINTR[4];
+   wire [ 0: 2] statPIH   = `statPIH(regUBASR);
+   wire [ 0: 2] statPIL   = `statPIL(regUBASR);
+   wire         statINTHI = (devINTR[1][7] | devINTR[2][7] | devINTR[3][7] | devINTR[4][7] |
+                             devINTR[1][6] | devINTR[2][6] | devINTR[3][6] | devINTR[4][6]);
+   wire         statINTLO = (devINTR[1][5] | devINTR[2][5] | devINTR[3][5] | devINTR[4][5] |
+                             devINTR[1][4] | devINTR[2][4] | devINTR[3][4] | devINTR[4][4]);
 
    //
    // High Priority Interrupt
