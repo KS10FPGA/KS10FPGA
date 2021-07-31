@@ -41,7 +41,8 @@ and Mouser.
   <li>LP20 Printer Interface</li>
   <li>LP26 Printer with Direct Access Vertical Format Unit</li>
   <li>DUP11 Synchronous Serial Interface</li>
-  <li>KMC11 General Purpose Processor (in work)</li>
+  <li>KMC11 General Purpose Processor</li>
+  <li>Unibus Excerciser (to test the Unibus Adapter)</li>
 </ul>
 
 Detailed design information can be found on the wiki pages at:
