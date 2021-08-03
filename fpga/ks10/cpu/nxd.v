@@ -68,45 +68,52 @@ module NXD (
    // Microcode decode
    //
 
-   wire busIO   = `busIO(cpuADDRO);
-   wire busWRU  = `busWRU(cpuADDRO);
-   wire busVECT = `busVECT(cpuADDRO);
-   wire ioCLEAR = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRIOLAT);
+   wire busREAD  = `busREAD(cpuADDRO);          // Read Cycle (IO or Memory)
+   wire busWRITE = `busWRITE(cpuADDRO);         // Write Cycle (IO or Memory)
+   wire busPHYS  = `busPHYS(cpuADDRO);          // Physical Address
+   wire busIO    = `busIO(cpuADDRO);            // IO Cycle
+   wire busWRU   = `busWRU(cpuADDRO);           // WRU Cycle
+   wire busVECT  = `busVECT(cpuADDRO);          // Vector Cycle
+
+   //
+   // Microcode Decode
+   //
+
+   wire ioCLEAR  = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_CLRIOLAT);
+
+   //
+   // Decoding
+   //
+
+// wire nxdWRU  = busREAD & busIO & busPHYS & busWRU;
+// wire nxdVECT = busREAD & busIO & busPHYS & busVECT;
+// wire nxdRWIO = ((busREAD  & busIO & busPHYS & !busWRU & !busVECT) |
+//                 (busWRITE & busIO & busPHYS & !busWRU & !busVECT));
 
    //
    // State definition
    //
 
-   localparam [0:3] stateIDLE   =  0,
-                    stateCNT0   =  1,
-                    stateCNT1   =  2,
-                    stateCNT2   =  3,
-                    stateCNT3   =  4,
-                    stateCNT4   =  5,
-                    stateCNT5   =  6,
-                    stateCNT6   =  7,
-                    stateCNT7   =  8,
-                    stateCNT8   =  9,
-                    stateCNT9   = 10,
-                    stateACKIO1 = 11,
-                    stateACKIO2 = 12,
-                    stateACKWRU = 13,
-                    stateACKVEC = 14,
-                    stateNOACK  = 15;
+   localparam [0:3] stateIDLE   = 0,
+                    stateCNT    = 1,
+                    stateACKIO  = 2,
+                    stateACKWRU = 3,
+                    stateACKVEC = 4,
+                    stateNOACK  = 5;
 
    //
-   // Microcode address 3666 is executed at the end if
+   // Microcode address 3726 is executed at the end if
    // the WRU cycle.
    //
 
-   reg addr3666;
+   reg wruDONE;
 
    always @(posedge clk)
      begin
         if (rst)
-          addr3666  <= 0;
+          wruDONE  <= 0;
         else
-          addr3666 <= (crom[0:11] == 12'o3726);
+          wruDONE <= (crom[0:11] == 12'o3726);
      end
 
    //
@@ -122,6 +129,7 @@ module NXD (
    reg wru;
    reg vect;
    reg busy;
+   reg [0:3] nxmcnt;
    reg [0:3] state;
 
    always @(posedge clk)
@@ -134,19 +142,27 @@ module NXD (
              state <= stateIDLE;
           end
         else
-
           case (state)
+
+            //
+            // Wait for something to do
+            //
 
             stateIDLE:
               if (busIO & cpuREQO & !cpuACKI)
                 begin
-                   wru   <= busWRU;
-                   vect  <= busVECT;
-                   busy  <= 1;
-                   state <= stateCNT0;
+                   wru    <= busWRU;
+                   vect   <= busVECT;
+                   busy   <= 1;
+                   nxmcnt <= 10;
+                   state  <= stateCNT;
                 end
 
-            stateCNT0:
+            //
+            // Wait for ACK.  Timeout if the ACK never occurs.
+            //
+
+            stateCNT:
               if (cpuACKI)
                 begin
                    if (wru)
@@ -154,144 +170,38 @@ module NXD (
                    else if (vect)
                      state <= stateACKVEC;
                    else
-                     state <= stateACKIO1;
+                     state <= stateACKIO;
                 end
-              else
-                state <= stateCNT1;
-
-            stateCNT1:
-              if (cpuACKI)
-                begin
-                   if (wru)
-                     state <= stateACKWRU;
-                   else if (vect)
-                     state <= stateACKVEC;
-                   else
-                     state <= stateACKIO1;
-                end
-              else
-                state <= stateCNT2;
-
-            stateCNT2:
-              if (cpuACKI)
-                begin
-                   if (wru)
-                     state <= stateACKWRU;
-                   else if (vect)
-                     state <= stateACKVEC;
-                   else
-                     state <= stateACKIO1;
-                end
-              else
-                state <= stateCNT3;
-
-            stateCNT3:
-              if (cpuACKI)
-                begin
-                   if (wru)
-                     state <= stateACKWRU;
-                   else if (vect)
-                     state <= stateACKVEC;
-                   else
-                     state <= stateACKIO1;
-                end
-              else
-                state <= stateCNT4;
-
-            stateCNT4:
-              if (cpuACKI)
-                begin
-                   if (wru)
-                     state <= stateACKWRU;
-                   else if (vect)
-                     state <= stateACKVEC;
-                   else
-                     state <= stateACKIO1;
-                end
-              else
-                state <= stateCNT5;
-
-            stateCNT5:
-              if (cpuACKI)
-                begin
-                   if (wru)
-                     state <= stateACKWRU;
-                   else if (vect)
-                     state <= stateACKVEC;
-                   else
-                     state <= stateACKIO1;
-                end
-              else
-                state <= stateCNT6;
-
-            stateCNT6:
-              if (cpuACKI)
-                begin
-                   if (wru)
-                     state <= stateACKWRU;
-                   else if (vect)
-                     state <= stateACKVEC;
-                   else
-                     state <= stateACKIO1;
-                end
-              else
-                state <= stateCNT7;
-
-            stateCNT7:
-              if (cpuACKI)
-                begin
-                   if (wru)
-                     state <= stateACKWRU;
-                   else if (vect)
-                     state <= stateACKVEC;
-                   else
-                     state <= stateACKIO1;
-                end
-              else
-                state <= stateCNT8;
-
-            stateCNT8:
-              if (cpuACKI)
-                begin
-                   if (wru)
-                     state <= stateACKWRU;
-                   else if (vect)
-                     state <= stateACKVEC;
-                   else
-                     state <= stateACKIO1;
-                end
-              else
-                state <= stateCNT9;
-
-            stateCNT9:
-              if (cpuACKI)
-                begin
-                   if (wru)
-                     state <= stateACKWRU;
-                   else if (vect)
-                     state <= stateACKVEC;
-                   else
-                     state <= stateACKIO1;
-                end
+              else if (nxmcnt != 0)
+                nxmcnt <= nxmcnt - 1'b1;
               else
                 state <= stateNOACK;
 
-            stateACKIO1:
-              state <= stateACKIO2;
+            //
+            // Finish IO cycle
+            //
 
-            stateACKIO2:
+            stateACKIO:
               if (ioCLEAR)
                 begin
                    busy  <= 0;
                    state <= stateIDLE;
                 end
 
+            //
+            // Finish WRU cycle
+            //
+
             stateACKWRU:
-              if (addr3666)
+              if (wruDONE)
                 begin
                    busy  <= 0;
                    state <= stateIDLE;
                 end
+
+            //
+            // Finish Vector Cycle
+            //
 
             stateACKVEC:
               if (!busVECT)
@@ -299,6 +209,10 @@ module NXD (
                    busy  <= 0;
                    state <= stateIDLE;
                 end
+
+            //
+            // Un-acked IO Cycle
+            //
 
             stateNOACK:
               if (wru)
@@ -317,19 +231,9 @@ module NXD (
    // Outputs
    //
 
-   assign ioBUSY = ((busIO & cpuREQO & !cpuACKI & (state == stateIDLE)) |
-                    busy);
+   assign ioBUSY = ((busIO & cpuREQO & !cpuACKI & (state == stateIDLE)) | busy);
 
    assign ioWAIT = ((busIO & cpuREQO & !cpuACKI & (state == stateIDLE)) |
-                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT0)) |
-                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT1)) |
-                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT2)) |
-                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT3)) |
-                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT4)) |
-                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT5)) |
-                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT6)) |
-                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT7)) |
-                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT8)) |
-                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT9)));
+                    (busIO & cpuREQO & !cpuACKI & (state == stateCNT)));
 
 endmodule
