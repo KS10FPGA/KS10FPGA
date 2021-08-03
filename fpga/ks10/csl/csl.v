@@ -216,11 +216,11 @@ module CSL (
       input  wire         axiBREADY,    // Write response ready
       // Bus Interface
       input  wire         busREQI,      // Bus Request In
-      output wire         busREQO,      // Bus Request Out
+      output reg          busREQO,      // Bus Request Out
       input  wire         busACKI,      // Bus Acknowledge In
       output wire         busACKO,      // Bus Acknowledge Out
       input  wire [ 0:35] busADDRI,     // Bus Address In
-      output wire [ 0:35] busADDRO,     // Bus Address Out
+      output reg  [ 0:35] busADDRO,     // Bus Address Out
       input  wire [ 0:35] busDATAI,     // Bus Data In
       output wire [ 0:35] busDATAO,     // Bus Data Out
       // CPU Interfaces
@@ -326,15 +326,13 @@ module CSL (
    // State Machine
    //
 
+   reg [0:9] cslNXDTIM;
    reg [0:2] state;
-   localparam [0:2] stateIDLE        = 0,
-                    stateREADWAITGO  = 1,
-                    stateREADWAITIO  = 2,
-                    stateREAD        = 3,
-                    stateWRITEWAITGO = 4,
-                    stateWRITEWAITIO = 5,
-                    stateWRITE       = 6,
-                    stateFAIL        = 7;
+   localparam [0:2] stateIDLE         = 0,
+                    stateREADWAITGO   = 1,
+                    stateREADWAITACK  = 2,
+                    stateWRITEWAITGO  = 3,
+                    stateWRITEWAITACK = 4;
 
    //
    // axiAWREADY
@@ -518,19 +516,13 @@ module CSL (
                 endcase
           end
 
-        else if (state == stateREAD)
+        else if ((state == stateREADWAITACK) & busACKI)
            regCONDR <= busDATAI;
 
-        else if (state == stateFAIL)
+        else if (cslNXDTIM == 1)
           regCONCSR[22] <= 1;           // NXMNXD
 
      end
-
-   //
-   // 'GO' bit
-   //
-
-   wire regGO = (state != stateIDLE);
 
    //
    // axiARREADY
@@ -560,7 +552,8 @@ module CSL (
    // asserted onto the axiRDATA
    //
 
-   wire [0:31] regSTAT   = {15'b0, regGO, 6'b0, regCONCSR[22], cpuHALT, cpuRUN, cpuCONT, cpuEXEC, cslTIMEREN, cslTRAPEN, cslCACHEEN, 1'b0, cslRESET};
+   wire cslGOSTAT = busREQO;
+   wire [0:31] regSTAT   = {15'b0, cslGOSTAT, 6'b0, regCONCSR[22], cpuHALT, cpuRUN, cpuCONT, cpuEXEC, cslTIMEREN, cslTRAPEN, cslCACHEEN, 1'b0, cslRESET};
    wire [0:31] regLPRD   = {6'b0, lpCONFIG, 13'b0, lpSIXLPI, lpOVFU, lpONLINE};
    wire [0:31] regDUPRD  = {dupTXE, 3'b0, dupRI, dupCTS, dupDSR, dupDCD, dupTXFIFO, dupRXF, dupDTR, dupRTS, 1'b0, dupH325, dupW3, dupW5, dupW6, 8'b0};
    wire [0:31] regDEBCSR = {9'b0, debBRCMD, 1'b0, debBRSTATE, 8'b0, debTRCMD, debTRSTATE, debTRFULL, debTREMPTY};
@@ -749,57 +742,71 @@ module CSL (
    //  read/write and IO/memory.
    //
 
-   reg [0:9] timer;
    localparam [0:9] timeout = 511;
+
+   reg [0:35] regCONDRO;
+
+   wire cslREAD  = `busREAD(regCONAR);
+   wire cslWRITE = `busWRITE(regCONAR);
 
    always @(posedge clk)
      begin
         if (rst)
           begin
-             timer <= 0;
-             state <= stateIDLE;
+             cslNXDTIM <= timeout;
+             busREQO   <= 0;
+             busADDRO  <= 0;
+             state     <= stateIDLE;
           end
         else
           case (state)
             stateIDLE:
-              if (cslGO & regCONAR[3])
+              if (cslGO & cslREAD)
                 state <= stateREADWAITGO;
-              else if (cslGO & regCONAR[5])
+              else if (cslGO & cslWRITE)
                 state <= stateWRITEWAITGO;
             stateREADWAITGO:
               if (!cslGO)
                 begin
-                   timer <= 0;
-                   state <= stateREADWAITIO;
+                   cslNXDTIM <= timeout;
+                   busREQO   <= 1;
+                   busADDRO  <= regCONAR;
+                   state     <= stateREADWAITACK;
                 end
-            stateREADWAITIO:
-              if (!busIO)
-                state <= stateREAD;
-            stateREAD:
-              if (timer == timeout)
-                state <= stateFAIL;
-              else if (busACKI)
-                state <= stateIDLE;
+            stateREADWAITACK:
+              if (busACKI)
+                begin
+                   busREQO   <= 0;
+                   state     <= stateIDLE;
+                end
+              else if (cslNXDTIM != 0)
+                cslNXDTIM <= cslNXDTIM - 1'b1;
               else
-                timer <= timer + 1'b1;
+                begin
+                   busREQO   <= 0;
+                   state     <= stateIDLE;
+                end
             stateWRITEWAITGO:
               if (!cslGO)
                 begin
-                   timer <= 0;
-                   state <= stateWRITEWAITIO;
+                   cslNXDTIM <= timeout;
+                   busREQO   <= 1;
+                   busADDRO  <= regCONAR;
+                   state     <= stateWRITEWAITACK;
                 end
-            stateWRITEWAITIO:
-              if (!busIO)
-                state <= stateWRITE;
-            stateWRITE:
-              if (timer == timeout)
-                state <= stateFAIL;
-              else if (busACKI)
-                state <= stateIDLE;
+            stateWRITEWAITACK:
+              if (busACKI)
+                begin
+                   busREQO   <= 0;
+                   state     <= stateIDLE;
+                end
+              else if (cslNXDTIM != 0)
+                cslNXDTIM <= cslNXDTIM - 1'b1;
               else
-                timer <= timer + 1'b1;
-            stateFAIL:
-              state <= stateIDLE;
+                begin
+                   busREQO   <= 0;
+                   state     <= stateIDLE;
+                end
           endcase
      end
 
@@ -810,23 +817,10 @@ module CSL (
    assign busDATAO = cirREAD ? regCONIR : regCONDR;
 
    //
-   // Bus REQ
-   //
-
-   assign busREQO = ((state == stateREAD ) ||
-                     (state == stateWRITE));
-
-   //
    // Bus ACK
    //
 
    assign busACKO = cirREAD;
-
-   //
-   // Bus Address Out is always set by Address Register
-   //
-
-   assign busADDRO = regCONAR;
 
    //
    // This AXI slave always responds with "OK".
@@ -843,7 +837,7 @@ module CSL (
 
    always @(posedge clk)
      begin
-        if (state == stateFAIL)
+        if (cslNXDTIM == 1)
           begin
              $display("[%11.3f] CSL: Unacknowledged bus cycle.  Addr was %012o",
                       $time/1.0e3, busADDRO);
