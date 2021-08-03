@@ -72,4 +72,11 @@
 `define devHIBYTE(dev)   (( dev[35] & `devIOBYTE(dev)) | !`devIOBYTE(dev))  // High byte select
 `define devLOBYTE(dev)   ((!dev[35] & `devIOBYTE(dev)) | !`devIOBYTE(dev))  // Low byte select
 
+//
+// Byte and word selects
+//
+
+`define devWORDSEL(dev)  (dev[34])
+`define devBYTESEL(dev)  (dev[35])
+
 `endif

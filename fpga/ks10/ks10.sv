@@ -44,6 +44,7 @@
 `timescale 1ns/1ps
 
 `include "uba/uba.vh"
+`include "ube/ube.vh"
 `include "dup11/dup11.vh"
 `include "dz11/dz11.vh"
 `include "kmc11/kmc11.vh"
@@ -696,6 +697,36 @@ module KS10 (
    );
 
    //
+   // Debug Interface
+   //
+
+   DEBUG uDEBUG (
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
+      .cpuADDR          (cpuADDRO),
+      .cpuPC            (cpuPC),
+      .cpuHR            (cpuHR),
+      .regsLOAD         (regsLOAD),
+      .vmaLOAD          (vmaLOAD),
+      .debBRCMD         (debBRCMD),
+      .debBRSTATE       (debBRSTATE),
+      .debTRCMD         (debTRCMD),
+      .debTRSTATE       (debTRSTATE),
+      .debTRFULL        (debTRFULL),
+      .debTREMPTY       (debTREMPTY),
+      .debBAR           (debBAR),
+      .debBMR           (debBMR),
+      .debITR           (debITR),
+      .debPCIR          (debPCIR),
+      .debBRCMD_WR      (debBRCMD_WR),
+      .debTRCMD_WR      (debTRCMD_WR),
+      .debITR_RD        (debITR_RD),
+      .debugHALT        (debugHALT)
+   );
+
+`ifdef UBA1
+
+   //
    // IO Bridge #1
    //
 
@@ -728,74 +759,7 @@ module KS10 (
       .devDATAO         (devDATAI[1])
    );
 
-   //
-   // IO Bridge #3
-   //
-
-   UBA #(
-      .ubaNUM           (`devUBA3),
-      .ubaADDR          (`ubaADDR)
-   )
-   UBA3 (
-      .rst              (cpuRST),
-      .clk              (cpuCLK),
-      .busREQI          (ubaREQI[3]),
-      .busREQO          (ubaREQO[3]),
-      .busACKI          (ubaACKI[3]),
-      .busACKO          (ubaACKO[3]),
-      .busADDRI         (ubaADDRI[3]),
-      .busADDRO         (ubaADDRO[3]),
-      .busDATAI         (ubaDATAI[3]),
-      .busDATAO         (ubaDATAO[3]),
-      .busINTR          (ubaINTR[3]),
-      .devRESET         (devRESET[3]),
-      .devACLO          (devACLO[3]),
-      .devREQI          (devREQO[3]),
-      .devREQO          (devREQI[3]),
-      .devACKI          (devACKO[3]),
-      .devACKO          (devACKI[3]),
-      .devINTR          (devINTR[3]),
-      .devADDRI         (devADDRO[3]),
-      .devADDRO         (devADDRI[3]),
-      .devDATAI         (devDATAO[3]),
-      .devDATAO         (devDATAI[3])
-   );
-
-   //
-   // IO Bridge #4
-   //
-
-`ifdef UBA4
-
-   UBA #(
-      .ubaNUM           (`devUBA4),
-      .ubaADDR          (`ubaADDR)
-   )
-   UBA4 (
-      .rst              (cpuRST),
-      .clk              (cpuCLK),
-      .busREQI          (ubaREQI[4]),
-      .busREQO          (ubaREQO[4]),
-      .busACKI          (ubaACKI[4]),
-      .busACKO          (ubaACKO[4]),
-      .busADDRI         (ubaADDRI[4]),
-      .busADDRO         (ubaADDRO[4]),
-      .busDATAI         (ubaDATAI[4]),
-      .busDATAO         (ubaDATAO[4]),
-      .busINTR          (ubaINTR[4]),
-      .devRESET         (devRESET[4]),
-      .devACLO          (devACLO[4]),
-      .devREQI          (devREQO[4]),
-      .devREQO          (devREQI[4]),
-      .devACKI          (devACKO[4]),
-      .devACKO          (devACKI[4]),
-      .devINTR          (devINTR[4]),
-      .devADDRI         (devADDRO[4]),
-      .devADDRO         (devADDRI[4]),
-      .devDATAI         (devDATAO[4]),
-      .devDATAO         (devDATAI[4])
-   );
-`endif
+`ifdef RH11
 
    //
    // RH11 #1 Connected to IO Bridge 1 Device 1
@@ -836,6 +800,133 @@ module KS10 (
       .devDATAO         (devDATAO[1][1])
    );
 
+`else
+
+   //
+   // IO Bridge #1, Device 1 is not implemented. Tie inputs
+   //
+
+   assign devINTR[1][1] = 0;
+   assign devACLO[1][1] = 0;
+   assign devREQO[1][1] = 0;
+   assign devACKO[1][1] = 0;
+   assign devADDRO[1][1] = 0;
+   assign devDATAO[1][1] = 0;
+
+`endif
+
+   //
+   // IO Bridge #1, Device 2 is not implemented. Tie inputs
+   //
+
+   assign devINTR[1][2] = 0;
+   assign devACLO[1][2] = 0;
+   assign devREQO[1][2] = 0;
+   assign devACKO[1][2] = 0;
+   assign devADDRO[1][2] = 0;
+   assign devDATAO[1][2] = 0;
+
+   //
+   // IO Bridge #1, Device 3 is not implemented. Tie inputs
+   //
+
+   assign devINTR[1][3] = 0;
+   assign devACLO[1][3] = 0;
+   assign devREQO[1][3] = 0;
+   assign devACKO[1][3] = 0;
+   assign devADDRO[1][3] = 0;
+   assign devDATAO[1][3] = 0;
+
+   //
+   // IO Bridge #1, Device 4 is not implemented. Tie inputs
+   //
+
+   assign devINTR[1][4] = 0;
+   assign devACLO[1][4] = 0;
+   assign devREQO[1][4] = 0;
+   assign devACKO[1][4] = 0;
+   assign devADDRO[1][4] = 0;
+   assign devDATAO[1][4] = 0;
+
+`else
+
+   //
+   // IO Bridge #1 is not implemented. Tie inputs.
+   //
+
+   assign ubaREQO[1]  = 0;
+   assign ubaACKO[1]  = 0;
+   assign ubaADDRO[1] = 0;
+   assign ubaDATAO[1] = 0;
+   assign ubaINTR[1]  = 0;
+
+`endif
+
+   //
+   // IO Brige #2
+   //
+
+`ifdef UBA2
+
+   //
+   // IO Bridge #2 is not implemented. Tie inputs.
+   //
+
+   assign ubaREQO[2]  = 0;
+   assign ubaACKO[2]  = 0;
+   assign ubaADDRO[2] = 0;
+   assign ubaDATAO[2] = 0;
+   assign ubaINTR[2]  = 0;
+
+`else
+
+   //
+   // IO Bridge #2 is not implemented. Tie inputs.
+   //
+
+   assign ubaREQO[2]  = 0;
+   assign ubaACKO[2]  = 0;
+   assign ubaADDRO[2] = 0;
+   assign ubaDATAO[2] = 0;
+   assign ubaINTR[2]  = 0;
+
+`endif
+
+`ifdef UBA3
+
+   //
+   // IO Bridge #3
+   //
+
+   UBA #(
+      .ubaNUM           (`devUBA3),
+      .ubaADDR          (`ubaADDR)
+   )
+   UBA3 (
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
+      .busREQI          (ubaREQI[3]),
+      .busREQO          (ubaREQO[3]),
+      .busACKI          (ubaACKI[3]),
+      .busACKO          (ubaACKO[3]),
+      .busADDRI         (ubaADDRI[3]),
+      .busADDRO         (ubaADDRO[3]),
+      .busDATAI         (ubaDATAI[3]),
+      .busDATAO         (ubaDATAO[3]),
+      .busINTR          (ubaINTR[3]),
+      .devRESET         (devRESET[3]),
+      .devACLO          (devACLO[3]),
+      .devREQI          (devREQO[3]),
+      .devREQO          (devREQI[3]),
+      .devACKI          (devACKO[3]),
+      .devACKO          (devACKI[3]),
+      .devINTR          (devINTR[3]),
+      .devADDRI         (devADDRO[3]),
+      .devADDRO         (devADDRI[3]),
+      .devDATAI         (devDATAO[3]),
+      .devDATAO         (devDATAI[3])
+   );
+
    //
    // DZ11 #1 Connected to IO Bridge 3 Device 1
    //
@@ -874,10 +965,11 @@ module KS10 (
 `else
 
    //
-   // IO Bridge #3, Device 2 is not connected. Tie inputs
+   // IO Bridge #3, Device 1 is not connected. Tie inputs
    //
 
    assign devINTR[3][1]  = 0;
+   assign devACLO[3][1]  = 0;
    assign devREQO[3][1]  = 0;
    assign devACKO[3][1]  = 0;
    assign devADDRO[3][1] = 0;
@@ -959,6 +1051,7 @@ module KS10 (
    //
 
    assign devINTR[3][2]  = 0;
+   assign devACLO[3][2]  = 0;
    assign devREQO[3][2]  = 0;
    assign devACKO[3][2]  = 0;
    assign devADDRO[3][2] = 0;
@@ -1018,6 +1111,7 @@ module KS10 (
    //
 
    assign devINTR[3][3]  = 0;
+   assign devACLO[3][3]  = 0;
    assign devREQO[3][3]  = 0;
    assign devACKO[3][3]  = 0;
    assign devADDRO[3][3] = 0;
@@ -1063,6 +1157,7 @@ module KS10 (
    //
 
    assign devINTR[3][4]  = 0;
+   assign devACLO[3][4]  = 0;
    assign devREQO[3][4]  = 0;
    assign devACKO[3][4]  = 0;
    assign devADDRO[3][4] = 0;
@@ -1070,49 +1165,224 @@ module KS10 (
 
 `endif
 
-   //
-   // Debug Interface
-   //
-
-   DEBUG uDEBUG (
-      .rst              (cpuRST),
-      .clk              (cpuCLK),
-      .cpuADDR          (cpuADDRO),
-      .cpuPC            (cpuPC),
-      .cpuHR            (cpuHR),
-      .regsLOAD         (regsLOAD),
-      .vmaLOAD          (vmaLOAD),
-      .debBRCMD         (debBRCMD),
-      .debBRSTATE       (debBRSTATE),
-      .debTRCMD         (debTRCMD),
-      .debTRSTATE       (debTRSTATE),
-      .debTRFULL        (debTRFULL),
-      .debTREMPTY       (debTREMPTY),
-      .debBAR           (debBAR),
-      .debBMR           (debBMR),
-      .debITR           (debITR),
-      .debPCIR          (debPCIR),
-      .debBRCMD_WR      (debBRCMD_WR),
-      .debTRCMD_WR      (debTRCMD_WR),
-      .debITR_RD        (debITR_RD),
-      .debugHALT        (debugHALT)
-   );
-
-`ifndef UBA2
+`else
 
    //
-   // IO Bridge #2 is not implemented. Tie inputs.
+   // IO Bridge #3 is not implemented. Tie inputs.
    //
 
-   assign ubaREQO[2]  = 0;
-   assign ubaACKO[2]  = 0;
-   assign ubaADDRO[2] = 0;
-   assign ubaDATAO[2] = 0;
-   assign ubaINTR[2]  = 0;
+   assign ubaREQO[3]  = 0;
+   assign ubaACKO[3]  = 0;
+   assign ubaADDRO[3] = 0;
+   assign ubaDATAO[3] = 0;
+   assign ubaINTR[3]  = 0;
 
 `endif
 
-`ifndef UBA4
+   //
+   // IO Bridge #4
+   //
+
+`ifdef UBA4
+
+   UBA #(
+      .ubaNUM           (`devUBA4),
+      .ubaADDR          (`ubaADDR)
+   )
+   UBA4 (
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
+      .busREQI          (ubaREQI[4]),
+      .busREQO          (ubaREQO[4]),
+      .busACKI          (ubaACKI[4]),
+      .busACKO          (ubaACKO[4]),
+      .busADDRI         (ubaADDRI[4]),
+      .busADDRO         (ubaADDRO[4]),
+      .busDATAI         (ubaDATAI[4]),
+      .busDATAO         (ubaDATAO[4]),
+      .busINTR          (ubaINTR[4]),
+      .devRESET         (devRESET[4]),
+      .devACLO          (devACLO[4]),
+      .devREQI          (devREQO[4]),
+      .devREQO          (devREQI[4]),
+      .devACKI          (devACKO[4]),
+      .devACKO          (devACKI[4]),
+      .devINTR          (devINTR[4]),
+      .devADDRI         (devADDRO[4]),
+      .devADDRO         (devADDRI[4]),
+      .devDATAI         (devDATAO[4]),
+      .devDATAO         (devDATAI[4])
+   );
+
+   //
+   // UBE1 is connected to UBA4
+   //
+
+`ifdef UBE1
+
+   UBE #(
+      .ubeDEV           (`ube1DEV),
+      .ubeVECT          (`ube1VECT),
+      .ubeADDR          (`ube1ADDR)
+   )
+   uUBE1 (
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
+      .devRESET         (devRESET[4]),
+      .devACLO          (devACLO[4][1]),
+      .devINTR          (devINTR[4][1]),
+      .devREQI          (devREQI[4][1]),
+      .devREQO          (devREQO[4][1]),
+      .devACKI          (devACKI[4][1]),
+      .devACKO          (devACKO[4][1]),
+      .devADDRI         (devADDRI[4][1]),
+      .devADDRO         (devADDRO[4][1]),
+      .devDATAI         (devDATAI[4][1]),
+      .devDATAO         (devDATAO[4][1])
+   );
+
+`else
+
+   //
+   // IO Bridge #4, Device 1 is not implemented. Tie inputs
+   //
+
+   assign devINTR[4][1] = 0;
+   assign devACLO[4][1] = 0;
+   assign devREQO[4][1] = 0;
+   assign devACKO[4][1] = 0;
+   assign devADDRO[4][1] = 0;
+   assign devDATAO[4][1] = 0;
+
+`endif
+
+   //
+   // UBE2 is connected to UBA4
+   //
+
+`ifdef UBE2
+
+   UBE #(
+      .ubeDEV           (`ube2DEV),
+      .ubeVECT          (`ube2VECT),
+      .ubeADDR          (`ube2ADDR)
+   )
+   uUBE2 (
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
+      .devRESET         (devRESET[4]),
+      .devACLO          (devACLO[4][2]),
+      .devINTR          (devINTR[4][2]),
+      .devREQI          (devREQI[4][2]),
+      .devREQO          (devREQO[4][2]),
+      .devACKI          (devACKI[4][2]),
+      .devACKO          (devACKO[4][2]),
+      .devADDRI         (devADDRI[4][2]),
+      .devADDRO         (devADDRO[4][2]),
+      .devDATAI         (devDATAI[4][2]),
+      .devDATAO         (devDATAO[4][2])
+   );
+
+`else
+
+   //
+   // IO Bridge #4, Device 2 is not implemented. Tie inputs
+   //
+
+   assign devINTR[4][2] = 0;
+   assign devACLO[4][2] = 0;
+   assign devREQO[4][2] = 0;
+   assign devACKO[4][2] = 0;
+   assign devADDRO[4][2] = 0;
+   assign devDATAO[4][2] = 0;
+
+`endif
+
+   //
+   // UBE3 is connected to UBA4
+   //
+
+`ifdef UBE3
+
+   UBE #(
+      .ubeDEV           (`ube3DEV),
+      .ubeVECT          (`ube3VECT),
+      .ubeADDR          (`ube3ADDR)
+   )
+   uUBE3 (
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
+      .devRESET         (devRESET[4]),
+      .devACLO          (devACLO[4][3]),
+      .devINTR          (devINTR[4][3]),
+      .devREQI          (devREQI[4][3]),
+      .devREQO          (devREQO[4][3]),
+      .devACKI          (devACKI[4][3]),
+      .devACKO          (devACKO[4][3]),
+      .devADDRI         (devADDRI[4][3]),
+      .devADDRO         (devADDRO[4][3]),
+      .devDATAI         (devDATAI[4][3]),
+      .devDATAO         (devDATAO[4][3])
+   );
+
+`else
+
+   //
+   // IO Bridge #4, Device 3 is not implemented. Tie inputs
+   //
+
+   assign devINTR[4][3] = 0;
+   assign devACLO[4][3] = 0;
+   assign devREQO[4][3] = 0;
+   assign devACKO[4][3] = 0;
+   assign devADDRO[4][3] = 0;
+   assign devDATAO[4][3] = 0;
+
+`endif
+
+   //
+   // UBE4 is connected to UBA4
+   //
+
+`ifdef UBE4
+
+   UBE #(
+      .ubeDEV           (`ube4DEV),
+      .ubeVECT          (`ube4VECT),
+      .ubeADDR          (`ube4ADDR)
+   )
+   uUBE4 (
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
+      .devRESET         (devRESET[4]),
+      .devACLO          (devACLO[4][4]),
+      .devINTR          (devINTR[4][4]),
+      .devREQI          (devREQI[4][4]),
+      .devREQO          (devREQO[4][4]),
+      .devACKI          (devACKI[4][4]),
+      .devACKO          (devACKO[4][4]),
+      .devADDRI         (devADDRI[4][4]),
+      .devADDRO         (devADDRO[4][4]),
+      .devDATAI         (devDATAI[4][4]),
+      .devDATAO         (devDATAO[4][4])
+   );
+
+`else
+
+   //
+   // IO Bridge #4, Device 4 is not implemented. Tie inputs
+   //
+
+   assign devINTR[4][4] = 0;
+   assign devACLO[4][4] = 0;
+   assign devREQO[4][4] = 0;
+   assign devACKO[4][4] = 0;
+   assign devADDRO[4][4] = 0;
+   assign devDATAO[4][4] = 0;
+
+`endif
+
+`else
 
    //
    // IO Bridge #4 is not implemented. Tie inputs.
@@ -1123,103 +1393,6 @@ module KS10 (
    assign ubaADDRO[4] = 0;
    assign ubaDATAO[4] = 0;
    assign ubaINTR[4]  = 0;
-
-`endif
-
-   //
-   // IO Bridge #1, Device 2 is not implemented. Tie inputs
-   //
-
-   assign devACLO[1][2] = 0;
-   assign devINTR[1][2] = 0;
-   assign devREQO[1][2] = 0;
-   assign devACKO[1][2] = 0;
-   assign devADDRO[1][2] = 0;
-   assign devDATAO[1][2] = 0;
-
-   //
-   // IO Bridge #1, Device 3 is not implemented. Tie inputs
-   //
-
-   assign devACLO[1][3] = 0;
-   assign devINTR[1][3] = 0;
-   assign devREQO[1][3] = 0;
-   assign devACKO[1][3] = 0;
-   assign devADDRO[1][3] = 0;
-   assign devDATAO[1][3] = 0;
-
-   //
-   // IO Bridge #1, Device 4 is not implemented. Tie inputs
-   //
-
-   assign devACLO[1][4] = 0;
-   assign devINTR[1][4] = 0;
-   assign devREQO[1][4] = 0;
-   assign devACKO[1][4] = 0;
-   assign devADDRO[1][4] = 0;
-   assign devDATAO[1][4] = 0;
-
-`ifdef UBA4
-
-`ifndef UBE1
-
-   //
-   // IO Bridge #4, Device 1 is not implemented. Tie inputs
-   //
-
-   assign devACLO[4][1] = 0;
-   assign devINTR[4][1] = 0;
-   assign devREQO[4][1] = 0;
-   assign devACKO[4][1] = 0;
-   assign devADDRO[4][1] = 0;
-   assign devDATAO[4][1] = 0;
-
-`endif
-
-`ifndef UBE2
-
-   //
-   // IO Bridge #4, Device 2 is not implemented. Tie inputs
-   //
-
-   assign devACLO[4][2] = 0;
-   assign devINTR[4][2] = 0;
-   assign devREQO[4][2] = 0;
-   assign devACKO[4][2] = 0;
-   assign devADDRO[4][2] = 0;
-   assign devDATAO[4][2] = 0;
-
-`endif
-
-`ifndef UBE3
-
-   //
-   // IO Bridge #4, Device 3 is not implemented. Tie inputs
-   //
-
-   assign devACLO[4][3] = 0;
-   assign devINTR[4][3] = 0;
-   assign devREQO[4][3] = 0;
-   assign devACKO[4][3] = 0;
-   assign devADDRO[4][3] = 0;
-   assign devDATAO[4][3] = 0;
-
-`endif
-
-`ifndef UBE4
-
-   //
-   // IO Bridge #4, Device 4 is not implemented. Tie inputs
-   //
-
-   assign devACLO[4][4] = 0;
-   assign devINTR[4][4] = 0;
-   assign devREQO[4][4] = 0;
-   assign devACKO[4][4] = 0;
-   assign devADDRO[4][4] = 0;
-   assign devDATAO[4][4] = 0;
-
-`endif
 
 `endif
 

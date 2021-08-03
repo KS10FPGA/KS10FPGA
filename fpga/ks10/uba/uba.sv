@@ -87,15 +87,22 @@ module UBA (
    );
 
    //
+   // Memory flags
+   //
+
+   localparam [ 0:17] flagWRITE = 18'o010000,           // Write bus cycle
+                      flagREAD  = 18'o040000;           // Read bus cycle
+
+   //
    // IO Bridge Configuration
    //
 
-   parameter  [14:17] ubaNUM   = 4'd0;                  // Bridge Device Number
-   parameter  [18:35] ubaADDR  = `ubaADDR;              // Base address
-   localparam [18:35] pageADDR = ubaADDR + `pageOFFSET; // Paging RAM Address
-   localparam [18:35] statADDR = ubaADDR + `statOFFSET; // Status Register Address
-   localparam [18:35] maintADDR= ubaADDR + `maintOFFSET;// Maintenance Register Address
-   localparam [ 0:35] wruRESP  = `getWRU(ubaNUM);       // Lookup WRU Response
+   parameter  [14:17] ubaNUM    = 4'd0;                         // Bridge Device Number
+   parameter  [18:35] ubaADDR   = `ubaADDR;                     // Base address
+   localparam [18:35] pageADDR  = ubaADDR + `pageOFFSET;        // Paging RAM Address
+   localparam [18:35] statADDR  = ubaADDR + `statOFFSET;        // Status Register Address
+   localparam [18:35] maintADDR = ubaADDR + `maintOFFSET;       // Maintenance Register Address
+   localparam [ 0:35] wruRESP   = `getWRU(ubaNUM);              // Lookup WRU Response
 
    //
    // KS10 Address Bus
@@ -111,7 +118,7 @@ module UBA (
    wire          busIO     = `busIO(busADDRI);          // IO Cycle
    wire          busWRU    = `busWRU(busADDRI);         // Read interrupting controller number
    wire          busVECT   = `busVECT(busADDRI);        // Read interrupt vector
-   wire          busIOBYTE = `busIOBYTE(busADDRI);      // IO Byte Cycle
+// wire          busIOBYTE = `busIOBYTE(busADDRI);      // IO Byte Cycle
    wire  [15:17] busPI     = `busPI(busADDRI);          // IO Bridge PI Request
    wire  [14:17] busDEV    = `busDEV(busADDRI);         // IO Bridge Device Number
    wire  [18:35] busADDR   = `busIOADDR(busADDRI);      // IO Address
@@ -136,26 +143,26 @@ module UBA (
    //
 
    logic [ 0: 3] pageFLAGS;                             // Page flags
-   wire          flagsRPW = `flagsRPW(pageFLAGS);       // Page read/pause/write
-   wire          flagsE16 = `flagsE16(pageFLAGS);       // Page E16
-   wire          flagsFTM = `flagsFTM(pageFLAGS);       // Page fast transfer mode
-   wire          flagsVLD = `flagsVLD(pageFLAGS);       // Page valid
+   wire          flagsRRV = `flagsRRV(pageFLAGS);       // Page uses Read Reverse Mode
+   wire          flagsE16 = `flagsE16(pageFLAGS);       // Page uses 16-bit transfers
+   wire          flagsFTM = `flagsFTM(pageFLAGS);       // Page uses Fast Transfer Mode
+// wire          flagsVLD = `flagsVLD(pageFLAGS);       // Page valid
 
    //
    // Address Decoding
    //
 
-   wire wruREAD    = busREAD  & busIO & busPHYS &  busWRU & !busVECT;
-   wire vectREAD   = busREAD  & busIO & busPHYS & !busWRU &  busVECT & (busDEV == ubaNUM);
-   wire pageREAD   = busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
-   wire pageWRITE  = busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
-   wire statREAD   = busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
-   wire statWRITE  = busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
-   wire maintWRITE = busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
-   wire devREAD    = busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) & !regUBAMR;
-   wire devWRITE   = busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) & !regUBAMR;
-   wire loopREAD   = busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) &  regUBAMR;
-   wire loopWRITE  = busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) &  regUBAMR;
+   wire wruREAD    = busREQI & busREAD  & busIO & busPHYS &  busWRU & !busVECT;
+   wire vectREAD   = busREQI & busREAD  & busIO & busPHYS & !busWRU &  busVECT & (busDEV == ubaNUM);
+   wire pageREAD   = busREQI & busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
+   wire pageWRITE  = busREQI & busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
+   wire statREAD   = busREQI & busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
+   wire statWRITE  = busREQI & busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
+   wire maintWRITE = busREQI & busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
+   wire devREAD    = busREQI & busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) & !regUBAMR;
+   wire devWRITE   = busREQI & busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) & !regUBAMR;
+   wire loopREAD   = busREQI & busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) &  regUBAMR;
+   wire loopWRITE  = busREQI & busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) &  regUBAMR;
 
    //
    // Status Register
@@ -193,38 +200,6 @@ module UBA (
       .maintWRITE (maintWRITE),
       .regUBAMR   (regUBAMR)
    );
-
-`ifdef LOOPBACK
-
-   //
-   // Loopback testing
-   //
-
-   logic [ 0:35] loopDATA;
-   logic [ 0:35] loopADDR;
-
-   always_ff @(posedge clk)
-     begin
-        if (rst)
-          begin
-             loopDATA <= 0;
-             loopADDR <= 0;
-          end
-        else if (loopWRITE)
-          begin
-             loopDATA <= busDATAI;
-             loopADDR <= busADDRI;
-          end
-     end
-
-   wire ewlb = `busIO(loopADDR) &  `busIOBYTE(loopADDR) & !loopADDR[34] & !loopADDR[35];        // Even word, low  byte.
-   wire ewhb = `busIO(loopADDR) &  `busIOBYTE(loopADDR) & !loopADDR[34] &  loopADDR[35];        // Even word, high byte.
-   wire owlb = `busIO(loopADDR) &  `busIOBYTE(loopADDR) &  loopADDR[34] & !loopADDR[35];        // Odd  word, low byte.
-   wire owhb = `busIO(loopADDR) &  `busIOBYTE(loopADDR) &  loopADDR[34] &  loopADDR[35];        // Odd  word, high byte.
-   wire ew   = `busIO(loopADDR) & !`busIOBYTE(loopADDR) & !loopADDR[34] & !loopADDR[35];        // Even word
-   wire ow   = `busIO(loopADDR) & !`busIOBYTE(loopADDR) &  loopADDR[34] & !loopADDR[35];        // Odd  word
-
-`endif
 
    //
    // Interrupts
@@ -267,773 +242,944 @@ module UBA (
    // Device arbiter
    //
 
-   localparam [0:3] stateIDLE       = 0,                // IDLE
-                    stateCPUtoDEV   = 1,                // Request from CPU to Device
-                    stateCPUtoVEC   = 2,                // Request from CPU to Interrupt Vector
-                    stateDEVtoMEM0  = 3,                // Request from Device to Memory
-                    stateDEVtoMEM1  = 4,                // Request from Device to Memory
-                    stateDEVtoIO    = 5,                // Request from Device to IO
-                    stateWAITREG    = 6,                // Wait for register to complete
-                    stateWAITBUSREQ = 7,                // Wait for bus request to complete
-                    stateWAITDEVREQ = 8,                // Wait for device request to complete
-                    stateDONE       = 9;                // Done
+   localparam [0:4] stateIDLE       =  0,               // IDLE
+                    stateCPUtoDEV   =  1,               // Request from CPU to Device
+                    stateCPUtoVEC   =  2,               // Request from CPU to Interrupt Vector
+                    stateDEVtoMEM0  =  3,               // Request from Device to Memory
+                    stateDEVtoMEM1  =  4,               // Request from Device to Memory
+                    stateDEVtoIO    =  5,               // Request from Device to IO
+                    stateLOOPtoMEM0 =  6,               // Request from Loopback to Memory
+                    stateLOOPtoMEM1 =  7,               // Request from Loopback to Memory
+                    stateLOOPtoMEM2 =  8,               // Request from Loopback to Memory
+                    stateLOOPtoMEM3 =  9,               // Request from Loopback to Memory
+                    stateLOOPtoMEM4 = 10,               // Request from Loopback to Memory
+                    stateMEMtoLOOP0 = 11,               // Request from Memory to Loopback
+                    stateMEMtoLOOP1 = 12,               // Request from Memory to Loopback
+                    stateMEMtoLOOP2 = 13,               // Request from Memory to Loopback
+                    stateMEMtoLOOP3 = 14,               // Request from Memory to Loopback
+                    stateWAITREG    = 15,               // Wait for register to complete
+                    stateWAITBUSREQ = 16,               // Wait for bus request to complete
+                    stateWAITDEVREQ = 17,               // Wait for device request to complete
+                    stateWAITVECREQ = 18,               // Wait for vector request to compelte
+                    stateDONE       = 19;               // Done
 
    localparam [ 0: 3] timeout = 4'd8;
+   logic      [ 0:35] rpwDATA;                          // Read/Pause/Write Data
+   logic      [ 0:35] loopDATA;                         // Loopback Data
+   logic      [ 0:35] loopADDR;                         // Loopback Addr
    logic      [ 0: 2] devSEL;                           // Device select
    logic      [ 0: 3] cntTMO;                           // Timeout timer
    logic      [ 0: 3] cntNXD;                           // Timeout timer
-   logic      [ 0: 3] state;                            // State variable
+   logic      [ 0: 4] state;                            // State variable
 
    always_ff @(posedge clk)
-     begin
-        if (rst)
-          begin
-             busREQO     <= 0;
-             busACKO     <= 0;
-             busDATAO    <= 0;
-             devREQO[1]  <= 0;
-             devREQO[2]  <= 0;
-             devREQO[3]  <= 0;
-             devREQO[4]  <= 0;
-             devACKO[1]  <= 0;
-             devACKO[2]  <= 0;
-             devACKO[3]  <= 0;
-             devACKO[4]  <= 0;
-             devADDRO[1] <= 0;
-             devADDRO[2] <= 0;
-             devADDRO[3] <= 0;
-             devADDRO[4] <= 0;
-             devDATAO[1] <= 0;
-             devDATAO[2] <= 0;
-             devDATAO[3] <= 0;
-             devDATAO[4] <= 0;
-             pageADDRI   <= 0;
-             devSEL      <= 0;
-             cntNXD      <= 0;
-             cntTMO      <= 0;
-             state       <= stateIDLE;
-          end
-        else
-          case (state)
-            stateIDLE:
-              begin
+     if (rst | devRESET)
+       begin
+          busREQO     <= 0;
+          busACKO     <= 0;
+          busDATAO    <= 0;
+          devREQO[1]  <= 0;
+          devREQO[2]  <= 0;
+          devREQO[3]  <= 0;
+          devREQO[4]  <= 0;
+          devACKO[1]  <= 0;
+          devACKO[2]  <= 0;
+          devACKO[3]  <= 0;
+          devACKO[4]  <= 0;
+          devADDRO[1] <= 0;
+          devADDRO[2] <= 0;
+          devADDRO[3] <= 0;
+          devADDRO[4] <= 0;
+          devDATAO[1] <= 0;
+          devDATAO[2] <= 0;
+          devDATAO[3] <= 0;
+          devDATAO[4] <= 0;
+          pageADDRI   <= 0;
+          rpwDATA     <= 0;
+          loopADDR    <= 0;
+          loopDATA    <= 0;
+          devSEL      <= 0;
+          cntNXD      <= 0;
+          cntTMO      <= 0;
+          state       <= stateIDLE;
+       end
 
-                 //
-                 // CPU is accessing status register
-                 //
+     else
 
-                 if ((busREQI & statREAD) | (busREQI & statWRITE))
-                   begin
-                      busACKO  <= 1;
-                      busDATAO <= regUBASR;
-                      state    <= stateWAITBUSREQ;
-                   end
+       case (state)
+         stateIDLE:
 
-                 //
-                 // CPU is accessing paging data
-                 //
+           //
+           // CPU is accessing status register
+           //
 
-                 else if ((busREQI & pageREAD) | (busREQI & pageWRITE))
-                   begin
-                      busACKO  <= 1;
-                      busDATAO <= pageDATAO;
-                      state    <= stateWAITBUSREQ;
-                   end
+           if ((busREQI & statREAD) | (busREQI & statWRITE))
+             begin
+                busACKO  <= 1;
+                busDATAO <= regUBASR;
+                state    <= stateWAITBUSREQ;
+             end
 
-                 //
-                 // CPU is accessing the maintenance register
-                 //
+           //
+           // CPU is accessing paging data
+           //
 
-                 else if (busREQI & maintWRITE)
-                   begin
-                      busACKO  <= 1;
-                      state    <= stateWAITBUSREQ;
-                   end
+           else if ((busREQI & pageREAD) | (busREQI & pageWRITE))
+             begin
+                busACKO  <= 1;
+                busDATAO <= pageDATAO;
+                state    <= stateWAITBUSREQ;
+             end
 
-                 //
-                 // CPU is doing a WRU bus cycle
-                 //
+           //
+           // CPU is performing a loopback read
+           //  Need to do an NPR read and return the results of that read on
+           //  this IO read operation.
+           //
+           //  DO NOT acknowledge this IO request from the CPU yet.
+           //
 
-                 else if (busREQI & wruREAD & ((busPI == statPIH) | (busPI == statPIL)))
-                   begin
-                      busACKO  <= 1;
-                      busDATAO <= wruRESP;
-                      state    <= stateWAITBUSREQ;
-                   end
+           else if (busREQI & loopREAD)
+             begin
+                loopADDR  <= busADDRI;
+                pageADDRI <= busADDRI;
+                cntTMO    <= timeout;
+                state     <= stateMEMtoLOOP0;
+             end
 
-                 //
-                 // CPU is requesting data from an IO device
-                 //
+           //
+           // CPU is performing a loopback write
+           //
 
-                 else if ((busREQI & devREAD) | (busREQI & devWRITE))
-                   begin
-                      devREQO[1]  <= 1;
-                      devREQO[2]  <= 1;
-                      devREQO[3]  <= 1;
-                      devREQO[4]  <= 1;
-                      devADDRO[1] <= busADDRI;
-                      devADDRO[2] <= busADDRI;
-                      devADDRO[3] <= busADDRI;
-                      devADDRO[4] <= busADDRI;
-                      devDATAO[1] <= busDATAI;
-                      devDATAO[2] <= busDATAI;
-                      devDATAO[3] <= busDATAI;
-                      devDATAO[4] <= busDATAI;
-                      cntNXD      <= timeout;
-                      state       <= stateCPUtoDEV;
-                   end
+           else if (busREQI & loopWRITE)
+             begin
+                busACKO   <= 1;
+                case ({`devIOBYTE(busADDRI), `devWORDSEL(busADDRI), `devBYTESEL(busADDRI)})
+                  3'b000: loopDATA[ 0:17] <= busDATAI[18:35];     // Even word
+                  3'b001: loopDATA[ 0:17] <= busDATAI[18:35];     // Even word
+                  3'b010: loopDATA[18:35] <= busDATAI[18:35];     // Odd  word
+                  3'b011: loopDATA[18:35] <= busDATAI[18:35];     // Odd  word
+                  3'b100: loopDATA[10:17] <= busDATAI[28:35];     // Even word, low  byte.
+                  3'b101: loopDATA[ 2: 9] <= busDATAI[20:27];     // Even word, high byte.
+                  3'b110: loopDATA[28:35] <= busDATAI[28:35];     // Odd  word, low  byte.
+                  3'b111: loopDATA[20:27] <= busDATAI[20:27];     // Odd  word, high byte.
+                endcase
+                loopADDR  <= busADDRI;
+                pageADDRI <= busADDRI;                            // Lookup paging for this address
+                cntTMO    <= timeout;
+                state     <= stateLOOPtoMEM0;
+             end
 
-                 //
-                 // CPU is requesting a vector from an IO device
-                 //
+           //
+           // CPU is accessing the maintenance register
+           //
 
-                 if (busREQI & vectREAD)
-                   begin
-                      devREQO[1]  <= 1;
-                      devREQO[2]  <= 1;
-                      devREQO[3]  <= 1;
-                      devREQO[4]  <= 1;
-                      devADDRO[1] <= busADDRI;
-                      devADDRO[2] <= busADDRI;
-                      devADDRO[3] <= busADDRI;
-                      devADDRO[4] <= busADDRI;
-                      devDATAO[1] <= busDATAI;
-                      devDATAO[2] <= busDATAI;
-                      devDATAO[3] <= busDATAI;
-                      devDATAO[4] <= busDATAI;
-                      cntNXD      <= timeout;
-                      state       <= stateCPUtoVEC;
-                   end
+           else if (busREQI & maintWRITE)
+             begin
+                busACKO <= 1;
+                state   <= stateWAITBUSREQ;
+             end
 
-                 //
-                 // Device 1 is requesting IO or memory
-                 //
+           //
+           // CPU is doing a WRU bus cycle
+           //
 
-                 else if (devREQI[1])
-                   begin
-                      devSEL <= 3'd1;
+           else if (busREQI & wruREAD & ((busPI == statPIH) | (busPI == statPIL)))
+             begin
+                busACKO  <= 1;
+                busDATAO <= wruRESP;
+                state    <= stateWAITBUSREQ;
+             end
 
-                      //
-                      // Device 1 is requesting IO
-                      //
+           //
+           // CPU is requesting data from an IO device
+           //
 
-                      if (`busIO(devADDRI[1]))
-                        begin
-                           devREQO[1]  <= 1;
-                           devREQO[2]  <= 1;
-                           devREQO[3]  <= 1;
-                           devREQO[4]  <= 1;
-                           devADDRO[1] <= devADDRI[1];
-                           devADDRO[2] <= devADDRI[1];
-                           devADDRO[3] <= devADDRI[1];
-                           devADDRO[4] <= devADDRI[1];
-                           devDATAO[1] <= devDATAI[1];
-                           devDATAO[2] <= devDATAI[1];
-                           devDATAO[3] <= devDATAI[1];
-                           devDATAO[4] <= devDATAI[1];
-                           state       <= stateDEVtoIO;
-                        end
+           else if ((busREQI & devREAD) | (busREQI & devWRITE))
+             begin
+                devREQO[1]  <= 1;
+                devREQO[2]  <= 1;
+                devREQO[3]  <= 1;
+                devREQO[4]  <= 1;
+                devADDRO[1] <= busADDRI;
+                devADDRO[2] <= busADDRI;
+                devADDRO[3] <= busADDRI;
+                devADDRO[4] <= busADDRI;
+                devDATAO[1] <= busDATAI;
+                devDATAO[2] <= busDATAI;
+                devDATAO[3] <= busDATAI;
+                devDATAO[4] <= busDATAI;
+                cntNXD      <= timeout;
+                state       <= stateCPUtoDEV;
+             end
 
-                      //
-                      // Device 1 is requesting memory
-                      //
+           //
+           // CPU is requesting a vector from an IO device
+           //  Determine the highest priority interrupt and request the
+           //  highest priority device to provide the interrupt vector.
+           //
 
-                      else
-                        begin
-                           busDATAO  <= devDATAI[1];
-                           pageADDRI <= devADDRI[1];
-                           cntTMO    <= timeout;
-                           state     <= stateDEVtoMEM0;
-                        end
-                   end
+           else if (busREQI & vectREAD)
+             begin
+                if (devINTR[1][7])
+                  devREQO[1] <= 1;
+                else if (devINTR[2][7])
+                  devREQO[2] <= 1;
+                else if (devINTR[3][7])
+                  devREQO[3] <= 1;
+                else if (devINTR[4][7])
+                  devREQO[4] <= 1;
+                else if (devINTR[1][6])
+                  devREQO[1] <= 1;
+                else if (devINTR[2][6])
+                  devREQO[2] <= 1;
+                else if (devINTR[3][6])
+                  devREQO[3] <= 1;
+                else if (devINTR[4][6])
+                  devREQO[4] <= 1;
+                else if (devINTR[1][5])
+                  devREQO[1] <= 1;
+                else if (devINTR[2][5])
+                  devREQO[2] <= 1;
+                else if (devINTR[3][5])
+                  devREQO[3] <= 1;
+                else if (devINTR[4][5])
+                  devREQO[4] <= 1;
+                else if (devINTR[1][4])
+                  devREQO[1] <= 1;
+                else if (devINTR[2][4])
+                  devREQO[2] <= 1;
+                else if (devINTR[3][4])
+                  devREQO[3] <= 1;
+                else if (devINTR[4][4])
+                  devREQO[4] <= 1;
+                cntNXD      <= timeout;
+                devADDRO[1] <= busADDRI;
+                devADDRO[2] <= busADDRI;
+                devADDRO[3] <= busADDRI;
+                devADDRO[4] <= busADDRI;
+                state       <= stateCPUtoVEC;
+             end
 
-                 //
-                 // Device 2 is requesting IO or memory
-                 //
+           //
+           // Device 1 is requesting IO or memory
+           //
 
-                 else if (devREQI[2])
-                   begin
-                      devSEL <= 3'd2;
+           else if (devREQI[1])
 
-                      //
-                      // Device 2 is requesting IO
-                      //
+             //
+             // Device 1 is requesting IO
+             //
 
-                      if (`busIO(devADDRI[2]))
-                        begin
-                           devREQO[1]  <= 1;
-                           devREQO[2]  <= 1;
-                           devREQO[3]  <= 1;
-                           devREQO[4]  <= 1;
-                           devADDRO[1] <= devADDRI[2];
-                           devADDRO[2] <= devADDRI[2];
-                           devADDRO[3] <= devADDRI[2];
-                           devADDRO[4] <= devADDRI[2];
-                           devDATAO[1] <= devDATAI[2];
-                           devDATAO[2] <= devDATAI[2];
-                           devDATAO[3] <= devDATAI[2];
-                           devDATAO[4] <= devDATAI[2];
-                           state       <= stateDEVtoIO;
-                        end
+             if (`busIO(devADDRI[1]))
+               begin
+                  devSEL      <= 3'd1;
+                  devREQO[1]  <= 1;
+                  devREQO[2]  <= 1;
+                  devREQO[3]  <= 1;
+                  devREQO[4]  <= 1;
+                  devADDRO[1] <= devADDRI[1];
+                  devADDRO[2] <= devADDRI[1];
+                  devADDRO[3] <= devADDRI[1];
+                  devADDRO[4] <= devADDRI[1];
+                  devDATAO[1] <= devDATAI[1];
+                  devDATAO[2] <= devDATAI[1];
+                  devDATAO[3] <= devDATAI[1];
+                  devDATAO[4] <= devDATAI[1];
+                  state       <= stateDEVtoIO;
+               end
 
-                      //
-                      // Device 2 is requesting memory
-                      //
+             //
+             // Device 1 is requesting memory
+             //
 
-                      else
-                        begin
-                           busDATAO  <= devDATAI[2];
-                           pageADDRI <= devADDRI[2];
-                           cntTMO    <= timeout;
-                           state     <= stateDEVtoMEM0;
-                        end
-                   end
+             else
+               begin
+                  devSEL    <= 3'd1;
+                  busDATAO  <= devDATAI[1];
+                  pageADDRI <= devADDRI[1];
+                  cntTMO    <= timeout;
+                  state     <= stateDEVtoMEM0;
+               end
 
-                 //
-                 // Device 3 is requesting IO or memory
-                 //
+           //
+           // Device 2 is requesting IO or memory
+           //
 
-                 else if (devREQI[3])
-                   begin
-                      devSEL <= 3'd3;
+           else if (devREQI[2])
 
-                      //
-                      // Device 3 is requesting IO
-                      //
+             //
+             // Device 2 is requesting IO
+             //
 
-                      if (`busIO(devADDRI[3]))
-                        begin
-                           devREQO[1]  <= 1;
-                           devREQO[2]  <= 1;
-                           devREQO[3]  <= 1;
-                           devREQO[4]  <= 1;
-                           devADDRO[1] <= devADDRI[3];
-                           devADDRO[2] <= devADDRI[3];
-                           devADDRO[3] <= devADDRI[3];
-                           devADDRO[4] <= devADDRI[3];
-                           devDATAO[1] <= devDATAI[3];
-                           devDATAO[2] <= devDATAI[3];
-                           devDATAO[3] <= devDATAI[3];
-                           devDATAO[4] <= devDATAI[3];
-                           state       <= stateDEVtoIO;
-                        end
+             if (`busIO(devADDRI[2]))
+               begin
+                  devSEL      <= 3'd2;
+                  devREQO[1]  <= 1;
+                  devREQO[2]  <= 1;
+                  devREQO[3]  <= 1;
+                  devREQO[4]  <= 1;
+                  devADDRO[1] <= devADDRI[2];
+                  devADDRO[2] <= devADDRI[2];
+                  devADDRO[3] <= devADDRI[2];
+                  devADDRO[4] <= devADDRI[2];
+                  devDATAO[1] <= devDATAI[2];
+                  devDATAO[2] <= devDATAI[2];
+                  devDATAO[3] <= devDATAI[2];
+                  devDATAO[4] <= devDATAI[2];
+                  state       <= stateDEVtoIO;
+               end
 
-                      //
-                      // Device 3 is requesting memory
-                      //
+             //
+             // Device 2 is requesting memory
+             //
 
-                      else
-                        begin
-                           busDATAO  <= devDATAI[3];
-                           pageADDRI <= devADDRI[3];
-                           cntTMO    <= timeout;
-                           state     <= stateDEVtoMEM0;
-                        end
-                   end
+             else
+               begin
+                  devSEL    <= 3'd2;
+                  busDATAO  <= devDATAI[2];
+                  pageADDRI <= devADDRI[2];
+                  cntTMO    <= timeout;
+                  state     <= stateDEVtoMEM0;
+               end
 
-                 //
-                 // Device 4 is requesting IO or memory
-                 //
+           //
+           // Device 3 is requesting IO or memory
+           //
 
-                 else if (devREQI[4])
-                   begin
-                      devSEL <= 3'd4;
+           else if (devREQI[3])
 
-                      //
-                      // Device 4 is requesting IO
-                      //
+             //
+             // Device 3 is requesting IO
+             //
 
-                      if (`busIO(devADDRI[4]))
-                        begin
-                           devREQO[1]  <= 1;
-                           devREQO[2]  <= 1;
-                           devREQO[3]  <= 1;
-                           devREQO[4]  <= 1;
-                           devADDRO[1] <= devADDRI[4];
-                           devADDRO[2] <= devADDRI[4];
-                           devADDRO[3] <= devADDRI[4];
-                           devADDRO[4] <= devADDRI[4];
-                           devDATAO[1] <= devDATAI[4];
-                           devDATAO[2] <= devDATAI[4];
-                           devDATAO[3] <= devDATAI[4];
-                           devDATAO[4] <= devDATAI[4];
-                           state       <= stateDEVtoIO;
-                        end
+             if (`busIO(devADDRI[3]))
+               begin
+                  devSEL      <= 3'd3;
+                  devREQO[1]  <= 1;
+                  devREQO[2]  <= 1;
+                  devREQO[3]  <= 1;
+                  devREQO[4]  <= 1;
+                  devADDRO[1] <= devADDRI[3];
+                  devADDRO[2] <= devADDRI[3];
+                  devADDRO[3] <= devADDRI[3];
+                  devADDRO[4] <= devADDRI[3];
+                  devDATAO[1] <= devDATAI[3];
+                  devDATAO[2] <= devDATAI[3];
+                  devDATAO[3] <= devDATAI[3];
+                  devDATAO[4] <= devDATAI[3];
+                  state       <= stateDEVtoIO;
+               end
 
-                      //
-                      // Device 4 is requesting memory
-                      //
+             //
+             // Device 3 is requesting memory
+             //
 
-                      else
-                        begin
-                           busDATAO  <= devDATAI[4];
-                           pageADDRI <= devADDRI[4];
-                           cntTMO    <= timeout;
-                           state     <= stateDEVtoMEM0;
-                        end
-                   end
-              end
+             else
+               begin
+                  devSEL    <= 3'd3;
+                  busDATAO  <= devDATAI[3];
+                  pageADDRI <= devADDRI[3];
+                  cntTMO    <= timeout;
+                  state     <= stateDEVtoMEM0;
+               end
 
-            //
-            // CPU is requesting data from an IO device
-            //
+           //
+           // Device 4 is requesting IO or memory
+           //
 
-            stateCPUtoDEV:
-              begin
-                 if (devACKI[1])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[1];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[2])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[2];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[3])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[3];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[4])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[4];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (!busREQI)
-                   begin
-                      state <= stateDONE;
-                   end
-                 else if (cntNXD != 0)
-                   begin
-                      cntNXD <= cntNXD - 1'b1;
-                   end
-                 else
-                   begin
-                      state <= stateWAITBUSREQ;
-                   end
-              end
+           else if (devREQI[4])
 
-            //
-            // CPU is requesting a Interrupt Vector
-            //
+             //
+             // Device 4 is requesting IO
+             //
 
-            stateCPUtoVEC:
-              begin
+             if (`busIO(devADDRI[4]))
+               begin
+                  devSEL      <= 3'd4;
+                  devREQO[1]  <= 1;
+                  devREQO[2]  <= 1;
+                  devREQO[3]  <= 1;
+                  devREQO[4]  <= 1;
+                  devADDRO[1] <= devADDRI[4];
+                  devADDRO[2] <= devADDRI[4];
+                  devADDRO[3] <= devADDRI[4];
+                  devADDRO[4] <= devADDRI[4];
+                  devDATAO[1] <= devDATAI[4];
+                  devDATAO[2] <= devDATAI[4];
+                  devDATAO[3] <= devDATAI[4];
+                  devDATAO[4] <= devDATAI[4];
+                  state       <= stateDEVtoIO;
+               end
 
-                 //
-                 // INTR 7 vector arbitration (Highest Priority)
-                 //
+             //
+             // Device 4 is requesting memory
+             //
 
-                 if (devACKI[1] & devINTR[1][7])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[1];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[2] & devINTR[2][7])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[2];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[3] & devINTR[3][7])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[3];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[4] & devINTR[4][7])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[4];
-                      state      <= stateWAITBUSREQ;
-                   end
+             else
+               begin
+                  devSEL    <= 3'd4;
+                  busDATAO  <= devDATAI[4];
+                  pageADDRI <= devADDRI[4];
+                  cntTMO    <= timeout;
+                  state     <= stateDEVtoMEM0;
+               end
 
-                 //
-                 // INTR 6 vector arbitration
-                 //
+         //
+         // CPU is requesting data from an IO device
+         //
 
-                 else if (devACKI[1] & devINTR[1][6])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[1];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[2] & devINTR[2][6])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[2];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[3] & devINTR[3][6])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[3];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[4] & devINTR[4][6])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[4];
-                      state      <= stateWAITBUSREQ;
-                   end
+         stateCPUtoDEV:
+           if (devACKI[1])
+             begin
+                busACKO    <= 1;
+                devREQO[1] <= 0;
+                devREQO[2] <= 0;
+                devREQO[3] <= 0;
+                devREQO[4] <= 0;
+                busDATAO   <= devDATAI[1];
+                state      <= stateWAITBUSREQ;
+             end
+           else if (devACKI[2])
+             begin
+                busACKO    <= 1;
+                devREQO[1] <= 0;
+                devREQO[2] <= 0;
+                devREQO[3] <= 0;
+                devREQO[4] <= 0;
+                busDATAO   <= devDATAI[2];
+                state      <= stateWAITBUSREQ;
+             end
+           else if (devACKI[3])
+             begin
+                busACKO    <= 1;
+                devREQO[1] <= 0;
+                devREQO[2] <= 0;
+                devREQO[3] <= 0;
+                devREQO[4] <= 0;
+                busDATAO   <= devDATAI[3];
+                state      <= stateWAITBUSREQ;
+             end
+           else if (devACKI[4])
+             begin
+                busACKO    <= 1;
+                devREQO[1] <= 0;
+                devREQO[2] <= 0;
+                devREQO[3] <= 0;
+                devREQO[4] <= 0;
+                busDATAO   <= devDATAI[4];
+                state      <= stateWAITBUSREQ;
+             end
+           else if (!busREQI)
+             state <= stateDONE;
+           else if (cntNXD != 0)
+             cntNXD <= cntNXD - 1'b1;
+           else
+             state <= stateWAITBUSREQ;
 
-                 //
-                 // INTR 5 vector arbitration
-                 //
+         //
+         // CPU is requesting a Interrupt Vector
+         //  Acknowledge the vector data from the highest priority device
+         //  and forward the vector to the CPU.
+         //
 
-                 else if (devACKI[1] & devINTR[1][5])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[1];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[2] & devINTR[2][5])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[2];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[3] & devINTR[3][5])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[3];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[4] & devINTR[4][5])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[4];
-                      state      <= stateWAITBUSREQ;
-                   end
+         stateCPUtoVEC:
+           if (devREQO[1] & devACKI[1])
+             begin
+                busACKO    <= 1;
+                devREQO[1] <= 0;
+                busDATAO   <= devDATAI[1];
+                state      <= stateWAITVECREQ;
+             end
+           else if (devREQO[2] & devACKI[2])
+             begin
+                busACKO    <= 1;
+                devREQO[2] <= 0;
+                busDATAO   <= devDATAI[2];
+                state      <= stateWAITVECREQ;
+             end
+           else if (devREQO[3] & devACKI[3])
+             begin
+                busACKO    <= 1;
+                devREQO[3] <= 0;
+                busDATAO   <= devDATAI[3];
+                state      <= stateWAITVECREQ;
+             end
+           else if (devREQO[4] & devACKI[4])
+             begin
+                busACKO    <= 1;
+                devREQO[4] <= 0;
+                busDATAO   <= devDATAI[4];
+                state      <= stateWAITVECREQ;
+             end
+           else if (cntTMO != 0)
+             cntTMO <= cntTMO - 1'b1;
+           else
+             begin
+                busREQO <= 0;
+                state   <= stateDONE;
+             end
 
-                 //
-                 // INTR 4 vector arbitration (Lowest prioity)
-                 //
+         //
+         // Check for page failures before acessing memory.  If UBA page
+         //  failure, bail out; otherwise start a memory request.
+         //
 
-                 else if (devACKI[1] & devINTR[1][4])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[1];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[2] & devINTR[2][4])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[2];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[3] & devINTR[3][4])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[3];
-                      state      <= stateWAITBUSREQ;
-                   end
-                 else if (devACKI[4] & devINTR[4][4])
-                   begin
-                      busACKO    <= 1;
-                      devREQO[1] <= 0;
-                      devREQO[2] <= 0;
-                      devREQO[3] <= 0;
-                      devREQO[4] <= 0;
-                      busDATAO   <= devDATAI[4];
-                      state      <= stateWAITBUSREQ;
-                   end
+         stateDEVtoMEM0:
+           begin
+              if (pageFAIL)
+                state <= stateDONE;
+              else
+                begin
+                   busREQO <= 1;
+                   state   <= stateDEVtoMEM1;
+                end
+           end
 
-              end
+         //
+         // Device is requesting access to memory.
+         //  Wait for memory to respond
+         //
 
-            //
-            // Device is requesting access to memory
-            //  Address and Data are routed to CPU.
-            //  Wait a clock cycle to check for a UBA Page Fail
-            //
+         stateDEVtoMEM1:
+           if (busACKI)
+             begin
+                busREQO         <= 0;
+                devACKO[devSEL] <= 1;
+                devDATAO[1]     <= busDATAI;
+                devDATAO[2]     <= busDATAI;
+                devDATAO[3]     <= busDATAI;
+                devDATAO[4]     <= busDATAI;
+                state           <= stateWAITDEVREQ;
+             end
+           else if (!devREQI[devSEL])
+             begin
+                busREQO <= 0;
+                state   <= stateDONE;
+             end
+           else if (cntTMO != 0)
+             cntTMO <= cntTMO - 1'b1;
+           else
+             begin
+                busREQO <= 0;
+                state   <= stateDONE;
+             end
 
-            stateDEVtoMEM0:
-              begin
-                 if (pageFAIL)
-                   state <= stateDONE;
-                 else
-                   begin
-                      busREQO <= 1;
-                      state   <= stateDEVtoMEM1;
-                   end
-              end
+         //
+         // A device is requesting an IO access
+         //  DSKMA Test.65 does a NPR IO write through the UBA to it's own CSR4
+         //  DSKMA Test.66 does a NPR IO read through the UBA to it's own CSR4.
+         //
 
-            //
-            // Device is requesting access to memory.
-            //  Wait for memory to respond
-            //
+         stateDEVtoIO:
+           begin
+              if (devACKI[1])
+                begin
+                   devACKO[devSEL]  <= 1;
+                   devDATAO[devSEL] <= devDATAI[1];
+                   state            <= stateDONE;
+                end
+              if (devACKI[2])
+                begin
+                   devACKO[devSEL]  <= 1;
+                   devDATAO[devSEL] <= devDATAI[2];
+                   state            <= stateDONE;
+                end
+              else if (devACKI[3])
+                begin
+                   devACKO[devSEL]  <= 1;
+                   devDATAO[devSEL] <= devDATAI[3];
+                   state            <= stateDONE;
+                end
+              else if (devACKI[4])
+                begin
+                   devACKO[devSEL]  <= 1;
+                   devDATAO[devSEL] <= devDATAI[4];
+                   state            <= stateDONE;
+                end
+              else if (!devREQI[devSEL])
+                state <= stateDONE;
+           end
 
-            stateDEVtoMEM1:
-              begin
-                 if (busACKI)
-                   begin
-                      busREQO         <= 0;
-                      devACKO[devSEL] <= 1;
-                      devDATAO[1]     <= busDATAI;
-                      devDATAO[2]     <= busDATAI;
-                      devDATAO[3]     <= busDATAI;
-                      devDATAO[4]     <= busDATAI;
-                      state           <= stateWAITDEVREQ;
-                   end
-                 else if (!devREQI[devSEL])
-                   begin
-                      busREQO <= 0;
-                      state   <= stateDONE;
-                   end
-                 else if (cntTMO != 0)
-                   begin
-                      cntTMO <= cntTMO - 1'b1;
-                   end
-                 else
-                   begin
-                      busREQO <= 0;
-                      state   <= stateDONE;
-                   end
-              end
+         //
+         //  Check for page failures before acessing memory.  If UBA page
+         //    failure, bail out; otherwise decide what to do and request
+         //    memory read or memory write.
+         //
+         //  Fast Transfer Mode Accesses
+         //    In Fast Transfer Mode (FTM), Even words are stored in rpwDATA
+         //    and do not generate any memory operations.  Odd words are
+         //    combined with Even words and cause both to be written to
+         //    memory simultaneously.
+         //
+         //  Non-RPW Accesses
+         //    Normal Mode Even Word
+         //    Normal Mode Even Word Low Byte
+         //
+         //  RPW Accesses (everything else)
+         //    Normal Mode Odd Word
+         //    Normal Mode Even Word High Byte
+         //    Normal Mode Odd  Word High Byte
+         //    Normal Mode Odd  Word Low  Byte
+         //    Read Reverse Even Word
+         //    Read Reverse Odd  Word
+         //
 
-            //
-            // A device is requesting an IO access
-            //  DSKMA Test.65 does a NPR IO write through the UBA to it's own CSR4
-            //  DSKMA Test.66 does a NPR IO read through the UBA to it's own CSR4.
-            //
+         stateLOOPtoMEM0:
+           begin
+              busACKO <= 0;
+              if (pageFAIL)
+                state <= stateDONE;
+              else if (flagsFTM)
 
-            stateDEVtoIO:
-              begin
-                 if (devACKI[1])
-                   begin
-                      devACKO[devSEL]  <= 1;
-                      devDATAO[devSEL] <= devDATAI[1];
-                      state            <= stateDONE;
-                   end
-                 if (devACKI[2])
-                   begin
-                      devACKO[devSEL]  <= 1;
-                      devDATAO[devSEL] <= devDATAI[2];
-                      state            <= stateDONE;
-                   end
-                 else if (devACKI[3])
-                   begin
-                      devACKO[devSEL]  <= 1;
-                      devDATAO[devSEL] <= devDATAI[3];
-                      state            <= stateDONE;
-                   end
-                 else if (devACKI[4])
-                   begin
-                      devACKO[devSEL]  <= 1;
-                      devDATAO[devSEL] <= devDATAI[4];
-                      state            <= stateDONE;
-                   end
-                 else if (!devREQI[devSEL])
-                   begin
-                      state <= stateDONE;
-                   end
-              end
+                //
+                // Fast Transfer Mode
+                //  DSUBA TEST14
+                //
 
-            //
-            // Wait for register access to complete
-            //
+                if (`devWORDSEL(loopADDR))
+                  begin
+                     busREQO         <= 1;
+                     cntTMO          <= timeout;
+                     pageADDRI[0:17] <= flagWRITE;
+                     busDATAO        <= {rpwDATA[0:17], loopDATA[18:35]};
+                     state           <= stateLOOPtoMEM4;
+                  end
+                else
+                  begin
+                     rpwDATA <= loopDATA;
+                     state   <= stateDONE;
+                  end
 
-            stateWAITREG:
-              begin
-                 if ((!busREQI | !devREAD) & (!busREQI | !devWRITE))
-                   begin
-                      busREQO     <= 0;
-                      busACKO     <= 0;
-                      devREQO[1]  <= 0;
-                      devREQO[2]  <= 0;
-                      devREQO[3]  <= 0;
-                      devREQO[4]  <= 0;
-                      devACKO[1]  <= 0;
-                      devACKO[2]  <= 0;
-                      devACKO[3]  <= 0;
-                      devACKO[4]  <= 0;
-                      devADDRO[1] <= 0;
-                      devADDRO[2] <= 0;
-                      devADDRO[3] <= 0;
-                      devADDRO[4] <= 0;
-                      devDATAO[1] <= 0;
-                      devDATAO[2] <= 0;
-                      devDATAO[3] <= 0;
-                      devDATAO[4] <= 0;
-                      devSEL      <= 0;
-                      state       <= stateIDLE;
-                   end
-              end
+              //
+              // Normal Mode Even Word (non-RPW) access.
+              //  DSUBA TEST11
+              //
 
-            //
-            // Wait for bus request to negate
-            //
+              else if (!flagsRRV & !`devIOBYTE(loopADDR) & !`devWORDSEL(loopADDR))
+                begin
+                   busREQO         <= 1;
+                   cntTMO          <= timeout;
+                   pageADDRI[0:17] <= flagWRITE;
+                   busDATAO        <= (flagsE16) ? {2'b0, loopDATA[2:17], 2'b0, busADDRO[20:35]} : {loopDATA[0:17], busADDRO[18:35]};
+                   state           <= stateLOOPtoMEM4;
+                end
 
-            stateWAITBUSREQ:
-              begin
-                 if (!busREQI)
-                   begin
-                      busREQO     <= 0;
-                      busACKO     <= 0;
-                      devREQO[1]  <= 0;
-                      devREQO[2]  <= 0;
-                      devREQO[3]  <= 0;
-                      devREQO[4]  <= 0;
-                      devACKO[1]  <= 0;
-                      devACKO[2]  <= 0;
-                      devACKO[3]  <= 0;
-                      devACKO[4]  <= 0;
-                      devADDRO[1] <= 0;
-                      devADDRO[2] <= 0;
-                      devADDRO[3] <= 0;
-                      devADDRO[4] <= 0;
-                      devDATAO[1] <= 0;
-                      devDATAO[2] <= 0;
-                      devDATAO[3] <= 0;
-                      devDATAO[4] <= 0;
-                      devSEL      <= 0;
-                      state       <= stateIDLE;
-                   end
-              end
+              //
+              // Normal Mode Even Word Low Byte (non-RPW) access
+              //  DSUBA TEST12
+              //
 
-            //
-            // Wait for device request to negate
-            //
+              else if (!flagsRRV & `devIOBYTE(loopADDR) & !`devWORDSEL(loopADDR) & !`devBYTESEL(loopADDR))
+                begin
+                   busREQO         <= 1;
+                   cntTMO          <= timeout;
+                   pageADDRI[0:17] <= flagWRITE;
+                   busDATAO        <= {10'b0, loopDATA[10:17], busADDRO[18:35]};
+                   state           <= stateLOOPtoMEM4;
+                end
 
-            stateWAITDEVREQ:
-              begin
-                 if (!devREQI[devSEL])
-                   begin
-                      busREQO     <= 0;
-                      busACKO     <= 0;
-                      devREQO[1]  <= 0;
-                      devREQO[2]  <= 0;
-                      devREQO[3]  <= 0;
-                      devREQO[4]  <= 0;
-                      devACKO[1]  <= 0;
-                      devACKO[2]  <= 0;
-                      devACKO[3]  <= 0;
-                      devACKO[4]  <= 0;
-                      devADDRO[1] <= 0;
-                      devADDRO[2] <= 0;
-                      devADDRO[3] <= 0;
-                      devADDRO[4] <= 0;
-                      devDATAO[1] <= 0;
-                      devDATAO[2] <= 0;
-                      devDATAO[3] <= 0;
-                      devDATAO[4] <= 0;
-                      devSEL      <= 0;
-                      state       <= stateIDLE;
-                   end
-              end
+              //
+              // All other accesses are RPW Accesses
+              //
 
-            //
-            // Done
-            //  Negate all requests
-            //
+              else
+                begin
+                   busREQO         <= 1;
+                   cntTMO          <= timeout;
+                   pageADDRI[0:17] <= flagREAD;
+                   state           <= stateLOOPtoMEM1;
+                end
+           end
 
-             stateDONE:
-              begin
-                 busREQO     <= 0;
-                 busACKO     <= 0;
-                 devREQO[1]  <= 0;
-                 devREQO[2]  <= 0;
-                 devREQO[3]  <= 0;
-                 devREQO[4]  <= 0;
-                 devACKO[1]  <= 0;
-                 devACKO[2]  <= 0;
-                 devACKO[3]  <= 0;
-                 devACKO[4]  <= 0;
-                 devADDRO[1] <= 0;
-                 devADDRO[2] <= 0;
-                 devADDRO[3] <= 0;
-                 devADDRO[4] <= 0;
-                 devDATAO[1] <= 0;
-                 devDATAO[2] <= 0;
-                 devDATAO[3] <= 0;
-                 devDATAO[4] <= 0;
-                 devSEL      <= 0;
-                 state       <= stateIDLE;
-              end
-          endcase
-     end
+         //
+         // Loopback is requesting read access to memory. Wait for memory to
+         //  respond. This is the read cycle of the read/pause/write cycle.
+         //
+
+         stateLOOPtoMEM1:
+           if (busACKI)
+             begin
+                busREQO <= 0;
+                rpwDATA <= busDATAI;
+                state   <= stateLOOPtoMEM2;
+             end
+           else if (cntTMO != 0)
+             cntTMO <= cntTMO - 1'b1;
+           else
+             begin
+                busREQO <= 0;
+                state   <= stateDONE;
+             end
+
+         //
+         // This is the pause cycle of the read/pause/write cycle.
+         //
+
+         stateLOOPtoMEM2:
+           state <= stateLOOPtoMEM3;
+
+         //
+         //  This is the write cycle of the read/pause/write cycle.
+         //
+
+         stateLOOPtoMEM3:
+           begin
+              busREQO         <= 1;
+              pageADDRI[0:17] <= flagWRITE;
+              case ({flagsE16, `devIOBYTE(loopADDR), `devWORDSEL(loopADDR), `devBYTESEL(loopADDR)})
+                4'b0000: busDATAO <= {loopDATA[0:17],  rpwDATA[18:35]};        // Even word
+                4'b0001: busDATAO <= {loopDATA[0:17],  rpwDATA[18:35]};        // Even word
+                4'b0010: busDATAO <= { rpwDATA[0:17], loopDATA[18:35]};        // Odd  word
+                4'b0011: busDATAO <= { rpwDATA[0:17], loopDATA[18:35]};        // Odd  word
+                4'b0100: busDATAO <= {2'b0,  rpwDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // Even word, low  byte.
+                4'b0101: busDATAO <= {2'b0, loopDATA[ 2: 9],  rpwDATA[10:17], 2'b0, busADDRO[20:27], busADDRO[28:35]};    // TEST16: Even word, high byte.
+                4'b0110: busDATAO <= {       rpwDATA[ 0:17],                  2'b0, loopDATA[20:27], loopDATA[28:35]};    // TEST17: Odd  word, low  byte.
+                4'b0111: busDATAO <= {       rpwDATA[ 0:17],                  2'b0, loopDATA[20:27],  rpwDATA[28:35]};    // TEST20: Odd  word, high byte.
+                4'b1000: busDATAO <= {2'b0, loopDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // E16, Even word
+                4'b1001: busDATAO <= {2'b0, loopDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // E16, Even word
+                4'b1010: busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0, loopDATA[20:27], loopDATA[28:35]};    // E16, Odd  word
+                4'b1011: busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0, loopDATA[20:27], loopDATA[28:35]};    // E16, Odd  word
+                4'b1100: busDATAO <= {2'b0,  rpwDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // E16, Even word, low  byte.
+                4'b1101: busDATAO <= {2'b0, loopDATA[ 2: 9],  rpwDATA[10:17], 2'b0, busADDRO[20:27], busADDRO[28:35]};    // E16, Even word, high byte.
+                4'b1110: busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0,  rpwDATA[20:27], loopDATA[28:35]};    // E16, Odd  word, low  byte.
+                4'b1111: busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0, loopDATA[20:27],  rpwDATA[28:35]};    // E16, Odd  word, high byte.
+              endcase
+              state <= stateLOOPtoMEM4;
+           end
+
+         //
+         // Wait for memory to finish
+         //
+
+         stateLOOPtoMEM4:
+           if (busACKI)
+             begin
+                busREQO <= 0;
+                state   <= stateDONE;
+             end
+           else if (cntTMO != 0)
+             cntTMO <= cntTMO - 1'b1;
+           else
+             begin
+                busREQO <= 0;
+                state   <= stateDONE;
+             end
+
+         //
+         // Check for page failures before acessing memory.  If UBA page
+         //  failure, bail out; otherwise start a memory request.
+         //
+
+         stateMEMtoLOOP0:
+           if (pageFAIL)
+             state <= stateDONE;
+           else
+             begin
+                busREQO         <= 1;
+                cntTMO          <= timeout;
+                pageADDRI[0:17] <= flagREAD;
+                state           <= stateMEMtoLOOP1;
+             end
+
+         //
+         // Read the data from memory
+         //
+
+         stateMEMtoLOOP1:
+           if (busACKI)
+             begin
+                busREQO <= 0;
+                case ({`devIOBYTE(loopADDR), `devWORDSEL(loopADDR), `devBYTESEL(loopADDR)})
+                  3'b000: loopDATA <= {18'b0, busDATAI[ 0:17]};      // Even word
+                  3'b001: loopDATA <= {18'b0, busDATAI[ 0:17]};      // Even word
+                  3'b010: loopDATA <= {18'b0, busDATAI[18:35]};      // Odd  word
+                  3'b011: loopDATA <= {18'b0, busDATAI[18:35]};      // Odd  word
+                  3'b100: loopDATA <= {28'b0, busDATAI[10:17]};      // Even word, low  byte.
+                  3'b101: loopDATA <= {20'b0, busDATAI[ 2: 9], 8'b0};// Even word, high byte.
+                  3'b110: loopDATA <= {28'b0, busDATAI[28:35]};      // Odd  word, low  byte.
+                  3'b111: loopDATA <= {20'b0, busDATAI[20:27], 8'b0};// Odd  word, high byte.
+                endcase
+                state <= stateMEMtoLOOP2;
+             end
+           else if (cntTMO != 0)
+             cntTMO <= cntTMO - 1'b1;
+           else
+             begin
+                busREQO <= 0;
+                state   <= stateDONE;
+             end
+
+         //
+         // Finally acknowlege the IO request that started this all.
+         //  Return the loopDATA from the NPR that was performed.
+         //
+
+         stateMEMtoLOOP2:
+           begin
+              busACKO  <= 1;
+              busDATAO <= loopDATA;
+              state    <= stateMEMtoLOOP3;
+           end
+
+         //
+         // Negate the bus acknowlege.  All done.
+         //
+
+         stateMEMtoLOOP3:
+           begin
+              if (!busREQI)
+                begin
+                   busACKO <= 0;
+                   state   <= stateDONE;
+                end
+           end
+
+         //
+         // Wait for register access to complete
+         //
+
+         stateWAITREG:
+           if ((!busREQI | !devREAD) & (!busREQI | !devWRITE))
+             begin
+                busREQO     <= 0;
+                busACKO     <= 0;
+                devREQO[1]  <= 0;
+                devREQO[2]  <= 0;
+                devREQO[3]  <= 0;
+                devREQO[4]  <= 0;
+                devACKO[1]  <= 0;
+                devACKO[2]  <= 0;
+                devACKO[3]  <= 0;
+                devACKO[4]  <= 0;
+                devADDRO[1] <= 0;
+                devADDRO[2] <= 0;
+                devADDRO[3] <= 0;
+                devADDRO[4] <= 0;
+                devDATAO[1] <= 0;
+                devDATAO[2] <= 0;
+                devDATAO[3] <= 0;
+                devDATAO[4] <= 0;
+                devSEL      <= 0;
+                state       <= stateIDLE;
+             end
+
+         //
+         // Wait for bus request to negate
+         //
+
+         stateWAITBUSREQ:
+           if (!busREQI)
+             begin
+                busREQO     <= 0;
+                busACKO     <= 0;
+                devREQO[1]  <= 0;
+                devREQO[2]  <= 0;
+                devREQO[3]  <= 0;
+                devREQO[4]  <= 0;
+                devACKO[1]  <= 0;
+                devACKO[2]  <= 0;
+                devACKO[3]  <= 0;
+                devACKO[4]  <= 0;
+                devADDRO[1] <= 0;
+                devADDRO[2] <= 0;
+                devADDRO[3] <= 0;
+                devADDRO[4] <= 0;
+                devDATAO[1] <= 0;
+                devDATAO[2] <= 0;
+                devDATAO[3] <= 0;
+                devDATAO[4] <= 0;
+                devSEL      <= 0;
+                state       <= stateIDLE;
+             end
+
+         //
+         // Wait for device request to negate
+         //
+
+         stateWAITDEVREQ:
+           if (!devREQI[devSEL])
+             begin
+                busREQO     <= 0;
+                busACKO     <= 0;
+                devREQO[1]  <= 0;
+                devREQO[2]  <= 0;
+                devREQO[3]  <= 0;
+                devREQO[4]  <= 0;
+                devACKO[1]  <= 0;
+                devACKO[2]  <= 0;
+                devACKO[3]  <= 0;
+                devACKO[4]  <= 0;
+                devADDRO[1] <= 0;
+                devADDRO[2] <= 0;
+                devADDRO[3] <= 0;
+                devADDRO[4] <= 0;
+                devDATAO[1] <= 0;
+                devDATAO[2] <= 0;
+                devDATAO[3] <= 0;
+                devDATAO[4] <= 0;
+                devSEL      <= 0;
+                state       <= stateIDLE;
+             end
+
+         //
+         // Wait for vector request to negate
+         //
+
+         stateWAITVECREQ:
+           if (!(busREQI & vectREAD))
+             begin
+                busREQO     <= 0;
+                busACKO     <= 0;
+                devREQO[1]  <= 0;
+                devREQO[2]  <= 0;
+                devREQO[3]  <= 0;
+                devREQO[4]  <= 0;
+                devACKO[1]  <= 0;
+                devACKO[2]  <= 0;
+                devACKO[3]  <= 0;
+                devACKO[4]  <= 0;
+                devADDRO[1] <= 0;
+                devADDRO[2] <= 0;
+                devADDRO[3] <= 0;
+                devADDRO[4] <= 0;
+                devDATAO[1] <= 0;
+                devDATAO[2] <= 0;
+                devDATAO[3] <= 0;
+                devDATAO[4] <= 0;
+                devSEL      <= 0;
+                state       <= stateIDLE;
+             end
+
+         //
+         // Done
+         //  Negate all requests
+         //
+
+         stateDONE:
+           begin
+              busREQO     <= 0;
+              busACKO     <= 0;
+              devREQO[1]  <= 0;
+              devREQO[2]  <= 0;
+              devREQO[3]  <= 0;
+              devREQO[4]  <= 0;
+              devACKO[1]  <= 0;
+              devACKO[2]  <= 0;
+              devACKO[3]  <= 0;
+              devACKO[4]  <= 0;
+              devADDRO[1] <= 0;
+              devADDRO[2] <= 0;
+              devADDRO[3] <= 0;
+              devADDRO[4] <= 0;
+              devDATAO[1] <= 0;
+              devDATAO[2] <= 0;
+              devDATAO[3] <= 0;
+              devDATAO[4] <= 0;
+              devSEL      <= 0;
+              state       <= stateIDLE;
+           end
+       endcase
 
    assign devRESET = statINI;
    assign setNXD   = (cntNXD == 1);

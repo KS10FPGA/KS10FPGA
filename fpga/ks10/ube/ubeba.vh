@@ -3,20 +3,20 @@
 // KS-10 Processor
 //
 // Brief
-//   UBA Paging Flag Definitions
+//   Unibus Excerciser Buffer Address Register (UBEBA) bit definitions.
 //
 // Details
-//   This module provides the bit definitions for the IO Bridge Paging Flags
+//   This file contains the bit definitions for the UBE Buffer Address Register.
 //
 // File
-//   ubapage.vh
+//   ubeba.vh
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -38,16 +38,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifndef __UBAPAGE_VH
-`define __UBAPAGE_VH
+`ifndef __UBEBA_VH
+`define __UBEBA_VH
 
-//
-// UBA Paging Flags
-//
-
-`define flagsRRV(bus)    (bus[0])            // Reverse read
-`define flagsE16(bus)    (bus[1])            // Enable 16-bit transfers
-`define flagsFTM(bus)    (bus[2])            // Fast transfer mode
-`define flagsVLD(bus)    (bus[3])            // Paging valid
+`define ubeBA_HI(reg)    (reg[15:8])    // High byte
+`define ubeBA_LO(reg)    (reg[ 7:0])    // Low byte
 
 `endif
