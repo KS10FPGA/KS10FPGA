@@ -3,8 +3,8 @@
 { "" "" "" "USEQ:uUSEQ\|STACK:uSTACK*" {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "LPRAMD:RAMD\|ramDATA*"     {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "LPRAMD:RAMD\|ramCTRL*"     {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "lpOVFUDAT"                 {  } {  } 0  10030 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "lpDVFUDAT"                 {  } {  } 0  14320 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "lpOVFUDAT*"                {  } {  } 0  10030 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "lpDVFUDAT*"                {  } {  } 0  14320 "" 0 0 "Design Software" 0 -1 0 ""}
 
 { "" "" "" "DROM"                      {  } {  } 0  10030 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "DROM"                      {  } {  } 0  14320 "" 0 0 "Design Software" 0 -1 0 ""}

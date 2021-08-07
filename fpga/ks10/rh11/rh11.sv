@@ -193,8 +193,8 @@ module RH11 (
    wire rpdsWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dsADDR[18:34]);
    wire rper1READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
    wire rper1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
-   wire rpasREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
-   wire rpasWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
+   wire rhasREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
+   wire rhasWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
 
    wire rplaREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
    wire rplaWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
@@ -291,10 +291,10 @@ module RH11 (
    wire [2:0] rhUNIT = `rhCS2_UNIT(rhCS2);
 
    //
-   // RH11 Attention Summary (RPAS) Register
+   // RH11 Attention Summary (RHAS) Pseudo Register
    //
 
-   wire [15:0] rpAS = {8'b0,
+   wire [15:0] rhAS = {8'b0,
                        `rpDS_ATA(rpDS[7]), `rpDS_ATA(rpDS[6]),
                        `rpDS_ATA(rpDS[5]), `rpDS_ATA(rpDS[4]),
                        `rpDS_ATA(rpDS[3]), `rpDS_ATA(rpDS[2]),
@@ -390,8 +390,8 @@ module RH11 (
                     rpdsREAD   & !rpPRES |
                     rper1WRITE & !rpPRES |
                     rper1READ  & !rpPRES |
-                    rpasWRITE  & !rpPRES |
-                    rpasREAD   & !rpPRES |
+                    rhasWRITE  & !rpPRES |
+                    rhasREAD   & !rpPRES |
                     rplaWRITE  & !rpPRES |
                     rplaREAD   & !rpPRES |
                     rpmrWRITE  & !rpPRES |
@@ -685,7 +685,7 @@ module RH11 (
                      rhcs2WRITE | rhcs2READ |
                      rpdsWRITE  | rpdsREAD  |
                      rper1WRITE | rper1READ |
-                     rpasWRITE  | rpasREAD  |
+                     rhasWRITE  | rhasREAD  |
                      //
                      rplaWRITE  | rplaREAD  |
                      rhdbWRITE  | rhdbREAD  |
@@ -705,23 +705,6 @@ module RH11 (
                      vectREAD);
 
    //
-   // Unit Selection
-   //
-
-   wire [15:0] rpdaUNIT  = rpDA[rhUNIT];
-   wire [15:0] rpdsUNIT  = rpDS[rhUNIT];
-   wire [15:0] rplaUNIT  = rpLA[rhUNIT];
-   wire [15:0] rpmrUNIT  = rpMR[rhUNIT];
-   wire [15:0] rpdtUNIT  = rpDT[rhUNIT];
-   wire [15:0] rpsnUNIT  = rpSN[rhUNIT];
-   wire [15:0] rpofUNIT  = rpOF[rhUNIT];
-   wire [15:0] rpdcUNIT  = rpDC[rhUNIT];
-   wire [15:0] rpccUNIT  = rpCC[rhUNIT];
-   wire [15:0] rper1UNIT = rpER1[rhUNIT];
-   wire [15:0] rper2UNIT = rpER2[rhUNIT];
-   wire [15:0] rper3UNIT = rpER3[rhUNIT];
-
-   //
    // Bus Mux and little-endian to big-endian bus swap.
    //  Only output the RP register if the disk is present.
    //
@@ -738,35 +721,35 @@ module RH11 (
         if (rhbaREAD)
           devDATAO = {20'b0, rhBA[15:0]};
         if (rpdaREAD & rpPRES)
-          devDATAO = {20'b0, rpdaUNIT};
+          devDATAO = {20'b0, rpDA[rhUNIT]};
         if (rhcs2READ)
           devDATAO = {20'b0, rhCS2};
         if (rpdsREAD & rpPRES)
-          devDATAO = {20'b0, rpdsUNIT};
+          devDATAO = {20'b0, rpDS[rhUNIT]};
         if (rper1READ & rpPRES)
-          devDATAO = {20'b0, rper1UNIT};
-        if (rpasREAD & rpPRES)
-          devDATAO = {20'b0, rpAS};
+          devDATAO = {20'b0, rpER1[rhUNIT]};
+        if (rhasREAD)
+          devDATAO = {20'b0, rhAS};
         if (rplaREAD & rpPRES)
-          devDATAO = {20'b0, rplaUNIT};
+          devDATAO = {20'b0, rpLA[rhUNIT]};
         if (rhdbREAD)
           devDATAO = {20'b0, rhDB};
         if (rpmrREAD & rpPRES)
-          devDATAO = {20'b0, rpmrUNIT};
+          devDATAO = {20'b0, rpMR[rhUNIT]};
         if (rpdtREAD & rpPRES)
-          devDATAO = {20'b0, rpdtUNIT};
+          devDATAO = {20'b0, rpDT[rhUNIT]};
         if (rpsnREAD & rpPRES)
-          devDATAO = {20'b0, rpsnUNIT};
+          devDATAO = {20'b0, rpSN[rhUNIT]};
         if (rpofREAD & rpPRES)
-          devDATAO = {20'b0, rpofUNIT};
+          devDATAO = {20'b0, rpOF[rhUNIT]};
         if (rpdcREAD & rpPRES)
-          devDATAO = {20'b0, rpdcUNIT};
+          devDATAO = {20'b0, rpDC[rhUNIT]};
         if (rpccREAD & rpPRES)
-          devDATAO = {20'b0, rpccUNIT};
+          devDATAO = {20'b0, rpCC[rhUNIT]};
         if (rper2READ & rpPRES)
-          devDATAO = {20'b0, rper2UNIT};
+          devDATAO = {20'b0, rpER2[rhUNIT]};
         if (rper3READ & rpPRES)
-          devDATAO = {20'b0, rper3UNIT};
+          devDATAO = {20'b0, rpER3[rhUNIT]};
         if (rpec1READ & rpPRES)
           devDATAO = {20'b0, rpEC1};
         if (rpec2READ & rpPRES)

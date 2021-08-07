@@ -338,7 +338,7 @@ RTL_FILES := \
 	ks10/lp26/lp26.v \
 	ks10/mem/mem.v \
 	ks10/mem/memstat.v \
-	ks10/rh11/rh11.v \
+	ks10/rh11/rh11.sv \
 	ks10/rh11/rhintr.v \
 	ks10/rh11/rhnem.v \
 	ks10/rh11/rhba.v \
