@@ -310,15 +310,6 @@ module RH11 (
                  `rpDS_ATA(rpDS[1]) | `rpDS_ATA(rpDS[0]));
 
    //
-   // 22 Sector (16-bit) Mode
-   //
-
-   wire [7:0] rpFMT22 = {`rpOF_FMT22(rpOF[7]), `rpOF_FMT22(rpOF[6]),
-                         `rpOF_FMT22(rpOF[5]), `rpOF_FMT22(rpOF[4]),
-                         `rpOF_FMT22(rpOF[3]), `rpOF_FMT22(rpOF[2]),
-                         `rpOF_FMT22(rpOF[1]), `rpOF_FMT22(rpOF[0])};
-
-   //
    // RPXX Status
    //
 
@@ -670,7 +661,6 @@ module RH11 (
       // RPXX interface
       .rpSDOP     (rpSDOP[sdSCAN]),
       .rpSDLSA    (rpSDLSA[sdSCAN]),
-      .rpFMT22    (rpFMT22[sdSCAN]),
       .rpSDREQ    (rpSDREQ),
       .rpSDACK    (rpSDACK),
       // SD Output

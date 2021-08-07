@@ -69,7 +69,6 @@ module SD (
       // RPXX
       input  wire [ 2: 0] rpSDOP,               // RP Operation
       input  wire [20: 0] rpSDLSA,              // RP Linear sector address
-      input  wire         rpFMT22,              // RP 22 Sector (16-bit) mode
       input  wire [ 7: 0] rpSDREQ,              // RP requests SD
       output reg  [ 7: 0] rpSDACK,              // SD has finished with RP
       // Output
