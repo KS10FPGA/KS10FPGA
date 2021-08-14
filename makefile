@@ -40,6 +40,7 @@ FPGA_LIST := \
 ALL_LIST := \
 	fpga* \
 	code \
+	wiki \
 	makefile \
 	doc/Manual \
 	doc/Website
