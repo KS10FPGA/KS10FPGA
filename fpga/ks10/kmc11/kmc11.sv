@@ -134,15 +134,16 @@ module KMC11 (
    // Address Decoding
    //
 
-   wire         vectREAD  = devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == kmcDEV);
-   wire         sel0READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);
-   wire         sel0WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);
-   wire         sel2READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel2ADDR[18:34]);
-   wire         sel2WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel2ADDR[18:34]);
-   wire         sel4READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
-   wire         sel4WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
-   wire         sel6READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
-   wire         sel6WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
+   wire devREQI1 = 1;					// FIXME: devREQI should work but doesn't
+   wire vectREAD  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == kmcDEV);
+   wire sel0READ  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);
+   wire sel0WRITE = devREQI1 & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);
+   wire sel2READ  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel2ADDR[18:34]);
+   wire sel2WRITE = devREQI1 & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel2ADDR[18:34]);
+   wire sel4READ  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
+   wire sel4WRITE = devREQI1 & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
+   wire sel6READ  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
+   wire sel6WRITE = devREQI1 & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
 
    //
    // Big-endian to little-endian data bus swap
@@ -156,116 +157,123 @@ module KMC11 (
 
    localparam [35:22] kmcRDMEMFLAGS = 14'b00010000000000,  // Read memory
                       kmcWRMEMFLAGS = 14'b00000100000000,  // Write memory
-                      kmcRDIOFLAGS  = 14'b00010010101000,  // Read Phys IO Byte to UBA3
-                      kmcWRIOFLAGS  = 14'b00000110101000;  // Write Phys IO Byte to UBA3
+                      kmcRDIOFLAGS  = 14'b00010010101000,  // Read Phys IO Byte
+                      kmcWRIOFLAGS  = 14'b00000110101000;  // Write Phys IO Byte
+
+   //
+   // Read/Pause/Write Data
+   //
+
+   logic [35: 0] kmcRPWD;
 
    //
    // Maintenance Register Bits
    //
 
-   wire [15: 8] kmcMAINT;
-   wire         kmcRUN     = `kmcMAINT_RUN(kmcMAINT);
-   wire         kmcMCLR    = `kmcMAINT_MCLR(kmcMAINT);
-   wire         kmcCRAMWR  = `kmcMAINT_CRAMWR(kmcMAINT);
-   wire         kmcCRAMOUT = `kmcMAINT_CRAMOUT(kmcMAINT);
-   wire         kmcCRAMIN  = `kmcMAINT_CRAMIN(kmcMAINT);
-   wire         kmcSTEP    = `kmcMAINT_STEP(kmcMAINT);
+   logic [15: 8] kmcMAINT;
+   wire          kmcRUN     = `kmcMAINT_RUN(kmcMAINT);
+   wire          kmcMCLR    = `kmcMAINT_MCLR(kmcMAINT);
+   wire          kmcCRAMWR  = `kmcMAINT_CRAMWR(kmcMAINT);
+   wire          kmcCRAMOUT = `kmcMAINT_CRAMOUT(kmcMAINT);
+   wire          kmcCRAMIN  = `kmcMAINT_CRAMIN(kmcMAINT);
+   wire          kmcSTEP    = `kmcMAINT_STEP(kmcMAINT);
 
    //
    // Initialize
    //
 
-   wire         kmcINIT = kmcMCLR | devRESET;
+   wire          kmcINIT = kmcMCLR | devRESET;
 
    //
    // Multiport RAM
    //
 
-   wire [15: 0] kmcNPRID;                               // NPR output data
-   wire [15: 0] kmcNPROD;                               // NPR output data
-   wire [15: 0] kmcNPRIA;                               // NPR input address
-   wire [15: 0] kmcNPROA;                               // NPR output address
-   wire [15: 0] kmcCSR0;                                // CSR0
-   wire [15: 0] kmcCSR2;                                // CSR2
-   wire [15: 0] kmcCSR4;                                // CSR4
-   wire [15: 0] kmcCSR6;                                // CSR6
-   wire [ 9: 0] kmcMNTADDR;                             // Maintenance address register
-   wire [15: 0] kmcMNTINST;                             // Maintenance instruction register
-   wire         kmcMPBUSY;                              // Multiport RAM Busy
+   logic [15: 0] kmcNPRID;                              // NPR output data
+   logic [15: 0] kmcNPROD;                              // NPR output data
+   logic [15: 0] kmcNPRIA;                              // NPR input address
+   logic [15: 0] kmcNPROA;                              // NPR output address
+   logic [15: 0] kmcCSR0;                               // CSR0
+   logic [15: 0] kmcCSR2;                               // CSR2
+   logic [15: 0] kmcCSR4;                               // CSR4
+   logic [15: 0] kmcCSR6;                               // CSR6
+   logic [ 9: 0] kmcMNTADDR;                            // Maintenance address register
+   logic [15: 0] kmcMNTINST;                            // Maintenance instruction register
+   logic         kmcMPBUSY;                             // Multiport RAM Busy
 
    //
    // Arithmetic Logic Unit (ALU) Signals
    //
 
-   wire [ 7: 0] kmcALU;                                 // ALU Data
-   wire         kmcALUZ;                                // ALU Zero
-   wire         kmcALUC;                                // ALU Carry
+   logic [ 7: 0] kmcALU;                                // ALU Data
+   logic         kmcALUZ;                               // ALU Zero
+   logic         kmcALUC;                               // ALU Carry
 
    //
    // Branch Register (BRG) Signals
    //
 
-   wire [ 7: 0] kmcBRG;                                 // BRG Register
+   logic [ 7: 0] kmcBRG;                                // BRG Register
 
    //
    // Sequencer Signals
    //
 
-   wire [ 9: 0] kmcPC;                                  // Program Counter
-   wire [15: 0] kmcCRAM;                                // Control RAM (Microcode)
+   logic [ 9: 0] kmcPC;                                 // Program Counter
+   logic [15: 0] kmcCRAM;                               // Control RAM (Microcode)
 
    //
    // MEM Signals
    //
 
-   wire [ 7: 0] kmcMEM;                                 // Memory
-   wire [10: 0] kmcMAR;                                 // Memory Address Register
+   logic [ 7: 0] kmcMEM;                                // Memory
+   logic [10: 0] kmcMAR;                                // Memory Address Register
 
    //
    // Data Mux Signals
    //
 
-   wire [ 7: 0] kmcDMUX;                                // Data mux
+   logic [ 7: 0] kmcDMUX;                               // Data mux
 
    //
    // Misc Register Signals
    //
 
-   wire [ 7: 0] kmcMISC;                                // Misc Register
-   wire         kmcVECTXXX4 = `kmcMISC_VECTXXX4(kmcMISC);//Interrupt Vector
-   wire [17:16] kmcBAEO     = `kmcMISC_BAEO(kmcMISC);   // BA[17:16] for DMA Writes
-   wire         kmcSETIRQ;                              // Start an interrupt
-   wire         kmcIRQO;                                // Interrupt in progress
-   wire         kmcSETNXM;                              // Non-existent memory
+   logic [ 7: 0] kmcMISC;                               // Misc Register
+   wire          kmcVECTXXX4 = `kmcMISC_VECTXXX4(kmcMISC);//Interrupt Vector
+   wire  [17:16] kmcBAEO     = `kmcMISC_BAEO(kmcMISC);  // BA[17:16] for DMA Writes
+   logic         kmcSETIRQ;                             // Start an interrupt
+   logic         kmcIRQO;                               // Interrupt in progress
+   logic         kmcSETNXM;                             // Non-existent memory
 
    //
    // NPR Control Port Signals
    //
 
-   wire [ 7: 0] kmcNPRC;                                // NPR Control Register
-   wire         kmcNPRO = `kmcNPRC_NPRO(kmcNPRC);       // NPR Direction
-   wire [17:16] kmcBAEI = `kmcNPRC_BAEI(kmcNPRC);       // BA[17:16] for DMA Reads
+   logic [ 7: 0] kmcNPRC;                               // NPR Control Register
+   wire          kmcNPRO = `kmcNPRC_NPRO(kmcNPRC);      // NPR Direction
+   wire          kmcBYTE = `kmcNPRC_BYTEXFER(kmcNPRC);  // NPR size
+   wire  [17:16] kmcBAEI = `kmcNPRC_BAEI(kmcNPRC);      // BA[17:16] for DMA Reads
 
    //
    // Scratch Pad Signals
    //
 
-   wire [ 7: 0] kmcSP;                                  // Scratch Pad Register
+   logic [ 7: 0] kmcSP;                                 // Scratch Pad Register
 
    //
    // Clock enables
    //
 
-   wire         kmcALUCLKEN;                            // ALU Clock Enable
-   wire         kmcBRGCLKEN;                            // BRG Clock Enable
-   wire         kmcCRAMCLKEN;                           // Control RAM Clock Enable
-   wire         kmcMARCLKEN;                            // Memory Address Register Clock Enable
-   wire         kmcMEMCLKEN;                            // Memory Clock Enable
-   wire         kmcMISCCLKEN;                           // Misc Register Clock Enable
-   wire         kmcNPRCLKEN;                            // NPR Control Register Clock Enable
-   wire         kmcPCCLKEN;                             // Program Counter Clock Enable
-   wire         kmcREGCLKEN;                            // Multiport RAM clock enable
-   wire         kmcSPCLKEN;                             // SP Clock Enable
+   logic         kmcALUCLKEN;                           // ALU Clock Enable
+   logic         kmcBRGCLKEN;                           // BRG Clock Enable
+   logic         kmcCRAMCLKEN;                          // Control RAM Clock Enable
+   logic         kmcMARCLKEN;                           // Memory Address Register Clock Enable
+   logic         kmcMEMCLKEN;                           // Memory Clock Enable
+   logic         kmcMISCCLKEN;                          // Misc Register Clock Enable
+   logic         kmcNPRCLKEN;                           // NPR Control Register Clock Enable
+   logic         kmcPCCLKEN;                            // Program Counter Clock Enable
+   logic         kmcREGCLKEN;                           // Multiport RAM clock enable
+   logic         kmcSPCLKEN;                            // SP Clock Enable
 
    //
    // Maintenance Register
@@ -327,6 +335,7 @@ module KMC11 (
       .kmcALU      (kmcALU),
       .kmcRAMCLKEN (kmcREGCLKEN),
       .kmcNPRO     (kmcNPRO),
+      .kmcBYTE     (kmcBYTE),
       .kmcMPBUSY   (kmcMPBUSY),
       .kmcNPRID    (kmcNPRID),
       .kmcNPROD    (kmcNPROD),
@@ -435,6 +444,7 @@ module KMC11 (
       .rst         (rst),
       .devACKI     (devACKI),
       .devREQO     (devREQO),
+      .devDATAI    (devDATAI),
       .kmcINIT     (kmcINIT),
       .kmcCRAM     (kmcCRAM),
       .kmcNPRCLKEN (kmcNPRCLKEN),
@@ -442,6 +452,7 @@ module KMC11 (
       .kmcALU      (kmcALU),
       .kmcMPBUSY   (kmcMPBUSY),
       .kmcSETNXM   (kmcSETNXM),
+      .kmcRPWD     (kmcRPWD),
       .kmcNPRC     (kmcNPRC)
    );
 
@@ -571,7 +582,20 @@ module KMC11 (
           if (kmcCRAMOUT)
             devDATAO = {20'b0, kmcMNTINST};
           else
-            devDATAO = {2'b0, kmcNPROD, 2'b0, kmcNPROD};
+`ifdef KMC_BROKE_RPW
+            case ({kmcBYTE, kmcNPROA[1:0]})
+              3'b000: devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word
+              3'b001: devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word
+              3'b010: devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word
+              3'b011: devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word
+              3'b100: devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word, low  byte (not RPW)
+              3'b101: devDATAO <= {2'b0, kmcNPROD[15: 8],  kmcRPWD[25:18], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word, high byte (RPW)
+              3'b110: devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0,  kmcRPWD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word, low  byte (RPW)
+              3'b111: devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8],  kmcRPWD[ 7: 0]};     // Odd  word, high byte (RPW)
+            endcase
+`else
+            devDATAO <= {2'b0, kmcNPROD[15:0], 2'b0, kmcNPROD[15:0]};
+`endif
         else
           begin
              if (sel0READ)

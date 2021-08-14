@@ -81,7 +81,8 @@ module KMCMPRAM (
       input  wire         kmcCRAMOUT,   // CRAM OUT
       input  wire  [ 7:0] kmcALU,       // ALU data
       input  wire         kmcRAMCLKEN,  // MPRAM clock enable
-      input  wire         kmcNPRO,      // NPR out transaction
+      input  wire         kmcNPRO,      // NPR Out transaction
+      input  wire         kmcBYTE,      // NPR Byte transaction
       output wire         kmcMPBUSY,    // MPRAM busy
       output logic [15:0] kmcNPRID,     // NPR in data
       output logic [15:0] kmcNPROD,     // NPR out data
@@ -112,8 +113,22 @@ module KMCMPRAM (
      begin
         if (rst)
           kmcNPRID[7:0] <= 0;
+`ifdef KMC_BROKE_RPW
+        else if (devREQO & devACKI & !kmcNPRO)
+          case ({kmcBYTE, kmcNPRIA[1:0]})
+            3'b000: kmcNPRID[ 7: 0] <= kmcDATAI[25:18]; // Even word
+            3'b001: kmcNPRID[ 7: 0] <= kmcDATAI[25:18]; // Even word
+            3'b010: kmcNPRID[ 7: 0] <= kmcDATAI[ 7: 0]; // Odd  word
+            3'b011: kmcNPRID[ 7: 0] <= kmcDATAI[ 7: 0]; // Odd  word
+            3'b100: kmcNPRID[ 7: 0] <= kmcDATAI[25:18]; // Even word, low  byte
+            3'b101: ;                                   // Even word, high byte
+            3'b110: kmcNPRID[ 7: 0] <= kmcDATAI[ 7: 0]; // Odd  word, low  byte
+            3'b111: ;                                   // Odd  word, high byte
+          endcase
+`else
         else if (devLOBYTE & devREQO & devACKI & !kmcNPRO)
           kmcNPRID[7:0] <= kmcDATAI[7:0];
+`endif
         else if (kmcRAMCLKEN & kmcDSTOBUS & (`kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPRIDL))
           kmcNPRID[7:0] <= kmcALU;
      end
@@ -127,8 +142,22 @@ module KMCMPRAM (
      begin
         if (rst)
           kmcNPRID[15:8] <= 0;
+`ifdef KMC_BROKE_RPW
+        else if (devREQO & devACKI & !kmcNPRO)
+          case ({kmcBYTE, kmcNPRIA[1:0]})
+            3'b000: kmcNPRID[15: 8] <= kmcDATAI[33:26]; // Even word
+            3'b001: kmcNPRID[15: 8] <= kmcDATAI[33:26]; // Even word
+            3'b010: kmcNPRID[15: 8] <= kmcDATAI[15: 8]; // Odd  word
+            3'b011: kmcNPRID[15: 8] <= kmcDATAI[15: 8]; // Odd  word
+            3'b100: ;                                   // Even word, low  byte
+            3'b101: kmcNPRID[15: 8] <= kmcDATAI[33:26]; // Even word, high byte
+            3'b110: ;                                   // Odd  word, low  byte
+            3'b111: kmcNPRID[15: 8] <= kmcDATAI[15: 8]; // Odd  word, high byte
+          endcase
+`else
         else if (devHIBYTE & devREQO & devACKI & !kmcNPRO)
           kmcNPRID[15:8] <= kmcDATAI[15:8];
+`endif
         else if (kmcRAMCLKEN & kmcDSTOBUS & (`kmcCRAM_OBUS(kmcCRAM) == `kmcCRAM_OBUS_NPRIDH))
           kmcNPRID[15:8] <= kmcALU;
      end

@@ -367,7 +367,6 @@ RTL_FILES := \
 	ks10/uba/ubasr.sv \
 	ks10/uba/ubapage.sv \
 	ks10/uba/ubaintr.sv \
-	ks10/uba/ubaintfc.sv \
 	ks10/ube/ube.sv \
 	ks10/ube/ubedb.sv \
 	ks10/ube/ubecc.sv \

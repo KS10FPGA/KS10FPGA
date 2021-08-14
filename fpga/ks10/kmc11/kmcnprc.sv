@@ -46,18 +46,20 @@
 `include "kmccram.vh"
 
 module KMCNPRC (
-      input  wire         clk,          // Clock
-      input  wire         rst,          // Reset
-      input  wire         devACKI,      // Device acknowledge in
-      output logic        devREQO,      // Device request out
-      input  wire         kmcINIT,      // Initialize
-      input  wire  [15:0] kmcCRAM,      // Control ROM
-      input  wire         kmcNPRCLKEN,  // NPR clock enable
-      input  wire  [10:0] kmcMAR,       // MAR register
-      input  wire  [ 7:0] kmcALU,       // ALU register
-      input  wire         kmcMPBUSY,    // Multiport RAM Busy
-      output logic        kmcSETNXM,    // Non-existent Memory
-      output logic [ 7:0] kmcNPRC       // NPRC register
+      input  wire          clk,         // Clock
+      input  wire          rst,         // Reset
+      input  wire          devACKI,     // Device acknowledge in
+      output logic         devREQO,     // Device request out
+      input  wire  [35: 0] devDATAI,    // Device data in
+      input  wire          kmcINIT,     // Initialize
+      input  wire  [15: 0] kmcCRAM,     // Control ROM
+      input  wire          kmcNPRCLKEN, // NPR clock enable
+      input  wire  [10: 0] kmcMAR,      // MAR register
+      input  wire  [ 7: 0] kmcALU,      // ALU register
+      input  wire          kmcMPBUSY,   // Multiport RAM Busy
+      output logic         kmcSETNXM,   // Non-existent Memory
+      output logic [35: 0] kmcRPWD,     // Read/Pause/Write Data
+      output logic [ 7: 0] kmcNPRC      // NPRC register
    );
 
    //
@@ -154,6 +156,7 @@ module KMCNPRC (
           begin
              devREQO   <= 0;
              kmcSETNXM <= 0;
+             kmcRPWD   <= 0;
              kmcNXMCNT <= kmcNXMVAL;
              state     <= stateIDLE;
           end
