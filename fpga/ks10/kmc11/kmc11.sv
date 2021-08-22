@@ -134,7 +134,7 @@ module KMC11 (
    // Address Decoding
    //
 
-   wire devREQI1 = 1;					// FIXME: devREQI should work but doesn't
+   wire devREQI1 = 1;                                   // FIXME: devREQI should work but doesn't
    wire vectREAD  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == kmcDEV);
    wire sel0READ  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);
    wire sel0WRITE = devREQI1 & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);

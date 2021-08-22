@@ -322,6 +322,7 @@ module KS10 (
    wire [ 0:35] cpuADDRO;               // CPU Address Out
    wire [ 0:35] cpuDATAI;               // CPU Data In
    wire [ 0:35] cpuDATAO;               // CPU Data Out
+   wire [ 1: 7] cpuINTRI;               // CPU Interrutpt In
    wire         cpuHALT;                // CPU Halt Status
    wire         cpuRUN;                 // CPU Run Status
    wire         cpuEXEC;                // CPU Exec Status
@@ -510,6 +511,7 @@ module KS10 (
       .cpuADDRI         (cpuADDRO),
       .cpuDATAI         (cpuDATAO),
       .cpuDATAO         (cpuDATAI),
+      .cpuINTRO         (cpuINTRI),
       // Console
       .cslREQI          (cslREQO),
       .cslREQO          (cslREQI),
@@ -528,6 +530,7 @@ module KS10 (
       .ubaDATAO         (ubaDATAI),
       .ubaADDRI         (ubaADDRO),
       .ubaADDRO         (ubaADDRI),
+      .ubaINTRI         (ubaINTR),
       // Memory
       .memREQO          (memREQI),
       .memACKI          (memACKO),
@@ -556,14 +559,13 @@ module KS10 (
       .cslCACHEEN       (cslCACHEEN),
       .cslINTRI         (cslINTR),
       .cslINTRO         (cslINTRO),
-      // UBA
-      .ubaINTR          (ubaINTR[1] | ubaINTR[2] |  ubaINTR[3] | ubaINTR[4]),
       // CPU
       .cpuREQO          (cpuREQO),
       .cpuACKI          (cpuACKI),
       .cpuADDRO         (cpuADDRO),
       .cpuDATAI         (cpuDATAI),
       .cpuDATAO         (cpuDATAO),
+      .cpuINTRI         (cpuINTRI),
       .cpuHALT          (cpuHALT),
       .cpuRUN           (cpuRUN),
       .cpuEXEC          (cpuEXEC),

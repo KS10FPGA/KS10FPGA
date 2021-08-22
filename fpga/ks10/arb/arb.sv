@@ -48,6 +48,7 @@ module ARB (
       input  wire [0:35] cpuADDRI,      // CPU Address
       input  wire [0:35] cpuDATAI,      // CPU Data In
       output reg  [0:35] cpuDATAO,      // CPU Data Out
+      output reg  [1: 7] cpuINTRO,      // CPU Interrupt Out
       // Console Interfaces
       input  wire        cslREQI,       // CSL Bus Request In
       output reg         cslREQO,       // CSL Bus Request Out
@@ -66,6 +67,7 @@ module ARB (
       output reg  [0:35] ubaDATAO[1:4], // UBA Data Out
       input  wire [0:35] ubaADDRI[1:4], // UBA Address In
       output reg  [0:35] ubaADDRO[1:4], // UBA Address Out
+      input  wire [1: 7] ubaINTRI[1:4], // Unibus Interrupt Request In
       // Memory Interfaces
       output reg         memREQO,       // MEM Bus Request Out
       input  wire        memACKI,       // MEM Bus Acknowledge In
@@ -310,5 +312,11 @@ module ARB (
 
           end
      end
+
+   //
+   // Interrupts
+   //
+
+   assign cpuINTRO = (ubaINTRI[1] | ubaINTRI[2] |  ubaINTRI[3] | ubaINTRI[4]);
 
 endmodule

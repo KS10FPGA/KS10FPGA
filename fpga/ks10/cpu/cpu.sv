@@ -61,7 +61,7 @@ module CPU (
       input  wire         cslINTRI,     // Console Interrupt to CPU
       output wire         cslINTRO,     // CPU Interrupt to Console
       // UBA
-      input  wire [ 1: 7] ubaINTR,      // Unibus Interrupt Request
+      input  wire [ 1: 7] cpuINTRI,     // Unibus Interrupt Request
       // CPU
       output wire         cpuREQO,      // CPU Bus Request
       input  wire         cpuACKI,      // Bus Acknowledge
@@ -409,7 +409,7 @@ module CPU (
       .crom             (crom),
       .dp               (dp),
       .aprINTR          (aprINTR),
-      .ubaINTR          (ubaINTR),
+      .ubaINTR          (cpuINTRI),
       .piREQPRI         (piREQPRI),
       .piCURPRI         (piCURPRI),
       .piINTR           (piINTR)
