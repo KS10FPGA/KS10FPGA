@@ -76,8 +76,7 @@ module CPU (
       output wire [18:35] cpuPC,        // Program Counter Register
       output wire [ 0:35] cpuHR,        // Instruction Register
       output wire         regsLOAD,     // Register update
-      output wire         vmaLOAD,      // VMA update
-      output wire         writeEN       // Write Enable
+      output wire         vmaLOAD       // VMA update
    );
 
    //
@@ -602,8 +601,7 @@ module CPU (
       .pcFLAGS          (pcFLAGS),
       .pageFAIL         (pageFAIL),
       .vmaREG           (vmaREG),
-      .vmaLOAD          (vmaLOAD),
-      .writeEN          (writeEN)
+      .vmaLOAD          (vmaLOAD)
    );
 
    //

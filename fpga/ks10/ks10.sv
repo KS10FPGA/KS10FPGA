@@ -416,7 +416,6 @@ module KS10 (
    wire [ 0:35] memDATAI;               // Memory Data In
    wire [ 0:35] memDATAO;               // Memory Data Out
    wire [ 0:35] memADDRI;               // Memory Address In
-   wire         writeEN;                // Memory Write Enable
 
    //
    // Buses between Backplane Bus Arbiter and UBA Adapters (x4)
@@ -574,8 +573,7 @@ module KS10 (
       .cpuPC            (cpuPC),
       .cpuHR            (cpuHR),
       .regsLOAD         (regsLOAD),
-      .vmaLOAD          (vmaLOAD),
-      .writeEN          (writeEN)
+      .vmaLOAD          (vmaLOAD)
    );
 
    //
@@ -685,7 +683,6 @@ module KS10 (
       .rst              (memRST),
       .memCLK           (memCLK),
       .clkT             (clkT),
-      .writeEN          (writeEN),
       .busREQI          (memREQI),
       .busACKO          (memACKO),
       .busADDRI         (memADDRI),

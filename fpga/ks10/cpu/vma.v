@@ -57,8 +57,7 @@ module VMA (
       input  wire [ 0: 17] pcFLAGS,     // PC Flags
       input  wire          pageFAIL,    // Page fail
       output reg  [ 0: 35] vmaREG,      // VMA register
-      output reg           vmaLOAD,     // VMA load
-      output reg           writeEN      // Write Enable
+      output reg           vmaLOAD      // VMA load
    );
 
    //
@@ -200,6 +199,7 @@ module VMA (
 
    reg readEN;
    reg wrtestEN;
+   reg writeEN;
    reg cacheinhEN;
    wire [1:0] sel = {`cromMEM_CYCLE_SEL};
 
