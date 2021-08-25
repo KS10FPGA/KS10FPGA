@@ -68,9 +68,9 @@ module NXD (
    // Microcode decode
    //
 
-   wire busREAD  = `busREAD(cpuADDRO);          // Read Cycle (IO or Memory)
-   wire busWRITE = `busWRITE(cpuADDRO);         // Write Cycle (IO or Memory)
-   wire busPHYS  = `busPHYS(cpuADDRO);          // Physical Address
+// wire busREAD  = `busREAD(cpuADDRO);          // Read Cycle (IO or Memory)
+// wire busWRITE = `busWRITE(cpuADDRO);         // Write Cycle (IO or Memory)
+// wire busPHYS  = `busPHYS(cpuADDRO);          // Physical Address
    wire busIO    = `busIO(cpuADDRO);            // IO Cycle
    wire busWRU   = `busWRU(cpuADDRO);           // WRU Cycle
    wire busVECT  = `busVECT(cpuADDRO);          // Vector Cycle
