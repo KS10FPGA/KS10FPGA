@@ -149,7 +149,7 @@
 //       must be zero.
 //
 // File
-//   csl.v
+//   csl.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -192,98 +192,98 @@
 
 module CSL (
       // Clock and Reset
-      input  wire         clk,          // Clock
-      input  wire         rst,          // Reset
+      input  wire          clk,         // Clock
+      input  wire          rst,         // Reset
       // AXI Interface
-      input  wire [ 7: 0] axiAWADDR,    // Write address
-      input  wire         axiAWVALID,   // Write address valid
-      output reg          axiAWREADY,   // Write address ready
-      input  wire [ 2: 0] axiAWPROT,    // Write protections
-      input  wire [31: 0] axiWDATA,     // Write data
-      input  wire [ 3: 0] axiWSTRB,     // Write data strobe
-      input  wire         axiWVALID,    // Write data valid
-      output reg          axiWREADY,    // Write data ready
-      input  wire [ 7: 0] axiARADDR,    // Read  address
-      input  wire         axiARVALID,   // Read  address valid
-      output reg          axiARREADY,   // Read  address ready
-      input  wire [ 2: 0] axiARPROT,    // Read  protections
-      output reg  [31: 0] axiRDATA,     // Read  data
-      output wire [ 1: 0] axiRRESP,     // Read  data response
-      output reg          axiRVALID,    // Read  data valid
-      input  wire         axiRREADY,    // Read  data ready
-      output wire [ 1: 0] axiBRESP,     // Write response
-      output reg          axiBVALID,    // Write response valid
-      input  wire         axiBREADY,    // Write response ready
+      input  wire  [ 7: 0] axiAWADDR,   // Write address
+      input  wire          axiAWVALID,  // Write address valid
+      output logic         axiAWREADY,  // Write address ready
+      input  wire  [ 2: 0] axiAWPROT,   // Write protections
+      input  wire  [31: 0] axiWDATA,    // Write data
+      input  wire  [ 3: 0] axiWSTRB,    // Write data strobe
+      input  wire          axiWVALID,   // Write data valid
+      output logic         axiWREADY,   // Write data ready
+      input  wire  [ 7: 0] axiARADDR,   // Read  address
+      input  wire          axiARVALID,  // Read  address valid
+      output logic         axiARREADY,  // Read  address ready
+      input  wire  [ 2: 0] axiARPROT,   // Read  protections
+      output logic [31: 0] axiRDATA,    // Read  data
+      output logic [ 1: 0] axiRRESP,    // Read  data response
+      output logic         axiRVALID,   // Read  data valid
+      input  wire          axiRREADY,   // Read  data ready
+      output logic [ 1: 0] axiBRESP,    // Write response
+      output logic         axiBVALID,   // Write response valid
+      input  wire          axiBREADY,   // Write response ready
       // Bus Interface
-      input  wire         busREQI,      // Bus Request In
-      output reg          busREQO,      // Bus Request Out
-      input  wire         busACKI,      // Bus Acknowledge In
-      output wire         busACKO,      // Bus Acknowledge Out
-      input  wire [ 0:35] busADDRI,     // Bus Address In
-      output reg  [ 0:35] busADDRO,     // Bus Address Out
-      input  wire [ 0:35] busDATAI,     // Bus Data In
-      output wire [ 0:35] busDATAO,     // Bus Data Out
+      input  wire          busREQI,     // Bus Request In
+      output logic         busREQO,     // Bus Request Out
+      input  wire          busACKI,     // Bus Acknowledge In
+      output logic         busACKO,     // Bus Acknowledge Out
+      input  wire  [ 0:35] busADDRI,    // Bus Address In
+      output logic [ 0:35] busADDRO,    // Bus Address Out
+      input  wire  [ 0:35] busDATAI,    // Bus Data In
+      output logic [ 0:35] busDATAO,    // Bus Data Out
       // CPU Interfaces
-      input  wire         cpuRUN,       // CPU Run Status
-      input  wire         cpuCONT,      // CPU Cont Status
-      input  wire         cpuEXEC,      // CPU Exec Status
-      input  wire         cpuHALT,      // CPU Halt Status
+      input  wire          cpuRUN,      // CPU Run Status
+      input  wire          cpuCONT,     // CPU Cont Status
+      input  wire          cpuEXEC,     // CPU Exec Status
+      input  wire          cpuHALT,     // CPU Halt Status
       // Console Interfaces
-      output reg          cslRUN,       // Run Switch
-      output reg          cslHALT,      // Halt Switch
-      output reg          cslCONT,      // Continue Switch
-      output reg          cslEXEC,      // Execute Switch
-      output wire         cslTIMEREN,   // Timer Enable
-      output wire         cslTRAPEN,    // Trap Enable
-      output wire         cslCACHEEN,   // Cache Enable
-      output reg          cslINTR,      // Interrupt KS10
-      output wire         cslRESET,     // Reset KS10
+      output logic         cslRUN,      // Run Switch
+      output logic         cslHALT,     // Halt Switch
+      output logic         cslCONT,     // Continue Switch
+      output logic         cslEXEC,     // Execute Switch
+      output logic         cslTIMEREN,  // Timer Enable
+      output logic         cslTRAPEN,   // Trap Enable
+      output logic         cslCACHEEN,  // Cache Enable
+      output logic         cslINTR,     // Interrupt KS10
+      output logic         cslRESET,    // Reset KS10
       // DUP11 Interfaces
-      input  wire         dupTXE,       // DUP11 TX FIFO Empty
-      output wire         dupRI,        // DUP11 Ring Indication
-      output wire         dupCTS,       // DUP11 Clear to Send
-      output wire         dupDSR,       // DUP11 Data Set Ready
-      output wire         dupDCD,       // DUP11 Data Carrier Detect
-      input  wire [ 7: 0] dupTXFIFO,    // DUP11 TX FIFO
-      input  wire         dupRXF,       // DUP11 RX FIFO Full
-      input  wire         dupDTR,       // DUP11 Data Terminal Ready
-      input  wire         dupRTS,       // DUP11 Request to Send
-      output wire         dupH325,      // DUP11 H325 Loopback
-      output wire         dupW3,        // DUP11 Jumper Wire #3
-      output wire         dupW5,        // DUP11 Jumper Wire #3
-      output wire         dupW6,        // DUP11 Jumper Wire #3
-      output wire [ 7: 0] dupRXFIFO,    // DUP11 RX FIFO
-      output reg          dupRXFIFO_WR, // DUP11 RX FIFO Write
-      output reg          dupTXFIFO_RD, // DUP11 TX FIFO Read
+      input  wire          dupTXE,      // DUP11 TX FIFO Empty
+      output logic         dupRI,       // DUP11 Ring Indication
+      output logic         dupCTS,      // DUP11 Clear to Send
+      output logic         dupDSR,      // DUP11 Data Set Ready
+      output logic         dupDCD,      // DUP11 Data Carrier Detect
+      input  wire  [ 7: 0] dupTXFIFO,   // DUP11 TX FIFO
+      input  wire          dupRXF,      // DUP11 RX FIFO Full
+      input  wire          dupDTR,      // DUP11 Data Terminal Ready
+      input  wire          dupRTS,      // DUP11 Request to Send
+      output logic         dupH325,     // DUP11 H325 Loopback
+      output logic         dupW3,       // DUP11 Jumper Wire #3
+      output logic         dupW5,       // DUP11 Jumper Wire #3
+      output logic         dupW6,       // DUP11 Jumper Wire #3
+      output logic [ 7: 0] dupRXFIFO,   // DUP11 RX FIFO
+      output logic         dupRXFIFO_WR,// DUP11 RX FIFO Write
+      output logic         dupTXFIFO_RD,// DUP11 TX FIFO Read
       // DZ11 Interfaces
-      output wire [ 7: 0] dzCO,         // DZ11 Carrier Sense
-      output wire [ 7: 0] dzRI,         // DZ11 Ring Indication
+      output logic [ 7: 0] dzCO,        // DZ11 Carrier Sense
+      output logic [ 7: 0] dzRI,        // DZ11 Ring Indication
       // LP20/LP26 Interfaces
-      output wire [ 6:15] lpCONFIG,     // LP26 Serial Configuration
-      input  wire         lpSIXLPI,     // LP26 Line spacing
-      output wire         lpOVFU,       // LP26 Optical Vertial Format Unit
-      input  wire         lpSETOFFLN,   // LP26 Set offline
-      output reg          lpONLINE,     // LP26 Status
+      output logic [ 6:15] lpCONFIG,    // LP26 Serial Configuration
+      input  wire          lpSIXLPI,    // LP26 Line spacing
+      output logic         lpOVFU,      // LP26 Optical Vertial Format Unit
+      input  wire          lpSETOFFLN,  // LP26 Set offline
+      output logic         lpONLINE,    // LP26 Status
       // RPXX Interfaces
-      output wire [ 7: 0] rpDPR,        // RPXX Drive Present
-      output wire [ 7: 0] rpMOL,        // RPXX Media On-line
-      output wire [ 7: 0] rpWRL,        // RPXX Write Lock
+      output logic [ 7: 0] rpDPR,       // RPXX Drive Present
+      output logic [ 7: 0] rpMOL,       // RPXX Media On-line
+      output logic [ 7: 0] rpWRL,       // RPXX Write Lock
       // SD Interfaces
-      input  wire [ 0:63] rhDEBUG,      // RH Debug Info
+      input  wire  [ 0:63] rhDEBUG,     // RH Debug Info
       // Debug Interfaces
-      output wire [ 9:11] debBRCMD,     // Debug Breakpoint command
-      input  wire [13:15] debBRSTATE,   // Debug Breakpoint state
-      output wire [24:26] debTRCMD,     // Debug Trace command
-      input  wire [27:29] debTRSTATE,   // Debug Trace state
-      input  wire         debTRFULL,    // Debug Trace full
-      input  wire         debTREMPTY,   // Debug Trace empty
-      output wire [ 0:35] debBAR,       // Debug Breakpoint Address Register
-      output wire [ 0:35] debBMR,       // Debug Breakpoint Mask Register
-      input  wire [ 0:63] debITR,       // Debug Instruction Trace Register
-      input  wire [ 0:63] debPCIR,      // Debug Program Counter and Instruction Register
-      output reg          debTRCMD_WR,  // Debug Trace command write
-      output reg          debBRCMD_WR,  // Debug Breakpoint command write
-      output reg          debITR_RD     // Debug Instruction Trace Register Read
+      output logic [ 9:11] debBRCMD,    // Debug Breakpoint command
+      input  wire  [13:15] debBRSTATE,  // Debug Breakpoint state
+      output logic [24:26] debTRCMD,    // Debug Trace command
+      input  wire  [27:29] debTRSTATE,  // Debug Trace state
+      input  wire          debTRFULL,   // Debug Trace full
+      input  wire          debTREMPTY,  // Debug Trace empty
+      output logic [ 0:35] debBAR,      // Debug Breakpoint Address Register
+      output logic [ 0:35] debBMR,      // Debug Breakpoint Mask Register
+      input  wire  [ 0:63] debITR,      // Debug Instruction Trace Register
+      input  wire  [ 0:63] debPCIR,     // Debug Program Counter and Instruction Register
+      output logic         debTRCMD_WR, // Debug Trace command write
+      output logic         debBRCMD_WR, // Debug Breakpoint command write
+      output logic         debITR_RD    // Debug Instruction Trace Register Read
    );
 
    //
@@ -320,14 +320,14 @@ module CSL (
    // Console Instruction Register Read
    //
 
-   wire cirREAD = busREAD & busIO & busPHYS & (busDEV == cslDEV) & (busADDR == addrCIR);
+   wire cirREAD = busREQI & busREAD & busIO & busPHYS & (busDEV == cslDEV) & (busADDR == addrCIR);
 
    //
    // State Machine
    //
 
-   reg [0:9] cslNXDTIM;
-   reg [0:2] state;
+   logic [0:9] cslNXDTIM;
+   logic [0:2] state;
    localparam [0:2] stateIDLE         = 0,
                     stateREADWAITGO   = 1,
                     stateREADWAITACK  = 2,
@@ -342,7 +342,7 @@ module CSL (
    // registered.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           axiAWREADY <= 0;
@@ -362,7 +362,7 @@ module CSL (
    // axiWVALID are asserted.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           axiWREADY <= 0;
@@ -382,7 +382,7 @@ module CSL (
    // axiWVALID, axiWREADY and axiWVALID are asserted.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           axiBVALID <= 0;
@@ -402,21 +402,21 @@ module CSL (
    // axiAWREADY, axiWVALID, axiWREADY and axiWVALID are asserted.
    //
 
-   reg [0:35] regCONAR;         // 0x00: Console Address Register
-   reg [0:35] regCONDR;         // 0x08: Console Data Register
-   reg [0:35] regCONIR;         // 0x10: Console Instruction Register
-   reg [0:31] regCONCSR;        // 0x18: Console Control/Status Register
-   reg [0:31] regDZCCR;         // 0x1c: DZ11  Console Control Register
-   reg [0:31] regLPCCR;         // 0x20: LP20  Console Control Register
-   reg [0:31] regRPCCR;         // 0x24: RPXX  Console Control Register
-   reg [0:31] regDUPCCR;        // 0x28: DUP11 Console Control Register
+   logic [0:35] regCONAR;       // 0x00: Console Address Register
+   logic [0:35] regCONDR;       // 0x08: Console Data Register
+   logic [0:35] regCONIR;       // 0x10: Console Instruction Register
+   logic [0:31] regCONCSR;      // 0x18: Console Control/Status Register
+   logic [0:31] regDZCCR;       // 0x1c: DZ11  Console Control Register
+   logic [0:31] regLPCCR;       // 0x20: LP20  Console Control Register
+   logic [0:31] regRPCCR;       // 0x24: RPXX  Console Control Register
+   logic [0:31] regDUPCCR;      // 0x28: DUP11 Console Control Register
                                 // 0x2c: Spare
                                 // 0x30: Spare
                                 // 0x34: Spare
                                 // 0x38: Spare
-   reg [0:31] regDCSR;          // 0x3c: Debug Control/Status Register
-   reg [0:35] regDBAR;          // 0x40: Debug Breakpoint Address Register
-   reg [0:35] regDBMR;          // 0x48: Debug Breakpoint Mask Register
+   logic [0:31] regDCSR;        // 0x3c: Debug Control/Status Register
+   logic [0:35] regDBAR;        // 0x40: Debug Breakpoint Address Register
+   logic [0:35] regDBMR;        // 0x48: Debug Breakpoint Mask Register
                                 // 0x50: Debug Instruction Trace Register (read-only)
                                 // 0x58: Debug Program Counter and Instruction Register (read-only)
                                 // 0x60: Spare
@@ -426,7 +426,7 @@ module CSL (
                                 // 0x70: RH11 Debug Regsister (read-only)
                                 // 0x78: Firmware Version Register (read-only
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           begin
@@ -531,7 +531,7 @@ module CSL (
    // asserted.  When this occurs, the read address is also registered.
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           axiARREADY <= 0;
@@ -558,7 +558,7 @@ module CSL (
    wire [0:31] regDUPRD  = {dupTXE, 3'b0, dupRI, dupCTS, dupDSR, dupDCD, dupTXFIFO, dupRXF, dupDTR, dupRTS, 1'b0, dupH325, dupW3, dupW5, dupW6, 8'b0};
    wire [0:31] regDEBCSR = {9'b0, debBRCMD, 1'b0, debBRSTATE, 8'b0, debTRCMD, debTRSTATE, debTRFULL, debTREMPTY};
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           begin
@@ -619,8 +619,9 @@ module CSL (
    assign cslCACHEEN = `cslCACHEEN(regCONCSR);
    assign cslRESET   = `cslRESET(regCONCSR);
 
-   reg cslGO;
-   always @(posedge clk)
+   logic cslGO;
+
+   always_ff @(posedge clk)
      begin
         if (rst)
           begin
@@ -670,7 +671,7 @@ module CSL (
    wire lpCLR = wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h20) & (axiWDATA[0] == 1'b0);   // axiWDATA is endian swapped
    wire lpSET = wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h20) & (axiWDATA[0] == 1'b1);   // axiWDATA is endian swapped
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst | lpSETOFFLN | lpCLR)
           lpONLINE <= 0;
@@ -692,7 +693,7 @@ module CSL (
    assign dupW6      = `dupccrW6(regDUPCCR);
    assign dupRXFIFO  = `dupccrRXFIFO(regDUPCCR);
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           begin
@@ -715,7 +716,7 @@ module CSL (
    assign debBRCMD = `dcsrBRCMD(regDCSR);
    assign debTRCMD = `dcsrTRCMD(regDCSR);
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           begin
@@ -744,12 +745,7 @@ module CSL (
 
    localparam [0:9] timeout = 511;
 
-   reg [0:35] regCONDRO;
-
-   wire cslREAD  = `busREAD(regCONAR);
-   wire cslWRITE = `busWRITE(regCONAR);
-
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (rst)
           begin
@@ -761,9 +757,9 @@ module CSL (
         else
           case (state)
             stateIDLE:
-              if (cslGO & cslREAD)
+              if (cslGO & `busREAD(regCONAR))
                 state <= stateREADWAITGO;
-              else if (cslGO & cslWRITE)
+              else if (cslGO & `busWRITE(regCONAR))
                 state <= stateWRITEWAITGO;
             stateREADWAITGO:
               if (!cslGO)
@@ -835,7 +831,7 @@ module CSL (
    // Whine about unacked bus cycles
    //
 
-   always @(posedge clk)
+   always_ff @(posedge clk)
      begin
         if (cslNXDTIM == 1)
           begin

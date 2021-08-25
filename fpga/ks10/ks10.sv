@@ -11,7 +11,7 @@
 //   Multiplexer, and an RH11 Disk Controller.
 //
 // File
-//   ks10.v
+//   ks10.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net

@@ -262,7 +262,7 @@ DIAG_FILES := \
 RTL_FILES := \
 	ks10/ks10.sv \
 	ks10/arb/arb.sv \
-	ks10/csl/csl.v \
+	ks10/csl/csl.sv \
 	ks10/cpu/alu.v \
 	ks10/cpu/apr.v \
 	ks10/cpu/bus.v \
@@ -336,8 +336,8 @@ RTL_FILES := \
 	ks10/lp20/lpramd.v \
 	ks10/lp20/lp20.v \
 	ks10/lp26/lp26.v \
-	ks10/mem/mem.v \
-	ks10/mem/memstat.v \
+	ks10/mem/mem.sv \
+	ks10/mem/memstat.sv \
 	ks10/rh11/rh11.sv \
 	ks10/rh11/rhintr.v \
 	ks10/rh11/rhnem.v \

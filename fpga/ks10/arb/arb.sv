@@ -9,7 +9,7 @@
 //   This device is the KS10 Bus Arbiter and Bus Multiplexer
 //
 // File
-//   arb.v
+//   arb.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -43,37 +43,37 @@
 
 module ARB (
       // CPU Interfaces
-      input  wire        cpuREQI,       // CPU Bus Request
-      output reg         cpuACKO,       // CPU Bus Acknowledge
-      input  wire [0:35] cpuADDRI,      // CPU Address
-      input  wire [0:35] cpuDATAI,      // CPU Data In
-      output reg  [0:35] cpuDATAO,      // CPU Data Out
-      output reg  [1: 7] cpuINTRO,      // CPU Interrupt Out
+      input  wire         cpuREQI,      // CPU Bus Request
+      output logic        cpuACKO,      // CPU Bus Acknowledge
+      input  wire  [0:35] cpuADDRI,     // CPU Address
+      input  wire  [0:35] cpuDATAI,     // CPU Data In
+      output logic [0:35] cpuDATAO,     // CPU Data Out
+      output logic [1: 7] cpuINTRO,     // CPU Interrupt Out
       // Console Interfaces
-      input  wire        cslREQI,       // CSL Bus Request In
-      output reg         cslREQO,       // CSL Bus Request Out
-      input  wire        cslACKI,       // CSL Bus Acknowledge In
-      output reg         cslACKO,       // CSL Bus Acknowledge Out
-      input  wire [0:35] cslDATAI,      // CSL Data In
-      output reg  [0:35] cslDATAO,      // CSL Data Out
-      input  wire [0:35] cslADDRI,      // CSL Address In
-      output reg  [0:35] cslADDRO,      // CSL Address Out
+      input  wire         cslREQI,      // CSL Bus Request In
+      output logic        cslREQO,      // CSL Bus Request Out
+      input  wire         cslACKI,      // CSL Bus Acknowledge In
+      output logic        cslACKO,      // CSL Bus Acknowledge Out
+      input  wire  [0:35] cslDATAI,     // CSL Data In
+      output logic [0:35] cslDATAO,     // CSL Data Out
+      input  wire  [0:35] cslADDRI,     // CSL Address In
+      output logic [0:35] cslADDRO,     // CSL Address Out
       // UBA Interfaces
-      input  wire        ubaREQI[1:4],  // UBA Bus Request In
-      output reg         ubaREQO[1:4],  // UBA Bus Request Out
-      input  wire        ubaACKI[1:4],  // UBA Bus Acknowledge In
-      output reg         ubaACKO[1:4],  // UBA Bus Acknowledge Out
-      input  wire [0:35] ubaDATAI[1:4], // UBA Data In
-      output reg  [0:35] ubaDATAO[1:4], // UBA Data Out
-      input  wire [0:35] ubaADDRI[1:4], // UBA Address In
-      output reg  [0:35] ubaADDRO[1:4], // UBA Address Out
-      input  wire [1: 7] ubaINTRI[1:4], // Unibus Interrupt Request In
+      input  wire         ubaREQI[1:4], // UBA Bus Request In
+      output logic        ubaREQO[1:4], // UBA Bus Request Out
+      input  wire         ubaACKI[1:4], // UBA Bus Acknowledge In
+      output logic        ubaACKO[1:4], // UBA Bus Acknowledge Out
+      input  wire  [0:35] ubaDATAI[1:4],// UBA Data In
+      output logic [0:35] ubaDATAO[1:4],// UBA Data Out
+      input  wire  [0:35] ubaADDRI[1:4],// UBA Address In
+      output logic [0:35] ubaADDRO[1:4],// UBA Address Out
+      input  wire  [1: 7] ubaINTRI[1:4],// Unibus Interrupt Request In
       // Memory Interfaces
-      output reg         memREQO,       // MEM Bus Request Out
-      input  wire        memACKI,       // MEM Bus Acknowledge In
-      input  wire [0:35] memDATAI,      // MEM Data In
-      output reg  [0:35] memDATAO,      // MEM Data Out
-      output reg  [0:35] memADDRO       // MEM Address Out
+      output logic        memREQO,      // MEM Bus Request Out
+      input  wire         memACKI,      // MEM Bus Acknowledge In
+      input  wire  [0:35] memDATAI,     // MEM Data In
+      output logic [0:35] memDATAO,     // MEM Data Out
+      output logic [0:35] memADDRO      // MEM Address Out
    );
 
    //
@@ -85,7 +85,7 @@ module ARB (
    //  CPU has lowest priority
    //
 
-   always @*
+   always_comb
      begin
 
         cslREQO     = 0;

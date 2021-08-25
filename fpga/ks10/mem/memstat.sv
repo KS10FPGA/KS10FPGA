@@ -47,7 +47,7 @@
 //                               Writing one clears EE bit.
 //
 // File
-//   memstat.v
+//   memstat.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -82,11 +82,11 @@
 `include "memstat.vh"
 
 module MEMSTAT (
-      input  wire        clk,                   // Clock
-      input  wire        rst,                   // Reset
-      input  wire [0:35] busDATAI,              // Bus data
-      input  wire        msrWRITE,              // Write to MSR
-      output wire [0:35] regSTAT                // Status Register
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire  [0:35] busDATAI,             // Bus data
+      input  wire         msrWRITE,             // Write to MSR
+      output logic [0:35] regSTAT               // Status Register
    );
 
    //
@@ -101,9 +101,9 @@ module MEMSTAT (
    //  MMC5/E62
    //
 
-   reg statPE;
+   logic statPE;
 
-   always @(negedge clk)
+   always_ff @(negedge clk)
      begin
         if (rst)
           statPE <= 0;
@@ -124,9 +124,9 @@ module MEMSTAT (
    //   MMC5/E61
    //
 
-   reg statPF;
+   logic statPF;
 
-   always @(negedge clk)
+   always_ff @(negedge clk)
      begin
         if (rst)
           statPF <= 1'b1;
@@ -142,9 +142,9 @@ module MEMSTAT (
    //  MMC3/E131
    //
 
-   reg statEE;
+   logic statEE;
 
-   always @(negedge clk)
+   always_ff @(negedge clk)
      begin
         if (rst)
           statEE <= 1'b1;

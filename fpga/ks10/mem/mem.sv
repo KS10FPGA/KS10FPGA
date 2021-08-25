@@ -23,7 +23,7 @@
 //   automatically tri-stated regardless of the state of the OE input signal."
 //
 // File
-//   mem.v
+//   mem.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -59,19 +59,18 @@
 `include "../cpu/bus.vh"
 
 module MEM (
-      input  wire         rst,          // Reset
-      input  wire         memCLK,       // Memory clock
-      input  wire [ 1: 4] clkT,         // Clock
-      input  wire         writeEN,      // Write Enable
-      output wire         SSRAM_CLK,    // SSRAM Clock
-      output wire         SSRAM_WE_N,   // SSRAM WE#
-      output wire         SSRAM_ADV,    // SSRAM Advance
+      input  wire          rst,         // Reset
+      input  wire          memCLK,      // Memory clock
+      input  wire  [ 1: 4] clkT,        // Clock
+      output logic         SSRAM_CLK,   // SSRAM Clock
+      output logic         SSRAM_WE_N,  // SSRAM WE#
+      output logic         SSRAM_ADV,   // SSRAM Advance
 `ifdef SSRAMx36
-      output wire [19: 0] SSRAM_A,      // SSRAM Address Bus
-      inout  wire [35: 0] SSRAM_D,      // SSRAM Data Bus
+      output logic [19: 0] SSRAM_A,     // SSRAM Address Bus
+      inout  wire  [35: 0] SSRAM_D,     // SSRAM Data Bus
 `else
-      output wire [21: 0] SSRAM_A,      // SSRAM Address Bus
-      inout  wire [17: 0] SSRAM_D,      // SSRAM Data Bus
+      output logic [21: 0] SSRAM_A,     // SSRAM Address Bus
+      inout  wire  [17: 0] SSRAM_D,     // SSRAM Data Bus
 `endif
       input  wire         busREQI,      // Memory Request In
       output wire         busACKO,      // Memory Acknowledge Out
@@ -129,7 +128,7 @@ module MEM (
    // Memory Status Register
    //
 
-   wire [0:35] regSTAT;
+   logic [0:35] regSTAT;
 
    MEMSTAT STAT (
       .rst       (rst),
@@ -145,16 +144,16 @@ module MEM (
 
 `ifdef SSRAM_BLKRAM
 
-   reg  [0:35] mem[0:32767];
-   reg  [0:14] rd_mem_addr;
-   wire [0:14] wr_mem_addr = busMEMADDR[21:35];
+   logic [0:35] mem[0:32767];
+   logic [0:14] rd_mem_addr;
+   wire  [0:14] wr_mem_addr = busMEMADDR[21:35];
 
-   reg  [0:35] hsb[0:31];
-   reg  [0: 4] rd_hsb_addr;
-   wire [0: 4] wr_hsb_addr = busMEMADDR[31:35];
+   logic [0:35] hsb[0:31];
+   logic [0: 4] rd_hsb_addr;
+   wire  [0: 4] wr_hsb_addr = busMEMADDR[31:35];
 
-   wire hsbVALID = (busMEMADDR[16:30] == addrHSB[16:30]);
-   wire memVALID = (busMEMADDR[16:20] == 0);
+   wire  hsbVALID = (busMEMADDR[16:30] == addrHSB[16:30]);
+   wire  memVALID = (busMEMADDR[16:20] == 0);
 
 `ifndef SYNTHESIS
 
@@ -163,7 +162,7 @@ module MEM (
 
 `endif
 
-   always @(posedge clkT[3])
+   always_ff @(posedge clkT[3])
      begin
         if (memWRITE & memVALID)
           mem[wr_mem_addr] <= busDATAI;
@@ -174,7 +173,7 @@ module MEM (
    // SRAM for Halt Status Block
    //
 
-   always @(posedge clkT[3])
+   always_ff @(posedge clkT[3])
      begin
         if (memWRITE & hsbVALID)
           hsb[wr_hsb_addr] <= busDATAI;
@@ -197,6 +196,7 @@ module MEM (
    assign SSRAM_A    = busMEMADDR;
    assign SSRAM_D    = memWRITE ? busDATAI : 36'bz;
    assign SSRAM_ADV  = 0;
+
    assign busDATAO   = busIO ? regSTAT : SSRAM_D;
    assign busACKO    = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
 
@@ -212,8 +212,9 @@ module MEM (
    // Delay Write Enable from T3 and T4 into T1 and T2
    //
 
-   reg ssramWE;
-   always @(posedge memCLK)
+   logic ssramWE;
+
+   always_ff @(posedge memCLK)
      begin
         ssramWE <= memWRITE & ((clkT == 4'b1001) | (clkT == 4'b1100));
      end
@@ -222,9 +223,9 @@ module MEM (
    // ssramA[0] is asserted in T2 and T3.
    //
 
-   reg ssramA0;
+   logic ssramA0;
 
-   always @(posedge memCLK)
+   always_ff @(posedge memCLK)
      begin
         if (rst)
           ssramA0 <= 0;
@@ -240,8 +241,9 @@ module MEM (
    //  SSRAM samples data in middle of T3 and T4
    //
 
-   reg [0:17] ssramDO;
-   always @(posedge memCLK)
+   logic [0:17] ssramDO;
+
+   always_ff @(posedge memCLK)
      if (rst)
        ssramDO <= 18'b0;
      else if (clkT == 4'b1100)
@@ -256,8 +258,9 @@ module MEM (
    //  D[18:35] is captured on SSRAM_D in T3
    //
 
-   reg [0:35] ssramDI;
-   always @(posedge SSRAM_CLK)
+   logic [0:35] ssramDI;
+
+   always_ff @(posedge SSRAM_CLK)
       begin
         if (rst)
           ssramDI <= 0;
@@ -275,6 +278,7 @@ module MEM (
    assign SSRAM_A    = {1'b0, busMEMADDR, ssramA0};
    assign SSRAM_D    = memWRITE ? ssramDO : {18{1'bz}};
    assign SSRAM_ADV  = 0;
+
    assign busDATAO   = busIO ? regSTAT : ssramDI;
    assign busACKO    = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
 
@@ -304,7 +308,7 @@ module MEM (
      end
 
 
-   always @(posedge clkT[3])
+   always_ff @(posedge clkT[3])
      begin
         if (msrREAD)
           $display("[%11.3f] KS10: Memory Status Register Read", $time/1.0e3);

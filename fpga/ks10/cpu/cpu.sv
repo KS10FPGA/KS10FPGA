@@ -8,7 +8,7 @@
 // Details
 //
 // File
-//   cpu.v
+//   cpu.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -45,158 +45,158 @@
 `include "apr.vh"
 
 module CPU (
-      input  wire         rst,          // Reset
-      input  wire         clk,          // Clock
-      input  wire [ 1: 4] clkT,         // Clock
+      input  wire          rst,         // Reset
+      input  wire          clk,         // Clock
+      input  wire  [ 1: 4] clkT,        // Clock
       // Breakpoint
-      input  wire         debugHALT,    // Breakpoint
+      input  wire          debugHALT,   // Breakpoint
       // Console
-      input  wire         cslRUN,       // Run
-      input  wire         cslHALT,      // Halt
-      input  wire         cslCONT,      // Continue
-      input  wire         cslEXEC,      // Execute
-      input  wire         cslTIMEREN,   // Timer Enable
-      input  wire         cslTRAPEN,    // Enable Traps
-      input  wire         cslCACHEEN,   // Enable Cache
-      input  wire         cslINTRI,     // Console Interrupt to CPU
-      output wire         cslINTRO,     // CPU Interrupt to Console
+      input  wire          cslRUN,      // Run
+      input  wire          cslHALT,     // Halt
+      input  wire          cslCONT,     // Continue
+      input  wire          cslEXEC,     // Execute
+      input  wire          cslTIMEREN,  // Timer Enable
+      input  wire          cslTRAPEN,   // Enable Traps
+      input  wire          cslCACHEEN,  // Enable Cache
+      input  wire          cslINTRI,    // Console Interrupt to CPU
+      output logic         cslINTRO,    // CPU Interrupt to Console
       // UBA
-      input  wire [ 1: 7] cpuINTRI,     // Unibus Interrupt Request
+      input  wire  [ 1: 7] cpuINTRI,    // Unibus Interrupt Request
       // CPU
-      output wire         cpuREQO,      // CPU Bus Request
-      input  wire         cpuACKI,      // Bus Acknowledge
-      output wire [ 0:35] cpuADDRO,     // CPU Addr and Flags
-      input  wire [ 0:35] cpuDATAI,     // Bus Data Input
-      output wire [ 0:35] cpuDATAO,     // CPU Data Output
-      output wire         cpuHALT,      // CPU Halt Status
-      output wire         cpuRUN,       // CPU Run Status
-      output wire         cpuEXEC,      // CPU Exec Status
-      output wire         cpuCONT,      // CPU Cont Status
+      output logic         cpuREQO,     // CPU Bus Request
+      input  wire          cpuACKI,     // Bus Acknowledge
+      output logic [ 0:35] cpuADDRO,    // CPU Addr and Flags
+      input  wire  [ 0:35] cpuDATAI,    // Bus Data Input
+      output logic [ 0:35] cpuDATAO,    // CPU Data Output
+      output logic         cpuHALT,     // CPU Halt Status
+      output logic         cpuRUN,      // CPU Run Status
+      output logic         cpuEXEC,     // CPU Exec Status
+      output logic         cpuCONT,     // CPU Cont Status
       // Trace
-      output wire [18:35] cpuPC,        // Program Counter Register
-      output wire [ 0:35] cpuHR,        // Instruction Register
-      output wire         regsLOAD,     // Register update
-      output wire         vmaLOAD       // VMA update
+      output logic [18:35] cpuPC,       // Program Counter Register
+      output logic [ 0:35] cpuHR,       // Instruction Register
+      output logic         regsLOAD,    // Register update
+      output logic         vmaLOAD      // VMA update
    );
 
    //
    // ROMS
    //
 
-   wire [0:107] crom;           // Control ROM
-   wire [0: 35] drom;           // Dispatch ROM
+   logic [0:107] crom;          // Control ROM
+   logic [0: 35] drom;          // Dispatch ROM
 
    //
    // Flags
    //
 
-   wire memory_cycle = 0;       // FIXME
-   wire nxmINTR;                // Non-existent memory interrupt
-   wire memWAIT;                // Wait for memory
-   wire ioWAIT;                 // Wait for memory
-   wire ioBUSY;                 // IO is busy
-   wire opJRST0;                // JRST 0 Instruction
-   wire skipJFCL;               // JFCL Instruction
-   wire trapCYCLE;              // Trap Cycle
+   wire  memory_cycle = 0;      // FIXME
+   logic nxmINTR;               // Non-existent memory interrupt
+   logic memWAIT;               // Wait for memory
+   logic ioWAIT;                // Wait for memory
+   logic ioBUSY;                // IO is busy
+   logic opJRST0;               // JRST 0 Instruction
+   logic skipJFCL;              // JFCL Instruction
+   logic trapCYCLE;             // Trap Cycle
 
    //
    // Prioity Interrupts
    //
 
-   wire piINTR;                 // Priority Interrupt
-   wire [ 0: 2] piCURPRI;       // Current Interrupt Priority
-   wire [ 0: 2] piREQPRI;       // Requested Interrupt Priority
+   logic piINTR;                // Priority Interrupt
+   logic [ 0: 2] piCURPRI;      // Current Interrupt Priority
+   logic [ 0: 2] piREQPRI;      // Requested Interrupt Priority
 
    //
    // PXCT
    //
 
-   wire         prevEN;         // Conditionally use Previous Context
-   wire [ 0: 5] acBLOCK;        // AC Block
+   logic         prevEN;        // Conditionally use Previous Context
+   logic [ 0: 5] acBLOCK;       // AC Block
 
    //
    // ALU Flags
    //
 
-   wire [ 0: 8] aluFLAGS;       // ALU Flags
+   logic [ 0: 8] aluFLAGS;      // ALU Flags
 
    //
    // PC Flags
    //
 
-   wire [ 0:17] pcFLAGS;        // PC Flags
+   logic [ 0:17] pcFLAGS;       // PC Flags
 
    //
    // APR Flags
    //
 
-   wire [22:35] aprFLAGS;       // APR Flags
-   wire [ 1: 7] aprINTR;        // APR Interrupt Request
+   logic [22:35] aprFLAGS;      // APR Flags
+   logic [ 1: 7] aprINTR;       // APR Interrupt Request
 
    //
    // VMA Register
    //
 
-   wire [ 0:35] vmaREG;         // VMA Register
+   logic [ 0:35] vmaREG;        // VMA Register
 
    //
    // Paging
    //
 
-   wire         pageFAIL;       // Page Fail
-   wire [16:26] pageADDR;       // Page Address
-   wire [ 0: 3] pageFLAGS;      // Page Flags
+   logic         pageFAIL;      // Page Fail
+   logic [16:26] pageADDR;      // Page Address
+   logic [ 0: 3] pageFLAGS;     // Page Flags
 
    //
    // Timer
    //
 
-   wire         timerINTR;      // Timer Interrupt
-   wire [18:35] timerCOUNT;     // Millisecond timer
+   logic         timerINTR;     // Timer Interrupt
+   logic [18:35] timerCOUNT;    // Millisecond timer
 
    //
    // Instruction Register IR
    //
 
-   wire [ 0:17] regIR;          // Instruction Register (IR)
-   wire         xrPREV;         // XR is previous
+   logic [ 0:17] regIR;         // Instruction Register (IR)
+   logic         xrPREV;        // XR is previous
 
    //
-   // Busses
+   // Internal Buses
    //
 
-   wire [ 0:35] dp;             // ALU output bus
-   wire [ 0:35] dbus;           // DBUS Mux output
-   wire [ 0:35] dbm;            // DBM Mux output
-   wire [ 0:35] ramfile;        // RAMFILE output
+   logic [ 0:35] dp;            // ALU output bus
+   logic [ 0:35] dbus;          // DBUS Mux output
+   logic [ 0:35] dbm;           // DBM Mux output
+   logic [ 0:35] ramfile;       // RAMFILE output
 
    //
    // SCAD, SC, and FE
    //
 
-   wire [ 0: 9] scad;
-   wire         scSIGN;         // Step Count Sign
-   wire         feSIGN;         // Floating-point exponent Sign
+   logic [ 0: 9] scad;          // Step count adder
+   logic         scSIGN;        // Step Count Sign
+   logic         feSIGN;        // Floating-point exponent Sign
 
    //
    // Dispatches
    //
 
-   wire [ 8:11] dispNI;         // Next Instruction Dispatch
-   wire [ 8:11] dispPF;         // Page Fail Dispatch
-   wire [ 8:11] dispBYTE;       // Byte Dispatch
-   wire [ 8:11] dispSCAD;       // SCAD Dispatch
-   wire [ 0:11] dispDIAG = 0;   // Diagnostic Dispatch
+   logic [ 8:11] dispNI;        // Next Instruction Dispatch
+   logic [ 8:11] dispPF;        // Page Fail Dispatch
+   logic [ 8:11] dispBYTE;      // Byte Dispatch
+   logic [ 8:11] dispSCAD;      // SCAD Dispatch
+   wire  [ 0:11] dispDIAG = 0;  // Diagnostic Dispatch
 
    //
    // Timing
    //
 
-   wire         clkenDP;        // Clock Enable for Datapaths
-   wire         clkenCR;        // Clock Enable for Control ROM
+   logic         clkenDP;       // Clock Enable for Datapaths
+   logic         clkenCR;       // Clock Enable for Control ROM
 
    //
-   //
+   // Optional DPBUS Latch
    //
 
    reg [0:35] dpreg;
