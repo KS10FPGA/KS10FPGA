@@ -42,39 +42,66 @@
 `timescale 1ns/1ps
 
 module ARB (
-      // CPU Interfaces
-      input  wire         cpuREQI,      // CPU Bus Request
-      output logic        cpuACKO,      // CPU Bus Acknowledge
-      input  wire  [0:35] cpuADDRI,     // CPU Address
-      input  wire  [0:35] cpuDATAI,     // CPU Data In
-      output logic [0:35] cpuDATAO,     // CPU Data Out
-      output logic [1: 7] cpuINTRO,     // CPU Interrupt Out
-      // Console Interfaces
-      input  wire         cslREQI,      // CSL Bus Request In
-      output logic        cslREQO,      // CSL Bus Request Out
-      input  wire         cslACKI,      // CSL Bus Acknowledge In
-      output logic        cslACKO,      // CSL Bus Acknowledge Out
-      input  wire  [0:35] cslDATAI,     // CSL Data In
-      output logic [0:35] cslDATAO,     // CSL Data Out
-      input  wire  [0:35] cslADDRI,     // CSL Address In
-      output logic [0:35] cslADDRO,     // CSL Address Out
-      // UBA Interfaces
-      input  wire         ubaREQI[1:4], // UBA Bus Request In
-      output logic        ubaREQO[1:4], // UBA Bus Request Out
-      input  wire         ubaACKI[1:4], // UBA Bus Acknowledge In
-      output logic        ubaACKO[1:4], // UBA Bus Acknowledge Out
-      input  wire  [0:35] ubaDATAI[1:4],// UBA Data In
-      output logic [0:35] ubaDATAO[1:4],// UBA Data Out
-      input  wire  [0:35] ubaADDRI[1:4],// UBA Address In
-      output logic [0:35] ubaADDRO[1:4],// UBA Address Out
-      input  wire  [1: 7] ubaINTRI[1:4],// Unibus Interrupt Request In
-      // Memory Interfaces
-      output logic        memREQO,      // MEM Bus Request Out
-      input  wire         memACKI,      // MEM Bus Acknowledge In
-      input  wire  [0:35] memDATAI,     // MEM Data In
-      output logic [0:35] memDATAO,     // MEM Data Out
-      output logic [0:35] memADDRO      // MEM Address Out
+      ks10bus.arbiter    cpuBUS,        // KS10 backplane bus to CPU
+      ks10bus.arbiter    cslBUS,        // KS10 backplane bus to CSL
+      ks10bus.arbiter    ubaBUS[1:4],   // KS10 backplane bus to UBA
+      ks10bus.arbiter    memBUS         // KS10 backplane bus to memory
    );
+
+   //
+   // CPU Interface
+   //
+
+   logic        cpuREQI;                // CPU Bus Request
+   logic [0:35] cpuADDRI;               // CPU Address
+   logic [0:35] cpuDATAI;               // CPU Data In
+   logic        cpuACKO;                // CPU Bus Acknowledge Out
+   logic [0:35] cpuDATAO;               // CPU Data Out
+   logic [1: 7] cpuINTRO;               // CPU Interrupt Out
+
+   //
+   // Memory Interface
+   //
+
+   logic        memACKI;                // MEM Bus Acknowledge In
+   logic [0:35] memDATAI;               // MEM Data In
+   logic        memREQO;                // MEM Bus Request Out
+   logic [0:35] memDATAO;               // MEM Data Out
+   logic [0:35] memADDRO;               // MEM Address Out
+
+   //
+   // Console Interface
+   //
+
+   logic        cslREQI;                // CSL Bus Request In
+   logic        cslACKI;                // CSL Bus Acknowledge In
+   logic [0:35] cslADDRI;               // CSL Address In
+   logic [0:35] cslDATAI;               // CSL Data In
+   logic        cslREQO;                // CSL Bus Request Out
+   logic        cslACKO;                // CSL Bus Acknowledge Out
+   logic [0:35] cslDATAO;               // CSL Data Out
+   logic [0:35] cslADDRO;               // CSL Address Out
+
+   //
+   // Unibus Interface
+   //
+
+   logic        ubaREQI[1:4];           // UBA Bus Request In
+   logic        ubaACKI[1:4];           // UBA Bus Acknowledge In
+   logic [0:35] ubaADDRI[1:4];          // UBA Address In
+   logic [0:35] ubaDATAI[1:4];          // UBA Data In
+   logic [1: 7] ubaINTRI[1:4];          // UBA Interrupt In
+   logic        ubaREQO[1:4];           // UBA Bus Request Out
+   logic        ubaACKO[1:4];           // UBA Bus Acknowledge Out
+   logic [0:35] ubaDATAO[1:4];          // UBA Data Out
+   logic [0:35] ubaADDRO[1:4];          // UBA Address Out
+   logic [1: 7] ubaINTRO[1:4];          // UBA Interrupt Out
+
+   //
+   // CPU Interrupts
+   //
+
+   assign cpuINTRO = (ubaINTRI[1] | ubaINTRI[2] |  ubaINTRI[3] | ubaINTRI[4]);
 
    //
    // Bus Request Arbitration
@@ -314,9 +341,66 @@ module ARB (
      end
 
    //
-   // Interrupts
+   // CPU Bus Interface
    //
 
-   assign cpuINTRO = (ubaINTRI[1] | ubaINTRI[2] |  ubaINTRI[3] | ubaINTRI[4]);
+   assign cpuREQI  = cpuBUS.busREQO;    // CPU Bus Request In
+// assign cpuACKI  = cpuBUS.busACKO;    // CPU Acknowledge In (CPU is not a target)
+   assign cpuADDRI = cpuBUS.busADDRO;   // CPU Address In
+   assign cpuDATAI = cpuBUS.busDATAO;   // CPU Data In
+   assign cpuBUS.busREQI  = 0;          // CPU Request Out (CPU is not a target)
+   assign cpuBUS.busACKI  = cpuACKO;    // CPU Acknowldge Out
+   assign cpuBUS.busADDRI = 0;          // CPU Address Out (CPU is not a target)
+   assign cpuBUS.busDATAI = cpuDATAO;   // CPU Data Out
+   assign cpuBUS.busINTRI = cpuINTRO;   // CPU Interrupt Output
+
+   //
+   // Memory Bus Interface
+   //
+
+// assign memREQI  = memBUS.busREQO;    // MEM Bus Request In (MEM is not an initiator)
+   assign memACKI  = memBUS.busACKO;    // MEM Bus Acknowledge In
+// assign memADDRI = memBUS.busADDRI;   // MEM Address In (MEM is not an initiator)
+   assign memDATAI = memBUS.busDATAO;   // MEM Data In
+   assign memBUS.busREQI  = memREQO;    // MEM Request Out
+   assign memBUS.busACKI  = 0;          // MEM Acknowledge Out (MEM is not an initiator)
+   assign memBUS.busADDRI = memADDRO;   // MEM Address Out
+   assign memBUS.busDATAI = memDATAO;   // MEM Data Out
+   assign memBUS.busINTRI = 0;          // MEM doesn't generate interrupts
+
+   //
+   // CSL Bus Interface
+   //
+
+   assign cslREQI  = cslBUS.busREQO;    // CSL Bus Request In
+   assign cslACKI  = cslBUS.busACKO;    // CSL Acknowledge In
+   assign cslADDRI = cslBUS.busADDRO;   // CSL Address In
+   assign cslDATAI = cslBUS.busDATAO;   // CSL Data In
+   assign cslBUS.busREQI  = cslREQO;    // CSL Request Out
+   assign cslBUS.busACKI  = cslACKO;    // CSL Acknowledge Out
+   assign cslBUS.busADDRI = cslADDRO;   // CSL Address Out
+   assign cslBUS.busDATAI = cslDATAO;   // CSL Data Out
+   assign cslBUS.busINTRI = 0;          // CSL doesn't generate interrupts
+
+   //
+   // UBA Bus Interfaces
+   //
+
+   genvar i;
+   generate
+      for (i = 1; i <= 4; i++)
+        begin : loop
+           assign ubaREQI[i]  = ubaBUS[i].busREQO;      // UBA Bus Request In
+           assign ubaACKI[i]  = ubaBUS[i].busACKO;      // UBA Acknowledge In
+           assign ubaADDRI[i] = ubaBUS[i].busADDRO;     // UBA Address In
+           assign ubaDATAI[i] = ubaBUS[i].busDATAO;     // UBA Data In
+           assign ubaINTRI[i] = ubaBUS[i].busINTRO;     // UBA Interrupt In
+           assign ubaBUS[i].busREQI  = ubaREQO[i];      // UBA Request Out
+           assign ubaBUS[i].busACKI  = ubaACKO[i];      // UBA Acknowledge Out
+           assign ubaBUS[i].busADDRI = ubaADDRO[i];     // UBA Address Out
+           assign ubaBUS[i].busDATAI = ubaDATAO[i];     // UBA Data Out
+           assign ubaBUS[i].busINTRI = 0;               // UBA Interrupt Out
+        end
+   endgenerate
 
 endmodule

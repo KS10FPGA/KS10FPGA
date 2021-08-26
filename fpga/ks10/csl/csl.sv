@@ -194,6 +194,7 @@ module CSL (
       // Clock and Reset
       input  wire          clk,         // Clock
       input  wire          rst,         // Reset
+      ks10bus.device       cslBUS,      // CSL Bus
       // AXI Interface
       input  wire  [ 7: 0] axiAWADDR,   // Write address
       input  wire          axiAWVALID,  // Write address valid
@@ -214,15 +215,6 @@ module CSL (
       output logic [ 1: 0] axiBRESP,    // Write response
       output logic         axiBVALID,   // Write response valid
       input  wire          axiBREADY,   // Write response ready
-      // Bus Interface
-      input  wire          busREQI,     // Bus Request In
-      output logic         busREQO,     // Bus Request Out
-      input  wire          busACKI,     // Bus Acknowledge In
-      output logic         busACKO,     // Bus Acknowledge Out
-      input  wire  [ 0:35] busADDRI,    // Bus Address In
-      output logic [ 0:35] busADDRO,    // Bus Address Out
-      input  wire  [ 0:35] busDATAI,    // Bus Data In
-      output logic [ 0:35] busDATAO,    // Bus Data Out
       // CPU Interfaces
       input  wire          cpuRUN,      // CPU Run Status
       input  wire          cpuCONT,     // CPU Cont Status
@@ -310,17 +302,17 @@ module CSL (
    // Memory Address and Flags
    //
 
-   wire         busREAD  = `busREAD(busADDRI);
-   wire         busIO    = `busIO(busADDRI);
-   wire         busPHYS  = `busPHYS(busADDRI);
-   wire [14:17] busDEV   = `busDEV(busADDRI);
-   wire [18:35] busADDR  = `busIOADDR(busADDRI);
+   wire         busREAD  = `busREAD(cslBUS.busADDRI);
+   wire         busIO    = `busIO(cslBUS.busADDRI);
+   wire         busPHYS  = `busPHYS(cslBUS.busADDRI);
+   wire [14:17] busDEV   = `busDEV(cslBUS.busADDRI);
+   wire [18:35] busADDR  = `busIOADDR(cslBUS.busADDRI);
 
    //
    // Console Instruction Register Read
    //
 
-   wire cirREAD = busREQI & busREAD & busIO & busPHYS & (busDEV == cslDEV) & (busADDR == addrCIR);
+   wire cirREAD = cslBUS.busREQI & busREAD & busIO & busPHYS & (busDEV == cslDEV) & (busADDR == addrCIR);
 
    //
    // State Machine
@@ -516,8 +508,8 @@ module CSL (
                 endcase
           end
 
-        else if ((state == stateREADWAITACK) & busACKI)
-           regCONDR <= busDATAI;
+        else if ((state == stateREADWAITACK) & cslBUS.busACKI)
+           regCONDR <= cslBUS.busDATAI;
 
         else if (cslNXDTIM == 1)
           regCONCSR[22] <= 1;           // NXMNXD
@@ -552,7 +544,7 @@ module CSL (
    // asserted onto the axiRDATA
    //
 
-   wire cslGOSTAT = busREQO;
+   wire cslGOSTAT = cslBUS.busREQO;
    wire [0:31] regSTAT   = {15'b0, cslGOSTAT, 6'b0, regCONCSR[22], cpuHALT, cpuRUN, cpuCONT, cpuEXEC, cslTIMEREN, cslTRAPEN, cslCACHEEN, 1'b0, cslRESET};
    wire [0:31] regLPRD   = {6'b0, lpCONFIG, 13'b0, lpSIXLPI, lpOVFU, lpONLINE};
    wire [0:31] regDUPRD  = {dupTXE, 3'b0, dupRI, dupCTS, dupDSR, dupDCD, dupTXFIFO, dupRXF, dupDTR, dupRTS, 1'b0, dupH325, dupW3, dupW5, dupW6, 8'b0};
@@ -749,10 +741,10 @@ module CSL (
      begin
         if (rst)
           begin
+             cslBUS.busREQO  <= 0;
+             cslBUS.busADDRO <= 0;
              cslNXDTIM <= timeout;
-             busREQO   <= 0;
-             busADDRO  <= 0;
-             state     <= stateIDLE;
+             state <= stateIDLE;
           end
         else
           case (state)
@@ -764,44 +756,44 @@ module CSL (
             stateREADWAITGO:
               if (!cslGO)
                 begin
+                   cslBUS.busREQO  <= 1;
+                   cslBUS.busADDRO <= regCONAR;
                    cslNXDTIM <= timeout;
-                   busREQO   <= 1;
-                   busADDRO  <= regCONAR;
-                   state     <= stateREADWAITACK;
+                   state <= stateREADWAITACK;
                 end
             stateREADWAITACK:
-              if (busACKI)
+              if (cslBUS.busACKI)
                 begin
-                   busREQO   <= 0;
-                   state     <= stateIDLE;
+                   cslBUS.busREQO <= 0;
+                   state <= stateIDLE;
                 end
               else if (cslNXDTIM != 0)
                 cslNXDTIM <= cslNXDTIM - 1'b1;
               else
                 begin
-                   busREQO   <= 0;
-                   state     <= stateIDLE;
+                   cslBUS.busREQO <= 0;
+                   state <= stateIDLE;
                 end
             stateWRITEWAITGO:
               if (!cslGO)
                 begin
+                   cslBUS.busREQO  <= 1;
+                   cslBUS.busADDRO <= regCONAR;
                    cslNXDTIM <= timeout;
-                   busREQO   <= 1;
-                   busADDRO  <= regCONAR;
-                   state     <= stateWRITEWAITACK;
+                   state <= stateWRITEWAITACK;
                 end
             stateWRITEWAITACK:
-              if (busACKI)
+              if (cslBUS.busACKI)
                 begin
-                   busREQO   <= 0;
-                   state     <= stateIDLE;
+                   cslBUS.busREQO <= 0;
+                   state <= stateIDLE;
                 end
               else if (cslNXDTIM != 0)
                 cslNXDTIM <= cslNXDTIM - 1'b1;
               else
                 begin
-                   busREQO   <= 0;
-                   state     <= stateIDLE;
+                   cslBUS.busREQO <= 0;
+                   state <= stateIDLE;
                 end
           endcase
      end
@@ -810,13 +802,13 @@ module CSL (
    // KS10 Bus Mux
    //
 
-   assign busDATAO = cirREAD ? regCONIR : regCONDR;
+   assign cslBUS.busDATAO = cirREAD ? regCONIR : regCONDR;
 
    //
    // Bus ACK
    //
 
-   assign busACKO = cirREAD;
+   assign cslBUS.busACKO = cirREAD;
 
    //
    // This AXI slave always responds with "OK".
@@ -824,6 +816,13 @@ module CSL (
 
    assign axiRRESP = 2'b0;
    assign axiBRESP = 2'b0;
+
+   //
+   // Bus Interface
+   //  (CSL doesn't generate interrupts)
+   //
+
+   assign cslBUS.busINTRO = 0;
 
 `ifndef SYNTHESIS
 
@@ -836,7 +835,7 @@ module CSL (
         if (cslNXDTIM == 1)
           begin
              $display("[%11.3f] CSL: Unacknowledged bus cycle.  Addr was %012o",
-                      $time/1.0e3, busADDRO);
+                      $time/1.0e3, cslBUS.busADDRO);
              $stop;
           end
      end

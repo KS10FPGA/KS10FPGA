@@ -260,6 +260,7 @@ DIAG_FILES := \
 #
 
 RTL_FILES := \
+	ks10/ks10bus.sv \
 	ks10/ks10.sv \
 	ks10/arb/arb.sv \
 	ks10/csl/csl.sv \

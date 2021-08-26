@@ -295,14 +295,6 @@ module KS10 (
    // Console Signals
    //
 
-   wire         cslREQI;                // Console Bus Request In
-   wire         cslREQO;                // Console Bus Request Out
-   wire         cslACKI;                // Console Bus Acknowledge In
-   wire         cslACKO;                // Console Bus Acknowledge Out
-   wire [ 0:35] cslADDRI;               // Console Address In
-   wire [ 0:35] cslADDRO;               // Console Address Out
-   wire [ 0:35] cslDATAI;               // Console Data In
-   wire [ 0:35] cslDATAO;               // Console Data Out
    wire         cslRUN;                 // Console Run Switch
    wire         cslHALT;                // Console Halt Switch
    wire         cslCONT;                // Console Continue Switch
@@ -317,12 +309,7 @@ module KS10 (
    // CPU Signals
    //
 
-   wire         cpuREQO;                // CPU Bus Request
-   wire         cpuACKI;                // CPU Bus Acknowledge
-   wire [ 0:35] cpuADDRO;               // CPU Address Out
-   wire [ 0:35] cpuDATAI;               // CPU Data In
-   wire [ 0:35] cpuDATAO;               // CPU Data Out
-   wire [ 1: 7] cpuINTRI;               // CPU Interrutpt In
+   wire [ 0:35] cpuADDRO;               // CPU Address Out (for breakpoints)
    wire         cpuHALT;                // CPU Halt Status
    wire         cpuRUN;                 // CPU Run Status
    wire         cpuEXEC;                // CPU Exec Status
@@ -408,28 +395,13 @@ module KS10 (
    wire [ 7: 0] rpDPR;                  // RPXX Drive Present
 
    //
-   // Memory Signals
+   // Backplane bus signals
    //
 
-   wire         memREQI;                // Memory REQ
-   wire         memACKO;                // Memory ACK
-   wire [ 0:35] memDATAI;               // Memory Data In
-   wire [ 0:35] memDATAO;               // Memory Data Out
-   wire [ 0:35] memADDRI;               // Memory Address In
-
-   //
-   // Buses between Backplane Bus Arbiter and UBA Adapters (x4)
-   //
-
-   wire         ubaREQI[1:4];           // Unibus Bus Request In
-   wire         ubaREQO[1:4];           // Unibus Bus Request Out
-   wire         ubaACKI[1:4];           // Unibus Bus Acknowledge In
-   wire         ubaACKO[1:4];           // Unibus Bus Acknowledge Out
-   wire [ 0:35] ubaADDRI[1:4];          // Unibus Address In
-   wire [ 0:35] ubaADDRO[1:4];          // Unibus Address Out
-   wire [ 0:35] ubaDATAI[1:4];          // Unibus Data In
-   wire [ 0:35] ubaDATAO[1:4];          // Unibus Data Out
-   wire [ 1: 7] ubaINTR[1:4];           // Unibus Interrupt Request
+   ks10bus      cpuBUS();               // KS10 backplane bus
+   ks10bus      cslBUS();               // KS10 backplane bus
+   ks10bus      memBUS();               // KS10 backplane bus
+   ks10bus      ubaBUS[1:4]();          // KS10 backplane bus
 
    //
    // Buses between UBA adapters and UBA devices (x16)
@@ -504,38 +476,10 @@ module KS10 (
    //
 
    ARB uARB (
-      // CPU
-      .cpuREQI          (cpuREQO),
-      .cpuACKO          (cpuACKI),
-      .cpuADDRI         (cpuADDRO),
-      .cpuDATAI         (cpuDATAO),
-      .cpuDATAO         (cpuDATAI),
-      .cpuINTRO         (cpuINTRI),
-      // Console
-      .cslREQI          (cslREQO),
-      .cslREQO          (cslREQI),
-      .cslACKI          (cslACKO),
-      .cslACKO          (cslACKI),
-      .cslDATAI         (cslDATAO),
-      .cslDATAO         (cslDATAI),
-      .cslADDRI         (cslADDRO),
-      .cslADDRO         (cslADDRI),
-      // Unibus
-      .ubaREQI          (ubaREQO),
-      .ubaREQO          (ubaREQI),
-      .ubaACKI          (ubaACKO),
-      .ubaACKO          (ubaACKI),
-      .ubaDATAI         (ubaDATAO),
-      .ubaDATAO         (ubaDATAI),
-      .ubaADDRI         (ubaADDRO),
-      .ubaADDRO         (ubaADDRI),
-      .ubaINTRI         (ubaINTR),
-      // Memory
-      .memREQO          (memREQI),
-      .memACKI          (memACKO),
-      .memDATAI         (memDATAO),
-      .memDATAO         (memDATAI),
-      .memADDRO         (memADDRI)
+      .cpuBUS           (cpuBUS),
+      .cslBUS           (cslBUS),
+      .ubaBUS           (ubaBUS),
+      .memBUS           (memBUS)
    );
 
    //
@@ -546,6 +490,15 @@ module KS10 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
       .clkT             (clkT),
+      // CPU
+      .cpuBUS           (cpuBUS),
+      .cpuADDRO         (cpuADDRO),
+      .cpuHALT          (cpuHALT),
+      .cpuRUN           (cpuRUN),
+      .cpuEXEC          (cpuEXEC),
+      .cpuCONT          (cpuCONT),
+      .cpuPC            (cpuPC),
+      .cpuHR            (cpuHR),
       // Breakpoint
       .debugHALT        (debugHALT),
       // Console
@@ -558,20 +511,7 @@ module KS10 (
       .cslCACHEEN       (cslCACHEEN),
       .cslINTRI         (cslINTR),
       .cslINTRO         (cslINTRO),
-      // CPU
-      .cpuREQO          (cpuREQO),
-      .cpuACKI          (cpuACKI),
-      .cpuADDRO         (cpuADDRO),
-      .cpuDATAI         (cpuDATAI),
-      .cpuDATAO         (cpuDATAO),
-      .cpuINTRI         (cpuINTRI),
-      .cpuHALT          (cpuHALT),
-      .cpuRUN           (cpuRUN),
-      .cpuEXEC          (cpuEXEC),
-      .cpuCONT          (cpuCONT),
       // Trace
-      .cpuPC            (cpuPC),
-      .cpuHR            (cpuHR),
       .regsLOAD         (regsLOAD),
       .vmaLOAD          (vmaLOAD)
    );
@@ -603,15 +543,8 @@ module KS10 (
       .axiBRESP         (axiBRESP),
       .axiBVALID        (axiBVALID),
       .axiBREADY        (axiBREADY),
-        // Bus Interfaces
-      .busREQI          (cslREQI),
-      .busREQO          (cslREQO),
-      .busACKI          (cslACKI),
-      .busACKO          (cslACKO),
-      .busADDRI         (cslADDRI),
-      .busADDRO         (cslADDRO),
-      .busDATAI         (cslDATAI),
-      .busDATAO         (cslDATAO),
+      // Bus Interfaces
+      .cslBUS           (cslBUS),
       // CPU Interfaces
       .cpuRUN           (cpuRUN),
       .cpuHALT          (cpuHALT),
@@ -683,11 +616,7 @@ module KS10 (
       .rst              (memRST),
       .memCLK           (memCLK),
       .clkT             (clkT),
-      .busREQI          (memREQI),
-      .busACKO          (memACKO),
-      .busADDRI         (memADDRI),
-      .busDATAI         (memDATAI),
-      .busDATAO         (memDATAO),
+      .memBUS           (memBUS),
       .SSRAM_CLK        (SSRAM_CLK),
       .SSRAM_WE_N       (SSRAM_WE_N),
       .SSRAM_A          (SSRAM_A),
@@ -736,15 +665,7 @@ module KS10 (
    UBA1 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      .busREQI          (ubaREQI[1]),
-      .busREQO          (ubaREQO[1]),
-      .busACKI          (ubaACKI[1]),
-      .busACKO          (ubaACKO[1]),
-      .busADDRI         (ubaADDRI[1]),
-      .busADDRO         (ubaADDRO[1]),
-      .busDATAI         (ubaDATAI[1]),
-      .busDATAO         (ubaDATAO[1]),
-      .busINTR          (ubaINTR[1]),
+      .ubaBUS           (ubaBUS[1]),
       .devRESET         (devRESET[1]),
       .devACLO          (devACLO[1]),
       .devREQI          (devREQO[1]),
@@ -853,11 +774,11 @@ module KS10 (
    // IO Bridge #1 is not implemented. Tie inputs.
    //
 
-   assign ubaREQO[1]  = 0;
-   assign ubaACKO[1]  = 0;
-   assign ubaADDRO[1] = 0;
-   assign ubaDATAO[1] = 0;
-   assign ubaINTR[1]  = 0;
+   assign ubaBUS[1].busREQO  = 0;
+   assign ubaBUS[1].busACKO  = 0;
+   assign ubaBUS[1].busADDRO = 0;
+   assign ubaBUS[1].busDATAO = 0;
+   assign ubaBUS[1].busINTRO = 0;
 
 `endif
 
@@ -871,11 +792,11 @@ module KS10 (
    // IO Bridge #2 is not implemented. Tie inputs.
    //
 
-   assign ubaREQO[2]  = 0;
-   assign ubaACKO[2]  = 0;
-   assign ubaADDRO[2] = 0;
-   assign ubaDATAO[2] = 0;
-   assign ubaINTR[2]  = 0;
+   assign ubaBUS[2].busREQO  = 0;
+   assign ubaBUS[2].busACKO  = 0;
+   assign ubaBUS[2].busADDRO = 0;
+   assign ubaBUS[2].busDATAO = 0;
+   assign ubaBUS[2].busINTRO = 0;
 
 `else
 
@@ -883,11 +804,11 @@ module KS10 (
    // IO Bridge #2 is not implemented. Tie inputs.
    //
 
-   assign ubaREQO[2]  = 0;
-   assign ubaACKO[2]  = 0;
-   assign ubaADDRO[2] = 0;
-   assign ubaDATAO[2] = 0;
-   assign ubaINTR[2]  = 0;
+   assign ubaBUS[2].busREQO  = 0;
+   assign ubaBUS[2].busACKO  = 0;
+   assign ubaBUS[2].busADDRO = 0;
+   assign ubaBUS[2].busDATAO = 0;
+   assign ubaBUS[2].busINTRO = 0;
 
 `endif
 
@@ -904,15 +825,7 @@ module KS10 (
    UBA3 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      .busREQI          (ubaREQI[3]),
-      .busREQO          (ubaREQO[3]),
-      .busACKI          (ubaACKI[3]),
-      .busACKO          (ubaACKO[3]),
-      .busADDRI         (ubaADDRI[3]),
-      .busADDRO         (ubaADDRO[3]),
-      .busDATAI         (ubaDATAI[3]),
-      .busDATAO         (ubaDATAO[3]),
-      .busINTR          (ubaINTR[3]),
+      .ubaBUS           (ubaBUS[3]),
       .devRESET         (devRESET[3]),
       .devACLO          (devACLO[3]),
       .devREQI          (devREQO[3]),
@@ -1170,11 +1083,11 @@ module KS10 (
    // IO Bridge #3 is not implemented. Tie inputs.
    //
 
-   assign ubaREQO[3]  = 0;
-   assign ubaACKO[3]  = 0;
-   assign ubaADDRO[3] = 0;
-   assign ubaDATAO[3] = 0;
-   assign ubaINTR[3]  = 0;
+   assign ubaBUS[3].busREQO  = 0;
+   assign ubaBUS[3].busACKO  = 0;
+   assign ubaBUS[3].busADDRO = 0;
+   assign ubaBUS[3].busDATAO = 0;
+   assign ubaBUS[3].busINTRO = 0;
 
 `endif
 
@@ -1191,15 +1104,7 @@ module KS10 (
    UBA4 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      .busREQI          (ubaREQI[4]),
-      .busREQO          (ubaREQO[4]),
-      .busACKI          (ubaACKI[4]),
-      .busACKO          (ubaACKO[4]),
-      .busADDRI         (ubaADDRI[4]),
-      .busADDRO         (ubaADDRO[4]),
-      .busDATAI         (ubaDATAI[4]),
-      .busDATAO         (ubaDATAO[4]),
-      .busINTR          (ubaINTR[4]),
+      .ubaBUS           (ubaBUS[4]),
       .devRESET         (devRESET[4]),
       .devACLO          (devACLO[4]),
       .devREQI          (devREQO[4]),
@@ -1387,11 +1292,11 @@ module KS10 (
    // IO Bridge #4 is not implemented. Tie inputs.
    //
 
-   assign ubaREQO[4]  = 0;
-   assign ubaACKO[4]  = 0;
-   assign ubaADDRO[4] = 0;
-   assign ubaDATAO[4] = 0;
-   assign ubaINTR[4]  = 0;
+   assign ubaBUS[4].busREQO  = 0;
+   assign ubaBUS[4].busACKO  = 0;
+   assign ubaBUS[4].busADDRO = 0;
+   assign ubaBUS[4].busDATAO = 0;
+   assign ubaBUS[4].busINTRO = 0;
 
 `endif
 

@@ -48,6 +48,7 @@ module CPU (
       input  wire          rst,         // Reset
       input  wire          clk,         // Clock
       input  wire  [ 1: 4] clkT,        // Clock
+      ks10bus.device       cpuBUS,      // KS10 backplane bus
       // Breakpoint
       input  wire          debugHALT,   // Breakpoint
       // Console
@@ -60,14 +61,7 @@ module CPU (
       input  wire          cslCACHEEN,  // Enable Cache
       input  wire          cslINTRI,    // Console Interrupt to CPU
       output logic         cslINTRO,    // CPU Interrupt to Console
-      // UBA
-      input  wire  [ 1: 7] cpuINTRI,    // Unibus Interrupt Request
-      // CPU
-      output logic         cpuREQO,     // CPU Bus Request
-      input  wire          cpuACKI,     // Bus Acknowledge
       output logic [ 0:35] cpuADDRO,    // CPU Addr and Flags
-      input  wire  [ 0:35] cpuDATAI,    // Bus Data Input
-      output logic [ 0:35] cpuDATAO,    // CPU Data Output
       output logic         cpuHALT,     // CPU Halt Status
       output logic         cpuRUN,      // CPU Run Status
       output logic         cpuEXEC,     // CPU Exec Status
@@ -326,9 +320,9 @@ module CPU (
       .pageADDR         (pageADDR),
       .aprFLAGS         (aprFLAGS),
       .piCURPRI         (piCURPRI),
-      .cpuDATAO         (cpuDATAO),
-      .cpuADDRO         (cpuADDRO),
-      .cpuREQO          (cpuREQO)
+      .cpuDATAO         (cpuBUS.busDATAO),
+      .cpuADDRO         (cpuBUS.busADDRO),
+      .cpuREQO          (cpuBUS.busREQO)
    );
 
    //
@@ -345,7 +339,7 @@ module CPU (
       .aprFLAGS         (aprFLAGS),
       .timerCOUNT       (timerCOUNT),
       .vmaREG           (vmaREG),
-      .cpuDATAI         (cpuDATAI),
+      .cpuDATAI         (cpuBUS.busDATAI),
       .dbm              (dbm)
    );
 
@@ -408,7 +402,7 @@ module CPU (
       .crom             (crom),
       .dp               (dp),
       .aprINTR          (aprINTR),
-      .ubaINTR          (cpuINTRI),
+      .ubaINTR          (cpuBUS.busINTRI),
       .piREQPRI         (piREQPRI),
       .piCURPRI         (piCURPRI),
       .piINTR           (piINTR)
@@ -470,9 +464,9 @@ module CPU (
       .clk              (clkT[1]),
       .rst              (rst),
       .crom             (crom),
-      .cpuADDRO         (cpuADDRO),
-      .cpuREQO          (cpuREQO),
-      .cpuACKI          (cpuACKI),
+      .cpuADDRO         (cpuBUS.busADDRO),
+      .cpuREQO          (cpuBUS.busREQO),
+      .cpuACKI          (cpuBUS.busACKI),
       .ioWAIT           (ioWAIT),
       .ioBUSY           (ioBUSY)
    );
@@ -484,9 +478,9 @@ module CPU (
    NXM uNXM (
       .clk              (clkT[1]),
       .rst              (rst),
-      .cpuADDRO         (cpuADDRO),
-      .cpuREQO          (cpuREQO),
-      .cpuACKI          (cpuACKI),
+      .cpuADDRO         (cpuBUS.busADDRO),
+      .cpuREQO          (cpuBUS.busREQO),
+      .cpuACKI          (cpuBUS.busACKI),
       .memWAIT          (memWAIT),
       .nxmINTR          (nxmINTR)
    );
@@ -609,5 +603,13 @@ module CPU (
    //
 
    assign cslINTRO = `flagCSL(aprFLAGS);
+
+   //
+   // KS10 backplane bus connections
+   //
+
+   assign cpuBUS.busACKO  = 0;
+   assign cpuBUS.busINTRO = 0;
+   assign cpuADDRO = cpuBUS.busADDRO;   // For breakpoints
 
 endmodule

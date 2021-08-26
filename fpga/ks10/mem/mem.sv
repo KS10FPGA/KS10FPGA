@@ -62,21 +62,17 @@ module MEM (
       input  wire          rst,         // Reset
       input  wire          memCLK,      // Memory clock
       input  wire  [ 1: 4] clkT,        // Clock
+      ks10bus.device       memBUS,      // Memory Bus
       output logic         SSRAM_CLK,   // SSRAM Clock
       output logic         SSRAM_WE_N,  // SSRAM WE#
       output logic         SSRAM_ADV,   // SSRAM Advance
 `ifdef SSRAMx36
       output logic [19: 0] SSRAM_A,     // SSRAM Address Bus
-      inout  wire  [35: 0] SSRAM_D,     // SSRAM Data Bus
+      inout  wire  [35: 0] SSRAM_D      // SSRAM Data Bus
 `else
       output logic [21: 0] SSRAM_A,     // SSRAM Address Bus
-      inout  wire  [17: 0] SSRAM_D,     // SSRAM Data Bus
+      inout  wire  [17: 0] SSRAM_D      // SSRAM Data Bus
 `endif
-      input  wire         busREQI,      // Memory Request In
-      output wire         busACKO,      // Memory Acknowledge Out
-      input  wire [ 0:35] busADDRI,     // Address Address In
-      input  wire [ 0:35] busDATAI,     // Data in
-      output wire [ 0:35] busDATAO      // Data out
    );
 
    //
@@ -105,14 +101,14 @@ module MEM (
    //  busADDRI[14:35] is address
    //
 
-   wire         busREAD    = `busREAD(busADDRI);
-   wire         busWRTEST  = `busWRTEST(busADDRI);
-   wire         busWRITE   = `busWRITE(busADDRI);
-   wire         busPHYS    = `busPHYS(busADDRI);
-   wire         busIO      = `busIO(busADDRI);
-   wire [ 0: 3] busDEV     = `busDEV(busADDRI);
-   wire [18:35] busIOADDR  = `busIOADDR(busADDRI);
-   wire [16:35] busMEMADDR = `busMEMADDR(busADDRI);
+   wire         busREAD    = `busREAD(memBUS.busADDRI);
+   wire         busWRTEST  = `busWRTEST(memBUS.busADDRI);
+   wire         busWRITE   = `busWRITE(memBUS.busADDRI);
+   wire         busPHYS    = `busPHYS(memBUS.busADDRI);
+   wire         busIO      = `busIO(memBUS.busADDRI);
+   wire [ 0: 3] busDEV     = `busDEV(memBUS.busADDRI);
+   wire [18:35] busIOADDR  = `busIOADDR(memBUS.busADDRI);
+   wire [16:35] busMEMADDR = `busMEMADDR(memBUS.busADDRI);
 
    //
    // Address decoding
@@ -133,7 +129,7 @@ module MEM (
    MEMSTAT STAT (
       .rst       (rst),
       .clk       (clkT[1]),
-      .busDATAI  (busDATAI),
+      .busDATAI  (memBUS.busDATAI),
       .msrWRITE  (msrWRITE),
       .regSTAT   (regSTAT)
    );
@@ -165,7 +161,7 @@ module MEM (
    always_ff @(posedge clkT[3])
      begin
         if (memWRITE & memVALID)
-          mem[wr_mem_addr] <= busDATAI;
+          mem[wr_mem_addr] <= memBUS.busDATAI;
         rd_mem_addr <= wr_mem_addr;
      end
 
@@ -176,12 +172,12 @@ module MEM (
    always_ff @(posedge clkT[3])
      begin
         if (memWRITE & hsbVALID)
-          hsb[wr_hsb_addr] <= busDATAI;
+          hsb[wr_hsb_addr] <= memBUS.busDATAI;
         rd_hsb_addr <= wr_hsb_addr;
      end
 
-   assign busDATAO  = busIO ? regSTAT : (memVALID ? mem[rd_mem_addr] : hsb[rd_hsb_addr]);
-   assign busACKO   = msrREAD | msrWRITE | (memVALID | hsbVALID) & (memREAD | memWRITE | memWRTEST);
+   assign memBUS.busDATAO = busIO ? regSTAT : (memVALID ? mem[rd_mem_addr] : hsb[rd_hsb_addr]);
+   assign memBUS.busACKO  = msrREAD | msrWRITE | (memVALID | hsbVALID) & (memREAD | memWRITE | memWRTEST);
 
 `endif
 
@@ -194,11 +190,11 @@ module MEM (
    assign SSRAM_CLK  = !memCLK;
    assign SSRAM_WE_N = !(memWRITE & (clkT == 4'b1001));
    assign SSRAM_A    = busMEMADDR;
-   assign SSRAM_D    = memWRITE ? busDATAI : 36'bz;
+   assign SSRAM_D    = memWRITE ? memBUS.busDATAI : 36'bz;
    assign SSRAM_ADV  = 0;
 
-   assign busDATAO   = busIO ? regSTAT : SSRAM_D;
-   assign busACKO    = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
+   assign memBUS.busDATAO = busIO ? regSTAT : SSRAM_D;
+   assign memBUS.busACKO  = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
 
 `endif
 
@@ -247,9 +243,9 @@ module MEM (
      if (rst)
        ssramDO <= 18'b0;
      else if (clkT == 4'b1100)
-       ssramDO <= busDATAI[18:35];
+       ssramDO <= memBUS.busDATAI[18:35];
      else
-       ssramDO <= busDATAI[ 0:17];
+       ssramDO <= memBUS.busDATAI[ 0:17];
 
    //
    // Capture data from SSRAM
@@ -279,10 +275,18 @@ module MEM (
    assign SSRAM_D    = memWRITE ? ssramDO : {18{1'bz}};
    assign SSRAM_ADV  = 0;
 
-   assign busDATAO   = busIO ? regSTAT : ssramDI;
-   assign busACKO    = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
+   assign memBUS.busDATAO = busIO ? regSTAT : ssramDI;
+   assign memBUS.busACKO  = msrREAD | msrWRITE | memREAD | memWRITE | memWRTEST;
 
 `endif
+
+   //
+   // Memory Bus Interface
+   //
+
+   assign memBUS.busREQO  = 0;          // Memory is target only
+   assign memBUS.busADDRO = 0;          // Memory is target only
+   assign memBUS.busINTRO = 0;          // Memory Interrupt Out (MEM doesn't generate interrupts)
 
    //
    // Simulation/Debug
