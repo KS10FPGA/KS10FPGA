@@ -46,7 +46,7 @@ module RHCS1 (
       input  wire         devRESET,             // Device reset from UBA
       input  wire         devLOBYTE,            // Device low byte
       input  wire         devHIBYTE,            // Device high byte
-      input  wire [ 0:35] devDATAI,             // Device data in
+      input  wire [35: 0] rhDATAI,              // Data in
       input  wire         rhcs1WRITE,           // CS1 write
       input  wire         rhCLRGO,              // Go clear
       input  wire         rhCLRTRE,             // Transfer error clear
@@ -68,12 +68,6 @@ module RHCS1 (
       input  wire [17:16] rhBA,                 // rhBA address extension
       output wire [15: 0] rhCS1                 // rhCS1 output
    );
-
-   //
-   // Big-endian to little-endian data bus swap
-   //
-
-   wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
    // Transfer Error (TRE)

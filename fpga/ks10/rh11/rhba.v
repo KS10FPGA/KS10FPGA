@@ -47,7 +47,7 @@ module RHBA (
       input  wire         devRESET,             // Device reset
       input  wire         devLOBYTE,            // Device Low Byte
       input  wire         devHIBYTE,            // Device High Byte
-      input  wire [ 0:35] devDATAI,             // Device Data In
+      input  wire [35: 0] rhDATAI,              // Data In
       input  wire         rhcs1WRITE,           // Write to RHCS1
       input  wire         rhbaWRITE,            // Write to BA
       input  wire         rhCLR,                // Controller clear
@@ -56,12 +56,6 @@ module RHBA (
       input  wire         rhINCBA,              // Increment BA
       output wire [17: 0] rhBA                  // rhBA Output
    );
-
-   //
-   // Big-endian to little-endian data bus swap
-   //
-
-   wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
    // RH11 Bus Address (RHBA) Register

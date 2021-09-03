@@ -46,18 +46,12 @@ module RHWC (
       input  wire         devRESET,             // Device reset
       input  wire         devLOBYTE,            // Device low byte
       input  wire         devHIBYTE,            // Device high byte
-      input  wire [ 0:35] devDATAI,             // Device data in
+      input  wire [35: 0] rhDATAI,              // Data in
       input  wire         rhwcWRITE,            // Write to WC
       input  wire         rhCLR,                // Controller clear
       input  wire         rhINCWC,              // Increment WC
       output reg  [15: 0] rhWC                  // WC Output
    );
-
-   //
-   // Big-endian to little-endian data bus swap
-   //
-
-   wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
    // RH11 Word Count (RHWC) Register

@@ -47,7 +47,7 @@ module RHCS2 (
       input  wire         devRESET,             // Device Reset from UBA
       input  wire         devLOBYTE,            // Device Low Byte
       input  wire         devHIBYTE,            // Device High Byte
-      input  wire [ 0:35] devDATAI,             // Device Data In
+      input  wire [35: 0] rhDATAI,              // Data In
       input  wire         rhcs2WRITE,           // Write to CS2
       input  wire         rhCMDGO,              // Go command
       input  wire         rhCLRGO,              // Command clear
@@ -62,12 +62,6 @@ module RHCS2 (
       input  wire         rhBUFOR,              // Status OR
       output wire [15: 0] rhCS2                 // CS2 Output
    );
-
-   //
-   // Big-endian to little-endian data bus swap
-   //
-
-   wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
    // Error Clear

@@ -54,7 +54,7 @@ module RHINTR (
       input  wire         rst,                  // Reset
       input  wire         devRESET,             // Device reset from UBA
       input  wire         devLOBYTE,            // Device low byte
-      input  wire [ 0:35] devDATAI,             // Device data in
+      input  wire [35: 0] rhDATAI,              // Data in
       input  wire         rhcs1WRITE,           // CS1 write
       input  wire         rhSC,                 // Special Conditions (RHCS1[SC ])
       input  wire         rhRDY,                // Ready              (RHCS1[RDY])
@@ -63,12 +63,6 @@ module RHINTR (
       input  wire         rhIACK,               // Interrupt acknowledge
       output wire         rhIRQ                 // Interrupt request
    );
-
-   //
-   // Big-endian to little-endian data bus swap
-   //
-
-   wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
    // Keep track of rhRDY transitions.

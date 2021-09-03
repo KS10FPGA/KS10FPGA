@@ -48,7 +48,7 @@ module RHDB (
       input  wire         devRESET,             // Device clear
       input  wire         devLOBYTE,            // Device low byte
       input  wire         devHIBYTE,            // Device high byte
-      input  wire [ 0:35] devDATAI,             // Device data in
+      input  wire [35: 0] rhDATAI,              // Data in
       input  wire         rhCLRGO,              // Command clear
       input  wire         rhCLRTRE,             // Transfer error clear
       input  wire         rhCLR,                // Controller clear
@@ -59,12 +59,6 @@ module RHDB (
       output wire         rhBUFOR,              // Status OR
       output reg  [15: 0] rhDB                  // rhDB output
    );
-
-   //
-   // Big-endian to little-endian data bus swap
-   //
-
-   wire [35:0] rhDATAI = devDATAI[0:35];
 
    //
    // The FIFO state is updated after the read and write signals.

@@ -148,10 +148,12 @@ module RPXX (
    //
 
    wire         devWRITE = `devWRITE(devADDRI);                 // Write Cycle
-   wire         devIO    = `devIO(devADDRI);                    // IO Cycle
    wire         devPHYS  = `devPHYS(devADDRI);                  // Physical reference
+   wire         devIO    = `devIO(devADDRI);                    // IO Cycle
+   wire         devWRU   = `devWRU(devADDRI);                   // WRU Cycle
+   wire         devVECT  = `devVECT(devADDRI);                  // Read interrupt vector
    wire [14:17] devDEV   = `devDEV(devADDRI);                   // Device Number
-   wire [18:34] devADDR  = `devADDR(devADDRI);                  // Device Address
+   wire [18:35] devADDR  = `devADDR(devADDRI);                  // Device Address
 
    //
    // Unit select
@@ -166,15 +168,15 @@ module RPXX (
    //   M7774/RG5/E75
    //
 
-   wire rpcs1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]) & rpSELECT;
-   wire rper1WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]) & rpSELECT;
-   wire rpasWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
-   wire rpmrWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]) & rpSELECT;
-   wire rpofWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]) & rpSELECT;
-   wire rpdaWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]) & rpSELECT;
-   wire rpdcWRITE  = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]) & rpSELECT;
-   wire rper2WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]) & rpSELECT;
-   wire rper3WRITE = devWRITE & devIO & devPHYS & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]) & rpSELECT;
+   wire rpcs1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs1ADDR) & rpSELECT;
+   wire rper1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR) & rpSELECT;
+   wire rpasWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR);
+   wire rpmrWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  mrADDR) & rpSELECT;
+   wire rpofWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  ofADDR) & rpSELECT;
+   wire rpdaWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  daADDR) & rpSELECT;
+   wire rpdcWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dcADDR) & rpSELECT;
+   wire rper2WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er2ADDR) & rpSELECT;
+   wire rper3WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er3ADDR) & rpSELECT;
 
    //
    // Big-endian to little-endian data bus swap
