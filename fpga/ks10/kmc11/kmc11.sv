@@ -66,29 +66,21 @@
 `include "../uba/ubabus.vh"
 
 module KMC11 (
-      input  wire          clk,                         // Clock
-      input  wire          rst,                         // Reset
-      // Reset
-      input  wire          devRESET,                    // Device Reset from IO Bus Bridge
-      // AC LO
-      output logic         devACLO,                     // Device Power Fail
-      // Interrupt
-      output logic [ 7: 4] devINTR,                     // Device Interrupt Request
-      // Target
-      input  wire          devREQI,                     // Device Request In
-      output logic         devACKO,                     // Device Acknowledge Out
-      input  wire  [ 0:35] devADDRI,                    // Device Address In
-      input  wire  [ 0:35] devDATAI,                    // Device Data In
-      // Initiator
-      output wire          devREQO,                     // Device Request Out
-      input  wire          devACKI,                     // Device Acknowledge In
-      output logic [ 0:35] devADDRO,                    // Device Address Out
-      output logic [ 0:35] devDATAO,                    // Device Data Out
-      // KMC11 Interfaces
+      unibus.device        unibus,                      // Unibus connection
       input  wire  [15: 0] kmcLUIBUS,                   // Line unit input bus
       output logic         kmcLUSTEP,                   // Line unit step
       output logic         kmcLULOOP                    // Line unit loop
    );
+
+   //
+   // Bus Interface
+   //
+
+   logic  clk;                                          // Clock
+   logic  rst;                                          // Reset
+   assign clk = unibus.clk;                             // Clock
+   assign rst = unibus.rst;                             // Reset
+   assign unibus.devACLO  = 0;                          // Power fail (not implemented)
 
    //
    // KMC Parameters
@@ -112,16 +104,16 @@ module KMC11 (
    // Device Address and Flags
    //
 
-   wire         devREAD   = `devREAD(devADDRI);         // Read Cycle
-   wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle
-   wire         devPHYS   = `devPHYS(devADDRI);         // Physical reference
-   wire         devIO     = `devIO(devADDRI);           // IO Cycle
-   wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
-   wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
-   wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
-   wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
-   wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
-   wire         devLOBYTE = `devLOBYTE(devADDRI);       // Device Low Byte
+   wire         devREAD   = `devREAD(unibus.devADDRI);  // Read Cycle
+   wire         devWRITE  = `devWRITE(unibus.devADDRI); // Write Cycle
+   wire         devPHYS   = `devPHYS(unibus.devADDRI);  // Physical reference
+   wire         devIO     = `devIO(unibus.devADDRI);    // IO Cycle
+   wire         devWRU    = `devWRU(unibus.devADDRI);   // WRU Cycle
+   wire         devVECT   = `devVECT(unibus.devADDRI);  // Read interrupt vector
+   wire [14:17] devDEV    = `devDEV(unibus.devADDRI);   // Device Number
+   wire [18:35] devADDR   = `devADDR(unibus.devADDRI);  // Device Address
+   wire         devHIBYTE = `devHIBYTE(unibus.devADDRI);// Device High Byte
+   wire         devLOBYTE = `devLOBYTE(unibus.devADDRI);// Device Low Byte
 
    //
    // KMC Interrupt Vectors
@@ -131,25 +123,31 @@ module KMC11 (
    localparam [18:35] kmcVECT4 = kmcVECT + 18'd4;       // KMC11 Vector + 4
 
    //
+   // Read/Write Decoding
+   //
+
+   wire kmcREAD  = /* FIXME: unibus.devREQI & */ devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV);
+   wire kmcWRITE = /* FIXME: unibus.devREQI & */ devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV);
+   wire vectREAD = /* FIXME: unibus.devREQI & */ devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == kmcDEV);
+
+   //
    // Address Decoding
    //
 
-   wire devREQI1 = 1;                                   // FIXME: devREQI should work but doesn't
-   wire vectREAD  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == kmcDEV);
-   wire sel0READ  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);
-   wire sel0WRITE = devREQI1 & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel0ADDR[18:34]);
-   wire sel2READ  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel2ADDR[18:34]);
-   wire sel2WRITE = devREQI1 & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel2ADDR[18:34]);
-   wire sel4READ  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
-   wire sel4WRITE = devREQI1 & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel4ADDR[18:34]);
-   wire sel6READ  = devREQI1 & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
-   wire sel6WRITE = devREQI1 & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV) & (devADDR == sel6ADDR[18:34]);
+   wire sel0READ  = kmcREAD  & (devADDR == sel0ADDR);
+   wire sel0WRITE = kmcWRITE & (devADDR == sel0ADDR);
+   wire sel2READ  = kmcREAD  & (devADDR == sel2ADDR);
+   wire sel2WRITE = kmcWRITE & (devADDR == sel2ADDR);
+   wire sel4READ  = kmcREAD  & (devADDR == sel4ADDR);
+   wire sel4WRITE = kmcWRITE & (devADDR == sel4ADDR);
+   wire sel6READ  = kmcREAD  & (devADDR == sel6ADDR);
+   wire sel6WRITE = kmcWRITE & (devADDR == sel6ADDR);
 
    //
    // Big-endian to little-endian data bus swap
    //
 
-   wire [35: 0] kmcDATAI = devDATAI[0:35];
+   wire [35: 0] kmcDATAI = unibus.devDATAI[0:35];
 
    //
    // Address Flags (little-endian)
@@ -182,7 +180,7 @@ module KMC11 (
    // Initialize
    //
 
-   wire          kmcINIT = kmcMCLR | devRESET;
+   wire          kmcINIT = kmcMCLR | unibus.devRESET;
 
    //
    // Multiport RAM
@@ -284,7 +282,7 @@ module KMC11 (
       .clk         (clk),
       .rst         (rst),
       .devHIBYTE   (devHIBYTE),
-      .devRESET    (devRESET),
+      .devRESET    (unibus.devRESET),
       .sel0WRITE   (sel0WRITE),
       .kmcDATAI    (kmcDATAI),
       .kmcINIT     (kmcINIT),
@@ -320,8 +318,8 @@ module KMC11 (
    KMCMPRAM uMPRAM (
       .clk         (clk),
       .rst         (rst),
-      .devREQO     (devREQO),
-      .devACKI     (devACKI),
+      .devREQO     (unibus.devREQO),
+      .devACKI     (unibus.devACKI),
       .devLOBYTE   (devLOBYTE),
       .devHIBYTE   (devHIBYTE),
       .sel0WRITE   (sel0WRITE),
@@ -442,9 +440,8 @@ module KMC11 (
    KMCNPRC uNPRC (
       .clk         (clk),
       .rst         (rst),
-      .devACKI     (devACKI),
-      .devREQO     (devREQO),
-      .devDATAI    (devDATAI),
+      .devACKI     (unibus.devACKI),
+      .devREQO     (unibus.devREQO),
       .kmcINIT     (kmcINIT),
       .kmcCRAM     (kmcCRAM),
       .kmcNPRCLKEN (kmcNPRCLKEN),
@@ -516,7 +513,7 @@ module KMC11 (
    // Generate Interrutp Request
    //
 
-   assign devINTR = kmcIRQO ? kmcINTR : 4'b0;
+   assign unibus.devINTRO = kmcIRQO ? kmcINTR : 4'b0;
 
    //
    // DMA Address
@@ -537,16 +534,16 @@ module KMC11 (
         if (kmcNPRO)
           begin
              if ((kmcBAEO[17:16] == 2'b11) & (kmcNPROA[15:13] == 3'b111))
-               devADDRO = {kmcWRIOFLAGS[35:22],  kmcDEV,  kmcBAEO[17:16], kmcNPROA[15:0]};
+               unibus.devADDRO = {kmcWRIOFLAGS[35:22],  kmcDEV,  kmcBAEO[17:16], kmcNPROA[15:0]};
              else
-               devADDRO = {kmcWRMEMFLAGS[35:22], 4'b0000, kmcBAEO[17:16], kmcNPROA[15:0]};
+               unibus.devADDRO = {kmcWRMEMFLAGS[35:22], 4'b0000, kmcBAEO[17:16], kmcNPROA[15:0]};
           end
         else
           begin
              if ((kmcBAEI[17:16] == 2'b11) & (kmcNPRIA[15:13] == 3'b111))
-               devADDRO = {kmcRDIOFLAGS[35:22],  kmcDEV,  kmcBAEI[17:16], kmcNPRIA[15:0]};
+               unibus.devADDRO = {kmcRDIOFLAGS[35:22],  kmcDEV,  kmcBAEI[17:16], kmcNPRIA[15:0]};
              else
-               devADDRO = {kmcRDMEMFLAGS[35:22], 4'b0000, kmcBAEI[17:16], kmcNPRIA[15:0]};
+               unibus.devADDRO = {kmcRDMEMFLAGS[35:22], 4'b0000, kmcBAEI[17:16], kmcNPRIA[15:0]};
           end
      end
 
@@ -554,15 +551,15 @@ module KMC11 (
    // Generate Bus ACK
    //
 
-   assign devACKO = (!(devREQO & !kmcNPRO) & sel0WRITE |
-                     !(devREQO & !kmcNPRO) & sel2WRITE |
-                     !(devREQO & !kmcNPRO) & sel4WRITE |
-                     !(devREQO & !kmcNPRO) & sel6WRITE |
-                     !(devREQO &  kmcNPRO) & sel0READ  |
-                     !(devREQO &  kmcNPRO) & sel2READ  |
-                     !(devREQO &  kmcNPRO) & sel4READ  |
-                     !(devREQO &  kmcNPRO) & sel6READ  |
-                     !(devREQO &  kmcNPRO) & vectREAD);
+   assign unibus.devACKO = (!(unibus.devREQO & !kmcNPRO) & sel0WRITE |
+                            !(unibus.devREQO & !kmcNPRO) & sel2WRITE |
+                            !(unibus.devREQO & !kmcNPRO) & sel4WRITE |
+                            !(unibus.devREQO & !kmcNPRO) & sel6WRITE |
+                            !(unibus.devREQO &  kmcNPRO) & sel0READ  |
+                            !(unibus.devREQO &  kmcNPRO) & sel2READ  |
+                            !(unibus.devREQO &  kmcNPRO) & sel4READ  |
+                            !(unibus.devREQO &  kmcNPRO) & sel6READ  |
+                            !(unibus.devREQO &  kmcNPRO) & vectREAD);
 
    //
    // Bus Mux and little-endian to big-endian bus swap
@@ -577,46 +574,46 @@ module KMC11 (
 
    always_comb
      begin
-        devDATAO = 0;
-        if (devREQO)
+        unibus.devDATAO = 0;
+        if (unibus.devREQO)
           if (kmcCRAMOUT)
-            devDATAO = {20'b0, kmcMNTINST};
+            unibus.devDATAO = {20'b0, kmcMNTINST};
           else
 `ifdef KMC_BROKE_RPW
             case ({kmcBYTE, kmcNPROA[1:0]})
-              3'b000: devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word
-              3'b001: devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word
-              3'b010: devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word
-              3'b011: devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word
-              3'b100: devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word, low  byte (not RPW)
-              3'b101: devDATAO <= {2'b0, kmcNPROD[15: 8],  kmcRPWD[25:18], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word, high byte (RPW)
-              3'b110: devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0,  kmcRPWD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word, low  byte (RPW)
-              3'b111: devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8],  kmcRPWD[ 7: 0]};     // Odd  word, high byte (RPW)
+              3'b000: unibus.devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word
+              3'b001: unibus.devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word
+              3'b010: unibus.devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word
+              3'b011: unibus.devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word
+              3'b100: unibus.devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word, low  byte (not RPW)
+              3'b101: unibus.devDATAO <= {2'b0, kmcNPROD[15: 8],  kmcRPWD[25:18], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word, high byte (RPW)
+              3'b110: unibus.devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0,  kmcRPWD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word, low  byte (RPW)
+              3'b111: unibus.devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8],  kmcRPWD[ 7: 0]};     // Odd  word, high byte (RPW)
             endcase
 `else
-            devDATAO <= {2'b0, kmcNPROD[15:0], 2'b0, kmcNPROD[15:0]};
+            unibus.devDATAO <= {2'b0, kmcNPROD[15:0], 2'b0, kmcNPROD[15:0]};
 `endif
         else
           begin
              if (sel0READ)
-               devDATAO = {20'b0, kmcMAINT[15:8], kmcCSR0[7:0]};
+               unibus.devDATAO = {20'b0, kmcMAINT[15:8], kmcCSR0[7:0]};
              if (sel2READ)
-               devDATAO = {20'b0, kmcCSR2};
+               unibus.devDATAO = {20'b0, kmcCSR2};
              if (sel4READ)
                if (kmcCRAMOUT)
-                 devDATAO = {26'b0, kmcMNTADDR};
+                 unibus.devDATAO = {26'b0, kmcMNTADDR};
                else
-                 devDATAO = {20'b0, kmcCSR4};
+                 unibus.devDATAO = {20'b0, kmcCSR4};
              if (sel6READ)
                if (kmcCRAMOUT)
-                 devDATAO = {20'b0, kmcMNTINST};
+                 unibus.devDATAO = {20'b0, kmcMNTINST};
                else
-                 devDATAO = {20'b0, kmcCSR6};
+                 unibus.devDATAO = {20'b0, kmcCSR6};
              if (vectREAD)
                if (kmcVECTXXX4)
-                 devDATAO = {20'b0, kmcVECT4[20:35]};
+                 unibus.devDATAO = {20'b0, kmcVECT4[20:35]};
                else
-                 devDATAO = {20'b0, kmcVECT0[20:35]};
+                 unibus.devDATAO = {20'b0, kmcVECT0[20:35]};
           end
      end
 
@@ -626,12 +623,6 @@ module KMC11 (
 
    assign kmcLUSTEP = `kmcMAINT_LUSTEP(kmcMAINT);
    assign kmcLULOOP = `kmcMAINT_LULOOP(kmcMAINT);
-
-   //
-   // Negate ACLO
-   //
-
-   assign devACLO = 0;
 
 //
 // This code write a log kmc11 register accesses to "kmcstatus.txt" in the

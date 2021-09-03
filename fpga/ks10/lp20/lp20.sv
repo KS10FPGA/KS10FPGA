@@ -23,7 +23,7 @@
 //   the IO bus as 36-bit address and 36-bit data just to keep things simple.
 //
 // File
-//   lp20.v
+//   lp20.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -67,25 +67,7 @@
 `include "../uba/ubabus.vh"
 
 module LP20 (
-      input  wire         clk,                          // Clock
-      input  wire         rst,                          // Reset
-      // Reset
-      input  wire         devRESET,                     // Device Reset from IO Bus Bridge
-      // AC LO
-      output wire         devACLO,                      // Device Power Fail
-      // Interrupt
-      output wire [ 7: 4] devINTR,                      // Device Interrupt Request
-      // Target
-      input  wire         devREQI,                      // Device Request In
-      output wire         devACKO,                      // Device Acknowledge Out
-      input  wire [ 0:35] devADDRI,                     // Device Address In
-      input  wire [ 0:35] devDATAI,                     // Device Data In
-      // Initiator
-      output wire         devREQO,                      // Device Request Out
-      input  wire         devACKI,                      // Device Acknowledge In
-      output wire [ 0:35] devADDRO,                     // Device Address Out
-      output reg  [ 0:35] devDATAO,                     // Device Data Out
-      // LP26 Interfaces
+      unibus.device       unibus,                       // Unibus connection
       input  wire         lpOVFU,                       // LP26 Optical vertical format unit
       output wire         lpINIT,                       // LP26 Initialize
       input  wire         lpONLINE,                     // LP26 Online status
@@ -99,11 +81,14 @@ module LP20 (
       output wire         lpSTROBE                      // LP26 Printer data strobe
    );
 
-`ifndef SYNTHESIS
+   //
+   // Bus Interface
+   //
 
-   integer file;
-
-`endif
+   logic  clk;                                          // Clock
+   logic  rst;                                          // Reset
+   assign clk = unibus.clk;                             // Clock
+   assign rst = unibus.rst;                             // Reset
 
    //
    // LP Parameters
@@ -140,16 +125,24 @@ module LP20 (
    // Device Address and Flags
    //
 
-   wire         devREAD   = `devREAD(devADDRI);         // Read Cycle
-   wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle
-   wire         devPHYS   = `devPHYS(devADDRI);         // Physical reference
-   wire         devIO     = `devIO(devADDRI);           // IO Cycle
-   wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
-   wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
-   wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
-   wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
-   wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
-   wire         devLOBYTE = `devLOBYTE(devADDRI);       // Device Low Byte
+   wire         devREAD   = `devREAD(unibus.devADDRI);  // Read Cycle
+   wire         devWRITE  = `devWRITE(unibus.devADDRI); // Write Cycle
+   wire         devPHYS   = `devPHYS(unibus.devADDRI);  // Physical reference
+   wire         devIO     = `devIO(unibus.devADDRI);    // IO Cycle
+   wire         devWRU    = `devWRU(unibus.devADDRI);   // WRU Cycle
+   wire         devVECT   = `devVECT(unibus.devADDRI);  // Read interrupt vector
+   wire [14:17] devDEV    = `devDEV(unibus.devADDRI);   // Device Number
+   wire [18:35] devADDR   = `devADDR(unibus.devADDRI);  // Device Address
+   wire         devHIBYTE = `devHIBYTE(unibus.devADDRI);// Device High Byte
+   wire         devLOBYTE = `devLOBYTE(unibus.devADDRI);// Device Low Byte
+
+   //
+   // Read/Write Decoding
+   //
+
+   wire lpREAD   = /* FIXME: unibus.devREQI & */ devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV);
+   wire lpWRITE  = /* FIXME: unibus.devREQI & */ devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV);
+   wire vectREAD = /* FIXME: unibus.devREQI & */ devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == lpDEV);
 
    //
    // Address Decoding
@@ -160,33 +153,32 @@ module LP20 (
    //  M8586/LPC9/E31
    //
 
-   wire vectREAD  = devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == lpDEV);
-   wire csraREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == csraADDR[18:34]);
-   wire csraWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == csraADDR[18:34]);
-   wire csrbREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == csrbADDR[18:34]);
-   wire csrbWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == csrbADDR[18:34]);
-   wire barREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == barADDR[18:34]);
-   wire barWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == barADDR[18:34]);
-   wire bctrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == bctrADDR[18:34]);
-   wire bctrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == bctrADDR[18:34]);
-   wire pctrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == pctrADDR[18:34]);
-   wire pctrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == pctrADDR[18:34]);
-   wire ramdREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == ramdADDR[18:34]);
-   wire ramdWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == ramdADDR[18:34]);
-   wire cctrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cctrADDR[18:34]) & devHIBYTE;
-   wire cctrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cctrADDR[18:34]) & devHIBYTE;
-   wire cbufREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cbufADDR[18:34]) & devLOBYTE;
-   wire cbufWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cbufADDR[18:34]) & devLOBYTE;
-   wire cksmREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cksmADDR[18:34]) & devHIBYTE;
-   wire cksmWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == cksmADDR[18:34]) & devHIBYTE;
-   wire pdatREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == pdatADDR[18:34]) & devLOBYTE;
-   wire pdatWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV) & (devADDR == pdatADDR[18:34]) & devLOBYTE;
+   wire csraREAD  = lpREAD  & (devADDR == csraADDR);
+   wire csraWRITE = lpWRITE & (devADDR == csraADDR);
+   wire csrbREAD  = lpREAD  & (devADDR == csrbADDR);
+   wire csrbWRITE = lpWRITE & (devADDR == csrbADDR);
+   wire barREAD   = lpREAD  & (devADDR == barADDR);
+   wire barWRITE  = lpWRITE & (devADDR == barADDR);
+   wire bctrREAD  = lpREAD  & (devADDR == bctrADDR);
+   wire bctrWRITE = lpWRITE & (devADDR == bctrADDR);
+   wire pctrREAD  = lpREAD  & (devADDR == pctrADDR);
+   wire pctrWRITE = lpWRITE & (devADDR == pctrADDR);
+   wire ramdREAD  = lpREAD  & (devADDR == ramdADDR);
+   wire ramdWRITE = lpWRITE & (devADDR == ramdADDR);
+   wire cctrREAD  = lpREAD  & (devADDR == cctrADDR) & devHIBYTE;
+   wire cctrWRITE = lpWRITE & (devADDR == cctrADDR) & devHIBYTE;
+   wire cbufREAD  = lpREAD  & (devADDR == cbufADDR) & devLOBYTE;
+   wire cbufWRITE = lpWRITE & (devADDR == cbufADDR) & devLOBYTE;
+   wire cksmREAD  = lpREAD  & (devADDR == cksmADDR) & devHIBYTE;
+   wire cksmWRITE = lpWRITE & (devADDR == cksmADDR) & devHIBYTE;
+   wire pdatREAD  = lpREAD  & (devADDR == pdatADDR) & devLOBYTE;
+   wire pdatWRITE = lpWRITE & (devADDR == pdatADDR) & devLOBYTE;
 
    //
    // Big-endian to little-endian data bus swap
    //
 
-   wire [35:0] lpDATAI = devDATAI[0:35];
+   wire [35:0] lpDATAI = unibus.devDATAI[0:35];
 
    //
    // Interrupt Acknowledge
@@ -265,9 +257,6 @@ module LP20 (
    wire lpVAL;                          // Printer valid data
    wire lpLPE;                          // Line printer parity error
    wire lpSETDTE;                       // Set demand timeout error
-
-//   wire lpVFUERR;                     // VFU error
-
    wire lpSETGOE = lpCMDGO & lpERR;     // Set GO error
 
    //
@@ -313,7 +302,7 @@ module LP20 (
    LPCSRA CSRA (
       .clk        (clk),
       .rst        (rst),
-      .devRESET   (devRESET),
+      .devRESET   (unibus.devRESET),
       .devLOBYTE  (devLOBYTE),
       .devHIBYTE  (devHIBYTE),
       .csraWRITE  (csraWRITE),
@@ -347,7 +336,7 @@ module LP20 (
    LPCSRB CSRB (
       .clk        (clk),
       .rst        (rst),
-      .devRESET   (devRESET),
+      .devRESET   (unibus.devRESET),
       .devLOBYTE  (devLOBYTE),
       .devHIBYTE  (devHIBYTE),
       .csrbWRITE  (csrbWRITE),
@@ -438,8 +427,8 @@ module LP20 (
    LPRAMD RAMD (
       .clk        (clk),
       .rst        (rst),
-      .devREQO    (devREQO),
-      .devACKI    (devACKI),
+      .devREQO    (unibus.devREQO),
+      .devACKI    (unibus.devACKI),
       .lpINIT     (lpINIT),
       .lpDATAI    (lpDATAI),
       .cbufWRITE  (cbufWRITE),
@@ -467,8 +456,8 @@ module LP20 (
    LPCBUF CBUF (
       .clk        (clk),
       .rst        (rst),
-      .devREQO    (devREQO),
-      .devACKI    (devACKI),
+      .devREQO    (unibus.devREQO),
+      .devACKI    (unibus.devACKI),
       .cbufWRITE  (cbufWRITE),
       .lpINIT     (lpINIT),
       .lpDATAI    (lpDATAI),
@@ -484,8 +473,8 @@ module LP20 (
    LPCKSM CKSM (
       .clk        (clk),
       .rst        (rst),
-      .devREQO    (devREQO),
-      .devACKI    (devACKI),
+      .devREQO    (unibus.devREQO),
+      .devACKI    (unibus.devACKI),
       .lpDATAI    (lpDATAI),
       .lpCMDGO    (lpCMDGO),
       .regBAR     (regBAR),
@@ -499,8 +488,8 @@ module LP20 (
    LPPDAT PDAT (
       .clk        (clk),
       .rst        (rst),
-      .devREQO    (devREQO),
-      .devACKI    (devACKI),
+      .devREQO    (unibus.devREQO),
+      .devACKI    (unibus.devACKI),
       .lpINIT     (lpINIT),
       .lpCBUF     (regCBUF),
       .lpRAMD     (regRAMD),
@@ -536,8 +525,8 @@ module LP20 (
    LPDMA DMA (
       .clk        (clk),
       .rst        (rst),
-      .devREQO    (devREQO),
-      .devACKI    (devACKI),
+      .devREQO    (unibus.devREQO),
+      .devACKI    (unibus.devACKI),
       .lpDATAI    (lpDATAI),
       .lpDONE     (lpDONE),
       .lpTESTMSYN (lpTESTMSYN),
@@ -573,31 +562,31 @@ module LP20 (
    // Create Interrupt Request
    //
 
-   assign devINTR = lpINT ? lpINTR : 4'b0;
+   assign unibus.devINTRO = lpINT ? lpINTR : 4'b0;
 
    //
    // Create DMA address
    //
 
-   assign devADDRO = {rdFLAGS, regBAR};
+   assign unibus.devADDRO = {rdFLAGS, regBAR};
 
    //
    // Generate Bus ACK
    //
 
-   assign devACKO = (csraREAD | csraWRITE |
-                     csrbREAD | csrbWRITE |
-                     barREAD  | barWRITE  |
-                     bctrREAD | bctrWRITE |
-                     //
-                     pctrREAD | pctrWRITE |
-                     ramdREAD | ramdWRITE |
-                     cctrREAD | cctrWRITE |
-                     cbufREAD | cbufWRITE |
-                     //
-                     cksmREAD | cksmWRITE |
-                     pdatREAD | pdatWRITE |
-                     vectREAD);
+   assign unibus.devACKO = (csraREAD | csraWRITE |
+                            csrbREAD | csrbWRITE |
+                            barREAD  | barWRITE  |
+                            bctrREAD | bctrWRITE |
+                            //
+                            pctrREAD | pctrWRITE |
+                            ramdREAD | ramdWRITE |
+                            cctrREAD | cctrWRITE |
+                            cbufREAD | cbufWRITE |
+                            //
+                            cksmREAD | cksmWRITE |
+                            pdatREAD | pdatWRITE |
+                            vectREAD);
 
    //
    // Bus Mux and little-endian to big-endian bus swap
@@ -623,34 +612,36 @@ module LP20 (
 
    always @*
      begin
-        devDATAO = 0;
+        unibus.devDATAO = 0;
         if (csraREAD)
-          devDATAO = {20'b0, regCSRA};
+          unibus.devDATAO = {20'b0, regCSRA};
         if (csrbREAD)
-          devDATAO = {20'b0, regCSRB};
+          unibus.devDATAO = {20'b0, regCSRB};
         if (barREAD)
-          devDATAO = {20'b0, regBAR[15:0]};
+          unibus.devDATAO = {20'b0, regBAR[15:0]};
         if (bctrREAD)
-          devDATAO = {20'b0, regBCTR};
+          unibus.devDATAO = {20'b0, regBCTR};
         if (pctrREAD)
-          devDATAO = {20'b0, regPCTR};
+          unibus.devDATAO = {20'b0, regPCTR};
          if (ramdREAD)
-          devDATAO = {20'b0, regRAMD};
+          unibus.devDATAO = {20'b0, regRAMD};
         if (cctrREAD | cbufREAD)
-          devDATAO = {20'b0, regCCTR, regCBUF};
+          unibus.devDATAO = {20'b0, regCCTR, regCBUF};
         if (cksmREAD | pdatREAD)
-          devDATAO = {20'b0, regCKSM, regPDAT};
+          unibus.devDATAO = {20'b0, regCKSM, regPDAT};
         if (vectREAD)
-          devDATAO = {20'b0, lpVECT[20:35]};
+          unibus.devDATAO = {20'b0, lpVECT[20:35]};
      end
 
    //
-   // Negate ACLO
+   // Bus Interface
    //
 
-   assign devACLO = 0;
+   assign unibus.devACLO  = 0;                  // Power fail (not implemented)
 
 `ifndef SYNTHESIS
+
+   integer file;
 
    //
    // String sizes in bytes
@@ -672,8 +663,8 @@ module LP20 (
 
    always @(posedge clk)
      begin
-        if (lpGO & devREQO & devACKI)
-          $fwrite(file, "[%11.3f] LP20: Read %012o from Memory.  BAR was %06o.\n", $time/1.0e3, lpDATAI[35:0], regBAR);
+        if (lpGO & unibus.devREQO & unibus.devACKI)
+          $fwrite(file, "[%11.3f] LP20: Read %012o from Memory.  BAR was %06o.\n", $time/1.0e3, lpDATAI, regBAR);
      end
 
    //

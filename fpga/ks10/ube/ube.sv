@@ -49,33 +49,25 @@
 `include "../uba/ubabus.vh"
 
 module UBE (
-      input  wire          clk,                         // Clock
-      input  wire          rst,                         // Reset
-      // Reset
-      input  wire          devRESET,                    // Device Reset
-      // AC LO
-      output logic         devACLO,                     // Device Power Fail
-      // Interrupt
-      output logic [ 7: 4] devINTR,                     // Device Interrupt Request
-      // Target
-      input  wire          devREQI,                     // Device Request In
-      output logic         devACKO,                     // Device Acknowledge Out
-      input  wire  [ 0:35] devADDRI,                    // Device Address In
-      input  wire  [ 0:35] devDATAI,                    // Device Data In
-      // Initiator
-      output logic         devREQO,                     // Device Request Out
-      input  wire          devACKI,                     // Device Acknowledge In
-      output logic [ 0:35] devADDRO,                    // Device Address Out
-      output logic [ 0:35] devDATAO                     // Device Data Out
+      unibus.device unibus                                      // Unibus connection
    );
+
+   //
+   // Bus Interface
+   //
+
+   logic  clk;                                                  // Clock
+   logic  rst;                                                  // Reset
+   assign clk = unibus.clk;                                     // Clock
+   assign rst = unibus.rst;                                     // Reset
 
    //
    // UBE Parameters
    //
 
-   parameter  [14:17] ubeDEV  = `ube1DEV;               // UBE Device Number
-   parameter  [18:35] ubeVECT = `ube1VECT;              // UBE Interrupt Vector
-   parameter  [18:35] ubeADDR = `ube1ADDR;              // UBE Base Address
+   parameter  [14:17] ubeDEV  = `ube1DEV;                       // UBE Device Number
+   parameter  [18:35] ubeVECT = `ube1VECT;                      // UBE Interrupt Vector
+   parameter  [18:35] ubeADDR = `ube1ADDR;                      // UBE Base Address
 
    //
    // UBE Register Addresses
@@ -109,42 +101,49 @@ module UBE (
    // Device Address and Flags
    //
 
-   wire         devREAD   = `devREAD(devADDRI);         // Read Cycle
-   wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle
-   wire         devPHYS   = `devPHYS(devADDRI);         // Physical reference
-   wire         devIO     = `devIO(devADDRI);           // IO Cycle
-   wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
-   wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
-   wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
-   wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
-   wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
-   wire         devLOBYTE = `devLOBYTE(devADDRI);       // Device Low Byte
+   wire         devREAD   = `devREAD(unibus.devADDRI);          // Read Cycle
+   wire         devWRITE  = `devWRITE(unibus.devADDRI);         // Write Cycle
+   wire         devPHYS   = `devPHYS(unibus.devADDRI);          // Physical reference
+   wire         devIO     = `devIO(unibus.devADDRI);            // IO Cycle
+   wire         devWRU    = `devWRU(unibus.devADDRI);           // WRU Cycle
+   wire         devVECT   = `devVECT(unibus.devADDRI);          // Read interrupt vector
+   wire [14:17] devDEV    = `devDEV(unibus.devADDRI);           // Device Number
+   wire [18:35] devADDR   = `devADDR(unibus.devADDRI);          // Device Address
+   wire         devHIBYTE = `devHIBYTE(unibus.devADDRI);        // Device High Byte
+   wire         devLOBYTE = `devLOBYTE(unibus.devADDRI);        // Device Low Byte
+
+   //
+   // Read/Write Decoding
+   //
+
+   wire ubeREAD  = unibus.devREQI & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV);
+   wire ubeWRITE = unibus.devREQI & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV);
+   wire vectREAD = unibus.devREQI & devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == ubeDEV);
 
    //
    // Address Decoding
    //
 
-   wire vectREAD   = devREQI & devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == ubeDEV);
-   wire dbREAD     = devREQI & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == dbADDR[18:34]);
-   wire dbWRITE    = devREQI & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == dbADDR[18:34]);
-   wire ccREAD     = devREQI & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == ccADDR[18:34]);
-   wire ccWRITE    = devREQI & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == ccADDR[18:34]);
-   wire baREAD     = devREQI & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == baADDR[18:34]);
-   wire baWRITE    = devREQI & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == baADDR[18:34]);
-   wire csr1READ   = devREQI & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == csr1ADDR[18:34]);
-   wire csr1WRITE  = devREQI & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == csr1ADDR[18:34]);
-   wire csr2READ   = devREQI & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == csr2ADDR[18:34]);
-   wire csr2WRITE  = devREQI & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == csr2ADDR[18:34]);
-   wire clrREAD    = devREQI & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == clrADDR[18:34]);
-   wire clrWRITE   = devREQI & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == clrADDR[18:34]);
-   wire simgoREAD  = devREQI & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == simgoADDR[18:34]);
-   wire simgoWRITE = devREQI & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == ubeDEV) & (devADDR == simgoADDR[18:34]);
+   wire dbREAD     = ubeREAD  & (devADDR == dbADDR);
+   wire dbWRITE    = ubeWRITE & (devADDR == dbADDR);
+   wire ccREAD     = ubeREAD  & (devADDR == ccADDR);
+   wire ccWRITE    = ubeWRITE & (devADDR == ccADDR);
+   wire baREAD     = ubeREAD  & (devADDR == baADDR);
+   wire baWRITE    = ubeWRITE & (devADDR == baADDR);
+   wire csr1READ   = ubeREAD  & (devADDR == csr1ADDR);
+   wire csr1WRITE  = ubeWRITE & (devADDR == csr1ADDR);
+   wire csr2READ   = ubeREAD  & (devADDR == csr2ADDR);
+   wire csr2WRITE  = ubeWRITE & (devADDR == csr2ADDR);
+   wire clrREAD    = ubeREAD  & (devADDR == clrADDR);
+   wire clrWRITE   = ubeWRITE & (devADDR == clrADDR);
+   wire simgoREAD  = ubeREAD  & (devADDR == simgoADDR);
+   wire simgoWRITE = ubeWRITE & (devADDR == simgoADDR);
 
    //
    // Big-endian to little-endian data bus swap
    //
 
-   wire [35:0] ubeDATAI = devDATAI[0:35];
+   wire [35:0] ubeDATAI = unibus.devDATAI[0:35];
 
    //
    // Interrupt Acknowledge
@@ -187,7 +186,7 @@ module UBE (
    //
 
    logic [15:0] regCSR2;
-   assign       devACLO  = `ubeCSR2_ACLO(regCSR2);       // Power down
+   assign unibus.devACLO = `ubeCSR2_ACLO(regCSR2);      // Power down
 
    //
    // Simultaneous GO
@@ -215,13 +214,13 @@ module UBE (
    UBEDB DB (
       .rst        (rst),
       .clk        (clk),
-      .devRESET   (devRESET),
+      .devRESET   (unibus.devRESET),
       .devHIBYTE  (devHIBYTE),
       .devLOBYTE  (devLOBYTE),
-      .devADDRO   (devADDRO),
-      .devDATAI   (devDATAI),
-      .devREQO    (devREQO),
-      .devACKI    (devACKI),
+      .devADDRO   (unibus.devADDRO),
+      .devDATAI   (unibus.devDATAI),
+      .devREQO    (unibus.devREQO),
+      .devACKI    (unibus.devACKI),
       .dbWRITE    (dbWRITE),
       .ubeBYTE    (ubeBYTE),
       .ubeNPRO    (ubeNPRO),
@@ -235,10 +234,10 @@ module UBE (
    UBECC CC (
       .rst        (rst),
       .clk        (clk),
-      .devRESET   (devRESET),
+      .devRESET   (unibus.devRESET),
       .devHIBYTE  (devHIBYTE),
       .devLOBYTE  (devLOBYTE),
-      .devDATAI   (devDATAI),
+      .devDATAI   (unibus.devDATAI),
       .ccWRITE    (ccWRITE),
       .ubeINC     (ubeINC),
       .regCC      (regCC)
@@ -251,10 +250,10 @@ module UBE (
    UBEBA BA (
       .rst        (rst),
       .clk        (clk),
-      .devRESET   (devRESET),
+      .devRESET   (unibus.devRESET),
       .devHIBYTE  (devHIBYTE),
       .devLOBYTE  (devLOBYTE),
-      .devDATAI   (devDATAI),
+      .devDATAI   (unibus.devDATAI),
       .baWRITE    (baWRITE),
       .ubeINC     (ubeINC),
       .regBA      (regBA)
@@ -267,10 +266,10 @@ module UBE (
    UBECSR1 CSR1 (
       .rst        (rst),
       .clk        (clk),
-      .clr        (devRESET),
+      .clr        (unibus.devRESET),
       .devHIBYTE  (devHIBYTE),
       .devLOBYTE  (devLOBYTE),
-      .devDATAI   (devDATAI),
+      .devDATAI   (unibus.devDATAI),
       .csr1WRITE  (csr1WRITE),
       .regCSR1    (regCSR1)
    );
@@ -282,10 +281,10 @@ module UBE (
    UBECSR2 CSR2 (
       .rst        (rst),
       .clk        (clk),
-      .devRESET   (devRESET),
+      .devRESET   (unibus.devRESET),
       .devHIBYTE  (devHIBYTE),
       .devLOBYTE  (devLOBYTE),
-      .devDATAI   (devDATAI),
+      .devDATAI   (unibus.devDATAI),
       .csr2WRITE  (csr2WRITE),
       .regCSR2    (regCSR2)
    );
@@ -316,11 +315,11 @@ module UBE (
      begin
         if (rst | ubeCLR)
           begin
-             ubeINC   <= 0;
-             devINTR  <= 0;
-             devREQO  <= 0;
-             devADDRO <= 0;
-             state    <= stateIDLE;
+             ubeINC <= 0;
+             unibus.devREQO  <= 0;
+             unibus.devADDRO <= 0;
+             unibus.devINTRO <= 0;
+             state <= stateIDLE;
           end
         else
           case (state)
@@ -351,8 +350,8 @@ module UBE (
                        (ubeBR == ubeBR5) |
                        (ubeBR == ubeBR4))
                      begin
-                        devINTR <= ubeBR;
-                        state   <= stateINTACT;
+                        unibus.devINTRO <= ubeBR;
+                        state <= stateINTACT;
                      end
                    else
                      case ({ubeNPRS, ubeXTCCO, ubeNPRO})
@@ -375,9 +374,9 @@ module UBE (
 
                        3'b100:
                          begin
-                            devREQO  <= 1;
-                            devADDRO <= {rdFLAGS, 2'b0, regBA};
-                            state    <= stateNPRS;
+                            unibus.devREQO  <= 1;
+                            unibus.devADDRO <= {rdFLAGS, 2'b0, regBA};
+                            state <= stateNPRS;
                          end
 
                        //
@@ -386,9 +385,9 @@ module UBE (
 
                        3'b101:
                          begin
-                            devREQO  <= 1;
-                            devADDRO <= {wrFLAGS, 2'b0, regBA};
-                            state    <= stateNPRS;
+                            unibus.devREQO  <= 1;
+                            unibus.devADDRO <= {wrFLAGS, 2'b0, regBA};
+                            state <= stateNPRS;
                          end
 
                        //
@@ -426,8 +425,8 @@ module UBE (
             stateINTCLR:
               if (!ubeIACK)
                 begin
-                   devINTR <= 0;
-                   state   <= stateIDLE;
+                   unibus.devINTRO <= 0;
+                   state <= stateIDLE;
                 end
 
             //
@@ -436,10 +435,10 @@ module UBE (
             //
 
             stateNPRS:
-              if (devACKI)
+              if (unibus.devACKI)
                 begin
-                   devREQO <= 0;
-                   state   <= stateIDLE;
+                   unibus.devREQO <= 0;
+                   state <= stateIDLE;
                 end
 
             //
@@ -453,15 +452,15 @@ module UBE (
             stateNPROM0:
               if (regCC[15:1] == 0)
                 begin
-                   devREQO  <= 0;
-                   devADDRO <= 0;
-                   state    <= stateIDLE;
+                   unibus.devREQO  <= 0;
+                   unibus.devADDRO <= 0;
+                   state <= stateIDLE;
                 end
               else
                 begin
-                   devREQO  <= 1;
-                   devADDRO <= {wrFLAGS, 2'b0, regBA};
-                   state    <= stateNPROM1;
+                   unibus.devREQO  <= 1;
+                   unibus.devADDRO <= {wrFLAGS, 2'b0, regBA};
+                   state <= stateNPROM1;
                 end
 
             //
@@ -469,11 +468,11 @@ module UBE (
             //
 
             stateNPROM1:
-              if (devACKI)
+              if (unibus.devACKI)
                 begin
-                   devREQO <= 0;
-                   ubeINC  <= 1;
-                   state   <= stateNPROM2;
+                   unibus.devREQO <= 0;
+                   ubeINC <= 1;
+                   state  <= stateNPROM2;
                 end
 
             //
@@ -482,8 +481,8 @@ module UBE (
 
             stateNPROM2:
               begin
-                 ubeINC  <= 0;
-                 state   <= stateNPROM3;
+                 ubeINC <= 0;
+                 state  <= stateNPROM3;
               end
 
             //
@@ -506,17 +505,17 @@ module UBE (
             stateNPRIM0:
               if (regCC[15:1] == 0)
                 begin
-                   ubeINC   <= 0;
-                   devREQO  <= 0;
-                   devADDRO <= 0;
-                   state    <= stateIDLE;
+                   ubeINC <= 0;
+                   unibus.devREQO  <= 0;
+                   unibus.devADDRO <= 0;
+                   state  <= stateIDLE;
                 end
               else
                 begin
-                   ubeINC   <= 0;
-                   devREQO  <= 1;
-                   devADDRO <= {rdFLAGS, 2'b0, regBA};
-                   state    <= stateNPRIM1;
+                   ubeINC <= 0;
+                   unibus.devREQO  <= 1;
+                   unibus.devADDRO <= {rdFLAGS, 2'b0, regBA};
+                   state  <= stateNPRIM1;
                 end
 
             //
@@ -524,11 +523,11 @@ module UBE (
             //
 
             stateNPRIM1:
-              if (devACKI)
+              if (unibus.devACKI)
                 begin
-                   devREQO <= 0;
-                   ubeINC  <= 1;
-                   state   <= stateNPRIM2;
+                   unibus.devREQO <= 0;
+                   ubeINC <= 1;
+                   state  <= stateNPRIM2;
                 end
 
             //
@@ -537,8 +536,8 @@ module UBE (
 
             stateNPRIM2:
               begin
-                 ubeINC  <= 0;
-                 state   <= stateNPRIM3;
+                 ubeINC <= 0;
+                 state  <= stateNPRIM3;
               end
 
             //
@@ -559,21 +558,21 @@ module UBE (
    //  a request
    //
 
-   assign devACKO = ((!(devREQO & !ubeNPRO) & dbREAD)     |
-                     (!(devREQO & !ubeNPRO) & dbWRITE)    |
-                     (!(devREQO & !ubeNPRO) & ccREAD)     |
-                     (!(devREQO & !ubeNPRO) & ccWRITE)    |
-                     (!(devREQO & !ubeNPRO) & baREAD)     |
-                     (!(devREQO & !ubeNPRO) & baWRITE)    |
-                     (!(devREQO & !ubeNPRO) & csr1READ)   |
-                     (!(devREQO & !ubeNPRO) & csr1WRITE)  |
-                     (!(devREQO & !ubeNPRO) & csr2READ)   |
-                     (!(devREQO & !ubeNPRO) & csr2WRITE)  |
-                     (!(devREQO & !ubeNPRO) & clrREAD)    |
-                     (!(devREQO & !ubeNPRO) & clrWRITE)   |
-                     (!(devREQO & !ubeNPRO) & simgoREAD)  |
-                     (!(devREQO & !ubeNPRO) & simgoWRITE) |
-                     (!(devREQO & !ubeNPRO) & vectREAD));
+   assign unibus.devACKO = ((!(unibus.devREQO & !ubeNPRO) & dbREAD)     |
+                            (!(unibus.devREQO & !ubeNPRO) & dbWRITE)    |
+                            (!(unibus.devREQO & !ubeNPRO) & ccREAD)     |
+                            (!(unibus.devREQO & !ubeNPRO) & ccWRITE)    |
+                            (!(unibus.devREQO & !ubeNPRO) & baREAD)     |
+                            (!(unibus.devREQO & !ubeNPRO) & baWRITE)    |
+                            (!(unibus.devREQO & !ubeNPRO) & csr1READ)   |
+                            (!(unibus.devREQO & !ubeNPRO) & csr1WRITE)  |
+                            (!(unibus.devREQO & !ubeNPRO) & csr2READ)   |
+                            (!(unibus.devREQO & !ubeNPRO) & csr2WRITE)  |
+                            (!(unibus.devREQO & !ubeNPRO) & clrREAD)    |
+                            (!(unibus.devREQO & !ubeNPRO) & clrWRITE)   |
+                            (!(unibus.devREQO & !ubeNPRO) & simgoREAD)  |
+                            (!(unibus.devREQO & !ubeNPRO) & simgoWRITE) |
+                            (!(unibus.devREQO & !ubeNPRO) & vectREAD));
 
    //
    // Bus Mux
@@ -583,30 +582,24 @@ module UBE (
 
    always_comb
      begin
-        devDATAO = 0;
-        if (devREQO & ubeNPRO)
-          devDATAO = {2'b0, regDB, 2'b0, regDB};
+        unibus.devDATAO = 0;
+        if (unibus.devREQO & ubeNPRO)
+          unibus.devDATAO = {2'b0, regDB, 2'b0, regDB};
         else
           begin
              if (dbREAD)
-               devDATAO = {20'b0, regDB};
+               unibus.devDATAO = {20'b0, regDB};
              if (ccREAD)
-               devDATAO = {20'b0, regCC};
+               unibus.devDATAO = {20'b0, regCC};
              if (baREAD)
-               devDATAO = {20'b0, regBA};
+               unibus.devDATAO = {20'b0, regBA};
              if (csr1READ)
-               devDATAO = {20'b0, regCSR1};
+               unibus.devDATAO = {20'b0, regCSR1};
              if (csr2READ)
-               devDATAO = {20'b0, regCSR2};
+               unibus.devDATAO = {20'b0, regCSR2};
              if (vectREAD)
-               devDATAO = {20'b0, ubeVECT[20:35]};
+               unibus.devDATAO = {20'b0, ubeVECT[20:35]};
           end
      end
-
-`ifndef SYNTHESIS
-
-   integer file;
-
-`endif
 
 endmodule

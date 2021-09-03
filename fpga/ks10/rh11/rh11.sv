@@ -17,7 +17,7 @@
 //     the IO bus as 36-bit address and 36-bit data just to keep things simple.
 //
 // File
-//   rh11.v
+//   rh11.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -60,37 +60,30 @@
 `include "../uba/ubabus.vh"
 
 module RH11 (
-      input  wire         clk,                          // Clock
-      input  wire         rst,                          // Reset
-      // Reset
-      input  wire         devRESET,                     // Device Reset from IO Bus Bridge
-      // AC LO
-      output wire         devACLO,                      // Device Power Fail
-      // Interrupt
-      output wire [ 7: 4] devINTR,                      // Device Interrupt Request
-      // Target
-      input  wire         devREQI,                      // Device Request In
-      output wire         devACKO,                      // Device Acknowledge Out
-      input  wire [ 0:35] devADDRI,                     // Device Address In
-      input  wire [ 0:35] devDATAI,                     // Device Data In
-      // Initiator
-      output wire         devREQO,                      // Device Request Out
-      input  wire         devACKI,                      // Device Acknowledge In
-      output wire [ 0:35] devADDRO,                     // Device Address Out
-      output reg  [ 0:35] devDATAO,                     // Device Data Out
+      unibus.device       unibus,                       // Unibus connection
       // SD Interfaces
       input  wire         SD_MISO,                      // SD Data In
       output wire         SD_MOSI,                      // SD Data Out
       output wire         SD_SCLK,                      // SD Clock
       output wire         SD_SS_N,                      // SD Slave Select
-      // RH11 Interfaces
-      output wire [ 0:63] rhDEBUG,                      // RH11 Debug Output
       // RPXX Interfaces
       input  wire [ 7: 0] rpMOL,                        // RPxx Media On-line
       input  wire [ 7: 0] rpWRL,                        // RPxx Write Lock
       input  wire [ 7: 0] rpDPR,                        // RPxx Drive Present
-      output wire [ 7: 0] rpLEDS                        // RPxx Status LEDs
+      output wire [ 7: 0] rpLEDS,                       // RPxx Status LEDs
+      output wire [ 0:63] rhDEBUG                       // RH11 Debug Output
    );
+
+   //
+   // Bus Interface
+   //
+
+   logic  clk;                                          // Clock
+   logic  rst;                                          // Reset
+   logic  devRESET;                                     // Device reset
+   assign clk      = unibus.clk;                        // Clock
+   assign rst      = unibus.rst;                        // Reset
+   assign devRESET = unibus.devRESET;                   // Device reset
 
    //
    // RH Parameters
@@ -148,86 +141,82 @@ module RH11 (
 `endif
 
    //
-   // Selector function
-   //
-
-   function [7:0] select;
-      input [0:2] sel;
-      begin
-         select = 1'b1 << sel;
-      end
-   endfunction
-
-   //
    // Device Address and Flags
    //
 
-   wire         devREAD   = `devREAD(devADDRI);         // Read Cycle
-   wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle
-   wire         devPHYS   = `devPHYS(devADDRI);         // Physical reference
-   wire         devIO     = `devIO(devADDRI);           // IO Cycle
-   wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
-   wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
-   wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
-   wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
-   wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
-   wire         devLOBYTE = `devLOBYTE(devADDRI);       // Device Low Byte
+   wire         devREAD   = `devREAD(unibus.devADDRI);  // Read Cycle
+   wire         devWRITE  = `devWRITE(unibus.devADDRI); // Write Cycle
+   wire         devPHYS   = `devPHYS(unibus.devADDRI);  // Physical reference
+   wire         devIO     = `devIO(unibus.devADDRI);    // IO Cycle
+   wire         devWRU    = `devWRU(unibus.devADDRI);   // WRU Cycle
+   wire         devVECT   = `devVECT(unibus.devADDRI);  // Read interrupt vector
+   wire [14:17] devDEV    = `devDEV(unibus.devADDRI);   // Device Number
+   wire [18:35] devADDR   = `devADDR(unibus.devADDRI);  // Device Address
+   wire         devHIBYTE = `devHIBYTE(unibus.devADDRI);// Device High Byte
+   wire         devLOBYTE = `devLOBYTE(unibus.devADDRI);// Device Low Byte
+
+   //
+   // Read/Write Decoding
+   //
+
+   wire rhREAD   = unibus.devREQI & devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV);
+   wire rhWRITE  = unibus.devREQI & devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV);
+   wire vectREAD = unibus.devREQI & devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == rhDEV);
 
    //
    // Address Decoding
    //
 
-   wire vectREAD   = devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == rhDEV);
-   wire rhcs1READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
-   wire rhcs1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs1ADDR[18:34]);
-   wire rhwcREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  wcADDR[18:34]);
-   wire rhwcWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  wcADDR[18:34]);
-   wire rhbaREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  baADDR[18:34]);
-   wire rhbaWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  baADDR[18:34]);
-   wire rpdaREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]);
-   wire rpdaWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  daADDR[18:34]);
+   wire rhcs1READ  = rhREAD  & (devADDR == cs1ADDR);
+   wire rhcs1WRITE = rhWRITE & (devADDR == cs1ADDR);
+   wire rhwcREAD   = rhREAD  & (devADDR ==  wcADDR);
+   wire rhwcWRITE  = rhWRITE & (devADDR ==  wcADDR);
+   wire rhbaREAD   = rhREAD  & (devADDR ==  baADDR);
+   wire rhbaWRITE  = rhWRITE & (devADDR ==  baADDR);
+   wire rpdaREAD   = rhREAD  & (devADDR ==  daADDR);
+   wire rpdaWRITE  = rhWRITE & (devADDR ==  daADDR);
 
-   wire rhcs2READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs2ADDR[18:34]);
-   wire rhcs2WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs2ADDR[18:34]);
-   wire rpdsREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dsADDR[18:34]);
-   wire rpdsWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dsADDR[18:34]);
-   wire rper1READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
-   wire rper1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR[18:34]);
-   wire rhasREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
-   wire rhasWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR[18:34]);
+   wire rhcs2READ  = rhREAD  & (devADDR == cs2ADDR);
+   wire rhcs2WRITE = rhWRITE & (devADDR == cs2ADDR);
+   wire rpdsREAD   = rhREAD  & (devADDR ==  dsADDR);
+   wire rpdsWRITE  = rhWRITE & (devADDR ==  dsADDR);
+   wire rper1READ  = rhREAD  & (devADDR == er1ADDR);
+   wire rper1WRITE = rhWRITE & (devADDR == er1ADDR);
+   wire rhasREAD   = rhREAD  & (devADDR ==  asADDR);
+   wire rhasWRITE  = rhWRITE & (devADDR ==  asADDR);
 
-   wire rplaREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
-   wire rplaWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  laADDR[18:34]);
-   wire rhdbREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dbADDR[18:34]);
-   wire rhdbWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dbADDR[18:34]);
-   wire rpmrREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]);
-   wire rpmrWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  mrADDR[18:34]);
-   wire rpdtREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dtADDR[18:34]);
-   wire rpdtWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dtADDR[18:34]);
+   wire rplaREAD   = rhREAD  & (devADDR ==  laADDR);
+   wire rplaWRITE  = rhWRITE & (devADDR ==  laADDR);
+   wire rhdbREAD   = rhREAD  & (devADDR ==  dbADDR);
+   wire rhdbWRITE  = rhWRITE & (devADDR ==  dbADDR);
+   wire rpmrREAD   = rhREAD  & (devADDR ==  mrADDR);
+   wire rpmrWRITE  = rhWRITE & (devADDR ==  mrADDR);
+   wire rpdtREAD   = rhREAD  & (devADDR ==  dtADDR);
+   wire rpdtWRITE  = rhWRITE & (devADDR ==  dtADDR);
 
-   wire rpsnREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  snADDR[18:34]);
-   wire rpsnWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  snADDR[18:34]);
-   wire rpofREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]);
-   wire rpofWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  ofADDR[18:34]);
-   wire rpdcREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]);
-   wire rpdcWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dcADDR[18:34]);
-   wire rpccREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  ccADDR[18:34]);
-   wire rpccWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  ccADDR[18:34]);
+   wire rpsnREAD   = rhREAD  & (devADDR ==  snADDR);
+   wire rpsnWRITE  = rhWRITE & (devADDR ==  snADDR);
+   wire rpofREAD   = rhREAD  & (devADDR ==  ofADDR);
+   wire rpofWRITE  = rhWRITE & (devADDR ==  ofADDR);
+   wire rpdcREAD   = rhREAD  & (devADDR ==  dcADDR);
+   wire rpdcWRITE  = rhWRITE & (devADDR ==  dcADDR);
+   wire rpccREAD   = rhREAD  & (devADDR ==  ccADDR);
+   wire rpccWRITE  = rhWRITE & (devADDR ==  ccADDR);
 
-   wire rper2READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]);
-   wire rper2WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er2ADDR[18:34]);
-   wire rper3READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]);
-   wire rper3WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er3ADDR[18:34]);
-   wire rpec1READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == ec1ADDR[18:34]);
-   wire rpec1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == ec1ADDR[18:34]);
-   wire rpec2READ  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == ec2ADDR[18:34]);
-   wire rpec2WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == ec2ADDR[18:34]);
+   wire rper2READ  = rhREAD  & (devADDR == er2ADDR);
+   wire rper2WRITE = rhWRITE & (devADDR == er2ADDR);
+   wire rper3READ  = rhREAD  & (devADDR == er3ADDR);
+   wire rper3WRITE = rhWRITE & (devADDR == er3ADDR);
+   wire rpec1READ  = rhREAD  & (devADDR == ec1ADDR);
+   wire rpec1WRITE = rhWRITE & (devADDR == ec1ADDR);
+   wire rpec2READ  = rhREAD  & (devADDR == ec2ADDR);
+   wire rpec2WRITE = rhWRITE & (devADDR == ec2ADDR);
 
    //
    // Big-endian to little-endian data bus swap
    //
 
-   wire [35:0] rhDATAI = devDATAI[0:35];
+   wire [35:0] rhDATAI = unibus.devDATAI[0:35];
 
    //
    // Interrupt Acknowledge
@@ -586,8 +575,8 @@ module RH11 (
    RHNEM NEM (
       .clk        (clk),
       .rst        (rst),
-      .devREQO    (devREQO),
-      .devACKI    (devACKI),
+      .devREQO    (unibus.devREQO),
+      .devACKI    (unibus.devACKI),
       .setNEM     (rhSETNEM)
    );
 
@@ -607,8 +596,8 @@ module RH11 (
               .rst      (rst),
               .clr      (rhCLR | devRESET),
               .rhINCSECT(sdINCSECT),
-              .devADDRI (devADDRI),
-              .devDATAI (devDATAI),
+              .devADDRI (unibus.devADDRI),
+              .devDATAI (unibus.devDATAI),
               .rhUNIT   (rhUNIT),
               .rpNUM    (i[2:0]),
               .rpPAT    (rhPAT),
@@ -652,10 +641,10 @@ module RH11 (
       .SD_SCLK    (SD_SCLK),
       .SD_SS_N    (SD_SS_N),
       // Device interface
-      .devDATAI   (devDATAI),
+      .devDATAI   (unibus.devDATAI),
       .devDATAO   (sdDATAO),
-      .devREQO    (devREQO),
-      .devACKI    (devACKI),
+      .devREQO    (unibus.devREQO),
+      .devACKI    (unibus.devACKI),
       // RH11 interfaces
       .rhWC       (rhWC),
       // RPXX interface
@@ -677,32 +666,32 @@ module RH11 (
    // Generate Bus ACK
    //
 
-   assign devACKO = (rhcs1WRITE | rhcs1READ |
-                     rhwcWRITE  | rhwcREAD  |
-                     rhbaWRITE  | rhbaREAD  |
-                     rpdaWRITE  | rpdaREAD  |
-                     //
-                     rhcs2WRITE | rhcs2READ |
-                     rpdsWRITE  | rpdsREAD  |
-                     rper1WRITE | rper1READ |
-                     rhasWRITE  | rhasREAD  |
-                     //
-                     rplaWRITE  | rplaREAD  |
-                     rhdbWRITE  | rhdbREAD  |
-                     rpmrWRITE  | rpmrREAD  |
-                     rpdtWRITE  | rpdtREAD  |
-                     //
-                     rpsnWRITE  | rpsnREAD  |
-                     rpofWRITE  | rpofREAD  |
-                     rpdcWRITE  | rpdcREAD  |
-                     rpccWRITE  | rpccREAD  |
-                     //
-                     rper2WRITE | rper2READ |
-                     rper3WRITE | rper3READ |
-                     rpec1WRITE | rpec1READ |
-                     rpec2WRITE | rpec2READ |
-                     //
-                     vectREAD);
+   assign unibus.devACKO = (rhcs1WRITE | rhcs1READ |
+                            rhwcWRITE  | rhwcREAD  |
+                            rhbaWRITE  | rhbaREAD  |
+                            rpdaWRITE  | rpdaREAD  |
+                            //
+                            rhcs2WRITE | rhcs2READ |
+                            rpdsWRITE  | rpdsREAD  |
+                            rper1WRITE | rper1READ |
+                            rhasWRITE  | rhasREAD  |
+                            //
+                            rplaWRITE  | rplaREAD  |
+                            rhdbWRITE  | rhdbREAD  |
+                            rpmrWRITE  | rpmrREAD  |
+                            rpdtWRITE  | rpdtREAD  |
+                            //
+                            rpsnWRITE  | rpsnREAD  |
+                            rpofWRITE  | rpofREAD  |
+                            rpdcWRITE  | rpdcREAD  |
+                            rpccWRITE  | rpccREAD  |
+                            //
+                            rper2WRITE | rper2READ |
+                            rper3WRITE | rper3READ |
+                            rpec1WRITE | rpec1READ |
+                            rpec2WRITE | rpec2READ |
+                            //
+                            vectREAD);
 
    //
    // Bus Mux and little-endian to big-endian bus swap.
@@ -711,70 +700,70 @@ module RH11 (
 
    always @*
      begin
-        devDATAO = 0;
-        if (devREQO)
-          devDATAO = sdDATAO;
+        unibus.devDATAO = 0;
+        if (unibus.devREQO)
+          unibus.devDATAO = sdDATAO;
         if (rhcs1READ)
-          devDATAO = {20'b0, rhCS1};
+          unibus.devDATAO = {20'b0, rhCS1};
         if (rhwcREAD)
-          devDATAO = {20'b0, rhWC};
+          unibus.devDATAO = {20'b0, rhWC};
         if (rhbaREAD)
-          devDATAO = {20'b0, rhBA[15:0]};
+          unibus.devDATAO = {20'b0, rhBA[15:0]};
         if (rpdaREAD & rpPRES)
-          devDATAO = {20'b0, rpDA[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpDA[rhUNIT]};
         if (rhcs2READ)
-          devDATAO = {20'b0, rhCS2};
+          unibus.devDATAO = {20'b0, rhCS2};
         if (rpdsREAD & rpPRES)
-          devDATAO = {20'b0, rpDS[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpDS[rhUNIT]};
         if (rper1READ & rpPRES)
-          devDATAO = {20'b0, rpER1[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpER1[rhUNIT]};
         if (rhasREAD)
-          devDATAO = {20'b0, rhAS};
+          unibus.devDATAO = {20'b0, rhAS};
         if (rplaREAD & rpPRES)
-          devDATAO = {20'b0, rpLA[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpLA[rhUNIT]};
         if (rhdbREAD)
-          devDATAO = {20'b0, rhDB};
+          unibus.devDATAO = {20'b0, rhDB};
         if (rpmrREAD & rpPRES)
-          devDATAO = {20'b0, rpMR[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpMR[rhUNIT]};
         if (rpdtREAD & rpPRES)
-          devDATAO = {20'b0, rpDT[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpDT[rhUNIT]};
         if (rpsnREAD & rpPRES)
-          devDATAO = {20'b0, rpSN[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpSN[rhUNIT]};
         if (rpofREAD & rpPRES)
-          devDATAO = {20'b0, rpOF[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpOF[rhUNIT]};
         if (rpdcREAD & rpPRES)
-          devDATAO = {20'b0, rpDC[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpDC[rhUNIT]};
         if (rpccREAD & rpPRES)
-          devDATAO = {20'b0, rpCC[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpCC[rhUNIT]};
         if (rper2READ & rpPRES)
-          devDATAO = {20'b0, rpER2[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpER2[rhUNIT]};
         if (rper3READ & rpPRES)
-          devDATAO = {20'b0, rpER3[rhUNIT]};
+          unibus.devDATAO = {20'b0, rpER3[rhUNIT]};
         if (rpec1READ & rpPRES)
-          devDATAO = {20'b0, rpEC1};
+          unibus.devDATAO = {20'b0, rpEC1};
         if (rpec2READ & rpPRES)
-          devDATAO = {20'b0, rpEC2};
+          unibus.devDATAO = {20'b0, rpEC2};
         if (vectREAD)
-          devDATAO = {20'b0, rhVECT[20:35]};
+          unibus.devDATAO = {20'b0, rhVECT[20:35]};
      end
 
    //
    // Interrupt Request
    //
 
-   assign devINTR = rhIRQ ? rhINTR : 4'b0;
+   assign unibus.devINTRO = rhIRQ ? rhINTR : 4'b0;
 
    //
    // Create DMA address
    //
 
-   assign devADDRO = sdREADOP ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
+   assign unibus.devADDRO = sdREADOP ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
 
    //
-   // Negate ACLO
+   // Bus Interface
    //
 
-   assign devACLO = 0;
+   assign unibus.devACLO  = 0;                          // Power fail (not implemented)
 
    //
    // Debug output
@@ -793,15 +782,15 @@ module RH11 (
      begin
         if (rhSETNEM)
           begin
-             $display("[%11.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o", $time/1.0e3, devADDRO);
+             $display("[%11.3f] RH11: Unacknowledged bus cycle.  Addr Bus = %012o", $time/1.0e3, unibus.devADDRO);
              $stop;
           end
-        if (devACKI)
+        if (unibus.devACKI)
           begin
              if (sdREADOP)
-               $fwrite(file, "[%11.3f] RH11: Wrote %012o to address %012o.  rhWC = 0x%04x\n", $time/1.0e3, sdDATAO, devADDRO, rhWC);
+               $fwrite(file, "[%11.3f] RH11: Wrote %012o to address %012o.  rhWC = 0x%04x\n", $time/1.0e3, sdDATAO, unibus.devADDRO, rhWC);
              else
-               $fwrite(file, "[%11.3f] RH11: Read %012o from address %012o.  rhWC = 0x%04x\n", $time/1.0e3, devDATAI, devADDRO, rhWC);
+               $fwrite(file, "[%11.3f] RH11: Read %012o from address %012o.  rhWC = 0x%04x\n", $time/1.0e3, unibus.devDATAI, unibus.devADDRO, rhWC);
              $fflush(file);
           end
      end

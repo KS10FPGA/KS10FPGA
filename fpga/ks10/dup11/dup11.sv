@@ -22,7 +22,7 @@
 //   the IO bus as 36-bit address and 36-bit data just to keep things simple.
 //
 // File
-//   dup11.v
+//   dup11.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
@@ -60,29 +60,10 @@
 `include "duptxcsr.vh"
 `include "duptxdbuf.vh"
 `include "dupparcsr.vh"
-
 `include "../uba/ubabus.vh"
 
 module DUP11 (
-      input  wire         clk,                          // Clock
-      input  wire         rst,                          // Reset
-      // Reset
-      input  wire         devRESET,                     // Device Reset from IO Bus Bridge
-      // AC LO
-      output wire         devACLO,                      // Device Power Fail
-      // Interrupt
-      output wire [ 7: 4] devINTR,                      // Device Interrupt Request
-      // Target
-      input  wire         devREQI,                      // Device Request In
-      output wire         devACKO,                      // Device Acknowledge Out
-      input  wire [ 0:35] devADDRI,                     // Device Address In
-      input  wire [ 0:35] devDATAI,                     // Device Data In
-      // Initiator
-      output wire         devREQO,                      // Device Request Out
-      input  wire         devACKI,                      // Device Acknowledge In
-      output wire [ 0:35] devADDRO,                     // Device Address Out
-      output reg  [ 0:35] devDATAO,                     // Device Data Out
-      // DUP11 Interfaces
+      unibus.device       unibus,                       // Unibus connection
       input  wire         dupW3,                        // Configuration Wire 3
       input  wire         dupW5,                        // Configuration Wire 5
       input  wire         dupW6,                        // Configuration Wire 6
@@ -99,11 +80,14 @@ module DUP11 (
       output wire         dupTXD                        // Transmitter Data
    );
 
-`ifndef SYNTHESIS
+   //
+   // Bus Interface
+   //
 
-   integer file;
-
-`endif
+   logic  clk;                                          // Clock
+   logic  rst;                                          // Reset
+   assign clk = unibus.clk;                             // Clock
+   assign rst = unibus.rst;                             // Reset
 
    //
    // DUP Parameters
@@ -128,16 +112,16 @@ module DUP11 (
    // Device Address and Flags
    //
 
-   wire         devREAD   = `devREAD(devADDRI);         // Read Cycle
-   wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle
-   wire         devPHYS   = `devPHYS(devADDRI);         // Physical reference
-   wire         devIO     = `devIO(devADDRI);           // IO Cycle
-   wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
-   wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
-   wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
-   wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
-   wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
-   wire         devLOBYTE = `devLOBYTE(devADDRI);       // Device Low Byte
+   wire         devREAD   = `devREAD(unibus.devADDRI);  // Read Cycle
+   wire         devWRITE  = `devWRITE(unibus.devADDRI); // Write Cycle
+   wire         devPHYS   = `devPHYS(unibus.devADDRI);  // Physical reference
+   wire         devIO     = `devIO(unibus.devADDRI);    // IO Cycle
+   wire         devWRU    = `devWRU(unibus.devADDRI);   // WRU Cycle
+   wire         devVECT   = `devVECT(unibus.devADDRI);  // Read interrupt vector
+   wire [14:17] devDEV    = `devDEV(unibus.devADDRI);   // Device Number
+   wire [18:35] devADDR   = `devADDR(unibus.devADDRI);  // Device Address
+   wire         devHIBYTE = `devHIBYTE(unibus.devADDRI);// Device High Byte
+   wire         devLOBYTE = `devLOBYTE(unibus.devADDRI);// Device Low Byte
 
    //
    // DUP Interrupt Vectors
@@ -147,24 +131,31 @@ module DUP11 (
    localparam [18:35] dupTXVECT = dupVECT + 18'd4;      // DUP11 TX Interrupt Vector
 
    //
+   // Read/Write Decoding
+   //
+
+   wire dupREAD  = /*FIXME: unibus.devREQI & */devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV);
+   wire dupWRITE = /*FIXME: unibus.devREQI & */devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV);
+   wire vectREAD = /*FIXME: unibus.devREQI & */devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == dupDEV);
+
+   //
    // Address Decoding
    //
 
-   wire vectREAD    = devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == dupDEV);
-   wire rxcsrREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV) & (devADDR == rxcsrADDR [18:34]);
-   wire rxcsrWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV) & (devADDR == rxcsrADDR [18:34]);
-   wire rxdbufREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV) & (devADDR == rxdbufADDR[18:34]);
-   wire parcsrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV) & (devADDR == parcsrADDR[18:34]);
-   wire txcsrREAD   = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV) & (devADDR == txcsrADDR [18:34]);
-   wire txcsrWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV) & (devADDR == txcsrADDR [18:34]);
-   wire txdbufREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV) & (devADDR == txdbufADDR[18:34]);
-   wire txdbufWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV) & (devADDR == txdbufADDR[18:34]);
+   wire rxcsrREAD   = dupREAD  & (devADDR == rxcsrADDR);
+   wire rxcsrWRITE  = dupWRITE & (devADDR == rxcsrADDR);
+   wire rxdbufREAD  = dupREAD  & (devADDR == rxdbufADDR);
+   wire parcsrWRITE = dupWRITE & (devADDR == parcsrADDR);
+   wire txcsrREAD   = dupREAD  & (devADDR == txcsrADDR);
+   wire txcsrWRITE  = dupWRITE & (devADDR == txcsrADDR);
+   wire txdbufREAD  = dupREAD  & (devADDR == txdbufADDR);
+   wire txdbufWRITE = dupWRITE & (devADDR == txdbufADDR);
 
    //
    // Big-endian to little-endian data bus swap
    //
 
-   wire [35: 0] dupDATAI = devDATAI[0:35];
+   wire [35: 0] dupDATAI = unibus.devDATAI[0:35];
 
    //
    // RXCSR Register
@@ -283,7 +274,7 @@ module DUP11 (
    DUPTXCSR TXCSR (
       .clk          (clk),
       .rst          (rst),
-      .devRESET     (devRESET),
+      .devRESET     (unibus.devRESET),
       .devLOBYTE    (devLOBYTE),
       .devHIBYTE    (devHIBYTE),
       .txdbufWRITE  (txdbufWRITE),
@@ -439,17 +430,17 @@ module DUP11 (
    // Interrupt Request
    //
 
-   assign devINTR = dupTXINTR | dupRXINTR ? dupINTR : 4'b0;
+   assign unibus.devINTRO = dupTXINTR | dupRXINTR ? dupINTR : 4'b0;
 
    //
    // Generate Bus ACK
    //
 
-   assign devACKO = (rxcsrREAD  | rxcsrWRITE  |
-                     rxdbufREAD | parcsrWRITE |
-                     txcsrREAD  | txcsrWRITE  |
-                     txdbufREAD | txdbufWRITE |
-                     vectREAD);
+   assign unibus.devACKO = (rxcsrREAD  | rxcsrWRITE  |
+                            rxdbufREAD | parcsrWRITE |
+                            txcsrREAD  | txcsrWRITE  |
+                            txdbufREAD | txdbufWRITE |
+                            vectREAD);
 
    //
    // Bus Mux and little-endian to big-endian bus swap
@@ -457,36 +448,33 @@ module DUP11 (
 
    always @*
      begin
-        devDATAO = 0;
+        unibus.devDATAO = 0;
         if (rxcsrREAD)
-          devDATAO = {20'b0, regRXCSR};
+          unibus.devDATAO = {20'b0, regRXCSR};
         if (rxdbufREAD)
-          devDATAO = {20'b0, regRXDBUF};
+          unibus.devDATAO = {20'b0, regRXDBUF};
         if (txcsrREAD)
-          devDATAO = {20'b0, regTXCSR};
+          unibus.devDATAO = {20'b0, regTXCSR};
         if (txdbufREAD)
-          devDATAO = {20'b0, regTXDBUF};
+          unibus.devDATAO = {20'b0, regTXDBUF};
         if (vectREAD)
           if (dupRXINTR)
-            devDATAO = {20'b0, dupRXVECT[20:35]};
+            unibus.devDATAO = {20'b0, dupRXVECT[20:35]};
           else
-            devDATAO = {20'b0, dupTXVECT[20:35]};
+            unibus.devDATAO = {20'b0, dupTXVECT[20:35]};
      end
 
    //
-   // The DUP11 doesn't do DMA.  Tie DMA outputs off.
+   // Bus Interface
    //
 
-   assign devADDRO = 0;
-   assign devREQO  = 0;
-
-   //
-   // Negate ACLO
-   //
-
-   assign devACLO = 0;
+   assign unibus.devACLO  = 0;                          // Power fail (not implemented)
+   assign unibus.devREQO  = 0;                          // Request out (DUP11 is not an initiator)
+   assign unibus.devADDRO = 0;                          // Address out (DUP11 is not an initiator)
 
 `ifndef SYNTHESIS
+
+   integer file;
 
    //
    // String sizes in bytes

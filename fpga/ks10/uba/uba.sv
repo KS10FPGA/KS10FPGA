@@ -56,26 +56,34 @@
 `include "../cpu/bus.vh"
 
 module UBA (
-      input  wire          rst,                         // Reset
-      input  wire          clk,                         // Clock
-      ks10bus.device       ubaBUS,                      // Backplane Bus
-      // Device Reset
-      output logic         devRESET,                    // Device Reset
-      // AC LO
-      input  wire          devACLO[1:4],                // Device AC power failure
-      // Interupt
-      input  wire  [ 7: 4] devINTR[1:4],                // Device Interrupt Request
-      // Device as Target
-      input  wire          devREQI[1:4],                // Device Request In
-      output logic         devACKO[1:4],                // Device Acknowledge Out
-      input  wire  [ 0:35] devADDRI[1:4],               // Device Address In
-      input  wire  [ 0:35] devDATAI[1:4],               // Device Data In
-      // Device as Initiator
-      output logic         devREQO[1:4],                // Device Request Out
-      input  wire          devACKI[1:4],                // Device Acknowledge In
-      output logic [ 0:35] devADDRO[1:4],               // Device Address Out
-      output logic [ 0:35] devDATAO[1:4]                // Device Data Out
+      input wire           rst,                         // Reset
+      input wire           clk,                         // Clock
+      ks10bus.device       ubabus,                      // Backplane Bus
+      unibus.uba           unibus[1:4]                  // Unibus
    );
+
+   //
+   // Unibus Interface
+   //
+
+   logic         devRESET;                              // Reset
+   logic         devACLO[1:4];                          // Power fail
+   logic [ 7: 4] devINTRI[1:4];                         // Interrupt in
+   logic         devREQI[1:4];                          // Request in
+   logic         devACKO[1:4];                          // Acknowledge out
+   logic [ 0:35] devADDRI[1:4];                         // Address in
+   logic [ 0:35] devDATAI[1:4];                         // Data in
+   logic         devREQO[1:4];                          // Request out
+   logic         devACKI[1:4];                          // Acknowledge in
+   logic [ 0:35] devADDRO[1:4];                         // Address out
+   logic [ 0:35] devDATAO[1:4];                         // Data out
+
+   //
+   // KS10 Backplane Bus Interface
+   //
+
+   logic [ 0:35] busADDRO;                              // Bus address out
+   assign busADDRO = ubabus.busADDRO;
 
    //
    // Memory flags
@@ -90,9 +98,9 @@ module UBA (
 
    parameter  [14:17] ubaNUM    = 4'd0;                 // Bridge Device Number
    parameter  [18:35] ubaADDR   = `ubaADDR;             // Base address
-   localparam [18:35] pageADDR  = ubaADDR + `pageOFFSET;// Paging RAM Address
-   localparam [18:35] statADDR  = ubaADDR + `statOFFSET;// Status Register Address
-   localparam [18:35] maintADDR = ubaADDR + `maintOFFSET;// Maintenance Register Address
+   localparam [18:35] pageADDR  = ubaADDR +`pageOFFSET; // Paging RAM Address
+   localparam [18:35] statADDR  = ubaADDR +`statOFFSET; // Status Register Address
+   localparam [18:35] maintADDR = ubaADDR +`maintOFFSET;// Maintenance Register Address
    localparam [ 0:35] wruRESP   = `getWRU(ubaNUM);      // Lookup WRU Response
 
    //
@@ -103,57 +111,63 @@ module UBA (
    //  busADDRI[14:35] is address
    //
 
-   wire          busREAD   = `busREAD(ubaBUS.busADDRI); // Read Cycle (IO or Memory)
-   wire          busWRITE  = `busWRITE(ubaBUS.busADDRI);// Write Cycle (IO or Memory)
-   wire          busPHYS   = `busPHYS(ubaBUS.busADDRI); // Physical reference
-   wire          busIO     = `busIO(ubaBUS.busADDRI);   // IO Cycle
-   wire          busWRU    = `busWRU(ubaBUS.busADDRI);  // Read interrupting controller number
-   wire          busVECT   = `busVECT(ubaBUS.busADDRI); // Read interrupt vector
-// wire          busIOBYTE = `busIOBYTE(ubaBUS.busADDRI);// IO Byte Cycle
-   wire  [15:17] busPI     = `busPI(ubaBUS.busADDRI);   // IO Bridge PI Request
-   wire  [14:17] busDEV    = `busDEV(ubaBUS.busADDRI);  // IO Bridge Device Number
-   wire  [18:35] busADDR   = `busIOADDR(ubaBUS.busADDRI);// IO Address
+   wire         busREAD   = `busREAD(ubabus.busADDRI);  // Read Cycle (IO or Memory)
+   wire         busWRITE  = `busWRITE(ubabus.busADDRI); // Write Cycle (IO or Memory)
+   wire         busPHYS   = `busPHYS(ubabus.busADDRI);  // Physical reference
+   wire         busIO     = `busIO(ubabus.busADDRI);    // IO Cycle
+   wire         busWRU    = `busWRU(ubabus.busADDRI);   // Read interrupting controller number
+   wire         busVECT   = `busVECT(ubabus.busADDRI);  // Read interrupt vector
+   wire [15:17] busPI     = `busPI(ubabus.busADDRI);    // IO Bridge PI Request
+   wire [14:17] busDEV    = `busDEV(ubabus.busADDRI);   // IO Bridge Device Number
+   wire [18:35] busADDR   = `busIOADDR(ubabus.busADDRI);// IO Address
 
    //
    // Signals
    //
 
-   logic         regUBAMR;                              // Maintenance Mode
-   logic         setNXD;                                // Set NXD
-   logic         setTMO;                                // Set TMO
-   logic         pageFAIL;                              // Page failure
+   logic        regUBAMR;                               // Maintenance Mode
+   logic        setNXD;                                 // Set NXD
+   logic        setTMO;                                 // Set TMO
+   logic        pageFAIL;                               // Page failure
 
    //
    // Device request on any device input
    //
 
-   wire          devREQ   = devREQI[1] | devREQI[2] | devREQI[3] | devREQI[4];
+   wire         devREQ   = devREQI[1] | devREQI[2] | devREQI[3] | devREQI[4];
 
    //
    // Paging flags
    //
 
-   logic [ 0: 3] pageFLAGS;                             // Page flags
-   wire          flagsRRV = `flagsRRV(pageFLAGS);       // Page uses Read Reverse Mode
-   wire          flagsE16 = `flagsE16(pageFLAGS);       // Page uses 16-bit transfers
-   wire          flagsFTM = `flagsFTM(pageFLAGS);       // Page uses Fast Transfer Mode
-// wire          flagsVLD = `flagsVLD(pageFLAGS);       // Page valid
+   logic [0: 3] pageFLAGS;                              // Page flags
+   wire         flagsRRV = `flagsRRV(pageFLAGS);        // Page uses Read Reverse Mode
+   wire         flagsE16 = `flagsE16(pageFLAGS);        // Page uses 16-bit transfers
+   wire         flagsFTM = `flagsFTM(pageFLAGS);        // Page uses Fast Transfer Mode
+// wire         flagsVLD = `flagsVLD(pageFLAGS);        // Page valid
+
+   //
+   // Read/Write Decoding
+   //
+
+   wire wruREAD  = ubabus.busREQI & busREAD  & busIO & busPHYS &  busWRU & !busVECT;
+   wire vectREAD = ubabus.busREQI & busREAD  & busIO & busPHYS & !busWRU &  busVECT & (busDEV == ubaNUM);
+   wire ubaREAD  = ubabus.busREQI & busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM);
+   wire ubaWRITE = ubabus.busREQI & busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM);
 
    //
    // Address Decoding
    //
 
-   wire wruREAD    = ubaBUS.busREQI & busREAD  & busIO & busPHYS &  busWRU & !busVECT;
-   wire vectREAD   = ubaBUS.busREQI & busREAD  & busIO & busPHYS & !busWRU &  busVECT & (busDEV == ubaNUM);
-   wire pageREAD   = ubaBUS.busREQI & busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
-   wire pageWRITE  = ubaBUS.busREQI & busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:29] == pageADDR[18:29]);
-   wire statREAD   = ubaBUS.busREQI & busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
-   wire statWRITE  = ubaBUS.busREQI & busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == statADDR[18:35]);
-   wire maintWRITE = ubaBUS.busREQI & busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:35] == maintADDR[18:35]);
-   wire devREAD    = ubaBUS.busREQI & busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) & !regUBAMR;
-   wire devWRITE   = ubaBUS.busREQI & busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) & !regUBAMR;
-   wire loopREAD   = ubaBUS.busREQI & busREAD  & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) &  regUBAMR;
-   wire loopWRITE  = ubaBUS.busREQI & busWRITE & busIO & busPHYS & !busWRU & !busVECT & (busDEV == ubaNUM) & (busADDR[18:28] != ubaADDR[18:28]) &  regUBAMR;
+   wire pageREAD   = ubaREAD  & (busADDR[18:29] == pageADDR [18:29]);
+   wire pageWRITE  = ubaWRITE & (busADDR[18:29] == pageADDR [18:29]);
+   wire statREAD   = ubaREAD  & (busADDR[18:35] == statADDR [18:35]);
+   wire statWRITE  = ubaWRITE & (busADDR[18:35] == statADDR [18:35]);
+   wire maintWRITE = ubaWRITE & (busADDR[18:35] == maintADDR[18:35]);
+   wire devREAD    = ubaREAD  & (busADDR[18:28] != ubaADDR  [18:28]) & !regUBAMR;
+   wire devWRITE   = ubaWRITE & (busADDR[18:28] != ubaADDR  [18:28]) & !regUBAMR;
+   wire loopREAD   = ubaREAD  & (busADDR[18:28] != ubaADDR  [18:28]) &  regUBAMR;
+   wire loopWRITE  = ubaWRITE & (busADDR[18:28] != ubaADDR  [18:28]) &  regUBAMR;
 
    //
    // Status Register
@@ -169,9 +183,9 @@ module UBA (
    UBASR SR (
       .rst        (rst),
       .clk        (clk),
-      .busDATAI   (ubaBUS.busDATAI),
+      .busDATAI   (ubabus.busDATAI),
       .devACLO    (devACLO),
-      .devINTR    (devINTR),
+      .devINTR    (devINTRI),
       .statWRITE  (statWRITE),
       .setNXD     (setNXD),
       .setTMO     (setTMO | pageFAIL),
@@ -187,7 +201,7 @@ module UBA (
    UBAMR MR (
       .rst        (rst),
       .clk        (clk),
-      .busDATAI   (ubaBUS.busDATAI),
+      .busDATAI   (ubabus.busDATAI),
       .maintWRITE (maintWRITE),
       .regUBAMR   (regUBAMR)
    );
@@ -200,10 +214,10 @@ module UBA (
       .rst        (rst),
       .clk        (clk),
       .busPI      (busPI),
-      .busINTR    (ubaBUS.busINTRO),
+      .busINTR    (ubabus.busINTRO),
       .wruREAD    (wruREAD),
       .regUBASR   (regUBASR),
-      .devINTR    (devINTR)
+      .devINTR    (devINTRI)
    );
 
    //
@@ -219,9 +233,9 @@ module UBA (
       .rst        (rst),
       .clk        (clk),
       .devREQI    (devREQ),
-      .busADDRI   (ubaBUS.busADDRI),
-      .busDATAI   (ubaBUS.busDATAI),
-      .busADDRO   (ubaBUS.busADDRO),
+      .busADDRI   (ubabus.busADDRI),
+      .busDATAI   (ubabus.busDATAI),
+      .busADDRO   (ubabus.busADDRO),
       .pageWRITE  (pageWRITE),
       .pageDATAO  (pageDATAO),
       .pageADDRI  (pageADDRI),
@@ -266,9 +280,9 @@ module UBA (
    always_ff @(posedge clk)
      if (rst | devRESET)
        begin
-          ubaBUS.busREQO  <= 0;
-          ubaBUS.busACKO  <= 0;
-          ubaBUS.busDATAO <= 0;
+          ubabus.busREQO  <= 0;
+          ubabus.busACKO  <= 0;
+          ubabus.busDATAO <= 0;
           devREQO[1]  <= 0;
           devREQO[2]  <= 0;
           devREQO[3]  <= 0;
@@ -304,10 +318,10 @@ module UBA (
            // CPU is accessing status register
            //
 
-           if ((ubaBUS.busREQI & statREAD) | (ubaBUS.busREQI & statWRITE))
+           if ((ubabus.busREQI & statREAD) | (ubabus.busREQI & statWRITE))
              begin
-                ubaBUS.busACKO  <= 1;
-                ubaBUS.busDATAO <= regUBASR;
+                ubabus.busACKO  <= 1;
+                ubabus.busDATAO <= regUBASR;
                 state <= stateWAITBUSREQ;
              end
 
@@ -315,10 +329,10 @@ module UBA (
            // CPU is accessing paging data
            //
 
-           else if ((ubaBUS.busREQI & pageREAD) | (ubaBUS.busREQI & pageWRITE))
+           else if ((ubabus.busREQI & pageREAD) | (ubabus.busREQI & pageWRITE))
              begin
-                ubaBUS.busACKO  <= 1;
-                ubaBUS.busDATAO <= pageDATAO;
+                ubabus.busACKO  <= 1;
+                ubabus.busDATAO <= pageDATAO;
                 state <= stateWAITBUSREQ;
              end
 
@@ -330,10 +344,10 @@ module UBA (
            //  DO NOT acknowledge this IO request from the CPU yet.
            //
 
-           else if (ubaBUS.busREQI & loopREAD)
+           else if (ubabus.busREQI & loopREAD)
              begin
-                loopADDR  <= ubaBUS.busADDRI;
-                pageADDRI <= ubaBUS.busADDRI;
+                loopADDR  <= ubabus.busADDRI;
+                pageADDRI <= ubabus.busADDRI;
                 cntTMO    <= timeout;
                 state     <= stateMEMtoLOOP0;
              end
@@ -342,21 +356,21 @@ module UBA (
            // CPU is performing a loopback write
            //
 
-           else if (ubaBUS.busREQI & loopWRITE)
+           else if (ubabus.busREQI & loopWRITE)
              begin
-                ubaBUS.busACKO   <= 1;
-                case ({`devIOBYTE(ubaBUS.busADDRI), `devWORDSEL(ubaBUS.busADDRI), `devBYTESEL(ubaBUS.busADDRI)})
-                  3'b000: loopDATA[ 0:17] <= ubaBUS.busDATAI[18:35];     // Even word
-                  3'b001: loopDATA[ 0:17] <= ubaBUS.busDATAI[18:35];     // Even word
-                  3'b010: loopDATA[18:35] <= ubaBUS.busDATAI[18:35];     // Odd  word
-                  3'b011: loopDATA[18:35] <= ubaBUS.busDATAI[18:35];     // Odd  word
-                  3'b100: loopDATA[10:17] <= ubaBUS.busDATAI[28:35];     // Even word, low  byte.
-                  3'b101: loopDATA[ 2: 9] <= ubaBUS.busDATAI[20:27];     // Even word, high byte.
-                  3'b110: loopDATA[28:35] <= ubaBUS.busDATAI[28:35];     // Odd  word, low  byte.
-                  3'b111: loopDATA[20:27] <= ubaBUS.busDATAI[20:27];     // Odd  word, high byte.
+                ubabus.busACKO   <= 1;
+                case ({`devIOBYTE(ubabus.busADDRI), `devWORDSEL(ubabus.busADDRI), `devBYTESEL(ubabus.busADDRI)})
+                  3'b000: loopDATA[ 0:17] <= ubabus.busDATAI[18:35];     // Even word
+                  3'b001: loopDATA[ 0:17] <= ubabus.busDATAI[18:35];     // Even word
+                  3'b010: loopDATA[18:35] <= ubabus.busDATAI[18:35];     // Odd  word
+                  3'b011: loopDATA[18:35] <= ubabus.busDATAI[18:35];     // Odd  word
+                  3'b100: loopDATA[10:17] <= ubabus.busDATAI[28:35];     // Even word, low  byte.
+                  3'b101: loopDATA[ 2: 9] <= ubabus.busDATAI[20:27];     // Even word, high byte.
+                  3'b110: loopDATA[28:35] <= ubabus.busDATAI[28:35];     // Odd  word, low  byte.
+                  3'b111: loopDATA[20:27] <= ubabus.busDATAI[20:27];     // Odd  word, high byte.
                 endcase
-                loopADDR  <= ubaBUS.busADDRI;
-                pageADDRI <= ubaBUS.busADDRI;                            // Lookup paging for this address
+                loopADDR  <= ubabus.busADDRI;
+                pageADDRI <= ubabus.busADDRI;                            // Lookup paging for this address
                 cntTMO    <= timeout;
                 state     <= stateLOOPtoMEM0;
              end
@@ -365,9 +379,9 @@ module UBA (
            // CPU is accessing the maintenance register
            //
 
-           else if (ubaBUS.busREQI & maintWRITE)
+           else if (ubabus.busREQI & maintWRITE)
              begin
-                ubaBUS.busACKO <= 1;
+                ubabus.busACKO <= 1;
                 state <= stateWAITBUSREQ;
              end
 
@@ -375,10 +389,10 @@ module UBA (
            // CPU is doing a WRU bus cycle
            //
 
-           else if (ubaBUS.busREQI & wruREAD & ((busPI == statPIH) | (busPI == statPIL)))
+           else if (ubabus.busREQI & wruREAD & ((busPI == statPIH) | (busPI == statPIL)))
              begin
-                ubaBUS.busACKO  <= 1;
-                ubaBUS.busDATAO <= wruRESP;
+                ubabus.busACKO  <= 1;
+                ubabus.busDATAO <= wruRESP;
                 state <= stateWAITBUSREQ;
              end
 
@@ -386,20 +400,20 @@ module UBA (
            // CPU is requesting data from an IO device
            //
 
-           else if ((ubaBUS.busREQI & devREAD) | (ubaBUS.busREQI & devWRITE))
+           else if ((ubabus.busREQI & devREAD) | (ubabus.busREQI & devWRITE))
              begin
                 devREQO[1]  <= 1;
                 devREQO[2]  <= 1;
                 devREQO[3]  <= 1;
                 devREQO[4]  <= 1;
-                devADDRO[1] <= ubaBUS.busADDRI;
-                devADDRO[2] <= ubaBUS.busADDRI;
-                devADDRO[3] <= ubaBUS.busADDRI;
-                devADDRO[4] <= ubaBUS.busADDRI;
-                devDATAO[1] <= ubaBUS.busDATAI;
-                devDATAO[2] <= ubaBUS.busDATAI;
-                devDATAO[3] <= ubaBUS.busDATAI;
-                devDATAO[4] <= ubaBUS.busDATAI;
+                devADDRO[1] <= ubabus.busADDRI;
+                devADDRO[2] <= ubabus.busADDRI;
+                devADDRO[3] <= ubabus.busADDRI;
+                devADDRO[4] <= ubabus.busADDRI;
+                devDATAO[1] <= ubabus.busDATAI;
+                devDATAO[2] <= ubabus.busDATAI;
+                devDATAO[3] <= ubabus.busDATAI;
+                devDATAO[4] <= ubabus.busDATAI;
                 cntNXD      <= timeout;
                 state       <= stateCPUtoDEV;
              end
@@ -410,45 +424,45 @@ module UBA (
            //  highest priority device to provide the interrupt vector.
            //
 
-           else if (ubaBUS.busREQI & vectREAD)
+           else if (ubabus.busREQI & vectREAD)
              begin
-                if (devINTR[1][7])
+                if (devINTRI[1][7])
                   devREQO[1] <= 1;
-                else if (devINTR[2][7])
+                else if (devINTRI[2][7])
                   devREQO[2] <= 1;
-                else if (devINTR[3][7])
+                else if (devINTRI[3][7])
                   devREQO[3] <= 1;
-                else if (devINTR[4][7])
+                else if (devINTRI[4][7])
                   devREQO[4] <= 1;
-                else if (devINTR[1][6])
+                else if (devINTRI[1][6])
                   devREQO[1] <= 1;
-                else if (devINTR[2][6])
+                else if (devINTRI[2][6])
                   devREQO[2] <= 1;
-                else if (devINTR[3][6])
+                else if (devINTRI[3][6])
                   devREQO[3] <= 1;
-                else if (devINTR[4][6])
+                else if (devINTRI[4][6])
                   devREQO[4] <= 1;
-                else if (devINTR[1][5])
+                else if (devINTRI[1][5])
                   devREQO[1] <= 1;
-                else if (devINTR[2][5])
+                else if (devINTRI[2][5])
                   devREQO[2] <= 1;
-                else if (devINTR[3][5])
+                else if (devINTRI[3][5])
                   devREQO[3] <= 1;
-                else if (devINTR[4][5])
+                else if (devINTRI[4][5])
                   devREQO[4] <= 1;
-                else if (devINTR[1][4])
+                else if (devINTRI[1][4])
                   devREQO[1] <= 1;
-                else if (devINTR[2][4])
+                else if (devINTRI[2][4])
                   devREQO[2] <= 1;
-                else if (devINTR[3][4])
+                else if (devINTRI[3][4])
                   devREQO[3] <= 1;
-                else if (devINTR[4][4])
+                else if (devINTRI[4][4])
                   devREQO[4] <= 1;
                 cntNXD      <= timeout;
-                devADDRO[1] <= ubaBUS.busADDRI;
-                devADDRO[2] <= ubaBUS.busADDRI;
-                devADDRO[3] <= ubaBUS.busADDRI;
-                devADDRO[4] <= ubaBUS.busADDRI;
+                devADDRO[1] <= ubabus.busADDRI;
+                devADDRO[2] <= ubabus.busADDRI;
+                devADDRO[3] <= ubabus.busADDRI;
+                devADDRO[4] <= ubabus.busADDRI;
                 state       <= stateCPUtoVEC;
              end
 
@@ -486,7 +500,7 @@ module UBA (
 
              else
                begin
-                  ubaBUS.busDATAO <= devDATAI[1];
+                  ubabus.busDATAO <= devDATAI[1];
                   devSEL    <= 3'd1;
                   pageADDRI <= devADDRI[1];
                   cntTMO    <= timeout;
@@ -527,7 +541,7 @@ module UBA (
 
              else
                begin
-                  ubaBUS.busDATAO <= devDATAI[2];
+                  ubabus.busDATAO <= devDATAI[2];
                   devSEL    <= 3'd2;
                   pageADDRI <= devADDRI[2];
                   cntTMO    <= timeout;
@@ -568,7 +582,7 @@ module UBA (
 
              else
                begin
-                  ubaBUS.busDATAO <= devDATAI[3];
+                  ubabus.busDATAO <= devDATAI[3];
                   devSEL    <= 3'd3;
                   pageADDRI <= devADDRI[3];
                   cntTMO    <= timeout;
@@ -609,7 +623,7 @@ module UBA (
 
              else
                begin
-                  ubaBUS.busDATAO <= devDATAI[4];
+                  ubabus.busDATAO <= devDATAI[4];
                   devSEL    <= 3'd4;
                   pageADDRI <= devADDRI[4];
                   cntTMO    <= timeout;
@@ -623,8 +637,8 @@ module UBA (
          stateCPUtoDEV:
            if (devACKI[1])
              begin
-                ubaBUS.busACKO  <= 1;
-                ubaBUS.busDATAO <= devDATAI[1];
+                ubabus.busACKO  <= 1;
+                ubabus.busDATAO <= devDATAI[1];
                 devREQO[1] <= 0;
                 devREQO[2] <= 0;
                 devREQO[3] <= 0;
@@ -633,8 +647,8 @@ module UBA (
              end
            else if (devACKI[2])
              begin
-                ubaBUS.busACKO  <= 1;
-                ubaBUS.busDATAO <= devDATAI[2];
+                ubabus.busACKO  <= 1;
+                ubabus.busDATAO <= devDATAI[2];
                 devREQO[1] <= 0;
                 devREQO[2] <= 0;
                 devREQO[3] <= 0;
@@ -643,8 +657,8 @@ module UBA (
              end
            else if (devACKI[3])
              begin
-                ubaBUS.busACKO  <= 1;
-                ubaBUS.busDATAO <= devDATAI[3];
+                ubabus.busACKO  <= 1;
+                ubabus.busDATAO <= devDATAI[3];
                 devREQO[1] <= 0;
                 devREQO[2] <= 0;
                 devREQO[3] <= 0;
@@ -653,15 +667,15 @@ module UBA (
              end
            else if (devACKI[4])
              begin
-                ubaBUS.busACKO  <= 1;
-                ubaBUS.busDATAO <= devDATAI[4];
+                ubabus.busACKO  <= 1;
+                ubabus.busDATAO <= devDATAI[4];
                 devREQO[1] <= 0;
                 devREQO[2] <= 0;
                 devREQO[3] <= 0;
                 devREQO[4] <= 0;
                 state      <= stateWAITBUSREQ;
              end
-           else if (!ubaBUS.busREQI)
+           else if (!ubabus.busREQI)
              state <= stateDONE;
            else if (cntNXD != 0)
              cntNXD <= cntNXD - 1'b1;
@@ -677,29 +691,29 @@ module UBA (
          stateCPUtoVEC:
            if (devREQO[1] & devACKI[1])
              begin
-                ubaBUS.busACKO  <= 1;
-                ubaBUS.busDATAO <= devDATAI[1];
+                ubabus.busACKO  <= 1;
+                ubabus.busDATAO <= devDATAI[1];
                 devREQO[1] <= 0;
                 state      <= stateWAITVECREQ;
              end
            else if (devREQO[2] & devACKI[2])
              begin
-                ubaBUS.busACKO  <= 1;
-                ubaBUS.busDATAO <= devDATAI[2];
+                ubabus.busACKO  <= 1;
+                ubabus.busDATAO <= devDATAI[2];
                 devREQO[2] <= 0;
                 state      <= stateWAITVECREQ;
              end
            else if (devREQO[3] & devACKI[3])
              begin
-                ubaBUS.busACKO  <= 1;
-                ubaBUS.busDATAO <= devDATAI[3];
+                ubabus.busACKO  <= 1;
+                ubabus.busDATAO <= devDATAI[3];
                 devREQO[3] <= 0;
                 state      <= stateWAITVECREQ;
              end
            else if (devREQO[4] & devACKI[4])
              begin
-                ubaBUS.busACKO  <= 1;
-                ubaBUS.busDATAO <= devDATAI[4];
+                ubabus.busACKO  <= 1;
+                ubabus.busDATAO <= devDATAI[4];
                 devREQO[4] <= 0;
                 state      <= stateWAITVECREQ;
              end
@@ -707,7 +721,7 @@ module UBA (
              cntTMO <= cntTMO - 1'b1;
            else
              begin
-                ubaBUS.busREQO <= 0;
+                ubabus.busREQO <= 0;
                 state   <= stateDONE;
              end
 
@@ -722,7 +736,7 @@ module UBA (
                 state <= stateDONE;
               else
                 begin
-                   ubaBUS.busREQO <= 1;
+                   ubabus.busREQO <= 1;
                    state   <= stateDEVtoMEM1;
                 end
            end
@@ -733,26 +747,26 @@ module UBA (
          //
 
          stateDEVtoMEM1:
-           if (ubaBUS.busACKI)
+           if (ubabus.busACKI)
              begin
-                ubaBUS.busREQO         <= 0;
+                ubabus.busREQO         <= 0;
                 devACKO[devSEL] <= 1;
-                devDATAO[1]     <= ubaBUS.busDATAI;
-                devDATAO[2]     <= ubaBUS.busDATAI;
-                devDATAO[3]     <= ubaBUS.busDATAI;
-                devDATAO[4]     <= ubaBUS.busDATAI;
+                devDATAO[1]     <= ubabus.busDATAI;
+                devDATAO[2]     <= ubabus.busDATAI;
+                devDATAO[3]     <= ubabus.busDATAI;
+                devDATAO[4]     <= ubabus.busDATAI;
                 state           <= stateWAITDEVREQ;
              end
            else if (!devREQI[devSEL])
              begin
-                ubaBUS.busREQO <= 0;
+                ubabus.busREQO <= 0;
                 state   <= stateDONE;
              end
            else if (cntTMO != 0)
              cntTMO <= cntTMO - 1'b1;
            else
              begin
-                ubaBUS.busREQO <= 0;
+                ubabus.busREQO <= 0;
                 state   <= stateDONE;
              end
 
@@ -818,7 +832,7 @@ module UBA (
 
          stateLOOPtoMEM0:
            begin
-              ubaBUS.busACKO <= 0;
+              ubabus.busACKO <= 0;
               if (pageFAIL)
                 state <= stateDONE;
               else if (flagsFTM)
@@ -830,8 +844,8 @@ module UBA (
 
                 if (`devWORDSEL(loopADDR))
                   begin
-                     ubaBUS.busREQO  <= 1;
-                     ubaBUS.busDATAO <= {rpwDATA[0:17], loopDATA[18:35]};
+                     ubabus.busREQO  <= 1;
+                     ubabus.busDATAO <= {rpwDATA[0:17], loopDATA[18:35]};
                      cntTMO          <= timeout;
                      pageADDRI[0:17] <= flagWRITE;
                      state           <= stateLOOPtoMEM4;
@@ -849,8 +863,8 @@ module UBA (
 
               else if (!flagsRRV & !`devIOBYTE(loopADDR) & !`devWORDSEL(loopADDR))
                 begin
-                   ubaBUS.busREQO  <= 1;
-                   ubaBUS.busDATAO <= (flagsE16) ? {2'b0, loopDATA[2:17], 2'b0, ubaBUS.busADDRO[20:35]} : {loopDATA[0:17], ubaBUS.busADDRO[18:35]};
+                   ubabus.busREQO  <= 1;
+                   ubabus.busDATAO <= (flagsE16) ? {2'b0, loopDATA[2:17], 2'b0, busADDRO[20:35]} : {loopDATA[0:17], busADDRO[18:35]};
                    cntTMO          <= timeout;
                    pageADDRI[0:17] <= flagWRITE;
                    state           <= stateLOOPtoMEM4;
@@ -863,8 +877,8 @@ module UBA (
 
               else if (!flagsRRV & `devIOBYTE(loopADDR) & !`devWORDSEL(loopADDR) & !`devBYTESEL(loopADDR))
                 begin
-                   ubaBUS.busREQO  <= 1;
-                   ubaBUS.busDATAO <= {10'b0, loopDATA[10:17], ubaBUS.busADDRO[18:35]};
+                   ubabus.busREQO  <= 1;
+                   ubabus.busDATAO <= {10'b0, loopDATA[10:17], busADDRO[18:35]};
                    cntTMO          <= timeout;
                    pageADDRI[0:17] <= flagWRITE;
                    state           <= stateLOOPtoMEM4;
@@ -876,7 +890,7 @@ module UBA (
 
               else
                 begin
-                   ubaBUS.busREQO  <= 1;
+                   ubabus.busREQO  <= 1;
                    cntTMO          <= timeout;
                    pageADDRI[0:17] <= flagREAD;
                    state           <= stateLOOPtoMEM1;
@@ -889,17 +903,17 @@ module UBA (
          //
 
          stateLOOPtoMEM1:
-           if (ubaBUS.busACKI)
+           if (ubabus.busACKI)
              begin
-                ubaBUS.busREQO <= 0;
-                rpwDATA <= ubaBUS.busDATAI;
+                ubabus.busREQO <= 0;
+                rpwDATA <= ubabus.busDATAI;
                 state   <= stateLOOPtoMEM2;
              end
            else if (cntTMO != 0)
              cntTMO <= cntTMO - 1'b1;
            else
              begin
-                ubaBUS.busREQO <= 0;
+                ubabus.busREQO <= 0;
                 state <= stateDONE;
              end
 
@@ -916,25 +930,25 @@ module UBA (
 
          stateLOOPtoMEM3:
            begin
-              ubaBUS.busREQO         <= 1;
+              ubabus.busREQO         <= 1;
               pageADDRI[0:17] <= flagWRITE;
               case ({flagsE16, `devIOBYTE(loopADDR), `devWORDSEL(loopADDR), `devBYTESEL(loopADDR)})
-                4'b0000: ubaBUS.busDATAO <= {loopDATA[0:17],  rpwDATA[18:35]};        // Even word
-                4'b0001: ubaBUS.busDATAO <= {loopDATA[0:17],  rpwDATA[18:35]};        // Even word
-                4'b0010: ubaBUS.busDATAO <= { rpwDATA[0:17], loopDATA[18:35]};        // Odd  word
-                4'b0011: ubaBUS.busDATAO <= { rpwDATA[0:17], loopDATA[18:35]};        // Odd  word
-                4'b0100: ubaBUS.busDATAO <= {2'b0,  rpwDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // Even word, low  byte.
-                4'b0101: ubaBUS.busDATAO <= {2'b0, loopDATA[ 2: 9],  rpwDATA[10:17], 2'b0, ubaBUS.busADDRO[20:27], ubaBUS.busADDRO[28:35]};    // TEST16: Even word, high byte.
-                4'b0110: ubaBUS.busDATAO <= {       rpwDATA[ 0:17],                  2'b0, loopDATA[20:27], loopDATA[28:35]};    // TEST17: Odd  word, low  byte.
-                4'b0111: ubaBUS.busDATAO <= {       rpwDATA[ 0:17],                  2'b0, loopDATA[20:27],  rpwDATA[28:35]};    // TEST20: Odd  word, high byte.
-                4'b1000: ubaBUS.busDATAO <= {2'b0, loopDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // E16, Even word
-                4'b1001: ubaBUS.busDATAO <= {2'b0, loopDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // E16, Even word
-                4'b1010: ubaBUS.busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0, loopDATA[20:27], loopDATA[28:35]};    // E16, Odd  word
-                4'b1011: ubaBUS.busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0, loopDATA[20:27], loopDATA[28:35]};    // E16, Odd  word
-                4'b1100: ubaBUS.busDATAO <= {2'b0,  rpwDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // E16, Even word, low  byte.
-                4'b1101: ubaBUS.busDATAO <= {2'b0, loopDATA[ 2: 9],  rpwDATA[10:17], 2'b0, ubaBUS.busADDRO[20:27], ubaBUS.busADDRO[28:35]};    // E16, Even word, high byte.
-                4'b1110: ubaBUS.busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0,  rpwDATA[20:27], loopDATA[28:35]};    // E16, Odd  word, low  byte.
-                4'b1111: ubaBUS.busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0, loopDATA[20:27],  rpwDATA[28:35]};    // E16, Odd  word, high byte.
+                4'b0000: ubabus.busDATAO <= {loopDATA[0:17],  rpwDATA[18:35]};        // Even word
+                4'b0001: ubabus.busDATAO <= {loopDATA[0:17],  rpwDATA[18:35]};        // Even word
+                4'b0010: ubabus.busDATAO <= { rpwDATA[0:17], loopDATA[18:35]};        // Odd  word
+                4'b0011: ubabus.busDATAO <= { rpwDATA[0:17], loopDATA[18:35]};        // Odd  word
+                4'b0100: ubabus.busDATAO <= {2'b0,  rpwDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // Even word, low  byte.
+                4'b0101: ubabus.busDATAO <= {2'b0, loopDATA[ 2: 9],  rpwDATA[10:17], 2'b0, busADDRO[20:27], busADDRO[28:35]};    // TEST16: Even word, high byte.
+                4'b0110: ubabus.busDATAO <= {       rpwDATA[ 0:17],                  2'b0, loopDATA[20:27], loopDATA[28:35]};    // TEST17: Odd  word, low  byte.
+                4'b0111: ubabus.busDATAO <= {       rpwDATA[ 0:17],                  2'b0, loopDATA[20:27],  rpwDATA[28:35]};    // TEST20: Odd  word, high byte.
+                4'b1000: ubabus.busDATAO <= {2'b0, loopDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // E16, Even word
+                4'b1001: ubabus.busDATAO <= {2'b0, loopDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // E16, Even word
+                4'b1010: ubabus.busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0, loopDATA[20:27], loopDATA[28:35]};    // E16, Odd  word
+                4'b1011: ubabus.busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0, loopDATA[20:27], loopDATA[28:35]};    // E16, Odd  word
+                4'b1100: ubabus.busDATAO <= {2'b0,  rpwDATA[ 2: 9], loopDATA[10:17], 2'b0,  rpwDATA[20:27],  rpwDATA[28:35]};    // E16, Even word, low  byte.
+                4'b1101: ubabus.busDATAO <= {2'b0, loopDATA[ 2: 9],  rpwDATA[10:17], 2'b0, busADDRO[20:27], busADDRO[28:35]};    // E16, Even word, high byte.
+                4'b1110: ubabus.busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0,  rpwDATA[20:27], loopDATA[28:35]};    // E16, Odd  word, low  byte.
+                4'b1111: ubabus.busDATAO <= {2'b0,  rpwDATA[ 2: 9],  rpwDATA[10:17], 2'b0, loopDATA[20:27],  rpwDATA[28:35]};    // E16, Odd  word, high byte.
               endcase
               state <= stateLOOPtoMEM4;
            end
@@ -944,16 +958,16 @@ module UBA (
          //
 
          stateLOOPtoMEM4:
-           if (ubaBUS.busACKI)
+           if (ubabus.busACKI)
              begin
-                ubaBUS.busREQO <= 0;
+                ubabus.busREQO <= 0;
                 state <= stateDONE;
              end
            else if (cntTMO != 0)
              cntTMO <= cntTMO - 1'b1;
            else
              begin
-                ubaBUS.busREQO <= 0;
+                ubabus.busREQO <= 0;
                 state <= stateDONE;
              end
 
@@ -967,7 +981,7 @@ module UBA (
              state <= stateDONE;
            else
              begin
-                ubaBUS.busREQO  <= 1;
+                ubabus.busREQO  <= 1;
                 cntTMO          <= timeout;
                 pageADDRI[0:17] <= flagREAD;
                 state           <= stateMEMtoLOOP1;
@@ -978,18 +992,18 @@ module UBA (
          //
 
          stateMEMtoLOOP1:
-           if (ubaBUS.busACKI)
+           if (ubabus.busACKI)
              begin
-                ubaBUS.busREQO <= 0;
+                ubabus.busREQO <= 0;
                 case ({`devIOBYTE(loopADDR), `devWORDSEL(loopADDR), `devBYTESEL(loopADDR)})
-                  3'b000: loopDATA <= {18'b0, ubaBUS.busDATAI[ 0:17]};      // Even word
-                  3'b001: loopDATA <= {18'b0, ubaBUS.busDATAI[ 0:17]};      // Even word
-                  3'b010: loopDATA <= {18'b0, ubaBUS.busDATAI[18:35]};      // Odd  word
-                  3'b011: loopDATA <= {18'b0, ubaBUS.busDATAI[18:35]};      // Odd  word
-                  3'b100: loopDATA <= {28'b0, ubaBUS.busDATAI[10:17]};      // Even word, low  byte.
-                  3'b101: loopDATA <= {20'b0, ubaBUS.busDATAI[ 2: 9], 8'b0};// Even word, high byte.
-                  3'b110: loopDATA <= {28'b0, ubaBUS.busDATAI[28:35]};      // Odd  word, low  byte.
-                  3'b111: loopDATA <= {20'b0, ubaBUS.busDATAI[20:27], 8'b0};// Odd  word, high byte.
+                  3'b000: loopDATA <= {18'b0, ubabus.busDATAI[ 0:17]};      // Even word
+                  3'b001: loopDATA <= {18'b0, ubabus.busDATAI[ 0:17]};      // Even word
+                  3'b010: loopDATA <= {18'b0, ubabus.busDATAI[18:35]};      // Odd  word
+                  3'b011: loopDATA <= {18'b0, ubabus.busDATAI[18:35]};      // Odd  word
+                  3'b100: loopDATA <= {28'b0, ubabus.busDATAI[10:17]};      // Even word, low  byte.
+                  3'b101: loopDATA <= {20'b0, ubabus.busDATAI[ 2: 9], 8'b0};// Even word, high byte.
+                  3'b110: loopDATA <= {28'b0, ubabus.busDATAI[28:35]};      // Odd  word, low  byte.
+                  3'b111: loopDATA <= {20'b0, ubabus.busDATAI[20:27], 8'b0};// Odd  word, high byte.
                 endcase
                 state <= stateMEMtoLOOP2;
              end
@@ -997,7 +1011,7 @@ module UBA (
              cntTMO <= cntTMO - 1'b1;
            else
              begin
-                ubaBUS.busREQO <= 0;
+                ubabus.busREQO <= 0;
                 state <= stateDONE;
              end
 
@@ -1008,8 +1022,8 @@ module UBA (
 
          stateMEMtoLOOP2:
            begin
-              ubaBUS.busACKO  <= 1;
-              ubaBUS.busDATAO <= loopDATA;
+              ubabus.busACKO  <= 1;
+              ubabus.busDATAO <= loopDATA;
               state <= stateMEMtoLOOP3;
            end
 
@@ -1019,9 +1033,9 @@ module UBA (
 
          stateMEMtoLOOP3:
            begin
-              if (!ubaBUS.busREQI)
+              if (!ubabus.busREQI)
                 begin
-                   ubaBUS.busACKO <= 0;
+                   ubabus.busACKO <= 0;
                    state   <= stateDONE;
                 end
            end
@@ -1031,10 +1045,10 @@ module UBA (
          //
 
          stateWAITREG:
-           if ((!ubaBUS.busREQI | !devREAD) & (!ubaBUS.busREQI | !devWRITE))
+           if ((!ubabus.busREQI | !devREAD) & (!ubabus.busREQI | !devWRITE))
              begin
-                ubaBUS.busREQO <= 0;
-                ubaBUS.busACKO <= 0;
+                ubabus.busREQO <= 0;
+                ubabus.busACKO <= 0;
                 devREQO[1]  <= 0;
                 devREQO[2]  <= 0;
                 devREQO[3]  <= 0;
@@ -1060,10 +1074,10 @@ module UBA (
          //
 
          stateWAITBUSREQ:
-           if (!ubaBUS.busREQI)
+           if (!ubabus.busREQI)
              begin
-                ubaBUS.busREQO <= 0;
-                ubaBUS.busACKO <= 0;
+                ubabus.busREQO <= 0;
+                ubabus.busACKO <= 0;
                 devREQO[1]  <= 0;
                 devREQO[2]  <= 0;
                 devREQO[3]  <= 0;
@@ -1091,8 +1105,8 @@ module UBA (
          stateWAITDEVREQ:
            if (!devREQI[devSEL])
              begin
-                ubaBUS.busREQO <= 0;
-                ubaBUS.busACKO <= 0;
+                ubabus.busREQO <= 0;
+                ubabus.busACKO <= 0;
                 devREQO[1]  <= 0;
                 devREQO[2]  <= 0;
                 devREQO[3]  <= 0;
@@ -1118,10 +1132,10 @@ module UBA (
          //
 
          stateWAITVECREQ:
-           if (!(ubaBUS.busREQI & vectREAD))
+           if (!(ubabus.busREQI & vectREAD))
              begin
-                ubaBUS.busREQO <= 0;
-                ubaBUS.busACKO <= 0;
+                ubabus.busREQO <= 0;
+                ubabus.busACKO <= 0;
                 devREQO[1]  <= 0;
                 devREQO[2]  <= 0;
                 devREQO[3]  <= 0;
@@ -1149,8 +1163,8 @@ module UBA (
 
          stateDONE:
            begin
-              ubaBUS.busREQO <= 0;
-              ubaBUS.busACKO <= 0;
+              ubabus.busREQO <= 0;
+              ubabus.busACKO <= 0;
               devREQO[1]  <= 0;
               devREQO[2]  <= 0;
               devREQO[3]  <= 0;
@@ -1175,6 +1189,30 @@ module UBA (
    assign devRESET = statINI;
    assign setNXD   = (cntNXD == 1);
    assign setTMO   = (cntTMO == 1);
+
+   //
+   // Unibus Interface
+   //
+
+   genvar i;
+   generate
+      for (i = 1; i <= 4; i++)
+        begin : loop
+           assign devACLO[i]  = unibus[i].devACLO;      // Power fail
+           assign devREQI[i]  = unibus[i].devREQO;      // Request out
+           assign devACKI[i]  = unibus[i].devACKO;      // Acknowledge out
+           assign devADDRI[i] = unibus[i].devADDRO;     // Address out
+           assign devDATAI[i] = unibus[i].devDATAO;     // Data out
+           assign devINTRI[i] = unibus[i].devINTRO;     // Interrupt out
+           assign unibus[i].clk = clk;                  // Clock
+           assign unibus[i].rst = rst;                  // Reset
+           assign unibus[i].devRESET = devRESET;        // Device reset
+           assign unibus[i].devREQI  = devREQO[i];      // Request in
+           assign unibus[i].devACKI  = devACKO[i];      // Acknowledge in
+           assign unibus[i].devADDRI = devADDRO[i];     // Address in
+           assign unibus[i].devDATAI = devDATAO[i];     // Data in
+        end
+   endgenerate
 
 `ifndef SYNTHESIS
 
@@ -1205,10 +1243,10 @@ module UBA (
         else
           begin
 
-             if (busREQI)
-               addr <= busADDRI;
+             if (ubabus.busREQI)
+               addr <= ubabus.busADDRI;
 
-             if (ubaBUS.busREQO)
+             if (ubabus.busREQO)
                addr <= pageADDRI;
 
              if (setNXD)
@@ -1223,14 +1261,14 @@ module UBA (
                $fwrite(file, "[%11.3f] UBA%d: Page Failure (TMO). Addr = %012o.\n",
                        $time/1.0e3, ubaNUM, addr);
 
-             if (busACKI)
+             if (ubabus.busACKI)
                begin
-                  if (`busREAD(ubaBUS.busADDRO))
+                  if (`busREAD(ubabus.busADDRO))
                     $fwrite(file, "[%11.3f] UBA%d: Read %012o from address %012o.\n",
-                            $time/1.0e3, ubaNUM, busDATAI, ubaBUS.busADDRO);
+                            $time/1.0e3, ubaNUM, ubabus.busDATAI, ubabus.busADDRO);
                   else
                     $fwrite(file, "[%11.3f] UBA%d: Wrote %012o to address %012o.\n",
-                            $time/1.0e3, ubaNUM, ubaBUS.busDATAO, ubaBUS.busADDRO);
+                            $time/1.0e3, ubaNUM, ubabus.busDATAO, ubabus.busADDRO);
                end
 
           end

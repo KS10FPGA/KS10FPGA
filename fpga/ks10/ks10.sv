@@ -132,6 +132,12 @@ module KS10 (
    );
 
    //
+   // Loop variable
+   //
+
+   genvar i;
+
+   //
    // Clock generator
    //
 
@@ -404,20 +410,10 @@ module KS10 (
    ks10bus      ubaBUS[1:4]();          // KS10 backplane bus
 
    //
-   // Buses between UBA adapters and UBA devices (x16)
+   // Unibuses between UBA adapters and UBA devices (x16)
    //
 
-   wire         devRESET[1:4];
-   wire         devACLO [1:4][1:4];
-   wire         devREQI [1:4][1:4];
-   wire         devREQO [1:4][1:4];
-   wire         devACKI [1:4][1:4];
-   wire         devACKO [1:4][1:4];
-   wire [ 0:35] devADDRI[1:4][1:4];
-   wire [ 0:35] devADDRO[1:4][1:4];
-   wire [ 0:35] devDATAI[1:4][1:4];
-   wire [ 0:35] devDATAO[1:4][1:4];
-   wire [ 7: 4] devINTR [1:4][1:4];
+   unibus       unibus[1:4][1:4]();     // Unibus
 
    //
    // Debug Signals
@@ -665,18 +661,8 @@ module KS10 (
    UBA1 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      .ubaBUS           (ubaBUS[1]),
-      .devRESET         (devRESET[1]),
-      .devACLO          (devACLO[1]),
-      .devREQI          (devREQO[1]),
-      .devREQO          (devREQI[1]),
-      .devACKI          (devACKO[1]),
-      .devACKO          (devACKI[1]),
-      .devINTR          (devINTR[1]),
-      .devADDRI         (devADDRO[1]),
-      .devADDRO         (devADDRI[1]),
-      .devDATAI         (devDATAO[1]),
-      .devDATAO         (devDATAI[1])
+      .ubabus           (ubaBUS[1]),
+      .unibus           (unibus[1])
    );
 
 `ifdef RH11
@@ -692,32 +678,18 @@ module KS10 (
       .rhINTR           (`rh1INTR)
    )
    uRH11 (
-      .rst              (cpuRST),
-      .clk              (cpuCLK),
+      .unibus           (unibus[1][1]),
       // SD Interfaces
       .SD_MISO          (SD_MISO),
       .SD_MOSI          (SD_MOSI),
       .SD_SCLK          (SD_SCLK),
       .SD_SS_N          (SD_SS_N),
-      // RH11 Interfaces
+      // RP Interfaces
       .rhDEBUG          (rhDEBUG),
-      // RPXX Interfaces
       .rpMOL            (rpMOL),
       .rpWRL            (rpWRL),
       .rpDPR            (rpDPR),
-      .rpLEDS           (RP_LEDS),
-      // Device
-      .devRESET         (devRESET[1]),
-      .devACLO          (devACLO[1][1]),
-      .devINTR          (devINTR[1][1]),
-      .devREQI          (devREQI[1][1]),
-      .devREQO          (devREQO[1][1]),
-      .devACKI          (devACKI[1][1]),
-      .devACKO          (devACKO[1][1]),
-      .devADDRI         (devADDRI[1][1]),
-      .devADDRO         (devADDRO[1][1]),
-      .devDATAI         (devDATAI[1][1]),
-      .devDATAO         (devDATAO[1][1])
+      .rpLEDS           (RP_LEDS)
    );
 
 `else
@@ -726,12 +698,12 @@ module KS10 (
    // IO Bridge #1, Device 1 is not implemented. Tie inputs
    //
 
-   assign devINTR[1][1] = 0;
-   assign devACLO[1][1] = 0;
-   assign devREQO[1][1] = 0;
-   assign devACKO[1][1] = 0;
-   assign devADDRO[1][1] = 0;
-   assign devDATAO[1][1] = 0;
+   assign unibus[1][1].devINTRO = 0;
+   assign unibus[1][1].devACLO  = 0;
+   assign unibus[1][1].devREQO  = 0;
+   assign unibus[1][1].devACKO  = 0;
+   assign unibus[1][1].devADDRO = 0;
+   assign unibus[1][1].devDATAO = 0;
 
 `endif
 
@@ -739,34 +711,34 @@ module KS10 (
    // IO Bridge #1, Device 2 is not implemented. Tie inputs
    //
 
-   assign devINTR[1][2] = 0;
-   assign devACLO[1][2] = 0;
-   assign devREQO[1][2] = 0;
-   assign devACKO[1][2] = 0;
-   assign devADDRO[1][2] = 0;
-   assign devDATAO[1][2] = 0;
+   assign unibus[1][2].devINTRO = 0;
+   assign unibus[1][2].devACLO  = 0;
+   assign unibus[1][2].devREQO  = 0;
+   assign unibus[1][2].devACKO  = 0;
+   assign unibus[1][2].devADDRO = 0;
+   assign unibus[1][2].devDATAO = 0;
 
    //
    // IO Bridge #1, Device 3 is not implemented. Tie inputs
    //
 
-   assign devINTR[1][3] = 0;
-   assign devACLO[1][3] = 0;
-   assign devREQO[1][3] = 0;
-   assign devACKO[1][3] = 0;
-   assign devADDRO[1][3] = 0;
-   assign devDATAO[1][3] = 0;
+   assign unibus[1][3].devINTRO = 0;
+   assign unibus[1][3].devACLO  = 0;
+   assign unibus[1][3].devREQO  = 0;
+   assign unibus[1][3].devACKO  = 0;
+   assign unibus[1][3].devADDRO = 0;
+   assign unibus[1][3].devDATAO = 0;
 
    //
    // IO Bridge #1, Device 4 is not implemented. Tie inputs
    //
 
-   assign devINTR[1][4] = 0;
-   assign devACLO[1][4] = 0;
-   assign devREQO[1][4] = 0;
-   assign devACKO[1][4] = 0;
-   assign devADDRO[1][4] = 0;
-   assign devDATAO[1][4] = 0;
+   assign unibus[1][4].devINTRO = 0;
+   assign unibus[1][4].devACLO  = 0;
+   assign unibus[1][4].devREQO  = 0;
+   assign unibus[1][4].devACKO  = 0;
+   assign unibus[1][4].devADDRO = 0;
+   assign unibus[1][4].devDATAO = 0;
 
 `else
 
@@ -779,6 +751,25 @@ module KS10 (
    assign ubaBUS[1].busADDRO = 0;
    assign ubaBUS[1].busDATAO = 0;
    assign ubaBUS[1].busINTRO = 0;
+
+   generate
+      for (i = 1; i <= 4; i++)
+        begin : loop1
+           assign unibus[1][i].clk      = 0;
+           assign unibus[1][i].rst      = 0;
+           assign unibus[1][i].devRESET = 0;
+           assign unibus[1][i].devACLO  = 0;
+           assign unibus[1][i].devREQO  = 0;
+           assign unibus[1][i].devACKO  = 0;
+           assign unibus[1][i].devADDRO = 0;
+           assign unibus[1][i].devDATAO = 0;
+           assign unibus[1][i].devINTRO = 0;
+           assign unibus[1][i].devREQI  = 0;
+           assign unibus[1][i].devACKI  = 0;
+           assign unibus[1][i].devADDRI = 0;
+           assign unibus[1][i].devDATAI = 0;
+        end
+   endgenerate
 
 `endif
 
@@ -798,6 +789,25 @@ module KS10 (
    assign ubaBUS[2].busDATAO = 0;
    assign ubaBUS[2].busINTRO = 0;
 
+   generate
+      for (i = 1; i <= 4; i++)
+        begin : loop2
+           assign unibus[2][i].clk      = 0;
+           assign unibus[2][i].rst      = 0;
+           assign unibus[2][i].devRESET = 0;
+           assign unibus[2][i].devACLO  = 0;
+           assign unibus[2][i].devREQO  = 0;
+           assign unibus[2][i].devACKO  = 0;
+           assign unibus[2][i].devADDRO = 0;
+           assign unibus[2][i].devDATAO = 0;
+           assign unibus[2][i].devINTRO = 0;
+           assign unibus[2][i].devREQI  = 0;
+           assign unibus[2][i].devACKI  = 0;
+           assign unibus[2][i].devADDRI = 0;
+           assign unibus[2][i].devDATAI = 0;
+        end
+   endgenerate
+
 `else
 
    //
@@ -809,6 +819,25 @@ module KS10 (
    assign ubaBUS[2].busADDRO = 0;
    assign ubaBUS[2].busDATAO = 0;
    assign ubaBUS[2].busINTRO = 0;
+
+   generate
+      for (i = 1; i <= 4; i++)
+        begin : loop2
+           assign unibus[2][i].clk      = 0;
+           assign unibus[2][i].rst      = 0;
+           assign unibus[2][i].devRESET = 0;
+           assign unibus[2][i].devACLO  = 0;
+           assign unibus[2][i].devREQO  = 0;
+           assign unibus[2][i].devACKO  = 0;
+           assign unibus[2][i].devADDRO = 0;
+           assign unibus[2][i].devDATAO = 0;
+           assign unibus[2][i].devINTRO = 0;
+           assign unibus[2][i].devREQI  = 0;
+           assign unibus[2][i].devACKI  = 0;
+           assign unibus[2][i].devADDRI = 0;
+           assign unibus[2][i].devDATAI = 0;
+       end
+   endgenerate
 
 `endif
 
@@ -825,18 +854,8 @@ module KS10 (
    UBA3 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      .ubaBUS           (ubaBUS[3]),
-      .devRESET         (devRESET[3]),
-      .devACLO          (devACLO[3]),
-      .devREQI          (devREQO[3]),
-      .devREQO          (devREQI[3]),
-      .devACKI          (devACKO[3]),
-      .devACKO          (devACKI[3]),
-      .devINTR          (devINTR[3]),
-      .devADDRI         (devADDRO[3]),
-      .devADDRO         (devADDRI[3]),
-      .devDATAI         (devDATAO[3]),
-      .devDATAO         (devDATAI[3])
+      .ubabus           (ubaBUS[3]),
+      .unibus           (unibus[3])
    );
 
    //
@@ -852,26 +871,12 @@ module KS10 (
       .dzINTR           (`dz1INTR)
    )
    uDZ11 (
-      .rst              (cpuRST),
-      .clk              (cpuCLK),
-      // DZ11 IO
+      .unibus           (unibus[3][1]),
       .dzTXD            (DZ_TXD),
       .dzRXD            (DZ_RXD),
       .dzCO             (dzCO),
       .dzRI             (dzRI),
-      .dzDTR            (DZ_DTR),
-      // Device
-      .devRESET         (devRESET[3]),
-      .devACLO          (devACLO[3][1]),
-      .devINTR          (devINTR[3][1]),
-      .devREQI          (devREQI[3][1]),
-      .devREQO          (devREQO[3][1]),
-      .devACKI          (devACKI[3][1]),
-      .devACKO          (devACKO[3][1]),
-      .devADDRI         (devADDRI[3][1]),
-      .devADDRO         (devADDRO[3][1]),
-      .devDATAI         (devDATAI[3][1]),
-      .devDATAO         (devDATAO[3][1])
+      .dzDTR            (DZ_DTR)
    );
 
 `else
@@ -880,12 +885,12 @@ module KS10 (
    // IO Bridge #3, Device 1 is not connected. Tie inputs
    //
 
-   assign devINTR[3][1]  = 0;
-   assign devACLO[3][1]  = 0;
-   assign devREQO[3][1]  = 0;
-   assign devACKO[3][1]  = 0;
-   assign devADDRO[3][1] = 0;
-   assign devDATAO[3][1] = 0;
+   assign unibus[3][1].devINTRO = 0;
+   assign unibus[3][1].devACLO  = 0;
+   assign unibus[3][1].devREQO  = 0;
+   assign unibus[3][1].devACKO  = 0;
+   assign unibus[3][1].devADDRO = 0;
+   assign unibus[3][1].devDATAO = 0;
    assign DZ_TXD = 0;
    assign DZ_DTR = 0;
 
@@ -903,23 +908,9 @@ module KS10 (
       .lpVECT           (`lp1VECT),
       .lpINTR           (`lp1INTR)
    ) uLP20 (
-      .clk              (cpuCLK),
-      .rst              (cpuRST),
-      // LP20 Configuration
+      .unibus           (unibus[3][2]),
+      // LP20/LP26 Interface
       .lpOVFU           (lpOVFU),
-      // Device Interface
-      .devRESET         (devRESET[3]),
-      .devACLO          (devACLO[3][2]),
-      .devINTR          (devINTR[3][2]),
-      .devREQI          (devREQI[3][2]),
-      .devREQO          (devREQO[3][2]),
-      .devACKI          (devACKI[3][2]),
-      .devACKO          (devACKO[3][2]),
-      .devADDRI         (devADDRI[3][2]),
-      .devADDRO         (devADDRO[3][2]),
-      .devDATAI         (devDATAI[3][2]),
-      .devDATAO         (devDATAO[3][2]),
-      // LP26 Interfaces
       .lpINIT           (lpINIT),
       .lpONLINE         (lpONLINE),
       .lpPARERR         (lpPARERR),
@@ -962,13 +953,15 @@ module KS10 (
    // IO Bridge #3, Device 2 is not connected. Tie inputs
    //
 
-   assign devINTR[3][2]  = 0;
-   assign devACLO[3][2]  = 0;
-   assign devREQO[3][2]  = 0;
-   assign devACKO[3][2]  = 0;
-   assign devADDRO[3][2] = 0;
-   assign devDATAO[3][2] = 0;
-   assign LP_TXD         = 0;
+   assign unibus[3][2].devINTRO = 0;
+   assign unibus[3][2].devACLO  = 0;
+   assign unibus[3][2].devREQO  = 0;
+   assign unibus[3][2].devACKO  = 0;
+   assign unibus[3][2].devADDRO = 0;
+   assign unibus[3][2].devDATAO = 0;
+   assign LP_TXD                = 0;
+   assign lpSETOFFLN            = 0;
+   assign lpSIXLPI              = 0;
 
 `endif
 
@@ -984,25 +977,11 @@ module KS10 (
       .dupVECT          (`dup1VECT),
       .dupINTR          (`dup1INTR)
    ) uDUP11 (
-      .clk              (cpuCLK),
-      .rst              (cpuRST),
-      // DUP Configuration
+      .unibus           (unibus[3][3]),
+      // DUP Interfaces
       .dupW3            (dupW3),
       .dupW5            (dupW5),
       .dupW6            (dupW6),
-      // Device Interface
-      .devRESET         (devRESET[3]),
-      .devACLO          (devACLO[3][3]),
-      .devINTR          (devINTR[3][3]),
-      .devREQI          (devREQI[3][3]),
-      .devREQO          (devREQO[3][3]),
-      .devACKI          (devACKI[3][3]),
-      .devACKO          (devACKO[3][3]),
-      .devADDRI         (devADDRI[3][3]),
-      .devADDRO         (devADDRO[3][3]),
-      .devDATAI         (devDATAI[3][3]),
-      .devDATAO         (devDATAO[3][3]),
-      // DUP Interfaces
       .dupRI            (dupRI),
       .dupCTS           (dupCTS),
       .dupDCD           (dupDCD),
@@ -1022,12 +1001,12 @@ module KS10 (
    // IO Bridge #3, Device 3 is not connected. Tie inputs
    //
 
-   assign devINTR[3][3]  = 0;
-   assign devACLO[3][3]  = 0;
-   assign devREQO[3][3]  = 0;
-   assign devACKO[3][3]  = 0;
-   assign devADDRO[3][3] = 0;
-   assign devDATAO[3][3] = 0;
+   assign unibus[3][3].devINTRO = 0;
+   assign unibus[3][3].devACLO  = 0;
+   assign unibus[3][3].devREQO  = 0;
+   assign unibus[3][3].devACKO  = 0;
+   assign unibus[3][3].devADDRO = 0;
+   assign unibus[3][3].devDATAO = 0;
 
 `endif
 
@@ -1043,20 +1022,7 @@ module KS10 (
       .kmcVECT          (`kmcVECT),
       .kmcINTR          (`kmcINTR)
    ) uKMC11 (
-      .clk              (cpuCLK),
-      .rst              (cpuRST),
-      // Device Interface
-      .devRESET         (devRESET[3]),
-      .devACLO          (devACLO[3][4]),
-      .devINTR          (devINTR[3][4]),
-      .devREQI          (devREQI[3][4]),
-      .devREQO          (devREQO[3][4]),
-      .devACKI          (devACKI[3][4]),
-      .devACKO          (devACKO[3][4]),
-      .devADDRI         (devADDRI[3][4]),
-      .devADDRO         (devADDRO[3][4]),
-      .devDATAI         (devDATAI[3][4]),
-      .devDATAO         (devDATAO[3][4]),
+      .unibus           (unibus[3][4]),
       .kmcLUIBUS        (kmcLUIBUS),
       .kmcLUSTEP        (kmcLUSTEP),
       .kmcLULOOP        (kmcLULOOP)
@@ -1068,12 +1034,12 @@ module KS10 (
    // IO Bridge #3, Device 4 is not connected. Tie inputs
    //
 
-   assign devINTR[3][4]  = 0;
-   assign devACLO[3][4]  = 0;
-   assign devREQO[3][4]  = 0;
-   assign devACKO[3][4]  = 0;
-   assign devADDRO[3][4] = 0;
-   assign devDATAO[3][4] = 0;
+   assign unibus[3][4].devINTRO = 0;
+   assign unibus[3][4].devACLO  = 0;
+   assign unibus[3][4].devREQO  = 0;
+   assign unibus[3][4].devACKO  = 0;
+   assign unibus[3][4].devADDRO = 0;
+   assign unibus[3][4].devDATAO = 0;
 
 `endif
 
@@ -1088,6 +1054,25 @@ module KS10 (
    assign ubaBUS[3].busADDRO = 0;
    assign ubaBUS[3].busDATAO = 0;
    assign ubaBUS[3].busINTRO = 0;
+
+   generate
+      for (i = 1; i <= 4; i++)
+        begin : loop3
+           assign unibus[3][i].clk      = 0;
+           assign unibus[3][i].rst      = 0;
+           assign unibus[3][i].devRESET = 0;
+           assign unibus[3][i].devACLO  = 0;
+           assign unibus[3][i].devREQO  = 0;
+           assign unibus[3][i].devACKO  = 0;
+           assign unibus[3][i].devADDRO = 0;
+           assign unibus[3][i].devDATAO = 0;
+           assign unibus[3][i].devINTRO = 0;
+           assign unibus[3][i].devREQI  = 0;
+           assign unibus[3][i].devACKI  = 0;
+           assign unibus[3][i].devADDRI = 0;
+           assign unibus[3][i].devDATAI = 0;
+        end
+   endgenerate
 
 `endif
 
@@ -1104,18 +1089,8 @@ module KS10 (
    UBA4 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      .ubaBUS           (ubaBUS[4]),
-      .devRESET         (devRESET[4]),
-      .devACLO          (devACLO[4]),
-      .devREQI          (devREQO[4]),
-      .devREQO          (devREQI[4]),
-      .devACKI          (devACKO[4]),
-      .devACKO          (devACKI[4]),
-      .devINTR          (devINTR[4]),
-      .devADDRI         (devADDRO[4]),
-      .devADDRO         (devADDRI[4]),
-      .devDATAI         (devDATAO[4]),
-      .devDATAO         (devDATAI[4])
+      .ubabus           (ubaBUS[4]),
+      .unibus           (unibus[4])
    );
 
    //
@@ -1130,19 +1105,7 @@ module KS10 (
       .ubeADDR          (`ube1ADDR)
    )
    uUBE1 (
-      .rst              (cpuRST),
-      .clk              (cpuCLK),
-      .devRESET         (devRESET[4]),
-      .devACLO          (devACLO[4][1]),
-      .devINTR          (devINTR[4][1]),
-      .devREQI          (devREQI[4][1]),
-      .devREQO          (devREQO[4][1]),
-      .devACKI          (devACKI[4][1]),
-      .devACKO          (devACKO[4][1]),
-      .devADDRI         (devADDRI[4][1]),
-      .devADDRO         (devADDRO[4][1]),
-      .devDATAI         (devDATAI[4][1]),
-      .devDATAO         (devDATAO[4][1])
+      .unibus           (unibus[4][1])
    );
 
 `else
@@ -1151,12 +1114,12 @@ module KS10 (
    // IO Bridge #4, Device 1 is not implemented. Tie inputs
    //
 
-   assign devINTR[4][1] = 0;
-   assign devACLO[4][1] = 0;
-   assign devREQO[4][1] = 0;
-   assign devACKO[4][1] = 0;
-   assign devADDRO[4][1] = 0;
-   assign devDATAO[4][1] = 0;
+   assign unibus[4][1].devINTRO = 0;
+   assign unibus[4][1].devACLO  = 0;
+   assign unibus[4][1].devREQO  = 0;
+   assign unibus[4][1].devACKO  = 0;
+   assign unibus[4][1].devADDRO = 0;
+   assign unibus[4][1].devDATAO = 0;
 
 `endif
 
@@ -1172,19 +1135,7 @@ module KS10 (
       .ubeADDR          (`ube2ADDR)
    )
    uUBE2 (
-      .rst              (cpuRST),
-      .clk              (cpuCLK),
-      .devRESET         (devRESET[4]),
-      .devACLO          (devACLO[4][2]),
-      .devINTR          (devINTR[4][2]),
-      .devREQI          (devREQI[4][2]),
-      .devREQO          (devREQO[4][2]),
-      .devACKI          (devACKI[4][2]),
-      .devACKO          (devACKO[4][2]),
-      .devADDRI         (devADDRI[4][2]),
-      .devADDRO         (devADDRO[4][2]),
-      .devDATAI         (devDATAI[4][2]),
-      .devDATAO         (devDATAO[4][2])
+      .unibus           (unibus[4][2])
    );
 
 `else
@@ -1193,12 +1144,12 @@ module KS10 (
    // IO Bridge #4, Device 2 is not implemented. Tie inputs
    //
 
-   assign devINTR[4][2] = 0;
-   assign devACLO[4][2] = 0;
-   assign devREQO[4][2] = 0;
-   assign devACKO[4][2] = 0;
-   assign devADDRO[4][2] = 0;
-   assign devDATAO[4][2] = 0;
+   assign unibus[4][2].devINTRO = 0;
+   assign unibus[4][2].devACLO  = 0;
+   assign unibus[4][2].devREQO  = 0;
+   assign unibus[4][2].devACKO  = 0;
+   assign unibus[4][2].devADDRO = 0;
+   assign unibus[4][2].devDATAO = 0;
 
 `endif
 
@@ -1214,19 +1165,7 @@ module KS10 (
       .ubeADDR          (`ube3ADDR)
    )
    uUBE3 (
-      .rst              (cpuRST),
-      .clk              (cpuCLK),
-      .devRESET         (devRESET[4]),
-      .devACLO          (devACLO[4][3]),
-      .devINTR          (devINTR[4][3]),
-      .devREQI          (devREQI[4][3]),
-      .devREQO          (devREQO[4][3]),
-      .devACKI          (devACKI[4][3]),
-      .devACKO          (devACKO[4][3]),
-      .devADDRI         (devADDRI[4][3]),
-      .devADDRO         (devADDRO[4][3]),
-      .devDATAI         (devDATAI[4][3]),
-      .devDATAO         (devDATAO[4][3])
+      .unibus           (unibus[4][3])
    );
 
 `else
@@ -1235,12 +1174,12 @@ module KS10 (
    // IO Bridge #4, Device 3 is not implemented. Tie inputs
    //
 
-   assign devINTR[4][3] = 0;
-   assign devACLO[4][3] = 0;
-   assign devREQO[4][3] = 0;
-   assign devACKO[4][3] = 0;
-   assign devADDRO[4][3] = 0;
-   assign devDATAO[4][3] = 0;
+   assign unibus[4][3].devINTRO = 0;
+   assign unibus[4][3].devACLO  = 0;
+   assign unibus[4][3].devREQO  = 0;
+   assign unibus[4][3].devACKO  = 0;
+   assign unibus[4][3].devADDRO = 0;
+   assign unibus[4][3].devDATAO = 0;
 
 `endif
 
@@ -1256,19 +1195,7 @@ module KS10 (
       .ubeADDR          (`ube4ADDR)
    )
    uUBE4 (
-      .rst              (cpuRST),
-      .clk              (cpuCLK),
-      .devRESET         (devRESET[4]),
-      .devACLO          (devACLO[4][4]),
-      .devINTR          (devINTR[4][4]),
-      .devREQI          (devREQI[4][4]),
-      .devREQO          (devREQO[4][4]),
-      .devACKI          (devACKI[4][4]),
-      .devACKO          (devACKO[4][4]),
-      .devADDRI         (devADDRI[4][4]),
-      .devADDRO         (devADDRO[4][4]),
-      .devDATAI         (devDATAI[4][4]),
-      .devDATAO         (devDATAO[4][4])
+      .unibus           (unibus[4][4])
    );
 
 `else
@@ -1277,12 +1204,12 @@ module KS10 (
    // IO Bridge #4, Device 4 is not implemented. Tie inputs
    //
 
-   assign devINTR[4][4] = 0;
-   assign devACLO[4][4] = 0;
-   assign devREQO[4][4] = 0;
-   assign devACKO[4][4] = 0;
-   assign devADDRO[4][4] = 0;
-   assign devDATAO[4][4] = 0;
+   assign unibus[4][4].devINTRO = 0;
+   assign unibus[4][4].devACLO  = 0;
+   assign unibus[4][4].devREQO  = 0;
+   assign unibus[4][4].devACKO  = 0;
+   assign unibus[4][4].devADDRO = 0;
+   assign unibus[4][4].devDATAO = 0;
 
 `endif
 
@@ -1297,6 +1224,25 @@ module KS10 (
    assign ubaBUS[4].busADDRO = 0;
    assign ubaBUS[4].busDATAO = 0;
    assign ubaBUS[4].busINTRO = 0;
+
+   generate
+      for (i = 1; i <= 4; i++)
+        begin : loop4
+           assign unibus[4][i].clk      = 0;
+           assign unibus[4][i].rst      = 0;
+           assign unibus[4][i].devRESET = 0;
+           assign unibus[4][i].devACLO  = 0;
+           assign unibus[4][i].devREQO  = 0;
+           assign unibus[4][i].devACKO  = 0;
+           assign unibus[4][i].devADDRO = 0;
+           assign unibus[4][i].devDATAO = 0;
+           assign unibus[4][i].devINTRO = 0;
+           assign unibus[4][i].devREQI  = 0;
+           assign unibus[4][i].devACKI  = 0;
+           assign unibus[4][i].devADDRI = 0;
+           assign unibus[4][i].devDATAI = 0;
+        end
+   endgenerate
 
 `endif
 

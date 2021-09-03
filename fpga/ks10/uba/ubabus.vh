@@ -63,7 +63,7 @@
 // Addressing
 //
 
-`define devADDR(dev)     (dev[18:34])   // Device Address
+`define devADDR(dev)     ({dev[18:34],1'b0})    // Device Address
 
 //
 // This are valid during IOBYTE operations

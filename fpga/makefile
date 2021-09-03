@@ -261,6 +261,7 @@ DIAG_FILES := \
 
 RTL_FILES := \
 	ks10/ks10bus.sv \
+	ks10/unibus.sv \
 	ks10/ks10.sv \
 	ks10/arb/arb.sv \
 	ks10/csl/csl.sv \
@@ -293,7 +294,7 @@ RTL_FILES := \
 	ks10/cpu/useq/dispatch.v \
 	ks10/cpu/useq/useq.v \
 	ks10/debug/debug.v \
-	ks10/dup11/dup11.v \
+	ks10/dup11/dup11.sv \
 	ks10/dup11/dupclk.v \
 	ks10/dup11/dupintr.v \
 	ks10/dup11/dupparcsr.v \
@@ -335,7 +336,7 @@ RTL_FILES := \
 	ks10/lp20/lpintr.v \
 	ks10/lp20/lppdat.v \
 	ks10/lp20/lpramd.v \
-	ks10/lp20/lp20.v \
+	ks10/lp20/lp20.sv \
 	ks10/lp26/lp26.v \
 	ks10/mem/mem.sv \
 	ks10/mem/memstat.sv \

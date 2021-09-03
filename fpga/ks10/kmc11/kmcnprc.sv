@@ -50,7 +50,6 @@ module KMCNPRC (
       input  wire          rst,         // Reset
       input  wire          devACKI,     // Device acknowledge in
       output logic         devREQO,     // Device request out
-      input  wire  [35: 0] devDATAI,    // Device data in
       input  wire          kmcINIT,     // Initialize
       input  wire  [15: 0] kmcCRAM,     // Control ROM
       input  wire          kmcNPRCLKEN, // NPR clock enable

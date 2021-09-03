@@ -61,32 +61,25 @@
 `include "dztdr.vh"
 `include "../uba/ubabus.vh"
 
-module DZ11 (
-      input  wire         clk,                          // Clock
-      input  wire         rst,                          // Reset
-      // Reset
-      input  wire         devRESET,                     // Device Reset from IO Bus Bridge
-      // AC LO
-      output wire         devACLO,                      // Device Power Fail
-      // Interrupt
-      output wire [ 7: 4] devINTR,                      // Device Interrupt Request
-      // Target
-      input  wire         devREQI,                      // Device Request In
-      output wire         devACKO,                      // Device Acknowledge Out
-      input  wire [ 0:35] devADDRI,                     // Device Address In
-      input  wire [ 0:35] devDATAI,                     // Device Data In
-      // Initiator
-      output wire         devREQO,                      // Device Request Out
-      input  wire         devACKI,                      // Device Acknowledge In
-      output wire [ 0:35] devADDRO,                     // Device Address Out
-      output reg  [ 0:35] devDATAO,                     // Device Data Out
-      // DZ11 Interfaces
+  module DZ11 (
+      unibus.device       unibus,                       // Unibus connection
       output wire [ 7: 0] dzTXD,                        // DZ11 Transmitter Serial Data
       input  wire [ 7: 0] dzRXD,                        // DZ11 Receiver Serial Data
       input  wire [ 7: 0] dzCO,                         // DZ11 Carrier Detect
       input  wire [ 7: 0] dzRI,                         // DZ11 Ring Indicator
       output wire [ 7: 0] dzDTR                         // DZ11 Data Terminal Ready
    );
+
+   //
+   // Bus Interface
+   //
+
+   logic  clk;                                          // Clock
+   logic  rst;                                          // Reset
+   logic  devRESET;                                     // Device Reset
+   assign clk = unibus.clk;                             // Clock
+   assign rst = unibus.rst;                             // Reset
+   assign devRESET = unibus.devRESET;                   // Device Reset
 
    //
    // DZ Parameters
@@ -119,36 +112,43 @@ module DZ11 (
    // Device Address and Flags
    //
 
-   wire         devREAD   = `devREAD(devADDRI);         // Read Cycle
-   wire         devWRITE  = `devWRITE(devADDRI);        // Write Cycle
-   wire         devPHYS   = `devPHYS(devADDRI);         // Physical reference
-   wire         devIO     = `devIO(devADDRI);           // IO Cycle
-   wire         devWRU    = `devWRU(devADDRI);          // WRU Cycle
-   wire         devVECT   = `devVECT(devADDRI);         // Read interrupt vector
-   wire [14:17] devDEV    = `devDEV(devADDRI);          // Device Number
-   wire [18:34] devADDR   = `devADDR(devADDRI);         // Device Address
-   wire         devHIBYTE = `devHIBYTE(devADDRI);       // Device High Byte
-   wire         devLOBYTE = `devLOBYTE(devADDRI);       // Device Low Byte
+   wire         devREAD   = `devREAD(unibus.devADDRI);  // Read Cycle
+   wire         devWRITE  = `devWRITE(unibus.devADDRI); // Write Cycle
+   wire         devPHYS   = `devPHYS(unibus.devADDRI);  // Physical reference
+   wire         devIO     = `devIO(unibus.devADDRI);    // IO Cycle
+   wire         devWRU    = `devWRU(unibus.devADDRI);   // WRU Cycle
+   wire         devVECT   = `devVECT(unibus.devADDRI);  // Read interrupt vector
+   wire [14:17] devDEV    = `devDEV(unibus.devADDRI);   // Device Number
+   wire [18:35] devADDR   = `devADDR(unibus.devADDRI);  // Device Address
+   wire         devHIBYTE = `devHIBYTE(unibus.devADDRI);// Device High Byte
+   wire         devLOBYTE = `devLOBYTE(unibus.devADDRI);// Device Low Byte
+
+   //
+   // Read/Write Decoding
+   //
+
+   wire dzREAD   = /*FIXME: unibus.devREQI & */devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV);
+   wire dzWRITE  = /*FIXME: unibus.devREQI & */devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV);
+   wire vectREAD = /*FIXME: unibus.devREQI & */devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == dzDEV);
 
    //
    // Address Decoding
    //
 
-   wire vectREAD = devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == dzDEV);
-   wire csrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
-   wire csrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == csrADDR[18:34]);
-   wire rbufREAD = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == rbfADDR[18:34]);
-   wire lprWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == lprADDR[18:34]);
-   wire tcrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
-   wire tcrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == tcrADDR[18:34]);
-   wire msrREAD  = devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == msrADDR[18:34]);
-   wire tdrWRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV) & (devADDR == tdrADDR[18:34]);
+   wire csrREAD  = dzREAD  & (devADDR == csrADDR);
+   wire csrWRITE = dzWRITE & (devADDR == csrADDR);
+   wire rbufREAD = dzREAD  & (devADDR == rbfADDR);
+   wire lprWRITE = dzWRITE & (devADDR == lprADDR);
+   wire tcrREAD  = dzREAD  & (devADDR == tcrADDR);
+   wire tcrWRITE = dzWRITE & (devADDR == tcrADDR);
+   wire msrREAD  = dzREAD  & (devADDR == msrADDR);
+   wire tdrWRITE = dzWRITE & (devADDR == tdrADDR);
 
    //
    // Big-endian to little-endian data bus swap
    //
 
-   wire [35:0] dzDATAI = devDATAI[0:35];
+   wire [35:0] dzDATAI = unibus.devDATAI[0:35];
 
    //
    // Interrupt Acknowledge
@@ -380,11 +380,11 @@ module DZ11 (
    // Generate Bus ACK
    //
 
-   assign devACKO = (csrREAD  | csrWRITE |
-                     rbufREAD | lprWRITE |
-                     tcrREAD  | tcrWRITE |
-                     msrREAD  | tdrWRITE |
-                     vectREAD);
+   assign unibus.devACKO = (csrREAD  | csrWRITE |
+                            rbufREAD | lprWRITE |
+                            tcrREAD  | tcrWRITE |
+                            msrREAD  | tdrWRITE |
+                            vectREAD);
 
    //
    // Bus Mux and little-endian to big-endian bus swap.
@@ -392,20 +392,20 @@ module DZ11 (
 
    always_comb
      begin
-        devDATAO = 0;
+        unibus.devDATAO = 0;
         if (csrREAD)
-          devDATAO = {20'b0, regCSR};
+          unibus.devDATAO = {20'b0, regCSR};
         if (rbufREAD)
-          devDATAO = {20'b0, regRBUF};
+          unibus.devDATAO = {20'b0, regRBUF};
         if (tcrREAD)
-          devDATAO = {20'b0, regTCR};
+          unibus.devDATAO = {20'b0, regTCR};
         if (msrREAD)
-          devDATAO = {20'b0, regMSR};
+          unibus.devDATAO = {20'b0, regMSR};
         if (vectREAD)
           if (rxVECTOR)
-            devDATAO = {20'b0, rxVECT[20:35]};
+            unibus.devDATAO = {20'b0, rxVECT[20:35]};
           else
-            devDATAO = {20'b0, txVECT[20:35]};
+            unibus.devDATAO = {20'b0, txVECT[20:35]};
      end
 
    //
@@ -415,19 +415,18 @@ module DZ11 (
    assign dzTXD = uartTXD;
 
    //
-   // DZ11 Device Interface
-   //  The DZ11 is not a KS10 bus initiator.  Tie unused outputs.
+   // Interrupt output
    //
 
-   assign devINTR  = (rxINTR | txINTR) ? dzINTR : 4'b0;
-   assign devADDRO = 0;
-   assign devREQO  = 0;
+   assign unibus.devINTRO = (rxINTR | txINTR) ? dzINTR : 4'b0;
 
    //
-   // Negate ACLO
+   // Bus Interface
    //
 
-   assign devACLO = 0;
+   assign unibus.devACLO  = 0;                          // Power fail (not implemented)
+   assign unibus.devREQO  = 0;                          // Request out (DZ11 is not an initiator)
+   assign unibus.devADDRO = 0;                          // Address out (DZ11 is not an initiator)
 
 `ifndef SYNTHESIS
 
