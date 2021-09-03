@@ -1,3 +1,7 @@
+#
+# Take the noise out of the output transcript
+#
+
 { "" "" "" "LP26:uLP26\|lpDVFUDAT*"    {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "LP26:uLP26\|lpLINBUF*"     {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "USEQ:uUSEQ\|STACK:uSTACK*" {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
@@ -45,7 +49,15 @@
 { "" "" "" "HPS_SPI_SS"                {  } {  } 0 169065 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "HDMI_*"                    {  } {  } 0  15706 "" 0 0 "Design Software" 0 -1 0 ""}
 
+{ "" "" "" "*"                         {  } {  } 0  10648 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "*"                         {  } {  } 0  12021 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "*"                         {  } {  } 0  12023 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "*"                         {  } {  } 0  12128 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "*"                         {  } {  } 0  12130 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "*"                         {  } {  } 0  12133 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "*"                         {  } {  } 0  12134 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "*"                         {  } {  } 0  12241 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "*"                         {  } {  } 0  14073 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "*"                         {  } {  } 0  15714 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "*"                         {  } {  } 0 286033 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "*"                         {  } {  } 0 292013 "" 0 0 "Design Software" 0 -1 0 ""}
