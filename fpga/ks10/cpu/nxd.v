@@ -54,14 +54,14 @@
 `include "bus.vh"
 
 module NXD (
-      input  wire         clk,          // Clock
-      input  wire         rst,          // Reset
-      input  wire [0:107] crom,         // Control ROM Data
-      input  wire [0: 35] cpuADDRO,     // Bus Address
-      input  wire         cpuREQO,      // CPU Bus Request
-      input  wire         cpuACKI,      // CPU Bus Acknowledge
-      output wire         ioWAIT,       // IO Wait
-      output wire         ioBUSY        // IO Busy
+      input  wire         clk,                  // Clock
+      input  wire         rst,                  // Reset
+      input  wire [0:107] crom,                 // Control ROM Data
+      input  wire [0: 35] cpuADDRO,             // Bus Address
+      input  wire         cpuREQO,              // CPU Bus Request
+      input  wire         cpuACKI,              // CPU Bus Acknowledge
+      output wire         ioWAIT,               // IO Wait
+      output wire         ioBUSY                // IO Busy
    );
 
    //
