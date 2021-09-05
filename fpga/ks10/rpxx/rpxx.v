@@ -59,9 +59,9 @@
 `include "rpmr.vh"
 `include "rpcs1.vh"
 `include "rper1.vh"
-`include "../rh11.vh"
-`include "../sd/sd.vh"
-`include "../../uba/ubabus.vh"
+`include "sd/sd.vh"
+`include "../rh11/rh11.vh"
+`include "../uba/ubabus.vh"
 
 module RPXX (
       input  wire         clk,                  // Clock

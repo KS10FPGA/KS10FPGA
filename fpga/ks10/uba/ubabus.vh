@@ -3,9 +3,15 @@
 // KS-10 Processor
 //
 // Brief
-//   UBA Bus Bit Definitions
+//   IO Bus (Unibus) Bit Definitions
 //
 // Details
+//   This file constains the IO bus definitions.  It is very similar to the
+//   KS10 bus definitions for obvious reasons.
+//
+// Note:
+//   The KS10 FPGA IO Bus doesn't even vaguely resemble Unibus.  It just uses
+//   that name to indicate it's origins and purpose.
 //
 // File
 //   ubabus.vh

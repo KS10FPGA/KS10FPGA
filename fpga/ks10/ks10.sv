@@ -50,7 +50,7 @@
 `include "kmc11/kmc11.vh"
 `include "rh11/rh11.vh"
 `include "lp20/lp20.vh"
-`include "rh11/rpxx/rpxx.vh"
+`include "rpxx/rpxx.vh"
 
 module KS10 (
       // Clock/Reset
@@ -113,8 +113,8 @@ module KS10 (
       output wire         SD_MOSI,      // SD Data Out
       output wire         SD_SCLK,      // SD Clock
       output wire         SD_SS_N,      // SD Slave Select
-      // RPXX Interfaces
-      output wire [ 7: 0] RP_LEDS,      // RPXX LEDs
+      // RP Interfaces
+      output wire [ 7: 0] RP_LEDS,      // RP LEDs
       // SSRAM Interfaces
       output wire         SSRAM_CLK,    // SSRAM Clock
       output wire         SSRAM_WE_N,   // SSRAM WE#
@@ -387,18 +387,13 @@ module KS10 (
    wire         lpTOF;                  // LP26 top of form
 
    //
-   // RH11 Interfaces
-   //
-
-   wire [ 0:63] rhDEBUG;                // RH11 Debug
-
-   //
    // RPxx Interfaces
    //
 
-   wire [ 7: 0] rpWRL;                  // RPXX Write Lock
-   wire [ 7: 0] rpMOL;                  // RPXX Media on-line
-   wire [ 7: 0] rpDPR;                  // RPXX Drive Present
+   wire [ 7: 0] rpWRL;                  // RPxx Write Lock
+   wire [ 7: 0] rpMOL;                  // RPxx Media on-line
+   wire [ 7: 0] rpDPR;                  // RPxx Drive Present
+   wire [ 0:63] rpDEBUG;                // RPxx Debug
 
    //
    // Backplane bus signals
@@ -582,12 +577,11 @@ module KS10 (
       .lpOVFU           (lpOVFU),
       .lpSETOFFLN       (lpSETOFFLN),
       .lpONLINE         (lpONLINE),
-      // RPXX Interfaces
+      // RPxx Interfaces
       .rpDPR            (rpDPR),
       .rpMOL            (rpMOL),
       .rpWRL            (rpWRL),
-      // RH11 Interfaces
-      .rhDEBUG          (rhDEBUG),
+      .rpDEBUG          (rpDEBUG),
       // Debug Interface
       .debTRCMD         (debTRCMD),
       .debBRCMD         (debBRCMD),
@@ -684,11 +678,11 @@ module KS10 (
       .SD_MOSI          (SD_MOSI),
       .SD_SCLK          (SD_SCLK),
       .SD_SS_N          (SD_SS_N),
-      // RP Interfaces
-      .rhDEBUG          (rhDEBUG),
+      // RPxx Interfaces
       .rpMOL            (rpMOL),
       .rpWRL            (rpWRL),
       .rpDPR            (rpDPR),
+      .rpDEBUG          (rpDEBUG),
       .rpLEDS           (RP_LEDS)
    );
 

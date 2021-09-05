@@ -45,7 +45,7 @@
 `include "rpdc.vh"
 `include "rpcs1.vh"
 `include "rphcrc.vh"
-`include "../sd/sd.vh"
+`include "sd/sd.vh"
 
 //
 // Simulate seek accurately

@@ -260,8 +260,7 @@ module CSL (
       output logic [ 7: 0] rpDPR,       // RPXX Drive Present
       output logic [ 7: 0] rpMOL,       // RPXX Media On-line
       output logic [ 7: 0] rpWRL,       // RPXX Write Lock
-      // SD Interfaces
-      input  wire  [ 0:63] rhDEBUG,     // RH Debug Info
+      input  wire  [ 0:63] rpDEBUG,     // RPXX Debug Info
       // Debug Interfaces
       output logic [ 9:11] debBRCMD,    // Debug Breakpoint command
       input  wire  [13:15] debBRSTATE,  // Debug Breakpoint state
@@ -582,8 +581,8 @@ module CSL (
                     8'h54   : axiRDATA <= debITR[0 :31];             // Instruction Trace Register (HI)
                     8'h58   : axiRDATA <= debPCIR[32:63];            // Debug Program Counter and Intruction Register
                     8'h5c   : axiRDATA <= debPCIR[ 0:31];            // Debug Program Counter and Intruction Register (HI)
-                    8'h70   : axiRDATA <= rhDEBUG[32:63];            // RH11 Debug Register
-                    8'h74   : axiRDATA <= rhDEBUG[ 0:31];            // RH11 Debug Register (HI)
+                    8'h70   : axiRDATA <= rpDEBUG[32:63];            // RH11 Debug Register
+                    8'h74   : axiRDATA <= rpDEBUG[ 0:31];            // RH11 Debug Register (HI)
                     8'h78   : axiRDATA <= {regREV[24:31], regREV[16:23], regREV[ 8:15], regREV[ 0: 7]};// Firmware Version Register
                     8'h7c   : axiRDATA <= {regREV[56:63], regREV[48:55], regREV[40:47], regREV[32:39]};// Firmware Version Register (HI)
                     default : axiRDATA <= 32'b0;

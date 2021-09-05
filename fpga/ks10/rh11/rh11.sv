@@ -50,13 +50,9 @@
 `timescale 1ns/1ps
 
 `include "rh11.vh"
+`include "rhds.vh"
 `include "rhcs1.vh"
 `include "rhcs2.vh"
-`include "rpxx/rpcs1.vh"
-`include "rpxx/rpof.vh"
-`include "rpxx/rpds.vh"
-`include "rpxx/rpxx.vh"
-`include "sd/sd.vh"
 `include "../uba/ubabus.vh"
 
 module RH11 (
@@ -71,7 +67,7 @@ module RH11 (
       input  wire [ 7: 0] rpWRL,                        // RPxx Write Lock
       input  wire [ 7: 0] rpDPR,                        // RPxx Drive Present
       output wire [ 7: 0] rpLEDS,                       // RPxx Status LEDs
-      output wire [ 0:63] rhDEBUG                       // RH11 Debug Output
+      output wire [ 0:63] rpDEBUG                       // RPxx Debug Output
    );
 
    //
@@ -284,28 +280,28 @@ module RH11 (
    //
 
    wire [15:0] rhAS = {8'b0,
-                       `rpDS_ATA(rpDS[7]), `rpDS_ATA(rpDS[6]),
-                       `rpDS_ATA(rpDS[5]), `rpDS_ATA(rpDS[4]),
-                       `rpDS_ATA(rpDS[3]), `rpDS_ATA(rpDS[2]),
-                       `rpDS_ATA(rpDS[1]), `rpDS_ATA(rpDS[0])};
+                       `rhDS_ATA(rpDS[7]), `rhDS_ATA(rpDS[6]),
+                       `rhDS_ATA(rpDS[5]), `rhDS_ATA(rpDS[4]),
+                       `rhDS_ATA(rpDS[3]), `rhDS_ATA(rpDS[2]),
+                       `rhDS_ATA(rpDS[1]), `rhDS_ATA(rpDS[0])};
 
    //
    // ATA (from all disks)
    //
 
-   wire rpATA = (`rpDS_ATA(rpDS[7]) | `rpDS_ATA(rpDS[6]) |
-                 `rpDS_ATA(rpDS[5]) | `rpDS_ATA(rpDS[4]) |
-                 `rpDS_ATA(rpDS[3]) | `rpDS_ATA(rpDS[2]) |
-                 `rpDS_ATA(rpDS[1]) | `rpDS_ATA(rpDS[0]));
+   wire rpATA = (`rhDS_ATA(rpDS[7]) | `rhDS_ATA(rpDS[6]) |
+                 `rhDS_ATA(rpDS[5]) | `rhDS_ATA(rpDS[4]) |
+                 `rhDS_ATA(rpDS[3]) | `rhDS_ATA(rpDS[2]) |
+                 `rhDS_ATA(rpDS[1]) | `rhDS_ATA(rpDS[0]));
 
    //
    // RPXX Status
    //
 
-   wire       rpERR = `rpDS_ERR(rpDS[rhUNIT]);
-   wire       rpDVA = `rpCS1_DVA(rpCS1[rhUNIT]);
-   wire [5:1] rpFUN = `rpCS1_FUN(rpCS1[rhUNIT]);
-   wire       rpGO  = `rpCS1_GO(rpCS1[rhUNIT]);
+   wire       rpERR = `rhDS_ERR(rpDS[rhUNIT]);
+   wire       rpDVA = `rhCS1_DVA(rpCS1[rhUNIT]);
+   wire [5:1] rpFUN = `rhCS1_FUN(rpCS1[rhUNIT]);
+   wire       rpGO  = `rhCS1_GO(rpCS1[rhUNIT]);
 
    //
    // RPXX Serial Number Registes
@@ -361,7 +357,7 @@ module RH11 (
    // Go Command
    //
 
-   wire rhCMDGO = rhcs1WRITE & `rpCS1_GO(rhDATAI);
+   wire rhCMDGO = rhcs1WRITE & `rhCS1_GO(rhDATAI);
 
    //
    // Drive is present
@@ -406,10 +402,8 @@ module RH11 (
 
    //
    // Command Clear
-   //
-   // The DEC KS10 logic doesn't fully decode the Read, Write, and Wrchk
-   // commands and therefore includes some illegal commands.  This 'feature' is
-   // replicated here.
+   //  This decodes functions 24 through 37.  Some of these are used by the Disk
+   //  Drives and others are used by the Tape Drives.  See comments.
    //
    // Trace
    //  M7296/CSRA/E6
@@ -417,19 +411,19 @@ module RH11 (
    //  M7296/CSRA/E16
    //  M7296/CSRA/E17
    //
-
-   wire rhCLRGO = ((rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funWRCHK ) & `rpCS1_GO(rhDATAI)) |
-                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funWRCHKH) & `rpCS1_GO(rhDATAI)) |
-                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o26     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
-                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o27     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
-                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funWRITE ) & `rpCS1_GO(rhDATAI)) |
-                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funWRITEH) & `rpCS1_GO(rhDATAI)) |
-                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o32     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
-                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o33     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
-                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funREAD  ) & `rpCS1_GO(rhDATAI)) |
-                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == `funREADH ) & `rpCS1_GO(rhDATAI)) |
-                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o36     ) & `rpCS1_GO(rhDATAI)) |  // Illegal command
-                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o37     ) & `rpCS1_GO(rhDATAI)));  // Illegal command
+   //                                                                                           // ------- RP06 -------   ------- TM02 -------
+   wire rhCLRGO = ((rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o24) & `rhCS1_GO(rhDATAI)) | // Write Check             Write Check Forward
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o25) & `rhCS1_GO(rhDATAI)) | // Write Check Header
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o26) & `rhCS1_GO(rhDATAI)) | //
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o27) & `rhCS1_GO(rhDATAI)) | //                         Write Check Reverse
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o30) & `rhCS1_GO(rhDATAI)) | // Write                   Write Forward
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o31) & `rhCS1_GO(rhDATAI)) | // Write Header
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o32) & `rhCS1_GO(rhDATAI)) | //
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o33) & `rhCS1_GO(rhDATAI)) | //
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o34) & `rhCS1_GO(rhDATAI)) | // Read                    Read Forward
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o35) & `rhCS1_GO(rhDATAI)) | // Read Header
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o36) & `rhCS1_GO(rhDATAI)) | //
+                   (rhRDY & rhcs1WRITE & (`rhCS1_FUN(rhDATAI) == 5'o37) & `rhCS1_GO(rhDATAI))); //                         Read Reverse
 
    //
    // RH11 Control/Status #1 (RHCS1) Register
@@ -659,7 +653,7 @@ module RH11 (
       .sdSETWCE   (sdSETWCE),
       .sdREADOP   (sdREADOP),
       .sdSCAN     (sdSCAN),
-      .sdDEBUG    (rhDEBUG)
+      .sdDEBUG    (rpDEBUG)
    );
 
    //

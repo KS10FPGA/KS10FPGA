@@ -348,22 +348,22 @@ RTL_FILES := \
 	ks10/rh11/rhwc.v \
 	ks10/rh11/rhcs1.v \
 	ks10/rh11/rhcs2.v \
-	ks10/rh11/rpxx/rpaddr.v \
-	ks10/rh11/rpxx/rpcs1.v \
-	ks10/rh11/rpxx/rpctrl.v \
-	ks10/rh11/rpxx/rpda.v \
-	ks10/rh11/rpxx/rpdc.v \
-	ks10/rh11/rpxx/rpds.v \
-	ks10/rh11/rpxx/rper1.v \
-	ks10/rh11/rpxx/rper2.v \
-	ks10/rh11/rpxx/rper3.v \
-	ks10/rh11/rpxx/rphcrc.v \
-	ks10/rh11/rpxx/rpla.v \
-	ks10/rh11/rpxx/rpmr.v \
-	ks10/rh11/rpxx/rpof.v \
-	ks10/rh11/rpxx/rpxx.v \
-	ks10/rh11/sd/sd.v \
-	ks10/rh11/sd/sdspi.v \
+	ks10/rpxx/rpaddr.v \
+	ks10/rpxx/rpcs1.v \
+	ks10/rpxx/rpctrl.v \
+	ks10/rpxx/rpda.v \
+	ks10/rpxx/rpdc.v \
+	ks10/rpxx/rpds.v \
+	ks10/rpxx/rper1.v \
+	ks10/rpxx/rper2.v \
+	ks10/rpxx/rper3.v \
+	ks10/rpxx/rphcrc.v \
+	ks10/rpxx/rpla.v \
+	ks10/rpxx/rpmr.v \
+	ks10/rpxx/rpof.v \
+	ks10/rpxx/rpxx.v \
+	ks10/rpxx/sd/sd.v \
+	ks10/rpxx/sd/sdspi.v \
 	ks10/uba/uba.sv \
 	ks10/uba/ubamr.sv \
 	ks10/uba/ubasr.sv \
@@ -511,22 +511,22 @@ INC_FILES := \
 	ks10/rh11/rhwc.vh \
 	ks10/rh11/rhcs1.vh \
 	ks10/rh11/rhcs2.vh \
-	ks10/rh11/rpxx/rpas.vh \
-	ks10/rh11/rpxx/rpcs1.vh \
-	ks10/rh11/rpxx/rpda.vh \
-	ks10/rh11/rpxx/rpcc.vh \
-	ks10/rh11/rpxx/rpdc.vh \
-	ks10/rh11/rpxx/rpds.vh \
-	ks10/rh11/rpxx/rper1.vh \
-	ks10/rh11/rpxx/rper2.vh \
-	ks10/rh11/rpxx/rper3.vh \
-	ks10/rh11/rpxx/rphcrc.vh \
-	ks10/rh11/rpxx/rpof.vh \
-	ks10/rh11/rpxx/rpla.vh \
-	ks10/rh11/rpxx/rpmr.vh \
-	ks10/rh11/rpxx/rpxx.vh \
-	ks10/rh11/sd/sdspi.vh \
-	ks10/rh11/sd/sd.vh \
+	ks10/rpxx/rpas.vh \
+	ks10/rpxx/rpcs1.vh \
+	ks10/rpxx/rpda.vh \
+	ks10/rpxx/rpcc.vh \
+	ks10/rpxx/rpdc.vh \
+	ks10/rpxx/rpds.vh \
+	ks10/rpxx/rper1.vh \
+	ks10/rpxx/rper2.vh \
+	ks10/rpxx/rper3.vh \
+	ks10/rpxx/rphcrc.vh \
+	ks10/rpxx/rpof.vh \
+	ks10/rpxx/rpla.vh \
+	ks10/rpxx/rpmr.vh \
+	ks10/rpxx/rpxx.vh \
+	ks10/rpxx/sd/sdspi.vh \
+	ks10/rpxx/sd/sd.vh \
 	ks10/rh11/rh11.vh \
 	ks10/uba/uba.vh \
 	ks10/uba/ubamr.vh \
