@@ -43,8 +43,8 @@
 module RPDA (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire [35: 0] rpDATAI,              // RP Data In
-      input  wire         rpdaWRITE,            // DA Write
+      input  wire [35: 0] rpDATAI,              // Data In
+      input  wire         rpWRDA,               // Write DA
       input  wire         rpPRESET,             // Preset command
       input  wire [ 5: 0] rpSECNUM,             // Last sector number
       input  wire [ 5: 0] rpTRKNUM,             // Last track number
@@ -66,7 +66,7 @@ module RPDA (
      begin
         if (rst | rpPRESET)
           rpSA <= 0;
-        else if (rpdaWRITE & rpDRY)
+        else if (rpWRDA & rpDRY)
           rpSA <= `rpDA_SA(rpDATAI);
         else if (rpINCSECT)
           begin
@@ -90,7 +90,7 @@ module RPDA (
      begin
         if (rst | rpPRESET)
           rpTA <= 0;
-        else if (rpdaWRITE & rpDRY)
+        else if (rpWRDA & rpDRY)
           rpTA <= `rpDA_TA(rpDATAI);
         else if (rpINCSECT & (rpSA == rpSECNUM))
           begin

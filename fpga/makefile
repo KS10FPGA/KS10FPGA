@@ -193,19 +193,19 @@ SIM_ARGS := \
 
 SYN_ARGS := \
 	MAJOR_VER=\"00\" \
-	MINOR_VER=\"32\" \
+	MINOR_VER=\"33\" \
         CLKFRQ=12500000 \
 	SSRAMx18 \
 	RPXX_SIMSEEK \
 	RPXX_SIMDMD \
 	UBA1 \
+	RH11A \
 	UBA3 \
-	UBA4 \
-	RH11 \
 	DZ11 \
 	LP20 \
 	DUP11 \
 	KMC11 \
+	UBA4 \
 	UBE1 \
 	UBE2 \
 	UBE3 \
@@ -262,6 +262,7 @@ DIAG_FILES := \
 RTL_FILES := \
 	ks10/ks10bus.sv \
 	ks10/unibus.sv \
+	ks10/massbus.sv \
 	ks10/ks10.sv \
 	ks10/arb/arb.sv \
 	ks10/csl/csl.sv \
@@ -362,6 +363,7 @@ RTL_FILES := \
 	ks10/rpxx/rpmr.v \
 	ks10/rpxx/rpof.v \
 	ks10/rpxx/rpxx.v \
+	ks10/rpxx/rp.sv \
 	ks10/rpxx/sd/sd.v \
 	ks10/rpxx/sd/sdspi.v \
 	ks10/uba/uba.sv \

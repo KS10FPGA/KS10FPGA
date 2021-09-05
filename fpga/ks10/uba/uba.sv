@@ -53,6 +53,7 @@
 `include "uba.vh"
 `include "ubasr.vh"
 `include "ubapage.vh"
+`include "ubabus.vh"
 `include "../cpu/bus.vh"
 
 module UBA (

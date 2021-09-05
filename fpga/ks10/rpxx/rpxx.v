@@ -66,9 +66,7 @@
 module RPXX (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clear
-      input  wire         rhINCSECT,            // Increment Sector
-      input  wire [ 0:35] devADDRI,             // Device Address In
+      input  wire         devRESET,             // Device reset
       input  wire [ 0:35] devDATAI,             // Device Data In
       input  wire [ 2: 0] rhUNIT,               // Unit select
       input  wire [ 2: 0] rpNUM,                // Unit number
@@ -76,6 +74,10 @@ module RPXX (
       input  wire         rpMOL,                // Media On-line
       input  wire         rpWRL,                // Write Lock
       input  wire         rpDPR,                // Drive Present
+      input  wire         rpINCRSECT,           // Increment Sector
+      input  wire [18:35] rpADDR,               // Massbus Address
+      input  wire         rpREAD,               // Massbus Read
+      input  wire         rpWRITE,              // Massbus Write
       output wire [15: 0] rpCS1,                // CS1 Register
       output wire [15: 0] rpDA,                 // DA  Register
       output wire [15: 0] rpDS,                 // DS  Register
@@ -83,11 +85,14 @@ module RPXX (
       output wire [15: 0] rpLA,                 // LA  Register
       output wire [15: 0] rpMR,                 // MR  Register
       output wire [15: 0] rpDT,                 // DT  Register
+      output wire [15: 0] rpSN,                 // SN  Register
       output wire [15: 0] rpOF,                 // OF  Register
       output wire [15: 0] rpDC,                 // DC  Register
       output wire [15: 0] rpCC,                 // CC  Register
       output wire [15: 0] rpER2,                // ER2 Register
       output wire [15: 0] rpER3,                // ER3 Register
+      output wire [15: 0] rpEC1,                // EC1 Register
+      output wire [15: 0] rpEC2,                // EC2 Register
       output wire [ 2: 0] rpSDOP,               // SD Operation
       output wire         rpSDREQ,              // SD Request
       input  wire         rpSDACK,              // SD Complete Acknowledge
@@ -99,61 +104,31 @@ module RPXX (
    // RH Parameters
    //
 
-   parameter [14:17] rhDEV    = `rh1DEV;        // Device 3
-   parameter [18:35] rhADDR   = `rh1ADDR;       // RH11 #1 Base Address
-   parameter [15: 0] drvTYPE  = `rpRP06;        // Drive type
-
-   //
-   // RH Register Addresses
-   //
-
-   localparam [18:35] cs1ADDR = rhADDR + `cs1OFFSET;
-   localparam [18:35] wcADDR  = rhADDR + `wcOFFSET;
-   localparam [18:35] baADDR  = rhADDR + `baOFFSET;
-   localparam [18:35] daADDR  = rhADDR + `daOFFSET;
-
-   localparam [18:35] cs2ADDR = rhADDR + `cs2OFFSET;
-   localparam [18:35] dsADDR  = rhADDR + `dsOFFSET;
-   localparam [18:35] er1ADDR = rhADDR + `er1OFFSET;
-   localparam [18:35] asADDR  = rhADDR + `asOFFSET;
-
-   localparam [18:35] laADDR  = rhADDR + `laOFFSET;
-   localparam [18:35] dbADDR  = rhADDR + `dbOFFSET;
-   localparam [18:35] mrADDR  = rhADDR + `mrOFFSET;
-   localparam [18:35] dtADDR  = rhADDR + `dtOFFSET;
-
-   localparam [18:35] snADDR  = rhADDR + `snOFFSET;
-   localparam [18:35] ofADDR  = rhADDR + `ofOFFSET;
-   localparam [18:35] dcADDR  = rhADDR + `dcOFFSET;
-   localparam [18:35] ccADDR  = rhADDR + `ccOFFSET;
-
-   localparam [18:35] er2ADDR = rhADDR + `er2OFFSET;
-   localparam [18:35] er3ADDR = rhADDR + `er3OFFSET;
-   localparam [18:35] ec1ADDR = rhADDR + `ec1OFFSET;
-   localparam [18:35] ec2ADDR = rhADDR + `ec2OFFSET;
-
-   localparam [18:35] undADDR = rhADDR + `undOFFSET;
+   parameter [15: 0] rpDRVTYP  = `rpRP06;       // Drive type
+   parameter [15: 0] rpDRVSN   = `rpSN0;        // Drive serial number
 
    //
    // Lookup Drive Geometries
    //
 
-   localparam [5:0] rpSECN16 = `getLAST_SECT16(drvTYPE);        // Sectors in 16-bit mode
-   localparam [5:0] rpSECN18 = `getLAST_SECT18(drvTYPE);        // Sectors in 18-bit mode
-   localparam [5:0] rpTRKNUM = `getLAST_TRACK(drvTYPE);         // Tracks (or surfaces or heads)
-   localparam [9:0] rpCYLNUM = `getLAST_CYL (drvTYPE);          // Cylinder
+   localparam [5:0] rpSECN16 = `getLAST_SECT16(rpDRVTYP);       // Sectors in 16-bit mode
+   localparam [5:0] rpSECN18 = `getLAST_SECT18(rpDRVTYP);       // Sectors in 18-bit mode
+   localparam [5:0] rpTRKNUM = `getLAST_TRACK(rpDRVTYP);        // Tracks (or surfaces or heads)
+   localparam [9:0] rpCYLNUM = `getLAST_CYL (rpDRVTYP);         // Cylinder
 
    //
-   // Device Address and Flags
+   // Addressing
    //
 
-   wire         devWRITE = `devWRITE(devADDRI);                 // Write Cycle
-   wire         devPHYS  = `devPHYS(devADDRI);                  // Physical reference
-   wire         devIO    = `devIO(devADDRI);                    // IO Cycle
-   wire         devWRU   = `devWRU(devADDRI);                   // WRU Cycle
-   wire         devVECT  = `devVECT(devADDRI);                  // Read interrupt vector
-   wire [14:17] devDEV   = `devDEV(devADDRI);                   // Device Number
-   wire [18:35] devADDR  = `devADDR(devADDRI);                  // Device Address
+   localparam [18:35] rpADDRCS1 = 18'o776700,                   // Control/Status Register
+                      rpADDRDA  = 18'o776706,                   // Disk Address Register
+                      rpADDRER1 = 18'o776714,                   // Error Register #1
+                      rpADDRAS  = 18'o776716,                   // Attention Summary Register
+                      rpADDRMR  = 18'o776724,                   // Maintenance Register
+                      rpADDROF  = 18'o776732,                   // Offset Register
+                      rpADDRDC  = 18'o776734,                   // Desired Cylinder Register
+                      rpADDRER2 = 18'o776740,                   // Error Register #2
+                      rpADDRER3 = 18'o776742;                   // Error Register #3
 
    //
    // Unit select
@@ -164,19 +139,16 @@ module RPXX (
    //
    // Register Decode
    //
-   // Trace
-   //   M7774/RG5/E75
-   //
 
-   wire rpcs1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == cs1ADDR) & rpSELECT;
-   wire rper1WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er1ADDR) & rpSELECT;
-   wire rpasWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  asADDR);
-   wire rpmrWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  mrADDR) & rpSELECT;
-   wire rpofWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  ofADDR) & rpSELECT;
-   wire rpdaWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  daADDR) & rpSELECT;
-   wire rpdcWRITE  = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR ==  dcADDR) & rpSELECT;
-   wire rper2WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er2ADDR) & rpSELECT;
-   wire rper3WRITE = devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == rhDEV) & (devADDR == er3ADDR) & rpSELECT;
+   wire rpWRCS1 = rpWRITE & (rpADDR == rpADDRCS1) & rpSELECT;   // RPCS1
+   wire rpWRDA  = rpWRITE & (rpADDR == rpADDRDA ) & rpSELECT;   // RPDA
+   wire rpWRER1 = rpWRITE & (rpADDR == rpADDRER1) & rpSELECT;   // RPER1
+   wire rpWRAS  = rpWRITE & (rpADDR == rpADDRAS );              // RPAS
+   wire rpWRMR  = rpWRITE & (rpADDR == rpADDRMR ) & rpSELECT;   // RPMR
+   wire rpWROF  = rpWRITE & (rpADDR == rpADDROF ) & rpSELECT;   // RPOF
+   wire rpWRDC  = rpWRITE & (rpADDR == rpADDRDC ) & rpSELECT;   // RPDC
+   wire rpWRER2 = rpWRITE & (rpADDR == rpADDRER2) & rpSELECT;   // RPER1
+   wire rpWRER3 = rpWRITE & (rpADDR == rpADDRER3) & rpSELECT;   // RPER2
 
    //
    // Big-endian to little-endian data bus swap
@@ -193,23 +165,23 @@ module RPXX (
    //  M7774/RG4/E60
    //
 
-   wire rpGO       = !rpPAT & rpcs1WRITE &                                        `rpCS1_GO(rpDATAI);   // Go command
-// wire rpUNLOAD   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funUNLOAD ) & `rpCS1_GO(rpDATAI);   // Unload command
-   wire rpSEEK     = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funSEEK   ) & `rpCS1_GO(rpDATAI);   // Seek command
-   wire rpRECAL    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funRECAL  ) & `rpCS1_GO(rpDATAI);   // Recalibrate command
-   wire rpDRVCLR   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funCLEAR  ) & `rpCS1_GO(rpDATAI);   // Drive clear command
-// wire rpRELEASE  = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funRELEASE) & `rpCS1_GO(rpDATAI);   // Release command
-// wire rpOFFSET   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funOFFSET ) & `rpCS1_GO(rpDATAI);   // Offset command
-   wire rpCENTER   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funCENTER ) & `rpCS1_GO(rpDATAI);   // Return to center command
-   wire rpPRESET   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funPRESET ) & `rpCS1_GO(rpDATAI);   // Read-in preset command
-   wire rpPAKACK   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funPAKACK ) & `rpCS1_GO(rpDATAI);   // Pack acknowledge command
-// wire rpSEARCH   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funSEARCH ) & `rpCS1_GO(rpDATAI);   // Search command
-// wire rpWRCHK    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHK  ) & `rpCS1_GO(rpDATAI);   // Write check command
-// wire rpWRCHKH   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHKH ) & `rpCS1_GO(rpDATAI);   // Write check header command
-   wire rpWRITE    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITE  ) & `rpCS1_GO(rpDATAI);   // Write command
-   wire rpWRITEH   = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITEH ) & `rpCS1_GO(rpDATAI);   // Write header command
-// wire rpREAD     = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREAD   ) & `rpCS1_GO(rpDATAI);   // Read command
-// wire rpREADH    = !rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREADH  ) & `rpCS1_GO(rpDATAI);   // Read header command
+   wire rpFUN_GO      = rpWRCS1 &                                        `rpCS1_GO(rpDATAI) & !rpPAT;   // Go command
+// wire rpFUN_UNLOAD  = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funUNLOAD ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Unload command
+   wire rpFUN_SEEK    = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funSEEK   ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Seek command
+   wire rpFUN_RECAL   = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funRECAL  ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Recalibrate command
+   wire rpFUN_DRVCLR  = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funCLEAR  ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Drive clear command
+// wire rpFUN_RELEASE = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funRELEASE) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Release command
+// wire rpFUN_OFFSET  = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funOFFSET ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Offset command
+   wire rpFUN_CENTER  = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funCENTER ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Return to center command
+   wire rpFUN_PRESET  = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funPRESET ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Read-in preset command
+   wire rpFUN_PAKACK  = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funPAKACK ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Pack acknowledge command
+// wire rpFUN_SEARCH  = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funSEARCH ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Search command
+// wire rpFUN_WRCHK   = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funWRCHK  ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Write check command
+// wire rpFUN_WRCHKH  = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funWRCHKH ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Write check header command
+   wire rpFUN_WRITE   = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funWRITE  ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Write command
+   wire rpFUN_WRITEH  = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funWRITEH ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Write header command
+// wire rpFUN_READ    = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funREAD   ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Read command
+// wire rpFUN_READH   = rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funREADH  ) & `rpCS1_GO(rpDATAI) & !rpPAT;   // Read header command
 
    //
    // Illegal Function Decoder
@@ -222,21 +194,21 @@ module RPXX (
    //  M7774/RG4/E78
    //
 
-   wire rpSETILF   = ((!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o12) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o13) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o15) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o16) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o17) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o20) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o21) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o22) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o23) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o26) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o27) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o32) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o33) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o36) & `rpCS1_GO(rpDATAI)) |
-                      (!rpPAT & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == 5'o37) & `rpCS1_GO(rpDATAI)));
+   wire rpSETILF   = ((rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o12) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o13) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o15) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o16) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o17) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o20) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o21) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o22) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o23) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o26) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o27) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o32) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o33) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o36) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                      (rpWRCS1 & (`rpCS1_FUN(rpDATAI) == 5'o37) & `rpCS1_GO(rpDATAI) & !rpPAT));
 
    //
    // RPxx Control Status Register #1 (RPCS1)
@@ -293,7 +265,7 @@ module RPXX (
    wire [5:0] rpSECNUM = rpFMT22 ? rpSECN16 : rpSECN18;
 
    //
-   // Misc bits
+   // Misc signals
    //
 
    wire rpDRY;                                  // Drive ready
@@ -317,7 +289,7 @@ module RPXX (
    // EBL pulse in Diagnostic Mode.
    //
 
-   wire rpINCSECT = rpDMD ? rpEBL : (rhINCSECT & rpSELECT);
+   wire rpINCSECT = rpDMD ? rpEBL : (rpINCRSECT & rpSELECT);
 
    //
    // Increment cylinder
@@ -332,8 +304,8 @@ module RPXX (
    //  M7773/SN1/E59
    //
 
-   wire rpSETWLE  = ((!rpPAT & rpWRL & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITE ) & `rpCS1_GO(rpDATAI)) |
-                     (!rpPAT & rpWRL & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITEH) & `rpCS1_GO(rpDATAI)));
+   wire rpSETWLE  = ((rpWRL & rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funWRITE ) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                     (rpWRL & rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funWRITEH) & `rpCS1_GO(rpDATAI) & !rpPAT));
 
    //
    // Invalid address error
@@ -345,16 +317,16 @@ module RPXX (
    //  M7786/SS4/E47
    //
 
-   wire inv_addr  = (rpSA > rpSECNUM) | (rpTA > rpTRKNUM) | (rpDCA > rpCYLNUM);
+   wire rpINVADDR  = (rpSA > rpSECNUM) | (rpTA > rpTRKNUM) | (rpDCA > rpCYLNUM);
 
-   wire rpSETIAE  = ((!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITE ) & `rpCS1_GO(rpDATAI)) |
-                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRITEH) & `rpCS1_GO(rpDATAI)) |
-                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREAD  ) & `rpCS1_GO(rpDATAI)) |
-                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funREADH ) & `rpCS1_GO(rpDATAI)) |
-                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHK ) & `rpCS1_GO(rpDATAI)) |
-                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funWRCHKH) & `rpCS1_GO(rpDATAI)) |
-                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funSEEK  ) & `rpCS1_GO(rpDATAI)) |
-                     (!rpPAT & inv_addr & rpcs1WRITE & (`rpCS1_FUN(rpDATAI) == `funSEARCH) & `rpCS1_GO(rpDATAI)));
+   wire rpSETIAE  = ((rpINVADDR & rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funWRITE ) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                     (rpINVADDR & rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funWRITEH) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                     (rpINVADDR & rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funREAD  ) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                     (rpINVADDR & rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funREADH ) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                     (rpINVADDR & rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funWRCHK ) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                     (rpINVADDR & rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funWRCHKH) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                     (rpINVADDR & rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funSEEK  ) & `rpCS1_GO(rpDATAI) & !rpPAT) |
+                     (rpINVADDR & rpWRCS1 & (`rpCS1_FUN(rpDATAI) == `funSEARCH) & `rpCS1_GO(rpDATAI) & !rpPAT));
 
    //
    // Address overflow error
@@ -385,13 +357,13 @@ module RPXX (
    //  M7774/RG6/E29
    //
 
-   wire rpSETRMR  = ((!rpDRY & rpcs1WRITE) |
-                     (!rpDRY & rper1WRITE) |
-                     (!rpDRY & rpofWRITE ) |
-                     (!rpDRY & rpdaWRITE ) |
-                     (!rpDRY & rpdcWRITE ) |
-                     (!rpDRY & rper2WRITE) |
-                     (!rpDRY & rper3WRITE));
+   wire rpSETRMR  = ((rpWRCS1 & !rpDRY) |
+                     (rpWRER1 & !rpDRY) |
+                     (rpWROF  & !rpDRY) |
+                     (rpWRDA  & !rpDRY) |
+                     (rpWRDC  & !rpDRY) |
+                     (rpWRER2 & !rpDRY) |
+                     (rpWRER3 & !rpDRY));
 
    //
    // Parity Error
@@ -399,14 +371,14 @@ module RPXX (
    // Asserted when a register is modified and there is incorrect parity.
    //
 
-   wire rpSETPAR  =  ((rpPAT & rpcs1WRITE) |
-                      (rpPAT & rper1WRITE) |
-                      (rpPAT & rpmrWRITE)  |
-                      (rpPAT & rpofWRITE)  |
-                      (rpPAT & rpdaWRITE)  |
-                      (rpPAT & rpdcWRITE)  |
-                      (rpPAT & rper2WRITE) |
-                      (rpPAT & rper3WRITE));
+   wire rpSETPAR  =  ((rpWRCS1 & rpPAT) |
+                      (rpWRER1 & rpPAT) |
+                      (rpWRMR  & rpPAT) |
+                      (rpWROF  & rpPAT) |
+                      (rpWRDA  & rpPAT) |
+                      (rpWRDC  & rpPAT) |
+                      (rpWRER2 & rpPAT) |
+                      (rpWRER3 & rpPAT));
 
    //
    // Class B errors
@@ -457,15 +429,15 @@ module RPXX (
    //  M7787/DP2/E57
    //
 
-   wire rpCLRATA = ((rpasWRITE & `rpAS_ATA7(rpDATAI) & (rpNUM == 7)) |
-                    (rpasWRITE & `rpAS_ATA6(rpDATAI) & (rpNUM == 6)) |
-                    (rpasWRITE & `rpAS_ATA5(rpDATAI) & (rpNUM == 5)) |
-                    (rpasWRITE & `rpAS_ATA4(rpDATAI) & (rpNUM == 4)) |
-                    (rpasWRITE & `rpAS_ATA3(rpDATAI) & (rpNUM == 3)) |
-                    (rpasWRITE & `rpAS_ATA2(rpDATAI) & (rpNUM == 2)) |
-                    (rpasWRITE & `rpAS_ATA1(rpDATAI) & (rpNUM == 1)) |
-                    (rpasWRITE & `rpAS_ATA0(rpDATAI) & (rpNUM == 0)) |
-                    (rpGO & !rpERR));
+   wire rpCLRATA = ((rpWRAS & `rpAS_ATA7(rpDATAI) & (rpNUM == 7)) |
+                    (rpWRAS & `rpAS_ATA6(rpDATAI) & (rpNUM == 6)) |
+                    (rpWRAS & `rpAS_ATA5(rpDATAI) & (rpNUM == 5)) |
+                    (rpWRAS & `rpAS_ATA4(rpDATAI) & (rpNUM == 4)) |
+                    (rpWRAS & `rpAS_ATA3(rpDATAI) & (rpNUM == 3)) |
+                    (rpWRAS & `rpAS_ATA2(rpDATAI) & (rpNUM == 2)) |
+                    (rpWRAS & `rpAS_ATA1(rpDATAI) & (rpNUM == 1)) |
+                    (rpWRAS & `rpAS_ATA0(rpDATAI) & (rpNUM == 0)) |
+                    (rpFUN_GO & !rpERR));
 
    //
    // RPxx Control/Status Register (RPCS1)
@@ -474,9 +446,8 @@ module RPXX (
    RPCS1 CS1 (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr),
       .rpDATAI     (rpDATAI),
-      .rpcs1WRITE  (rpcs1WRITE),
+      .rpWRCS1     (rpWRCS1),
       .rpDRY       (rpDRY),
       .rpCS1       (rpCS1)
    );
@@ -489,8 +460,8 @@ module RPXX (
       .clk         (clk),
       .rst         (rst),
       .rpDATAI     (rpDATAI),
-      .rpdaWRITE   (rpdaWRITE),
-      .rpPRESET    (rpPRESET),
+      .rpWRDA      (rpWRDA),
+      .rpPRESET    (rpFUN_PRESET),
       .rpSECNUM    (rpSECNUM),
       .rpTRKNUM    (rpTRKNUM),
       .rpINCSECT   (rpINCSECT),
@@ -505,20 +476,20 @@ module RPXX (
    RPDS DS (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr),
+      .devRESET    (devRESET),
       .rpCLRATA    (rpCLRATA),
+      .rpCLRLST    (rpWRDA),
       .rpSETLST    (rpSETLST),
       .rpSETATA    (rpSETATA),
-      .rpGO        (rpGO),
+      .rpGO        (rpFUN_GO),
       .rpMOL       (rpMOL),
       .rpWRL       (rpWRL),
       .rpDPR       (rpDPR),
       .rpPIP       (rpPIP),
       .rpDRY       (rpDRY),
-      .rpDRVCLR    (rpDRVCLR),
-      .rpPRESET    (rpPRESET),
-      .rpPAKACK    (rpPAKACK),
-      .rpdaWRITE   (rpdaWRITE),
+      .rpDRVCLR    (rpFUN_DRVCLR),
+      .rpPRESET    (rpFUN_PRESET),
+      .rpPAKACK    (rpFUN_PAKACK),
       .rpER1       (rpER1),
       .rpER2       (rpER2),
       .rpER3       (rpER3),
@@ -532,8 +503,8 @@ module RPXX (
    RPER1 ER1 (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr),
-      .rpDRVCLR    (rpDRVCLR),
+      .devRESET    (devRESET),
+      .rpDRVCLR    (rpFUN_DRVCLR),
       .rpSETDCK    (rpSETDCK),
       .rpSETOPI    (rpSETOPI),
       .rpSETDTE    (rpSETDTE),
@@ -545,7 +516,7 @@ module RPXX (
       .rpSETILF    (rpSETILF),
       .rpSETHCRC   (rpSETHCRC),
       .rpDATAI     (rpDATAI),
-      .rper1WRITE  (rper1WRITE),
+      .rpWRER1     (rpWRER1),
       .rpHCI       (rpHCI),
       .rpDRY       (rpDRY),
       .rpER1       (rpER1)
@@ -558,7 +529,6 @@ module RPXX (
    RPLA LA (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr),
       .rpDSCK      (rpDSCK),
       .rpDIND      (rpDIND),
       .rpDMD       (rpDMD),
@@ -574,14 +544,14 @@ module RPXX (
    RPOF OF (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr),
-      .rpCENTER    (rpCENTER),
-      .rpPRESET    (rpPRESET),
-      .rpSEEK      (rpSEEK),
-      .rpWRITE     (rpWRITE),
-      .rpWRITEH    (rpWRITEH),
+      .devRESET    (devRESET),
+      .rpCENTER    (rpFUN_CENTER),
+      .rpPRESET    (rpFUN_PRESET),
+      .rpSEEK      (rpFUN_SEEK),
+      .rpWRITE     (rpFUN_WRITE),
+      .rpWRITEH    (rpFUN_WRITEH),
       .rpDATAI     (rpDATAI),
-      .rpofWRITE   (rpofWRITE),
+      .rpWROF      (rpWROF),
       .rpDRY       (rpDRY),
       .rpOF        (rpOF)
    );
@@ -594,9 +564,9 @@ module RPXX (
       .clk         (clk),
       .rst         (rst),
       .rpDATAI     (rpDATAI),
-      .rpPRESET    (rpPRESET),
-      .rpRECAL     (rpRECAL),
-      .rpdcWRITE   (rpdcWRITE),
+      .rpPRESET    (rpFUN_PRESET),
+      .rpRECAL     (rpFUN_RECAL),
+      .rpWRDC      (rpWRDC),
       .rpINCCYL    (rpINCCYL),
       .rpDRY       (rpDRY),
       .rpDC        (rpDC)
@@ -609,10 +579,10 @@ module RPXX (
    RPMR MR (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr),
-      .rpDRVCLR    (rpDRVCLR),
+      .devRESET    (devRESET),
+      .rpDRVCLR    (rpFUN_DRVCLR),
       .rpDATAI     (rpDATAI),
-      .rpmrWRITE   (rpmrWRITE),
+      .rpWRMR      (rpWRMR),
       .rpDRY       (rpDRY),
       .rpSBD       (rpSBD),
       .rpZD        (rpZD),
@@ -629,10 +599,10 @@ module RPXX (
    RPER2 ER2 (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr),
-      .rpDRVCLR    (rpDRVCLR),
+      .devRESET    (devRESET),
+      .rpDRVCLR    (rpFUN_DRVCLR),
       .rpDATAI     (rpDATAI),
-      .rper2WRITE  (rper2WRITE),
+      .rpWRER2     (rpWRER2),
       .rpDRY       (rpDRY),
       .rpER2       (rpER2)
    );
@@ -644,11 +614,11 @@ module RPXX (
    RPER3 ER3 (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr),
-      .rpDRVCLR    (rpDRVCLR),
+      .devRESET    (devRESET),
+      .rpDRVCLR    (rpFUN_DRVCLR),
       .rpSETSKI    (rpSETSKI),
       .rpDATAI     (rpDATAI),
-      .rper3WRITE  (rper3WRITE),
+      .rpWRER3     (rpWRER3),
       .rpDRY       (rpDRY),
       .rpER3       (rpER3)
    );
@@ -677,8 +647,8 @@ module RPXX (
    RPCTRL CTRL (
       .clk         (clk),
       .rst         (rst),
-      .clr         (clr),
-      .rpGO        (rpGO),
+      .devRESET    (devRESET),
+      .rpGO        (rpFUN_GO),
       .rpFUN       (rpFUN),
       .rpCYLNUM    (rpCYLNUM),
       .rpCC        (rpCC),
@@ -722,6 +692,9 @@ module RPXX (
    // Fixups
    //
 
-   assign rpDT = drvTYPE;
+   assign rpDT  = rpDRVTYP;
+   assign rpSN  = rpDRVSN;
+   assign rpEC1 = 16'b0;
+   assign rpEC2 = 16'b0;
 
 endmodule

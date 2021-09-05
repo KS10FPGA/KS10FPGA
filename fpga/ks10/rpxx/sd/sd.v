@@ -238,7 +238,15 @@ module SD (
 
    always @(posedge clk)
      begin
-        if (rst | clr)
+        if (rst)
+          begin
+             state   <= stateRESET;
+             sdERR   <= 0;
+             sdVAL   <= 0;
+             sdWRCNT <= 0;
+             sdRDCNT <= 0;
+          end
+        else if (clr)
           begin
              sdINCSECT <= 0;
              sdINCBA   <= 0;
@@ -264,19 +272,6 @@ module SD (
              header1   <= 0;
              header2   <= 0;
              timeout   <= nTIM;
-
-             //
-             // Only initialize the SD Card and interface state at power-up
-             //
-
-             if (rst)
-               begin
-                  state   <= stateRESET;
-                  sdERR   <= 0;
-                  sdVAL   <= 0;
-                  sdWRCNT <= 0;
-                  sdRDCNT <= 0;
-               end
           end
         else
           begin

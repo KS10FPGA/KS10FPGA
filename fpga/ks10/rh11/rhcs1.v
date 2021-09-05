@@ -50,6 +50,7 @@ module RHCS1 (
       input  wire         rhcs1WRITE,           // CS1 write
       input  wire         rhCLRGO,              // Go clear
       input  wire         rhCLRTRE,             // Transfer error clear
+      input  wire         rhSETCPE,             // Massbus parity error  (RHCS1[CPE])
       input  wire         rhDLT,                // Data late error       (RHCS2[DLT])
       input  wire         rhWCE,                // Write check error     (RHCS2[WCE])
       input  wire         rhUPE,                // Unibus parity error   (RHCS2[UPE])
@@ -60,11 +61,11 @@ module RHCS1 (
       input  wire         rhDPE,                // Data Parity Error     (RHCS2[DPE])
       input  wire         rhCLR,                // Controller Clear      (RHCS2[CLR])
       input  wire         rhIACK,               // Interrupt acknowledge
-      input  wire         rpATA,                // RPxx Attention
-      input  wire         rpERR,                // RPxx Composite error  (RPDS [ERR])
-      input  wire         rpDVA,                // RPxx Drive available  (RPCS1[DVA])
-      input  wire [ 5: 1] rpFUN,                // RPxx Function         (RPCA1[FUN])
-      input  wire         rpGO,                 // RPxx Go               (RPCS1[GO ])
+      input  wire         rhATA,                // RPxx Attention
+      input  wire         rhERR,                // RPxx Composite error  (RHDS [ERR])
+      input  wire         rhDVA,                // RPxx Drive available  (RHCS1[DVA])
+      input  wire [ 5: 1] rhFUN,                // RPxx Function         (RHCS1[FUN])
+      input  wire         rhGO,                 // RPxx Go               (RHCS1[GO ])
       input  wire [17:16] rhBA,                 // rhBA address extension
       output wire [15: 0] rhCS1                 // rhCS1 output
    );
@@ -80,7 +81,7 @@ module RHCS1 (
    //  M7296/CSRB/E22
    //
 
-   wire statTRE = rhDLT | rhWCE | rhUPE | rhNED | rhNEM | rhPGE | rhMXF | rhDPE | rpERR;
+   wire statTRE = rhDLT | rhWCE | rhUPE | rhNED | rhNEM | rhPGE | rhMXF | rhDPE | rhERR;
 
    reg lastTRE;
 
@@ -127,7 +128,15 @@ module RHCS1 (
    //  M7297/PACA/E10
    //
 
-   wire cs1CPE = 0;
+   reg cs1CPE;
+
+   always @(posedge clk)
+     begin
+        if (rst | devRESET | rhCLR)
+          cs1CPE <= 0;
+        else if (rhSETCPE)
+          cs1CPE <= 1;
+     end
 
    //
    // CS1 Ready (RDY)
@@ -136,7 +145,7 @@ module RHCS1 (
    //  M7296/CSRA/E3
    //
 
-   wire cs1RDY = !rpGO;
+   wire cs1RDY = !rhGO;
 
    //
    // CS1 Port Select (PSEL)
@@ -182,7 +191,7 @@ module RHCS1 (
    //  R11-0-01/MBSA/
    //
 
-   wire [5:1] cs1FUN = rpFUN;
+   wire [5:1] cs1FUN = rhFUN;
 
    //
    // CS1 GO
@@ -193,7 +202,7 @@ module RHCS1 (
    //  R11-0-01/MBSA/
    //
 
-   wire cs1GO = rpGO;
+   wire cs1GO = rhGO;
 
    //
    // CS1 Special Conditions (SC)
@@ -203,7 +212,7 @@ module RHCS1 (
    //  M7296/CSRB/E20
    //
 
-   wire cs1SC = cs1TRE | cs1CPE | rpATA;
+   wire cs1SC = cs1TRE | cs1CPE | rhATA;
 
    //
    // Build CS1 Register
@@ -215,7 +224,7 @@ module RHCS1 (
    //  M7295/BCTJ/E59 (12:15)
    //
 
-   assign rhCS1 = {cs1SC, cs1TRE, cs1CPE, 1'b0, rpDVA, cs1PSEL,
+   assign rhCS1 = {cs1SC, cs1TRE, cs1CPE, 1'b0, rhDVA, cs1PSEL,
                    rhBA[17:16], cs1RDY, cs1IE, cs1FUN, cs1GO};
 
 endmodule

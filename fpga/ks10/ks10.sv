@@ -50,7 +50,6 @@
 `include "kmc11/kmc11.vh"
 `include "rh11/rh11.vh"
 `include "lp20/lp20.vh"
-`include "rpxx/rpxx.vh"
 
 module KS10 (
       // Clock/Reset
@@ -406,9 +405,18 @@ module KS10 (
 
    //
    // Unibuses between UBA adapters and UBA devices (x16)
+   //   Four unibuses for each of the four unibus adapters
+   //   UBA2 is not implementable and is tied off.
    //
 
    unibus       unibus[1:4][1:4]();     // Unibus
+
+   //
+   // Massbuses
+   //
+
+   massbus massbusRP();                 // Massbus from RH11 to disk drives
+// massbus massbusTU();                 // Massbus from RH11 to tape drives
 
    //
    // Debug Signals
@@ -655,11 +663,11 @@ module KS10 (
    UBA1 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      .ubabus           (ubaBUS[1]),
+      .ks10bus          (ubaBUS[1]),
       .unibus           (unibus[1])
    );
 
-`ifdef RH11
+`ifdef RH11A
 
    //
    // RH11 #1 Connected to IO Bridge 1 Device 1
@@ -671,19 +679,28 @@ module KS10 (
       .rhVECT           (`rh1VECT),
       .rhINTR           (`rh1INTR)
    )
-   uRH11 (
+   uRH11A (
       .unibus           (unibus[1][1]),
-      // SD Interfaces
-      .SD_MISO          (SD_MISO),
-      .SD_MOSI          (SD_MOSI),
-      .SD_SCLK          (SD_SCLK),
-      .SD_SS_N          (SD_SS_N),
-      // RPxx Interfaces
+      .massbus          (massbusRP)
+   );
+
+   //
+   // RP Disk Drives slaved to the RH11
+   //
+
+   RP uRP (
+      .massbus          (massbusRP),
+      // RP Control and Status
       .rpMOL            (rpMOL),
       .rpWRL            (rpWRL),
       .rpDPR            (rpDPR),
       .rpDEBUG          (rpDEBUG),
-      .rpLEDS           (RP_LEDS)
+      .rpLEDS           (RP_LEDS),
+      // SD Card Interface
+      .SD_MISO          (SD_MISO),
+      .SD_MOSI          (SD_MOSI),
+      .SD_SCLK          (SD_SCLK),
+      .SD_SS_N          (SD_SS_N)
    );
 
 `else
@@ -848,7 +865,7 @@ module KS10 (
    UBA3 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      .ubabus           (ubaBUS[3]),
+      .ks10bus          (ubaBUS[3]),
       .unibus           (unibus[3])
    );
 
@@ -1083,7 +1100,7 @@ module KS10 (
    UBA4 (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      .ubabus           (ubaBUS[4]),
+      .ks10bus          (ubaBUS[4]),
       .unibus           (unibus[4])
    );
 

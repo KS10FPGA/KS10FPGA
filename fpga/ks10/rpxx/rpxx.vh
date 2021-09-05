@@ -194,4 +194,17 @@
                             (((unit) == 6) ? `rpRP06 : \
                              `rpRM03)))))))
 
+//
+// getSN(unit)
+//
+
+`define getSN(unit) (((unit) == 0) ? `rpSN0: \
+                     (((unit) == 1) ? `rpSN1 : \
+                      (((unit) == 2) ? `rpSN2 : \
+                       (((unit) == 3) ? `rpSN3 : \
+                         (((unit) == 4) ? `rpSN4 : \
+                          (((unit) == 5) ? `rpSN5 : \
+                           (((unit) == 6) ? `rpSN6 : \
+                            `rpSN7)))))))
+
 `endif

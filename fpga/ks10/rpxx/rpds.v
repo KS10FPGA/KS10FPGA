@@ -45,9 +45,10 @@
 module RPDS (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clr
+      input  wire         devRESET,             // Device Reset
       input  wire         rpCLRATA,             // ATA clr
-      input  wire         rpSETLST,             // Last sector transferred
+      input  wire         rpCLRLST,             // Clear Last sector transferred
+      input  wire         rpSETLST,             // Set Last sector transferred
       input  wire         rpSETATA,             // Set ATA
       input  wire         rpGO,                 // Go command
       input  wire         rpMOL,                // Media On-line
@@ -58,7 +59,6 @@ module RPDS (
       input  wire         rpDRVCLR,             // Drive clear command
       input  wire         rpPRESET,             // Preset command
       input  wire         rpPAKACK,             // Pack Ack command
-      input  wire         rpdaWRITE,            // Write RPDA
       input  wire [15: 0] rpER1,                // rpER1 register
       input  wire [15: 0] rpER2,                // rpER2 register
       input  wire [15: 0] rpER3,                // rpER3 register
@@ -106,7 +106,7 @@ module RPDS (
    reg  dsATA;
    always @(posedge clk)
      begin
-        if (rst | clr | rpCLRATA | rpDRVCLR)
+        if (rst | devRESET | rpCLRATA | rpDRVCLR)
           dsATA <= 0;
         else if (rpSETATA | (rpMOL != lastMOL) | (rpGO & dsERR))
           dsATA <= 1;
@@ -174,7 +174,7 @@ module RPDS (
    reg dsLST;
    always @(posedge clk)
      begin
-        if (rst | clr | rpdaWRITE)
+        if (rst | devRESET | rpCLRLST)
           dsLST <= 0;
         else if (rpSETLST)
           dsLST <= 1;

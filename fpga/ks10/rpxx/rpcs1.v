@@ -43,9 +43,8 @@
 module RPCS1 (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clr
       input  wire [35: 0] rpDATAI,              // RH Data In
-      input  wire         rpcs1WRITE,           // Write to CS1
+      input  wire         rpWRCS1,              // Write to CS1
       input  wire         rpDRY,                // Drive ready
       output wire [15: 0] rpCS1                 // rpCS1 Output
    );
@@ -72,7 +71,7 @@ module RPCS1 (
      begin
         if (rst)
           rpFUN <= 0;
-        else if (rpcs1WRITE & rpDRY)
+        else if (rpWRCS1 & rpDRY)
           rpFUN <= `rpCS1_FUN(rpDATAI);
      end
 

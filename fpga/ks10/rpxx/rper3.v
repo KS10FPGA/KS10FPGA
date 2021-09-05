@@ -48,11 +48,11 @@
 module RPER3 (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clear
+      input  wire         devRESET,             // Device Reset
       input  wire         rpDRVCLR,             // Drive clear command
       input  wire         rpSETSKI,             // Set seek incomplete
       input  wire [35: 0] rpDATAI,              // Data in
-      input  wire         rper3WRITE,           // Write
+      input  wire         rpWRER3,              // Write ER3
       input  wire         rpDRY,                // Drive ready
       output wire [15: 0] rpER3                 // ER3 Output
    );
@@ -69,9 +69,9 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | clr | rpDRVCLR)
+        if (rst | devRESET | rpDRVCLR)
           rpOCE <= 0;
-        else if (rper3WRITE & rpDRY)
+        else if (rpWRER3 & rpDRY)
           rpOCE <= `rpER3_OCE(rpDATAI);
      end
 
@@ -88,11 +88,11 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | clr | rpDRVCLR)
+        if (rst | devRESET | rpDRVCLR)
           rpSKI <= 0;
         else if (rpSETSKI)
           rpSKI <= 1;
-        else if (rper3WRITE & rpDRY)
+        else if (rpWRER3 & rpDRY)
           rpSKI <= `rpER3_SKI(rpDATAI);
      end
 
@@ -110,9 +110,9 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | clr | rpDRVCLR)
+        if (rst | devRESET | rpDRVCLR)
           rpUN1 <= 0;
-        else if (rper3WRITE & rpDRY)
+        else if (rpWRER3 & rpDRY)
           rpUN1 <= `rpER3_UN1(rpDATAI);
      end
 
@@ -127,9 +127,9 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | clr | rpDRVCLR)
+        if (rst | devRESET | rpDRVCLR)
           rpACL <= 0;
-        else if (rper3WRITE & rpDRY)
+        else if (rpWRER3 & rpDRY)
           rpACL <= `rpER3_ACL(rpDATAI);
      end
 
@@ -144,9 +144,9 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | clr | rpDRVCLR)
+        if (rst | devRESET | rpDRVCLR)
           rpDCL <= 0;
-        else if (rper3WRITE & rpDRY)
+        else if (rpWRER3 & rpDRY)
           rpDCL <= `rpER3_DCL(rpDATAI);
      end
 
@@ -161,9 +161,9 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | clr | rpDRVCLR)
+        if (rst | devRESET | rpDRVCLR)
           rpF35 <= 0;
-        else if (rper3WRITE & rpDRY)
+        else if (rpWRER3 & rpDRY)
           rpF35 <= `rpER3_F35(rpDATAI);
      end
 
@@ -178,9 +178,9 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | clr | rpDRVCLR)
+        if (rst | devRESET | rpDRVCLR)
           rpUN2 <= 0;
-        else if (rper3WRITE & rpDRY)
+        else if (rpWRER3 & rpDRY)
           rpUN2 <= `rpER3_UN2(rpDATAI);
      end
 
@@ -195,9 +195,9 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | clr | rpDRVCLR)
+        if (rst | devRESET | rpDRVCLR)
           rpVLU <= 0;
-        else if (rper3WRITE & rpDRY)
+        else if (rpWRER3 & rpDRY)
           rpVLU <= `rpER3_VLU(rpDATAI);
      end
 
@@ -212,9 +212,9 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | clr | rpDRVCLR)
+        if (rst | devRESET | rpDRVCLR)
           rpDCU <= 0;
-        else if (rper3WRITE & rpDRY)
+        else if (rpWRER3 & rpDRY)
           rpDCU <= `rpER3_DCU(rpDATAI);
      end
 

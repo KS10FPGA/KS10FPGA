@@ -43,10 +43,10 @@
 module RPMR (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clear
+      input  wire         devRESET,             // Device reset
       input  wire         rpDRVCLR,             // Drive clear
       input  wire [35: 0] rpDATAI,              // Data In
-      input  wire         rpmrWRITE,            // Write
+      input  wire         rpWRMR,               // Write MR
       input  wire         rpDRY,                // Drive ready
       input  wire         rpSBD,                // Sync byte detected
       input  wire         rpZD,                 // Zero detect
@@ -67,11 +67,9 @@ module RPMR (
    reg rpDMD;
    always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rpDRVCLR)
           rpDMD <= 0;
-        else if (clr | rpDRVCLR)
-          rpDMD <= 0;
-        else if (rpmrWRITE & rpDRY)
+        else if (rpWRMR & rpDRY)
           rpDMD <= `rpMR_DMD(rpDATAI);
      end
 
@@ -89,7 +87,7 @@ module RPMR (
           rpDRDD <= 0;
         else if (!rpDMD)
           rpDRDD <= 0;
-        else if (rpmrWRITE)
+        else if (rpWRMR)
           rpDRDD <= `rpMR_DRDD(rpDATAI);
      end
 
@@ -107,7 +105,7 @@ module RPMR (
           rpDSCK <= 0;
         else if (!rpDMD)
           rpDSCK <= 0;
-        else if (rpmrWRITE)
+        else if (rpWRMR)
           rpDSCK <= `rpMR_DSCK(rpDATAI);
      end
 
@@ -125,7 +123,7 @@ module RPMR (
           rpDIND <= 0;
         else if (!rpDMD)
           rpDIND <= 0;
-        else if (rpmrWRITE)
+        else if (rpWRMR)
           rpDIND <= `rpMR_DIND(rpDATAI);
      end
 
@@ -143,7 +141,7 @@ module RPMR (
           rpDCLK <= 0;
         else if (!rpDMD)
           rpDCLK <= 0;
-        else if (rpmrWRITE)
+        else if (rpWRMR)
           rpDCLK <= `rpMR_DCLK(rpDATAI);
      end
 

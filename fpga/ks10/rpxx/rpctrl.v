@@ -80,7 +80,7 @@
 module RPCTRL (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clr
+      input  wire         devRESET,             // Device Reset
       input  wire         rpGO,                 // Go bit
       input  wire [ 5: 1] rpFUN,                // Function
       input  wire [ 9: 0] rpCYLNUM,             // Number of cylinders
@@ -339,7 +339,7 @@ module RPCTRL (
    always @(posedge clk)
      begin
 
-        if (rst | clr)
+        if (rst | devRESET)
           begin
              rpCC     <= rpDC;
              rpDFE    <= 0;

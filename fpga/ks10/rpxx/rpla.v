@@ -110,7 +110,6 @@
 module RPLA (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clear
       input  wire         rpDSCK,               // Diagnostic sector clock
       input  wire         rpDIND,               // Diagnostic index pulse
       input  wire         rpDMD,                // Diagnostic mode

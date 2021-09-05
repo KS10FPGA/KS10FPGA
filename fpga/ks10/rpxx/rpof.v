@@ -43,14 +43,14 @@
 module RPOF (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clear
+      input  wire         devRESET,             // Device Reset
       input  wire         rpCENTER,             // Center command
       input  wire         rpPRESET,             // Preset command
       input  wire         rpSEEK,               // Seek command
       input  wire         rpWRITE,              // Write command
       input  wire         rpWRITEH,             // Write header command
       input  wire [35: 0] rpDATAI,              // RP Data In
-      input  wire         rpofWRITE,            // OF Write
+      input  wire         rpWROF,               // Write OF
       input  wire         rpDRY,                // Drive ready
       output wire [15: 0] rpOF                  // rpOF Output
    );
@@ -70,7 +70,7 @@ module RPOF (
           ofFMT22 <= 0;
         else if (rpPRESET)
           ofFMT22 <= 0;
-        else if (rpofWRITE & rpDRY)
+        else if (rpWROF & rpDRY)
           ofFMT22 <= `rpOF_FMT22(rpDATAI);
      end
 
@@ -89,7 +89,7 @@ module RPOF (
           ofECI <= 0;
         else if (rpPRESET)
           ofECI <= 0;
-        else if (rpofWRITE & rpDRY)
+        else if (rpWROF & rpDRY)
           ofECI <= `rpOF_ECI(rpDATAI);
      end
 
@@ -108,7 +108,7 @@ module RPOF (
           ofHCI <= 0;
         else if (rpPRESET)
           ofHCI <= 0;
-        else if (rpofWRITE & rpDRY)
+        else if (rpWROF & rpDRY)
           ofHCI <= `rpOF_HCI(rpDATAI);
      end
 
@@ -123,11 +123,9 @@ module RPOF (
    reg ofOFD;
    always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
           ofOFD <= 0;
-        else if (clr | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
-          ofOFD <= 0;
-        else if (rpofWRITE & rpDRY)
+        else if (rpWROF & rpDRY)
           ofOFD <= `rpOF_OFD(rpDATAI);
      end
 
@@ -143,11 +141,9 @@ module RPOF (
    reg [6:0] ofOFS;
    always @(posedge clk)
      begin
-        if (rst)
+        if (rst | devRESET | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
           ofOFS <= 0;
-        else if (clr | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
-          ofOFS <= 0;
-        else if (rpofWRITE & rpDRY)
+        else if (rpWROF & rpDRY)
           ofOFS <= `rpOF_OFS(rpDATAI);
      end
 

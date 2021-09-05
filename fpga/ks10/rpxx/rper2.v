@@ -46,10 +46,10 @@
 module RPER2 (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clear
+      input  wire         devRESET,             // Device Reset
       input  wire         rpDRVCLR,             // Drive clear
       input  wire [35: 0] rpDATAI,              // Data in
-      input  wire         rper2WRITE,           // Write
+      input  wire         rpWRER2,              // Write ER2
       input  wire         rpDRY,                // Drive ready
       output reg  [15: 0] rpER2                 // ER2 Output
    );
@@ -73,9 +73,9 @@ module RPER2 (
 
    always @(posedge clk)
      begin
-        if (rst | clr | rpDRVCLR)
+        if (rst | devRESET | rpDRVCLR)
           rpER2 <= 0;
-        else if (rper2WRITE & rpDRY)
+        else if (rpWRER2 & rpDRY)
           rpER2 <= rpDATAI[15:0];
      end
 
