@@ -214,7 +214,6 @@ module UBA (
    UBAINTR INTR (
       .rst        (rst),
       .clk        (clk),
-      .busPI      (busPI),
       .busINTR    (ks10bus.busINTRO),
       .wruREAD    (wruREAD),
       .regUBASR   (regUBASR),

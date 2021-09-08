@@ -44,7 +44,6 @@
 module UBAINTR (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire [15:17] busPI,                // IO Bridge PI Request
       output wire [ 1: 7] busINTR,              // Interrupt to CPU
       input  wire         wruREAD,              // Who are you?
       input  wire [ 0:35] regUBASR,             // Status Register
