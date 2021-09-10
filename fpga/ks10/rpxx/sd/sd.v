@@ -65,7 +65,7 @@ module SD (
       output reg          devREQO,              // DMA Request
       input  wire         devACKI,              // DMA Acknowledge
       // RH11
-      input  wire [15: 0] rhWC,                 // RH Word Count
+      input  wire         rhWCZ,                // RH Word is zero
       // RPXX
       input  wire [ 2: 0] rpSDOP,               // RP Operation
       input  wire [20: 0] rpSDLSA,              // RP Linear sector address
@@ -1155,7 +1155,7 @@ module SD (
                     if (devACKI)
                       begin
                          sdINCBA <= 1;
-                         sdINCWC <= (rhWC != 0);
+                         sdINCWC <= !rhWCZ;
                          state   <= stateREADH02;
                       end
                     else
@@ -1184,7 +1184,7 @@ module SD (
                     if (devACKI)
                       begin
                          sdINCBA <= 1;
-                         sdINCWC <= (rhWC != 0);
+                         sdINCWC <= !rhWCZ;
                          state   <= stateREAD00;
                       end
                     else
@@ -1453,7 +1453,7 @@ module SD (
                     if (spiDONE)
                       begin
                          devREQO  <= 1;
-                         devDATAO <= (rhWC != 0) ? tempDATA : 0;
+                         devDATAO <= !rhWCZ ? tempDATA : 0;
                          state    <= stateREAD12;
                       end
                  end
@@ -1468,7 +1468,7 @@ module SD (
                     if (devACKI)
                       begin
                          sdINCBA <= 1;
-                         sdINCWC <= (rhWC != 0);
+                         sdINCWC <= !rhWCZ;
                          state   <= stateREAD13;
                       end
                     else
@@ -1549,7 +1549,7 @@ module SD (
                  begin
                     if (spiDONE)
                       begin
-                         if (sectCNT & (rhWC == 0))
+                         if (sectCNT & rhWCZ)
                            begin
                               sdINCSECT <= sectCNT;
                               sectCNT   <= 0;
@@ -1616,7 +1616,7 @@ module SD (
                     if (devACKI)
                       begin
                          sdINCBA <= 1;
-                         sdINCWC <= (rhWC != 0);
+                         sdINCWC <= !rhWCZ;
                          header1 <= devDATAI;
                          state   <= stateWRITEH02;
                       end
@@ -1645,7 +1645,7 @@ module SD (
                     if (devACKI)
                       begin
                          sdINCBA <= 1;
-                         sdINCWC <= (rhWC != 0);
+                         sdINCWC <= !rhWCZ;
                          header2 <= devDATAI;
                          state   <= stateWRITE00;
                       end
@@ -1790,7 +1790,7 @@ module SD (
 
                stateWRITE05:
                  begin
-                    if (rhWC == 0)
+                    if (rhWCZ)
                       begin
                          tempDATA <= 0;
                          state    <= stateWRITE07;
@@ -1826,7 +1826,7 @@ module SD (
                stateWRITE07:
                  begin
                     sdINCBA <= 1;
-                    sdINCWC <= (rhWC != 0);
+                    sdINCWC <= !rhWCZ;
                     spiOP   <= `spiTR;
                     spiTXD  <= tempDATA[28:35];
                     state   <= stateWRITE08;
@@ -2177,7 +2177,7 @@ module SD (
                     if (spiDONE)
                       begin
                          spiOP <= `spiCSH;
-                         if (sectCNT & (rhWC == 0))
+                         if (sectCNT & rhWCZ)
                            begin
                               sdINCSECT <= sectCNT;
                               sectCNT   <= 0;
@@ -2245,7 +2245,7 @@ module SD (
                     if (devACKI)
                       begin
                          sdINCBA  <= 1;
-                         sdINCWC  <= (rhWC != 0);
+                         sdINCWC  <= !rhWCZ;
                          sdSETWCE <= (header1 != devDATAI);
                          state    <= stateWRCHKH02;
                       end
@@ -2275,7 +2275,7 @@ module SD (
                     if (devACKI)
                       begin
                          sdINCBA  <= 1;
-                         sdINCWC  <= (rhWC != 0);
+                         sdINCWC  <= !rhWCZ;
                          sdSETWCE <= (header1 != devDATAI);
                          state    <= stateWRCHK00;
                       end
@@ -2542,7 +2542,7 @@ module SD (
                stateWRCHK11:
                  begin
                     if (spiDONE)
-                      if (rhWC == 0)
+                      if (rhWCZ)
                         state <= stateWRCHK13;
                       else
                         begin
@@ -2577,7 +2577,7 @@ module SD (
                stateWRCHK13:
                  begin
                     sdINCBA <= 1;
-                    sdINCWC <= (rhWC != 0);
+                    sdINCWC <= !rhWCZ;
                     if (loopCNT == 63)
                       begin
                          spiOP  <= `spiTR;
@@ -2619,7 +2619,7 @@ module SD (
                     if (spiDONE)
                       begin
                          spiOP <= `spiCSH;
-                         if (sectCNT & (rhWC == 0))
+                         if (sectCNT & rhWCZ)
                            begin
                               sdINCSECT <= sectCNT;
                               sectCNT   <= 0;

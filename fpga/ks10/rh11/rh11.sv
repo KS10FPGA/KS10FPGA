@@ -109,6 +109,27 @@ module RH11 (
    localparam [18:35] rhADDR44 = rhADDR + 6'o44;        // Address 44
    localparam [18:35] rhADDR46 = rhADDR + 6'o46;        // Address 46
 
+   localparam [18:35] rhADDR50 = rhADDR + 6'o50;        // Address 50
+   localparam [18:35] rhADDR52 = rhADDR + 6'o52;        // Address 52
+   localparam [18:35] rhADDR54 = rhADDR + 6'o54;        // Address 54
+   localparam [18:35] rhADDR56 = rhADDR + 6'o56;        // Address 56
+
+   localparam [18:35] rhADDR60 = rhADDR + 6'o60;        // Address 60
+   localparam [18:35] rhADDR62 = rhADDR + 6'o62;        // Address 62
+   localparam [18:35] rhADDR64 = rhADDR + 6'o64;        // Address 64
+   localparam [18:35] rhADDR66 = rhADDR + 6'o66;        // Address 66
+
+   localparam [18:35] rhADDR70 = rhADDR + 6'o70;        // Address 70
+   localparam [18:35] rhADDR72 = rhADDR + 6'o72;        // Address 72
+   localparam [18:35] rhADDR74 = rhADDR + 6'o74;        // Address 74
+   localparam [18:35] rhADDR76 = rhADDR + 6'o76;        // Address 76
+
+   //
+   // Type of device attached to controller
+   //
+
+   wire rhISDISK = (rhADDR == `rh1ADDR);
+
    //
    // Address Flags
    //
@@ -153,50 +174,35 @@ module RH11 (
    // Address Decoding
    //
 
-   wire rhRDREG00 = rhREAD  & (devADDR == rhADDR00);        // RHCS1
-   wire rhWRREG00 = rhWRITE & (devADDR == rhADDR00);        // RHCS1
-   wire rhRDREG02 = rhREAD  & (devADDR == rhADDR02);        // RHWC
-   wire rhWRREG02 = rhWRITE & (devADDR == rhADDR02);        // RHWC
-   wire rhRDREG04 = rhREAD  & (devADDR == rhADDR04);        // RHBA
-   wire rhWRREG04 = rhWRITE & (devADDR == rhADDR04);        // RHBA
-   wire rhRDREG06 = rhREAD  & (devADDR == rhADDR06);        // RPDA/MTFC
-   wire rhWRREG06 = rhWRITE & (devADDR == rhADDR06);        // RPDA/MTFC
+   wire rhRDREG00 = rhREAD  & (devADDR == rhADDR00);    // RHCS1
+   wire rhWRREG00 = rhWRITE & (devADDR == rhADDR00);    // RHCS1
+   wire rhRDREG02 = rhREAD  & (devADDR == rhADDR02);    // RHWC
+   wire rhWRREG02 = rhWRITE & (devADDR == rhADDR02);    // RHWC
+   wire rhRDREG04 = rhREAD  & (devADDR == rhADDR04);    // RHBA
+   wire rhWRREG04 = rhWRITE & (devADDR == rhADDR04);    // RHBA
+   wire rhRDREG06 = rhREAD  & (devADDR == rhADDR06);    // RPDA/MTFC
 
-   wire rhRDREG10 = rhREAD  & (devADDR == rhADDR10);        // RHCS2
-   wire rhWRREG10 = rhWRITE & (devADDR == rhADDR10);        // RHCS2
-   wire rhRDREG12 = rhREAD  & (devADDR == rhADDR12);        // RPDS/MTDS
-   wire rhWRREG12 = rhWRITE & (devADDR == rhADDR12);        // RPDS/MTDS
-   wire rhRDREG14 = rhREAD  & (devADDR == rhADDR14);        // RPER1/MTER
-   wire rhWRREG14 = rhWRITE & (devADDR == rhADDR14);        // RPER1/MTER
-   wire rhRDREG16 = rhREAD  & (devADDR == rhADDR16);        // RHAS
-   wire rhWRREG16 = rhWRITE & (devADDR == rhADDR16);        // RHAS
+   wire rhRDREG10 = rhREAD  & (devADDR == rhADDR10);    // RHCS2
+   wire rhWRREG10 = rhWRITE & (devADDR == rhADDR10);    // RHCS2
+   wire rhRDREG12 = rhREAD  & (devADDR == rhADDR12);    // RPDS/MTDS
+   wire rhRDREG14 = rhREAD  & (devADDR == rhADDR14);    // RPER1/MTER
+   wire rhRDREG16 = rhREAD  & (devADDR == rhADDR16);    // RHAS
 
-   wire rhRDREG20 = rhREAD  & (devADDR == rhADDR20);        // RPLA/MTCC
-   wire rhWRREG20 = rhWRITE & (devADDR == rhADDR20);        // RPLA/MTCC
-   wire rhRDREG22 = rhREAD  & (devADDR == rhADDR22);        // RHDB
-   wire rhWRREG22 = rhWRITE & (devADDR == rhADDR22);        // RHDB
-   wire rhRDREG24 = rhREAD  & (devADDR == rhADDR24);        // RPMR/MTMR
-   wire rhWRREG24 = rhWRITE & (devADDR == rhADDR24);        // RPMR/MTMR
-   wire rhRDREG26 = rhREAD  & (devADDR == rhADDR26);        // RPDT/MTDT
-   wire rhWRREG26 = rhWRITE & (devADDR == rhADDR26);        // RPDT/MTDT
+   wire rhRDREG20 = rhREAD  & (devADDR == rhADDR20);    // RPLA/MTCC
+   wire rhRDREG22 = rhREAD  & (devADDR == rhADDR22);    // RHDB
+   wire rhWRREG22 = rhWRITE & (devADDR == rhADDR22);    // RHDB
+   wire rhRDREG24 = rhREAD  & (devADDR == rhADDR24);    // RPMR/MTMR
+   wire rhRDREG26 = rhREAD  & (devADDR == rhADDR26);    // RPDT/MTDT
 
-   wire rhRDREG30 = rhREAD  & (devADDR == rhADDR30);        // RPSN/MTSN
-   wire rhWRREG30 = rhWRITE & (devADDR == rhADDR30);        // RPSN/MTSN
-   wire rhRDREG32 = rhREAD  & (devADDR == rhADDR32);        // RPOF/MTTC
-   wire rhWRREG32 = rhWRITE & (devADDR == rhADDR32);        // RPOF/MTTC
-   wire rhRDREG34 = rhREAD  & (devADDR == rhADDR34);        // RPDC/zero
-   wire rhWRREG34 = rhWRITE & (devADDR == rhADDR34);        // RPDC/zero
-   wire rhRDREG36 = rhREAD  & (devADDR == rhADDR36);        // RPCC/zero
-   wire rhWRREG36 = rhWRITE & (devADDR == rhADDR36);        // RPCC/zero
+   wire rhRDREG30 = rhREAD  & (devADDR == rhADDR30);    // RPSN/MTSN
+   wire rhRDREG32 = rhREAD  & (devADDR == rhADDR32);    // RPOF/MTTC
+   wire rhRDREG34 = rhREAD  & (devADDR == rhADDR34);    // RPDC/zero
+   wire rhRDREG36 = rhREAD  & (devADDR == rhADDR36);    // RPCC/zero
 
-   wire rhRDREG40 = rhREAD  & (devADDR == rhADDR40);        // RPER2/zero
-   wire rhWRREG40 = rhWRITE & (devADDR == rhADDR40);        // RPER2/zero
-   wire rhRDREG42 = rhREAD  & (devADDR == rhADDR42);        // RPER3/zero
-   wire rhWRREG42 = rhWRITE & (devADDR == rhADDR42);        // RPER3/zero
-   wire rhRDREG44 = rhREAD  & (devADDR == rhADDR44);        // RPEC1/zero
-   wire rhWRREG44 = rhWRITE & (devADDR == rhADDR44);        // RPEC1/zero
-   wire rhRDREG46 = rhREAD  & (devADDR == rhADDR46);        // RPEC2/zero
-   wire rhWRREG46 = rhWRITE & (devADDR == rhADDR46);        // RPEC2/zero
+   wire rhRDREG40 = rhREAD  & (devADDR == rhADDR40);    // RPER2/zero
+   wire rhRDREG42 = rhREAD  & (devADDR == rhADDR42);    // RPER3/zero
+   wire rhRDREG44 = rhREAD  & (devADDR == rhADDR44);    // RPEC1/zero
+   wire rhRDREG46 = rhREAD  & (devADDR == rhADDR46);    // RPEC2/zero
 
    //
    // Big-endian to little-endian data bus swap
@@ -209,6 +215,64 @@ module RH11 (
    //
 
    wire         rhIACK = vectREAD;
+
+   //
+   // Massbus Address ROM
+   //  Converts Unibus addresses to Massbus addresses.
+   //
+   // Trace:
+   //  M7295/BCTA/E29.  The truth table is on M7295/BCTK
+   //
+
+   logic       rhREGNED;
+   logic [4:0] rhREGSEL;
+
+   always_comb
+     begin
+        case (devADDR)
+          rhADDR00: {rhREGNED, rhREGSEL} = {1'b0, 5'o00}; // RHCS1
+          rhADDR02: {rhREGNED, rhREGSEL} = {1'b0, 5'o37}; // RHWC
+          rhADDR04: {rhREGNED, rhREGSEL} = {1'b0, 5'o37}; // RHBA
+          rhADDR06: {rhREGNED, rhREGSEL} = {1'b1, 5'o05}; // RPDA/RMDA/MTFC
+
+          rhADDR10: {rhREGNED, rhREGSEL} = {1'b0, 5'o37}; // RHCS2
+          rhADDR12: {rhREGNED, rhREGSEL} = {1'b1, 5'o01}; // RPDS/RMAS/MTDS
+          rhADDR14: {rhREGNED, rhREGSEL} = {1'b1, 5'o02}; // RPER1/RMER1/MTER
+          rhADDR16: {rhREGNED, rhREGSEL} = {1'b1, 5'o04}; // RHAS/RMAS/MTAS
+
+          rhADDR20: {rhREGNED, rhREGSEL} = {1'b1, 5'o07}; // RPLA/RMLA/MTCC
+          rhADDR22: {rhREGNED, rhREGSEL} = {1'b0, 5'o37}; // RHDB
+          rhADDR24: {rhREGNED, rhREGSEL} = {1'b1, 5'o03}; // RPMR/RMMR1/MTMR
+          rhADDR26: {rhREGNED, rhREGSEL} = {1'b1, 5'o06}; // RPDT/RMTD/MTDT
+
+          rhADDR30: {rhREGNED, rhREGSEL} = {1'b1, 5'o10}; // RPSN/RMSN/MTSN
+          rhADDR32: {rhREGNED, rhREGSEL} = {1'b1, 5'o11}; // RPOF/RMOF/MTTC
+          rhADDR34: {rhREGNED, rhREGSEL} = {1'b1, 5'o12}; // RPDC/RMDC/-
+          rhADDR36: {rhREGNED, rhREGSEL} = {1'b1, 5'o13}; // RPCC/RMHR/-
+
+          rhADDR40: {rhREGNED, rhREGSEL} = {1'b1, 5'o14}; // RPER2/RMMR2/-
+          rhADDR42: {rhREGNED, rhREGSEL} = {1'b1, 5'o15}; // RPER3/RMER2/-
+          rhADDR44: {rhREGNED, rhREGSEL} = {1'b1, 5'o16}; // RPER1/RMEC1/-
+          rhADDR46: {rhREGNED, rhREGSEL} = {1'b1, 5'o17}; // RPER2/RMEC2/-
+
+          rhADDR50: {rhREGNED, rhREGSEL} = {1'b1, 5'o20}; // Unused
+          rhADDR52: {rhREGNED, rhREGSEL} = {1'b1, 5'o21}; // Unused
+          rhADDR54: {rhREGNED, rhREGSEL} = {1'b1, 5'o22}; // Unused
+          rhADDR56: {rhREGNED, rhREGSEL} = {1'b1, 5'o23}; // Unused
+
+          rhADDR60: {rhREGNED, rhREGSEL} = {1'b1, 5'o24}; // Unused
+          rhADDR62: {rhREGNED, rhREGSEL} = {1'b1, 5'o25}; // Unused
+          rhADDR64: {rhREGNED, rhREGSEL} = {1'b1, 5'o26}; // Unused
+          rhADDR66: {rhREGNED, rhREGSEL} = {1'b1, 5'o27}; // Unused
+
+          rhADDR70: {rhREGNED, rhREGSEL} = {1'b1, 5'o30}; // Unused
+          rhADDR72: {rhREGNED, rhREGSEL} = {1'b1, 5'o31}; // Unused
+          rhADDR74: {rhREGNED, rhREGSEL} = {1'b1, 5'o32}; // Unused
+          rhADDR76: {rhREGNED, rhREGSEL} = {1'b1, 5'o33}; // Unused
+
+          default : {rhREGNED, rhREGSEL} = {1'b0, 5'o37}; // Everything else
+        endcase
+     end
 
    //
    // RH11 Registers
@@ -233,6 +297,7 @@ module RH11 (
    wire         rhMXF  = `rhCS2_MXF(rhCS2);
    wire         rhDPE  = `rhCS2_DPE(rhCS2);
    wire         rhCLR  = `rhCS2_CLR(rhCS2);
+   wire         rhPAT  = `rhCS2_PAT(rhCS2);
    wire         rhBAI  = `rhCS2_BAI(rhCS2);
    wire [ 2: 0] rhUNIT = `rhCS2_UNIT(rhCS2);
 
@@ -243,9 +308,9 @@ module RH11 (
    wire         rhSC   = `rhCS1_SC (rhCS1);
    wire         rhRDY  = `rhCS1_RDY(rhCS1);
    wire         rhIE   = `rhCS1_IE (rhCS1);
-   wire         rhDVA  = `rhCS1_DVA(massbus.mbREG00[rhUNIT]);
-   wire [ 5: 1] rhFUN  = `rhCS1_FUN(massbus.mbREG00[rhUNIT]);
-   wire         rhGO   = `rhCS1_GO(massbus.mbREG00[rhUNIT]);
+   wire [ 5: 1] rhFUN  = `rhCS1_FUN(rhCS1);
+   wire         rhDVA  =  massbus.mbDVA[rhUNIT];
+   wire         rhGO;
 
    //
    // RHDS Status
@@ -253,43 +318,36 @@ module RH11 (
 
    wire         rhERR  = `rhDS_ERR(massbus.mbREG12[rhUNIT]);
    wire         rhDPR  = `rhDS_DPR(massbus.mbREG12[rhUNIT]);
+   wire         rhDRY  = `rhDS_DRY(massbus.mbREG12[rhUNIT]);
 
    //
    // RH11 Attention Summary (RHAS) Pseudo Register
    //
 
    wire [15: 0] rhAS = {8'b0,
-                        `rhDS_ATA(massbus.mbREG12[7]),
-                        `rhDS_ATA(massbus.mbREG12[6]),
-                        `rhDS_ATA(massbus.mbREG12[5]),
-                        `rhDS_ATA(massbus.mbREG12[4]),
-                        `rhDS_ATA(massbus.mbREG12[3]),
-                        `rhDS_ATA(massbus.mbREG12[2]),
-                        `rhDS_ATA(massbus.mbREG12[1]),
-                        `rhDS_ATA(massbus.mbREG12[0])};
+                        massbus.mbATA[7], massbus.mbATA[6],
+                        massbus.mbATA[5], massbus.mbATA[4],
+                        massbus.mbATA[3], massbus.mbATA[2],
+                        massbus.mbATA[1], massbus.mbATA[0]};
 
    //
    // ATA (from all disks)
    //
 
-   wire         rhATA = (`rhDS_ATA(massbus.mbREG12[7]) |
-                         `rhDS_ATA(massbus.mbREG12[6]) |
-                         `rhDS_ATA(massbus.mbREG12[5]) |
-                         `rhDS_ATA(massbus.mbREG12[4]) |
-                         `rhDS_ATA(massbus.mbREG12[3]) |
-                         `rhDS_ATA(massbus.mbREG12[2]) |
-                         `rhDS_ATA(massbus.mbREG12[1]) |
-                         `rhDS_ATA(massbus.mbREG12[0]));
+   wire         rhATA = (massbus.mbATA[7] | massbus.mbATA[6] |
+                         massbus.mbATA[5] | massbus.mbATA[4] |
+                         massbus.mbATA[3] | massbus.mbATA[2] |
+                         massbus.mbATA[1] | massbus.mbATA[0]);
 
    //
    // RH Signals
    //
 
-   wire         rhSETNEM;               // Set non-existent memory
-   wire         rhSETDLT;               // Set device late
-   wire         rhBUFIR;                // Buffer input ready
-   wire         rhBUFOR;                // Buffer output ready
-   wire         rhIRQ;                  // Interrupt request
+   wire rhSETNEM;                       // Set non-existent memory
+   wire rhSETDLT;                       // Set device late
+   wire rhBUFIR;                        // Buffer input ready
+   wire rhBUFOR;                        // Buffer output ready
+   wire rhIRQ;                          // Interrupt request
 
    //
    // Transfer Error Clear
@@ -298,50 +356,19 @@ module RH11 (
    wire rhCLRTRE = rhWRREG00 & devHIBYTE & `rhCS1_TRE(rhDATAI);
 
    //
-   // Go Command
-   //
-
-   wire rhCMDGO = rhWRREG00 & `rhCS1_GO(rhDATAI);
-
-   //
    // Set Non-existant Device (NED)
+   //  Only external registers
    //
 
-   wire rhSETNED = (rhWRREG06 & !rhDPR |
-                    rhRDREG06 & !rhDPR |
-                    rhWRREG12 & !rhDPR |
-                    rhRDREG12 & !rhDPR |
-                    rhWRREG14 & !rhDPR |
-                    rhRDREG14 & !rhDPR |
-                    rhWRREG16 & !rhDPR |
-                    rhRDREG16 & !rhDPR |
-                    rhWRREG20 & !rhDPR |
-                    rhRDREG20 & !rhDPR |
-                    rhWRREG24 & !rhDPR |
-                    rhRDREG24 & !rhDPR |
-                    rhWRREG26 & !rhDPR |
-                    rhRDREG26 & !rhDPR |
-                    rhWRREG30 & !rhDPR |
-                    rhRDREG30 & !rhDPR |
-                    rhWRREG32 & !rhDPR |
-                    rhRDREG32 & !rhDPR |
-                    rhWRREG34 & !rhDPR |
-                    rhRDREG34 & !rhDPR |
-                    rhWRREG36 & !rhDPR |
-                    rhRDREG36 & !rhDPR |
-                    rhWRREG40 & !rhDPR |
-                    rhRDREG40 & !rhDPR |
-                    rhWRREG42 & !rhDPR |
-                    rhRDREG42 & !rhDPR |
-                    rhWRREG44 & !rhDPR |
-                    rhRDREG44 & !rhDPR |
-                    rhWRREG46 & !rhDPR |
-                    rhRDREG46 & !rhDPR);
+   wire rhSETNED = !rhDPR & rhREGNED;
+// wire rhSETNED = !rhDPR & rhREGNED & (devADDR >= rhNEDADDR);
 
    //
    // Command Clear
    //  This decodes functions 24 through 37.  Some of these are used by the Disk
-   //  Drives and others are used by the Tape Drives.  See comments.
+   //  Drives, some are used by the Tape Drives, and some are unused.
+   //
+   //  See comments below.
    //
    // Trace
    //  M7296/CSRA/E6
@@ -350,18 +377,18 @@ module RH11 (
    //  M7296/CSRA/E17
    //
    //                                                                                           // ------- RP06 -------   ------- TM02 -------
-   wire rhCLRGO = ((rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o24) & `rhCS1_GO(rhDATAI)) |  // Write Check            Write Check Forward
-                   (rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o25) & `rhCS1_GO(rhDATAI)) |  // Write Check Header
-                   (rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o26) & `rhCS1_GO(rhDATAI)) |  //
-                   (rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o27) & `rhCS1_GO(rhDATAI)) |  //                        Write Check Reverse
-                   (rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o30) & `rhCS1_GO(rhDATAI)) |  // Write                  Write Forward
-                   (rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o31) & `rhCS1_GO(rhDATAI)) |  // Write Header
-                   (rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o32) & `rhCS1_GO(rhDATAI)) |  //
-                   (rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o33) & `rhCS1_GO(rhDATAI)) |  //
-                   (rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o34) & `rhCS1_GO(rhDATAI)) |  // Read                   Read Forward
-                   (rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o35) & `rhCS1_GO(rhDATAI)) |  // Read Header
-                   (rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o36) & `rhCS1_GO(rhDATAI)) |  //
-                   (rhRDY & rhWRREG00 & (`rhCS1_FUN(rhDATAI) == 5'o37) & `rhCS1_GO(rhDATAI)));  //                        Read Reverse
+   wire rhCLRGO = ((rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o24) & `rhCS1_GO(rhDATAI)) |  // Write Check            Write Check Forward
+                   (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o25) & `rhCS1_GO(rhDATAI)) |  // Write Check Header
+                   (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o26) & `rhCS1_GO(rhDATAI)) |  //
+                   (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o27) & `rhCS1_GO(rhDATAI)) |  //                        Write Check Reverse
+                   (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o30) & `rhCS1_GO(rhDATAI)) |  // Write                  Write Forward
+                   (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o31) & `rhCS1_GO(rhDATAI)) |  // Write Header
+                   (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o32) & `rhCS1_GO(rhDATAI)) |  //
+                   (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o33) & `rhCS1_GO(rhDATAI)) |  //
+                   (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o34) & `rhCS1_GO(rhDATAI)) |  // Read                   Read Forward
+                   (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o35) & `rhCS1_GO(rhDATAI)) |  // Read Header
+                   (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o36) & `rhCS1_GO(rhDATAI)) |  //
+                   (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o37) & `rhCS1_GO(rhDATAI)));  //                        Read Reverse
 
 
    //
@@ -399,9 +426,9 @@ module RH11 (
       .rhATA      (rhATA),
       .rhERR      (rhERR),
       .rhDVA      (rhDVA),
-      .rhFUN      (rhFUN),
-      .rhGO       (rhGO),
+      .rhDRY      (rhDRY),
       .rhBA       (rhBA[17:16]),
+      .rhGO       (rhGO),
       .rhCS1      (rhCS1)
    );
 
@@ -418,7 +445,7 @@ module RH11 (
       .rhDATAI    (rhDATAI),
       .rhwcWRITE  (rhWRREG02),
       .rhCLR      (rhCLR),
-      .rhINCWC    (massbus.incWC2),
+      .rhINCWC    (massbus.mbINCWC),
       .rhWC       (rhWC)
    );
 
@@ -438,7 +465,7 @@ module RH11 (
       .rhCLR      (rhCLR),
       .rhRDY      (rhRDY),
       .rhBAI      (rhBAI),
-      .rhINCBA    (massbus.incBA4),
+      .rhINCBA    (massbus.mbINCBA),
       .rhBA       (rhBA)
    );
 
@@ -454,7 +481,7 @@ module RH11 (
       .devHIBYTE  (devHIBYTE),
       .rhDATAI    (rhDATAI),
       .rhcs2WRITE (rhWRREG10),
-      .rhCMDGO    (rhCMDGO),
+      .rhCMDGO    (rhGO),
       .rhCLRGO    (rhCLRGO),
       .rhCLRTRE   (rhCLRTRE),
       .rhCLR      (rhCLR),
@@ -462,7 +489,7 @@ module RH11 (
       .rhSETDLT   (rhSETDLT),
       .rhSETNED   (rhSETNED),
       .rhSETNEM   (rhSETNEM),
-      .rhSETWCE   (massbus.setWCE),
+      .rhSETWCE   (massbus.mbWCE),
       .rhBUFIR    (rhBUFIR),
       .rhBUFOR    (rhBUFOR),
       .rhCS2      (rhCS2)
@@ -524,32 +551,14 @@ module RH11 (
    //
    // Generate Bus ACK
    //
+   //  Diagnostics expect a UBA Timeout (UBASR[TMO]) if accessing a register
+   //  that is not addressable for this type of device.
+   //
 
-   assign unibus.devACKO = (rhWRREG00 | rhRDREG00 |
-                            rhWRREG02 | rhRDREG02 |
-                            rhWRREG04 | rhRDREG04 |
-                            rhWRREG06 | rhRDREG06 |
-                            //
-                            rhWRREG10 | rhRDREG10 |
-                            rhWRREG12 | rhRDREG12 |
-                            rhWRREG14 | rhRDREG14 |
-                            rhWRREG16 | rhRDREG16 |
-                            //
-                            rhWRREG20 | rhRDREG20 |
-                            rhWRREG22 | rhRDREG22 |
-                            rhWRREG24 | rhRDREG24 |
-                            rhWRREG26 | rhRDREG26 |
-                            //
-                            rhWRREG30 | rhRDREG30 |
-                            rhWRREG32 | rhRDREG32 |
-                            rhWRREG34 | rhRDREG34 |
-                            rhWRREG36 | rhRDREG36 |
-                            //
-                            rhWRREG40 | rhRDREG40 |
-                            rhWRREG42 | rhRDREG42 |
-                            rhWRREG44 | rhRDREG44 |
-                            rhWRREG46 | rhRDREG46 |
-                            //
+   assign unibus.devACKO = ((rhREAD  &  rhISDISK & (devADDR >= rhADDR00) & (devADDR <= rhADDR46)) |
+                            (rhWRITE &  rhISDISK & (devADDR >= rhADDR00) & (devADDR <= rhADDR46)) |
+                            (rhREAD  & !rhISDISK & (devADDR >= rhADDR00) & (devADDR <= rhADDR32)) |
+                            (rhWRITE & !rhISDISK & (devADDR >= rhADDR00) & (devADDR <= rhADDR32)) |
                             vectREAD);
 
    //
@@ -560,8 +569,8 @@ module RH11 (
    always @*
      begin
         unibus.devDATAO = 0;
-        if (massbus.devREQO)
-          unibus.devDATAO = massbus.devDATAO;
+        if (massbus.mbREQO)
+          unibus.devDATAO = massbus.mbDATAO;
         if (rhRDREG00)
           unibus.devDATAO = {20'b0, rhCS1};                    // RHCS1
         if (rhRDREG02)
@@ -616,51 +625,35 @@ module RH11 (
    // Unibus Interface
    //
 
-   assign unibus.devREQO  = massbus.devREQO;
-   assign unibus.devACLO  = massbus.devACLO;
-   assign unibus.devADDRO = massbus.setNPRO ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
+   assign unibus.devREQO  = massbus.mbREQO;
+   assign unibus.devACLO  = massbus.mbACLO;
+   assign unibus.devADDRO = massbus.mbNPRO ? {wrFLAGS, rhBA} : {rdFLAGS, rhBA};
 
    //
    // Hookup Massbus Outputs
    //
 
-   assign massbus.clk       = clk;
-   assign massbus.rst       = rst;
-   assign massbus.devRESET  = devRESET;
-   assign massbus.devACKI   = unibus.devACKI;
-   assign massbus.devDATAI  = unibus.devDATAI;
-   assign massbus.mbADDR    = devADDR;
-   assign massbus.mbREAD    = rhREAD;
-   assign massbus.mbWRITE   = rhWRITE;
-   assign massbus.rhCS1     = rhCS1;
-   assign massbus.rhCS2     = rhCS2;
-   assign massbus.rhWC      = rhWC;
-   assign massbus.mbWRREG00 = rhWRREG00;
-// assign massbus.mbWRREG02 = rhWRREG02;
-// assign massbus.mbWRREG04 = rhWRREG04;
-   assign massbus.mbWRREG06 = rhWRREG06;
-// assign massbus.mbWRREG10 = rhWRREG10;
-// assign massbus.mbWRREG12 = rhWRREG12;
-   assign massbus.mbWRREG14 = rhWRREG14;
-   assign massbus.mbWRREG16 = rhWRREG16;
-   assign massbus.mbWRREG20 = rhWRREG20;
-// assign massbus.mbWRREG20 = rhWRREG22;
-   assign massbus.mbWRREG24 = rhWRREG24;
-// assign massbus.mbWRREG26 = rhWRREG26;
-// assign massbus.mbWRREG30 = rhWRREG30;
-   assign massbus.mbWRREG32 = rhWRREG32;
-   assign massbus.mbWRREG34 = rhWRREG34;
-   assign massbus.mbWRREG36 = rhWRREG36;
-   assign massbus.mbWRREG40 = rhWRREG40;
-   assign massbus.mbWRREG42 = rhWRREG42;
-   assign massbus.mbWRREG44 = rhWRREG44;
-   assign massbus.mbWRREG46 = rhWRREG46;
+   assign massbus.clk      = clk;
+   assign massbus.rst      = rst;
+   assign massbus.mbINIT   = devRESET | rhCLR;
+   assign massbus.mbACKI   = unibus.devACKI;
+   assign massbus.mbDATAI  = unibus.devDATAI;
+   assign massbus.mbREAD   = rhREAD;
+   assign massbus.mbWRITE  = rhWRITE;
+   assign massbus.mbREGSEL = rhREGSEL;
+   assign massbus.mbFUN    = rhFUN;
+   assign massbus.mbGO     = rhGO;
+   assign massbus.mbUNIT   = rhUNIT;
+   assign massbus.mbPAT    = rhPAT;
+   assign massbus.mbWCZ    = (rhWC == 0);
 
    //
    // Debug output
    //
 
 `ifndef SYNTHESIS
+
+   assign massbus.file = file;
 
    initial
      begin
@@ -678,7 +671,7 @@ module RH11 (
           end
         if (unibus.devACKI)
           begin
-             if (massbus.setNPRO)
+             if (massbus.mbNPRO)
                $fwrite(file, "[%11.3f] RH11: Wrote %012o to address %012o.  rhWC = 0x%04x\n", $time/1.0e3, unibus.devDATAO, unibus.devADDRO, rhWC);
              else
                $fwrite(file, "[%11.3f] RH11: Read %012o from address %012o.  rhWC = 0x%04x\n", $time/1.0e3, unibus.devDATAI, unibus.devADDRO, rhWC);

@@ -80,7 +80,7 @@
 module RPCTRL (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         devRESET,             // Device Reset
+      input  wire         rpINIT,               // Initialize
       input  wire         rpGO,                 // Go bit
       input  wire [ 5: 1] rpFUN,                // Function
       input  wire [ 9: 0] rpCYLNUM,             // Number of cylinders
@@ -293,16 +293,6 @@ module RPCTRL (
 `endif
 
    //
-   // go_cmd
-   //
-   // go_cmd must be asserted after rpGO is negated otherwise it will
-   // create an RHCS2[PGE] error
-   //
-
-   wire go_cmd;
-   EDGETRIG #(.POSEDGE(0)) GOEDGE(clk, rst, 1'b1, rpGO, go_cmd);
-
-   //
    // State Definition
    //
 
@@ -339,7 +329,7 @@ module RPCTRL (
    always @(posedge clk)
      begin
 
-        if (rst | devRESET)
+        if (rst | rpINIT)
           begin
              rpCC     <= rpDC;
              rpDFE    <= 0;
@@ -384,7 +374,7 @@ module RPCTRL (
                     // Wait for a GO command
                     //
 
-                    if (go_cmd)
+                    if (rpGO)
 
                       //
                       // Decode Command (Function)
@@ -1313,15 +1303,15 @@ module RPCTRL (
           end
         else
           begin
-             if ((go_cmd & (rpFUN == `funSEEK  )) |
-                 (go_cmd & (rpFUN == `funRECAL )) |
-                 (go_cmd & (rpFUN == `funSEARCH)) |
-                 (go_cmd & (rpFUN == `funWRCHK )) |
-                 (go_cmd & (rpFUN == `funWRCHKH)) |
-                 (go_cmd & (rpFUN == `funWRITE )) |
-                 (go_cmd & (rpFUN == `funWRITEH)) |
-                 (go_cmd & (rpFUN == `funREAD  )) |
-                 (go_cmd & (rpFUN == `funREADH )))
+             if ((rpGO & (rpFUN == `funSEEK  )) |
+                 (rpGO & (rpFUN == `funRECAL )) |
+                 (rpGO & (rpFUN == `funSEARCH)) |
+                 (rpGO & (rpFUN == `funWRCHK )) |
+                 (rpGO & (rpFUN == `funWRCHKH)) |
+                 (rpGO & (rpFUN == `funWRITE )) |
+                 (rpGO & (rpFUN == `funWRITEH)) |
+                 (rpGO & (rpFUN == `funREAD  )) |
+                 (rpGO & (rpFUN == `funREADH )))
                begin
                   rpACTIVE <= 1;
                   acttimer <= ACTTIME;

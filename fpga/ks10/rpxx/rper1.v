@@ -46,7 +46,7 @@
 module RPER1 (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         devRESET,             // Device Reset
+      input  wire         rpINIT,               // Initialize
       input  wire         rpDRVCLR,             // Drive clear command
       input  wire         rpSETDCK,             // Set data check error
       input  wire         rpSETOPI,             // Set operation incomplete
@@ -75,7 +75,7 @@ module RPER1 (
    reg rpDCK;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpDCK <= 0;
         else if (rpSETDCK)
           rpDCK <= 1;
@@ -93,7 +93,7 @@ module RPER1 (
    reg rpUNS;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpUNS <= 0;
         else if (rpWRER1 & rpDRY)
           rpUNS <= `rpER1_UNS(rpDATAI);
@@ -109,7 +109,7 @@ module RPER1 (
    reg rpOPI;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpOPI <= 0;
         else if (rpSETOPI)
           rpOPI <= 1;
@@ -127,7 +127,7 @@ module RPER1 (
    reg rpDTE;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpDTE <= 0;
         else if (rpSETDTE)
           rpDTE <= 1;
@@ -145,7 +145,7 @@ module RPER1 (
    reg rpWLE;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpWLE <= 0;
         else if (rpSETWLE)
           rpWLE <= 1;
@@ -163,7 +163,7 @@ module RPER1 (
    reg rpIAE;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpIAE <= 0;
         else if (rpSETIAE)
           rpIAE <= 1;
@@ -182,7 +182,7 @@ module RPER1 (
    always @(posedge clk)
      begin
 
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpAOE <= 0;
         else if (rpSETAOE)
           rpAOE <= 1;
@@ -200,7 +200,7 @@ module RPER1 (
    reg rpHCRC;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpHCRC <= 0;
         else if (rpSETHCRC & !rpHCI)
           rpHCRC <= 1;
@@ -218,7 +218,7 @@ module RPER1 (
    reg rpHCE;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpHCE <= 0;
         else if (rpWRER1 & rpDRY)
           rpHCE <= `rpER1_HCE(rpDATAI);
@@ -234,7 +234,7 @@ module RPER1 (
    reg rpECH;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpECH <= 0;
         else if (rpWRER1 & rpDRY)
           rpECH <= `rpER1_ECH(rpDATAI);
@@ -250,7 +250,7 @@ module RPER1 (
    reg rpWCF;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpWCF <= 0;
         else if (rpWRER1 & rpDRY)
           rpWCF <= `rpER1_WCF(rpDATAI);
@@ -266,7 +266,7 @@ module RPER1 (
    reg rpFER;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpFER <= 0;
         else if (rpWRER1 & rpDRY)
           rpFER <= `rpER1_FER(rpDATAI);
@@ -282,7 +282,7 @@ module RPER1 (
    reg rpPAR;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpPAR <= 0;
         else if (rpSETPAR)
           rpPAR <= 1;
@@ -300,7 +300,7 @@ module RPER1 (
    reg rpRMR;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpRMR <= 0;
         else if (rpSETRMR)
           rpRMR <= 1;
@@ -318,7 +318,7 @@ module RPER1 (
    reg rpILR;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpILR <= 0;
         else if (rpWRER1 & rpDRY)
           rpILR <= `rpER1_ILR(rpDATAI);
@@ -334,7 +334,7 @@ module RPER1 (
    reg rpILF;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpILF <= 0;
         else if (rpSETILF)
           rpILF <= 1;

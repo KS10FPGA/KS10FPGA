@@ -49,6 +49,8 @@
 `default_nettype none
 `timescale 1ns/1ps
 
+`include "rpds.vh"
+
 module RP (
       massbus.slave        massbus,                     // Massbus interface
       input  wire          SD_MISO,                     // SD Data In
@@ -63,6 +65,15 @@ module RP (
    );
 
    //
+   // Bus interface
+   //
+
+   logic clk;
+   logic rst;
+   assign clk = massbus.clk;
+   assign rst = massbus.rst;
+
+   //
    // SD Signals
    //
 
@@ -73,9 +84,6 @@ module RP (
    logic [ 2: 0] sdSCAN;                                // Current RP accessing SD
    logic         sdREADOP;                              // Read operation
    logic         sdINCSECT;                             // Increment Sector
-
-   wire  [ 2: 0] rpUNIT = `rhCS2_UNIT(massbus.rhCS2);   // Unit
-   wire          rpPAT  = `rhCS2_PAT(massbus.rhCS2);    // Parity Test
 
    //
    // Generate an array of disk drives
@@ -94,21 +102,21 @@ module RP (
               .rpDRVSN   (`getSN(i))
            )
            uRPXX (
-              .clk       (massbus.clk),
-              .rst       (massbus.rst),
-              .devRESET  (massbus.devRESET),
-              .devDATAI  (massbus.devDATAI),
-              .rhUNIT    (rpUNIT),
+              .clk       (clk),
+              .rst       (rst),
               .rpNUM     (i[2:0]),
-              .rpPAT     (rpPAT),
-              .rpINCRSECT(sdINCSECT),
               .rpMOL     (rpMOL[i]),
               .rpWRL     (rpWRL[i]),
               .rpDPR     (rpDPR[i]),
-              .rpADDR    (massbus.mbADDR),
+              .devDATAI  (massbus.mbDATAI),
+              .rpINIT    (massbus.mbINIT),
+              .rpPAT     (massbus.mbPAT),
+              .rpUNIT    (massbus.mbUNIT),
               .rpREAD    (massbus.mbREAD),
               .rpWRITE   (massbus.mbWRITE),
-              .rpCS1     (massbus.mbREG00[i]),
+              .rpREGSEL  (massbus.mbREGSEL),
+              .rpFUN     (massbus.mbFUN),
+              .rpFUNGO   (massbus.mbGO),
               .rpDA      (massbus.mbREG06[i]),
               .rpDS      (massbus.mbREG12[i]),
               .rpER1     (massbus.mbREG14[i]),
@@ -127,7 +135,8 @@ module RP (
               .rpSDREQ   (rpSDREQ[i]),
               .rpSDACK   (rpSDACK[i]),
               .rpSDLSA   (rpSDLSA[i]),
-              .rpACTIVE  (rpLEDS[i])
+              .rpACTIVE  (rpLEDS[i]),
+              .rpINCRSECT(sdINCSECT)
            );
 
         end
@@ -139,9 +148,9 @@ module RP (
    //
 
    SD uSD (
-      .clk        (massbus.clk),
-      .rst        (massbus.rst),
-      .clr        (massbus.devRESET),
+      .clk        (clk),
+      .rst        (rst),
+      .clr        (massbus.mbINIT),
 `ifndef SYNTHESIS
       .file       (massbus.file),
 `endif
@@ -150,21 +159,21 @@ module RP (
       .SD_SCLK    (SD_SCLK),
       .SD_SS_N    (SD_SS_N),
       // Device interface
-      .devDATAI   (massbus.devDATAI),
-      .devDATAO   (massbus.devDATAO),
-      .devREQO    (massbus.devREQO),
-      .devACKI    (massbus.devACKI),
+      .devDATAI   (massbus.mbDATAI),
+      .devDATAO   (massbus.mbDATAO),
+      .devREQO    (massbus.mbREQO),
+      .devACKI    (massbus.mbACKI),
       // RH11 interfaces
-      .rhWC       (massbus.rhWC),
+      .rhWCZ      (massbus.mbWCZ),
       // RPXX interface
       .rpSDOP     (rpSDOP[sdSCAN]),
       .rpSDLSA    (rpSDLSA[sdSCAN]),
       .rpSDREQ    (rpSDREQ),
       .rpSDACK    (rpSDACK),
       // SD Output
-      .sdINCWC    (massbus.incWC2),
-      .sdINCBA    (massbus.incBA4),
-      .sdSETWCE   (massbus.setWCE),
+      .sdINCWC    (massbus.mbINCWC),
+      .sdINCBA    (massbus.mbINCBA),
+      .sdSETWCE   (massbus.mbWCE),
       .sdINCSECT  (sdINCSECT),
       .sdREADOP   (sdREADOP),
       .sdSCAN     (sdSCAN),
@@ -176,13 +185,13 @@ module RP (
    //  Something is wrong here with sdREADOP
    //
 
-   assign massbus.setNPRO = sdREADOP;
+   assign massbus.mbNPRO = sdREADOP;
 
    //
    // ACLO
    //
 
-   assign massbus.devACLO = 0;
+   assign massbus.mbACLO = 0;
 
    //
    // Parity Test from RP
@@ -190,5 +199,30 @@ module RP (
 
    assign massbus.mbINVPAR = 0;
 
+   //
+   // Attention
+   //
+
+   assign massbus.mbATA[0] = `rpDS_ATA(massbus.mbREG12[0]);
+   assign massbus.mbATA[1] = `rpDS_ATA(massbus.mbREG12[1]);
+   assign massbus.mbATA[2] = `rpDS_ATA(massbus.mbREG12[2]);
+   assign massbus.mbATA[3] = `rpDS_ATA(massbus.mbREG12[3]);
+   assign massbus.mbATA[4] = `rpDS_ATA(massbus.mbREG12[4]);
+   assign massbus.mbATA[5] = `rpDS_ATA(massbus.mbREG12[5]);
+   assign massbus.mbATA[6] = `rpDS_ATA(massbus.mbREG12[6]);
+   assign massbus.mbATA[7] = `rpDS_ATA(massbus.mbREG12[7]);
+
+   //
+   // Drive Available
+   //
+
+   assign massbus.mbDVA[0] = 1;
+   assign massbus.mbDVA[1] = 1;
+   assign massbus.mbDVA[2] = 1;
+   assign massbus.mbDVA[3] = 1;
+   assign massbus.mbDVA[4] = 1;
+   assign massbus.mbDVA[5] = 1;
+   assign massbus.mbDVA[6] = 1;
+   assign massbus.mbDVA[7] = 1;
 
 endmodule

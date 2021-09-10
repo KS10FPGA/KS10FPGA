@@ -48,7 +48,7 @@
 module RPER3 (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         devRESET,             // Device Reset
+      input  wire         rpINIT,               // Initialize
       input  wire         rpDRVCLR,             // Drive clear command
       input  wire         rpSETSKI,             // Set seek incomplete
       input  wire [35: 0] rpDATAI,              // Data in
@@ -69,7 +69,7 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpOCE <= 0;
         else if (rpWRER3 & rpDRY)
           rpOCE <= `rpER3_OCE(rpDATAI);
@@ -88,7 +88,7 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpSKI <= 0;
         else if (rpSETSKI)
           rpSKI <= 1;
@@ -110,7 +110,7 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpUN1 <= 0;
         else if (rpWRER3 & rpDRY)
           rpUN1 <= `rpER3_UN1(rpDATAI);
@@ -127,7 +127,7 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpACL <= 0;
         else if (rpWRER3 & rpDRY)
           rpACL <= `rpER3_ACL(rpDATAI);
@@ -144,7 +144,7 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpDCL <= 0;
         else if (rpWRER3 & rpDRY)
           rpDCL <= `rpER3_DCL(rpDATAI);
@@ -161,7 +161,7 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpF35 <= 0;
         else if (rpWRER3 & rpDRY)
           rpF35 <= `rpER3_F35(rpDATAI);
@@ -178,7 +178,7 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpUN2 <= 0;
         else if (rpWRER3 & rpDRY)
           rpUN2 <= `rpER3_UN2(rpDATAI);
@@ -195,7 +195,7 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpVLU <= 0;
         else if (rpWRER3 & rpDRY)
           rpVLU <= `rpER3_VLU(rpDATAI);
@@ -212,7 +212,7 @@ module RPER3 (
 
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpDCU <= 0;
         else if (rpWRER3 & rpDRY)
           rpDCU <= `rpER3_DCU(rpDATAI);

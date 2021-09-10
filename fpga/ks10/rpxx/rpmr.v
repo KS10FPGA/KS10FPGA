@@ -43,7 +43,7 @@
 module RPMR (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         devRESET,             // Device reset
+      input  wire         rpINIT,               // Initialize
       input  wire         rpDRVCLR,             // Drive clear
       input  wire [35: 0] rpDATAI,              // Data In
       input  wire         rpWRMR,               // Write MR
@@ -67,7 +67,7 @@ module RPMR (
    reg rpDMD;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpDRVCLR)
+        if (rst | rpINIT | rpDRVCLR)
           rpDMD <= 0;
         else if (rpWRMR & rpDRY)
           rpDMD <= `rpMR_DMD(rpDATAI);

@@ -43,7 +43,7 @@
 module RPOF (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         devRESET,             // Device Reset
+      input  wire         rpINIT,               // Initialize
       input  wire         rpCENTER,             // Center command
       input  wire         rpPRESET,             // Preset command
       input  wire         rpSEEK,               // Seek command
@@ -123,7 +123,7 @@ module RPOF (
    reg ofOFD;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
+        if (rst | rpINIT | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
           ofOFD <= 0;
         else if (rpWROF & rpDRY)
           ofOFD <= `rpOF_OFD(rpDATAI);
@@ -141,7 +141,7 @@ module RPOF (
    reg [6:0] ofOFS;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
+        if (rst | rpINIT | rpCENTER | rpSEEK | rpWRITE | rpWRITEH)
           ofOFS <= 0;
         else if (rpWROF & rpDRY)
           ofOFS <= `rpOF_OFS(rpDATAI);

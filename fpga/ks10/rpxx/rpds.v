@@ -45,7 +45,7 @@
 module RPDS (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         devRESET,             // Device Reset
+      input  wire         rpINIT,               // Initialize
       input  wire         rpCLRATA,             // ATA clr
       input  wire         rpCLRLST,             // Clear Last sector transferred
       input  wire         rpSETLST,             // Set Last sector transferred
@@ -106,7 +106,7 @@ module RPDS (
    reg  dsATA;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpCLRATA | rpDRVCLR)
+        if (rst | rpINIT | rpCLRATA | rpDRVCLR)
           dsATA <= 0;
         else if (rpSETATA | (rpMOL != lastMOL) | (rpGO & dsERR))
           dsATA <= 1;
@@ -174,7 +174,7 @@ module RPDS (
    reg dsLST;
    always @(posedge clk)
      begin
-        if (rst | devRESET | rpCLRLST)
+        if (rst | rpINIT | rpCLRLST)
           dsLST <= 0;
         else if (rpSETLST)
           dsLST <= 1;

@@ -64,9 +64,9 @@ module RHCS1 (
       input  wire         rhATA,                // RPxx Attention
       input  wire         rhERR,                // RPxx Composite error  (RHDS [ERR])
       input  wire         rhDVA,                // RPxx Drive available  (RHCS1[DVA])
-      input  wire [ 5: 1] rhFUN,                // RPxx Function         (RHCS1[FUN])
-      input  wire         rhGO,                 // RPxx Go               (RHCS1[GO ])
+      input  wire         rhDRY,                // RPxx Drive Ready      (RHDS [DRY ])
       input  wire [17:16] rhBA,                 // rhBA address extension
+      output reg          rhGO,                 // RHCS1[GO]
       output wire [15: 0] rhCS1                 // rhCS1 output
    );
 
@@ -81,7 +81,7 @@ module RHCS1 (
    //  M7296/CSRB/E22
    //
 
-   wire statTRE = rhDLT | rhWCE | rhUPE | rhNED | rhNEM | rhPGE | rhMXF | rhDPE | rhERR;
+   wire statTRE = rhDLT | rhWCE | rhUPE | rhNED | rhNEM | rhPGE | rhMXF | rhDPE;
 
    reg lastTRE;
 
@@ -145,7 +145,7 @@ module RHCS1 (
    //  M7296/CSRA/E3
    //
 
-   wire cs1RDY = !rhGO;
+   wire cs1DRY = rhDRY;
 
    //
    // CS1 Port Select (PSEL)
@@ -160,7 +160,7 @@ module RHCS1 (
      begin
         if (rst | devRESET | rhCLR)
           cs1PSEL <= 0;
-        else if (rhcs1WRITE & devHIBYTE & cs1RDY)
+        else if (rhcs1WRITE & devHIBYTE & rhDRY)
           cs1PSEL <= `rhCS1_PSEL(rhDATAI);
      end
 
@@ -191,18 +191,34 @@ module RHCS1 (
    //  R11-0-01/MBSA/
    //
 
-   wire [5:1] cs1FUN = rhFUN;
+   reg [5:1] cs1FUN;
+   always @(posedge clk)
+     begin
+        if (rst)
+          cs1FUN <= 0;
+        else if (rhcs1WRITE & devLOBYTE & rhDRY)
+          cs1FUN <= `rhCS1_FUN(rhDATAI);
+     end
 
    //
    // CS1 GO
    //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          rhGO <= 0;
+        else
+          rhGO <= rhcs1WRITE & devLOBYTE & `rhCS1_GO(rhDATAI);
+     end
+
    // From Massbus
    //
    // Trace
    //  R11-0-01/MBSA/
    //
 
-   wire cs1GO = rhGO;
+   wire cs1GO = !rhDRY;
 
    //
    // CS1 Special Conditions (SC)
@@ -225,6 +241,6 @@ module RHCS1 (
    //
 
    assign rhCS1 = {cs1SC, cs1TRE, cs1CPE, 1'b0, rhDVA, cs1PSEL,
-                   rhBA[17:16], cs1RDY, cs1IE, cs1FUN, cs1GO};
+                   rhBA[17:16], cs1DRY, cs1IE, cs1FUN, cs1GO};
 
 endmodule
