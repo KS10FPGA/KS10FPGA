@@ -674,18 +674,18 @@ WAVE_CPU_INTF := \
 	"add wave -noupdate -divider {CPU Interface}" \
 	"add wave -noupdate -radix binary   -radixshowbase 0 -label {clkT}                 {/testbench/uKS10/uCPU/clkT}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clken}                {/testbench/uKS10/uCPU/uINTF/clken}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuREQO}              {/testbench/uKS10/uCPU/cpuREQO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuACKI}              {/testbench/uKS10/uCPU/cpuACKI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuADDRO[0:35]}       {/testbench/uKS10/uCPU/cpuADDRO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label { 3: READ}             {/testbench/uKS10/uCPU/cpuADDRO[3]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label { 4: WRTEST}           {/testbench/uKS10/uCPU/cpuADDRO[4]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label { 5: WRITE}            {/testbench/uKS10/uCPU/cpuADDRO[5]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {10: IO}               {/testbench/uKS10/uCPU/cpuADDRO[10]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {11: WRU}              {/testbench/uKS10/uCPU/cpuADDRO[11]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {12: VECT}             {/testbench/uKS10/uCPU/cpuADDRO[12]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuADDRO[14:35]}      {/testbench/uKS10/uCPU/cpuADDRO[14:35]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuDATAI}             {/testbench/uKS10/uCPU/cpuDATAI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuDATAO}             {/testbench/uKS10/uCPU/cpuDATAO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuREQO}              {/testbench/uKS10/uCPU/cpuBUS.busREQO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuACKI}              {/testbench/uKS10/uCPU/cpuBUS.busACKI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuADDRO[0:35]}       {/testbench/uKS10/uCPU/cpuBUS.busADDRO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label { 3: READ}             {/testbench/uKS10/uCPU/cpuBUS.busADDRO[3]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label { 4: WRTEST}           {/testbench/uKS10/uCPU/cpuBUS.busADDRO[4]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label { 5: WRITE}            {/testbench/uKS10/uCPU/cpuBUS.busADDRO[5]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {10: IO}               {/testbench/uKS10/uCPU/cpuBUS.busADDRO[10]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {11: WRU}              {/testbench/uKS10/uCPU/cpuBUS.busADDRO[11]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {12: VECT}             {/testbench/uKS10/uCPU/cpuBUS.busADDRO[12]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuADDRO[14:35]}      {/testbench/uKS10/uCPU/cpuBUS.busADDRO[14:35]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuDATAI}             {/testbench/uKS10/uCPU/cpuBUS.busDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuDATAO}             {/testbench/uKS10/uCPU/cpuBUS.busDATAO}" \
 
 WAVE_CPU_NXD := \
 	"add wave -noupdate -divider {CPU NXD}" \
@@ -900,12 +900,11 @@ WAVE_MEM := \
 	"add wave -noupdate -color \"lightblue\" -divider {Memory Interface}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {memCLK}               {/testbench/uKS10/uMEM/memCLK}" \
 	"add wave -noupdate -radix binary   -radixshowbase 0 -label {clkT}                 {/testbench/uKS10/uMEM/clkT}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQI}              {/testbench/uKS10/uMEM/busREQI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busACKO}              {/testbench/uKS10/uMEM/busACKO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busADDRI}             {/testbench/uKS10/uMEM/busADDRI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busDATAI}             {/testbench/uKS10/uMEM/busDATAI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busDATAO}             {/testbench/uKS10/uMEM/busDATAO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {writeEN}              {/testbench/uKS10/uMEM/writeEN}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQI}              {/testbench/uKS10/uMEM/memBUS.busREQI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busACKO}              {/testbench/uKS10/uMEM/memBUS.busACKO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busADDRI}             {/testbench/uKS10/uMEM/memBUS.busADDRI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busDATAI}             {/testbench/uKS10/uMEM/memBUS.busDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busDATAO}             {/testbench/uKS10/uMEM/memBUS.busDATAO}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {memREAD}              {/testbench/uKS10/uMEM/memREAD}"  \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {memWRITE}             {/testbench/uKS10/uMEM/memWRITE}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {memWRTEST}            {/testbench/uKS10/uMEM/memWRTEST}" \
@@ -975,15 +974,19 @@ WAVE_KS10 :=\
 WAVE_UBA1 := \
 	"add wave -noupdate -divider {UBA1}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clk}                  {/testbench/uKS10/UBA1/clk}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {ubaINTRI}             {/testbench/uKS10/uARB/ubaINTRI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuINTRO}             {/testbench/uKS10/uARB/cpuINTRO}" \
 	"add wave -noupdate -divider {UBA1 Interface}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQI}              {/testbench/uKS10/UBA1/busREQI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busACKO}             {/testbench/uKS10/UBA1/busACKO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busADDRI}            {/testbench/uKS10/UBA1/busADDRI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busDATAI}            {/testbench/uKS10/UBA1/busDATAI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQO}              {/testbench/uKS10/UBA1/busREQO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busACKI}             {/testbench/uKS10/UBA1/busACKI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busADDRO}            {/testbench/uKS10/UBA1/busADDRO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busDATAO}            {/testbench/uKS10/UBA1/busDATAO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQI}              {/testbench/uKS10/UBA1/ks10bus.busREQI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busACKO}             {/testbench/uKS10/UBA1/ks10bus.busACKO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busADDRI}            {/testbench/uKS10/UBA1/ks10bus.busADDRI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busDATAI}            {/testbench/uKS10/UBA1/ks10bus.busDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQO}              {/testbench/uKS10/UBA1/ks10bus.busREQO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busACKI}             {/testbench/uKS10/UBA1/ks10bus.busACKI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busADDRO}            {/testbench/uKS10/UBA1/ks10bus.busADDRO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label { busDATAO}            {/testbench/uKS10/UBA1/ks10bus.busDATAO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devINTR}              {/testbench/uKS10/UBA1/INTR/devINTR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busINTR}              {/testbench/uKS10/UBA1/INTR/busINTR}" \
 	"add wave -noupdate -divider {UBA1 Register Control}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {wruREAD}              {/testbench/uKS10/UBA1/wruREAD}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {vectREAD}             {/testbench/uKS10/UBA1/vectREAD}" \
@@ -1371,14 +1374,14 @@ WAVE_KMC11 := \
 
 WAVE_RH11A := \
 	"add wave -noupdate -divider {RH11A}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI}              {/testbench/uKS10/uRH11A/devREQI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO}              {/testbench/uKS10/uRH11A/devREQO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI}              {/testbench/uKS10/uRH11A/devACKI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO}              {/testbench/uKS10/uRH11A/devACKO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAI}             {/testbench/uKS10/uRH11A/devDATAI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAO}             {/testbench/uKS10/uRH11A/devDATAO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devADDRI}             {/testbench/uKS10/uRH11A/devADDRI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devADDRO}             {/testbench/uKS10/uRH11A/devADDRO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQI}              {/testbench/uKS10/uRH11A/unibus.devREQI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devREQO}              {/testbench/uKS10/uRH11A/unibus.devREQO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKI}              {/testbench/uKS10/uRH11A/unibus.devACKI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devACKO}              {/testbench/uKS10/uRH11A/unibus.devACKO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAI}             {/testbench/uKS10/uRH11A/unibus.devDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAO}             {/testbench/uKS10/uRH11A/unibus.devDATAO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devADDRI}             {/testbench/uKS10/uRH11A/unibus.devADDRI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devADDRO}             {/testbench/uKS10/uRH11A/unibus.devADDRO}" \
 	"add wave -noupdate -divider {RH11A Register Addressing}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {vectREAD}             {/testbench/uKS10/uRH11A/vectREAD}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {CS1 READ}             {/testbench/uKS10/uRH11A/rhRDREG00}" \
@@ -1422,6 +1425,7 @@ WAVE_RH11A := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {EC2 READ}             {/testbench/uKS10/uRH11A/rhRDREG46}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {EC2 WRITE}            {/testbench/uKS10/uRH11A/rhWRREG46}" \
 	"add wave -noupdate -divider {RH11A Registers}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rhISDISK}            {/testbench/uKS10/uRH11A/rhISDISK}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHCS1      REG}       {/testbench/uKS10/uRH11A/rhCS1}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHWC       REG}       {/testbench/uKS10/uRH11A/rhWC}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHBA       REG}       {/testbench/uKS10/uRH11A/rhBA}" \
@@ -1443,14 +1447,34 @@ WAVE_RH11B := $(subst RH11A,RH11B,$(WAVE_RH11A))
 
 WAVE_RP1 := \
 	"add wave -noupdate -divider {RP1}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAI}             {/testbench/uKS10/uRP/devDATAI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devADDRI}             {/testbench/uKS10/uRP/devADDRI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAI}             {/testbench/uKS10/uRP/unibus.devDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devADDRI}             {/testbench/uKS10/uRP/unibus.devADDRI}" \
 	"add wave -noupdate -divider {HERE}" \
- 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devDATAI[0]}          {/testbench/uKS10/uRP/uRP[0]/uRPXX/devDATAI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {devADDRI[0]}          {/testbench/uKS10/uRP/uRP[0]/uRPXX/devADDRI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpofWRITE[0]}         {/testbench/uKS10/uRP/uRP[0]/uRPXX/rpofWRITE}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpSELECT[0]}          {/testbench/uKS10/uRP/uRP[0]/uRPXX/rpSELECT}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpOF[0]}              {/testbench/uKS10/uRP/uRP[0]/uRPXX/rpOF}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uRP/clk}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rhUNIT}               {/testbench/uKS10/uRP/rhUNIT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpUNIT[0]}            {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/rpUNIT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpSELECT[0]}          {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/rpSELECT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpMR[0]}              {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/rpMR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpMR[1]}              {/testbench/uKS10/uRP/uRPXX[1]/uRPXX/rpMR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpMR[2]}              {/testbench/uKS10/uRP/uRPXX[2]/uRPXX/rpMR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpMR[3]}              {/testbench/uKS10/uRP/uRPXX[3]/uRPXX/rpMR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpOF[0]}              {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/rpOF}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpGO}                 {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/rpGO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpFUN}                {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/rpFUN}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpFUN_GO[0]}          {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/rpFUN_GO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpFUN_GO[1]}          {/testbench/uKS10/uRP/uRPXX[1]/uRPXX/rpFUN_GO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpFUN_GO[2]}          {/testbench/uKS10/uRP/uRPXX[2]/uRPXX/rpFUN_GO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpFUN_GO[3]}          {/testbench/uKS10/uRP/uRPXX[3]/uRPXX/rpFUN_GO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpFUN_DRVCLR[0]}      {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/rpFUN_DRVCLR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpFUN_DRVCLR[1]}      {/testbench/uKS10/uRP/uRPXX[1]/uRPXX/rpFUN_DRVCLR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpFUN_DRVCLR[2]}      {/testbench/uKS10/uRP/uRPXX[2]/uRPXX/rpFUN_DRVCLR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rpFUN_DRVCLR[3]}      {/testbench/uKS10/uRP/uRPXX[3]/uRPXX/rpFUN_DRVCLR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {CTRL/rpGO}            {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/CTRL/rpGO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {CTRL/rpFUN}           {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/CTRL/rpFUN}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {CTRL/go_cmd}          {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/CTRL/go_cmd}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {CTRL/rst}             {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/CTRL/rst}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {CTRL/devRESET}        {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/CTRL/devRESET}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {state}                {/testbench/uKS10/uRP/uRPXX[0]/uRPXX/CTRL/state}" \
 
 WAVE_SD := \
 	"add wave -noupdate -divider {SD}" \
