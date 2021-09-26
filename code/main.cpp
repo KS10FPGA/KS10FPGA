@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2020 Rob Doyle
+// Copyright (C) 2013-2021 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -190,11 +190,11 @@ int main(void) {
 
     uint64_t rh11debug = ks10.getRH11debug();
     if (rh11debug >> 56 == ks10_t::rh11IDLE) {
-        printf("KS10: RH11 successfully initialized SDHC media.\n");
+        printf("KS10: RP06 successfully initialized SDHC media.\n");
     } else if (rh11debug >> 40 == 0x7e0c80) {
-        printf("KS10: %sRH11 cannot utilize SDSC media.  Use SDHC media.%s\n", vt100fg_red, vt100at_rst);
+        printf("KS10: %sRP06 cannot utilize SDSC media.  Use SDHC media.%s\n", vt100fg_red, vt100at_rst);
     } else {
-        printf("KS10: %sRH11 failed to initialize SDHC media.%s\n", vt100fg_red, vt100at_rst);
+        printf("KS10: %sRP06 failed to initialize SDHC media.%s\n", vt100fg_red, vt100at_rst);
         ks10.printRH11Debug();
     }
 

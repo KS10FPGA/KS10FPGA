@@ -1515,7 +1515,7 @@ static bool cmdEN(int argc, char *[]) {
 //!
 //! \details
 //!    The <b>EX</b> (Execute) command causes the KS10 to execute the
-//!    instruction in the Console Instruction Register, then return to the
+//!    instruction in provided by the argument and then return to the
 //!    halt state.
 //!
 //! \sa cmdCO, cmdSI, cmdHA
@@ -1538,8 +1538,7 @@ static bool cmdEX(int argc, char *argv[]) {
 
     if (argc == 2) {
         ks10_t::data_t data = parseOctal(argv[1]);
-        ks10_t::writeRegCIR(data);
-        ks10_t::startEXEC();
+        ks10_t::executeInstruction(data);
     } else {
         printf(usage);
     }
@@ -1884,14 +1883,13 @@ static bool cmdLA(int argc, char *argv[]) {
         if (addr <= ks10_t::maxMemAddr) {
             address = addr;
             printf("Memory address set to %08llo\n", address);
-            ks10_t::writeRegAddr(addr);
         } else {
             printf("Invalid memory address.\n");
             printf(usage, ks10_t::memStart, ks10_t::maxMemAddr);
         }
     } else {
         printf(usage, ks10_t::memStart, ks10_t::maxMemAddr);
-        printf("Address is %08llo\n", ks10_t::readRegAddr());
+        printf("Address is %08llo\n", address);
     }
 
     return true;
@@ -1993,7 +1991,7 @@ static bool cmdLI(int argc, char *argv[]) {
         }
     } else {
         printf(usage, ks10_t::memStart, ks10_t::maxIOAddr);
-        printf("Address is %08llo\n", ks10_t::readRegAddr());
+        printf("Address is %08llo\n", address);
     }
 
     return true;
@@ -2964,28 +2962,6 @@ static bool cmdZZ(int argc, char *argv[]) {
         } else if (strncasecmp(argv[1], "off", 2) == 0) {
             ks10_t::cpuReset(false);
             printf("KS10 unreset\n");
-        }
-    } else if (argc == 3) {
-        if (*argv[1] == 'R') {
-            if (strncasecmp(argv[2], "regaddr", 4) == 0) {
-                printf("  Address Register: %012llo.\n", ks10_t::readRegAddr());
-            } else if (strncasecmp(argv[2], "regdata", 4) == 0) {
-                printf("  Data Register: %012llo.\n", ks10_t::readRegData());
-            } else if (strncasecmp(argv[2], "regcir", 4) == 0) {
-                printf("  CIR Register: %012llo.\n", ks10_t::readRegCIR());
-            } else if (strncasecmp(argv[2], "regstat", 4) == 0) {
-                 printf("  Status Register: %012o.\n", ks10_t::readRegStat());
-            } else if (strncasecmp(argv[2], "rh11debug", 4) == 0) {
-                ks10_t::printRH11Debug();
-            }
-        } else if (*argv[1] == 'W') {
-            if (strncasecmp(argv[2], "regcir", 4) == 0) {
-                ks10_t::writeRegCIR(0254000020000);
-                printf(" CIR Register written.\n");
-            } else if (strncasecmp(argv[2], "regdir", 4) == 0) {
-                ks10_t::writeRegCIR(0);
-                printf(" CIR Register written.\n");
-            }
         }
     }
 

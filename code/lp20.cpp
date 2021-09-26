@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2020 Rob Doyle
+// Copyright (C) 2013-2021 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -397,8 +397,6 @@ void lp20_t::printFile(const char *filename) {
         while ((ks10_t::readIO(csra_addr) & csra_go) != 0) {
             ;
         }
-
-        usleep(100000);    // FIXME
 
     }
 }

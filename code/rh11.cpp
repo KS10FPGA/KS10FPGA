@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2016 Rob Doyle
+// Copyright (C) 2013-2021 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -42,6 +42,8 @@
 #include "rh11.hpp"
 #include "vt100.hpp"
 #include "commands.hpp"
+
+#undef RH11_VERBOSE
 
 //!
 //! \brief
@@ -149,7 +151,7 @@ bool rh11_t::wait(bool verbose) {
 
 bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
 
-#if 0
+#ifdef RH11_VERBOSE
     printf("KS10: Readblock: vaddr=%06llo, daddr=%012llo\n", vaddr, daddr);
 #endif
 
@@ -196,13 +198,13 @@ bool rh11_t::readBlock(ks10_t::addr_t vaddr, ks10_t::data_t daddr) {
     //
 
     if (cs1_read() & cs1_sc) {
-        printf("KS10: Disk error reading boot sector\n");
-
+        printf("KS10: Disk error reading boot sector.\n");
+#ifdef RH11_VERBOSE
         printf("KS10: RHCS1 is 0x%04x\n"
                "      RPDS  is 0x%04x\n"
                "      RPER1 is 0x%04x\n",
                cs1_read(), ds_read(), er1_read());
-
+#endif
         return false;
     }
 
@@ -322,7 +324,9 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
     bool success = readBlock(vaddr, daddr);
     if (success) {
         if (isHomBlock(paddr)) {
-
+#ifdef RH11_VERBOSE
+            printf("KS10: Successfully read HOM block.\n");
+#endif
             //
             // Get the disk address of the FE File Page from the Home Block
             //
@@ -354,14 +358,16 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                         printf("KS10: Reading Monitor Pre-Boot Page.\n");
                         success = readBlock(vaddr, daddr);
                         if (success) {
-#if 0
+#ifdef RH11_VERBOSE
                             for (int i = 0; i < 020; i++) {
                                 printf("KS10: data[%o] = %012llo\n", 01000 + i, ks10_t::readMem(paddr + i));
                             }
 #endif
                             if (ks10_t::readMem(paddr) != 0) {
-                                printf("KS10: Monitor Pre-Boot read successfully.\n"
-                                       "      Boot address is %06llo.\n", paddr);
+#ifdef RH11_VERBOSE
+                                printf("KS10: Monitor Pre-Boot read successfully.\n");
+#endif
+                                printf("KS10: Booting from address %07llo.\n", paddr);
                                 ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
                                 ks10_t::startRUN();
                                 consoleOutput();
@@ -371,7 +377,7 @@ bool rh11_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                                 return false;
                             }
                         } else {
-                            printf("KS10: Unable to read Monitor Pre-Boot\n");
+                            printf("KS10: Unable to read Monitor Pre-Boot.\n");
                             return false;
                         }
                     } else {
@@ -1464,7 +1470,7 @@ void rh11_t::boot(ks10_t::data_t unit, bool diagmode) {
 
     ks10_t::addr_t offset = diagmode ? diagPrebootOffset : monPrebootOffset;
 
-#if 0
+#ifdef RH11_VERBOSE
 
     printf("RPCS1 = %06o\n"
            "RPDT  = %06o\n"

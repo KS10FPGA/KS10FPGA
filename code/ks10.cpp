@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2020 Rob Doyle
+// Copyright (C) 2013-2021 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -172,58 +172,6 @@ ks10_t::~ks10_t(void) {
         printf("KS10: munmap() failed.\n");
     }
     close(fd);
-}
-
-//!
-//! \brief
-//!    This function starts and completes a KS10 bus transaction
-//!
-//! \details
-//!    A KS10 FPGA bus cycle begins when the <b>GO</b> bit is asserted.  The
-//!    <b>GO</b> bit will remain asserted while the bus cycle is still active.
-//!    The <b>Console Data Register</b> should not be accessed when the
-//!    <b>GO</b> bit is asserted.
-//!
-//! \note
-//!    This function is NOT thread safe.
-//!
-
-void ks10_t::__go(void) {
-    writeRegStat(readRegStat() | statGO);
-    for (int i = 0; i < 100; i++) {
-        if ((readRegStat() & statGO) == 0) {
-           return;
-        }
-        usleep(1000);
-    }
-    printf("KS10: GO-bit timeout\n");
-}
-
-//!
-//! \brief
-//!    This function starts and completes a KS10 bus transaction
-//!
-//! \details
-//!    A KS10 FPGA bus cycle begins when the <b>GO</b> bit is asserted.  The
-//!    <b>GO</b> bit will remain asserted while the bus cycle is still active.
-//!    The <b>Console Data Register</b> should not be accessed when the
-//!    <b>GO</b> bit is asserted.
-//!
-//! \note
-//!    This function is thread safe.
-//!
-
-void ks10_t::go(void) {
-    lockMutex();
-    writeRegStat(readRegStat() | statGO);
-    unlockMutex();
-    for (int i = 0; i < 100; i++) {
-        if ((readRegStat() & statGO) == 0) {
-           return;
-        }
-        usleep(1000);
-    }
-    printf("KS10: GO-bit timeout\n");
 }
 
 //!

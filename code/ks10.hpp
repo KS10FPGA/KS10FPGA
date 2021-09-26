@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2020 Rob Doyle
+// Copyright (C) 2013-2021 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -36,8 +36,8 @@
 //
 //******************************************************************************
 
-#ifndef __KS10_H
-#define __KS10_H
+#ifndef __KS10_HPP
+#define __KS10_HPP
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -274,12 +274,6 @@ class ks10_t {
         ~ks10_t(void);
         static uint32_t lh(data_t data);
         static uint32_t rh(data_t data);
-        static uint32_t readRegStat(void);
-        static void writeRegStat(uint32_t data);
-        static data_t readRegAddr(void);
-        static void writeRegAddr(data_t data);
-        static data_t readRegData(void);
-        static void writeRegData(data_t data);
         static data_t readRegCIR(void);
         static void writeRegCIR(data_t data);
         static data_t readMem(addr_t addr);
@@ -397,23 +391,42 @@ class ks10_t {
         static bool testReg64(volatile void * addr, const char *name, uint64_t mask = 0xffffffffffffffffull);
 
         //
-        // Private functions without mutex locks
+        // Private functions without mutex locks.  NOT thread safe.
         //  Use these with care.
         //
 
-        static void   __go(void);
-        static bool   __halt(void);
         static data_t __readRegAddr(void);
-        static void   __writeRegAddr(data_t data);
+        static void __writeRegAddr(data_t data);
         static data_t __readRegData(void);
-        static void   __writeRegData(data_t data);
+        static void __writeRegData(data_t data);
         static data_t __readRegCIR(void);
-        static void   __writeRegCIR(data_t data);
-        static data_t __readMem(addr_t addr);
-        static void   __writeMem(addr_t addr, data_t data);
-        static void   __startEXEC(void);
-        static void   __executeInstruction(data_t insn);
+        static void __writeRegCIR(data_t data);
+        static uint32_t __readRegStat(void);
+        static void __writeRegStat(uint32_t data);
+        static void __run(bool enable);
+        static bool __run(void);
+        static void __startEXEC(void);
+        static void __startSTEP(void);
+        static void __startCONT(void);
+        static void __startRUN(void);
+        static bool __halt(void);
+        static bool __timerEnable(void);
+        static void __timerEnable(bool enable);
+        static bool __trapEnable(void);
+        static void __trapEnable(bool enable);
+        static bool __cacheEnable(void);
+        static void __cacheEnable(bool enable);
+        static bool __cpuReset(void);
+        static void __cpuReset(bool enable);
+        static void __statGO(void);
+        static void __executeInstruction(data_t insn);
         static data_t __executeInstructionAndGetData(data_t insn, addr_t tempAddr);
+        static data_t __readMem(addr_t addr);
+        static void __writeMem(addr_t addr, data_t data);
+        static data_t __readIO(addr_t addr);
+    static void __writeIO(addr_t addr, data_t data);
+        static uint16_t __readIObyte(addr_t addr);
+        static void __writeIObyte(addr_t addr, uint16_t data);
 };
 
 //!
@@ -564,18 +577,11 @@ inline void ks10_t::writeReg64(volatile void * reg, uint64_t data) {
 //!    Contents of the <b>Console Address Register</b>.
 //!
 //! \note
-//!    This function is thread safe.
+//!    This function is NOT thread safe.
 //!
 
 inline ks10_t::data_t ks10_t::__readRegAddr(void) {
     return *regAddr;
-}
-
-inline ks10_t::data_t ks10_t::readRegAddr(void) {
-    lockMutex();
-    data_t ret = __readRegAddr();
-    unlockMutex();
-    return ret;
 }
 
 //!
@@ -586,40 +592,24 @@ inline ks10_t::data_t ks10_t::readRegAddr(void) {
 //!    data to be written to the <b>Console Address Register</b>.
 //!
 //! \note
-//!    This function is thread safe.
+//!    This function is NOT thread safe.
 //!
 
 inline void ks10_t::__writeRegAddr(data_t data) {
     *regAddr = data;
 }
 
-inline void ks10_t::writeRegAddr(data_t data) {
-    lockMutex();
-    __writeRegAddr(data);
-    unlockMutex();
-}
-
-//!
-//! \brief
 //!    This function reads from <b>Console Data Register</b>
 //!
 //! \returns
 //!    Contents of the <b>Console Data Register</b>.
 //!
 //! \note
-//!    This function is thread safe.
+//!    This function is NOT thread safe.
 //!
 
 inline ks10_t::data_t ks10_t::__readRegData(void) {
     return *regData;
-    unlockMutex();
-}
-
-inline ks10_t::data_t ks10_t::readRegData(void) {
-    lockMutex();
-    data_t ret = __readRegData();
-    unlockMutex();
-    return ret;
 }
 
 //!
@@ -630,17 +620,11 @@ inline ks10_t::data_t ks10_t::readRegData(void) {
 //!    data to be written to the <b>Console Data Register</b>.
 //!
 //! \note
-//!    This function is thread safe.
+//!    This function is NOT thread safe.
 //!
 
 inline void ks10_t::__writeRegData(data_t data) {
     *regData = data;
-}
-
-inline void ks10_t::writeRegData(data_t data) {
-    lockMutex();
-    __writeRegData(data);
-    unlockMutex();
 }
 
 //!
@@ -695,10 +679,10 @@ inline void ks10_t::writeRegCIR(data_t data) {
 //!    Contents of the <b>Console Status Register</b>.
 //!
 //! \note
-//!    This function is thread safe.
+//!    This function is NOT thread safe.
 //!
 
-inline uint32_t ks10_t::readRegStat(void) {
+inline uint32_t ks10_t::__readRegStat(void) {
     return *regStat;
 }
 
@@ -710,13 +694,12 @@ inline uint32_t ks10_t::readRegStat(void) {
 //!    data to be written to the <b>Console Status Register</b>.
 //!
 //! \note
-//!    This function is thread safe.
+//!    This function is NOT thread safe.
 //!
 
-inline void ks10_t::writeRegStat(uint32_t data) {
+inline void ks10_t::__writeRegStat(uint32_t data) {
     *regStat = data;
 }
-
 
 //!
 //! \brief
@@ -1013,16 +996,18 @@ inline uint64_t ks10_t::getRH11debug(void) {
 //!    This function is thread safe.
 //!
 
-inline void ks10_t::run(bool enable) {
+inline void ks10_t::__run(bool enable) {
     if (enable) {
-        lockMutex();
-        writeRegStat(readRegStat() | statRUN);
-        unlockMutex();
+        __writeRegStat(__readRegStat() | statRUN);
     } else {
-        lockMutex();
-        writeRegStat(readRegStat() & ~statRUN);
-        unlockMutex();
+        __writeRegStat(__readRegStat() & ~statRUN);
     }
+}
+
+inline void ks10_t::run(bool enable) {
+    lockMutex();
+    __run(enable);
+    unlockMutex();
 }
 
 //!
@@ -1041,8 +1026,15 @@ inline void ks10_t::run(bool enable) {
 //!    This function is thread safe.
 //!
 
+inline bool ks10_t::__run(void) {
+    return __readRegStat() & statRUN;
+}
+
 inline bool ks10_t::run(void) {
-    return readRegStat() & statRUN;
+    lockMutex();
+    bool ret = __run();
+    unlockMutex();
+    return ret;
 }
 
 //!
@@ -1054,7 +1046,7 @@ inline bool ks10_t::run(void) {
 //!
 
 inline void ks10_t::__startEXEC(void) {
-    writeRegStat(statCONT | statEXEC | readRegStat());
+    __writeRegStat(statCONT | statEXEC | __readRegStat());
 }
 
 inline void ks10_t::startEXEC(void) {
@@ -1071,9 +1063,13 @@ inline void ks10_t::startEXEC(void) {
 //!    This function is thread safe.
 //!
 
+inline void ks10_t::__startSTEP(void) {
+    __writeRegStat(statCONT | __readRegStat());
+}
+
 inline void ks10_t::startSTEP(void) {
     lockMutex();
-    writeRegStat(statCONT | readRegStat());
+    __startSTEP();
     unlockMutex();
 }
 
@@ -1085,9 +1081,13 @@ inline void ks10_t::startSTEP(void) {
 //!    This function is thread safe.
 //!
 
+inline void ks10_t::__startCONT(void) {
+    __writeRegStat(statRUN | statCONT | __readRegStat());
+}
+
 inline void ks10_t::startCONT(void) {
     lockMutex();
-    writeRegStat(statRUN | statCONT | readRegStat());
+    __startCONT();
     unlockMutex();
 }
 
@@ -1099,9 +1099,13 @@ inline void ks10_t::startCONT(void) {
 //!    This function is thread safe.
 //!
 
+inline void ks10_t::__startRUN(void) {
+    __writeRegStat(statRUN | statCONT | statEXEC | __readRegStat());
+}
+
 inline void ks10_t::startRUN(void) {
     lockMutex();
-    writeRegStat(statRUN | statCONT | statEXEC | readRegStat());
+    __startRUN();
     unlockMutex();
 }
 
@@ -1121,17 +1125,15 @@ inline void ks10_t::startRUN(void) {
 //!
 
 inline bool ks10_t::__halt(void) {
-    return readRegStat() & statHALT;
+    return __readRegStat() & statHALT;
 }
 
 inline bool ks10_t::halt(void) {
     lockMutex();
-    bool ret =  __halt();
+    bool ret = __halt();
     unlockMutex();
     return ret;
 }
-
-
 
 //!
 //! \brief
@@ -1145,8 +1147,15 @@ inline bool ks10_t::halt(void) {
 //!    This function is thread safe.
 //!
 
+inline bool ks10_t::__timerEnable(void) {
+    return __readRegStat() & statTIMEREN;
+}
+
 inline bool ks10_t::timerEnable(void) {
-    return readRegStat() & statTIMEREN;
+    lockMutex();
+    bool ret = __timerEnable();
+    unlockMutex();
+    return ret;
 }
 
 //!
@@ -1161,16 +1170,18 @@ inline bool ks10_t::timerEnable(void) {
 //!    This function is thread safe.
 //!
 
-inline void ks10_t::timerEnable(bool enable) {
+inline void ks10_t::__timerEnable(bool enable) {
     if (enable) {
-        lockMutex();
-        writeRegStat(readRegStat() | statTIMEREN);
-        unlockMutex();
+        __writeRegStat(__readRegStat() | statTIMEREN);
     } else {
-        lockMutex();
-        writeRegStat(readRegStat() & ~statTIMEREN);
-        unlockMutex();
+        __writeRegStat(__readRegStat() & ~statTIMEREN);
     }
+}
+
+inline void ks10_t::timerEnable(bool enable) {
+    lockMutex();
+    __timerEnable(enable);
+    unlockMutex();
 }
 
 //!
@@ -1185,8 +1196,15 @@ inline void ks10_t::timerEnable(bool enable) {
 //!    This function is thread safe.
 //!
 
+inline bool ks10_t::__trapEnable(void) {
+    return __readRegStat() & statTRAPEN;
+}
+
 inline bool ks10_t::trapEnable(void) {
-    return readRegStat() & statTRAPEN;
+    lockMutex();
+    bool ret = __trapEnable();
+    unlockMutex();
+    return ret;
 }
 
 //!
@@ -1204,16 +1222,18 @@ inline bool ks10_t::trapEnable(void) {
 //!    This function is thread safe.
 //!
 
-inline void ks10_t::trapEnable(bool enable) {
+inline void ks10_t::__trapEnable(bool enable) {
     if (enable) {
-        lockMutex();
-        writeRegStat(readRegStat() | statTRAPEN);
-        unlockMutex();
+        __writeRegStat(__readRegStat() | statTRAPEN);
     } else {
-        lockMutex();
-        writeRegStat(readRegStat() & ~statTRAPEN);
-        unlockMutex();
+        __writeRegStat(__readRegStat() & ~statTRAPEN);
     }
+}
+
+inline void ks10_t::trapEnable(bool enable) {
+    lockMutex();
+    __trapEnable(enable);
+    unlockMutex();
 }
 
 //!
@@ -1228,8 +1248,15 @@ inline void ks10_t::trapEnable(bool enable) {
 //!    This function is thread safe.
 //!
 
+inline bool ks10_t::__cacheEnable(void) {
+    return __readRegStat() & statCACHEEN;
+}
+
 inline bool ks10_t::cacheEnable(void) {
-    return readRegStat() & statCACHEEN;
+    lockMutex();
+    bool ret = __cacheEnable();
+    unlockMutex();
+    return ret;
 }
 
 //!
@@ -1247,16 +1274,18 @@ inline bool ks10_t::cacheEnable(void) {
 //!    This function is thread safe.
 //!
 
-inline void ks10_t::cacheEnable(bool enable) {
+inline void ks10_t::__cacheEnable(bool enable) {
     if (enable) {
-        lockMutex();
-        writeRegStat(readRegStat() | statCACHEEN);
-        unlockMutex();
+        __writeRegStat(__readRegStat() | statCACHEEN);
     } else {
-        lockMutex();
-        writeRegStat(readRegStat() & ~statCACHEEN);
-        unlockMutex();
+        __writeRegStat(__readRegStat() & ~statCACHEEN);
     }
+}
+
+inline void ks10_t::cacheEnable(bool enable) {
+    lockMutex();
+    __cacheEnable(enable);
+    unlockMutex();
 }
 
 //!
@@ -1271,8 +1300,15 @@ inline void ks10_t::cacheEnable(bool enable) {
 //!    This function is thread safe.
 //!
 
+inline bool ks10_t::__cpuReset(void) {
+    return __readRegStat() & statRESET;
+}
+
 inline bool ks10_t::cpuReset(void) {
-    return readRegStat() & statRESET;
+    lockMutex();
+    bool ret = __cpuReset();
+    unlockMutex();
+    return ret;
 }
 
 //!
@@ -1291,16 +1327,17 @@ inline bool ks10_t::cpuReset(void) {
 //!    This function is thread safe.
 //!
 
-inline void ks10_t::cpuReset(bool enable) {
+inline void ks10_t::__cpuReset(bool enable) {
     if (enable) {
-        lockMutex();
-        writeRegStat(readRegStat() | statRESET);
-        unlockMutex();
+        __writeRegStat(__readRegStat() | statRESET);
     } else {
-        lockMutex();
-        writeRegStat(readRegStat() & ~statRESET);
-        unlockMutex();
+        __writeRegStat(__readRegStat() & ~statRESET);
     }
+}
+inline void ks10_t::cpuReset(bool enable) {
+    lockMutex();
+    __cpuReset(enable);
+    unlockMutex();
 }
 
 //!
@@ -1318,13 +1355,15 @@ inline void ks10_t::cpuReset(bool enable) {
 //!    This function is thread safe.
 //!
 
+
+
 inline void ks10_t::cpuIntr(void) {
     lockMutex();
-    writeRegStat(readRegStat() | statINTR);
+    __writeRegStat(__readRegStat() | statINTR);
     unlockMutex();
     usleep(10);
     lockMutex();
-    writeRegStat(readRegStat() & ~statINTR);
+    __writeRegStat(__readRegStat() & ~statINTR);
     unlockMutex();
 }
 
@@ -1343,8 +1382,8 @@ inline void ks10_t::cpuIntr(void) {
 
 inline bool ks10_t::nxmnxd(void) {
     lockMutex();
-    uint32_t reg = readRegStat();
-    writeRegStat(reg & ~statNXMNXD);
+    uint32_t reg = __readRegStat();
+    __writeRegStat(reg & ~statNXMNXD);
     unlockMutex();
     return reg & statNXMNXD;
 }
@@ -1366,8 +1405,34 @@ inline void ks10_t::__executeInstruction(data_t insn) {
 }
 
 inline void ks10_t::executeInstruction(data_t insn) {
-    writeRegCIR(insn);
-    startEXEC();
+    lockMutex();
+    __executeInstruction(insn);
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    This function starts and completes a KS10 bus transaction
+//!
+//! \details
+//!    A KS10 FPGA bus cycle begins when the <b>GO</b> bit is asserted.  The
+//!    <b>GO</b> bit will remain asserted while the bus cycle is still active.
+//!    The <b>Console Data Register</b> should not be accessed when the
+//!    <b>GO</b> bit is asserted.
+//!
+//! \note
+//!    This function is NOT thread safe.
+//!
+
+inline void ks10_t::__statGO(void) {
+    __writeRegStat(__readRegStat() | statGO);
+    for (int i = 0; i < 100; i++) {
+        if ((__readRegStat() & statGO) == 0) {
+           return;
+        }
+        usleep(1000);
+    }
+    printf("KS10: GO-bit timeout\n");
 }
 
 //!
@@ -1388,21 +1453,20 @@ inline void ks10_t::executeInstruction(data_t insn) {
 //!    Contents of the KS10 memory that was read.
 //!
 //! \note
-//!    This function is thread safe.
-//!
-//!    writeRegAddr(), readRegData(), and go() each grab the mutex
+//!    This function is not thread safe.
 //!
 
 inline ks10_t::data_t ks10_t::__readMem(addr_t addr) {
-    __writeRegAddr((addr & memAddrMask) | flagRead | flagPhys);
-    __go();
+    __writeRegAddr(addr | flagRead | flagPhys);
+    __statGO();
     return dataMask & __readRegData();
 }
 
 inline ks10_t::data_t ks10_t::readMem(addr_t addr) {
-    writeRegAddr((addr & memAddrMask) | flagRead | flagPhys);
-    go();
-    return dataMask & readRegData();
+    lockMutex();
+    ks10_t::data_t ret = __readMem(addr);
+    unlockMutex();
+    return ret;
 }
 
 //!
@@ -1420,24 +1484,22 @@ inline ks10_t::data_t ks10_t::readMem(addr_t addr) {
 //!    data is the data to be written to the KS10 memory.
 //!
 //! \see
-//!    writeIO() for 36-bit IO writes, and writeIObyte() for UNIBUS writes.
+//!    writeIO() for 36-bit IO writes, and writeIObyte() for 8-bit IO writes.
 //!
 //! \note
 //!    This function is thread safe.
-//!
-//!    writeRegAddr(), writeRegData(), and go() each grab the mutex
 //!
 
 inline void ks10_t::__writeMem(addr_t addr, data_t data) {
     __writeRegAddr((addr & memAddrMask) | flagWrite | flagPhys);
     __writeRegData(data);
-    __go();
+    __statGO();
 }
 
 inline void ks10_t::writeMem(addr_t addr, data_t data) {
-    writeRegAddr((addr & memAddrMask) | flagWrite | flagPhys);
-    writeRegData(data);
-    go();
+    lockMutex();
+    __writeMem(addr, data);
+    unlockMutex();
 }
 
 //!
@@ -1448,7 +1510,7 @@ inline void ks10_t::writeMem(addr_t addr, data_t data) {
 //!    addr is the address in the KS10 IO space which is to be read.
 //!
 //! \see
-//!    readMem() for 36-bit memory reads, and readIObyte() for UNIBUS reads.
+//!    readMem() for 36-bit memory reads, and readIObyte() for 8-bit IO reads.
 //!
 //! \returns
 //!    Contents of the KS10 IO that was read.
@@ -1456,13 +1518,18 @@ inline void ks10_t::writeMem(addr_t addr, data_t data) {
 //! \note
 //!    This function is thread safe.
 //!
-//!    writeRegAddr(), readRegData(), and go() each grab the mutex
-//!
+
+inline ks10_t::data_t ks10_t::__readIO(addr_t addr) {
+    __writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO);
+    __statGO();
+    return dataMask & __readRegData();
+}
 
 inline ks10_t::data_t ks10_t::readIO(addr_t addr) {
-    writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO);
-    go();
-    return dataMask & readRegData();
+    lockMutex();
+    ks10_t::data_t ret = __readIO(addr);
+    unlockMutex();
+    return ret;
 }
 
 //!
@@ -1470,8 +1537,7 @@ inline ks10_t::data_t ks10_t::readIO(addr_t addr) {
 //!    This function writes a 36-bit word to the KS10 IO.
 //!
 //! \details
-//!    This function is used to write to 36-bit KS10 IO and is not to be
-//!    used to write to UNIBUS style IO.
+//!    This function is used to write to 36-bit KS10 IO
 //!
 //! \param [in] addr -
 //!    addr is the address in the KS10 IO space which is to be written.
@@ -1480,23 +1546,27 @@ inline ks10_t::data_t ks10_t::readIO(addr_t addr) {
 //!    data is the data to be written to the KS10 IO.
 //!
 //! \see
-//!    writeMem() for memory writes, and writeIObyte() for UNIBUS writes.
+//!    writeMem() for memory writes, and writeIObyte() for 8-bit IO writes.
 //!
 //! \note
 //!    This function is thread safe.
 //!
-//!    writeRegAddr(), writeRegData(), and go() each grab the mutex
-//!
+
+inline void ks10_t::__writeIO(addr_t addr, data_t data) {
+    __writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO);
+    __writeRegData(data);
+    __statGO();
+}
 
 inline void ks10_t::writeIO(addr_t addr, data_t data) {
-    writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO);
-    writeRegData(data);
-    go();
+    lockMutex();
+    __writeIO(addr, data);
+    unlockMutex();
 }
 
 //!
 //! \brief
-//!    This function reads an 8-bit (or 16-bit) byte from KS10 UNIBUS IO.
+//!    This function reads an 8-bit byte from KS10 UNIBUS IO.
 //!
 //! \param [in]
 //!    addr is the address in the Unibus IO space which is to be read.
@@ -1511,13 +1581,18 @@ inline void ks10_t::writeIO(addr_t addr, data_t data) {
 //! \note
 //!    This function is thread safe.
 //!
-//!    writeRegAddr(), readRegData(), and go() each grab the mutex
-//!
+
+inline uint16_t ks10_t::__readIObyte(addr_t addr) {
+    __writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO | flagByte);
+    __statGO();
+    return 0xffff & __readRegData();
+}
 
 inline uint16_t ks10_t::readIObyte(addr_t addr) {
-    writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO | flagByte);
-    go();
-    return 0xffff & readRegData();
+    lockMutex();
+    uint16_t ret = __readIObyte(addr);
+    unlockMutex();
+    return ret;
 }
 
 //!
@@ -1533,13 +1608,17 @@ inline uint16_t ks10_t::readIObyte(addr_t addr) {
 //! \note
 //!    This function is thread safe.
 //!
-//!    writeRegAddr(), writeRegData(), and go() each grab the mutex
-//!
+
+inline void ks10_t::__writeIObyte(addr_t addr, uint16_t data) {
+    __writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO | flagByte);
+    __writeRegData(data);
+    __statGO();
+}
 
 inline void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
-    writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO | flagByte);
-    writeRegData(data);
-    go();
+    lockMutex();
+    __writeIObyte(addr, data);
+    unlockMutex();
 }
 
 #endif
