@@ -111,17 +111,18 @@ void *ctyThread(void *) {
 //!    Main Program
 //!
 
-int main(void) {
+int main(int argc, char *argv[]) {
 
-    const bool debugKS10 = false;
+    const bool debugKS10 = (argc == 2) && (strncasecmp(argv[1], "--debug", 5) == 0);
 
     //
     // Print startup message
     //
 
-    printf("\x1b[H\x1b[2J"
+    printf("%s%s"
            "KS10: Console started.\n"
-           "KS10: Copyright 2012-2021 (c) Rob Doyle.  All rights reserved.\n");
+           "KS10: Copyright 2012-2021 (c) Rob Doyle.  All rights reserved.\n",
+           vt100_hom, vt100_cls);
 
     //
     // Initialize the KS10 object
@@ -183,19 +184,19 @@ int main(void) {
     recallConfig();
 
     //
-    // Check RH11 Initialization Status
+    // Check RP Initialization Status
     //
 
     sleep(1);
 
-    uint64_t rh11debug = ks10.getRH11debug();
-    if (rh11debug >> 56 == ks10_t::rh11IDLE) {
+    uint64_t rpdebug = ks10.getRPDEBUG();
+    if (rpdebug >> 56 == ks10_t::rpIDLE) {
         printf("KS10: RP06 successfully initialized SDHC media.\n");
-    } else if (rh11debug >> 40 == 0x7e0c80) {
+    } else if (rpdebug >> 40 == 0x7e0c80) {
         printf("KS10: %sRP06 cannot utilize SDSC media.  Use SDHC media.%s\n", vt100fg_red, vt100at_rst);
     } else {
         printf("KS10: %sRP06 failed to initialize SDHC media.%s\n", vt100fg_red, vt100at_rst);
-        ks10.printRH11Debug();
+        ks10.printRPDEBUG();
     }
 
     //

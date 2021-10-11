@@ -16,7 +16,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2020 Rob Doyle
+// Copyright (C) 2013-2021 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -64,7 +64,7 @@
 
 //!
 //! \brief
-//!    sigaction struct/
+//!    sigaction struct
 //!
 
 struct sigaction sa;
@@ -2330,7 +2330,7 @@ static bool cmdRH(int argc, char *argv[]) {
             rh11.testRPLA(rhcfg.rhunit);
         } else if (strncasecmp(argv[1], "stat", 4) == 0) {
             //printf("KS10: rpCCR is 0x%08x\n", ks10_t::readRPCCR());
-            ks10_t::printRH11Debug();
+            ks10_t::printRPDEBUG();
         } else if (strncasecmp(argv[1], "wrchk", 5) == 0) {
             rh11.testWrchk(rhcfg.rhunit);
         } else if (strncasecmp(argv[1], "write", 5) == 0) {

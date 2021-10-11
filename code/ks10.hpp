@@ -59,19 +59,6 @@ class ks10_t {
         typedef uint64_t data_t;                                //!< KS10 Data Typedef
 
         //
-        //! RH11 Debug Register
-        //
-
-        struct rh11debug_t {
-            uint16_t rdcnt;                                     //!< Read count
-            uint16_t wrcnt;                                     //!< Write count
-            uint8_t  LEDs;                                      //!< LED status
-            uint8_t  errval;                                    //!< Error value
-            uint8_t  errnum;                                    //!< Error number
-            uint8_t  state;                                     //!< Controller state
-        } __attribute__((packed));
-
-        //
         // Opcodes
         //
 
@@ -126,14 +113,14 @@ class ks10_t {
         static const int regCONCSROffset  = 0x18;               //!< CONS  Control/Status Register Offset
         static const int regDZCCROffset   = 0x1c;               //!< DZ11  Console Control Register
         static const int regLPCCROffset   = 0x20;               //!< LP20  Console Control Register
-        static const int regRPCCROffset   = 0x24;               //!< RPxx  Console Control Register
+        static const int regRPCCROffset   = 0x24;               //!< RP    Console Control Register
         static const int regDUPCCROffset  = 0x28;               //!< DUP11 Console Control Register
         static const int regDEBCSROffset  = 0x3c;               //!< DEBUG Control/Status Register
         static const int regDEBBAROffset  = 0x40;               //!< DEBUG Breakpoint Address Register
         static const int regDEBBMROffset  = 0x48;               //!< DEBUG Breakpoint Mask Register
         static const int regDEBITROffset  = 0x50;               //!< DEBUG Instruction Trace Register
         static const int regDEBPCIROffset = 0x58;               //!< DEBUG Program Counter and Instruction Register
-        static const int regRH11Offset    = 0x70;               //!< RH11  Debug Register
+        static const int regRPDEBOffset   = 0x70;               //!< RP    Debug Register
         static const int regVERSOffset    = 0x78;               //!< FPGA  Version Register
 
         //
@@ -228,12 +215,12 @@ class ks10_t {
         static const data_t dbmrIOWR   = (            flagWrite | flagIO);
 
         //
-        // RH11 Controller State
+        // RP Controller State
         //
 
-        static const uint8_t rh11INIT00 =   1;
-        static const uint8_t rh11IDLE   = 124;
-        static const uint8_t rh11INFAIL = 126;
+        static const uint8_t rpINIT00 =   1;
+        static const uint8_t rpIDLE   = 124;
+        static const uint8_t rpINFAIL = 126;
 
         //
         // DUP11 Configuration Bits
@@ -280,8 +267,10 @@ class ks10_t {
         static void writeMem(addr_t addr, data_t data);
         static data_t readIO(addr_t addr);
         static void writeIO(addr_t addr, data_t data);
-        static uint16_t readIObyte(addr_t addr);
-        static void writeIObyte(addr_t addr, uint16_t data);
+        static uint16_t readIO16(addr_t addr);
+        static void writeIO16(addr_t addr, uint16_t data);
+        static uint8_t readIO8(addr_t addr);
+        static void writeIO8(addr_t addr, uint8_t data);
         static uint32_t readDUPCCR(void);
         static void writeDUPCCR(uint32_t data);
         static uint32_t readDZCCR(void);
@@ -298,6 +287,7 @@ class ks10_t {
         static void writeDBMR(data_t data);
         static data_t readDITR(void);
         static data_t readDPCIR(void);
+        static uint64_t getRPDEBUG(void);
         static bool run(void);
         static void run(bool);
         static bool halt(void);
@@ -317,10 +307,9 @@ class ks10_t {
         static void startEXEC(void);
         static void startCONT(void);
         static void testRegs(void);
+        static void printRPDEBUG(void);
         static void printHaltStatusWord(void);
         static void printHaltStatusBlock(void);
-        static uint64_t getRH11debug(void);
-        static void printRH11Debug(void);
         static void checkFirmware(void);
         static void putchar(int ch);
         static int getchar(void);
@@ -368,14 +357,14 @@ class ks10_t {
         static volatile       uint32_t *regStat;                //!< Console Control/Status Register
         static volatile       uint32_t *regDZCCR;               //!< DZ11 Console Control Register
         static volatile       uint32_t *regLPCCR;               //!< LP20 Console Control Register
-        static volatile       uint32_t *regRPCCR;               //!< RPxx Console Control Register
+        static volatile       uint32_t *regRPCCR;               //!< RP Console Control Register
         static volatile       uint32_t *regDUPCCR;              //!< DUP11 Console Control Register
         static volatile       uint32_t *regDEBCSR;              //!< Debug Control/Status Register
         static volatile       addr_t   *regDEBBAR;              //!< Debug Breakpoint Address Register
         static volatile       addr_t   *regDEBBMR;              //!< Debug Breakpoint Mask Register
         static volatile       uint64_t *regDEBITR;              //!< Debug Instruction Trace Register
         static volatile       uint64_t *regDEBPCIR;             //!< Debug Program Counter and Instruction Register
-        static volatile const uint64_t *regRH11Debug;           //!< RH11 Debug Register
+        static volatile const uint64_t *regRPDEBUG;             //!< RP Debug Register
         static          const char     *regVers;                //!< Firmware Version Register
 
         //
@@ -424,9 +413,11 @@ class ks10_t {
         static data_t __readMem(addr_t addr);
         static void __writeMem(addr_t addr, data_t data);
         static data_t __readIO(addr_t addr);
-    static void __writeIO(addr_t addr, data_t data);
-        static uint16_t __readIObyte(addr_t addr);
-        static void __writeIObyte(addr_t addr, uint16_t data);
+        static void __writeIO(addr_t addr, data_t data);
+        static uint16_t __readIO16(addr_t addr);
+        static void __writeIO16(addr_t addr, uint16_t data);
+        static uint8_t __readIO8(addr_t addr);
+        static void __writeIO8(addr_t addr, uint8_t data);
 };
 
 //!
@@ -965,21 +956,21 @@ inline uint64_t ks10_t::readDPCIR(void) {
 
 //!
 //! \brief
-//!    Get Contents of RH11 Debug Register
+//!    Get Contents of RP Debug Register
 //!
 //! \brief
-//!    This function return the contents of the RH11 Debug Register
+//!    This function return the contents of the RP Debug Register
 //!
 //! \returns
-//!     Contents of the RH11 Debug Register
+//!     Contents of the RP Debug Register
 //!
 //! \note
 //!    This function is thread safe.
 //!
 
-inline uint64_t ks10_t::getRH11debug(void) {
+inline uint64_t ks10_t::getRPDEBUG(void) {
     lockMutex();
-    uint64_t ret = *regRH11Debug;
+    uint64_t ret = *regRPDEBUG;
     unlockMutex();
     return ret;
 }
@@ -1510,7 +1501,8 @@ inline void ks10_t::writeMem(addr_t addr, data_t data) {
 //!    addr is the address in the KS10 IO space which is to be read.
 //!
 //! \see
-//!    readMem() for 36-bit memory reads, and readIObyte() for 8-bit IO reads.
+//!    readMem() for 36-bit memory reads, readIO16() for 16-bit IO reads,
+//!    amd readIO8 for 8-bit IO reads.
 //!
 //! \returns
 //!    Contents of the KS10 IO that was read.
@@ -1546,7 +1538,8 @@ inline ks10_t::data_t ks10_t::readIO(addr_t addr) {
 //!    data is the data to be written to the KS10 IO.
 //!
 //! \see
-//!    writeMem() for memory writes, and writeIObyte() for 8-bit IO writes.
+//!    writeMem() for memory writes, writeIO16() for 16-bit IO writes, and
+//!    writeIO8() for 8-bit IO writes.
 //!
 //! \note
 //!    This function is thread safe.
@@ -1566,14 +1559,14 @@ inline void ks10_t::writeIO(addr_t addr, data_t data) {
 
 //!
 //! \brief
-//!    This function reads an 8-bit byte from KS10 UNIBUS IO.
+//!    This function reads an 16-word from KS10 UNIBUS IO.
 //!
 //! \param [in]
 //!    addr is the address in the Unibus IO space which is to be read.
 //!
 //! \see
-//!    readMem() for 36-bit memory reads, and readIObyte() for UNIBUS
-//!    reads.
+//!    readMem() for 36-bit memory reads, readIO() for 36-bit IO reads,
+//!    and readIO8() for 8-bit IO reads.
 //!
 //! \returns
 //!    Contents of the KS10 Unibus IO that was read.
@@ -1582,15 +1575,76 @@ inline void ks10_t::writeIO(addr_t addr, data_t data) {
 //!    This function is thread safe.
 //!
 
-inline uint16_t ks10_t::__readIObyte(addr_t addr) {
+inline uint16_t ks10_t::__readIO16(addr_t addr) {
     __writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO | flagByte);
     __statGO();
     return 0xffff & __readRegData();
 }
 
-inline uint16_t ks10_t::readIObyte(addr_t addr) {
+inline uint16_t ks10_t::readIO16(addr_t addr) {
     lockMutex();
-    uint16_t ret = __readIObyte(addr);
+    uint16_t ret = __readIO16(addr);
+    unlockMutex();
+    return ret;
+}
+
+//!
+//! \brief
+//!    This function writes 16-word to KS10 Unibus IO.
+//!
+//! \param
+//!    addr is the address in the KS10 Unibus IO space which is to be written.
+//!
+//! \param data -
+//!    data is the data to be written to the KS10 Unibus IO.
+//!
+//! \see
+//!    writeMem() for 36-bit memory reads, writeIO() for 36-bit IO reads,
+//!    and writeIO8() for 8-bit IO reads.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::__writeIO16(addr_t addr, uint16_t data) {
+    __writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO | flagByte);
+    __writeRegData(data);
+    __statGO();
+}
+
+inline void ks10_t::writeIO16(addr_t addr, uint16_t data) {
+    lockMutex();
+    __writeIO16(addr, data);
+    unlockMutex();
+}
+
+//!
+//! \brief
+//!    This function reads an 8-bit byte from KS10 UNIBUS IO.
+//!
+//! \param [in]
+//!    addr is the address in the Unibus IO space which is to be read.
+//!
+//! \see
+//!    readMem() for 36-bit memory reads, readIO() for 36-bit IO reads,
+//!    and readIO16 for 16-bit IO reads.
+//!
+//! \returns
+//!    Contents of the KS10 Unibus IO that was read.
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint8_t ks10_t::__readIO8(addr_t addr) {
+    __writeRegAddr((addr & ioAddrMask) | flagRead | flagPhys | flagIO | flagByte);
+    __statGO();
+    return 0xff & __readRegData();
+}
+
+inline uint8_t ks10_t::readIO8(addr_t addr) {
+    lockMutex();
+    uint8_t ret = __readIO8(addr);
     unlockMutex();
     return ret;
 }
@@ -1605,19 +1659,23 @@ inline uint16_t ks10_t::readIObyte(addr_t addr) {
 //! \param data -
 //!    data is the data to be written to the KS10 Unibus IO.
 //!
+//! \see
+//!    writeMem() for 36-bit memory writes, writeIO() for 36-bit IO reads,
+//!    and writeIO16 for 16-bit IO reads.
+//!
 //! \note
 //!    This function is thread safe.
 //!
 
-inline void ks10_t::__writeIObyte(addr_t addr, uint16_t data) {
+inline void ks10_t::__writeIO8(addr_t addr, uint8_t data) {
     __writeRegAddr((addr & ioAddrMask) | flagWrite | flagPhys | flagIO | flagByte);
     __writeRegData(data);
     __statGO();
 }
 
-inline void ks10_t::writeIObyte(addr_t addr, uint16_t data) {
+inline void ks10_t::writeIO8(addr_t addr, uint8_t data) {
     lockMutex();
-    __writeIObyte(addr, data);
+    __writeIO8(addr, data);
     unlockMutex();
 }
 

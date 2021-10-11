@@ -73,4 +73,11 @@ static const char vt100bg_mag[] = "\e[0;45m";
 static const char vt100bg_cyn[] = "\e[0;46m";
 static const char vt100bg_wht[] = "\e[0;47m";
 
+//
+// VT100 Cursor Control
+//
+
+static const char vt100_hom[]   = "\e[H";
+static const char vt100_cls[]   = "\e[2J";
+
 #endif

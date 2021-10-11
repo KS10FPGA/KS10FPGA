@@ -45,6 +45,7 @@
 #include <pthread.h>
 #include <sys/mman.h>
 
+#include "vt100.hpp"
 #include "ks10.hpp"
 
 int ks10_t::fd;                                         //!< /dev/mem file descriptor
@@ -59,14 +60,14 @@ volatile ks10_t::data_t *ks10_t::regCIR;                //!< KS10 Console Instru
 volatile uint32_t *ks10_t::regStat;                     //!< Console Control/Status Register
 volatile uint32_t *ks10_t::regDZCCR;                    //!< DZ11 Console Control Register
 volatile uint32_t *ks10_t::regLPCCR;                    //!< LP20 Console Control Register
-volatile uint32_t *ks10_t::regRPCCR;                    //!< RPxx Console Control Register
+volatile uint32_t *ks10_t::regRPCCR;                    //!< RP Console Control Register
 volatile uint32_t *ks10_t::regDUPCCR;                   //!< DUP11 Console Control Register
 volatile uint32_t *ks10_t::regDEBCSR ;                  //!< Debug Control/Status Register
 volatile ks10_t::addr_t *ks10_t::regDEBBAR;             //!< Debug Breakpoint Address Register
 volatile ks10_t::addr_t *ks10_t::regDEBBMR;             //!< Debug Breakpoint Mask Register
 volatile uint64_t *ks10_t::regDEBITR;                   //!< Debug Instruction Trace Register
 volatile uint64_t *ks10_t::regDEBPCIR ;                 //!< Debug Program Counter and Instruction Register
-volatile const uint64_t *ks10_t::regRH11Debug;          //!< RH11 Debug Register
+volatile const uint64_t *ks10_t::regRPDEBUG;            //!< RP Debug Register
 const char *ks10_t::regVers;                            //!< Firmware Version Register
 
 //!
@@ -83,6 +84,10 @@ const char *ks10_t::regVers;                            //!< Firmware Version Re
 ks10_t::ks10_t(bool debug) {
 
     ks10_t::debug = debug;
+
+    if(debug) {
+        printf("KS10: Debug mode enabled.\n");
+    }
 
     //
     // Open /dev/mem
@@ -145,14 +150,14 @@ ks10_t::ks10_t(bool debug) {
     regStat      = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regCONCSROffset]);   //!< Console Control/Status Register
     regDZCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDZCCROffset]);    //!< DZ11 Console Control Register
     regLPCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regLPCCROffset]);    //!< LP20 Console Control Register
-    regRPCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regRPCCROffset]);    //!< RPxx Console Control Register
+    regRPCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regRPCCROffset]);    //!< RP Console Control Register
     regDUPCCR    = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDUPCCROffset]);   //!< DUP11 Console Control Register
     regDEBCSR    = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDEBCSROffset]);   //!< Debug Control/Status Register
     regDEBBAR    = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regDEBBAROffset]);   //!< Debug Breakpoint Address Register
     regDEBBMR    = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regDEBBMROffset]);   //!< Debug Breakpoint Mask Register
     regDEBITR    = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regDEBITROffset]);   //!< Debug Instruction Trace Register
     regDEBPCIR   = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regDEBPCIROffset]);  //!< Debug Program Counter and Instruction Register
-    regRH11Debug = reinterpret_cast<volatile const uint64_t *>(&fpgaAddrVirt[regRH11Offset]);     //!< RH11 Debug Register
+    regRPDEBUG   = reinterpret_cast<volatile const uint64_t *>(&fpgaAddrVirt[regRPDEBOffset]);    //!< RP Debug Register
     regVers      = reinterpret_cast<         const char     *>(&fpgaAddrVirt[regVERSOffset]);     //!< Firmware Version Register
 }
 
@@ -302,7 +307,7 @@ void ks10_t::checkFirmware(void) {
 
 bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
     if (debug) {
-        printf("KS10:  %s: Checking 64-bit accesses.\n", name);
+        printf("KS10:  Testing %s ", name);
     }
 
     //
@@ -319,14 +324,50 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
     volatile uint64_t * reg64 = reinterpret_cast<volatile uint64_t *>(addr);
 
     for (unsigned long long write64 = 1; write64 != 0; write64 <<= 1) {
-        *reg64 = write64;
-        uint64_t read64 = *reg64;
-        if ((read64 & mask) != (write64 & mask)) {
-            if (debug) {
-                printf("KS10:  %s: Register failure.  Was 0x%016llx.  Should be 0x%016llx\n", name, read64, write64);
+
+        if (write64 & mask) {
+            uint64_t read64;
+
+            //
+            // Write a one and read it back
+            //
+
+            *reg64 = write64;
+            read64 = *reg64;
+
+            if ((read64 & mask)!= (write64 & mask)) {
+                if (debug) {
+                    if (success) {
+                        printf("%sFail%s\n", vt100fg_red, vt100at_rst);
+                    }
+                    printf("KS10:  Testing %s %sWas 0x%016llx. Expected 0x%016llx.%s\n",
+                           name, vt100fg_red, read64 & mask, write64 & mask, vt100at_rst);
+                }
+                success = false;
             }
-            success = false;
+
+            //
+            // Write a zero and read it back
+            //
+
+            *reg64 = 0;
+            read64 = *reg64;
+
+            if ((read64 & mask) != 0) {
+                if (debug) {
+                    if (success) {
+                        printf("%sFail%s\n", vt100fg_red, vt100at_rst);
+                    }
+                    printf("KS10:  Testing %s Was 0x%016llx. Expected 0x%016llx.\n",
+                           name, read64 & mask, 0ull);
+                }
+                success = false;
+            }
         }
+    }
+
+    if (debug & success) {
+        printf("%sPass%s\n", vt100fg_grn, vt100at_rst);
     }
 
     //
@@ -368,7 +409,7 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
 bool ks10_t::testReg32(volatile void * addr, const char *name, uint32_t mask) {
 
     if (debug) {
-        printf("KS10:  %s: Checking 32-bit accesses.\n", name);
+        printf("KS10:  Testing %s ", name);
     }
 
     //
@@ -384,15 +425,51 @@ bool ks10_t::testReg32(volatile void * addr, const char *name, uint32_t mask) {
     bool success = true;
     volatile uint32_t * reg32 = reinterpret_cast<volatile uint32_t *>(addr);
 
-    for (uint32_t write32 = 1; write32 != 0; write32 <<= 1) {
-        *reg32 = write32;
-        uint32_t read32 = *reg32;
-        if ((read32 & mask) != (write32 & mask)) {
-            if (debug) {
-                printf("KS10:  %s: Register failure.  Was 0x%08x.  Should be 0x%08x\n", name, read32, write32);
+    for (uint32_t write = 1; write != 0; write <<= 1) {
+
+        if (write & mask) {
+            uint32_t read;
+
+            //
+            // Write a one and read it back
+            //
+
+            *reg32 = write;
+            read = *reg32;
+
+            if ((read & mask) != (write & mask)) {
+                if (debug) {
+                    if (success) {
+                        printf("%sFail%s\n", vt100fg_red, vt100at_rst);
+                    }
+                    printf("KS10:  Testing %s %sWas 0x%08x. Expected 0x%08x.%s\n",
+                           name, vt100fg_red, read & mask, write & mask, vt100at_rst);
+                }
+                success = false;
             }
-            success = false;
+
+            //
+            // Write a zero and read it back
+            //
+
+            *reg32 = 0;
+            read = *reg32;
+
+            if ((read & mask) != 0) {
+                if (debug) {
+                    if (success) {
+                        printf("%sFail%s\n", vt100fg_red, vt100at_rst);
+                    }
+                    printf("KS10:  Testing %s %sWas 0x%08x. Expected 0x%08x.%s\n",
+                           name, vt100fg_red, read & mask, 0, vt100at_rst);
+                }
+                success = false;
+            }
         }
+    }
+
+    if (debug & success) {
+        printf("%sPass%s\n", vt100fg_grn, vt100at_rst);
     }
 
     //
@@ -408,9 +485,6 @@ bool ks10_t::testReg32(volatile void * addr, const char *name, uint32_t mask) {
 //! \brief
 //!    Test all of the KS10 Registers
 //!
-//! \returns
-//!    True if all of the tests pass, false otherwise.
-//!
 //! \note
 //!    This function is NOT thread safe.  Selftest should be performed as a
 //!    single thread application.
@@ -421,21 +495,21 @@ void ks10_t::testRegs(void) {
     if (debug) {
         printf("KS10: Console Interface Register test.\n");
     }
-    success &= testReg64(regAddr,   "regADDR  ", 0xfffffffff);
-    success &= testReg64(regData,   "regDATA  ", 0xfffffffff);
-    success &= testReg64(regCIR,    "regCIR   ", 0xfffffffff);
-    success &= testReg32(regStat,   "regStat  ", 0x0000021d);
-    success &= testReg32(regDZCCR,  "regDZCCR ", 0xffffffff);
-    success &= testReg32(regLPCCR,  "regLPCCR ", 0x03ff0002);
-    success &= testReg32(regRPCCR,  "regRPCCR ", 0xffffffff);
-    success &= testReg32(regDUPCCR, "regDUPCCR", 0x0f000e00);
-    success &= testReg32(regDEBCSR, "regDEBCSR", 0x007000e0);
-    success &= testReg64(regDEBBAR, "regDEBBAR", 0xfffffffff);
-    success &= testReg64(regDEBBMR, "regDEBBMR", 0xfffffffff);
+    success &= testReg64(regAddr,   "KS10 Console Address Register  . . . . . . ", 0xfffffffff);
+    success &= testReg64(regData,   "KS10 Console Data Register . . . . . . . . ", 0xfffffffff);
+    success &= testReg64(regCIR,    "KS10 Console Instruction Register  . . . . ", 0xfffffffff);
+    success &= testReg32(regStat,   "KS10 Console Control/Status Register . . . ", 0x0000021d);
+    success &= testReg32(regDZCCR,  "DZ11 Console Control Register  . . . . . . ", 0xffffffff);
+    success &= testReg32(regLPCCR,  "LP20 Console Control Register  . . . . . . ", 0x03ff0003);
+    success &= testReg32(regRPCCR,  "RP Console Control Register  . . . . . . . ", 0xffffffff);
+    success &= testReg32(regDUPCCR, "DUP11 Console Control Register . . . . . . ", 0x0f000f00);
+    success &= testReg32(regDEBCSR, "Debug Console Control Register . . . . . . ", 0x007000e0);
+    success &= testReg64(regDEBBAR, "Debug Bus Address Register . . . . . . . . ", 0xfffffffff);
+    success &= testReg64(regDEBBMR, "Debug Bus Mask Register  . . . . . . . . . ", 0xfffffffff);
     if (success) {
         printf("KS10: Console Interface Register test completed successfully.\n");
     } else {
-        printf("KS10: Fatal - Console Interface Register test failed.\n");
+        printf("KS10: %sFatal - Console Interface Register test failed.%s\n", vt100fg_red, vt100at_rst);
         if (!debug) {
             exit(EXIT_FAILURE);
         }
@@ -912,21 +986,33 @@ void ks10_t::printHaltStatusBlock(void) {
     unlockMutex();
 }
 
-
 //!
 //! \brief
-//!    Print RH11 Debug Word
+//!    Print RP Debug Word
 //!
 //! \note
 //!    This function is thread safe.
 //!
 
-void ks10_t::printRH11Debug(void) {
+void ks10_t::printRPDEBUG(void) {
 
-    uint64_t rh11stat = getRH11debug();
-    rh11debug_t *rh11debug = reinterpret_cast<rh11debug_t *>(&rh11stat);
+    //
+    // This defintion matches the FPGA
+    //
 
-    printf("KS10: RH11 status is 0x%016llx\n"
+    struct rpdebug_t {
+        uint16_t rdcnt;                                     //!< Read count
+        uint16_t wrcnt;                                     //!< Write count
+        uint8_t  LEDs;                                      //!< LED status
+        uint8_t  errval;                                    //!< Error value
+        uint8_t  errnum;                                    //!< Error number
+        uint8_t  state;                                     //!< Controller state
+    } __attribute__((packed));
+
+    uint64_t rpstat = getRPDEBUG();
+    rpdebug_t *rpdebug = reinterpret_cast<rpdebug_t *>(&rpstat);
+
+    printf("KS10: RP status is 0x%016llx\n"
            "  State  = %d\n"
            "  ErrNum = %d\n"
            "  ErrVal = %d\n"
@@ -934,13 +1020,13 @@ void ks10_t::printRH11Debug(void) {
            "  RdCnt  = %d\n"
            "  LEDs   = 0x%02x\n"
            "",
-           rh11stat,
-           rh11debug->state,
-           rh11debug->errnum,
-           rh11debug->errval,
-           rh11debug->wrcnt,
-           rh11debug->rdcnt,
-           rh11debug->LEDs);
+           rpstat,
+           rpdebug->state,
+           rpdebug->errnum,
+           rpdebug->errval,
+           rpdebug->wrcnt,
+           rpdebug->rdcnt,
+           rpdebug->LEDs);
 }
 
 
