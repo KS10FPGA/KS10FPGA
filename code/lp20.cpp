@@ -41,6 +41,41 @@
 #include "string.h"
 #include "uba.hpp"
 #include "lp20.hpp"
+#include "config.hpp"
+
+//!
+//! \brief
+//!    Configuration file name
+//!
+
+static const char *cfg_file = ".ks10/lp20.cfg";
+
+//!
+//! \brief
+//!    Recall the non-volatile LP configuration from file
+//!
+
+void lp20_t::recallConfig(void) {
+    if (!config_t::read(cfg_file, &cfg, sizeof(cfg))) {
+        printf("KS10: Unable to read \"%s\".  Using defaults.\n", cfg_file);
+        // Set baudrate to 115200 baud, no parity, 8 data bits, 2 stop bits, online
+        cfg.lpccr = 0x02590001;
+    }
+    // Initialize the LP Console Control Register
+    ks10_t::writeLPCCR(cfg.lpccr);
+}
+
+//!
+//! \brief
+//!    Save the non-volatile LP configuration to file
+//!
+
+void lp20_t::saveConfig(void) {
+    cfg.lpccr = ks10_t::readLPCCR();
+    if (config_t::write(cfg_file, &cfg, sizeof(cfg))) {
+        printf("      lp: sucessfully wrote configuration file \"%s\".\n", cfg_file);
+    }
+}
 
 //!
 //! \brief

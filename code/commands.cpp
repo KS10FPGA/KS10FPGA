@@ -146,39 +146,6 @@ static const char *cpucfg_file = ".ks10/cpu.cfg";
 
 //!
 //! \brief
-//!    DUP11 non-volatile configuration
-//!
-
-static struct dupcfg_t {
-    uint32_t dupccr;
-} dupcfg;
-
-static const char *dupcfg_file = ".ks10/dup11.cfg";
-
-//!
-//! \brief
-//!    DZ11 non-volatile configuration
-//!
-
-static struct dzcfg_t {
-    uint32_t dzccr;
-} dzcfg;
-
-static const char *dzcfg_file = ".ks10/dz11.cfg";
-
-//!
-//! \brief
-//!    LP20 non-volatile configuration
-//!
-
-static struct lpcfg_t {
-    uint32_t lpccr;
-} lpcfg;
-
-static const char *lpcfg_file = ".ks10/lp20.cfg";
-
-//!
-//! \brief
 //!    RH11 non-volatile configuration
 //!
 
@@ -202,99 +169,14 @@ static const char *rpcfg_file = ".ks10/rpxx.cfg";
 
 //!
 //! \brief
-//!    Initialize DUP Console Control Register
-//!
-
-void initDUPCCR(void) {
-    //
-    // Read DUPCCR
-    //
-
-    uint32_t dupccr = ks10_t::readDUPCCR();
-
-    dupccr |= ks10_t::dupH325 | ks10_t::dupW3 | ks10_t::dupW6;
-
-    //
-    // Write DUPCCR back
-    //
-
-    ks10_t::writeDUPCCR(dupccr);
-}
-
-//!
-//! \brief
-//!    Initialize LP Console Control Register
-//!
-
-void initLPCCR(void) {
-
-    //
-    // Read LPCCR
-    //
-
-    uint32_t lpccr = ks10_t::readLPCCR();
-
-    //
-    // Set baudrate to 115200 baud, no parity, 8 data bits, 2 stop bits.
-    //
-
-    lpccr = 0x02590000 | (lpccr & 0x0000ffff);
-
-    //
-    // Handle online/offline commands
-    //
-
-    if ((lpcfg.lpccr & ks10_t::lpONLINE) != 0) {
-        lpccr |= ks10_t::lpONLINE;
-    } else {
-        lpccr &= ~ks10_t::lpONLINE;
-    }
-
-    //
-    // Handle OVFU
-    //
-
-    if ((lpcfg.lpccr & ks10_t::lpOVFU) != 0) {
-        lpccr |=  ks10_t::lpOVFU;
-    } else {
-        lpccr &= ~ks10_t::lpOVFU;
-    }
-
-    //
-    // Write LPCCR back
-    //
-
-    ks10_t::writeLPCCR(lpccr);
-}
-
-//!
-//! \brief
 //!    Recall Configuration
 //!
 
 void recallConfig(void) {
 
-    //
-    // Read the configuration files.  Use defaults if the configuration cannot
-    // be read.
-    //
-
-    if (!config_t::read(dupcfg_file, &dupcfg, sizeof(dupcfg))) {
-        printf("KS10: Unable to read \"%s\".  Using defaults.\n", dupcfg_file);
-        dupcfg.dupccr = 0x00000d00;
-        config_t::write(dupcfg_file, &dupcfg, sizeof(dupcfg));
-    }
-
-    if (!config_t::read(dzcfg_file, &dzcfg, sizeof(dzcfg))) {
-        printf("KS10: Unable to read \"%s\".  Using defaults.\n", dzcfg_file);
-        dzcfg.dzccr = 0x0000ff00;
-        config_t::write(dzcfg_file, &dzcfg, sizeof(dzcfg));
-    }
-
-    if (!config_t::read(lpcfg_file, &lpcfg, sizeof(lpcfg))) {
-        printf("KS10: Unable to read \"%s\".  Using defaults.\n", lpcfg_file);
-        lpcfg.lpccr = 0x00000001;
-    }
+    dp.recallConfig();
+    dz.recallConfig();
+    lp.recallConfig();
 
     if (!config_t::read(rhcfg_file, &rhcfg, sizeof(rhcfg))) {
         printf("KS10: Unable to read \"%s\".  Using defaults.\n", rhcfg_file);
@@ -326,14 +208,11 @@ void recallConfig(void) {
     // Initialize contol registers
     //
 
-    ks10_t::writeDZCCR(dzcfg.dzccr);                            // Initialize the DZ11 Console Control Register
     ks10_t::writeRPCCR(rpcfg.rpccr);                            // Initialize the RPxx Console Control Register
     ks10_t::writeDBAR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Address Register
     ks10_t::writeDBAR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Address Register
     ks10_t::writeDBMR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Mask Register
 
-    initDUPCCR();                                               // Initialize the DUP11 Console Control Register
-    initLPCCR();                                                // Initialize the LP20 Console Control Registrer
 }
 
 //!
@@ -2075,9 +1954,7 @@ static bool cmdLP(int argc, char *argv[]) {
     }
 
     if ((argc == 2) && strncasecmp(argv[1], "save", 4) == 0) {
-        if (config_t::write(lpcfg_file, &lpcfg, sizeof(lpcfg))) {
-            printf("KS10: Sucessfully wrote configuration file.\n");
-        }
+        lp.saveConfig();
         return true;
     } else if ((argc == 2) && (strncasecmp(argv[1], "break", 4) == 0)) {
         static const ks10_t::addr_t flagPhys = 0x008000000ULL;
@@ -2099,17 +1976,13 @@ static bool cmdLP(int argc, char *argv[]) {
 
     for (int i = 1; i < argc; i++) {
         if (strncasecmp(argv[i], "online", 4) == 0) {
-            lpcfg.lpccr |= ks10_t::lpONLINE;
-            initLPCCR();
+            ks10_t::writeLPCCR(ks10_t::readLPCCR() | ks10_t::lpONLINE);
         } else if (strncasecmp(argv[i], "offline", 4) == 0) {
-            lpcfg.lpccr &= ~ks10_t::lpONLINE;
-            initLPCCR();
+            ks10_t::writeLPCCR(ks10_t::readLPCCR() & ~ks10_t::lpONLINE);
         } else if (strncasecmp(argv[i], "ovfu", 4) == 0) {
-            lpcfg.lpccr |= ks10_t::lpOVFU;
-            initLPCCR();
+            ks10_t::writeLPCCR(ks10_t::readLPCCR() | ks10_t::lpOVFU);
         } else if (strncasecmp(argv[i], "davfu", 4) == 0) {
-            lpcfg.lpccr &= ~ks10_t::lpOVFU;
-            initLPCCR();
+            ks10_t::writeLPCCR(ks10_t::readLPCCR() & ~ks10_t::lpOVFU);
         } else {
             printf(usage);
         }

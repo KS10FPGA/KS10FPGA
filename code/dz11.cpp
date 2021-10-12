@@ -40,6 +40,62 @@
 #include "stdio.h"
 #include "uba.hpp"
 #include "dz11.hpp"
+#include "config.hpp"
+
+//!
+//! \brief
+//!    Configuration file name
+//!
+
+static const char *cfg_file = ".ks10/dz11.cfg";
+
+//!
+//! \brief
+//!    Recall the non-volatile DZ configuration from file
+//!
+
+void dz11_t::recallConfig(void) {
+    if (!config_t::read(cfg_file, &cfg, sizeof(cfg))) {
+        printf("KS10: Unable to read \"%s\".  Using defaults.\n", cfg_file);
+        // Set CO[7:0], negate RI[7:0]
+        cfg.dzccr = 0x0000ff00;
+    }
+    // Initialize the LP Console Control Register
+    ks10_t::writeDZCCR(cfg.dzccr);
+}
+
+//!
+//! \brief
+//!    Save the non-volatile DZ configuration to file
+//!
+
+void dz11_t::saveConfig(void) {
+    cfg.dzccr = ks10_t::readDZCCR();
+    if (config_t::write(cfg_file, &cfg, sizeof(cfg))) {
+        printf("      dz: sucessfully wrote configuration file \"%s\".\n", cfg_file);
+    }
+}
+
+//!
+//! \brief
+//!    Dump DZ11 registers
+//!
+
+void dz11_t::dumpRegs(void) {
+
+    printf("KS10: Register Dump\n"
+           "      UBAS : %012llo\n"
+           "      CSR  : %06o\n"
+           "      TCR  : %06o\n"
+           "      MSR  : %06o\n"
+           "      DZCCR: 0x%08x\n",
+           uba.readCSR(),
+           ks10_t::readIO16(addrCSR),
+           ks10_t::readIO16(addrTCR),
+           ks10_t::readIO16(addrMSR),
+           ks10_t::readDZCCR());
+}
+
 
 //!
 //! \brief
