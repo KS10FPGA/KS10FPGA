@@ -44,6 +44,7 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "rp.hpp"
 #include "dasm.hpp"
 #include "dz11.hpp"
 #include "ks10.hpp"
@@ -62,6 +63,13 @@
 #endif
 
 #define CUSTOM_CMD
+
+//!
+//! \brief
+//!   Construct RP (disk) device
+//!
+
+rp_t rp;
 
 //!
 //! \brief
@@ -146,29 +154,6 @@ static const char *cpucfg_file = ".ks10/cpu.cfg";
 
 //!
 //! \brief
-//!    RH11 non-volatile configuration
-//!
-
-static struct rhcfg_t {
-    ks10_t::data_t rhbase;
-    ks10_t::data_t rhunit;
-    ks10_t::data_t mtparam;
-} rhcfg;
-
-static const char *rhcfg_file = ".ks10/rh11.cfg";
-
-//
-// RPxx non-volatile configuration
-//
-
-static struct rpcfg_t {
-    uint64_t rpccr;
-} rpcfg;
-
-static const char *rpcfg_file = ".ks10/rpxx.cfg";
-
-//!
-//! \brief
 //!    Recall Configuration
 //!
 
@@ -177,42 +162,21 @@ void recallConfig(void) {
     dp.recallConfig();
     dz.recallConfig();
     lp.recallConfig();
-
-    if (!config_t::read(rhcfg_file, &rhcfg, sizeof(rhcfg))) {
-        printf("KS10: Unable to read \"%s\".  Using defaults.\n", rhcfg_file);
-        rhcfg.rhbase  = 000001776700;
-        rhcfg.rhunit  = 000000000000;
-        rhcfg.mtparam = 000000000000;
-    }
-
-    if (!config_t::read(rpcfg_file, &rpcfg, sizeof(rpcfg))) {
-        printf("KS10: Unable to read \"%s\".  Using defaults.\n", rpcfg_file);
-        rpcfg.rpccr = 0x00000000070707f8ULL;
-    }
+    rp.recallConfig();
 
     //
     // Initialize the Console Communications memory area
     //
 
     ks10_t::writeMem(ks10_t::switchADDR,  0400000400000);       // Initialize switch register
-    ks10_t::writeMem(ks10_t::kaswADDR,    0003740000000);       // Initialize keep-alive and status word (KASW)
+    ks10_t::writeMem(ks10_t::kaswADDR,    0003740000000);       // Initialize keep-alive and status word
     ks10_t::writeMem(ks10_t::ctyinADDR,   0000000000000);       // Initialize CTY input word
     ks10_t::writeMem(ks10_t::ctyoutADDR,  0000000000000);       // Initialize CTY output word
     ks10_t::writeMem(ks10_t::klninADDR,   0000000000000);       // Initialize KLINIK input word
     ks10_t::writeMem(ks10_t::klnoutADDR,  0000000000000);       // Initialize KLINIK output word
-    ks10_t::writeMem(ks10_t::rhbaseADDR,  rhcfg.rhbase);        // Initialize RH11 base address
-    ks10_t::writeMem(ks10_t::rhunitADDR,  rhcfg.rhunit);        // Initialize UNIT number
-    ks10_t::writeMem(ks10_t::mtparmADDR,  rhcfg.mtparam);       // Initialize magtape params.
-
-    //
-    // Initialize contol registers
-    //
-
-    ks10_t::writeRPCCR(rpcfg.rpccr);                            // Initialize the RPxx Console Control Register
-    ks10_t::writeDBAR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Address Register
-    ks10_t::writeDBAR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Address Register
-    ks10_t::writeDBMR (0x0000000000000000ULL);                  // Initialize the Debug Breakpoint Mask Register
-
+    ks10_t::writeMem(ks10_t::rhbaseADDR,  rp.cfg.baseaddr);     // Initialize RH11 base address
+    ks10_t::writeMem(ks10_t::rhunitADDR,  rp.cfg.unit);         // Initialize UNIT number
+    ks10_t::writeMem(ks10_t::mtparmADDR,  0);                   // Initialize magtape params
 }
 
 //!
@@ -830,9 +794,8 @@ static bool cmdBT(int argc, char *argv[]) {
     // Set RH11 Boot Parameters
     //
 
-    ks10_t::writeMem(ks10_t::rhbaseADDR, rhcfg.rhbase);
-    ks10_t::writeMem(ks10_t::rhunitADDR, rhcfg.rhunit);
-    rh11_t rh11(rhcfg.rhbase);
+    ks10_t::writeMem(ks10_t::rhbaseADDR, rp.cfg.baseaddr);
+    ks10_t::writeMem(ks10_t::rhunitADDR, rp.cfg.unit);
 
     //
     // Halt the KS10 if it is already running.
@@ -845,11 +808,11 @@ static bool cmdBT(int argc, char *argv[]) {
 
     switch (argc) {
         case 1:
-            rh11.boot(rhcfg.rhunit, false);
+            rp.boot(rp.cfg.unit, false);
             break;
         case 2:
             if (*argv[1] == '1') {
-                rh11.boot(rhcfg.rhunit, true);
+                rp.boot(rp.cfg.unit, true);
             } else {
                 printf(usage);
             }
@@ -1177,17 +1140,15 @@ static bool cmdDS(int argc, char *argv[]) {
               "  UNIT = %o\n"
               "\n"
               "%s",
-              static_cast<unsigned int>((rhcfg.rhbase >> 18) & 0000007),
-              static_cast<unsigned int>((rhcfg.rhbase >>  0) & 0777777),
-              static_cast<unsigned int>((rhcfg.rhunit >>  0) & 0000007),
+              static_cast<unsigned int>((rp.cfg.baseaddr >> 18) & 0000007),
+              static_cast<unsigned int>((rp.cfg.baseaddr >>  0) & 0777777),
+              static_cast<unsigned int>((rp.cfg.unit     >>  0) & 0000007),
               usage);
        return true;
    }
 
    if ((argc == 2) && (strncasecmp(argv[1], "save", 4) == 0)) {
-       if (config_t::write(rhcfg_file, &rhcfg, sizeof(rhcfg))) {
-           printf("KS10: Sucessfully wrote configuration file.\n");
-       }
+       rp.saveConfig();
        return true;
    }
 
@@ -1201,7 +1162,7 @@ static bool cmdDS(int argc, char *argv[]) {
                if (temp == 0) {
                    temp = 1;
                }
-               rhcfg.rhbase = (rhcfg.rhbase & 0777777) | (temp << 18);
+               rp.cfg.baseaddr = (rp.cfg.baseaddr & 0777777) | (temp << 18);
            }
        } else if (strncasecmp(argv[i], "base=", 5) == 0) {
            unsigned int temp = parseOctal(&argv[i][5]);
@@ -1209,7 +1170,7 @@ static bool cmdDS(int argc, char *argv[]) {
                printf("KS10: Parameter must be 776700: \"%s\".\n", argv[i]);
                printf(usage);
            } else {
-               rhcfg.rhbase = (rhcfg.rhbase & 07000000) | (temp & 0777777);
+               rp.cfg.baseaddr = (rp.cfg.baseaddr & 07000000) | (temp & 0777777);
            }
        } else if (strncasecmp(argv[i], "unit=", 5) == 0) {
            unsigned int temp = parseOctal(&argv[i][5]);
@@ -1217,7 +1178,7 @@ static bool cmdDS(int argc, char *argv[]) {
                printf("KS10: Parameter out of range: \"%s\".\n", argv[i]);
                printf(usage);
            } else {
-               rhcfg.rhunit = temp;
+               rp.cfg.unit = temp;
            }
        } else {
            printf("KS10: Unrecognized parameter: \"%s\".\n", argv[i]);
@@ -1484,8 +1445,8 @@ static bool cmdGO(int argc, char *argv[]) {
         // Set RH11 Boot Parameters
         //
 
-        ks10_t::writeMem(ks10_t::rhbaseADDR, rhcfg.rhbase);
-        ks10_t::writeMem(ks10_t::rhunitADDR, rhcfg.rhunit);
+        ks10_t::writeMem(ks10_t::rhbaseADDR, rp.cfg.baseaddr);
+        ks10_t::writeMem(ks10_t::rhunitADDR, rp.cfg.unit);
 
         //
         // Load DSQDA diagnostic subroutines (SUBSM)
@@ -1521,8 +1482,8 @@ static bool cmdGO(int argc, char *argv[]) {
         // Set RH11 Boot Parameters
         //
 
-        ks10_t::writeMem(ks10_t::rhbaseADDR, rhcfg.rhbase);
-        ks10_t::writeMem(ks10_t::rhunitADDR, rhcfg.rhunit);
+        ks10_t::writeMem(ks10_t::rhbaseADDR, rp.cfg.baseaddr);
+        ks10_t::writeMem(ks10_t::rhunitADDR, rp.cfg.unit);
 
         //
         // Load DSQDA diagnostic subroutines (SUBSM)
@@ -1831,17 +1792,16 @@ static bool cmdLB(int argc, char *argv[]) {
     // Set RH11 Boot Parameters
     //
 
-    ks10_t::writeMem(ks10_t::rhbaseADDR, rhcfg.rhbase);
-    ks10_t::writeMem(ks10_t::rhunitADDR, rhcfg.rhunit);
-    rh11_t rh11(rhcfg.rhbase);
+    ks10_t::writeMem(ks10_t::rhbaseADDR, rp.cfg.baseaddr);
+    ks10_t::writeMem(ks10_t::rhunitADDR, rp.cfg.unit);
 
     switch (argc) {
         case 1:
-            rh11.boot(rhcfg.rhunit, false);
+            rp.boot(rp.cfg.unit, false);
             break;
         case 2:
             if (*argv[1] == '1') {
-                rh11.boot(rhcfg.rhunit, true);
+                rp.boot(rp.cfg.unit, true);
             } else {
                 printf(usage);
             }
@@ -2202,34 +2162,26 @@ static bool cmdRH(int argc, char *argv[]) {
         " RH WRITE - Test RH11 Disk Write\n"
         " RH WRCHK - Test RH11 Disk Write Check\n";
 
-    //
-    // Set RH11 Boot Parameters
-    //
-
-    ks10_t::writeMem(ks10_t::rhbaseADDR, rhcfg.rhbase);
-    ks10_t::writeMem(ks10_t::rhunitADDR, rhcfg.rhunit);
-    rh11_t rh11(rhcfg.rhbase);
-
     if (argc == 2) {
         if (strncasecmp(argv[1], "boot", 4) == 0) {
-            rh11.boot(rhcfg.rhunit);
+            rp.boot(rp.cfg.unit);
         } else if (strncasecmp(argv[1], "clr", 3) == 0) {
-            rh11.clear();
+            rp.clear();
         } else if (strncasecmp(argv[1], "fifo", 4) == 0) {
-            rh11.testFIFO();
+            rp.testFIFO();
         } else if (strncasecmp(argv[1], "init", 4) == 0) {
-            rh11.testInit(rhcfg.rhunit);
+            rp.testInit(rp.cfg.unit);
         } else if (strncasecmp(argv[1], "read", 4) == 0) {
-            rh11.testRead(rhcfg.rhunit);
+            rp.testRead(rp.cfg.unit);
         } else if (strncasecmp(argv[1], "rpla", 4) == 0) {
-            rh11.testRPLA(rhcfg.rhunit);
+            rp.testRPLA(rp.cfg.unit);
         } else if (strncasecmp(argv[1], "stat", 4) == 0) {
             //printf("KS10: rpCCR is 0x%08x\n", ks10_t::readRPCCR());
             ks10_t::printRPDEBUG();
         } else if (strncasecmp(argv[1], "wrchk", 5) == 0) {
-            rh11.testWrchk(rhcfg.rhunit);
+            rp.testWrchk(rp.cfg.unit);
         } else if (strncasecmp(argv[1], "write", 5) == 0) {
-            rh11.testWrite(rhcfg.rhunit);
+            rp.testWrite(rp.cfg.unit);
         } else {
             printf(usage);
         }
@@ -2265,22 +2217,21 @@ static bool cmdRP(int argc, char *argv[]) {
         "       RP SAVE\n";
 
    if (argc == 1) {
+       uint16_t rpccr = ks10_t::readRPCCR();
        printf("KS10: RPxx Parameters are:\n"
               "      UNIT: PRESENT ONLINE WRPROT\n");
        for (int i = 0; i < 8; i++) {
            printf("        %1d:     %d      %d      %d\n", i,
-                  (int)(rpcfg.rpccr >> (16 + i)) & 1,
-                  (int)(rpcfg.rpccr >> ( 8 + i)) & 1,
-                  (int)(rpcfg.rpccr >> ( 0 + i)) & 1);
+                  (int)(rpccr >> (16 + i)) & 1,
+                  (int)(rpccr >> ( 8 + i)) & 1,
+                  (int)(rpccr >> ( 0 + i)) & 1);
        }
        printf(usage);
        return true;
    }
 
    if ((argc == 2) && (strncasecmp(argv[1], "save", 4) == 0)) {
-       if (config_t::write(rpcfg_file, &rpcfg, sizeof(rpcfg))) {
-           printf("KS10: Sucessfully wrote configuration file.\n");
-       }
+       rp.saveConfig();
        return true;
    }
 
@@ -2297,45 +2248,48 @@ static bool cmdRP(int argc, char *argv[]) {
                printf("KS10: Unit parameter not specified.\n%s\n", usage);
                return true;
            }
+           uint16_t rpccr = ks10_t::readRPCCR();
            if (argv[i][8] == '0') {
-               rpcfg.rpccr &= ~(1ULL << (16 + unit));
-               rpcfg.rpccr &= ~(1ULL << (24 + unit));
+               rpccr &= ~(1ULL << (16 + unit));
+               rpccr &= ~(1ULL << (24 + unit));
            } else if (argv[i][8] == '1') {
-               rpcfg.rpccr |= (1ULL << (16 + unit));
-               rpcfg.rpccr |= (1ULL << (24 + unit));
+               rpccr |= (1ULL << (16 + unit));
+               rpccr |= (1ULL << (24 + unit));
            } else {
                printf("KS10: Unrecognized parameter \"%s\".\n%s\n", argv[i], usage);
                return true;
            }
-           ks10_t::writeRPCCR(rpcfg.rpccr);
+           ks10_t::writeRPCCR(rpccr);
        } else if (strncasecmp(argv[i], "online=", 7) == 0) {
            if (unit < 0) {
                printf("KS10: Unit parameter not specified.\n%s\n", usage);
                return true;
            }
+           uint16_t rpccr = ks10_t::readRPCCR();
            if (argv[i][7] == '0') {
-               rpcfg.rpccr &= ~(1ULL << (8 + unit));
+               rpccr &= ~(1ULL << (8 + unit));
            } else if (argv[i][7] == '1') {
-               rpcfg.rpccr |= (1ULL << (8 + unit));
+               rpccr |= (1ULL << (8 + unit));
            } else {
                printf("KS10: Unrecognized parameter \"%s\".\n%s\n", argv[i], usage);
                return true;
            }
-           ks10_t::writeRPCCR(rpcfg.rpccr);
+           ks10_t::writeRPCCR(rpccr);
        } else if (strncasecmp(argv[i], "wrprot=", 7) == 0) {
            if (unit < 0) {
                printf("KS10: Unit parameter not specified.\n%s\n", usage);
                return true;
            }
+           uint16_t rpccr = ks10_t::readRPCCR();
            if (argv[i][7] == '0') {
-               rpcfg.rpccr &= ~(1ULL << unit);
+               rpccr &= ~(1ULL << unit);
            } else if (argv[i][7] == '1') {
-               rpcfg.rpccr |= (1ULL << unit);
+               rpccr |= (1ULL << unit);
            } else {
                printf("KS10: Unrecognized parameter \"%s\".\n%s\n", argv[i], usage);
                return true;
            }
-           ks10_t::writeRPCCR(rpcfg.rpccr);
+           ks10_t::writeRPCCR(rpccr);
        } else {
            printf("KS10: Unrecognized parameter \"%s\".\n%s\n", argv[i], usage);
            return true;
