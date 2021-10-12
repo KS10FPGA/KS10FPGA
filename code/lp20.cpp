@@ -128,9 +128,9 @@ static const uint16_t davfu_data[] = {
 //!
 
 void lp20_t::initialize(void) {
-    ks10_t::data_t temp = ks10_t::readIO(csra_addr);
-    ks10_t::writeIO(csra_addr, temp | csra_init);
-    ks10_t::writeIO(csra_addr, temp);
+    ks10_t::data_t temp = ks10_t::readIO(addrCSRA);
+    ks10_t::writeIO(addrCSRA, temp | LPCSRA_INIT);
+    ks10_t::writeIO(addrCSRA, temp);
 }
 
 //!
@@ -170,8 +170,8 @@ void lp20_t::testRegs(void) {
     // Is printer online?
     //
 
-    ks10_t::data_t temp = ks10_t::readIO(csra_addr);
-    if ((temp & csra_onln) == 0) {
+    ks10_t::data_t temp = ks10_t::readIO(addrCSRA);
+    if ((temp & LPCSRA_ONLN) == 0) {
         printf("KS10: Printer is offline.\n");
         return;
     }
@@ -181,8 +181,8 @@ void lp20_t::testRegs(void) {
     //
 
     for (int i = 0; i < 256; i++) {
-        ks10_t::writeIO(cbuf_addr, i);
-        ks10_t::writeIO(ramd_addr, 0);
+        ks10_t::writeIO(addrCBUF, i);
+        ks10_t::writeIO(addrRAMD, 0);
     }
 
     //
@@ -196,17 +196,16 @@ void lp20_t::testRegs(void) {
     //  This will page the destination to 070000
     //
 
-    uba_t uba3(uba_t::uba3);
-    uba3.pag_write(1, uba_t::pag_vld | (0 + uba_t::addr2page(paddr)));
-    uba3.pag_write(2, uba_t::pag_vld | (1 + uba_t::addr2page(paddr)));
-    uba3.pag_write(3, uba_t::pag_vld | (2 + uba_t::addr2page(paddr)));
-    uba3.pag_write(4, uba_t::pag_vld | (3 + uba_t::addr2page(paddr)));
+    uba.writePAG(1, uba_t::PAG_VLD | (0 + uba_t::addr2page(paddr)));
+    uba.writePAG(2, uba_t::PAG_VLD | (1 + uba_t::addr2page(paddr)));
+    uba.writePAG(3, uba_t::PAG_VLD | (2 + uba_t::addr2page(paddr)));
+    uba.writePAG(4, uba_t::PAG_VLD | (3 + uba_t::addr2page(paddr)));
 
     //
     // Initialize
     //
 
-    ks10_t::writeIO(csra_addr, csra_init);
+    ks10_t::writeIO(addrCSRA, LPCSRA_INIT);
 
     //
     // DMA is limited to 4K words (BCTR is 12-bits)
@@ -228,26 +227,26 @@ void lp20_t::testRegs(void) {
             bytes_to_send = bytes_per_dma;
         }
 
-        ks10_t::writeIO(bctr_addr, -bytes_to_send);
+        ks10_t::writeIO(addrBCTR, -bytes_to_send);
         printf("DMA %d bytes\n", bytes_to_send);
 
         //
         // Set destination address
         //
 
-        ks10_t::writeIO(bar_addr, vaddr + bytes_sent);
+        ks10_t::writeIO(addrBAR, vaddr + bytes_sent);
 
         //
         // Start DMA
         //
 
-        ks10_t::writeIO(csra_addr, csra_go);
+        ks10_t::writeIO(addrCSRA, LPCSRA_GO);
 
         //
         // Wait for DMA to complete
         //
 
-        while ((ks10_t::readIO(csra_addr) & csra_go) != 0) {
+        while ((ks10_t::readIO(addrCSRA) & LPCSRA_GO) != 0) {
             ;
         }
 
@@ -271,33 +270,31 @@ void lp20_t::testRegs(void) {
 
 void lp20_t::dumpRegs(void) {
 
-    uba_t uba3(uba_t::uba3);
-    ks10_t::data_t mask16 = 0177777;
-    ks10_t::data_t mask08 = 0000377;
-
     printf("KS10: Register Dump\n"
            "      UBAS: %012llo\n"
-           "      CSRA: %06llo\n"
-           "      CSRB: %06llo\n"
-           "      BAR : %06llo\n"
-           "      BCTR: %06llo\n"
-           "      PCTR: %06llo\n"
-           "      RAMD: %06llo\n"
-           "      CCTR: %06llo\n"
-           "      CBUF: %06llo\n"
-           "      CKSM: %06llo\n"
-           "      PDAT: %06llo\n",
-           uba3.csr_read(),
-           mask16 & ks10_t::readIO(csra_addr),
-           mask16 & ks10_t::readIO(csrb_addr),
-           mask16 & ks10_t::readIO(bar_addr),
-           mask16 & ks10_t::readIO(bctr_addr),
-           mask16 & ks10_t::readIO(pctr_addr),
-           mask16 & ks10_t::readIO(ramd_addr),
-           mask08 & (ks10_t::readIO(cbuf_addr) >> 8),
-           mask08 & (ks10_t::readIO(cbuf_addr) >> 0),
-           mask08 & (ks10_t::readIO(pdat_addr) >> 8),
-           mask08 & (ks10_t::readIO(pdat_addr) >> 0));
+           "      CSRA: %06o\n"
+           "      CSRB: %06o\n"
+           "      BAR : %06o\n"
+           "      BCTR: %06o\n"
+           "      PCTR: %06o\n"
+           "      RAMD: %06o\n"
+           "      CCTR: %06o\n"
+           "      CBUF: %06o\n"
+           "      CKSM: %06o\n"
+           "      PDAT: %06o\n"
+           "      LPCCR: 0x%08x\n",
+           uba.readCSR(),
+           ks10_t::readIO16(addrCSRA),
+           ks10_t::readIO16(addrCSRB),
+           ks10_t::readIO16(addrBAR),
+           ks10_t::readIO16(addrBCTR),
+           ks10_t::readIO16(addrPCTR),
+           ks10_t::readIO16(addrRAMD),
+           (ks10_t::readIO16(addrCBUF) >> 8) & 0377,
+           (ks10_t::readIO16(addrCBUF) >> 0) & 0377,
+           (ks10_t::readIO16(addrPDAT) >> 8) & 0377,
+           (ks10_t::readIO16(addrPDAT) >> 0) & 0377,
+           ks10_t::readLPCCR());
 }
 
 //!
@@ -320,8 +317,8 @@ void lp20_t::printFile(const char *filename) {
     // Is printer online?
     //
 
-    ks10_t::data_t temp = ks10_t::readIO(csra_addr);
-    if ((temp & csra_onln) == 0) {
+    ks10_t::data_t temp = ks10_t::readIO(addrCSRA);
+    if ((temp & LPCSRA_ONLN) == 0) {
         printf("KS10: Printer is offline.\n");
         return;
     }
@@ -331,8 +328,8 @@ void lp20_t::printFile(const char *filename) {
     //
 
     for (int i = 0; i < 256; i++) {
-        ks10_t::writeIO(cbuf_addr, i);
-        ks10_t::writeIO(ramd_addr, 0);
+        ks10_t::writeIO(addrCBUF, i);
+        ks10_t::writeIO(addrRAMD, 0);
     }
 
     //
@@ -340,6 +337,16 @@ void lp20_t::printFile(const char *filename) {
     //
 
     char buffer[128];
+
+    //
+    // Set Unibus mapping
+    //  This will page the destination to 070000
+    //
+
+    uba.writePAG(1, uba_t::PAG_VLD | (0 + uba_t::addr2page(paddr)));
+    uba.writePAG(2, uba_t::PAG_VLD | (1 + uba_t::addr2page(paddr)));
+    uba.writePAG(3, uba_t::PAG_VLD | (2 + uba_t::addr2page(paddr)));
+    uba.writePAG(4, uba_t::PAG_VLD | (3 + uba_t::addr2page(paddr)));
 
     //
     // Read file from SD Card into buffer
@@ -356,45 +363,34 @@ void lp20_t::printFile(const char *filename) {
         packBytes(paddr, buffer, numbytes);
 
         //
-        // Set Unibus mapping
-        //  This will page the destination to 070000
-        //
-
-        uba_t uba3(uba_t::uba3);
-        uba3.pag_write(1, uba_t::pag_vld | (0 + uba_t::addr2page(paddr)));
-        uba3.pag_write(2, uba_t::pag_vld | (1 + uba_t::addr2page(paddr)));
-        uba3.pag_write(3, uba_t::pag_vld | (2 + uba_t::addr2page(paddr)));
-        uba3.pag_write(4, uba_t::pag_vld | (3 + uba_t::addr2page(paddr)));
-
-        //
         // Reset LP20
         //
 
-        ks10_t::writeIO(csra_addr, csra_init);
+        ks10_t::writeIO(addrCSRA, LPCSRA_INIT);
 
         //
         // Set byte counter
         //
 
-        ks10_t::writeIO(bctr_addr, -numbytes);
+        ks10_t::writeIO(addrBCTR, -numbytes);
 
         //
         // Set destination address
         //
 
-        ks10_t::writeIO(bar_addr, vaddr);
+        ks10_t::writeIO(addrBAR, vaddr);
 
         //
         // Start DMA
         //
 
-        ks10_t::writeIO(csra_addr, csra_go);
+        ks10_t::writeIO(addrCSRA, LPCSRA_GO);
 
         //
         // Wait for DMA to complete
         //
 
-        while ((ks10_t::readIO(csra_addr) & csra_go) != 0) {
+        while ((ks10_t::readIO(addrCSRA) & LPCSRA_GO) != 0) {
             ;
         }
 

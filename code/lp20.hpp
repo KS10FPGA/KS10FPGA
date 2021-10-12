@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2020 Rob Doyle
+// Copyright (C) 2013-2021 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -50,61 +50,54 @@ class lp20_t {
     private:
 
         //
+        // Register offsets
+        //
+
+        const ks10_t::addr_t offsetCSRA = 000;
+        const ks10_t::addr_t offsetCSRB = 002;
+        const ks10_t::addr_t offsetBAR  = 004;
+        const ks10_t::addr_t offsetBCTR = 006;
+        const ks10_t::addr_t offsetPCTR = 010;
+        const ks10_t::addr_t offsetRAMD = 012;
+        const ks10_t::addr_t offsetCBUF = 014;
+        const ks10_t::addr_t offsetPDAT = 016;
+
+        //
+        // Register Addresses
+        //
+
+        const ks10_t::addr_t addrCSRA;
+        const ks10_t::addr_t addrCSRB;
+        const ks10_t::addr_t addrBAR;
+        const ks10_t::addr_t addrBCTR;
+        const ks10_t::addr_t addrPCTR;
+        const ks10_t::addr_t addrRAMD;
+        const ks10_t::addr_t addrCBUF;
+        const ks10_t::addr_t addrPDAT;
+
+        //!
         //! Control and Status Register A (CSRA) definitions
-        //
+        //!
 
-        static const ks10_t::addr_t csra_addr = 03775400;       //!< CSRA Address
-        static const ks10_t::data_t csra_onln = 0x0800;         //!< Online
-        static const ks10_t::data_t csra_init = 0x0100;         //!< Clear
-        static const ks10_t::data_t csra_done = 0x0080;         //!< DMA Done
-        static const ks10_t::data_t csra_ie   = 0x0040;         //!< Interrupt enable
-        static const ks10_t::data_t csra_go   = 0x0001;         //!< Go
-
-        //
-        //! Control and Status Register B (CSRB) definitions
-        //
-
-        static const ks10_t::addr_t csrb_addr = 03775402;
+        static const ks10_t::data_t LPCSRA_ONLN = 0x0800;         //!< Online
+        static const ks10_t::data_t LPCSRA_INIT = 0x0100;         //!< Clear
+        static const ks10_t::data_t LPCSRA_DONE = 0x0080;         //!< DMA Done
+        static const ks10_t::data_t LPCSRA_IE   = 0x0040;         //!< Interrupt enable
+        static const ks10_t::data_t LPCSRA_GO   = 0x0001;         //!< Go
 
         //
-        //! Bus Address Register (BAR) definitions
+        // UBA object
         //
 
-        static const ks10_t::addr_t bar_addr = 03775404;
+        uba_t uba;
 
         //
-        //! Byte Count Register (BCTR)
+        // LP non-volatile configuration
         //
 
-        static const ks10_t::addr_t bctr_addr = 03775406;
-
-        //
-        //! Page Count Register (PCTR)
-        //
-
-        static const ks10_t::addr_t pctr_addr = 03775410;
-
-        //
-        //! RAM Data Register (RAMD)
-        //
-
-        static const ks10_t::addr_t ramd_addr = 03775412;
-
-        //
-        //! Character Buffer Register (CBUF)
-        //! Column Counter Register (CCTR)
-        //
-
-        static const ks10_t::addr_t cbuf_addr = 03775414;
-
-        //
-        //! Printer Data Register (PDAT)
-        //! Checksum Register (CKSM)
-        //
-
-        static const ks10_t::addr_t pdat_addr = 03775416;
-
-        static void setup(unsigned int line);
+        struct lpcfg_t {
+            uint32_t lpccr;
+        } cfg;
 
     public:
 
@@ -112,13 +105,32 @@ class lp20_t {
         // LP20 Base Addresses
         //
 
-        static const ks10_t::addr_t base_addr1 = 03775400;      //!< base address #1
-        static const ks10_t::addr_t base_addr2 = 03775420;      //!< base address #2
+        static const uint32_t baseADDR1 = 03775400;      //!< base address #1
+        static const uint32_t baseADDR2 = 03775420;      //!< base address #2
 
-        static void initialize(void);
-        static void testRegs(void);
-        static void dumpRegs(void);
-        static void printFile(const char *filename);
+        //
+        // Public Functions
+        //
+
+        void recallConfig(void);
+        void saveConfig(void);
+        void initialize(void);
+        void testRegs(void);
+        void dumpRegs(void);
+        void printFile(const char *filename);
+
+        lp20_t(uint32_t baseADDR = baseADDR1) :
+            addrCSRA((baseADDR & 07777760) + offsetCSRA),
+            addrCSRB((baseADDR & 07777760) + offsetCSRB),
+            addrBAR ((baseADDR & 07777760) + offsetBAR ),
+            addrBCTR((baseADDR & 07777760) + offsetBCTR),
+            addrPCTR((baseADDR & 07777760) + offsetPCTR),
+            addrRAMD((baseADDR & 07777760) + offsetRAMD),
+            addrCBUF((baseADDR & 07777760) + offsetCBUF),
+            addrPDAT((baseADDR & 07777760) + offsetPDAT),
+            uba(baseADDR) {
+            ;
+        }
 };
 
 #endif

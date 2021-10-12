@@ -49,6 +49,7 @@
 #include "ks10.hpp"
 #include "lp20.hpp"
 #include "rh11.hpp"
+#include "dup11.hpp"
 #include "config.hpp"
 #include "commands.hpp"
 
@@ -61,6 +62,27 @@
 #endif
 
 #define CUSTOM_CMD
+
+//!
+//! \brief
+//!   Construct LP (printer) device
+//!
+
+lp20_t lp;
+
+//!
+//! \brief
+//!   Construct DZ (tty) device
+//!
+
+dz11_t dz;
+
+//!
+//! \brief
+//!   Construct DUP (serial com) device
+//!
+
+dup11_t dp;
 
 //!
 //! \brief
@@ -1360,21 +1382,21 @@ static bool cmdDZ(int argc, char *argv[]) {
     if (argc == 3) {
         if (strncasecmp(argv[1], "tx", 2) == 0) {
             if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
-                dz11_t::testTX(*argv[2]);
+                dz.testTX(*argv[2]);
             } else {
                 printf(usage);
             }
 
         } else if (strncasecmp(argv[1], "rx", 2) == 0) {
             if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
-                dz11_t::testRX(*argv[2]);
+                dz.testRX(*argv[2]);
             } else {
                 printf(usage);
             }
 
         } else if (strncasecmp(argv[1], "ec", 2) == 0) {
             if ((*argv[2] >= '0') && (*argv[2] <= '7')) {
-                dz11_t::testECHO(*argv[2]);
+                dz.testECHO(*argv[2]);
             } else {
                 printf(usage);
             }
@@ -2065,13 +2087,13 @@ static bool cmdLP(int argc, char *argv[]) {
         ks10_t::writeDCSR(ks10_t::dcsrBRCMD_MATCH | (ks10_t::readDCSR() & ~ks10_t::dcsrBRCMD));
         return true;
     } else if ((argc == 2) && (strncasecmp(argv[1], "stat", 4) == 0)) {
-        lp20_t::dumpRegs();
+        lp.dumpRegs();
         return true;
     } else if ((argc == 2) && (strncasecmp(argv[1], "test", 4) == 0)) {
-        lp20_t::testRegs();
+        lp.testRegs();
         return true;
     } else if ((argc == 3) && (strncasecmp(argv[1], "print", 4) == 0)) {
-        lp20_t::printFile(argv[2]);
+        lp.printFile(argv[2]);
         return true;
     }
 

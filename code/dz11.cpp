@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2020 Rob Doyle
+// Copyright (C) 2013-2021 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -38,6 +38,7 @@
 //
 
 #include "stdio.h"
+#include "uba.hpp"
 #include "dz11.hpp"
 
 //!
@@ -54,13 +55,13 @@ void dz11_t::setup(unsigned int line) {
     // Assert Device Clear
     //
 
-    ks10_t::writeIO(csr_addr, csr_clr);
+    ks10_t::writeIO(addrCSR, DZCSR_CLR);
 
     //
     // Wait for Device Clear to negate.  This takes about 15 uS.
     //
 
-    while (ks10_t::readIO(csr_addr) & csr_clr) {
+    while (ks10_t::readIO(addrCSR) & DZCSR_CLR) {
         ;
     }
 
@@ -68,19 +69,19 @@ void dz11_t::setup(unsigned int line) {
     // Configure Line Parameter Register for 9600,N,8,1
     //
 
-    ks10_t::writeIO(lpr_addr, 0x1e18 | line);
+    ks10_t::writeIO(addrLPR, 0x1e18 | line);
 
     //
     // Enable selected line
     //
 
-    ks10_t::writeIO(tcr_addr, (1 << line));
+    ks10_t::writeIO(addrTCR, (1 << line));
 
     //
     // Enable Master Scan Enable
     //
 
-    ks10_t::writeIO(csr_addr, csr_mse);
+    ks10_t::writeIO(addrCSR, DZCSR_MSE);
 }
 
 //!
@@ -113,7 +114,7 @@ void dz11_t::testTX(char line) {
         // Wait for Transmitter Ready (TRDY) to be asserted.
         //
 
-        while ((ks10_t::readIO(csr_addr) & csr_trdy) == 0) {
+        while ((ks10_t::readIO(addrCSR) & DZCSR_TRDY) == 0) {
             ;
         }
 
@@ -121,7 +122,7 @@ void dz11_t::testTX(char line) {
         // Output character to Transmitter Data Register
         //
 
-        ks10_t::writeIO(tdr_addr, *s++);
+        ks10_t::writeIO(addrTDR, *s++);
     }
 }
 
@@ -153,13 +154,13 @@ void dz11_t::testRX(char line) {
         // Wait for Receiver Done (RDONE) to be asserted.
         //
 
-        if (ks10_t::readIO(csr_addr) & csr_rdone) {
+        if (ks10_t::readIO(addrCSR) & DZCSR_RDONE) {
 
             //
             // Wait for Transmitter Ready (TRDY) to be asserted
             //
 
-            while (!(ks10_t::readIO(csr_addr) & csr_trdy)) {
+            while (!(ks10_t::readIO(addrCSR) & DZCSR_TRDY)) {
                 ;
             }
 
@@ -167,7 +168,7 @@ void dz11_t::testRX(char line) {
             // Read character from Receiver Buffer (RBUF)
             //
 
-            char ch = ks10_t::readIO(rbuf_addr) & 0xff;
+            char ch = ks10_t::readIO(addrRBUF) & 0xff;
 
             //
             // Abort on CTRL-C
@@ -211,13 +212,13 @@ void dz11_t::testECHO(char line) {
         // Wait for Receiver Done (RDONE) to be asserted.
         //
 
-        if (ks10_t::readIO(csr_addr) & csr_rdone) {
+        if (ks10_t::readIO(addrCSR) & DZCSR_RDONE) {
 
             //
             // Wait for Transmitter Ready (TRDY) to be asserted
             //
 
-            while (!(ks10_t::readIO(csr_addr) & csr_trdy)) {
+            while (!(ks10_t::readIO(addrCSR) & DZCSR_TRDY)) {
                 ;
             }
 
@@ -225,7 +226,7 @@ void dz11_t::testECHO(char line) {
             // Read character from Receiver Buffer (RBUF)
             //
 
-            char ch = ks10_t::readIO(rbuf_addr) & 0xff;
+            char ch = ks10_t::readIO(addrRBUF) & 0xff;
 
             //
             // Abort on CTRL-C
@@ -239,7 +240,7 @@ void dz11_t::testECHO(char line) {
             // Echo character to Transmitter Data Register (TDR)
             //
 
-            ks10_t::writeIO(tdr_addr, ch);
+            ks10_t::writeIO(addrTDR, ch);
 
         }
     }

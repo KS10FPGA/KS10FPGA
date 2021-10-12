@@ -51,12 +51,21 @@ class uba_t {
     private:
 
         //
+        // Register offsets
+        //
+
+        const ks10_t::addr_t offsetUBA = 0763000;
+        const ks10_t::addr_t offsetPAG = 0000000;
+        const ks10_t::addr_t offsetCSR = 0000100;
+        const ks10_t::addr_t offsetMR  = 0000101;
+
+        //
         // Register Addresses
         //
 
-        const ks10_t::addr_t csr_addr;
-        const ks10_t::addr_t pag_addr;
-        static const ks10_t::addr_t uba_offset = 0763000;
+        const ks10_t::addr_t addrPAG;
+        const ks10_t::addr_t addrCSR;
+        const ks10_t::addr_t addrMR;
 
     public:
 
@@ -64,33 +73,30 @@ class uba_t {
         // UBA Base Addresses
         //
 
-        static const ks10_t::addr_t pag_offset = 0000000;
-        static const ks10_t::addr_t uba0       = (0 << 18) + uba_offset;
-        static const ks10_t::addr_t uba1       = (1 << 18) + uba_offset;
-        static const ks10_t::addr_t uba2       = (2 << 18) + uba_offset;
-        static const ks10_t::addr_t uba3       = (3 << 18) + uba_offset;
-        static const ks10_t::addr_t uba4       = (4 << 18) + uba_offset;
+        static const ks10_t::addr_t uba1ADDR   = 01763000;
+        static const ks10_t::addr_t uba2ADDR   = 02763000;
+        static const ks10_t::addr_t uba3ADDR   = 03763000;
+        static const ks10_t::addr_t uba4ADDR   = 04763000;
 
         //
         // UBA Control Status Register (UBACSR)
         //
 
-        static const ks10_t::addr_t csr_offset = 0000100;
-        static const ks10_t::data_t csr_tmo    = 0400000;
-        static const ks10_t::data_t csr_nxd    = 0040000;
-        static const ks10_t::data_t csr_hi     = 0004000;
-        static const ks10_t::data_t csr_lo     = 0002000;
-        static const ks10_t::data_t csr_pwr    = 0002000;
-        static const ks10_t::data_t csr_ini    = 0000100;
+        static const ks10_t::data_t UBACSR_TMO = 0400000;
+        static const ks10_t::data_t UBACSR_NXD = 0040000;
+        static const ks10_t::data_t UBACSR_HI  = 0004000;
+        static const ks10_t::data_t UBACSR_LO  = 0002000;
+        static const ks10_t::data_t UBACSR_PWR = 0002000;
+        static const ks10_t::data_t UBACSR_INI = 0000100;
 
         //
         // UBA Paging RAM
         //
 
-        static const ks10_t::data_t pag_rpw    = 0400000;
-        static const ks10_t::data_t pag_e16    = 0200000;
-        static const ks10_t::data_t pag_ftm    = 0100000;
-        static const ks10_t::data_t pag_vld    = 0040000;
+        static const ks10_t::data_t PAG_RPW    = 0400000;
+        static const ks10_t::data_t PAG_E16    = 0200000;
+        static const ks10_t::data_t PAG_FTM    = 0100000;
+        static const ks10_t::data_t PAG_VLD    = 0040000;
 
         //!
         //! \brief
@@ -100,9 +106,10 @@ class uba_t {
         //!    Base address of Unibus Address
         //!
 
-        uba_t (ks10_t::addr_t base_addr) :
-            csr_addr((base_addr & 07000000) + uba_offset + csr_offset),
-            pag_addr((base_addr & 07000000) + uba_offset + pag_offset) {
+        uba_t (ks10_t::addr_t baseADDR) :
+            addrPAG((baseADDR & 07000000) + offsetUBA + offsetPAG),
+            addrCSR((baseADDR & 07000000) + offsetUBA + offsetCSR),
+            addrMR ((baseADDR & 07000000) + offsetUBA + offsetMR ) {
             ;
         }
 
@@ -114,8 +121,8 @@ class uba_t {
         //!    data to write to the CSR
         //!
 
-        void csr_write(ks10_t::data_t data) {
-            ks10_t::writeIO(csr_addr, data);
+        void writeCSR(ks10_t::data_t data) {
+            ks10_t::writeIO(addrCSR, data);
         }
 
         //!
@@ -126,8 +133,8 @@ class uba_t {
         //!    Contents of CSR Register
         //!
 
-        ks10_t::data_t csr_read(void) {
-            return ks10_t::readIO(csr_addr);
+        ks10_t::data_t readCSR(void) {
+            return ks10_t::readIO(addrCSR);
         }
 
         //!
@@ -141,8 +148,8 @@ class uba_t {
         //!    data to write to Paging Memory
         //!
 
-        void pag_write(ks10_t::addr_t offset, ks10_t::data_t data) {
-            ks10_t::writeIO(pag_addr + offset, data);
+        void writePAG(ks10_t::addr_t offset, ks10_t::data_t data) {
+            ks10_t::writeIO(addrPAG + offset, data);
         }
 
         //!
@@ -156,8 +163,8 @@ class uba_t {
         //!    Contents of Paging Memmory
         //!
 
-        ks10_t::data_t pag_read(ks10_t::addr_t offset) {
-            return ks10_t::readIO(pag_addr + offset);
+        ks10_t::data_t readPAG(ks10_t::addr_t offset) {
+            return ks10_t::readIO(addrPAG + offset);
         }
 
         //!
@@ -171,7 +178,7 @@ class uba_t {
         //!    page associated with the address
         //!
 
-        static inline ks10_t::data_t addr2page(ks10_t::addr_t addr) {
+        static ks10_t::data_t addr2page(ks10_t::addr_t addr) {
             return (addr >> 9) & 03777;
         }
 };

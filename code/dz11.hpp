@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2020 Rob Doyle
+// Copyright (C) 2013-2021 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -39,6 +39,7 @@
 #ifndef __DZ11_HPP
 #define __DZ11_HPP
 
+#include "uba.hpp"
 #include "ks10.hpp"
 
 //!
@@ -50,46 +51,51 @@ class dz11_t {
     private:
 
         //
+        // Register offsets
+        //
+
+        const ks10_t::addr_t offsetCSR  = 00;
+        const ks10_t::addr_t offsetRBUF = 02;
+        const ks10_t::addr_t offsetLPR  = 02;
+        const ks10_t::addr_t offsetTCR  = 04;
+        const ks10_t::addr_t offsetMSR  = 06;
+        const ks10_t::addr_t offsetTDR  = 06;
+
+        //
+        // Register Addresses
+        //
+
+        const ks10_t::addr_t addrCSR;
+        const ks10_t::addr_t addrRBUF;
+        const ks10_t::addr_t addrLPR;
+        const ks10_t::addr_t addrTCR;
+        const ks10_t::addr_t addrMSR;
+        const ks10_t::addr_t addrTDR;
+
+        //
         //! Control and Status Register (CSR) definitions
         //
 
-        static const ks10_t::addr_t csr_addr  = 03760010;       //!< CSR Address
-        static const ks10_t::data_t csr_trdy  = 0x8000;         //!< Transmit Ready
-        static const ks10_t::data_t csr_rdone = 0x0080;         //!< Receiver Done
-        static const ks10_t::data_t csr_mse   = 0x0020;         //!< Master Scan Enable
-        static const ks10_t::data_t csr_clr   = 0x0010;         //!< Clear
+        static const ks10_t::data_t DZCSR_TRDY  = 0x8000;         //!< Transmit Ready
+        static const ks10_t::data_t DZCSR_RDONE = 0x0080;         //!< Receiver Done
+        static const ks10_t::data_t DZCSR_MSE   = 0x0020;         //!< Master Scan Enable
+        static const ks10_t::data_t DZCSR_CLR   = 0x0010;         //!< Clear
 
         //
-        //! Receiver Buffer Register (RBUF) definitions
+        // UBA object
         //
 
-        static const ks10_t::addr_t rbuf_addr = 03760012;
+        uba_t uba;
 
         //
-        //! Line Parameter Register (LPR) definitions
+        // LP non-volatile configuration
         //
 
-        static const ks10_t::addr_t lpr_addr = 03760012;
+        struct dzcfg_t {
+            uint32_t dzccr;
+        } cfg;
 
-        //
-        //! Transmit Control Register (TCR) definitions
-        //
-
-        static const ks10_t::addr_t tcr_addr = 03760014;
-
-        //
-        //! Modem Status Register (MSR) definitions
-        //
-
-        static const ks10_t::addr_t msr_addr = 03760016;
-
-        //
-        //! Transmit Data Register (TDR) definitions
-        //
-
-        static const ks10_t::addr_t tdr_addr = 03760016;
-
-        static void setup(unsigned int line);
+        void setup(unsigned int line);
 
     public:
 
@@ -97,14 +103,33 @@ class dz11_t {
         // DZ11 Base Addresses
         //
 
-        static const ks10_t::addr_t base_addr1 = 03760010;      //!< base address #1
-        static const ks10_t::addr_t base_addr2 = 03760020;      //!< base address #2
-        static const ks10_t::addr_t base_addr3 = 03760030;      //!< base address #3
-        static const ks10_t::addr_t base_addr4 = 03760040;      //!< base address #4
+        static const uint32_t baseADDR1 = 03760010;      //!< base address #1
+        static const uint32_t baseADDR2 = 03760020;      //!< base address #2
+        static const uint32_t baseADDR3 = 03760030;      //!< base address #3
+        static const uint32_t baseADDR4 = 03760040;      //!< base address #4
 
-        static void testTX(char line);
-        static void testRX(char line);
-        static void testECHO(char line);
+        //
+        // Public Functions
+        //
+
+        void recallConfig(void);
+        void saveConfig(void);
+        void testTX(char line);
+        void testRX(char line);
+        void testECHO(char line);
+        void dumpRegs(void);
+
+        dz11_t(uint32_t baseADDR = baseADDR1) :
+            addrCSR ((baseADDR & 07777770) + offsetCSR ),
+            addrRBUF((baseADDR & 07777770) + offsetRBUF),
+            addrLPR ((baseADDR & 07777770) + offsetLPR ),
+            addrTCR ((baseADDR & 07777770) + offsetTCR ),
+            addrMSR ((baseADDR & 07777770) + offsetMSR ),
+            addrTDR ((baseADDR & 07777770) + offsetTDR ),
+            uba(baseADDR) {
+                ;
+        }
+
 };
 
 #endif

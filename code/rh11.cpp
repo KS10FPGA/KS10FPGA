@@ -993,7 +993,7 @@ void rh11_t::testRead(ks10_t::data_t unit) {
     //  This will page the destination to 070000
     //
 
-    uba.pag_write(1, uba_t::pag_ftm | uba_t::pag_vld | uba_t::addr2page(paddr));
+    uba.writePAG(1, uba_t::PAG_FTM | uba_t::PAG_VLD | uba_t::addr2page(paddr));
 
     //
     // Set destination address
@@ -1161,7 +1161,7 @@ void rh11_t::testWrite(ks10_t::data_t unit) {
     //  This will page the destination to 070000
     //
 
-    uba.pag_write(1, uba_t::pag_ftm | uba_t::pag_vld | uba_t::addr2page(paddr));
+    uba.writePAG(1, uba_t::PAG_FTM | uba_t::PAG_VLD | uba_t::addr2page(paddr));
 
     //
     // Set destination address
@@ -1315,7 +1315,7 @@ void rh11_t::testWrchk(ks10_t::data_t unit) {
     //  This will page the destination to 070000
     //
 
-    uba.pag_write(1, uba_t::pag_ftm | uba_t::pag_vld | uba_t::addr2page(paddr));
+    uba.writePAG(1, uba_t::PAG_FTM | uba_t::PAG_VLD | uba_t::addr2page(paddr));
 
     //
     // Set destination address
@@ -1510,7 +1510,7 @@ void rh11_t::boot(ks10_t::data_t unit, bool diagmode) {
 
     //
 
-    uba.pag_write(1, uba_t::pag_ftm | uba_t::pag_vld | uba_t::addr2page(paddr));
+    uba.writePAG(1, uba_t::PAG_FTM | uba_t::PAG_VLD | uba_t::addr2page(paddr));
 
     //
     // Clear Attentions
