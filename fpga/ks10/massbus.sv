@@ -75,27 +75,11 @@ interface massbus;
    logic         mbWCE;                 // Write check error
    logic         mbNPRO;                // NPR output
    logic         mbATA[0:7];            // Attention
-   logic         mbDVA[0:7];            // Drive available
-// logic [15: 0] mbREG00[0:7];          // RPCS1, MTCS1  (RHCS1)
-// logic [15: 0] mbREG02;               // RPWC,  MTWC   (RHWC)
-// logic [15: 0] mbREG04;               // RPBA,  MTBA   (RHBA)
-   logic [15: 0] mbREG06[0:7];          // RPDA,  MTFC
-// logic [15: 0] mbREG10;               // RPCS2, MTCS2  (RHCS2)
-   logic [15: 0] mbREG12[0:7];          // RPDS,  MTDS           (Read Only)
-   logic [15: 0] mbREG14[0:7];          // RPER1, MTER           (Read Only)
-// logic [15: 0] mbREG16;               // RPAS,  MTAS   (RHAS)  (Pseudo Reg)
-   logic [15: 0] mbREG20[0:7];          // RPLA,  MTCC
-// logic [15: 0] mbREG22;               // RPDB,  MTDB   (RHDB)
-   logic [15: 0] mbREG24[0:7];          // RPMR,  MTMR
-   logic [15: 0] mbREG26[0:7];          // RPDT,  MTDT
-   logic [15: 0] mbREG30[0:7];          // RPSN,  MTSN
-   logic [15: 0] mbREG32[0:7];          // RPOF,  MTTC
-   logic [15: 0] mbREG34[0:7];          // RPDC,  Zero
-   logic [15: 0] mbREG36[0:7];          // RPCC,  Zero
-   logic [15: 0] mbREG40[0:7];          // RPER2, Zero
-   logic [15: 0] mbREG42[0:7];          // RPER3, Zero
-   logic [15: 0] mbREG44[0:7];          // RPEC1, Zero
-   logic [15: 0] mbREG46[0:7];          // RPEC2, Zero
+   logic         mbDVA;                 // Drive available
+   logic         mbDPR;			// Drive present
+   logic         mbDRY;			// Drive ready
+   logic [15: 0] mbREGDAT;		// Register data
+   logic         mbREGACK;		// Register ack
 
    //
    // Master Port
@@ -129,26 +113,10 @@ interface massbus;
       input  mbNPRO,
       input  mbATA,
       input  mbDVA,
-//    input  mbREG00,
-//    input  mbREG02,
-//    input  mbREG04,
-      input  mbREG06,
-//    input  mbREG10,
-      input  mbREG12,
-      input  mbREG14,
-//    input  mbREG16,
-      input  mbREG20,
-//    input  mbREG22,
-      input  mbREG24,
-      input  mbREG26,
-      input  mbREG30,
-      input  mbREG32,
-      input  mbREG34,
-      input  mbREG36,
-      input  mbREG40,
-      input  mbREG42,
-      input  mbREG44,
-      input  mbREG46
+      input  mbDPR,
+      input  mbDRY,
+      input  mbREGDAT,
+      input  mbREGACK
    );
 
    //
@@ -182,26 +150,10 @@ interface massbus;
       output mbNPRO,
       output mbATA,
       output mbDVA,
-//    output mbREG00,
-//    output mbREG02,
-//    output mbREG04,
-      output mbREG06,
-//    output mbREG10,
-      output mbREG12,
-      output mbREG14,
-//    output mbREG16,
-      output mbREG20,
-//    output mbREG22,
-      output mbREG24,
-      output mbREG26,
-      output mbREG30,
-      output mbREG32,
-      output mbREG34,
-      output mbREG36,
-      output mbREG40,
-      output mbREG42,
-      output mbREG44,
-      output mbREG46
+      output mbDPR,
+      output mbDRY,
+      output mbREGDAT,
+      output mbREGACK
    );
 
 endinterface

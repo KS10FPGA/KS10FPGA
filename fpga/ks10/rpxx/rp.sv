@@ -81,9 +81,28 @@ module RP (
    logic [20: 0] rpSDLSA[7:0];                          // SD Linear sector address
    logic [ 7: 0] rpSDREQ;                               // RP requests the SD
    logic [ 7: 0] rpSDACK;                               // SD acknowledges the RP
-   logic [ 2: 0] sdSCAN;                                // Current RP accessing SD
-   logic         sdREADOP;                              // Read operation
-   logic         sdINCSECT;                             // Increment Sector
+   logic [ 2: 0] rpSCAN;                                // Current RP accessing SD
+   logic         rpREADOP;                              // Read operation
+   logic         rpINCSECT;                             // Increment Sector
+
+   //
+   // Registers
+   //
+
+   logic [15: 0] rpDS[0:7];
+   logic [15: 0] rpER1[0:7];
+   logic [15: 0] rpMR[0:7];
+   logic [15: 0] rpDA[0:7];
+   logic [15: 0] rpDT[0:7];
+   logic [15: 0] rpLA[0:7];
+   logic [15: 0] rpSN[0:7];
+   logic [15: 0] rpOF[0:7];
+   logic [15: 0] rpDC[0:7];
+   logic [15: 0] rpCC[0:7];
+   logic [15: 0] rpER2[0:7];
+   logic [15: 0] rpER3[0:7];
+   logic [15: 0] rpEC1[0:7];
+   logic [15: 0] rpEC2[0:7];
 
    //
    // Generate an array of disk drives
@@ -117,31 +136,58 @@ module RP (
               .rpREGSEL  (massbus.mbREGSEL),
               .rpFUN     (massbus.mbFUN),
               .rpFUNGO   (massbus.mbGO),
-              .rpDA      (massbus.mbREG06[i]),
-              .rpDS      (massbus.mbREG12[i]),
-              .rpER1     (massbus.mbREG14[i]),
-              .rpLA      (massbus.mbREG20[i]),
-              .rpMR      (massbus.mbREG24[i]),
-              .rpDT      (massbus.mbREG26[i]),
-              .rpSN      (massbus.mbREG30[i]),
-              .rpOF      (massbus.mbREG32[i]),
-              .rpDC      (massbus.mbREG34[i]),
-              .rpCC      (massbus.mbREG36[i]),
-              .rpER2     (massbus.mbREG40[i]),
-              .rpER3     (massbus.mbREG42[i]),
-              .rpEC1     (massbus.mbREG44[i]),
-              .rpEC2     (massbus.mbREG46[i]),
+              .rpDS      (rpDS[i]),
+              .rpER1     (rpER1[i]),
+              .rpMR      (rpMR[i]),
+              .rpDA      (rpDA[i]),
+              .rpDT      (rpDT[i]),
+              .rpLA      (rpLA[i]),
+              .rpSN      (rpSN[i]),
+              .rpOF      (rpOF[i]),
+              .rpDC      (rpDC[i]),
+              .rpCC      (rpCC[i]),
+              .rpER2     (rpER2[i]),
+              .rpER3     (rpER3[i]),
+              .rpEC1     (rpEC1[i]),
+              .rpEC2     (rpEC2[i]),
               .rpSDOP    (rpSDOP[i]),
               .rpSDREQ   (rpSDREQ[i]),
               .rpSDACK   (rpSDACK[i]),
               .rpSDLSA   (rpSDLSA[i]),
               .rpACTIVE  (rpLEDS[i]),
-              .rpINCRSECT(sdINCSECT)
+              .rpINCRSECT(rpINCSECT)
            );
 
         end
 
    endgenerate
+
+   //
+   // Multiplex registers back to RH11
+   //
+
+   always_comb
+     begin
+        case (massbus.mbREGSEL)
+          5'o01: massbus.mbREGDAT = rpDS[massbus.mbUNIT];
+          5'o02: massbus.mbREGDAT = rpER1[massbus.mbUNIT];
+          5'o03: massbus.mbREGDAT = rpMR[massbus.mbUNIT];
+          5'o05: massbus.mbREGDAT = rpDA[massbus.mbUNIT];
+          5'o06: massbus.mbREGDAT = rpDT[massbus.mbUNIT];
+          5'o07: massbus.mbREGDAT = rpLA[massbus.mbUNIT];
+          5'o10: massbus.mbREGDAT = rpSN[massbus.mbUNIT];
+          5'o11: massbus.mbREGDAT = rpOF[massbus.mbUNIT];
+          5'o12: massbus.mbREGDAT = rpDC[massbus.mbUNIT];
+          5'o13: massbus.mbREGDAT = rpCC[massbus.mbUNIT];
+          5'o14: massbus.mbREGDAT = rpER2[massbus.mbUNIT];
+          5'o15: massbus.mbREGDAT = rpER3[massbus.mbUNIT];
+          5'o16: massbus.mbREGDAT = rpEC1[massbus.mbUNIT];
+          5'o17: massbus.mbREGDAT = rpEC2[massbus.mbUNIT];
+          default: massbus.mbREGDAT = 16'b0;
+        endcase
+     end
+
+   assign massbus.mbREGACK = (massbus.mbREGSEL <= 5'o17);
 
    //
    // SD Controller
@@ -166,32 +212,57 @@ module RP (
       // RH11 interfaces
       .rhWCZ      (massbus.mbWCZ),
       // RPXX interface
-      .rpSDOP     (rpSDOP[sdSCAN]),
-      .rpSDLSA    (rpSDLSA[sdSCAN]),
+      .rpSDOP     (rpSDOP[rpSCAN]),
+      .rpSDLSA    (rpSDLSA[rpSCAN]),
       .rpSDREQ    (rpSDREQ),
       .rpSDACK    (rpSDACK),
       // SD Output
       .sdINCWC    (massbus.mbINCWC),
       .sdINCBA    (massbus.mbINCBA),
       .sdSETWCE   (massbus.mbWCE),
-      .sdINCSECT  (sdINCSECT),
-      .sdREADOP   (sdREADOP),
-      .sdSCAN     (sdSCAN),
+      .sdINCSECT  (rpINCSECT),
+      .sdREADOP   (rpREADOP),
+      .sdSCAN     (rpSCAN),
       .sdDEBUG    (rpDEBUG)
    );
 
    //
    // FIXME:
-   //  Something is wrong here with sdREADOP
+   //  Something is wrong here with rpREADOP
    //
 
-   assign massbus.mbNPRO = sdREADOP;
+   assign massbus.mbNPRO = rpREADOP;
 
    //
-   // ACLO
+   // Attention
    //
 
-   assign massbus.mbACLO = 0;
+   assign massbus.mbATA[0] = `rpDS_ATA(rpDS[0]);
+   assign massbus.mbATA[1] = `rpDS_ATA(rpDS[1]);
+   assign massbus.mbATA[2] = `rpDS_ATA(rpDS[2]);
+   assign massbus.mbATA[3] = `rpDS_ATA(rpDS[3]);
+   assign massbus.mbATA[4] = `rpDS_ATA(rpDS[4]);
+   assign massbus.mbATA[5] = `rpDS_ATA(rpDS[5]);
+   assign massbus.mbATA[6] = `rpDS_ATA(rpDS[6]);
+   assign massbus.mbATA[7] = `rpDS_ATA(rpDS[7]);
+
+   //
+   // Drive Present (RPDS[DPR])
+   //
+
+   assign massbus.mbDPR    = `rpDS_DPR(rpDS[massbus.mbUNIT]);
+
+   //
+   // Drive Ready (RPDS[DRY])
+   //
+
+   assign massbus.mbDRY    = `rpDS_DRY(rpDS[massbus.mbUNIT]);
+
+   //
+   // Drive Available (MTCS1[DVA])
+   //
+
+   assign massbus.mbDVA    = 1;
 
    //
    // Parity Test from RP
@@ -200,29 +271,9 @@ module RP (
    assign massbus.mbINVPAR = 0;
 
    //
-   // Attention
+   // ACLO
    //
 
-   assign massbus.mbATA[0] = `rpDS_ATA(massbus.mbREG12[0]);
-   assign massbus.mbATA[1] = `rpDS_ATA(massbus.mbREG12[1]);
-   assign massbus.mbATA[2] = `rpDS_ATA(massbus.mbREG12[2]);
-   assign massbus.mbATA[3] = `rpDS_ATA(massbus.mbREG12[3]);
-   assign massbus.mbATA[4] = `rpDS_ATA(massbus.mbREG12[4]);
-   assign massbus.mbATA[5] = `rpDS_ATA(massbus.mbREG12[5]);
-   assign massbus.mbATA[6] = `rpDS_ATA(massbus.mbREG12[6]);
-   assign massbus.mbATA[7] = `rpDS_ATA(massbus.mbREG12[7]);
-
-   //
-   // Drive Available
-   //
-
-   assign massbus.mbDVA[0] = 1;
-   assign massbus.mbDVA[1] = 1;
-   assign massbus.mbDVA[2] = 1;
-   assign massbus.mbDVA[3] = 1;
-   assign massbus.mbDVA[4] = 1;
-   assign massbus.mbDVA[5] = 1;
-   assign massbus.mbDVA[6] = 1;
-   assign massbus.mbDVA[7] = 1;
+   assign massbus.mbACLO = 0;
 
 endmodule

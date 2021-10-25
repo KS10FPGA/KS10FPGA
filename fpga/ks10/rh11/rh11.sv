@@ -309,16 +309,15 @@ module RH11 (
    wire         rhRDY  = `rhCS1_RDY(rhCS1);
    wire         rhIE   = `rhCS1_IE (rhCS1);
    wire [ 5: 1] rhFUN  = `rhCS1_FUN(rhCS1);
-   wire         rhDVA  =  massbus.mbDVA[rhUNIT];
+   wire         rhDVA  =  massbus.mbDVA;
    wire         rhGO;
 
    //
    // RHDS Status
    //
 
-   wire         rhERR  = `rhDS_ERR(massbus.mbREG12[rhUNIT]);
-   wire         rhDPR  = `rhDS_DPR(massbus.mbREG12[rhUNIT]);
-   wire         rhDRY  = `rhDS_DRY(massbus.mbREG12[rhUNIT]);
+   wire         rhDPR  = massbus.mbDPR;
+   wire         rhDRY  = massbus.mbDRY;
 
    //
    // RH11 Attention Summary (RHAS) Pseudo Register
@@ -361,7 +360,6 @@ module RH11 (
    //
 
    wire rhSETNED = !rhDPR & rhREGNED;
-// wire rhSETNED = !rhDPR & rhREGNED & (devADDR >= rhNEDADDR);
 
    //
    // Command Clear
@@ -389,7 +387,6 @@ module RH11 (
                    (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o35) & `rhCS1_GO(rhDATAI)) |  // Read Header
                    (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o36) & `rhCS1_GO(rhDATAI)) |  //
                    (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o37) & `rhCS1_GO(rhDATAI)));  //                        Read Reverse
-
 
    //
    // Controller Parity Error
@@ -424,7 +421,6 @@ module RH11 (
       .rhCLR      (rhCLR),
       .rhIACK     (rhIACK),
       .rhATA      (rhATA),
-      .rhERR      (rhERR),
       .rhDVA      (rhDVA),
       .rhDRY      (rhDRY),
       .rhBA       (rhBA[17:16]),
@@ -572,45 +568,45 @@ module RH11 (
         if (massbus.mbREQO)
           unibus.devDATAO = massbus.mbDATAO;
         if (rhRDREG00)
-          unibus.devDATAO = {20'b0, rhCS1};                    // RHCS1
+          unibus.devDATAO = {20'b0, rhCS1};                     // RHCS1
         if (rhRDREG02)
-          unibus.devDATAO = {20'b0, rhWC};                     // RHWC
+          unibus.devDATAO = {20'b0, rhWC};                      // RHWC
         if (rhRDREG04)
-          unibus.devDATAO = {20'b0, rhBA[15:0]};               // RHBA
-        if (rhRDREG06 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG06[rhUNIT]};  // RPDA,  MTFC
+          unibus.devDATAO = {20'b0, rhBA[15:0]};            	// RHBA
+        if (rhRDREG06 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPDA,  MTFC
         if (rhRDREG10)
-          unibus.devDATAO = {20'b0, rhCS2};                    // RHCS2
-        if (rhRDREG12 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG12[rhUNIT]};  // RPDS,  MTDS
-        if (rhRDREG14 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG14[rhUNIT]};  // RPER1, MTER
+          unibus.devDATAO = {20'b0, rhCS2};                    	// RHCS2
+        if (rhRDREG12 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPDS,  MTDS
+        if (rhRDREG14 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPER1, MTER
         if (rhRDREG16)
-          unibus.devDATAO = {20'b0, rhAS};                     // RHAS
-        if (rhRDREG20 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG20[rhUNIT]};  // RPLA,  MTCC
+          unibus.devDATAO = {20'b0, rhAS};                     	// RHAS
+        if (rhRDREG20 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPLA,  MTCC
         if (rhRDREG22)
-          unibus.devDATAO = {20'b0, rhDB};                     // RHDB
-        if (rhRDREG24 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG24[rhUNIT]};  // RPMR,  MTMR
-        if (rhRDREG26 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG26[rhUNIT]};  // RPDT,  MTDT
-        if (rhRDREG30 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG30[rhUNIT]};  // RPSN,  MTSN
-        if (rhRDREG32 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG32[rhUNIT]};  // RPOF,  MTTC
-        if (rhRDREG34 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG34[rhUNIT]};  // RPDC,  Zero
-        if (rhRDREG36 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG36[rhUNIT]};  // RPCC,  Zero
-        if (rhRDREG40 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG40[rhUNIT]};  // RPER2, Zero
-        if (rhRDREG42 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG42[rhUNIT]};  // RPER3, Zero
-        if (rhRDREG44 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG44[rhUNIT]};  // RPEC1, Zero
-        if (rhRDREG46 & rhDPR)
-          unibus.devDATAO = {20'b0, massbus.mbREG46[rhUNIT]};  // RPEC2, Zero
+          unibus.devDATAO = {20'b0, rhDB};                     	// RHDB
+        if (rhRDREG24 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPMR,  MTMR
+        if (rhRDREG26 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPDT,  MTDT
+        if (rhRDREG30 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPSN,  MTSN
+        if (rhRDREG32 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPOF,  MTTC
+        if (rhRDREG34 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPDC,  Zero
+        if (rhRDREG36 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPCC,  Zero
+        if (rhRDREG40 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPER2, Zero
+        if (rhRDREG42 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPER3, Zero
+        if (rhRDREG44 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPEC1, Zero
+        if (rhRDREG46 & massbus.mbREGACK)
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPEC2, Zero
         if (vectREAD)
           unibus.devDATAO = {20'b0, rhVECT[20:35]};
      end
@@ -640,7 +636,7 @@ module RH11 (
    assign massbus.mbDATAI  = unibus.devDATAI;
    assign massbus.mbREAD   = rhREAD;
    assign massbus.mbWRITE  = rhWRITE;
-   assign massbus.mbREGSEL = rhREGSEL;
+   assign massbus.mbREGSEL = rhREGNED ? rhREGSEL : 5'b0;
    assign massbus.mbFUN    = rhFUN;
    assign massbus.mbGO     = rhGO;
    assign massbus.mbUNIT   = rhUNIT;

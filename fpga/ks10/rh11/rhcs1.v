@@ -62,7 +62,6 @@ module RHCS1 (
       input  wire         rhCLR,                // Controller Clear      (RHCS2[CLR])
       input  wire         rhIACK,               // Interrupt acknowledge
       input  wire         rhATA,                // RPxx Attention
-      input  wire         rhERR,                // RPxx Composite error  (RHDS [ERR])
       input  wire         rhDVA,                // RPxx Drive available  (RHCS1[DVA])
       input  wire         rhDRY,                // RPxx Drive Ready      (RHDS [DRY ])
       input  wire [17:16] rhBA,                 // rhBA address extension
