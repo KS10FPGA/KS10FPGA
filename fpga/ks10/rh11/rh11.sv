@@ -220,57 +220,61 @@ module RH11 (
    // Massbus Address ROM
    //  Converts Unibus addresses to Massbus addresses.
    //
+   //  rhREGSEL - Massbus register address.
+   //  rhREGEXT - Asserted if the register associatied with this address is a
+   //             Massbus register (as opposed to an RH11 address).
+   //
    // Trace:
    //  M7295/BCTA/E29.  The truth table is on M7295/BCTK
    //
 
-   logic       rhREGNED;
+   logic       rhREGEXT;
    logic [4:0] rhREGSEL;
 
    always_comb
      begin
         case (devADDR)
-          rhADDR00: {rhREGNED, rhREGSEL} = {1'b0, 5'o00}; // RHCS1
-          rhADDR02: {rhREGNED, rhREGSEL} = {1'b0, 5'o37}; // RHWC
-          rhADDR04: {rhREGNED, rhREGSEL} = {1'b0, 5'o37}; // RHBA
-          rhADDR06: {rhREGNED, rhREGSEL} = {1'b1, 5'o05}; // RPDA/RMDA/MTFC
+          rhADDR00: {rhREGEXT, rhREGSEL} = {1'b0, 5'o00}; // RHCS1
+          rhADDR02: {rhREGEXT, rhREGSEL} = {1'b0, 5'o37}; // RHWC
+          rhADDR04: {rhREGEXT, rhREGSEL} = {1'b0, 5'o37}; // RHBA
+          rhADDR06: {rhREGEXT, rhREGSEL} = {1'b1, 5'o05}; // RPDA/RMDA/MTFC
 
-          rhADDR10: {rhREGNED, rhREGSEL} = {1'b0, 5'o37}; // RHCS2
-          rhADDR12: {rhREGNED, rhREGSEL} = {1'b1, 5'o01}; // RPDS/RMAS/MTDS
-          rhADDR14: {rhREGNED, rhREGSEL} = {1'b1, 5'o02}; // RPER1/RMER1/MTER
-          rhADDR16: {rhREGNED, rhREGSEL} = {1'b1, 5'o04}; // RHAS/RMAS/MTAS
+          rhADDR10: {rhREGEXT, rhREGSEL} = {1'b0, 5'o37}; // RHCS2
+          rhADDR12: {rhREGEXT, rhREGSEL} = {1'b1, 5'o01}; // RPDS/RMAS/MTDS
+          rhADDR14: {rhREGEXT, rhREGSEL} = {1'b1, 5'o02}; // RPER1/RMER1/MTER
+          rhADDR16: {rhREGEXT, rhREGSEL} = {1'b1, 5'o04}; // RHAS/RMAS/MTAS
 
-          rhADDR20: {rhREGNED, rhREGSEL} = {1'b1, 5'o07}; // RPLA/RMLA/MTCC
-          rhADDR22: {rhREGNED, rhREGSEL} = {1'b0, 5'o37}; // RHDB
-          rhADDR24: {rhREGNED, rhREGSEL} = {1'b1, 5'o03}; // RPMR/RMMR1/MTMR
-          rhADDR26: {rhREGNED, rhREGSEL} = {1'b1, 5'o06}; // RPDT/RMTD/MTDT
+          rhADDR20: {rhREGEXT, rhREGSEL} = {1'b1, 5'o07}; // RPLA/RMLA/MTCC
+          rhADDR22: {rhREGEXT, rhREGSEL} = {1'b0, 5'o37}; // RHDB
+          rhADDR24: {rhREGEXT, rhREGSEL} = {1'b1, 5'o03}; // RPMR/RMMR1/MTMR
+          rhADDR26: {rhREGEXT, rhREGSEL} = {1'b1, 5'o06}; // RPDT/RMTD/MTDT
 
-          rhADDR30: {rhREGNED, rhREGSEL} = {1'b1, 5'o10}; // RPSN/RMSN/MTSN
-          rhADDR32: {rhREGNED, rhREGSEL} = {1'b1, 5'o11}; // RPOF/RMOF/MTTC
-          rhADDR34: {rhREGNED, rhREGSEL} = {1'b1, 5'o12}; // RPDC/RMDC/-
-          rhADDR36: {rhREGNED, rhREGSEL} = {1'b1, 5'o13}; // RPCC/RMHR/-
+          rhADDR30: {rhREGEXT, rhREGSEL} = {1'b1, 5'o10}; // RPSN/RMSN/MTSN
+          rhADDR32: {rhREGEXT, rhREGSEL} = {1'b1, 5'o11}; // RPOF/RMOF/MTTC
+          rhADDR34: {rhREGEXT, rhREGSEL} = {1'b1, 5'o12}; // RPDC/RMDC/-
+          rhADDR36: {rhREGEXT, rhREGSEL} = {1'b1, 5'o13}; // RPCC/RMHR/-
 
-          rhADDR40: {rhREGNED, rhREGSEL} = {1'b1, 5'o14}; // RPER2/RMMR2/-
-          rhADDR42: {rhREGNED, rhREGSEL} = {1'b1, 5'o15}; // RPER3/RMER2/-
-          rhADDR44: {rhREGNED, rhREGSEL} = {1'b1, 5'o16}; // RPER1/RMEC1/-
-          rhADDR46: {rhREGNED, rhREGSEL} = {1'b1, 5'o17}; // RPER2/RMEC2/-
+          rhADDR40: {rhREGEXT, rhREGSEL} = {1'b1, 5'o14}; // RPER2/RMMR2/-
+          rhADDR42: {rhREGEXT, rhREGSEL} = {1'b1, 5'o15}; // RPER3/RMER2/-
+          rhADDR44: {rhREGEXT, rhREGSEL} = {1'b1, 5'o16}; // RPER1/RMEC1/-
+          rhADDR46: {rhREGEXT, rhREGSEL} = {1'b1, 5'o17}; // RPER2/RMEC2/-
 
-          rhADDR50: {rhREGNED, rhREGSEL} = {1'b1, 5'o20}; // Unused
-          rhADDR52: {rhREGNED, rhREGSEL} = {1'b1, 5'o21}; // Unused
-          rhADDR54: {rhREGNED, rhREGSEL} = {1'b1, 5'o22}; // Unused
-          rhADDR56: {rhREGNED, rhREGSEL} = {1'b1, 5'o23}; // Unused
+          rhADDR50: {rhREGEXT, rhREGSEL} = {1'b1, 5'o20}; // Unused
+          rhADDR52: {rhREGEXT, rhREGSEL} = {1'b1, 5'o21}; // Unused
+          rhADDR54: {rhREGEXT, rhREGSEL} = {1'b1, 5'o22}; // Unused
+          rhADDR56: {rhREGEXT, rhREGSEL} = {1'b1, 5'o23}; // Unused
 
-          rhADDR60: {rhREGNED, rhREGSEL} = {1'b1, 5'o24}; // Unused
-          rhADDR62: {rhREGNED, rhREGSEL} = {1'b1, 5'o25}; // Unused
-          rhADDR64: {rhREGNED, rhREGSEL} = {1'b1, 5'o26}; // Unused
-          rhADDR66: {rhREGNED, rhREGSEL} = {1'b1, 5'o27}; // Unused
+          rhADDR60: {rhREGEXT, rhREGSEL} = {1'b1, 5'o24}; // Unused
+          rhADDR62: {rhREGEXT, rhREGSEL} = {1'b1, 5'o25}; // Unused
+          rhADDR64: {rhREGEXT, rhREGSEL} = {1'b1, 5'o26}; // Unused
+          rhADDR66: {rhREGEXT, rhREGSEL} = {1'b1, 5'o27}; // Unused
 
-          rhADDR70: {rhREGNED, rhREGSEL} = {1'b1, 5'o30}; // Unused
-          rhADDR72: {rhREGNED, rhREGSEL} = {1'b1, 5'o31}; // Unused
-          rhADDR74: {rhREGNED, rhREGSEL} = {1'b1, 5'o32}; // Unused
-          rhADDR76: {rhREGNED, rhREGSEL} = {1'b1, 5'o33}; // Unused
+          rhADDR70: {rhREGEXT, rhREGSEL} = {1'b1, 5'o30}; // Unused
+          rhADDR72: {rhREGEXT, rhREGSEL} = {1'b1, 5'o31}; // Unused
+          rhADDR74: {rhREGEXT, rhREGSEL} = {1'b1, 5'o32}; // Unused
+          rhADDR76: {rhREGEXT, rhREGSEL} = {1'b1, 5'o33}; // Unused
 
-          default : {rhREGNED, rhREGSEL} = {1'b0, 5'o37}; // Everything else
+          default : {rhREGEXT, rhREGSEL} = {1'b0, 5'o37}; // Everything else
         endcase
      end
 
@@ -316,7 +320,6 @@ module RH11 (
    // RHDS Status
    //
 
-   wire         rhDPR  = massbus.mbDPR;
    wire         rhDRY  = massbus.mbDRY;
 
    //
@@ -359,7 +362,8 @@ module RH11 (
    //  Only external registers
    //
 
-   wire rhSETNED = !rhDPR & rhREGNED;
+   wire rhSETNED = ((rhREAD  & rhREGEXT & !massbus.mbREGACK) |
+                    (rhWRITE & rhREGEXT & !massbus.mbREGACK));
 
    //
    // Command Clear
@@ -636,7 +640,7 @@ module RH11 (
    assign massbus.mbDATAI  = unibus.devDATAI;
    assign massbus.mbREAD   = rhREAD;
    assign massbus.mbWRITE  = rhWRITE;
-   assign massbus.mbREGSEL = rhREGNED ? rhREGSEL : 5'b0;
+   assign massbus.mbREGSEL = rhREGEXT ? rhREGSEL : 5'b0;
    assign massbus.mbFUN    = rhFUN;
    assign massbus.mbGO     = rhGO;
    assign massbus.mbUNIT   = rhUNIT;
