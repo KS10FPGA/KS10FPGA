@@ -234,7 +234,7 @@ module RH11 (
    always_comb
      begin
         case (devADDR)
-          rhADDR00: {rhREGEXT, rhREGSEL} = {1'b0, 5'o00}; // RHCS1
+          rhADDR00: {rhREGEXT, rhREGSEL} = {1'b1, 5'o00}; // RHCS1
           rhADDR02: {rhREGEXT, rhREGSEL} = {1'b0, 5'o37}; // RHWC
           rhADDR04: {rhREGEXT, rhREGSEL} = {1'b0, 5'o37}; // RHBA
           rhADDR06: {rhREGEXT, rhREGSEL} = {1'b1, 5'o05}; // RPDA/RMDA/MTFC
@@ -638,9 +638,9 @@ module RH11 (
    assign massbus.mbINIT   = devRESET | rhCLR;
    assign massbus.mbACKI   = unibus.devACKI;
    assign massbus.mbDATAI  = unibus.devDATAI;
-   assign massbus.mbREAD   = rhREAD;
-   assign massbus.mbWRITE  = rhWRITE;
-   assign massbus.mbREGSEL = rhREGEXT ? rhREGSEL : 5'b0;
+   assign massbus.mbREAD   = rhREAD  & rhREGEXT;
+   assign massbus.mbWRITE  = rhWRITE & rhREGEXT;
+   assign massbus.mbREGSEL = rhREGSEL;
    assign massbus.mbFUN    = rhFUN;
    assign massbus.mbGO     = rhGO;
    assign massbus.mbUNIT   = rhUNIT;
