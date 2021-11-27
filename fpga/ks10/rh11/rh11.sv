@@ -466,6 +466,7 @@ module RH11 (
       .rhRDY      (rhRDY),
       .rhBAI      (rhBAI),
       .rhINCBA    (massbus.mbINCBA),
+      .rhDECBA    (massbus.mbDECBA),
       .rhBA       (rhBA)
    );
 
@@ -576,41 +577,41 @@ module RH11 (
         if (rhRDREG02)
           unibus.devDATAO = {20'b0, rhWC};                      // RHWC
         if (rhRDREG04)
-          unibus.devDATAO = {20'b0, rhBA[15:0]};            	// RHBA
+          unibus.devDATAO = {20'b0, rhBA[15:0]};                // RHBA
         if (rhRDREG06 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPDA,  MTFC
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPDA,  MTFC
         if (rhRDREG10)
-          unibus.devDATAO = {20'b0, rhCS2};                    	// RHCS2
+          unibus.devDATAO = {20'b0, rhCS2};                     // RHCS2
         if (rhRDREG12 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPDS,  MTDS
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPDS,  MTDS
         if (rhRDREG14 & massbus.mbREGACK)
           unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPER1, MTER
         if (rhRDREG16)
-          unibus.devDATAO = {20'b0, rhAS};                     	// RHAS
+          unibus.devDATAO = {20'b0, rhAS};                      // RHAS
         if (rhRDREG20 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPLA,  MTCC
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPLA,  MTCC
         if (rhRDREG22)
-          unibus.devDATAO = {20'b0, rhDB};                     	// RHDB
+          unibus.devDATAO = {20'b0, rhDB};                      // RHDB
         if (rhRDREG24 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPMR,  MTMR
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPMR,  MTMR
         if (rhRDREG26 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPDT,  MTDT
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPDT,  MTDT
         if (rhRDREG30 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPSN,  MTSN
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPSN,  MTSN
         if (rhRDREG32 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPOF,  MTTC
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPOF,  MTTC
         if (rhRDREG34 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPDC,  Zero
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPDC,  Zero
         if (rhRDREG36 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPCC,  Zero
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPCC,  Zero
         if (rhRDREG40 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPER2, Zero
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPER2, Zero
         if (rhRDREG42 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPER3, Zero
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPER3, Zero
         if (rhRDREG44 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPEC1, Zero
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPEC1, Zero
         if (rhRDREG46 & massbus.mbREGACK)
-          unibus.devDATAO = {20'b0, massbus.mbREGDAT};  	// RPEC2, Zero
+          unibus.devDATAO = {20'b0, massbus.mbREGDAT};          // RPEC2, Zero
         if (vectREAD)
           unibus.devDATAO = {20'b0, rhVECT[20:35]};
      end

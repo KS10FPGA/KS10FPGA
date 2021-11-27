@@ -276,4 +276,12 @@ module RP (
 
    assign massbus.mbACLO = 0;
 
+   //
+   // mtDECBA
+   //
+   // No reverse operations on a disk drive
+   //
+
+   assign massbus.mbDECBA = 0;
+
 endmodule

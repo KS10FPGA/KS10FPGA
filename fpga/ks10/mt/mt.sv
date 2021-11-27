@@ -344,6 +344,7 @@ module MT (
 
    assign massbus.mbINCWC = 0;
    assign massbus.mbINCBA = 0;
+   assign massbus.mbDECBA = 0;
    assign massbus.mbWCE   = 0;
    assign massbus.mbNPRO  = 0;
    assign massbus.mbREQO  = 0;

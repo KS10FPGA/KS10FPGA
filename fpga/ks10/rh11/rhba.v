@@ -54,6 +54,7 @@ module RHBA (
       input  wire         rhRDY,                // Controller ready
       input  wire         rhBAI,                // Inhibit increment
       input  wire         rhINCBA,              // Increment BA
+      input  wire         rhDECBA,              // Decrement BA
       output wire [17: 0] rhBA                  // rhBA Output
    );
 
@@ -93,6 +94,8 @@ module RHBA (
           end
         else if (rhINCBA & !rhBAI)
           addr <= addr + 2'b10;
+        else if (rhDECBA & !rhBAI)
+          addr <= addr - 2'b10;
      end
 
    //

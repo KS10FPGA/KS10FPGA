@@ -71,15 +71,16 @@ interface massbus;
    logic         mbWCZ;                 // Word count is zero
    logic         mbINVPAR;              // Inverted parity
    logic         mbINCBA;               // Increment bus address
+   logic         mbDECBA;               // Decrement bus address
    logic         mbINCWC;               // Increment word count
    logic         mbWCE;                 // Write check error
    logic         mbNPRO;                // NPR output
    logic         mbATA[0:7];            // Attention
    logic         mbDVA;                 // Drive available
-   logic         mbDPR;			// Drive present
-   logic         mbDRY;			// Drive ready
-   logic [15: 0] mbREGDAT;		// Register data
-   logic         mbREGACK;		// Register ack
+   logic         mbDPR;                 // Drive present
+   logic         mbDRY;                 // Drive ready
+   logic [15: 0] mbREGDAT;              // Register data
+   logic         mbREGACK;              // Register ack
 
    //
    // Master Port
@@ -108,6 +109,7 @@ interface massbus;
       output mbWCZ,
       input  mbINVPAR,
       input  mbINCBA,
+      input  mbDECBA,
       input  mbINCWC,
       input  mbWCE,
       input  mbNPRO,
@@ -145,6 +147,7 @@ interface massbus;
       input  mbWCZ,
       output mbINVPAR,
       output mbINCBA,
+      output mbDECBA,
       output mbINCWC,
       output mbWCE,
       output mbNPRO,
