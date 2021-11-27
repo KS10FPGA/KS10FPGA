@@ -880,7 +880,7 @@ const char* dasm(unsigned long long insn) {
         {"IOT731", opSTD},         // 731
         {"IOT732", opSTD},         // 732
         {"IOT733", opSTD},         // 733
-        {"OT7434", opSTD},         // 734
+        {"IOT734", opSTD},         // 734
         {"IOT735", opSTD},         // 735
         {"IOT736", opSTD},         // 736
         {"IOT737", opSTD},         // 737
