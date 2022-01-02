@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2022 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -487,6 +487,13 @@ module MTCTRL (
 
                stateDECODE:
                  begin
+
+                    //
+                    // Stop settle down timer
+                    //
+
+                    mtSDWNTIM <= 0;
+                    mtSDWN <= 0;
 
                     //
                     // Decode Command (Function)
