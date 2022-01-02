@@ -45,11 +45,21 @@ module MTDS (
       input  wire         rst,                  // Reset
       input  wire         mtINIT,               // Initialize
       input  wire         mtCLRATA,             // Clear ATA
-      input  wire         mtGO,                 // Go command
+      input  wire         mtATA,                // Attention
+      input  wire         mtPIP,                // Positioning in progress
       input  wire         mtMOL,                // Media On-line
       input  wire         mtWRL,                // Write Lock
+      input  wire         mtEOT,                // End of tape
       input  wire         mtDPR,                // Drive present
-      input  wire         mtDRVCLR,             // Drive clear
+      input  wire         mtDRY,                // Data ready
+      input  wire         mtSSC,                // Slave status change
+      input  wire         mtPES,                // Phase encoder status
+      input  wire         mtSDWN,               // Slowing down
+      input  wire         mtSETIDB,             // Set Identification burst
+      input  wire         mtCLRIDB,             // Clear Identification burst
+      input  wire         mtTM,                 // Tape mark
+      input  wire         mtBOT,                // Beginning of tape
+      input  wire         mtSLA,                // Slave attention
       input  wire [15: 0] mtER,                 // mtER register
       output wire [15: 0] mtDS                  // mtDS register
    );
@@ -58,7 +68,6 @@ module MTDS (
    // Edge detect dsERR
    //
 
-   logic dsERR;                                 // Composite error
    logic lastERR;                               // Last composite error
 
    always_ff @(posedge clk)
@@ -66,7 +75,7 @@ module MTDS (
         if (rst)
           lastERR <= 0;
         else
-          lastERR <= dsERR;
+          lastERR <= (mtER != 0);
      end
 
    //
@@ -80,15 +89,17 @@ module MTDS (
    //  M8909/MBI3/E52
    //
 
-   logic dsATA;
+   logic dsERATA;
 
    always_ff @(posedge clk)
      begin
-        if (rst | mtINIT | mtCLRATA | mtDRVCLR)
-          dsATA <= 0;
-        else if (dsERR & !lastERR)
-          dsATA <= 1;
+        if (rst | mtINIT | mtCLRATA)
+          dsERATA <= 0;
+	else if (!lastERR & (mtER != 0))
+          dsERATA <= 1;
      end
+
+   wire dsATA = dsERATA | mtATA;
 
    //
    // MTDS Composite Error (mtERR)
@@ -101,7 +112,7 @@ module MTDS (
    //  M8909/MBI10/E82
    //
 
-   assign dsERR = (mtER != 0);
+   wire dsERR = (mtER != 0);
 
    //
    // MTDS Positioning In Progress (mtPIP)
@@ -110,7 +121,7 @@ module MTDS (
    //  M8933/TCCM7/E49
    //
 
-   wire dsPIP = 0;
+   wire dsPIP = mtPIP;
 
    //
    // MTDS Medium On-Line (mtMOL)
@@ -137,7 +148,7 @@ module MTDS (
    //  M8933/TCCM7/E59
    //
 
-   wire dsEOT = 0;
+   wire dsEOT = mtEOT;
 
    //
    // Unused
@@ -164,7 +175,7 @@ module MTDS (
    //  M8933/TCCM7/E58
    //
 
-   wire dsDRY = !mtGO;
+   wire dsDRY = mtDRY;
 
    //
    // Slave Status Change (mtSSC)
@@ -173,7 +184,7 @@ module MTDS (
    //  M8933/TCCM7/E58
    //
 
-   wire dsSSC = 0;
+   wire dsSSC = mtSSC;
 
    //
    // Phase Encoder Status (PES)
@@ -182,7 +193,7 @@ module MTDS (
    //  M8933/TCCM7/E58
    //
 
-   wire dsPES = 0;
+   wire dsPES = mtPES;
 
    //
    // Slowing Down (SDWN)
@@ -191,7 +202,7 @@ module MTDS (
    //  M8933/TCCM7/E58
    //
 
-   wire dsSDWN = 0;
+   wire dsSDWN = mtSDWN;
 
    //
    // Identification Burst (IDB)
@@ -200,7 +211,15 @@ module MTDS (
    //  M8933/TCCM7/E67
    //
 
-   wire dsIDB = 0;
+   logic dsIDB;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | mtINIT | mtCLRIDB)
+          dsIDB <= 0;
+	else if (mtSETIDB)
+          dsIDB <= 1;
+     end
 
    //
    // Tape Mark (TM)
@@ -209,7 +228,7 @@ module MTDS (
    //  M8933/TCCM7/E67
    //
 
-   wire dsTM = 0;
+   wire dsTM = mtTM;
 
    //
    // Beginnning of Tape (BOT)
@@ -218,7 +237,7 @@ module MTDS (
    //  M8933/TCCM7/E67
    //
 
-   wire dsBOT = 0;
+   wire dsBOT = mtBOT;
 
    //
    // Slave Attention
@@ -227,7 +246,7 @@ module MTDS (
    //  M8933/TCCM7/E67
    //
 
-   wire dsSLA = 0;
+   wire dsSLA = mtSLA;
 
    //
    // Build MTDS

@@ -64,9 +64,29 @@ module MTMR (
 
    //
    // MTMR BPI Clock (BPICLK)
+   //  DSTUA TST104 verifies that BPI Clock is 6250 Hz.
+   //  This is altered because the KS10 FPGA is faster than the original DEC KS10.
    //
 
-   wire mrBPICLK = 0;
+   logic             mrBPICLK;
+   logic      [10:0] mrBPIDIV;
+   localparam [10:0] mrBPINUM = 11'd1050;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst)
+          begin
+             mrBPICLK <= 0;
+             mrBPIDIV <= mrBPINUM;
+          end
+        else if (mrBPIDIV == 0)
+          begin
+             mrBPICLK <= !mrBPICLK;
+             mrBPIDIV <=  mrBPINUM;
+          end
+        else
+          mrBPIDIV <= mrBPIDIV - 1'b1;
+     end
 
    //
    // MTMR Maintenance Clock (MC)
@@ -76,6 +96,10 @@ module MTMR (
 
    //
    // MTMR Maintenance Opcode (MOP)
+   //
+   // Trace:
+   //  M8905/MR5/E25
+   //  M8905/MR5/E38
    //
 
    logic [3:0] mrMOP;
@@ -90,6 +114,9 @@ module MTMR (
 
    //
    // MTMR Maintenance Mode (MM)
+   //
+   // Trace:
+   //  M8905/MR5/E25
    //
 
    logic mrMM;

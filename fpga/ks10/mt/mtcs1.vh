@@ -57,12 +57,12 @@
 `define mtCS1_FUN_NOP      5'o00            // 01 : NOP
 `define mtCS1_FUN_UNLOAD   5'o01            // 03 : Unload
 `define mtCS1_FUN_REWIND   5'o03            // 07 : Rewind
-`define mtCS1_FUN_CLEAR    5'o04            // 11 : Drive clear
+`define mtCS1_FUN_DRVCLR   5'o04            // 11 : Drive clear
 `define mtCS1_FUN_PRESET   5'o10            // 21 : Read-in preset
 `define mtCS1_FUN_ERASE    5'o12            // 25 : Erase
-`define mtCS1_FUN_WRTAPMK  5'o13            // 27 : Write tape mark
+`define mtCS1_FUN_WRTM     5'o13            // 27 : Write tape mark
 `define mtCS1_FUN_SPCFWD   5'o14            // 31 : Space forward
-`define mtCS1_FUN_SPCREV   5'o14            // 33 : Spare reverse
+`define mtCS1_FUN_SPCREV   5'o15            // 33 : Spare reverse
 `define mtCS1_FUN_WRCHKFWD 5'o24            // 51 : Write check forward
 `define mtCS1_FUN_WRCHKREV 5'o25            // 57 : Write check reverse
 `define mtCS1_FUN_WRFWD    5'o30            // 61 : Write forward

@@ -43,46 +43,43 @@
 module MTTC (
       input  wire          clk,                 // Clock
       input  wire          rst,                 // Reset
-      input  wire          mtINIT,              // MT Initialize
-      input  wire  [35: 0] mtDATAI,             // MT Data In
+      input  wire          mtINIT,              // Initialize
+      input  wire  [35: 0] mtDATAI,             // Data In
       input  wire          mtWRTC,              // Write to TC
-      input wire           mtSETFCS,            // MT Set FCS bit
-      input wire           mtCLRFCS,            // MT Clear FCS bit
+      input  wire          mtPRESET,            // Read-in preset function
+      input  wire          mtFCS,               // Frame count status
+      input  wire          mtACCL,              // Accelerate
       output logic [15: 0] mtTC                 // mtTC Output
    );
 
    //
-   // MTTC Acceleration (tcACCEL)
+   // MTTC Acceleration (tcACCL)
    //
 
-   wire tcACCEL = 1;
+   wire tcACCL = mtACCL;
 
    //
    // MTTC Frame Count Status (tcFCS)
    //
 
-   logic tcFCS;
-
-   always_ff @(posedge clk)
-     begin
-        if (rst | mtINIT | mtCLRFCS)
-          tcFCS <= 0;
-        else if (mtSETFCS)
-          tcFCS <= 1;
-     end
+   wire tcFCS = mtFCS;
 
    //
-   // MTTC Tape Control Write (tcTCW)
+   // MTTC Slave Access Change (tcSAC)
+   //
+   // SAC is asserted when the slave selecgt address is modified.
+   //
+   // Note: SAC is not negated when the slave select address is not changed.
    //
 
-   logic tcTCW;
+   logic tcSAC;
 
    always_ff @(posedge clk)
      begin
         if (rst)
-          tcTCW <= 0;
-        else if (mtWRTC)
-          tcTCW <= `mtTC_TCW(mtDATAI);
+          tcSAC <= 0;
+        else if (mtWRTC & !tcSAC & (`mtTC_SS(mtDATAI) != `mtTC_SS(mtTC)))
+          tcSAC <= 1;
      end
 
    //
@@ -105,11 +102,13 @@ module MTTC (
    //
    // MTTC Unused (tcUN11)
    //
+   // This register must be read/write to pass diagnostics
+   //
    // Trace:
    //  M8905/MBR6/E9
    //
 
-    logic tcUN11;
+   logic tcUN11;
 
    always_ff @(posedge clk)
      begin
@@ -123,8 +122,18 @@ module MTTC (
    // MTTC Density Select (tcDEN)
    //
    // Trace:
-   //  M8905/MBR6/E3
-   //  M8905/MBR6/E9
+   //  M8905/MR6/E3
+   //  M8905/MR6/E9
+   //
+   // Note:
+   //  I don't understand the documents describing the read-in preset. The docs
+   //  say tcDEN should be initialized to 800 BPI NRZI (which is 3).
+   //  Initializing tcDEN to 3 fails DSTUA TST106.  The schematic (M8905/MR6)
+   //  shows that tcDEN[2:0] is set to 3'b010 by the read-in preset command.
+   //  tcDEN[2] is negated by E9 (net C10), tcDEN[1] is asserted by E3 (net C9),
+   //  and tcDEN[0] is negated by E9 (net C8).
+   //
+   //  Anyway. This passes the diagnostics.
    //
 
    logic [2:0] tcDEN;
@@ -133,6 +142,8 @@ module MTTC (
      begin
         if (rst)
           tcDEN <= 0;
+        else if (mtPRESET)
+          tcDEN <= 3'd2;
         else if (mtWRTC)
           tcDEN <= `mtTC_DEN(mtDATAI);
      end
@@ -149,7 +160,7 @@ module MTTC (
 
    always_ff @(posedge clk)
      begin
-        if (rst)
+        if (rst | mtPRESET)
           tcFMT <= 0;
         else if (mtWRTC)
           tcFMT <= `mtTC_FMT(mtDATAI);
@@ -166,7 +177,7 @@ module MTTC (
 
    always_ff @(posedge clk)
      begin
-        if (rst)
+        if (rst | mtPRESET)
           tcEVPAR <= 0;
         else if (mtWRTC)
           tcEVPAR <= `mtTC_EVPAR(mtDATAI);
@@ -183,7 +194,7 @@ module MTTC (
 
    always_ff @(posedge clk)
      begin
-        if (rst)
+        if (rst | mtPRESET)
           tcSS <= 0;
         else if (mtWRTC)
           tcSS <= `mtTC_SS(mtDATAI);
@@ -193,6 +204,6 @@ module MTTC (
    // Build TC Register
    //
 
-   assign mtTC = {tcACCEL, tcFCS, tcTCW, tcEAODTE, tcUN11, tcDEN, tcFMT, tcEVPAR, tcSS};
+   assign mtTC = {tcACCL, tcFCS, tcSAC, tcEAODTE, tcUN11, tcDEN, tcFMT, tcEVPAR, tcSS};
 
 endmodule

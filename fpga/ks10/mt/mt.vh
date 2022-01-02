@@ -46,30 +46,6 @@
 `include "../uba/ubabus.vh"
 
 //
-// RH Register Address offsets
-//
-
-`define mtcs1OFFSET (6'o00)             // CS1 Offset
-`define mtwcOFFSET  (6'o02)             // WC    Offset
-`define mtbaOFFSET  (6'o04)             // BA    Offset
-`define mtfcOFFSET  (6'o06)             // FC    Offset
-
-`define mtcs2OFFSET (6'o10)             // CS2 Offset
-`define mtdsOFFSET  (6'o12)             // DS    Offset
-`define mterOFFSET  (6'o14)             // ER    Offset
-`define mtasOFFSET  (6'o16)             // AS    Offset
-
-`define mtccOFFSET  (6'o20)             // CC    Offset
-`define mtdbOFFSET  (6'o22)             // DB    Offset
-`define mtmrOFFSET  (6'o24)             // MR    Offset
-`define mtdtOFFSET  (6'o26)             // DT    Offset
-
-`define mtsnOFFSET  (6'o30)             // SN    Offset
-`define mttcOFFSET  (6'o32)             // TC    Offset
-`define mtdcOFFSET  (6'o34)             // DC    Offset
-`define mtcs3OFFSET (6'o36)             // CS3 Offset
-
-//
 // MT Serial Numbers (MTSN Register)
 //
 
@@ -104,5 +80,32 @@
 `define mtSLV_SLV5 3'o5
 `define mtSLV_SLV6 3'o6
 `define mtSLV_SLV7 3'o7
+
+//
+// Get Serial Number
+//
+
+`define getMTSN(slv)(((slv) == 3'd0) ? `mtSN_SN0 : \
+                     (((slv) == 3'd1) ? `mtSN_SN1 : \
+                      (((slv) == 3'd2) ? `mtSN_SN2 : \
+                       (((slv) == 3'd3) ? `mtSN_SN3 : \
+                        (((slv) == 3'd4) ? `mtSN_SN4 : \
+                         (((slv) == 3'd5) ? `mtSN_SN5 : \
+                          (((slv) == 3'd6) ? `mtSN_SN6 : \
+                           `mtSN_SN7)))))))
+
+//
+// Get Drive Type
+//
+
+`define getMTDT(slv)(((slv) == 3'd0) ? (`mtDT_TM03|`mtDT_TU77) : \
+                     (((slv) == 3'd1) ? (`mtDT_TM03|`mtDT_TU77) : \
+                      (((slv) == 3'd2) ? (`mtDT_TM03|`mtDT_TU77) : \
+                       (((slv) == 3'd3) ? (`mtDT_TM03|`mtDT_TU77) : \
+                        (((slv) == 3'd4) ? (`mtDT_TM03|`mtDT_TU77) : \
+                         (((slv) == 3'd5) ? (`mtDT_TM03|`mtDT_TU77) : \
+                          (((slv) == 3'd6) ? (`mtDT_TM03|`mtDT_TU77) : \
+                           (`mtDT_TM03|`mtDT_TU77)7)))))))
+
 
 `endif

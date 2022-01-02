@@ -43,9 +43,12 @@
  module MTFC (
       input  wire          clk,                 // Clock
       input  wire          rst,                 // Reset
+      input  wire          mtINIT,
+      input  wire          mtCLRFC,             // Clear MTFC
       input  wire  [35: 0] mtDATAI,             // Data in
       input  wire          mtWRFC,              // Write MTFC
       input  wire          mtINCFC,             // Increment Frame Count
+      output logic         mtFCS,               // MTTC[FCS]
       output logic [15: 0] mtFC                 // mtFC Output
    );
 
@@ -61,12 +64,32 @@
 
    always_ff @(posedge clk)
      begin
-        if (rst)
+        if (rst | mtCLRFC)
           mtFC <= 0;
         else if (mtWRFC)
           mtFC <= `mtfc_FC(mtDATAI);
         else if (mtINCFC)
           mtFC <= mtFC + 1'b1;
+     end
+
+   //
+   // MTTC[FCS]
+   //
+   // Asserted by writing to FCS
+   //
+   // Negated by:
+   // #. IO Bridge Clear
+   // #. Controller Clear
+   // #. Drive Clear Function
+   // #. Frame Count Register Overflows to zero.
+   //
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | mtINIT | ((mtFC == 16'o177777) & mtINCFC))
+          mtFCS <= 0;
+        else if (mtWRFC)
+          mtFCS <= 1;
      end
 
 endmodule

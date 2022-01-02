@@ -44,12 +44,18 @@
 
 `define mtTC_ACCL(reg)  (reg[15])      // R/O Drive accelerating
 `define mtTC_FCS(reg)   (reg[14])      // R/O Frame count status
-`define mtTC_TCW(reg)   (reg[13])      // R/W Tape control write
+`define mtTC_SAC(reg)   (reg[13])      // R/W Slave access change
 `define mtTC_EAODTE(reg)(reg[12])      // R/W Enable abort on data transfer errors
 `define mtTC_UN11(reg)  (reg[11])      // R/W Unused (but still R/W)
 `define mtTC_DEN(reg)   (reg[10:8])    // R/W Density select
 `define mtTC_FMT(reg)   (reg[7:4])     // R/W Format select
 `define mtTC_EVPAR(reg) (reg[3])       // R/W Even parity
 `define mtTC_SS(reg)    (reg[2:0])     // R/W Slave select
+
+`define mtTC_DEN_200    (3'd0)         // 200 BPI NRZI (MT02 only)
+`define mtTC_DEN_556    (3'd1)         // 556 BPI NRZI (MT02 only)
+`define mtTC_DEN_800A   (3'd2)         // 800 BPI NRZI (alternate)
+`define mtTC_DEN_800    (3'd3)         // 800 BPI NRZI
+`define mtTC_DEN_1600   (3'd4)         // 1600 BPI PE
 
 `endif

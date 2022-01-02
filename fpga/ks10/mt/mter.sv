@@ -49,9 +49,9 @@ module MTER (
       input  wire          mtSETDTE,            // Drive timing error
       input  wire          mtSETNEF,            // Non-executable function
       input  wire          mtSETFCE,            // Frame counter error
-      input  wire          mtSETDPAR,           // Data parity error
+      input  wire          mtSETDPAR,           // Data bus parity error
       input  wire          mtSETFMTE,           // Format error
-      input  wire          mtSETPAR,            // Parity error
+      input  wire          mtSETCPAR,           // Control Bus Parity error
       input  wire          mtSETRMR,            // Register Modification Refused
       input  wire          mtSETILR,            // Illegal register
       input  wire          mtSETILF,            // Illegal function
@@ -197,7 +197,7 @@ module MTER (
    wire erINCVPE = 0;
 
    //
-   // Format Error (erDPAR)
+   // Data Bus Parity Error (erDPAR)
    //
    // Trace:
    //  M8909/MBI10/E73
@@ -233,21 +233,21 @@ module MTER (
      end
 
    //
-   // Parity Error (erPAR)
+   // Control Bus Parity Error (erCPAR)
    //
    // Trace:
    //  M8909/MBI10/E80
    //  M8909/MBI10/E83
    //
 
-   logic erPAR;
+   logic erCPAR;
 
    always_ff @(posedge clk)
      begin
         if (rst | mtINIT)
-          erPAR <= 0;
-        else if (mtSETPAR)
-          erPAR <= 1;
+          erCPAR <= 0;
+        else if (mtSETCPAR)
+          erCPAR <= 1;
      end
 
    //
@@ -309,6 +309,6 @@ module MTER (
    //
 
    assign mtER = {erCORCRC, erUNS, erOPI, erDTE, erNEF, erCSIMT, erFCE, erNSG,
-                  erPEFLRC, erINCVPE, erDPAR, erFMTE, erPAR, erRMR, erILR, erILF};
+                  erPEFLRC, erINCVPE, erDPAR, erFMTE, erCPAR, erRMR, erILR, erILF};
 
 endmodule
