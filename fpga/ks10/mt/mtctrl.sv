@@ -741,7 +741,7 @@ module MTCTRL (
                stateREAD:
                  begin
                     mtNPRO  <= 1;
-                    mtFWD   <= (mtFUN == `mtCS1_FUN_WRCHKFWD);
+                    mtFWD   <= (mtFUN == `mtCS1_FUN_RDFWD);
                     mtRDCNT <= mtRDCNT + 1'b1;
                     state   <= stateREAD0;
                  end
