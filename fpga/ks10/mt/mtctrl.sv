@@ -39,6 +39,7 @@
 `timescale 1ns/1ps
 
 `include "mtcs1.vh"
+`include "mttc.vh"
 
 module MTCTRL (
       input  wire          clk,                 // Clock
@@ -64,6 +65,8 @@ module MTCTRL (
       output logic [63: 0] mtDIRO,              // Data interface register
       output logic [63: 0] mtDEBUG,             // Debug output
       input  wire          mtFCZ,               // Frame count is zero
+      input  wire          mtFMTE,              // Format Error
+      input  wire          mtNEF,               // Non-executable function
       input  wire          mtWCZ,               // Word count is zero
       input  wire  [ 2: 0] mtDEN,               // Density
       input  wire  [ 3: 0] mtFMT,               // Format
@@ -79,6 +82,8 @@ module MTCTRL (
       output logic         mtTM,                // Tape mark
       output logic         mtSLA,               // Slave attention
       output logic         mtSSC,               // Slave status change
+      output logic         mtIDB,               // ID Burst Found
+      output logic         mtPES,               // Phase encoded status
       output logic         mtSDWN,              // Settle down
       output logic         mtINCFC              // Increment frame counter
    );
@@ -90,21 +95,23 @@ module MTCTRL (
    logic      [7:0] state;
    localparam [7:0] stateINIT      =  0,        // Initialize
                     stateIDLE      =  1,        // Wait for something to do
-                    stateSDWN      =  2,        // Settle down time
-                    stateDECODE    =  3,        // Decode the command
-                    stateACCL      =  4,        // Wait for transport to accelerate to speed
-                    stateSTARTEXEC =  5,        // Prepare to execute a command
-                    stateEXECCMD   =  6,        // Let the software execute the commad
-                    stateWRCHK     =  7,        // Write check fwd/rev
-                    stateWRCHK0    =  8,        // Write check fwd/rev
-                    stateWRCHK1    =  9,        // Write check fwd/rev
-                    stateREAD      = 10,        // Read  forward
-                    stateREAD0     = 11,        // Read  fwd/rev accessing data
-                    stateREAD1     = 12,        // Read  fwd/rev accessing data
-                    stateWRITE     = 13,        // Write forward
-                    stateWRITE0    = 14,        // Write forward
-                    stateWRITE1    = 15,        // Write forward
-                    stateWRITE2    = 16,        // Write forward
+                    stateDLY       =  2,        // Delay a clock cycle
+                    stateTSTERR    =  3,        // Test for errors
+                    stateSDWN      =  4,        // Settle down time
+                    stateDECODE    =  5,        // Decode the command
+                    stateACCL      =  6,        // Wait for transport to accelerate to speed
+                    stateSTARTEXEC =  7,        // Prepare to execute a command
+                    stateEXECCMD   =  8,        // Let the software execute the commad
+                    stateWRCHK     =  9,        // Write check fwd/rev
+                    stateWRCHK0    = 10,        // Write check fwd/rev
+                    stateWRCHK1    = 11,        // Write check fwd/rev
+                    stateREAD      = 12,        // Read  forward
+                    stateREAD0     = 13,        // Read  fwd/rev accessing data
+                    stateREAD1     = 14,        // Read  fwd/rev accessing data
+                    stateWRITE     = 15,        // Write forward
+                    stateWRITE0    = 16,        // Write forward
+                    stateWRITE1    = 17,        // Write forward
+                    stateWRITE2    = 18,        // Write forward
                     stateDONE      = 31;        // Done
    //
    // Timing parameters
@@ -174,6 +181,8 @@ module MTCTRL (
    //  The console software sets these bits to indicate a beginning of tape
    //  condition.  The FPGA does not modify this bit.
    //
+   //  Each tape transport maintains its own BOT signal
+   //
 
    logic mtBOTA[7:0];
 
@@ -196,13 +205,15 @@ module MTCTRL (
           mtBOTA[mtSS] <= 1;
      end
 
-   assign mtBOT = mtBOTA[mtSS];
+   assign mtBOT  = mtBOTA[mtSS];
 
    //
    // mtDIR[EOT] - End of tape
    //
    //  The console software sets these bits to indicate a end of tape
    //  condition.  The FPGA does not modify this bit.
+   //
+   //  Each tape transport maintains its own EOT signal
    //
 
    logic mtEOTA[7:0];
@@ -227,6 +238,77 @@ module MTCTRL (
      end
 
    assign mtEOT = mtEOTA[mtSS];
+
+   //
+   // mtIDB - ID Burst
+   //
+   //  The IDB logic uses the PES logic.
+   //
+   //  Each tape transport maintains its own IDB signal
+   //
+
+   logic mtIDBA[7:0];
+
+   always @(posedge clk)
+     begin
+        if (rst | mtINIT)
+          begin
+             mtIDBA[0] <= 0;
+             mtIDBA[1] <= 0;
+             mtIDBA[2] <= 0;
+             mtIDBA[3] <= 0;
+             mtIDBA[4] <= 0;
+             mtIDBA[5] <= 0;
+             mtIDBA[6] <= 0;
+             mtIDBA[7] <= 0;
+          end
+        else if (((state == stateDECODE) & (mtFUN == `mtCS1_FUN_WRFWD ) & mtBOT) |
+                 ((state == stateDECODE) & (mtFUN == `mtCS1_FUN_RDFWD ) & mtBOT) |
+                 ((state == stateDECODE) & (mtFUN == `mtCS1_FUN_SPCFWD) & mtBOT))
+          mtIDBA[mtSS] <= mtPES;
+     end
+
+   assign mtIDB = mtIDBA[mtSS];
+
+   //
+   // mtPES
+   //
+   //  This signal emulates the formatting state off the tape.  Unlike a real
+   //  tape, this state is not persistent (not written on the tape). This signal
+   //  maintains semi-persitent state that is not reset by Drive Clear, etc.
+   //  This should be good enough for the diagnostics.
+   //
+   //  mtPES is negated when the tape transport is taken off-line (or unloaded),
+   //  or the tape transport is written in NRZI mode at BOT. mtPES not not
+   //  negated by a Massbus INIT signal.
+   //
+   //  mtPES is asserted when the tape transport is written in PE mode at BOT.
+   //
+   //  Each tape transport maintains its own mtPES signal
+   //
+
+   logic mtPESA[7:0];
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          begin
+             mtPESA[0] <= 0;
+             mtPESA[1] <= 0;
+             mtPESA[2] <= 0;
+             mtPESA[3] <= 0;
+             mtPESA[4] <= 0;
+             mtPESA[5] <= 0;
+             mtPESA[6] <= 0;
+             mtPESA[7] <= 0;
+          end
+        else if ((state == stateIDLE) & (mtFUN == `mtCS1_FUN_WRFWD) & mtBOT)
+          mtPESA[mtSS] <= (mtDEN == `mtTC_DEN_1600);
+        else if (mtSLA)
+          mtPESA[mtSS] <= 0;
+     end
+
+   assign mtPES = mtPESA[mtSS];
 
    //
    // mtDIR[TM] - Tape Mark
@@ -382,14 +464,33 @@ module MTCTRL (
                //
                // stateIDLE
                //
-               // Look for a function (command) to go process
+               // Wait for a command to go process
+               //
+
+               stateIDLE:
+                 if (mtGO)
+                   state <= stateDLY;
+
+               //
+               // stateDLY
+               //
+               // Delay a clock cycle. Wait for errors to propigate, if any.
+               //
+
+               stateDLY:
+                 state <= stateTSTERR;
+
+               //
+               // stateTSTERR
+               //
+               // Test for Errors. Abort commands if any errors.
                //
                // The purpose of this logic is to quickly triage the command and
                // decide what to do.
                //
 
-               stateIDLE:
-                 if (mtGO /* or queued GO command during rewind & mtDRY */)
+               stateTSTERR:
+                 if (!mtNEF & !mtFMTE)
                    begin
                       case (mtFUN)
 
@@ -709,7 +810,7 @@ module MTCTRL (
                       begin
                          mtREQO <= 0;
                          mtSTB  <= 1;
-                         mtDIRD <= mtDATAI; 	// endian swap here
+                         mtDIRD <= mtDATAI;     // endian swap here
                          state  <= stateWRITE2;
                       end
                  end
@@ -865,7 +966,7 @@ module MTCTRL (
    assign mtDIRO = {// Byte 3
                     mtNPRO,     // 63 (READ/Deprecated)
                     mtSTB,      // 62 STB
-                    1'b0,  	// 61 (INIT/Deprecated)
+                    1'b0,       // 61 (INIT/Deprecated)
                     mtREADY,    // 60 READY
                     mtINCFC,    // 59 INCFC
                     mtSS[2:0],  // 58-56

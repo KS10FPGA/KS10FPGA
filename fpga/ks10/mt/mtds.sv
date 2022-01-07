@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2022 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -54,9 +54,8 @@ module MTDS (
       input  wire         mtDRY,                // Data ready
       input  wire         mtSSC,                // Slave status change
       input  wire         mtPES,                // Phase encoder status
+      input  wire         mtIDB,                // ID burst
       input  wire         mtSDWN,               // Slowing down
-      input  wire         mtSETIDB,             // Set Identification burst
-      input  wire         mtCLRIDB,             // Clear Identification burst
       input  wire         mtTM,                 // Tape mark
       input  wire         mtBOT,                // Beginning of tape
       input  wire         mtSLA,                // Slave attention
@@ -95,7 +94,7 @@ module MTDS (
      begin
         if (rst | mtINIT | mtCLRATA)
           dsERATA <= 0;
-	else if (!lastERR & (mtER != 0))
+        else if (!lastERR & (mtER != 0))
           dsERATA <= 1;
      end
 
@@ -211,15 +210,7 @@ module MTDS (
    //  M8933/TCCM7/E67
    //
 
-   logic dsIDB;
-
-   always_ff @(posedge clk)
-     begin
-        if (rst | mtINIT | mtCLRIDB)
-          dsIDB <= 0;
-	else if (mtSETIDB)
-          dsIDB <= 1;
-     end
+   wire dsIDB = mtIDB;
 
    //
    // Tape Mark (TM)

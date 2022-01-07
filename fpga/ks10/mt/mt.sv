@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2022 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -52,13 +52,14 @@
 `include "mt.vh"
 `include "mtas.vh"
 `include "mtds.vh"
+`include "mter.vh"
 `include "mtmr.vh"
 `include "mttc.vh"
 `include "mtcs1.vh"
 
 module MT (
-      massbus.slave  massbus,                     	// Massbus interface
-      mtcslbus.mt    mtCSLDATA                    	// CSL interface
+      massbus.slave  massbus,                           // Massbus interface
+      mtcslbus.mt    mtCSLDATA                          // CSL interface
    );
 
    //
@@ -74,7 +75,7 @@ module MT (
    // Massbus Addressing
    //
 
-   localparam [18:35] mtREGCS1 = 5'o00,			// Control/Status Register
+   localparam [18:35] mtREGCS1 = 5'o00,                 // Control/Status Register
                       mtREGDS  = 5'o01,                 // Drive Status Register
                       mtREGER  = 5'o02,                 // Error Register
                       mtREGMR  = 5'o03,                 // Maintenance Register
@@ -89,16 +90,16 @@ module MT (
    // Clock and reset from massbus
    //
 
-   wire          clk      = massbus.clk;		// Clock
-   wire          rst      = massbus.rst;		// Reset
+   wire          clk      = massbus.clk;                // Clock
+   wire          rst      = massbus.rst;                // Reset
    wire          mtINIT   = massbus.mbINIT;             // Initialize
-   wire  [ 2: 0] mtUNIT   = massbus.mbUNIT;        	// Unit select
+   wire  [ 2: 0] mtUNIT   = massbus.mbUNIT;             // Unit select
    wire          mtPAT    = massbus.mbPAT;              // Parity Test
-   wire          mtREAD   = massbus.mbREAD;		// Read
-   wire          mtWRITE  = massbus.mbWRITE;		// Write
-   wire  [ 4: 0] mtREGSEL = massbus.mbREGSEL;		// Register select
-   wire  [ 5: 1] mtFUN    = massbus.mbFUN;		// Function
-   wire  [35: 0] mtDATAI  = massbus.mbDATAI[0:35];	// Bus data
+   wire          mtREAD   = massbus.mbREAD;             // Read
+   wire          mtWRITE  = massbus.mbWRITE;            // Write
+   wire  [ 4: 0] mtREGSEL = massbus.mbREGSEL;           // Register select
+   wire  [ 5: 1] mtFUN    = massbus.mbFUN;              // Function
+   wire  [35: 0] mtDATAI  = massbus.mbDATAI[0:35];      // Bus data
 
    //
    // Registers
@@ -109,21 +110,22 @@ module MT (
    logic [15: 0] mtER;                                  // Error Register
    logic [15: 0] mtMR;                                  // Maintenance Register
    logic [15: 0] mtTC;                                  // Tape Control Register
-   wire  [15: 0] mtCC = 0;				// Character Check
+   wire  [15: 0] mtCC = 0;                              // Character Check
 
    //
    // MTTC Decode
    //
 
-   wire  [ 2: 0] mtDEN    = `mtTC_DEN(mtTC);          	// Density
-   wire  [ 3: 0] mtFMT    = `mtTC_FMT(mtTC);            // Format
-   wire  [ 2: 0] mtSS     = `mtTC_SS(mtTC);             // Slave Select
+   wire  [ 2: 0] mtDEN         = `mtTC_DEN(mtTC);       // Density
+   wire  [ 3: 0] mtFMT         = `mtTC_FMT(mtTC);       // Format
+   wire  [ 2: 0] mtSS          = `mtTC_SS(mtTC);        // Slave Select
+// wire          mtEVPAR       = `mtTC_EVPAR(mtTC);     // Even parity
 
    //
    // Unit select
    //
 
-   wire          mtSEL    = (mtUNIT == mtTCUNUM);     	// Unit select
+   wire          mtSEL    = (mtUNIT == mtTCUNUM);       // Unit select
 
    //
    // GO function
@@ -170,28 +172,38 @@ module MT (
 `endif
 
    //
-   // Console Configuration
-   //
-
-   wire          mtMOL    = mtSEL & mtCSLDATA.mtMOL[mtSS];	// Media on-line
-   wire          mtWRL    = mtSEL & mtCSLDATA.mtWRL[mtSS];	// Write lock
-   wire          mtDPR    = mtCSLDATA.mtDPR[mtUNIT];		// Drive present
-
-   //
-   // MT Signals
+   // MTDS Signals
    //
 
    logic         mtATA;                                 // MTDS[ATA]
    logic         mtPIP;                                 // MTDS[PIP]
    logic         mtEOT;                                 // MTDS[EOT]
    logic         mtSSC;                                 // MTDS[SSC]
+   logic         mtPES;                                 // MTDS[PES]
    logic         mtSDWN;                                // MTDS[SDWN]
+   logic         mtIDB;                                 // MTDS[IDB]
    logic         mtTM;                                  // MTDS[TM]
    logic         mtBOT;                                 // MTDS[BOT]
    logic         mtSLA;                                 // MTDS[SLA]
+   wire          mtMOL = mtSEL & mtCSLDATA.mtMOL[mtSS]; // MTDS[MOL]
+   wire          mtWRL = mtSEL & mtCSLDATA.mtWRL[mtSS]; // MTDS[WRL]
+   wire          mtDPR = mtCSLDATA.mtDPR[mtUNIT];       // MTDS[DPR]
+   wire          mtERR = `mtDS_ERR(mtDS);               // MTDS[ERR]
+
+   //
+   // MTTC Signals
+   //
+
    logic         mtACCL;                                // MTTC[ACCL]
    logic         mtFCS;                                 // MTTC[FCS]
    logic         mtINCFC;                               // Increment MTFC
+
+   //
+   // MTER Signals
+   //
+
+   wire         mtNEF  = `mtER_NEF(mtER);               // MTER(NEF)
+   wire         mtFMTE = `mtER_FMTE(mtER);              // MTER[FMTE]
 
    //
    // Control Bus Parity Error
@@ -212,7 +224,6 @@ module MT (
    //  M8909/MBI3/E84
    //
 
-   wire mtERR    = `mtDS_ERR(mtDS);
    wire mtCLRATA = ((mtWRAS & `mtAS_ATA7(mtDATAI) & (mtTCUNUM == 7)) |
                     (mtWRAS & `mtAS_ATA6(mtDATAI) & (mtTCUNUM == 6)) |
                     (mtWRAS & `mtAS_ATA5(mtDATAI) & (mtTCUNUM == 5)) |
@@ -324,8 +335,6 @@ module MT (
    //  constant "0177763" is -13.
    //
 
-   wire mtIDB    = `mtDS_IDB(mtDS);
-
    wire mtSETNEF = ((mtFUN_WRFWD    &  mtWRL) |
                     (mtFUN_ERASE    &  mtWRL) |
                     (mtFUN_WRTM     &  mtWRL) |
@@ -335,8 +344,8 @@ module MT (
                     (mtFUN_SPCFWD   & !mtFCS) |
                     (mtFUN_SPCREV   & !mtFCS) |
                     (mtFUN_WRFWD    & !mtFCS) |
-                    (mtFUN_WRFWD    & !(mtDEN == `mtTC_DEN_1600) &  mtIDB & !mtBOT) |
-                    (mtFUN_WRFWD    &  (mtDEN == `mtTC_DEN_1600) & !mtIDB & !mtBOT) |
+                    (mtFUN_WRFWD    & !(mtDEN == `mtTC_DEN_1600) &  mtPES & !mtBOT) |
+                    (mtFUN_WRFWD    &  (mtDEN == `mtTC_DEN_1600) & !mtPES & !mtBOT) |
                     (mtFUN_RDFWD    & !(mtDEN == `mtTC_DEN_1600) & (mtFC > 16'o177763)) |
                     (mtFUN_RDREV    & !(mtDEN == `mtTC_DEN_1600) & (mtFC > 16'o177763)) |
                     (mtFUN_WRCHKFWD & !(mtDEN == `mtTC_DEN_1600) & (mtFC > 16'o177763)) |
@@ -344,40 +353,27 @@ module MT (
                     (mtFUN_WRFWD    & !(mtDEN == `mtTC_DEN_1600) & (mtFC > 16'o177763)));
 
    //
-   // Phase Encoder Status
-   //
-   // This is just a loopback from the density
-   //
-
-   wire mtPES = (mtDEN == `mtTC_DEN_1600);
-
-   //
    // Format Error
    //
    // Set on a transfer function with an illegal format.
    //
 
-   wire mtXFRFUN  = mtFUN_WRFWD | mtFUN_RDFWD | mtFUN_RDREV | mtFUN_WRCHKFWD | mtFUN_WRCHKREV;
-   wire mtSETFMTE = ((mtGO & mtXFRFUN & (mtFMT == 4'o01)) |
-                     (mtGO & mtXFRFUN & (mtFMT == 4'o02)) |
-                     (mtGO & mtXFRFUN & (mtFMT == 4'o04)) |
-                     (mtGO & mtXFRFUN & (mtFMT == 4'o05)) |
-                     (mtGO & mtXFRFUN & (mtFMT == 4'o06)) |
-                     (mtGO & mtXFRFUN & (mtFMT == 4'o07)) |
-                     (mtGO & mtXFRFUN & (mtFMT == 4'o10)) |
-                     (mtGO & mtXFRFUN & (mtFMT == 4'o11)) |
-                     (mtGO & mtXFRFUN & (mtFMT == 4'o12)) |
-                     (mtGO & mtXFRFUN & (mtFMT == 4'o13)) |
-                     (mtGO & mtXFRFUN & (mtFMT == 4'o15)) |
-                     (mtGO & mtXFRFUN & (mtFMT == 4'o17)));
+   wire mtXFRFUN = mtFUN_WRFWD | mtFUN_RDFWD | mtFUN_RDREV | mtFUN_WRCHKFWD | mtFUN_WRCHKREV;
 
-   //
-   // IDB logic
-   // Tape coding changes can only occur when the tape is at BOT
-   //
+   wire mtFMTERR = ((mtXFRFUN & (mtFMT == 4'o01)) |
+                    (mtXFRFUN & (mtFMT == 4'o02)) |
+                    (mtXFRFUN & (mtFMT == 4'o04)) |
+                    (mtXFRFUN & (mtFMT == 4'o05)) |
+                    (mtXFRFUN & (mtFMT == 4'o06)) |
+                    (mtXFRFUN & (mtFMT == 4'o07)) |
+                    (mtXFRFUN & (mtFMT == 4'o10)) |
+                    (mtXFRFUN & (mtFMT == 4'o11)) |
+                    (mtXFRFUN & (mtFMT == 4'o12)) |
+                    (mtXFRFUN & (mtFMT == 4'o13)) |
+                    (mtXFRFUN & (mtFMT == 4'o15)) |
+                    (mtXFRFUN & (mtFMT == 4'o17)));
 
-   wire mtCLRIDB  = mtXFRFUN;
-   wire mtSETIDB  = mtFUN_WRFWD & mtBOT & (mtDEN == `mtTC_DEN_1600);
+   wire mtSETFMTE = mtGO & mtFMTERR;
 
    //
    // FIXMEs
@@ -422,9 +418,8 @@ module MT (
       .mtDRY       (mtDRY),
       .mtSSC       (mtSSC),
       .mtPES       (mtPES),
+      .mtIDB       (mtIDB),
       .mtSDWN      (mtSDWN),
-      .mtSETIDB    (mtSETIDB),
-      .mtCLRIDB    (mtCLRIDB),
       .mtTM        (mtTM),
       .mtBOT       (mtBOT),
       .mtSLA       (mtSLA),
@@ -510,6 +505,8 @@ module MT (
       .mtDEBUG     (mtCSLDATA.mtDEBUG),
       .mtMOL       (mtCSLDATA.mtMOL),
       .mtFCZ       (mtFC == 16'b0),
+      .mtFMTE      (mtFMTE),
+      .mtNEF       (mtNEF),
       .mtWRL       (mtWRL),
       .mtDEN       (mtDEN),
       .mtFMT       (mtFMT),
@@ -525,6 +522,8 @@ module MT (
       .mtTM        (mtTM),
       .mtSSC       (mtSSC),
       .mtSLA       (mtSLA),
+      .mtIDB       (mtIDB),
+      .mtPES       (mtPES),
       .mtSDWN      (mtSDWN),
       .mtINCFC     (mtINCFC)
    );
