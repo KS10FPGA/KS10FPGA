@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2022 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -397,7 +397,7 @@ module RH11 (
    //  Massbus device is sending inverted parity to RH11 in maintenance mode.
    //
 
-   wire rhSETCPE = rhREAD & massbus.mbINVPAR;
+   wire rhSETCPE = rhREAD & massbus.mbCPE;
 
    //
    // RH11 Control/Status #1 (RHCS1) Register
@@ -490,6 +490,7 @@ module RH11 (
       .rhSETDLT   (rhSETDLT),
       .rhSETNED   (rhSETNED),
       .rhSETNEM   (rhSETNEM),
+      .rhSETDPE   (massbus.mbDPE),
       .rhSETWCE   (massbus.mbWCE),
       .rhBUFIR    (rhBUFIR),
       .rhBUFOR    (rhBUFOR),

@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2022 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -265,10 +265,11 @@ module RP (
    assign massbus.mbDVA    = 1;
 
    //
-   // Parity Test from RP
+   // Parity Tests from RP
    //
 
-   assign massbus.mbINVPAR = 0;
+   assign massbus.mbCPE = 0;
+   assign massbus.mbDPE = 0;
 
    //
    // ACLO

@@ -141,7 +141,7 @@ module MT (
    // Only the MTMR and the MTAS registers can be written during an operation.
    //
 
-   logic         mtDRY;                                 // MTDS[DRY]
+   logic         mtDRY;
 
    wire          mtWRCS1  =   mtWRITE & mtSEL & (mtREGSEL == mtREGCS1) &  mtDRY;
    wire          mtWRFC   =   mtWRITE & mtSEL & (mtREGSEL == mtREGFC ) &  mtDRY;
@@ -382,7 +382,7 @@ module MT (
    wire mtSETOPI  = 0;                  // Operation Incomplete  (MTER[OPI]) : FIXME: Not implemented
    wire mtSETDTE  = 0;                  // Drive Timing Error    (MTER[DTE]) : FIXME: Not implemented
    wire mtSETFCE  = 0;                  // Frame Count Error     (MTER[FCE]) : FIXME: Not implemented
-   wire mtSETDPAR = 0;                  // Data Bus Parity Error (MTER[DPAR]): FIXME: Not implemented
+   wire mtSETDPAR = 0;                  // Data Bus Parity Error (MTER[DPAR]): Not testable with RH11.  See DSTUA TST67.
 
    //
    // MT Frame Count Register (MTFC)
@@ -529,11 +529,20 @@ module MT (
    );
 
    //
-   // RH11 Parity Test of receive data
-   //  Invert parity in Maintenance mode and with Even Parity OP
+   // Controller Parity Error
+   //  Asserted when accessing a register with even parity
+   //  Sets RHCS1[CPE]
    //
 
-   assign massbus.mbINVPAR = `mtMR_MM(mtMR) & (`mtMR_MOP(mtMR) == `mtMROP_EVPAR);
+   assign massbus.mbCPE = `mtMR_MM(mtMR) & (`mtMR_MOP(mtMR) == `mtMROP_EVPAR);
+
+   //
+   // Data Parity Error
+   //  Asserted when performing an NPR operation with even parity.
+   //  Sets RHCS2[DPE]
+   //
+
+   assign massbus.mbDPE = `mtMR_MM(mtMR) & (`mtMR_MOP(mtMR) == `mtMROP_EVPAR) & massbus.mbREQO;
 
    //
    // Multiplex registers back to RH11

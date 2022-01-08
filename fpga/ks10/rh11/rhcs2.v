@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2022 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -58,6 +58,7 @@ module RHCS2 (
       input  wire         rhSETWCE,             // Set WCE
       input  wire         rhSETNED,             // Set NED
       input  wire         rhSETNEM,             // Set NEM
+      input  wire         rhSETDPE,             // Set DPE
       input  wire         rhBUFIR,              // Status IR
       input  wire         rhBUFOR,              // Status OR
       output wire [15: 0] rhCS2                 // CS2 Output
@@ -223,7 +224,15 @@ module RHCS2 (
    //  M7297/PACA/E10 (SYNC PE)
    //
 
-   wire rhcs2DPE = 0;
+   reg rhcs2DPE;
+
+   always @(posedge clk)
+     begin
+        if (rst | devRESET | rhCLR)
+          rhcs2DPE <= 0;
+        else if (rhSETDPE)
+          rhcs2DPE <= 1;
+     end
 
    //
    // RHCS2 Output Ready
