@@ -45,6 +45,7 @@ module MTMR (
       input  wire          rst,                 // Reset
       input  wire  [35: 0] mtDATAI,             // RH Data In
       input  wire          mtmrWRITE,           // Write to MR
+      input  wire  [ 8: 0] mtMDF,               // Maintenance data field
       output logic [15: 0] mtMR                 // mtMR Output
    );
 
@@ -52,15 +53,7 @@ module MTMR (
    // MTMR Maintenance Data Field (MDF)
    //
 
-   logic [8:0] mrMDF;
-
-   always_ff @(posedge clk)
-     begin
-        if (rst)
-          mrMDF <= 0;
-        else if (mtmrWRITE)
-          mrMDF <= `mtMR_MDF(mtDATAI);
-     end
+   wire[8:0] mrMDF = mtMDF;
 
    //
    // MTMR BPI Clock (BPICLK)

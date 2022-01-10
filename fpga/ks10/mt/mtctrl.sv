@@ -84,9 +84,47 @@ module MTCTRL (
       output logic         mtSSC,               // Slave status change
       output logic         mtIDB,               // ID Burst Found
       output logic         mtPES,               // Phase encoded status
+      output logic [ 8: 0] mtMDF,               // Maintenance Data Field
       output logic         mtSDWN,              // Settle down
       output logic         mtINCFC              // Increment frame counter
    );
+
+   //
+   // Parity Function
+   //
+
+   function [8:0] parity(logic [35:0] d, logic [3:0] fmt);
+      case (fmt)
+        `mtTC_FMT_CORDMP:
+          begin
+             parity[8] = d[35] ^ d[27] ^ d[19] ^ d[11];
+             parity[7] = d[34] ^ d[26] ^ d[18] ^ d[10];
+             parity[6] = d[33] ^ d[25] ^ d[17] ^ d[ 9];
+             parity[5] = d[32] ^ d[24] ^ d[16] ^ d[ 8];
+             parity[4] = d[31] ^ d[23] ^ d[15] ^ d[ 7] ^ d[ 3];
+             parity[3] = d[30] ^ d[22] ^ d[14] ^ d[ 6] ^ d[ 2];
+             parity[2] = d[29] ^ d[21] ^ d[13] ^ d[ 5] ^ d[ 1];
+             parity[1] = d[28] ^ d[20] ^ d[12] ^ d[ 4] ^ d[ 0];
+             parity[0] = parity[8] ^ parity[7] ^ parity[6] ^ parity[5] ^
+                         parity[4] ^ parity[3] ^ parity[2] ^ parity[1]; // vertical parity
+          end
+        `mtTC_FMT_COMPAT:
+          begin
+             parity[8] = d[35] ^ d[27] ^ d[19] ^ d[11];
+             parity[7] = d[34] ^ d[26] ^ d[18] ^ d[10];
+             parity[6] = d[33] ^ d[25] ^ d[17] ^ d[ 9];
+             parity[5] = d[32] ^ d[24] ^ d[16] ^ d[ 8];
+             parity[4] = d[31] ^ d[23] ^ d[15] ^ d[ 7];
+             parity[3] = d[30] ^ d[22] ^ d[14] ^ d[ 6];
+             parity[2] = d[29] ^ d[21] ^ d[13] ^ d[ 5];
+             parity[1] = d[28] ^ d[20] ^ d[12] ^ d[ 4];
+             parity[0] = parity[8] ^ parity[7] ^ parity[6] ^ parity[5] ^
+                         parity[4] ^ parity[3] ^ parity[2] ^ parity[1]; // vertical parity
+          end
+        default:
+          parity = 0;
+      endcase
+   endfunction
 
    //
    // State Definition
@@ -376,6 +414,7 @@ module MTCTRL (
              mtDRY     <= 1;
              mtWCE     <= 0;
              mtSTB     <= 0;
+             mtMDF     <= 0;
              mtDIRD    <= 0;
              mtREQO    <= 0;
              mtNPRO    <= 0;
@@ -716,6 +755,7 @@ module MTCTRL (
                stateWRCHK:
                  begin
                     mtNPRO  <= 1;
+                    mtMDF   <= 0;
                     mtFWD   <= (mtFUN == `mtCS1_FUN_WRCHKFWD);
                     mtRDCNT <= mtRDCNT + 1'b1;
                     state   <= stateWRCHK0;
@@ -770,6 +810,7 @@ module MTCTRL (
                stateWRITE:
                  begin
                     mtNPRO  <= 0;
+                    mtMDF   <= 0;
                     mtFWD   <= 1;
                     mtWRCNT <= mtWRCNT + 1'b1;
                     state   <= stateWRITE0;
@@ -811,6 +852,7 @@ module MTCTRL (
                          mtREQO <= 0;
                          mtSTB  <= 1;
                          mtDIRD <= mtDATAI;     // endian swap here
+                         mtMDF  <= mtMDF ^ parity(mtDATAI, mtFMT);
                          state  <= stateWRITE2;
                       end
                  end
@@ -842,6 +884,7 @@ module MTCTRL (
                stateREAD:
                  begin
                     mtNPRO  <= 1;
+                    mtMDF   <= 0;
                     mtFWD   <= (mtFUN == `mtCS1_FUN_RDFWD);
                     mtRDCNT <= mtRDCNT + 1'b1;
                     state   <= stateREAD0;

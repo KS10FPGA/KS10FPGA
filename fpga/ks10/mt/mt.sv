@@ -202,8 +202,10 @@ module MT (
    // MTER Signals
    //
 
-   wire         mtNEF  = `mtER_NEF(mtER);               // MTER(NEF)
-   wire         mtFMTE = `mtER_FMTE(mtER);              // MTER[FMTE]
+   logic [ 8: 0] mtMDF;                                 // MTER[MDF]
+   wire          mtNEF  = `mtER_NEF(mtER);              // MTER[NEF]
+   wire          mtFMTE = `mtER_FMTE(mtER);             // MTER[FMTE]
+
 
    //
    // Control Bus Parity Error
@@ -474,6 +476,7 @@ module MT (
       .rst         (rst),
       .mtDATAI     (mtDATAI),
       .mtmrWRITE   (mtWRMR),
+      .mtMDF       (mtMDF),
       .mtMR        (mtMR)
    );
 
@@ -524,6 +527,7 @@ module MT (
       .mtSLA       (mtSLA),
       .mtIDB       (mtIDB),
       .mtPES       (mtPES),
+      .mtMDF       (mtMDF),
       .mtSDWN      (mtSDWN),
       .mtINCFC     (mtINCFC)
    );
