@@ -37,6 +37,7 @@ and Mouser.
   <li>1024 KW Memory</li>
   <li>RH11 Massbus Controller</li>
   <li>RP06 Disk Drives (x8)</li>
+  <li>TM03/TU77 Magtape (x8)</li>
   <li>DZ11 Terminal Multiplexer</li>
   <li>LP20 Printer Interface</li>
   <li>LP26 Printer with Direct Access Vertical Format Unit</li>
