@@ -37,6 +37,9 @@
 
 #include <stdio.h>
 
+#undef putchar
+#undef getchar
+
 class cursor_t {
     private:
         unsigned char curpos;

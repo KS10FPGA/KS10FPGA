@@ -44,6 +44,9 @@
 #include <unistd.h>
 #include <pthread.h>
 
+#undef putchar
+#undef getchar
+
 //!
 //! KS10 Interface Object
 //!

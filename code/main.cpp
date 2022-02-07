@@ -46,6 +46,8 @@
 #include "cmdline.hpp"
 #include "commands.hpp"
 
+#define __noreturn __attribute__((noreturn))
+
 static volatile bool print_hsb = false;
 static const char *prompt = "KS10> ";
 
@@ -62,7 +64,7 @@ static const char *prompt = "KS10> ";
 //!    the FPGA IO Mutex locking.
 //!
 
-void *haltThread(void *) {
+void *__noreturn haltThread(void *) {
     bool halted = true;
     printf("KS10: Halt Status thread started.\n");
     for (;;) {
@@ -87,7 +89,7 @@ void *haltThread(void *) {
 //!    the FPGA IO Mutex locking.
 //!
 
-void *ctyThread(void *) {
+void * __noreturn ctyThread(void *) {
     printf("KS10: CTY thread started.\n");
     for (;;) {
         int ch = ks10_t::getchar();
@@ -149,7 +151,7 @@ int main(int argc, char *argv[]) {
     pthread_t haltThreadID;
     int status = pthread_create(&haltThreadID, NULL, &haltThread, NULL);
     if (status != 0) {
-        printf("KS10: pthread_create() returned \"%s\".\n", strerror(status));
+        printf("KS10: pthread_create(haltThread) returned \"%s\".\n", strerror(status));
         exit(EXIT_FAILURE);
     }
 
@@ -160,7 +162,7 @@ int main(int argc, char *argv[]) {
     pthread_t ctyThreadID;
     status = pthread_create(&ctyThreadID, NULL, &ctyThread, NULL);
     if (status != 0) {
-        printf("KS10: pthread_create() returned \"%s\".\n", strerror(status));
+        printf("KS10: pthread_create(ctyThread) returned \"%s\".\n", strerror(status));
         exit(EXIT_FAILURE);
     }
     usleep(1000);
