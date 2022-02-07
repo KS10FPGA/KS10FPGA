@@ -100,7 +100,7 @@ bool config_t::write(const char *filename, const void *buf, size_t size) {
 //!    Size of buffer to be read.
 //!
 
-bool config_t::read(const char *filename, void *buf, unsigned int size) {
+bool config_t::read(const char *filename, void *buf, size_t size) {
 
     //
     // Open the configuration file
