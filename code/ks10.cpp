@@ -358,8 +358,8 @@ bool ks10_t::testReg64(volatile void * addr, const char *name, uint64_t mask) {
                     if (success) {
                         printf("%sFail%s\n", vt100fg_red, vt100at_rst);
                     }
-                    printf("KS10:  Testing %s Was 0x%016llx. Expected 0x%016llx.\n",
-                           name, read64 & mask, 0ull);
+                    printf("KS10:  Testing %s %sWas 0x%016llx. Expected 0x%016llx.%s\n",
+                           name, vt100fg_red, read64 & mask, 0ull, vt100at_rst);
                 }
                 success = false;
             }
@@ -955,16 +955,16 @@ void ks10_t::printHaltStatusBlock(void) {
     // Print the Halt Status Block
     //
 
-    printf("  Halt Status Block Address is %06llo\n"
-           "  PC  is %012llo     HR  is %012llo\n"
-           "  MAG is %012llo     ONE is %012llo\n"
-           "  AR  is %012llo     ARX is %012llo\n"
-           "  BR  is %012llo     BRX is %012llo\n"
-           "  EBR is %012llo     UBR is %012llo\n"
-           "  MSK is %012llo     FLG is %012llo\n"
-           "  PI  is %012llo     X1  is %012llo\n"
-           "  TO  is %012llo     T1  is %012llo \n"
-           "  VMA is %012llo\n",
+    printf("      Halt Status Block Address is %06llo\n"
+           "      PC  is %012llo     HR  is %012llo\n"
+           "      MAG is %012llo     ONE is %012llo\n"
+           "      AR  is %012llo     ARX is %012llo\n"
+           "      BR  is %012llo     BRX is %012llo\n"
+           "      EBR is %012llo     UBR is %012llo\n"
+           "      MSK is %012llo     FLG is %012llo\n"
+           "      PI  is %012llo     X1  is %012llo\n"
+           "      TO  is %012llo     T1  is %012llo \n"
+           "      VMA is %012llo\n",
            hsbAddr,
            __readMem(hsbAddr +  1),     // PC
            __readMem(hsbAddr +  2),     // HR

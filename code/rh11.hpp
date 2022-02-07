@@ -156,9 +156,6 @@ class rh11_t {
         //! \param baseADDR -
         //!    Base address of RH11 address
         //!
-        //! \param debug
-        //!    Enable debug mode
-        //!
 
         rh11_t (uint32_t baseADDR) :
             addrCS1((baseADDR & 07777740) + offsetCS1),

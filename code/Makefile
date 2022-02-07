@@ -13,7 +13,7 @@
 #
 #******************************************************************************
 #
-# Copyright (C) 2013-2017 Rob Doyle
+# Copyright (C) 2013-2022 Rob Doyle
 #
 # This file is part of the KS10 FPGA Project
 #
@@ -32,24 +32,23 @@
 #
 #******************************************************************************
 
-G++    := g++
+UNAME := $(shell uname -o)
+ifeq ($(UNAME),Cygwin)
+CROSS_COMPILE = arm-none-linux-gnueabihf-
+endif
 
-CFLAGS := -O2 -W -Wall -lpthread -pipe
+G++    := $(CROSS_COMPILE)g++
+
+CFLAGS := -O2 -W -Wall -lpthread -pipe -Wformat=0
 
 CFILES := commands.cpp config.cpp cursor.cpp dasm.cpp dz11.cpp dup11.cpp hist.cpp cmdline.cpp ks10.cpp lp20.cpp rp.cpp rh11.cpp main.cpp
 HFILES := commands.hpp config.hpp cursor.hpp dasm.hpp dz11.hpp dup11.hpp hist.hpp cmdline.hpp ks10.hpp lp20.hpp rp.hpp rh11.hpp uba.hpp
 
 console : $(CFILES) $(HFILES) makefile
 	$(G++) $(CFLAGS) $(CFILES) -o console
-
-.PHONEY : get
-
-get : Makefile
-	./get.sh
-
-.PHONEY : put
-put : Makefile
-	./put.sh
+ifeq ($(UNAME),Cygwin)
+	scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null console root@ks10:/home/root/
+endif
 
 clean:
 	rm console

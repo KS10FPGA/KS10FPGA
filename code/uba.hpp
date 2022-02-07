@@ -102,7 +102,7 @@ class uba_t {
         //! \brief
         //!    Constructor
         //!
-        //! \param base_addr -
+        //! \param baseADDR
         //!    Base address of Unibus Address
         //!
 

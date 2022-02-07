@@ -725,19 +725,19 @@ static bool cmdBR(int argc, char *argv[]) {
             addr = parseOctal(argv[2]);
             if (strncasecmp(argv[1], "fetch", 5) == 0) {
                 ks10_t::writeDBAR(ks10_t::dbarFETCH | addr);
-                ks10_t::writeDBMR(ks10_t::dbmrFETCH | ks10_t::dbmrMEM);
+                ks10_t::writeDBMR(ks10_t::dbmrFETCH | ks10_t::dbmrMEMMASK);
             } else if (strncasecmp(argv[1], "memrd", 5) == 0) {
                 ks10_t::writeDBAR(ks10_t::dbarMEMRD | addr);
-                ks10_t::writeDBMR(ks10_t::dbmrMEMRD | ks10_t::dbmrMEM);
+                ks10_t::writeDBMR(ks10_t::dbmrMEMRD | ks10_t::dbmrMEMMASK);
             } else if (strncasecmp(argv[1], "memwr", 5) == 0) {
                 ks10_t::writeDBAR(ks10_t::dbarMEMWR | addr);
-                ks10_t::writeDBMR(ks10_t::dbmrMEMWR | ks10_t::dbmrMEM);
+                ks10_t::writeDBMR(ks10_t::dbmrMEMWR | ks10_t::dbmrMEMMASK);
             } else if (strncasecmp(argv[1], "iord", 4) == 0) {
                 ks10_t::writeDBAR(ks10_t::dbarIORD | addr);
-                ks10_t::writeDBMR(ks10_t::dbmrIORD | ks10_t::dbmrIO);
+                ks10_t::writeDBMR(ks10_t::dbmrIORD | ks10_t::dbmrIOMASK);
             } else if (strncasecmp(argv[1], "iowr", 4) == 0) {
                 ks10_t::writeDBAR(ks10_t::dbarIOWR | addr);
-                ks10_t::writeDBMR(ks10_t::dbmrIOWR | ks10_t::dbmrIO);
+                ks10_t::writeDBMR(ks10_t::dbmrIOWR | ks10_t::dbmrIOMASK);
              } else {
                 printf(usage);
                 return true;
