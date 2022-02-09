@@ -44,9 +44,23 @@
 #include <unistd.h>
 #include <pthread.h>
 
+//!
+//! \brief
+//!    Fix stdio macros.
+//!
+
 #undef putchar
 #undef getchar
 
+//!
+//! \brief
+//!    Lock debugging
+//!
+
+#define LOCK()
+#define UNLOCK()
+
+//!
 //! \addtogroup ks10_api
 //! \{
 
@@ -162,7 +176,7 @@ class ks10_t {
         static const data_t ctyVALID = 0x100;           //!< Input/Output character valid
 
         //!
-    //! \brief
+        //! \brief
         //!    KS10 Read/Write Address Modes
         //!
 
@@ -176,7 +190,7 @@ class ks10_t {
         };
 
         //!
-    //! \brief
+        //! \brief
         //!    Console Control/Status Register Bits
         //!
 
@@ -350,6 +364,8 @@ class ks10_t {
         static void writeDZCCR(uint32_t data);
         static uint32_t readLPCCR(void);
         static void writeLPCCR(uint32_t data);
+        static uint32_t readMTCCR(void);
+        static void writeMTCCR(uint32_t data);
         static uint32_t readRPCCR(void);
         static void writeRPCCR(uint32_t data);
         static uint32_t readDCSR(void);
@@ -360,7 +376,10 @@ class ks10_t {
         static void writeDBMR(data_t data);
         static data_t readDITR(void);
         static data_t readDPCIR(void);
+        static uint64_t getMTDEBUG(void);
         static uint64_t getRPDEBUG(void);
+        static uint64_t readMTDIR(void);
+        static void writeMTDIR(uint64_t data);
         static bool run(void);
         static void run(bool);
         static bool halt(void);
@@ -380,6 +399,7 @@ class ks10_t {
         static void startEXEC(void);
         static void startCONT(void);
         static void testRegs(void);
+        static void printMTDEBUG(void);
         static void printRPDEBUG(void);
         static void printHaltStatusWord(void);
         static void printHaltStatusBlock(void);
@@ -431,12 +451,15 @@ class ks10_t {
         static volatile       uint32_t *regDZCCR;               //!< DZ11 Console Control Register
         static volatile       uint32_t *regLPCCR;               //!< LP20 Console Control Register
         static volatile       uint32_t *regRPCCR;               //!< RP Console Control Register
+        static volatile       uint32_t *regMTCCR;               //!< MT Console Control Register
         static volatile       uint32_t *regDUPCCR;              //!< DUP11 Console Control Register
         static volatile       uint32_t *regDEBCSR;              //!< Debug Control/Status Register
         static volatile       addr_t   *regDEBBAR;              //!< Debug Breakpoint Address Register
         static volatile       addr_t   *regDEBBMR;              //!< Debug Breakpoint Mask Register
         static volatile       uint64_t *regDEBITR;              //!< Debug Instruction Trace Register
         static volatile       uint64_t *regDEBPCIR;             //!< Debug Program Counter and Instruction Register
+        static volatile       uint64_t *regMTDIR;               //!< MT Data Interface Register
+        static volatile const uint64_t *regMTDEBUG;             //!< MT Debug Register
         static volatile const uint64_t *regRPDEBUG;             //!< RP Debug Register
         static          const char     *regVers;                //!< Firmware Version Register
 
@@ -725,9 +748,9 @@ inline ks10_t::data_t ks10_t::__readRegCIR(void) {
 //!
 
 inline ks10_t::data_t ks10_t::readRegCIR(void) {
-    lockMutex();
+    LOCK();
     data_t ret = __readRegCIR();
-    unlockMutex();
+    UNLOCK();
     return ret;
 }
 
@@ -759,9 +782,9 @@ inline void ks10_t::__writeRegCIR(data_t data) {
 //!
 
 inline void ks10_t::writeRegCIR(data_t data) {
-    lockMutex();
+    LOCK();
     __writeRegCIR(data);
-    unlockMutex();
+    UNLOCK();
 }
 
 //!
@@ -852,6 +875,36 @@ inline uint32_t ks10_t::readLPCCR(void) {
 
 inline void ks10_t::writeLPCCR(uint32_t data) {
     *regLPCCR = data;
+}
+
+//!
+//! \brief
+//!    This function reads a 32-bit value from the MTCCR
+//!
+//! \returns
+//!    contents of the MTCCR register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint32_t ks10_t::readMTCCR(void) {
+    return *regMTCCR;
+}
+
+//!
+//! \brief
+//!    This function writes a 32-bit value to the MTCCR
+//!
+//! \param data -
+//!    data is the data to be written to the MTCCR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::writeMTCCR(uint32_t data) {
+    *regMTCCR = data;
 }
 
 //!
@@ -956,9 +1009,9 @@ inline void ks10_t::writeDCSR(uint32_t data) {
 //!
 
 inline uint64_t ks10_t::readDBAR(void) {
-    lockMutex();
+    LOCK();
     uint64_t ret = *regDEBBAR;
-    unlockMutex();
+    UNLOCK();
     return ret;
 }
 
@@ -974,9 +1027,9 @@ inline uint64_t ks10_t::readDBAR(void) {
 //!
 
 inline void ks10_t::writeDBAR(uint64_t data) {
-    lockMutex();
+    LOCK();
     *regDEBBAR = data;
-    unlockMutex();
+    UNLOCK();
 }
 
 //!
@@ -991,9 +1044,9 @@ inline void ks10_t::writeDBAR(uint64_t data) {
 //!
 
 inline uint64_t ks10_t::readDBMR(void) {
-    lockMutex();
+    LOCK();
     uint64_t ret = *regDEBBMR;
-    unlockMutex();
+    UNLOCK();
     return ret;
 }
 
@@ -1009,9 +1062,9 @@ inline uint64_t ks10_t::readDBMR(void) {
 //!
 
 inline void ks10_t::writeDBMR(uint64_t data) {
-    lockMutex();
+    LOCK();
     *regDEBBMR = data;
-    unlockMutex();
+    UNLOCK();
 }
 
 //!
@@ -1031,9 +1084,9 @@ inline void ks10_t::writeDBMR(uint64_t data) {
 //!
 
 inline uint64_t ks10_t::readDITR(void) {
-    lockMutex();
+    LOCK();
     uint64_t ret = *regDEBITR;
-    unlockMutex();
+    UNLOCK();
     return ret;
 }
 
@@ -1050,10 +1103,45 @@ inline uint64_t ks10_t::readDITR(void) {
 //!
 
 inline uint64_t ks10_t::readDPCIR(void) {
-    lockMutex();
+    LOCK();
     uint64_t ret = *regDEBPCIR;
-    unlockMutex();
+    UNLOCK();
     return ret;
+}
+
+//!
+//! \brief
+//!    This function reads a 64-bit value from the MT Data Interface Register.
+//!
+//! \returns
+//!    contents of the MTDIR register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint64_t ks10_t::readMTDIR(void) {
+    LOCK();
+    uint64_t ret = *regMTDIR;
+    UNLOCK();
+    return ret;
+}
+
+//!
+//! \brief
+//!    This function writes a 64-bit value to the MT Data Interface Register
+//!
+//! \param data -
+//!    data is the data to be written to the MTDIR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::writeMTDIR(uint64_t data) {
+    LOCK();
+    *regMTDIR = data;
+    UNLOCK();
 }
 
 //!
@@ -1071,9 +1159,30 @@ inline uint64_t ks10_t::readDPCIR(void) {
 //!
 
 inline uint64_t ks10_t::getRPDEBUG(void) {
-    lockMutex();
+    LOCK();
     uint64_t ret = *regRPDEBUG;
-    unlockMutex();
+    UNLOCK();
+    return ret;
+}
+
+//!
+//! \brief
+//!    Get Contents of MT Debug Register
+//!
+//! \brief
+//!    This function return the contents of the MT Debug Register
+//!
+//! \returns
+//!     Contents of the MT Debug Register
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline uint64_t ks10_t::getMTDEBUG(void) {
+    LOCK();
+    uint64_t ret = *regMTDEBUG;
+    UNLOCK();
     return ret;
 }
 

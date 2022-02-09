@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2021 Rob Doyle
+// Copyright (C) 2013-2022 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -148,13 +148,13 @@ void dz11_t::setup(unsigned int line) {
 //!    ASCII line number
 //!
 
-void dz11_t::testTX(char line) {
+void dz11_t::testTX(int line) {
 
     //
     // Initialize the DZ11 for this line
     //
 
-    setup((line - '0') & 0x0007);
+    setup(line & 0x0007);
 
     //
     // Print test message
@@ -190,7 +190,7 @@ void dz11_t::testTX(char line) {
 //!    ASCII line number
 //!
 
-void dz11_t::testRX(char line) {
+void dz11_t::testRX(int line) {
 
     printf("Characters typed on TTY%c should echo on the console. ^C to exit.\n", line);
 
@@ -198,7 +198,7 @@ void dz11_t::testRX(char line) {
     // Initialize the DZ11 for this line
     //
 
-    setup((line - '0') & 0x0007);
+    setup(line & 0x0007);
 
     //
     // Test receiver
@@ -248,7 +248,7 @@ void dz11_t::testRX(char line) {
 //!    ASCII line number
 //!
 
-void dz11_t::testECHO(char line) {
+void dz11_t::testECHO(int line) {
 
     printf("Characters typed on TTY%c should echo. ^C to exit.\n", line);
 
@@ -256,7 +256,7 @@ void dz11_t::testECHO(char line) {
     // Initialize the DZ11 for this line
     //
 
-    setup((line - '0') & 0x0007);
+    setup(line & 0x0007);
 
     //
     // Test echo

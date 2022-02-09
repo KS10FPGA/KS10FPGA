@@ -13,7 +13,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2020 Rob Doyle
+// Copyright (C) 2013-2022 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -57,15 +57,12 @@
 //! \brief
 //!    Constructor
 //!
-//! \param taskHandle -
-//!    reference to the command line processing task taskHandle
-//!
-//! \param task -
-//!    Command processor callback.  This executes the command line.
+//! \param promptSize
+//!    length of the prompt so that the cmdline interpreter will not backspace over the prompt
 //!
 
 cmdline_t::cmdline_t(unsigned int promptSize) : cursor(promptSize), state(stateNONE), cmdlen(0) {
-    static const char cmd[] = "DS UNIT=2;BT 1";
+    static const char cmd[] = "rp boot";
     hist.save(cmd, sizeof(cmd)-1);
     memset(cmdline, 0, sizeof(cmdline));
 }
@@ -209,7 +206,7 @@ bool cmdline_t::newline(void) {
 //! \brief
 //!    Process and input character
 //!
-//! \param ch -
+//! \param[in] in
 //!    Character to insert into command line.
 //!
 

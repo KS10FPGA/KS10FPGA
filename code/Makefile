@@ -41,8 +41,8 @@ G++    := $(CROSS_COMPILE)g++
 
 CFLAGS := -O2 -W -Wall -lpthread -pipe -Wformat=0
 
-CFILES := commands.cpp config.cpp cursor.cpp dasm.cpp dz11.cpp dup11.cpp hist.cpp cmdline.cpp ks10.cpp lp20.cpp rp.cpp rh11.cpp main.cpp
-HFILES := commands.hpp config.hpp cursor.hpp dasm.hpp dz11.hpp dup11.hpp hist.hpp cmdline.hpp ks10.hpp lp20.hpp rp.hpp rh11.hpp uba.hpp
+CFILES := commands.cpp config.cpp cursor.cpp dasm.cpp dz11.cpp dup11.cpp hist.cpp cmdline.cpp ks10.cpp lp20.cpp mt.cpp rp.cpp rh11.cpp tape.cpp main.cpp
+HFILES := commands.hpp config.hpp cursor.hpp dasm.hpp dz11.hpp dup11.hpp hist.hpp cmdline.hpp ks10.hpp lp20.hpp mt.hpp rp.hpp rh11.hpp tape.hpp uba.hpp
 
 console : $(CFILES) $(HFILES) makefile
 	$(G++) $(CFLAGS) $(CFILES) -o console

@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2021 Rob Doyle
+// Copyright (C) 2013-2022 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -40,8 +40,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <termios.h>
+#include <sys/select.h>
 
+#include "mt.hpp"
 #include "ks10.hpp"
+#include "tape.hpp"
 #include "vt100.hpp"
 #include "cmdline.hpp"
 #include "commands.hpp"
@@ -76,7 +79,7 @@ void *__noreturn haltThread(void *) {
             printf("KS10: %sRunning.%s\n", vt100fg_grn, vt100at_rst);
         }
         halted = halt;
-        usleep(1);
+//      usleep(1);
     }
 }
 
@@ -165,6 +168,20 @@ int main(int argc, char *argv[]) {
         printf("KS10: pthread_create(ctyThread) returned \"%s\".\n", strerror(status));
         exit(EXIT_FAILURE);
     }
+
+    //
+    // Create TAPE thread
+    //
+
+    pthread_t tapeThreadID;
+    const char *file = "red405a2.tap";
+    //const char *file = "temp.tap";
+    status = pthread_create(&tapeThreadID, NULL, &tape_t::processThread, (void*)file);
+    if (status != 0) {
+        printf("KS10: pthread_create(tapeThread) returned \"%s\".\n", strerror(status));
+        exit(EXIT_FAILURE);
+    }
+
     usleep(1000);
 
     //

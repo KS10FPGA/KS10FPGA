@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2021 Rob Doyle
+// Copyright (C) 2013-2022 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -114,9 +114,9 @@ class dz11_t {
 
         void recallConfig(void);
         void saveConfig(void);
-        void testTX(char line);
-        void testRX(char line);
-        void testECHO(char line);
+        void testTX(int line);
+        void testRX(int line);
+        void testECHO(int line);
         void dumpRegs(void);
 
         dz11_t(uint32_t baseADDR = baseADDR1) :

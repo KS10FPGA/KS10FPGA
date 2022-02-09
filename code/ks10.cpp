@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2021 Rob Doyle
+// Copyright (C) 2013-2022 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -37,7 +37,7 @@
 //******************************************************************************
 //
 //! \addtogroup ks10_api
-//! @{
+//! \{
 //
 
 #include <stdio.h>
@@ -61,12 +61,15 @@ volatile uint32_t *ks10_t::regStat;                     //!< Console Control/Sta
 volatile uint32_t *ks10_t::regDZCCR;                    //!< DZ11 Console Control Register
 volatile uint32_t *ks10_t::regLPCCR;                    //!< LP20 Console Control Register
 volatile uint32_t *ks10_t::regRPCCR;                    //!< RP Console Control Register
+volatile uint32_t *ks10_t::regMTCCR;                    //!< MT Console Control Register
 volatile uint32_t *ks10_t::regDUPCCR;                   //!< DUP11 Console Control Register
 volatile uint32_t *ks10_t::regDEBCSR ;                  //!< Debug Control/Status Register
 volatile ks10_t::addr_t *ks10_t::regDEBBAR;             //!< Debug Breakpoint Address Register
 volatile ks10_t::addr_t *ks10_t::regDEBBMR;             //!< Debug Breakpoint Mask Register
 volatile uint64_t *ks10_t::regDEBITR;                   //!< Debug Instruction Trace Register
 volatile uint64_t *ks10_t::regDEBPCIR ;                 //!< Debug Program Counter and Instruction Register
+volatile uint64_t *ks10_t::regMTDIR;                    //!< MT Data Interface Register
+volatile const uint64_t *ks10_t::regMTDEBUG;            //!< MT Debug Register
 volatile const uint64_t *ks10_t::regRPDEBUG;            //!< RP Debug Register
 const char *ks10_t::regVers;                            //!< Firmware Version Register
 
@@ -80,6 +83,8 @@ const char *ks10_t::regVers;                            //!< Firmware Version Re
 //! \details
 //!    The constructor initializes this object. It mmaps the FPGA address space.
 //!
+//! \addtogroup ks10_lowlevel_api
+//! \{
 
 ks10_t::ks10_t(bool debug) {
 
@@ -144,21 +149,24 @@ ks10_t::ks10_t(bool debug) {
         }
     }
 
-    regAddr      = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regCONAROffset]);    //!< Console Address Register
-    regData      = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONDROffset]);    //!< Console Data Register
-    regCIR       = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONIROffset]);    //!< KS10 Console Instruction Register
-    regStat      = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regCONCSROffset]);   //!< Console Control/Status Register
-    regDZCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDZCCROffset]);    //!< DZ11 Console Control Register
-    regLPCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regLPCCROffset]);    //!< LP20 Console Control Register
-    regRPCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regRPCCROffset]);    //!< RP Console Control Register
-    regDUPCCR    = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDUPCCROffset]);   //!< DUP11 Console Control Register
-    regDEBCSR    = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDEBCSROffset]);   //!< Debug Control/Status Register
-    regDEBBAR    = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regDEBBAROffset]);   //!< Debug Breakpoint Address Register
-    regDEBBMR    = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regDEBBMROffset]);   //!< Debug Breakpoint Mask Register
-    regDEBITR    = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regDEBITROffset]);   //!< Debug Instruction Trace Register
-    regDEBPCIR   = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regDEBPCIROffset]);  //!< Debug Program Counter and Instruction Register
-    regRPDEBUG   = reinterpret_cast<volatile const uint64_t *>(&fpgaAddrVirt[regRPDEBOffset]);    //!< RP Debug Register
-    regVers      = reinterpret_cast<         const char     *>(&fpgaAddrVirt[regVERSOffset]);     //!< Firmware Version Register
+    regAddr      = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regCONAROffset]);    // Console Address Register
+    regData      = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONDROffset]);    // Console Data Register
+    regCIR       = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONIROffset]);    // KS10 Console Instruction Register
+    regStat      = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regCONCSROffset]);   // Console Control/Status Register
+    regDZCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDZCCROffset]);    // DZ11 Console Control Register
+    regLPCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regLPCCROffset]);    // LP20 Console Control Register
+    regRPCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regRPCCROffset]);    // RP Console Control Register
+    regMTCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regMTCCROffset]);    // MT Console Control Register
+    regDUPCCR    = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDUPCCROffset]);   // DUP11 Console Control Register
+    regDEBCSR    = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDEBCSROffset]);   // Debug Control/Status Register
+    regDEBBAR    = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regDEBBAROffset]);   // Debug Breakpoint Address Register
+    regDEBBMR    = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regDEBBMROffset]);   // Debug Breakpoint Mask Register
+    regDEBITR    = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regDEBITROffset]);   // Debug Instruction Trace Register
+    regDEBPCIR   = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regDEBPCIROffset]);  // Debug Program Counter and Instruction Register
+    regMTDIR     = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regMTDIROffset]);    // MT Data Interface Register
+    regMTDEBUG   = reinterpret_cast<volatile const uint64_t *>(&fpgaAddrVirt[regMTDEBOffset]);    // MT Debug Register
+    regRPDEBUG   = reinterpret_cast<volatile const uint64_t *>(&fpgaAddrVirt[regRPDEBOffset]);    // RP Debug Register
+    regVers      = reinterpret_cast<         const char     *>(&fpgaAddrVirt[regVERSOffset]);     // Firmware Version Register
 }
 
 //!
@@ -167,8 +175,8 @@ ks10_t::ks10_t(bool debug) {
 //!
 //! \details
 //!    The destructor destroys this object. This function:
-//!       #.  destroys the mutex, and
-//!       #.  unmmaps the FPGA address space.
+//!       -# destroys the mutex, and
+//!       -# unmmaps the FPGA address space.
 //!
 
 ks10_t::~ks10_t(void) {
@@ -179,6 +187,8 @@ ks10_t::~ks10_t(void) {
     close(fd);
 }
 
+//! \}
+
 //!
 //! \brief
 //!    Boot (Unreset) the KS10
@@ -186,6 +196,8 @@ ks10_t::~ks10_t(void) {
 //! \note
 //!    This function is thread safe.
 //!
+//! \addtogroup ks10_control_api
+//! \{
 
 void ks10_t::boot(void) {
 
@@ -250,6 +262,8 @@ void ks10_t::boot(void) {
 
 }
 
+/* ks10_ctrl_api */  //! \}
+
 //!
 //! \brief
 //!    This function verifies that the firmware is loaded into KS10 FPGA.
@@ -261,6 +275,8 @@ void ks10_t::boot(void) {
 //! \note
 //!    This function is thread safe.
 //!
+//! \addtogroup ks10_fpga_api
+//! \{
 
 void ks10_t::checkFirmware(void) {
     const char *buf = regVers;
@@ -487,7 +503,7 @@ bool ks10_t::testReg32(volatile void * addr, const char *name, uint32_t mask) {
 //!
 //! \note
 //!    This function is NOT thread safe.  Selftest should be performed as a
-//!    single thread application.
+//!    single thread application before the sub-threads have been started.
 //!
 
 void ks10_t::testRegs(void) {
@@ -501,11 +517,14 @@ void ks10_t::testRegs(void) {
     success &= testReg32(regStat,   "KS10 Console Control/Status Register . . . ", 0x0000021d);
     success &= testReg32(regDZCCR,  "DZ11 Console Control Register  . . . . . . ", 0xffffffff);
     success &= testReg32(regLPCCR,  "LP20 Console Control Register  . . . . . . ", 0x03ff0003);
+    success &= testReg32(regMTCCR,  "MT Console Control Register  . . . . . . . ", 0xffffffff);
     success &= testReg32(regRPCCR,  "RP Console Control Register  . . . . . . . ", 0xffffffff);
     success &= testReg32(regDUPCCR, "DUP11 Console Control Register . . . . . . ", 0x0f000f00);
     success &= testReg32(regDEBCSR, "Debug Console Control Register . . . . . . ", 0x007000e0);
     success &= testReg64(regDEBBAR, "Debug Bus Address Register . . . . . . . . ", 0xfffffffff);
     success &= testReg64(regDEBBMR, "Debug Bus Mask Register  . . . . . . . . . ", 0xfffffffff);
+//  success &= testReg64(regMTDIR,  "MT Data Interface Register . . . . . . . . ", 0x000000ff00000000);
+
     if (success) {
         printf("KS10: Console Interface Register test completed successfully.\n");
     } else {
@@ -515,6 +534,8 @@ void ks10_t::testRegs(void) {
         }
     }
 }
+
+/* ks10_fpga_api */  //! \}
 
 //!
 //! \brief
@@ -526,6 +547,8 @@ void ks10_t::testRegs(void) {
 //! \note
 //!    This function is thread safe.
 //!
+//! \addtogroup ks10_cty_api
+//! \{
 
 void ks10_t::putchar(int ch) {
     lockMutex();
@@ -561,6 +584,11 @@ int ks10_t::getchar(void) {
     unlockMutex();
     return -1;
 }
+
+//! \}
+
+//! \addtogroup ks10_cpu_api
+//! \{
 
 //!
 //! \brief
@@ -847,7 +875,7 @@ ks10_t::data_t ks10_t::rdHSB(void) {
 //!    AC number
 //!
 //! \returns
-//!    contents of the register
+//!    Contents of the register
 //!
 //! \note
 //!    This function is thread safe.
@@ -986,6 +1014,8 @@ void ks10_t::printHaltStatusBlock(void) {
     unlockMutex();
 }
 
+/* ks10_cpu_api */ //! \}
+
 //!
 //! \brief
 //!    Print RP Debug Word
@@ -993,6 +1023,8 @@ void ks10_t::printHaltStatusBlock(void) {
 //! \note
 //!    This function is thread safe.
 //!
+//! \addtogroup ks10_console_api
+//! \{
 
 void ks10_t::printRPDEBUG(void) {
 
@@ -1001,12 +1033,12 @@ void ks10_t::printRPDEBUG(void) {
     //
 
     struct rpdebug_t {
-        uint16_t rdcnt;                                     //!< Read count
-        uint16_t wrcnt;                                     //!< Write count
-        uint8_t  LEDs;                                      //!< LED status
-        uint8_t  errval;                                    //!< Error value
-        uint8_t  errnum;                                    //!< Error number
-        uint8_t  state;                                     //!< Controller state
+        uint16_t rdcnt;                                     // Read count
+        uint16_t wrcnt;                                     // Write count
+        uint8_t  LEDs;                                      // LED status
+        uint8_t  errval;                                    // Error value
+        uint8_t  errnum;                                    // Error number
+        uint8_t  state;                                     // Controller state
     } __attribute__((packed));
 
     uint64_t rpstat = getRPDEBUG();
@@ -1029,7 +1061,88 @@ void ks10_t::printRPDEBUG(void) {
            rpdebug->LEDs);
 }
 
+//!
+//! \brief
+//!    Print MT Debug Word
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+void ks10_t::printMTDEBUG(void) {
+
+    //
+    // This defintion matches the FPGA
+    //
+
+    struct mtdebug_t {
+        uint16_t rdcnt;                                     // Read count
+        uint16_t wrcnt;                                     // Write count
+        uint8_t  LEDs;                                      // LED status
+        uint8_t  errval;                                    // Error value
+        uint8_t  errnum;                                    // Error number
+        uint8_t  state;                                     // Controller state
+    } __attribute__((packed));
+
+    uint64_t mtstat = getMTDEBUG();
+
+    mtdebug_t *mtdebug = reinterpret_cast<mtdebug_t *>(&mtstat);
+
+    printf("KS10: MT status is 0x%016llx\n"
+           "      State  = %d\n"
+           "      ErrNum = %d\n"
+           "      ErrVal = %d\n"
+           "      WrCnt  = %d\n"
+           "      RdCnt  = %d\n"
+           "      LEDs   = 0x%02x\n",
+           mtstat,
+           mtdebug->state,
+           mtdebug->errnum,
+           mtdebug->errval,
+           mtdebug->wrcnt,
+           mtdebug->rdcnt,
+           mtdebug->LEDs);
+
+
+#if 0
+    uint64_t mtDIR = readMTDIR();
+    printf("KS10: MTDIR is 0x%016llx\n"
+           "      %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n"
+           "      DEN = 0%02llo\n"
+           "      FMT = 0%02llo\n"
+           "      SS  = 0%02llo\n"
+           "      FUN = 0%02llo\n",
+           mtDIR,
+           mtDIR & mtDIR_READ  ? "READ "  : "",
+           mtDIR & mtDIR_STB   ? "STB "   : "",
+           mtDIR & mtDIR_INIT  ? "INIT "  : "",
+           mtDIR & mtDIR_READY ? "READY "  : "",
+           mtDIR & mtDIR_INCFC ? "INCFC " : "",
+           mtDIR & mtDIR_FCZ   ? "FCZ "   : "",
+           mtDIR & mtDIR_WCZ   ? "WCZ "   : "",
+           mtDIR & mtDIR_MOL   ? "MOL "   : "",
+           mtDIR & mtDIR_55    ? "BIT55 " : "",
+           mtDIR & mtDIR_ACCL  ? "ACCL "  : "",
+           mtDIR & mtDIR_SDWN  ? "SDWN "  : "",
+           mtDIR & mtDIR_SLA   ? "SLA "   : "",
+           mtDIR & mtDIR_SSC   ? "SSC "   : "",
+           mtDIR & mtDIR_EOT   ? "EOT "   : "",
+           mtDIR & mtDIR_BOT   ? "BOT "   : "",
+           mtDIR & mtDIR_TM    ? "TM "    : "",
+           mtDIR & mtDIR_DRY   ? "DRY "   : "",
+           (mtDIR & mtDIR_DEN) >> 52,
+           (mtDIR & mtDIR_FMT) >> 48,
+           (mtDIR & mtDIR_SS ) >> 45,
+           (mtDIR & mtDIR_FUN) >> 40);
+
+    uint64_t * p = (uint64_t *)regAddr;
+    for (int i = 0; i < 20; i++) {
+        printf("KS10: 0x%02x 0x%016llx\n", i*8, p[i]);
+    }
+#endif
+}
 
 //
-//! @}
+/* ks10_console_api */ //! \}
+/* ks10_api */ //! \}
 //
