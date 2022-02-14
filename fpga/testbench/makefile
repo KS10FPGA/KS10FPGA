@@ -41,10 +41,11 @@ DIAGTAPE    := ../../Tape\ and\ Disk\ Images/KS10\ Diagnostics/ks_diag_gs.tap
 REDPACK     := ../../Tape\ and\ Disk\ Images/RED\ PACK\ 405A2/red405a2.tap
 SAV2VERILOG := ../../tools/sav2verilog/sav2verilog.exe
 MERGE_AWK   := ./merge18.awk
+ASM10       := ../../tools/asm10/asm10
 
 #
 # Read SD Card to file so it can be examined.
-#  This assumes that a 8GB card is installed.
+#  This assumes that a 8GB card (or larger) is installed.
 #
 
 DEV   := sde
@@ -200,6 +201,36 @@ dsrpa.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DS
 	mv dsrpa.sav DSRPA.SAV
 	$(SAV2VERILOG) DSRPA.SAV DSRPA.DAT
 	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSRPA.DAT DSQDA.PATCH DSRPA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSRPA.DAT > dsrpa.ssram.dat
+
+#
+# DSTUA
+#  The listing file that I have and the SEQ file that I have don't match.
+#
+
+#dstua.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH DSTUA.PATCH
+#	$(T10BACKUP) -i -x diagnostics..dstua.sav -f $(DIAGTAPE)
+#	mv dstua.sav DSTUA.SAV
+#	$(SAV2VERILOG) DSTUA.SAV DSTUA.DAT
+#	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSTUA.DAT DSQDA.PATCH DSTUA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSTUA.DAT > dstua.ssram.dat
+
+dstua.ssram.dat : DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH DSTUA.PATCH latest.dstua.sav
+	$(SAV2VERILOG) latest.dstua.sav DSTUA.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSTUA.DAT DSQDA.PATCH DSTUA.PATCH | awk -f $(MERGE_AWK) -vfilename=DSTUA.DAT > dstua.ssram.dat
+
+#
+# DSTUB
+#
+
+#dstub.ssram.dat : $(T10BACKUP) $(DIAGTAPE) $(SAV2VERILOG) DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH DSTUB.PATCH
+#	$(T10BACKUP) -i -x diagnostics..dstub.sav -f $(DIAGTAPE)
+#	mv dstub.sav DSTUB.SAV
+#	$(SAV2VERILOG) DSTUB.SAV DSTUB.DAT
+#	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSTUB.DAT DSQDA.PATCH DSTUB.PATCH | awk -f $(MERGE_AWK) -vfilename=DSTUB.DAT > dstub.ssram.dat
+
+dstub.ssram.dat : DSQDA.DAT DSQDB.DAT DSQDC.DAT DSQDA.PATCH DSTUB.PATCH latest.dstub.sav
+	$(SAV2VERILOG) latest.dstub.sav DSTUB.DAT
+	cat DSQDA.DAT DSQDB.DAT DSQDC.DAT DSTUB.DAT DSQDA.PATCH DSTUB.PATCH | awk -f $(MERGE_AWK) -vfilename=DSTUB.DAT > dstub.ssram.dat
+
 
 #
 # UBA
@@ -372,6 +403,20 @@ DSRPA.PATCH : makefile
 	echo -e "000000000\t\t// mem[077263] = 000000000000" >> DSRPA.PATCH
 
 #
+# DSTUA
+# Run TST72 first
+
+DSTUA.PATCH : makefile
+	echo -e "000000000\t\t// mem[000000] = 000000000000" >  DSTUA.PATCH
+
+#
+# DSTUB
+#
+
+DSTUB.PATCH : makefile
+	echo -e "000000000\t\t// mem[000000] = 000000000000" >  DSTUB.PATCH
+
+#
 # Patch the timout on the UART test
 #
 
@@ -400,15 +445,23 @@ DSDZA.PATCH : makefile
 	echo -e "000006000\t\t// mem[035667] = 000000006000 (15:19200 baud)" >> DSDZA.PATCH
 
 #
-#
-#
+#	echo -e "000000000\t\t// mem[034345] = 000000031372 (DSUBA TEST11)" >> DSUBA.PATCH
+#	echo -e "000000000\t\t// mem[034345] = 000000031721 (DSUBA TEST15)" >> DSUBA.PATCH
+#	echo -e "000000000\t\t// mem[034345] = 000000032056 (DSUBA TEST17)" >> DSUBA.PATCH
+#	echo -e "000000000\t\t// mem[034345] = 000000032772 (DSUBA TEST33)" >> DSUBA.PATCH
+#	echo -e "000000000\t\t// mem[034345] = 000000033154 (DSUBA TEST37)" >> DSUBA.PATCH
+#	echo -e "000000000\t\t// mem[034345] = 000000033375 (DSUBA TEST44)" >> DSUBA.PATCH
+#	echo -e "000000000\t\t// mem[034345] = 000000033474 (DSUBA TEST46)" >> DSUBA.PATCH
+#	echo -e "000000000\t\t// mem[034345] = 000000033526 (DSUBA TEST47)" >> DSUBA.PATCH
 
 DSUBA.PATCH : makefile
 	echo -e ""                                                          >  DSUBA.PATCH
-	echo -e "@4e00"                                                     >> DSUBA.PATCH
 	echo -e "000000000\t\t// mem[047000] = 000000000000 (memlow)"       >> DSUBA.PATCH
-	echo -e "@38E5"                                                     >> DSUBA.PATCH
-	echo -e "0000032d4\t\t// mem[034345] = 000000031324 (DSUBA test10)" >> DSUBA.PATCH
+	echo -e "000000000\t\t// mem[034345] = 000000033375 (DSUBA TEST44)" >> DSUBA.PATCH
+
+test_mt.seq : test_mt.asm makefile seqparse.awk
+	$(ASM10) test_mt.asm > test_mt.seq
+	awk -f seqparse.awk < test_mt.seq | awk -f $(MERGE_AWK) -vfilename=TEST_MT.DAT > test_mt.ssram.dat
 
 check :
 	cat /proc/partitions
@@ -417,6 +470,32 @@ check :
 
 #
 # Carefully update the SD Card
+#
+# The output of this script should look something like:
+#
+# $ make rp06_disk
+#
+# The disk /dev/sdn is partitioned as follows:
+#    8   208  15558144 sdn
+#    8   209  15558144 sdn1   P:\
+#
+# This script will destroy all of the data on /dev/sdn
+# This script will destroy all of the data on /dev/sdn
+# This script will destroy all of the data on /dev/sdn
+#
+# You've been warned.  If you don't know what you're doing.   Stop now!
+#
+# Are you sure you want to do that? [YES/NO] YES
+# This will take a while.  Please be patient.
+# 615600+0 records in
+# 615600+0 records out
+# 315187200 bytes (315 MB) copied, 621.582 s, 507 kB/s
+# 615600+0 records in
+# 615600+0 records out
+# 315187200 bytes (315 MB) copied, 612.29 s, 515 kB/s
+# 427624+0 records in
+# 427624+0 records out
+# 218943488 bytes (219 MB) copied, 427.631 s, 512 kB/s
 #
 
 rp06_disk : makefile $(UNIT0) $(UNIT1) $(UNIT2)
@@ -433,9 +512,9 @@ rp06_disk : makefile $(UNIT0) $(UNIT1) $(UNIT2)
 	@read -r -p "Are you sure you want to do that? [YES/NO] " prompt; \
 	if [[ $$prompt == "YES" || $$prompt == "yes" ]]; then \
 		echo "This will take a while.  Please be patient."; \
-		zcat $(UNIT0) | dd of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=0G; \
-		zcat $(UNIT1) | dd of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=1G; \
-		zcat $(UNIT2) | dd of=/dev/$(DEV) bs=512 iflag=count_bytes oflag=seek_bytes count=309700K seek=2G; \
+		zcat $(UNIT0) | dd of=/dev/$(DEV) iflag=count_bytes oflag=seek_bytes count=309700K seek=0G; \
+		zcat $(UNIT1) | dd of=/dev/$(DEV) iflag=count_bytes oflag=seek_bytes count=309700K seek=1G; \
+		zcat $(UNIT2) | dd of=/dev/$(DEV) iflag=count_bytes oflag=seek_bytes count=309700K seek=2G; \
         else \
 		echo "You must answer YES to write to SD Card!"; \
         fi
