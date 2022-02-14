@@ -22,6 +22,8 @@
 
 //
 // Modifications by Rob Doyle.  Mistake are mine.
+// Minor fixes so it can be complied with SystemVerilog
+// - renamed 'do' (keyword) to 'dor' because 'do' is a keyword in SV.
 //
 
 `timescale 1ns/10ps
@@ -120,7 +122,7 @@ module CY7C1463( d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode)
    reg  [20:0] a_d;
    reg  [20:0] a_o;
 
-   reg  [17:0] do;              // data  output reg
+   reg  [17:0] dor;             // data  output reg
    reg  [17:0] di;              // data   input bus
    reg  [17:0] dd;              // data delayed bus
 
@@ -140,7 +142,7 @@ module CY7C1463( d, clk, a, bws, we_b, adv_lb, ce1b, ce2, ce3b, oeb, cenb, mode)
    reg         we_bl;
 
 
-   wire [17:0]  d =  !tristate ?  do[17:0] : 18'bz ;    //  data bus
+   wire [17:0]  d =  !tristate ?  dor[17:0] : 18'bz ;    //  data bus
 
    assign chipen        = (adv_lb == 1 ) ? chipen_d : ~ce1b & ce2 & ~ce3b ;
 
@@ -187,7 +189,7 @@ initial
      noti2      = 0;
      $readmemh(`SSRAM_DAT, mem);
 
-end
+  end
 
    //
    // Asynchronous OE
@@ -329,7 +331,7 @@ end
             default : unknown; // output unknown values and display an error message
           endcase
 
-          do <= `tcdv  pipereg;
+          dor <= `tcdv  pipereg;
 
        end
 
@@ -342,7 +344,7 @@ end
          if (enable)
            cetri <= `tclz 0;
          writetri <= `tchz 0;
-         do <= `tdoh 18'hx;
+         dor <= `tdoh 18'hx;
          pipereg = mem[addreg];
       end
    endtask
@@ -408,7 +410,7 @@ end
 
    task unknown;
       begin
-         do = 18'bx;
+         dor = 18'bx;
          // $display ("Unknown function:  Operation = %b\n", operation);
       end
    endtask
