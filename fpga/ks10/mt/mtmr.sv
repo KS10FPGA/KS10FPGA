@@ -45,6 +45,7 @@ module MTMR (
       input  wire          rst,                 // Reset
       input  wire  [35: 0] mtDATAI,             // RH Data In
       input  wire          mtmrWRITE,           // Write to MR
+      input  wire          mtGO,                // GO
       input  wire  [ 8: 0] mtMDF,               // Maintenance data field
       output logic [15: 0] mtMR                 // mtMR Output
    );
@@ -84,8 +85,38 @@ module MTMR (
    //
    // MTMR Maintenance Clock (MC)
    //
+   // This is careful that the mtMC does not double-clock on write pulses that
+   // are not a single clock wide.
+   //
+   // Trace:
+   //  M8905/MR5/E19
+   //  M8905/MR5/E31
+   //  M8905/MR5/E34
+   //  M8905/MR5/E35
+   //
 
-   wire mrMC = 0;
+   logic [3:0] mrMOP;
+   logic       mrMC;
+   logic [2:0] wrdly;
+   wire        toggle = ((mtGO & wrdly[2] & !wrdly[1] & mrMOP == (mtMROP_WRP1)) |
+                         (mtGO & wrdly[2] & !wrdly[1] & mrMOP == (mtMROP_WRP2)) |
+                         (mtGO & wrdly[2] & !wrdly[1] & mrMOP == (mtMROP_WRP3)));
+
+   always_ff @(posedge clk)
+     begin
+        if (rst)
+          begin
+             mrMC     <= 0;
+             wrdly[0] <= 0;
+          end
+        else if (toggle)
+          begin
+             mrMC <= !mrMC;
+          end
+        wrdly[0] <= mtmrWRITE;
+        wrdly[1] <= wrdly[0];
+        wrdly[2] <= wrdly[1];
+     end
 
    //
    // MTMR Maintenance Opcode (MOP)
@@ -94,8 +125,6 @@ module MTMR (
    //  M8905/MR5/E25
    //  M8905/MR5/E38
    //
-
-   logic [3:0] mrMOP;
 
    always_ff @(posedge clk)
      begin

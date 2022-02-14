@@ -71,8 +71,9 @@ module MTCTRL (
       input  wire  [ 2: 0] mtDEN,               // Density
       input  wire  [ 3: 0] mtFMT,               // Format
       input  wire  [ 5: 1] mtFUN,               // Function
-      input  wire          mtGO,                // Go bit
+      input  wire          mtFUNGO,             // GO bit
       input  wire  [ 2: 0] mtSS,                // Slave Select
+      output logic         mtGO,                // GO
       output logic         mtPIP,               // Positioning in progress
       output logic         mtACCL,              // Tape drive acceleration
       output logic         mtATA,               // Attention
@@ -405,6 +406,7 @@ module MTCTRL (
      begin
         if (rst | mtINIT | mtDRVCLR)
           begin
+             mtGO      <= 0;
              mtACCL    <= 1;
              mtACCLTIM <= 0;
              mtSLA     <= 0;
@@ -507,7 +509,7 @@ module MTCTRL (
                //
 
                stateIDLE:
-                 if (mtGO)
+                 if (mtFUNGO)
                    state <= stateDLY;
 
                //
@@ -551,6 +553,7 @@ module MTCTRL (
                         `mtCS1_FUN_REWIND,
                         `mtCS1_FUN_PRESET:
                           begin
+                             mtGO <= 1;
                              if (mtSDWN & mtFWD)
                                begin
                                   mtDRY <= 0;
@@ -568,8 +571,9 @@ module MTCTRL (
                         `mtCS1_FUN_WRCHKREV,
                         `mtCS1_FUN_RDREV:
                           begin
+                             mtGO <= 1;
                              if (mtBOT)
-                               state <= stateIDLE;
+                               state <= stateDONE;
                              else if (mtSDWN & mtFWD)
                                state <= stateSDWN;
                              else
@@ -584,9 +588,10 @@ module MTCTRL (
                         `mtCS1_FUN_WRTM,
                         `mtCS1_FUN_WRFWD:
                           begin
+                             mtGO  <= 1;
                              mtDRY <= 0;
                              if (mtWRL)
-                               state <= stateIDLE;
+                               state <= stateDONE;
                              else if (mtSDWN & !mtFWD)
                                state <= stateSDWN;
                              else
@@ -601,6 +606,7 @@ module MTCTRL (
                         `mtCS1_FUN_WRCHKFWD,
                         `mtCS1_FUN_RDFWD:
                           begin
+                             mtGO <= 1;
                              if (mtSDWN & !mtFWD)
                                state <= stateSDWN;
                              else
@@ -981,6 +987,7 @@ module MTCTRL (
 
                stateDONE:
                  begin
+                    mtGO      <= 0;
                     mtPIP     <= 0;
                     mtDRY     <= 1;
                     mtREQO    <= 0;

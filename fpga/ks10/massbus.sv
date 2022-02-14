@@ -69,7 +69,8 @@ interface massbus;
    logic [ 2: 0] mbUNIT;                // Unit select     (RHCS2[UNIT])
    logic         mbPAT;                 // Parity test     (RHCS2[PAT])
    logic         mbWCZ;                 // Word count is zero
-   logic         mbINVPAR;              // Inverted parity
+   logic         mbCPE;                 // Controller parity error
+   logic         mbDPE;                 // Data parity error
    logic         mbINCBA;               // Increment bus address
    logic         mbDECBA;               // Decrement bus address
    logic         mbINCWC;               // Increment word count
@@ -107,7 +108,8 @@ interface massbus;
       output mbUNIT,
       output mbPAT,
       output mbWCZ,
-      input  mbINVPAR,
+      input  mbCPE,
+      input  mbDPE,
       input  mbINCBA,
       input  mbDECBA,
       input  mbINCWC,
@@ -145,7 +147,8 @@ interface massbus;
       input  mbUNIT,
       input  mbPAT,
       input  mbWCZ,
-      output mbINVPAR,
+      output mbCPE,
+      output mbDPE,
       output mbINCBA,
       output mbDECBA,
       output mbINCWC,

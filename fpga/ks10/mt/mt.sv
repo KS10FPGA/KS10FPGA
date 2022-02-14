@@ -116,10 +116,10 @@ module MT (
    // MTTC Decode
    //
 
-   wire  [ 2: 0] mtDEN         = `mtTC_DEN(mtTC);       // Density
-   wire  [ 3: 0] mtFMT         = `mtTC_FMT(mtTC);       // Format
-   wire  [ 2: 0] mtSS          = `mtTC_SS(mtTC);        // Slave Select
-// wire          mtEVPAR       = `mtTC_EVPAR(mtTC);     // Even parity
+   wire  [ 2: 0] mtDEN    = `mtTC_DEN(mtTC);            // Density
+   wire  [ 3: 0] mtFMT    = `mtTC_FMT(mtTC);            // Format
+   wire  [ 2: 0] mtSS     = `mtTC_SS(mtTC);             // Slave Select
+// wire          mtEVPAR  = `mtTC_EVPAR(mtTC);          // Even parity
 
    //
    // Unit select
@@ -133,7 +133,8 @@ module MT (
    // GO is ignored if the parity is incorrect
    //
 
-   wire          mtGO     = massbus.mbGO & mtSEL & !mtPAT;
+   logic         mtGO;                                  // From MTCTRL
+   wire          mtFUNGO  = massbus.mbGO & mtSEL & !mtPAT;
 
    //
    // Write Decoder
@@ -234,7 +235,7 @@ module MT (
                     (mtWRAS & `mtAS_ATA2(mtDATAI) & (mtTCUNUM == 2)) |
                     (mtWRAS & `mtAS_ATA1(mtDATAI) & (mtTCUNUM == 1)) |
                     (mtWRAS & `mtAS_ATA0(mtDATAI) & (mtTCUNUM == 0)) |
-                    (mtGO   & !mtERR));
+                    (mtFUNGO   & !mtERR));
 
    //
    // Illegal Register
@@ -247,42 +248,42 @@ module MT (
    // Function Decoder
    //
 
-// wire mtFUN_UNLOAD   = mtGO & (mtFUN == `mtCS1_FUN_UNLOAD  );   // Unload command
-// wire mtFUN_REWIND   = mtGO & (mtFUN == `mtCS1_FUN_REWIND  );   // Rewind command
-   wire mtFUN_DRVCLR   = mtGO & (mtFUN == `mtCS1_FUN_DRVCLR  );   // Drive clear command
-   wire mtFUN_PRESET   = mtGO & (mtFUN == `mtCS1_FUN_PRESET  );   // Read-in preset command
-   wire mtFUN_ERASE    = mtGO & (mtFUN == `mtCS1_FUN_ERASE   );   // Erase command
-   wire mtFUN_WRTM     = mtGO & (mtFUN == `mtCS1_FUN_WRTM    );   // Write tape mark
-   wire mtFUN_SPCFWD   = mtGO & (mtFUN == `mtCS1_FUN_SPCFWD  );   // Space forward command
-   wire mtFUN_SPCREV   = mtGO & (mtFUN == `mtCS1_FUN_SPCREV  );   // Space reverse command
-   wire mtFUN_WRCHKFWD = mtGO & (mtFUN == `mtCS1_FUN_WRCHKFWD);   // Write check forward command
-   wire mtFUN_WRCHKREV = mtGO & (mtFUN == `mtCS1_FUN_WRCHKREV);   // Write check reverse command
-   wire mtFUN_WRFWD    = mtGO & (mtFUN == `mtCS1_FUN_WRFWD   );   // Write forward
-   wire mtFUN_RDFWD    = mtGO & (mtFUN == `mtCS1_FUN_RDFWD   );   // Read forward
-   wire mtFUN_RDREV    = mtGO & (mtFUN == `mtCS1_FUN_RDREV   );   // Read reverse
+// wire mtFUN_UNLOAD   = mtFUNGO & (mtFUN == `mtCS1_FUN_UNLOAD  );      // Unload command
+// wire mtFUN_REWIND   = mtFUNGO & (mtFUN == `mtCS1_FUN_REWIND  );      // Rewind command
+   wire mtFUN_DRVCLR   = mtFUNGO & (mtFUN == `mtCS1_FUN_DRVCLR  );      // Drive clear command
+   wire mtFUN_PRESET   = mtFUNGO & (mtFUN == `mtCS1_FUN_PRESET  );      // Read-in preset command
+   wire mtFUN_ERASE    = mtFUNGO & (mtFUN == `mtCS1_FUN_ERASE   );      // Erase command
+   wire mtFUN_WRTM     = mtFUNGO & (mtFUN == `mtCS1_FUN_WRTM    );      // Write tape mark
+   wire mtFUN_SPCFWD   = mtFUNGO & (mtFUN == `mtCS1_FUN_SPCFWD  );      // Space forward command
+   wire mtFUN_SPCREV   = mtFUNGO & (mtFUN == `mtCS1_FUN_SPCREV  );      // Space reverse command
+   wire mtFUN_WRCHKFWD = mtFUNGO & (mtFUN == `mtCS1_FUN_WRCHKFWD);      // Write check forward command
+   wire mtFUN_WRCHKREV = mtFUNGO & (mtFUN == `mtCS1_FUN_WRCHKREV);      // Write check reverse command
+   wire mtFUN_WRFWD    = mtFUNGO & (mtFUN == `mtCS1_FUN_WRFWD   );      // Write forward
+   wire mtFUN_RDFWD    = mtFUNGO & (mtFUN == `mtCS1_FUN_RDFWD   );      // Read forward
+   wire mtFUN_RDREV    = mtFUNGO & (mtFUN == `mtCS1_FUN_RDREV   );      // Read reverse
 
    //
    // Illegal Function
    //
 
-   wire mtSETILF = ((mtGO & (mtFUN == 5'o02)) |
-                    (mtGO & (mtFUN == 5'o05)) |
-                    (mtGO & (mtFUN == 5'o06)) |
-                    (mtGO & (mtFUN == 5'o07)) |
-                    (mtGO & (mtFUN == 5'o11)) |
-                    (mtGO & (mtFUN == 5'o16)) |
-                    (mtGO & (mtFUN == 5'o17)) |
-                    (mtGO & (mtFUN == 5'o20)) |
-                    (mtGO & (mtFUN == 5'o21)) |
-                    (mtGO & (mtFUN == 5'o22)) |
-                    (mtGO & (mtFUN == 5'o23)) |
-                    (mtGO & (mtFUN == 5'o25)) |
-                    (mtGO & (mtFUN == 5'o26)) |
-                    (mtGO & (mtFUN == 5'o31)) |
-                    (mtGO & (mtFUN == 5'o32)) |
-                    (mtGO & (mtFUN == 5'o33)) |
-                    (mtGO & (mtFUN == 5'o35)) |
-                    (mtGO & (mtFUN == 5'o36)));
+   wire mtSETILF = ((mtFUNGO & (mtFUN == 5'o02)) |
+                    (mtFUNGO & (mtFUN == 5'o05)) |
+                    (mtFUNGO & (mtFUN == 5'o06)) |
+                    (mtFUNGO & (mtFUN == 5'o07)) |
+                    (mtFUNGO & (mtFUN == 5'o11)) |
+                    (mtFUNGO & (mtFUN == 5'o16)) |
+                    (mtFUNGO & (mtFUN == 5'o17)) |
+                    (mtFUNGO & (mtFUN == 5'o20)) |
+                    (mtFUNGO & (mtFUN == 5'o21)) |
+                    (mtFUNGO & (mtFUN == 5'o22)) |
+                    (mtFUNGO & (mtFUN == 5'o23)) |
+                    (mtFUNGO & (mtFUN == 5'o25)) |
+                    (mtFUNGO & (mtFUN == 5'o26)) |
+                    (mtFUNGO & (mtFUN == 5'o31)) |
+                    (mtFUNGO & (mtFUN == 5'o32)) |
+                    (mtFUNGO & (mtFUN == 5'o33)) |
+                    (mtFUNGO & (mtFUN == 5'o35)) |
+                    (mtFUNGO & (mtFUN == 5'o36)));
 
    //
    // Frame Counter Clear
@@ -311,7 +312,7 @@ module MT (
         if (rst)
           mtGO_DLY <= 0;
         else
-          mtGO_DLY <= mtGO;
+          mtGO_DLY <= mtFUNGO;
      end
 
    wire mtSETUNS = mtGO_DLY & !mtMOL & (mtFUN != `mtCS1_FUN_DRVCLR);
@@ -375,7 +376,7 @@ module MT (
                     (mtXFRFUN & (mtFMT == 4'o15)) |
                     (mtXFRFUN & (mtFMT == 4'o17)));
 
-   wire mtSETFMTE = mtGO & mtFMTERR;
+   wire mtSETFMTE = mtFUNGO & mtFMTERR;
 
    //
    // FIXMEs
@@ -476,6 +477,7 @@ module MT (
       .rst         (rst),
       .mtDATAI     (mtDATAI),
       .mtmrWRITE   (mtWRMR),
+      .mtGO        (mtGO),
       .mtMDF       (mtMDF),
       .mtMR        (mtMR)
    );
@@ -514,8 +516,9 @@ module MT (
       .mtDEN       (mtDEN),
       .mtFMT       (mtFMT),
       .mtFUN       (mtFUN),
-      .mtGO        (mtGO),
+      .mtFUNGO     (mtFUNGO),
       .mtSS        (mtSS),
+      .mtGO        (mtGO),
       .mtPIP       (mtPIP),
       .mtACCL      (mtACCL),
       .mtATA       (mtATA),
@@ -538,7 +541,7 @@ module MT (
    //  Sets RHCS1[CPE]
    //
 
-   assign massbus.mbCPE = `mtMR_MM(mtMR) & (`mtMR_MOP(mtMR) == `mtMROP_EVPAR);
+   assign massbus.mbCPE = `mtMR_MM(mtMR) & (`mtMR_MOP(mtMR) == mtMROP_EVPAR);
 
    //
    // Data Parity Error
@@ -546,7 +549,7 @@ module MT (
    //  Sets RHCS2[DPE]
    //
 
-   assign massbus.mbDPE = `mtMR_MM(mtMR) & (`mtMR_MOP(mtMR) == `mtMROP_EVPAR) & massbus.mbREQO;
+   assign massbus.mbDPE = `mtMR_MM(mtMR) & (`mtMR_MOP(mtMR) == mtMROP_EVPAR) & massbus.mbREQO;
 
    //
    // Multiplex registers back to RH11
