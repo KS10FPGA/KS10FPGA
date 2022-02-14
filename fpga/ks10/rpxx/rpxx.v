@@ -112,24 +112,24 @@ module RPXX (
    // Lookup Drive Geometries
    //
 
-   localparam [5:0] rpSECN16 = `getLAST_SECT16(rpDRVTYP);       // Sectors in 16-bit mode
-   localparam [5:0] rpSECN18 = `getLAST_SECT18(rpDRVTYP);       // Sectors in 18-bit mode
-   localparam [5:0] rpTRKNUM = `getLAST_TRACK(rpDRVTYP);        // Tracks (or surfaces or heads)
-   localparam [9:0] rpCYLNUM = `getLAST_CYL (rpDRVTYP);         // Cylinder
+   localparam [ 5: 0] rpSECN16 = `getLAST_SECT16(rpDRVTYP);     // Sectors in 16-bit mode
+   localparam [ 5: 0] rpSECN18 = `getLAST_SECT18(rpDRVTYP);     // Sectors in 18-bit mode
+   localparam [ 5: 0] rpTRKNUM = `getLAST_TRACK(rpDRVTYP);      // Tracks (or surfaces or heads)
+   localparam [ 9: 0] rpCYLNUM = `getLAST_CYL (rpDRVTYP);       // Cylinder
 
    //
    // Addressing
    //
 
-   localparam [4:0] rpREGCS1 = 5'o00,                           // Control/Status Register
-                    rpREGDA  = 5'o05,                           // Disk Address Register
-                    rpREGER1 = 5'o02,                           // Error Register #1
-                    rpREGAS  = 5'o04,                           // Attention Summary Register
-                    rpREGMR  = 5'o03,                           // Maintenance Register
-                    rpREGOF  = 5'o11,                           // Offset Register
-                    rpREGDC  = 5'o12,                           // Desired Cylinder Register
-                    rpREGER2 = 5'o14,                           // Error Register #2
-                    rpREGER3 = 5'o15;                           // Error Register #3
+   localparam [ 4: 0] rpREGCS1 = 5'o00,                         // Control/Status Register
+                      rpREGDA  = 5'o05,                         // Disk Address Register
+                      rpREGER1 = 5'o02,                         // Error Register #1
+                      rpREGAS  = 5'o04,                         // Attention Summary Register
+                      rpREGMR  = 5'o03,                         // Maintenance Register
+                      rpREGOF  = 5'o11,                         // Offset Register
+                      rpREGDC  = 5'o12,                         // Desired Cylinder Register
+                      rpREGER2 = 5'o14,                         // Error Register #2
+                      rpREGER3 = 5'o15;                         // Error Register #3
 
    //
    // Unit select
@@ -154,7 +154,7 @@ module RPXX (
    // Big-endian to little-endian data bus swap
    //
 
-   wire [35:0] rpDATAI = devDATAI[0:35];
+   wire [35: 0] rpDATAI = devDATAI[0:35];
 
    //
    // Function Decoder
