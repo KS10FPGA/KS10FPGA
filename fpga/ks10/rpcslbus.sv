@@ -3,20 +3,20 @@
 // KS-10 Processor
 //
 // Brief
-//   RP Console Control/Status Register Header File
+//   KS10 Console to Disk Drive Interface Bus
 //
 // Details
-//   This file contains the RP Control/Status Register bit definitions.
+//   This file contains interface definitions for Disk Drive Interface Bus
 //
 // File
-//   rpccr.vh
+//   rpcslbus.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2020-2021 Rob Doyle
+// Copyright (C) 2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -38,15 +38,39 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifndef __RPCCR_VH
-`define __RPCCR_VH
+`default_nettype none
+`timescale 1ns/1ps
 
 //
-// RPCCR bits
+// RP/CSL Interface
 //
 
-`define rpccrDPR(reg) (reg[ 8:15])  // Drive Present
-`define rpccrMOL(reg) (reg[16:23])  // Media On-line
-`define rpccrWRL(reg) (reg[24:31])  // Write Locked
+interface rpcslbus;
+   logic [ 7: 0] rpDPR;                 // Drive present
+   logic [ 7: 0] rpMOL;                 // Media on-line
+   logic [ 7: 0] rpWRL;                 // Write lock
+   logic [ 0:63] rpDEBUG;               // Debug Register
 
-`endif
+   //
+   // CSL Port
+   //
+
+   modport csl (
+      output rpDPR,                     // Drive present
+      output rpMOL,                     // Media on-line
+      output rpWRL,                     // Write lock
+      input  rpDEBUG                    // Debug Register
+   );
+
+   //
+   // RP Port
+   //
+
+   modport rp (
+      input  rpDPR,                     // Drive present
+      input  rpMOL,                     // Media on-line
+      input  rpWRL,                     // Write lock
+      output rpDEBUG                    // Debug Register
+   );
+
+endinterface

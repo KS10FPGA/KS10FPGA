@@ -77,8 +77,8 @@ module UBASR (
       input  wire          clk,                 // Clock
       input  wire          rst,                 // Reset
       input  wire  [ 0:35] busDATAI,            // Backplane Bus Data In
-      input  wire          devACLO[1:4],        // Power fail indication from device
-      input  wire  [ 7: 4] devINTR[1:4],        // Interrupt request
+      input  wire          devACLO[1:5],        // Power fail indication from device
+      input  wire  [ 7: 4] devINTR[1:5],        // Interrupt request
       input  wire          statWRITE,           // Write to status register
       input  wire          setNXD,              // Set NXD bit
       input  wire          setTMO,              // Set TMO bit
@@ -89,11 +89,11 @@ module UBASR (
    // High and Low Interrupt Request
    //
 
-   wire statINTHI = (devINTR[1][7] | devINTR[2][7] | devINTR[3][7] | devINTR[4][7] |
-                     devINTR[1][6] | devINTR[2][6] | devINTR[3][6] | devINTR[4][6]);
+   wire statINTHI = (devINTR[1][7] | devINTR[2][7] | devINTR[3][7] | devINTR[4][7] | devINTR[5][7] |
+                     devINTR[1][6] | devINTR[2][6] | devINTR[3][6] | devINTR[4][6] | devINTR[5][6]);
 
-   wire statINTLO = (devINTR[1][5] | devINTR[2][5] | devINTR[3][5] | devINTR[4][5] |
-                     devINTR[1][4] | devINTR[2][4] | devINTR[3][4] | devINTR[4][4]);
+   wire statINTLO = (devINTR[1][5] | devINTR[2][5] | devINTR[3][5] | devINTR[4][5] | devINTR[5][5] |
+                     devINTR[1][4] | devINTR[2][4] | devINTR[3][4] | devINTR[4][4] | devINTR[5][4]);
 
    //
    // UBA Adapter Timeout - UBASR[TMO]
@@ -199,7 +199,7 @@ module UBASR (
    // Build Status Register
    //
 
-   wire statPWR = devACLO[1] | devACLO[2] | devACLO[3] |devACLO[4];
+   wire statPWR = devACLO[1] | devACLO[2] | devACLO[3] | devACLO[4] | devACLO[5];
 
    assign regUBASR = {18'b0, statTMO, 2'b0, statNXD, 2'b0, statINTHI,
                       statINTLO, statPWR, 1'b0, statDXF, statINI, statPIH,

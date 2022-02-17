@@ -59,8 +59,8 @@
 module UBA (
       input wire           rst,                         // Reset
       input wire           clk,                         // Clock
-      ks10bus.device       ks10bus,                      // Backplane Bus
-      unibus.uba           unibus[1:4]                  // Unibus
+      ks10bus.device       ks10bus,                     // Backplane Bus
+      unibus.uba           unibus[1:5]                  // Unibus
    );
 
    //
@@ -68,16 +68,16 @@ module UBA (
    //
 
    logic         devRESET;                              // Reset
-   logic         devACLO[1:4];                          // Power fail
-   logic [ 7: 4] devINTRI[1:4];                         // Interrupt in
-   logic         devREQI[1:4];                          // Request in
-   logic         devACKO[1:4];                          // Acknowledge out
-   logic [ 0:35] devADDRI[1:4];                         // Address in
-   logic [ 0:35] devDATAI[1:4];                         // Data in
-   logic         devREQO[1:4];                          // Request out
-   logic         devACKI[1:4];                          // Acknowledge in
-   logic [ 0:35] devADDRO[1:4];                         // Address out
-   logic [ 0:35] devDATAO[1:4];                         // Data out
+   logic         devACLO[1:5];                          // Power fail
+   logic [ 7: 4] devINTRI[1:5];                         // Interrupt in
+   logic         devREQI[1:5];                          // Request in
+   logic         devACKO[1:5];                          // Acknowledge out
+   logic [ 0:35] devADDRI[1:5];                         // Address in
+   logic [ 0:35] devDATAI[1:5];                         // Data in
+   logic         devREQO[1:5];                          // Request out
+   logic         devACKI[1:5];                          // Acknowledge in
+   logic [ 0:35] devADDRO[1:5];                         // Address out
+   logic [ 0:35] devDATAO[1:5];                         // Data out
 
    //
    // KS10 Backplane Bus Interface
@@ -287,18 +287,22 @@ module UBA (
           devREQO[2]  <= 0;
           devREQO[3]  <= 0;
           devREQO[4]  <= 0;
+          devREQO[5]  <= 0;
           devACKO[1]  <= 0;
           devACKO[2]  <= 0;
           devACKO[3]  <= 0;
           devACKO[4]  <= 0;
+          devACKO[5]  <= 0;
           devADDRO[1] <= 0;
           devADDRO[2] <= 0;
           devADDRO[3] <= 0;
           devADDRO[4] <= 0;
+          devADDRO[5] <= 0;
           devDATAO[1] <= 0;
           devDATAO[2] <= 0;
           devDATAO[3] <= 0;
           devDATAO[4] <= 0;
+          devDATAO[5] <= 0;
           pageADDRI   <= 0;
           rpwDATA     <= 0;
           loopADDR    <= 0;
@@ -406,14 +410,17 @@ module UBA (
                 devREQO[2]  <= 1;
                 devREQO[3]  <= 1;
                 devREQO[4]  <= 1;
+                devREQO[5]  <= 1;
                 devADDRO[1] <= ks10bus.busADDRI;
                 devADDRO[2] <= ks10bus.busADDRI;
                 devADDRO[3] <= ks10bus.busADDRI;
                 devADDRO[4] <= ks10bus.busADDRI;
+                devADDRO[5] <= ks10bus.busADDRI;
                 devDATAO[1] <= ks10bus.busDATAI;
                 devDATAO[2] <= ks10bus.busDATAI;
                 devDATAO[3] <= ks10bus.busDATAI;
                 devDATAO[4] <= ks10bus.busDATAI;
+                devDATAO[5] <= ks10bus.busDATAI;
                 cntNXD      <= timeout;
                 state       <= stateCPUtoDEV;
              end
@@ -434,6 +441,8 @@ module UBA (
                   devREQO[3] <= 1;
                 else if (devINTRI[4][7])
                   devREQO[4] <= 1;
+                else if (devINTRI[5][7])
+                  devREQO[5] <= 1;
                 else if (devINTRI[1][6])
                   devREQO[1] <= 1;
                 else if (devINTRI[2][6])
@@ -442,6 +451,8 @@ module UBA (
                   devREQO[3] <= 1;
                 else if (devINTRI[4][6])
                   devREQO[4] <= 1;
+                else if (devINTRI[5][6])
+                  devREQO[5] <= 1;
                 else if (devINTRI[1][5])
                   devREQO[1] <= 1;
                 else if (devINTRI[2][5])
@@ -450,6 +461,8 @@ module UBA (
                   devREQO[3] <= 1;
                 else if (devINTRI[4][5])
                   devREQO[4] <= 1;
+                else if (devINTRI[5][5])
+                  devREQO[5] <= 1;
                 else if (devINTRI[1][4])
                   devREQO[1] <= 1;
                 else if (devINTRI[2][4])
@@ -458,11 +471,14 @@ module UBA (
                   devREQO[3] <= 1;
                 else if (devINTRI[4][4])
                   devREQO[4] <= 1;
+                else if (devINTRI[5][4])
+                  devREQO[5] <= 1;
                 cntNXD      <= timeout;
                 devADDRO[1] <= ks10bus.busADDRI;
                 devADDRO[2] <= ks10bus.busADDRI;
                 devADDRO[3] <= ks10bus.busADDRI;
                 devADDRO[4] <= ks10bus.busADDRI;
+                devADDRO[5] <= ks10bus.busADDRI;
                 state       <= stateCPUtoVEC;
              end
 
@@ -483,14 +499,17 @@ module UBA (
                   devREQO[2]  <= 1;
                   devREQO[3]  <= 1;
                   devREQO[4]  <= 1;
+                  devREQO[5]  <= 1;
                   devADDRO[1] <= devADDRI[1];
                   devADDRO[2] <= devADDRI[1];
                   devADDRO[3] <= devADDRI[1];
                   devADDRO[4] <= devADDRI[1];
+                  devADDRO[5] <= devADDRI[1];
                   devDATAO[1] <= devDATAI[1];
                   devDATAO[2] <= devDATAI[1];
                   devDATAO[3] <= devDATAI[1];
                   devDATAO[4] <= devDATAI[1];
+                  devDATAO[5] <= devDATAI[1];
                   state       <= stateDEVtoIO;
                end
 
@@ -524,14 +543,17 @@ module UBA (
                   devREQO[2]  <= 1;
                   devREQO[3]  <= 1;
                   devREQO[4]  <= 1;
+                  devREQO[5]  <= 1;
                   devADDRO[1] <= devADDRI[2];
                   devADDRO[2] <= devADDRI[2];
                   devADDRO[3] <= devADDRI[2];
                   devADDRO[4] <= devADDRI[2];
+                  devADDRO[5] <= devADDRI[2];
                   devDATAO[1] <= devDATAI[2];
                   devDATAO[2] <= devDATAI[2];
                   devDATAO[3] <= devDATAI[2];
                   devDATAO[4] <= devDATAI[2];
+                  devDATAO[5] <= devDATAI[2];
                   state       <= stateDEVtoIO;
                end
 
@@ -565,14 +587,17 @@ module UBA (
                   devREQO[2]  <= 1;
                   devREQO[3]  <= 1;
                   devREQO[4]  <= 1;
+                  devREQO[5]  <= 1;
                   devADDRO[1] <= devADDRI[3];
                   devADDRO[2] <= devADDRI[3];
                   devADDRO[3] <= devADDRI[3];
                   devADDRO[4] <= devADDRI[3];
+                  devADDRO[5] <= devADDRI[3];
                   devDATAO[1] <= devDATAI[3];
                   devDATAO[2] <= devDATAI[3];
                   devDATAO[3] <= devDATAI[3];
                   devDATAO[4] <= devDATAI[3];
+                  devDATAO[5] <= devDATAI[3];
                   state       <= stateDEVtoIO;
                end
 
@@ -606,14 +631,17 @@ module UBA (
                   devREQO[2]  <= 1;
                   devREQO[3]  <= 1;
                   devREQO[4]  <= 1;
+                  devREQO[5]  <= 1;
                   devADDRO[1] <= devADDRI[4];
                   devADDRO[2] <= devADDRI[4];
                   devADDRO[3] <= devADDRI[4];
                   devADDRO[4] <= devADDRI[4];
+                  devADDRO[5] <= devADDRI[4];
                   devDATAO[1] <= devDATAI[4];
                   devDATAO[2] <= devDATAI[4];
                   devDATAO[3] <= devDATAI[4];
                   devDATAO[4] <= devDATAI[4];
+                  devDATAO[5] <= devDATAI[4];
                   state       <= stateDEVtoIO;
                end
 
@@ -626,6 +654,50 @@ module UBA (
                   ks10bus.busDATAO <= devDATAI[4];
                   devSEL    <= 3'd4;
                   pageADDRI <= devADDRI[4];
+                  cntTMO    <= timeout;
+                  state     <= stateDEVtoMEM0;
+               end
+
+           //
+           // Device 5 is requesting IO or memory
+           //
+
+           else if (devREQI[5])
+
+             //
+             // Device 5 is requesting IO
+             //
+
+             if (`busIO(devADDRI[5]))
+               begin
+                  devSEL      <= 3'd5;
+                  devREQO[1]  <= 1;
+                  devREQO[2]  <= 1;
+                  devREQO[3]  <= 1;
+                  devREQO[4]  <= 1;
+                  devREQO[5]  <= 1;
+                  devADDRO[1] <= devADDRI[5];
+                  devADDRO[2] <= devADDRI[5];
+                  devADDRO[3] <= devADDRI[5];
+                  devADDRO[4] <= devADDRI[5];
+                  devADDRO[5] <= devADDRI[5];
+                  devDATAO[1] <= devDATAI[5];
+                  devDATAO[2] <= devDATAI[5];
+                  devDATAO[3] <= devDATAI[5];
+                  devDATAO[4] <= devDATAI[5];
+                  devDATAO[5] <= devDATAI[5];
+                  state       <= stateDEVtoIO;
+               end
+
+             //
+             // Device 5 is requesting memory
+             //
+
+             else
+               begin
+                  ks10bus.busDATAO <= devDATAI[5];
+                  devSEL    <= 3'd5;
+                  pageADDRI <= devADDRI[5];
                   cntTMO    <= timeout;
                   state     <= stateDEVtoMEM0;
                end
@@ -643,6 +715,7 @@ module UBA (
                 devREQO[2] <= 0;
                 devREQO[3] <= 0;
                 devREQO[4] <= 0;
+                devREQO[5] <= 0;
                 state      <= stateWAITBUSREQ;
              end
            else if (devACKI[2])
@@ -653,6 +726,7 @@ module UBA (
                 devREQO[2] <= 0;
                 devREQO[3] <= 0;
                 devREQO[4] <= 0;
+                devREQO[5] <= 0;
                 state      <= stateWAITBUSREQ;
              end
            else if (devACKI[3])
@@ -663,6 +737,7 @@ module UBA (
                 devREQO[2] <= 0;
                 devREQO[3] <= 0;
                 devREQO[4] <= 0;
+                devREQO[5] <= 0;
                 state      <= stateWAITBUSREQ;
              end
            else if (devACKI[4])
@@ -673,6 +748,18 @@ module UBA (
                 devREQO[2] <= 0;
                 devREQO[3] <= 0;
                 devREQO[4] <= 0;
+                devREQO[5] <= 0;
+                state      <= stateWAITBUSREQ;
+             end
+           else if (devACKI[5])
+             begin
+                ks10bus.busACKO  <= 1;
+                ks10bus.busDATAO <= devDATAI[5];
+                devREQO[1] <= 0;
+                devREQO[2] <= 0;
+                devREQO[3] <= 0;
+                devREQO[4] <= 0;
+                devREQO[5] <= 0;
                 state      <= stateWAITBUSREQ;
              end
            else if (!ks10bus.busREQI)
@@ -693,29 +780,36 @@ module UBA (
              begin
                 ks10bus.busACKO  <= 1;
                 ks10bus.busDATAO <= devDATAI[1];
-                devREQO[1] <= 0;
-                state      <= stateWAITVECREQ;
+                devREQO[1]       <= 0;
+                state            <= stateWAITVECREQ;
              end
            else if (devREQO[2] & devACKI[2])
              begin
                 ks10bus.busACKO  <= 1;
                 ks10bus.busDATAO <= devDATAI[2];
-                devREQO[2] <= 0;
-                state      <= stateWAITVECREQ;
+                devREQO[2]       <= 0;
+                state            <= stateWAITVECREQ;
              end
            else if (devREQO[3] & devACKI[3])
              begin
                 ks10bus.busACKO  <= 1;
                 ks10bus.busDATAO <= devDATAI[3];
-                devREQO[3] <= 0;
-                state      <= stateWAITVECREQ;
+                devREQO[3]       <= 0;
+                state            <= stateWAITVECREQ;
              end
            else if (devREQO[4] & devACKI[4])
              begin
                 ks10bus.busACKO  <= 1;
                 ks10bus.busDATAO <= devDATAI[4];
-                devREQO[4] <= 0;
-                state      <= stateWAITVECREQ;
+                devREQO[4]       <= 0;
+                state            <= stateWAITVECREQ;
+             end
+           else if (devREQO[5] & devACKI[5])
+             begin
+                ks10bus.busACKO  <= 1;
+                ks10bus.busDATAO <= devDATAI[5];
+                devREQO[5]       <= 0;
+                state            <= stateWAITVECREQ;
              end
            else if (cntTMO != 0)
              cntTMO <= cntTMO - 1'b1;
@@ -755,6 +849,7 @@ module UBA (
                 devDATAO[2]     <= ks10bus.busDATAI;
                 devDATAO[3]     <= ks10bus.busDATAI;
                 devDATAO[4]     <= ks10bus.busDATAI;
+                devDATAO[5]     <= ks10bus.busDATAI;
                 state           <= stateWAITDEVREQ;
              end
            else if (!devREQI[devSEL])
@@ -802,6 +897,12 @@ module UBA (
                    devDATAO[devSEL] <= devDATAI[4];
                    state            <= stateDONE;
                 end
+              else if (devACKI[5])
+                begin
+                   devACKO[devSEL]  <= 1;
+                   devDATAO[devSEL] <= devDATAI[5];
+                   state            <= stateDONE;
+                end
               else if (!devREQI[devSEL])
                 state <= stateDONE;
            end
@@ -846,9 +947,9 @@ module UBA (
                   begin
                      ks10bus.busREQO  <= 1;
                      ks10bus.busDATAO <= {rpwDATA[0:17], loopDATA[18:35]};
-                     cntTMO          <= timeout;
-                     pageADDRI[0:17] <= flagWRITE;
-                     state           <= stateLOOPtoMEM4;
+                     cntTMO           <= timeout;
+                     pageADDRI[0:17]  <= flagWRITE;
+                     state            <= stateLOOPtoMEM4;
                   end
                 else
                   begin
@@ -865,9 +966,9 @@ module UBA (
                 begin
                    ks10bus.busREQO  <= 1;
                    ks10bus.busDATAO <= (flagsE16) ? {2'b0, loopDATA[2:17], 2'b0, busADDRO[20:35]} : {loopDATA[0:17], busADDRO[18:35]};
-                   cntTMO          <= timeout;
-                   pageADDRI[0:17] <= flagWRITE;
-                   state           <= stateLOOPtoMEM4;
+                   cntTMO           <= timeout;
+                   pageADDRI[0:17]  <= flagWRITE;
+                   state            <= stateLOOPtoMEM4;
                 end
 
               //
@@ -879,9 +980,9 @@ module UBA (
                 begin
                    ks10bus.busREQO  <= 1;
                    ks10bus.busDATAO <= {10'b0, loopDATA[10:17], busADDRO[18:35]};
-                   cntTMO          <= timeout;
-                   pageADDRI[0:17] <= flagWRITE;
-                   state           <= stateLOOPtoMEM4;
+                   cntTMO           <= timeout;
+                   pageADDRI[0:17]  <= flagWRITE;
+                   state            <= stateLOOPtoMEM4;
                 end
 
               //
@@ -891,9 +992,9 @@ module UBA (
               else
                 begin
                    ks10bus.busREQO  <= 1;
-                   cntTMO          <= timeout;
-                   pageADDRI[0:17] <= flagREAD;
-                   state           <= stateLOOPtoMEM1;
+                   cntTMO           <= timeout;
+                   pageADDRI[0:17]  <= flagREAD;
+                   state            <= stateLOOPtoMEM1;
                 end
            end
 
@@ -906,15 +1007,15 @@ module UBA (
            if (ks10bus.busACKI)
              begin
                 ks10bus.busREQO <= 0;
-                rpwDATA <= ks10bus.busDATAI;
-                state   <= stateLOOPtoMEM2;
+                rpwDATA         <= ks10bus.busDATAI;
+                state           <= stateLOOPtoMEM2;
              end
            else if (cntTMO != 0)
              cntTMO <= cntTMO - 1'b1;
            else
              begin
                 ks10bus.busREQO <= 0;
-                state <= stateDONE;
+                state           <= stateDONE;
              end
 
          //
@@ -930,7 +1031,7 @@ module UBA (
 
          stateLOOPtoMEM3:
            begin
-              ks10bus.busREQO         <= 1;
+              ks10bus.busREQO <= 1;
               pageADDRI[0:17] <= flagWRITE;
               case ({flagsE16, `devIOBYTE(loopADDR), `devWORDSEL(loopADDR), `devBYTESEL(loopADDR)})
                 4'b0000: ks10bus.busDATAO <= {loopDATA[0:17],  rpwDATA[18:35]};        // Even word
@@ -1053,18 +1154,22 @@ module UBA (
                 devREQO[2]  <= 0;
                 devREQO[3]  <= 0;
                 devREQO[4]  <= 0;
+                devREQO[5]  <= 0;
                 devACKO[1]  <= 0;
                 devACKO[2]  <= 0;
                 devACKO[3]  <= 0;
                 devACKO[4]  <= 0;
+                devACKO[5]  <= 0;
                 devADDRO[1] <= 0;
                 devADDRO[2] <= 0;
                 devADDRO[3] <= 0;
                 devADDRO[4] <= 0;
+                devADDRO[5] <= 0;
                 devDATAO[1] <= 0;
                 devDATAO[2] <= 0;
                 devDATAO[3] <= 0;
                 devDATAO[4] <= 0;
+                devDATAO[5] <= 0;
                 devSEL      <= 0;
                 state       <= stateIDLE;
              end
@@ -1082,18 +1187,22 @@ module UBA (
                 devREQO[2]  <= 0;
                 devREQO[3]  <= 0;
                 devREQO[4]  <= 0;
+                devREQO[5]  <= 0;
                 devACKO[1]  <= 0;
                 devACKO[2]  <= 0;
                 devACKO[3]  <= 0;
                 devACKO[4]  <= 0;
+                devACKO[5]  <= 0;
                 devADDRO[1] <= 0;
                 devADDRO[2] <= 0;
                 devADDRO[3] <= 0;
                 devADDRO[4] <= 0;
+                devADDRO[5] <= 0;
                 devDATAO[1] <= 0;
                 devDATAO[2] <= 0;
                 devDATAO[3] <= 0;
                 devDATAO[4] <= 0;
+                devDATAO[5] <= 0;
                 devSEL      <= 0;
                 state       <= stateIDLE;
              end
@@ -1111,18 +1220,22 @@ module UBA (
                 devREQO[2]  <= 0;
                 devREQO[3]  <= 0;
                 devREQO[4]  <= 0;
+                devREQO[5]  <= 0;
                 devACKO[1]  <= 0;
                 devACKO[2]  <= 0;
                 devACKO[3]  <= 0;
                 devACKO[4]  <= 0;
+                devACKO[5]  <= 0;
                 devADDRO[1] <= 0;
                 devADDRO[2] <= 0;
                 devADDRO[3] <= 0;
                 devADDRO[4] <= 0;
+                devADDRO[5] <= 0;
                 devDATAO[1] <= 0;
                 devDATAO[2] <= 0;
                 devDATAO[3] <= 0;
                 devDATAO[4] <= 0;
+                devDATAO[5] <= 0;
                 devSEL      <= 0;
                 state       <= stateIDLE;
              end
@@ -1140,18 +1253,22 @@ module UBA (
                 devREQO[2]  <= 0;
                 devREQO[3]  <= 0;
                 devREQO[4]  <= 0;
+                devREQO[5]  <= 0;
                 devACKO[1]  <= 0;
                 devACKO[2]  <= 0;
                 devACKO[3]  <= 0;
                 devACKO[4]  <= 0;
+                devACKO[5]  <= 0;
                 devADDRO[1] <= 0;
                 devADDRO[2] <= 0;
                 devADDRO[3] <= 0;
                 devADDRO[4] <= 0;
+                devADDRO[5] <= 0;
                 devDATAO[1] <= 0;
                 devDATAO[2] <= 0;
                 devDATAO[3] <= 0;
                 devDATAO[4] <= 0;
+                devDATAO[5] <= 0;
                 devSEL      <= 0;
                 state       <= stateIDLE;
              end
@@ -1169,18 +1286,22 @@ module UBA (
               devREQO[2]  <= 0;
               devREQO[3]  <= 0;
               devREQO[4]  <= 0;
+              devREQO[5]  <= 0;
               devACKO[1]  <= 0;
               devACKO[2]  <= 0;
               devACKO[3]  <= 0;
               devACKO[4]  <= 0;
+              devACKO[5]  <= 0;
               devADDRO[1] <= 0;
               devADDRO[2] <= 0;
               devADDRO[3] <= 0;
               devADDRO[4] <= 0;
+              devADDRO[5] <= 0;
               devDATAO[1] <= 0;
               devDATAO[2] <= 0;
               devDATAO[3] <= 0;
               devDATAO[4] <= 0;
+              devDATAO[5] <= 0;
               devSEL      <= 0;
               state       <= stateIDLE;
            end
@@ -1196,7 +1317,7 @@ module UBA (
 
    genvar i;
    generate
-      for (i = 1; i <= 4; i++)
+      for (i = 1; i <= 5; i++)
         begin : loop
            assign devACLO[i]  = unibus[i].devACLO;      // Power fail
            assign devREQI[i]  = unibus[i].devREQO;      // Request out

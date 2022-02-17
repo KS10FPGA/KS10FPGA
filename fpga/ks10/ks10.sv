@@ -125,6 +125,9 @@ module KS10 (
       output wire [21: 0] SSRAM_A,      // SSRAM Address Bus
       inout  wire [17: 0] SSRAM_D,      // SSRAM Data Bus
 `endif
+`ifndef SYNTHESIS
+      output wire [63: 0] mtDIRO,       // MT Data Interface Register for SIM
+`endif
       // DE10-Nano Interfaces
       input  wire [ 1: 0] KEY,
       input  wire [ 3: 0] SW
@@ -386,13 +389,16 @@ module KS10 (
    wire         lpTOF;                  // LP26 top of form
 
    //
-   // RPxx Interfaces
+   // MT/CSL Interface
    //
 
-   wire [ 7: 0] rpWRL;                  // RPxx Write Lock
-   wire [ 7: 0] rpMOL;                  // RPxx Media on-line
-   wire [ 7: 0] rpDPR;                  // RPxx Drive Present
-   wire [ 0:63] rpDEBUG;                // RPxx Debug
+   mtcslbus     mtCSLDATA();            // MT/CSL interface data
+
+   //
+   // RP/CSL Interfaces
+   //
+
+   rpcslbus     rpCSLDATA();            // RP/CSL interface data
 
    //
    // Backplane bus signals
@@ -409,14 +415,14 @@ module KS10 (
    //   UBA2 is not implementable and is tied off.
    //
 
-   unibus       unibus[1:4][1:4]();     // Unibus
+   unibus       unibus[1:4][1:5]();     // Unibus array
 
    //
    // Massbuses
    //
 
    massbus massbusRP();                 // Massbus from RH11 to disk drives
-// massbus massbusTU();                 // Massbus from RH11 to tape drives
+   massbus massbusMT();                 // Massbus from RH11 to tape drives
 
    //
    // Debug Signals
@@ -585,11 +591,10 @@ module KS10 (
       .lpOVFU           (lpOVFU),
       .lpSETOFFLN       (lpSETOFFLN),
       .lpONLINE         (lpONLINE),
-      // RPxx Interfaces
-      .rpDPR            (rpDPR),
-      .rpMOL            (rpMOL),
-      .rpWRL            (rpWRL),
-      .rpDEBUG          (rpDEBUG),
+      // MT Interfaces
+      .mtDATA           (mtCSLDATA),
+      // RP Interfaces
+      .rpDATA           (rpCSLDATA),
       // Debug Interface
       .debTRCMD         (debTRCMD),
       .debBRCMD         (debBRCMD),
@@ -690,11 +695,7 @@ module KS10 (
 
    RP uRP (
       .massbus          (massbusRP),
-      // RP Control and Status
-      .rpMOL            (rpMOL),
-      .rpWRL            (rpWRL),
-      .rpDPR            (rpDPR),
-      .rpDEBUG          (rpDEBUG),
+      .rpCSLDATA        (rpCSLDATA),
       .rpLEDS           (RP_LEDS),
       // SD Card Interface
       .SD_MISO          (SD_MISO),
@@ -751,6 +752,17 @@ module KS10 (
    assign unibus[1][4].devADDRO = 0;
    assign unibus[1][4].devDATAO = 0;
 
+   //
+   // IO Bridge #1, Device 5 is not implemented. Tie inputs
+   //
+
+   assign unibus[1][5].devINTRO = 0;
+   assign unibus[1][5].devACLO  = 0;
+   assign unibus[1][5].devREQO  = 0;
+   assign unibus[1][5].devACKO  = 0;
+   assign unibus[1][5].devADDRO = 0;
+   assign unibus[1][5].devDATAO = 0;
+
 `else
 
    //
@@ -764,7 +776,7 @@ module KS10 (
    assign ubaBUS[1].busINTRO = 0;
 
    generate
-      for (i = 1; i <= 4; i++)
+      for (i = 1; i <= 5; i++)
         begin : loop1
            assign unibus[1][i].clk      = 0;
            assign unibus[1][i].rst      = 0;
@@ -801,7 +813,7 @@ module KS10 (
    assign ubaBUS[2].busINTRO = 0;
 
    generate
-      for (i = 1; i <= 4; i++)
+      for (i = 1; i <= 5; i++)
         begin : loop2
            assign unibus[2][i].clk      = 0;
            assign unibus[2][i].rst      = 0;
@@ -832,7 +844,7 @@ module KS10 (
    assign ubaBUS[2].busINTRO = 0;
 
    generate
-      for (i = 1; i <= 4; i++)
+      for (i = 1; i <= 5; i++)
         begin : loop2
            assign unibus[2][i].clk      = 0;
            assign unibus[2][i].rst      = 0;
@@ -1021,6 +1033,7 @@ module KS10 (
 
 `endif
 
+
    //
    // KMC11 #1 is connected to IO Bridge 3 Device 4
    //
@@ -1054,6 +1067,47 @@ module KS10 (
 
 `endif
 
+`ifdef RH11B
+
+   //
+   // RH11 #2 is connected to IO Bridge 3 Device 5
+   //
+
+   RH11 #(
+      .rhDEV            (`rh3DEV),
+      .rhADDR           (`rh3ADDR),
+      .rhVECT           (`rh3VECT),
+      .rhINTR           (`rh3INTR)
+   )
+   uRH11B (
+      .unibus           (unibus[3][5]),
+      .massbus          (massbusMT)
+   );
+
+   //
+   // MT Tape Drives slaved to the RH11
+   //
+
+   MT uMT (
+      .massbus          (massbusMT),
+      .mtCSLDATA        (mtCSLDATA)
+   );
+
+`else
+
+   //
+   // IO Bridge #3, Device 5 is not connected. Tie inputs
+   //
+
+   assign unibus[3][5].devINTRO = 0;
+   assign unibus[3][5].devACLO  = 0;
+   assign unibus[3][5].devREQO  = 0;
+   assign unibus[3][5].devACKO  = 0;
+   assign unibus[3][5].devADDRO = 0;
+   assign unibus[3][5].devDATAO = 0;
+
+`endif
+
 `else
 
    //
@@ -1067,7 +1121,7 @@ module KS10 (
    assign ubaBUS[3].busINTRO = 0;
 
    generate
-      for (i = 1; i <= 4; i++)
+      for (i = 1; i <= 5; i++)
         begin : loop3
            assign unibus[3][i].clk      = 0;
            assign unibus[3][i].rst      = 0;
@@ -1224,6 +1278,32 @@ module KS10 (
 
 `endif
 
+`ifdef UBE5
+
+   UBE #(
+      .ubeDEV           (`ube5DEV),
+      .ubeVECT          (`ube5VECT),
+      .ubeADDR          (`ube5ADDR)
+   )
+   uUBE5 (
+      .unibus           (unibus[4][5])
+   );
+
+`else
+
+   //
+   // IO Bridge #4, Device 5 is not implemented. Tie inputs
+   //
+
+   assign unibus[4][5].devINTRO = 0;
+   assign unibus[4][5].devACLO  = 0;
+   assign unibus[4][5].devREQO  = 0;
+   assign unibus[4][5].devACKO  = 0;
+   assign unibus[4][5].devADDRO = 0;
+   assign unibus[4][5].devDATAO = 0;
+
+`endif
+
 `else
 
    //
@@ -1237,7 +1317,7 @@ module KS10 (
    assign ubaBUS[4].busINTRO = 0;
 
    generate
-      for (i = 1; i <= 4; i++)
+      for (i = 1; i <= 5; i++)
         begin : loop4
            assign unibus[4][i].clk      = 0;
            assign unibus[4][i].rst      = 0;
@@ -1279,5 +1359,9 @@ module KS10 (
    assign ESD_WR_N  = 1;
    assign ESD_CS_N  = 1;
    assign ESD_ADDR  = 0;
+
+`ifndef SYNTHESIS
+   assign mtDIRO = mtCSLDATA.mtDIRO;
+`endif
 
 endmodule

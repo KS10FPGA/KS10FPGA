@@ -53,15 +53,12 @@
 
 module RP (
       massbus.slave        massbus,                     // Massbus interface
+      rpcslbus.rp          rpCSLDATA,                   // CSL data
       input  wire          SD_MISO,                     // SD Data In
       output logic         SD_MOSI,                     // SD Data Out
       output logic         SD_SCLK,                     // SD Clock
       output logic         SD_SS_N,                     // SD Slave Select
-      input  wire  [ 7: 0] rpMOL,                       // RPxx Media On-line
-      input  wire  [ 7: 0] rpWRL,                       // RPxx Write Lock
-      input  wire  [ 7: 0] rpDPR,                       // RPxx Drive Present
-      output logic [ 0: 7] rpLEDS,                      // Status LEDS
-      output logic [ 0:63] rpDEBUG                      // Debug Output
+      output logic [ 0: 7] rpLEDS                       // Status LEDS
    );
 
    //
@@ -124,9 +121,9 @@ module RP (
               .clk       (clk),
               .rst       (rst),
               .rpNUM     (i[2:0]),
-              .rpMOL     (rpMOL[i]),
-              .rpWRL     (rpWRL[i]),
-              .rpDPR     (rpDPR[i]),
+              .rpMOL     (rpCSLDATA.rpMOL[i]),
+              .rpWRL     (rpCSLDATA.rpWRL[i]),
+              .rpDPR     (rpCSLDATA.rpDPR[i]),
               .devDATAI  (massbus.mbDATAI),
               .rpINIT    (massbus.mbINIT),
               .rpPAT     (massbus.mbPAT),
@@ -223,7 +220,7 @@ module RP (
       .sdINCSECT  (rpINCSECT),
       .sdREADOP   (rpREADOP),
       .sdSCAN     (rpSCAN),
-      .sdDEBUG    (rpDEBUG)
+      .sdDEBUG    (rpCSLDATA.rpDEBUG)
    );
 
    //

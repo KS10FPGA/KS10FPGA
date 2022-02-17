@@ -195,7 +195,7 @@ SIM_ARGS := \
 
 SYN_ARGS := \
 	MAJOR_VER=\"00\" \
-	MINOR_VER=\"35\" \
+	MINOR_VER=\"37\" \
         CLKFRQ=12500000 \
 	SSRAMx18 \
 	RPXX_SIMSEEK \
@@ -203,8 +203,9 @@ SYN_ARGS := \
 	UBA1 \
 	RH11A \
 	UBA3 \
-	DZ11 \
+	RH11B \
 	LP20 \
+	DZ11 \
 	DUP11 \
 	KMC11 \
 	UBA4 \
@@ -265,6 +266,8 @@ RTL_FILES := \
 	ks10/ks10bus.sv \
 	ks10/unibus.sv \
 	ks10/massbus.sv \
+        ks10/mtcslbus.sv \
+        ks10/rpcslbus.sv \
 	ks10/ks10.sv \
 	ks10/arb/arb.sv \
 	ks10/csl/csl.sv \
@@ -352,7 +355,6 @@ RTL_FILES := \
 	ks10/rh11/rhcs1.v \
 	ks10/rh11/rhcs2.v \
 	ks10/rpxx/rpaddr.v \
-	ks10/rpxx/rpcs1.v \
 	ks10/rpxx/rpctrl.v \
 	ks10/rpxx/rpda.v \
 	ks10/rpxx/rpdc.v \
@@ -368,6 +370,13 @@ RTL_FILES := \
 	ks10/rpxx/rp.sv \
 	ks10/rpxx/sd/sd.v \
 	ks10/rpxx/sd/sdspi.v \
+	ks10/mt/mt.sv \
+        ks10/mt/mtfc.sv \
+        ks10/mt/mtds.sv \
+        ks10/mt/mter.sv \
+        ks10/mt/mtmr.sv \
+        ks10/mt/mttc.sv \
+        ks10/mt/mtctrl.sv \
 	ks10/uba/uba.sv \
 	ks10/uba/ubamr.sv \
 	ks10/uba/ubasr.sv \
@@ -416,9 +425,10 @@ DISKS := \
 #
 
 SIM_FILES := \
-	$(TESTBENCH)/testbench.v \
+	$(TESTBENCH)/testbench.sv \
 	$(TESTBENCH)/dumpregs.v \
-	$(TESTBENCH)/sdsim.v
+	$(TESTBENCH)/mtsim.sv \
+	$(TESTBENCH)/sdsim.v \
 
 ifneq (, $(findstring SSRAMx18, $(SYN_ARGS)))
 SIM_FILES += \
@@ -471,6 +481,12 @@ INC_FILES := \
 	ks10/cpu/vma.vh \
 	ks10/cpu/useq/crom.vh  \
 	ks10/cpu/useq/drom.vh  \
+	ks10/csl/debcsr.vh \
+	ks10/csl/dupccr.vh \
+	ks10/csl/dzccr.vh \
+	ks10/csl/lpccr.vh \
+	ks10/csl/mtccr.vh \
+	ks10/csl/rpccr.vh \
 	ks10/debug/debug_dskah.vh \
 	ks10/debug/debug_dskba.vh \
 	ks10/debug/debug_dskcg.vh \
@@ -510,6 +526,13 @@ INC_FILES := \
 	ks10/lp20/lpramd.vh \
 	ks10/lp26/lpdvfu.vh \
 	ks10/mem/memstat.vh \
+	ks10/mt/mt.vh \
+	ks10/mt/mtcs1.vh \
+	ks10/mt/mtfc.vh \
+	ks10/mt/mtds.vh \
+	ks10/mt/mter.vh \
+	ks10/mt/mtas.vh \
+	ks10/mt/mttc.vh \
 	ks10/rh11/rhba.vh \
 	ks10/rh11/rhdb.vh \
 	ks10/rh11/rhds.vh \
@@ -1425,25 +1448,128 @@ WAVE_RH11A := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {EC2 READ}             {/testbench/uKS10/uRH11A/rhRDREG46}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {EC2 WRITE}            {/testbench/uKS10/uRH11A/rhWRREG46}" \
 	"add wave -noupdate -divider {RH11A Registers}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rhISDISK}            {/testbench/uKS10/uRH11A/rhISDISK}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHCS1      REG}       {/testbench/uKS10/uRH11A/rhCS1}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHWC       REG}       {/testbench/uKS10/uRH11A/rhWC}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHBA       REG}       {/testbench/uKS10/uRH11A/rhBA}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHCS2      REG}       {/testbench/uKS10/uRH11A/rhCS2}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHDB       REG}       {/testbench/uKS10/uRH11A/rhDB}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RPDA/MTFC  REG}       {/testbench/uKS10/uRH11A/massbus.mbREG06}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RPDS/MTDS  REG}       {/testbench/uKS10/uRH11A/massbus.mbREG12}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RPER1/MTER REG}       {/testbench/uKS10/uRH11A/massbus.mbREG14}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHAS       REG}       {/testbench/uKS10/uRH11A/rhAS}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RPLA/MTCC  REG}       {/testbench/uKS10/uRH11A/massbus.mbREG20}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RPMR/MTMR  REG}       {/testbench/uKS10/uRH11A/massbus.mbREG24}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RPDT/MTDT  REG}       {/testbench/uKS10/uRH11A/massbus.mbREG26}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RPSN/MTSN  REG}       {/testbench/uKS10/uRH11A/massbus.mbREG30}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RPOF/MTTC  REG}       {/testbench/uKS10/uRH11A/massbus.mbREG32}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RPDC/ZERO  REG}       {/testbench/uKS10/uRH11A/massbus.mbREG34}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RPCC/MTCS3 REG}       {/testbench/uKS10/uRH11A/massbus.mbREG36}"
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rhISDISK}             {/testbench/uKS10/uRH11A/rhISDISK}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHCS1 REG}            {/testbench/uKS10/uRH11A/rhCS1}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHWC  REG}            {/testbench/uKS10/uRH11A/rhWC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHBA  REG}            {/testbench/uKS10/uRH11A/rhBA}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHCS2 REG}            {/testbench/uKS10/uRH11A/rhCS2}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHDB  REG}            {/testbench/uKS10/uRH11A/rhDB}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHAS  REG}            {/testbench/uKS10/uRH11A/rhAS}" \
+	"add wave -noupdate -divider {RH11A Debug}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rhSETNED}             {/testbench/uKS10/uRH11A/rhSETNED}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rhREAD}               {/testbench/uKS10/uRH11A/rhREAD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rhWRITE}              {/testbench/uKS10/uRH11A/rhWRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rhREGNED}             {/testbench/uKS10/uRH11A/rhREGNED}" \
 
 WAVE_RH11B := $(subst RH11A,RH11B,$(WAVE_RH11A))
+
+WAVE_MT := \
+	"add wave -noupdate -divider {MT0}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uMT/massbus.clk}" \
+ 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtDATAI}              {/testbench/uKS10/uMT/mtDATAI}" \
+	"add wave -noupdate -divider {Massbus}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtINIT}               {/testbench/uKS10/uMT/mtINIT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtUNIT}               {/testbench/uKS10/uMT/mtUNIT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtSS}                 {/testbench/uKS10/uMT/mtSS}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtSEL}                {/testbench/uKS10/uMT/mtSEL}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtREAD}               {/testbench/uKS10/uMT/mtREAD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtWRITE}              {/testbench/uKS10/uMT/mtWRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtREGSEL}             {/testbench/uKS10/uMT/mtREGSEL}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mbREGDAT}             {/testbench/uKS10/uMT/massbus.mbREGDAT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mbREGACK}             {/testbench/uKS10/uMT/massbus.mbREGACK}" \
+	"add wave -noupdate -divider {MT0 Registers Decode}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtWRCS1}              {/testbench/uKS10/uMT/mtWRCS1}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtWRFC}               {/testbench/uKS10/uMT/mtWRFC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtWRAS}               {/testbench/uKS10/uMT/mtWRAS}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtWRCC}               {/testbench/uKS10/uMT/mtWRCC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtWRMR}               {/testbench/uKS10/uMT/mtWRMR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtWRTC}               {/testbench/uKS10/uMT/mtWRTC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtRDCS1}              {/testbench/uKS10/uMT/mtRDCS1}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtRDDS}               {/testbench/uKS10/uMT/mtRDDS}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtRDER}               {/testbench/uKS10/uMT/mtRDER}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtRDMR}               {/testbench/uKS10/uMT/mtRDMR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtRDAS}               {/testbench/uKS10/uMT/mtRDAS}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtRDFC}               {/testbench/uKS10/uMT/mtRDFC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtRDDT}               {/testbench/uKS10/uMT/mtRDDT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtRDCC}               {/testbench/uKS10/uMT/mtRDCC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtRDSN}               {/testbench/uKS10/uMT/mtRDSN}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtRDTC}               {/testbench/uKS10/uMT/mtRDTC}" \
+	"add wave -noupdate -divider {MT0 Registers}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTFC REG}             {/testbench/uKS10/uMT/mtFC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTDS REG}             {/testbench/uKS10/uMT/mtDS}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTER REG}             {/testbench/uKS10/uMT/mtER}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTCC REG}             {/testbench/uKS10/uMT/mtCC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTMR REG}             {/testbench/uKS10/uMT/mtMR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTDT REG}             {/testbench/uKS10/uMT/drvTYPE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTSN REG}             {/testbench/uKS10/uMT/drvSN}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTTC REG}             {/testbench/uKS10/uMT/mtTC}" \
+	"add wave -noupdate -divider {MT0 Signals}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTTC/mtINIT}          {/testbench/uKS10/uMT/TC/mtINIT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTTC/mtDATAI}         {/testbench/uKS10/uMT/TC/mtDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTTC/mtWRTC}          {/testbench/uKS10/uMT/TC/mtWRTC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTTC/mtSETFCS}        {/testbench/uKS10/uMT/TC/mtSETFCS}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTTC/mtCLRFCS}        {/testbench/uKS10/uMT/TC/mtCLRFCS}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTTC/mtTC}            {/testbench/uKS10/uMT/TC/mtTC}" \
+	"add wave -noupdate -divider {MT0 CTRL}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtWRLO}               {/testbench/uKS10/uMT/CTRL/mtWRLO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtWRHI}               {/testbench/uKS10/uMT/CTRL/mtWRHI}" \
+	"add wave -noupdate -radix binary   -radixshowbase 0 -label {mtWSTRB}              {/testbench/uKS10/uMT/CTRL/mtWSTRB}" \
+	"add wave -noupdate -radix hex      -radixshowbase 0 -label {mtCSLDATAI}           {/testbench/uKS10/uMT/CTRL/mtCSLDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtMOL}                {/testbench/uKS10/uMT/CTRL/mtMOL}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtNPRO}               {/testbench/uKS10/uMT/CTRL/mtNPRO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtSTB}                {/testbench/uKS10/uMT/CTRL/mtSTB}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtDIRINIT}            {/testbench/uKS10/uMT/CTRL/mtDIRINT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtEOT}                {/testbench/uKS10/uMT/CTRL/mtEOT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtBOT}                {/testbench/uKS10/uMT/CTRL/mtBOT}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtTM}                 {/testbench/uKS10/uMT/CTRL/mtTM}" \
+	"add wave -noupdate -radix hex      -radixshowbase 0 -label {mtDIRO}               {/testbench/uKS10/uMT/CTRL/mtDIRO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtMOTCMD}             {/testbench/uKS10/uMT/CTRL/mtMOTCMD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtATA}                {/testbench/uKS10/uMT/CTRL/mtATA}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DS/dsERATA}           {/testbench/uKS10/uMT/DS/dsERATA}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DS/dsATA}             {/testbench/uKS10/uMT/mtDS[15]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtDRY}                {/testbench/uKS10/uMT/CTRL/mtDRY}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtSSC}                {/testbench/uKS10/uMT/CTRL/mtSSC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtSLA}                {/testbench/uKS10/uMT/CTRL/mtSLA}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtPIP}                {/testbench/uKS10/uMT/CTRL/mtPIP}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtSSC}                {/testbench/uKS10/uMT/CTRL/mtSSC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtFWD}                {/testbench/uKS10/uMT/CTRL/mtFWD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtACCL}               {/testbench/uKS10/uMT/CTRL/mtACCL}" \
+	"add wave -noupdate -radix decimal  -radixshowbase 0 -label {mtACCLTIM}            {/testbench/uKS10/uMT/CTRL/mtACCLTIM}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtSDWN}               {/testbench/uKS10/uMT/CTRL/mtSDWN}" \
+	"add wave -noupdate -radix decimal  -radixshowbase 0 -label {mtSDWNTIM}            {/testbench/uKS10/uMT/CTRL/mtSDWNTIM}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtBUSY}               {/testbench/uKS10/uMT/CTRL/mtBUSY}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtSTBI}               {/testbench/uKS10/uMT/CTRL/mtSTBI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtINCBA}              {/testbench/uKS10/uMT/CTRL/mtINCBA}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtDECBA}              {/testbench/uKS10/uMT/CTRL/mtDECBA}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtINCWC}              {/testbench/uKS10/uMT/CTRL/mtINCWC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtINCFC}              {/testbench/uKS10/uMT/CTRL/mtINCFC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtWCZ}                {/testbench/uKS10/uMT/CTRL/mtWCZ}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtFCZ}                {/testbench/uKS10/uMT/CTRL/mtFCZ}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHWC REG}             {/testbench/uKS10/uRH11B/rhWC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {RHBA REG}             {/testbench/uKS10/uRH11B/rhBA}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTFC REG}             {/testbench/uKS10/uMT/mtFC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtGO}                 {/testbench/uKS10/uMT/CTRL/mtGO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtFUN}                {/testbench/uKS10/uMT/CTRL/mtFUN}" \
+	"add wave -noupdate -radix decimal  -radixshowbase 0 -label {state}                {/testbench/uKS10/uMT/CTRL/state}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtDATAO}              {/testbench/uKS10/uMT/CTRL/mtDATAO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtREADY}              {/testbench/uKS10/uMT/CTRL/mtREADY}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtSTB}                {/testbench/uKS10/uMT/CTRL/mtSTB}" \
+	"add wave -noupdate -divider {DEBUG}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQO}              {/testbench/uKS10/uMT/CTRL/mtREQO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busACKI}              {/testbench/uKS10/uMT/CTRL/mtACKI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtDATAI}              {/testbench/uKS10/uMT/CTRL/mtDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtDATAO}              {/testbench/uKS10/uMT/CTRL/mtDATAO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtMDF}                {/testbench/uKS10/uMT/CTRL/mtMDF}" \
+	"add wave -noupdate -divider {MRCLK}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uMT/MR/clk}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtmrWRITE}            {/testbench/uKS10/uMT/MR/mtmrWRITE}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTMR REG}             {/testbench/uKS10/uMT/MR/mtMR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTMR[MM]}             {/testbench/uKS10/uMT/MR/mtMR[0]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTMR[MOP]}            {/testbench/uKS10/uMT/MR/mtMR[4:1]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {MTMR[MC]}             {/testbench/uKS10/uMT/MR/mtMR[5]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mtGO}                 {/testbench/uKS10/uMT/MR/mtGO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {wrdly}                {/testbench/uKS10/uMT/MR/wrdly}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {toggle}               {/testbench/uKS10/uMT/MR/toggle}"
 
 WAVE_RP1 := \
 	"add wave -noupdate -divider {RP1}" \
@@ -1924,6 +2050,9 @@ pgm: $(QUARTUS_DIR)/output_files/$(PROJECT).sof
 pgm1:
 	quartus_pgm $(PGM_ARGS)
 	jtagconfig
+
+$(PROJECT).rbf : $(QUARTUS_DIR)/output_files/$(PROJECT).sof
+	quartus_cpf -c -o bitstream_compression=on $(QUARTUS_DIR)/output_files/$(PROJECT).sof $(PROJECT).rbf
 
 #
 # Quartus Static Timing Analyzer

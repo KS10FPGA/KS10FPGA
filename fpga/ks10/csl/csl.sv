@@ -156,7 +156,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2020 Rob Doyle
+// Copyright (C) 2012-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -184,6 +184,7 @@
 `include "csl.vh"
 `include "dzccr.vh"
 `include "lpccr.vh"
+`include "mtccr.vh"
 `include "rpccr.vh"
 `include "dupccr.vh"
 `include "debcsr.vh"
@@ -256,11 +257,10 @@ module CSL (
       output logic         lpOVFU,      // LP26 Optical Vertial Format Unit
       input  wire          lpSETOFFLN,  // LP26 Set offline
       output logic         lpONLINE,    // LP26 Status
-      // RPXX Interfaces
-      output logic [ 7: 0] rpDPR,       // RPXX Drive Present
-      output logic [ 7: 0] rpMOL,       // RPXX Media On-line
-      output logic [ 7: 0] rpWRL,       // RPXX Write Lock
-      input  wire  [ 0:63] rpDEBUG,     // RPXX Debug Info
+      // RP Interface
+      rpcslbus.csl         rpDATA,      // RP Interface
+      // MT Interface
+      mtcslbus.csl         mtDATA,      // MT Interface
       // Debug Interfaces
       output logic [ 9:11] debBRCMD,    // Debug Breakpoint command
       input  wire  [13:15] debBRSTATE,  // Debug Breakpoint state
@@ -397,11 +397,11 @@ module CSL (
    logic [0:35] regCONDR;       // 0x08: Console Data Register
    logic [0:35] regCONIR;       // 0x10: Console Instruction Register
    logic [0:31] regCONCSR;      // 0x18: Console Control/Status Register
-   logic [0:31] regDZCCR;       // 0x1c: DZ11  Console Control Register
-   logic [0:31] regLPCCR;       // 0x20: LP20  Console Control Register
-   logic [0:31] regRPCCR;       // 0x24: RPXX  Console Control Register
-   logic [0:31] regDUPCCR;      // 0x28: DUP11 Console Control Register
-                                // 0x2c: Spare
+   logic [0:31] regDZCCR;       // 0x1c: DZ11 Console Control Register
+   logic [0:31] regLPCCR;       // 0x20: LP20 Console Control Register
+   logic [0:31] regRPCCR;       // 0x24: RP Console Control Register
+   logic [0:31] regMTCCR;       // 0x28: MT Console Control Register
+   logic [0:31] regDUPCCR;      // 0x2c: DUP11 Console Control Register
                                 // 0x30: Spare
                                 // 0x34: Spare
                                 // 0x38: Spare
@@ -410,11 +410,9 @@ module CSL (
    logic [0:35] regDBMR;        // 0x48: Debug Breakpoint Mask Register
                                 // 0x50: Debug Instruction Trace Register (read-only)
                                 // 0x58: Debug Program Counter and Instruction Register (read-only)
-                                // 0x60: Spare
-                                // 0x64: Spare
-                                // 0x68: Spare
-                                // 0x6c: Spare
-                                // 0x70: RH11 Debug Regsister (read-only)
+                                // 0x60: Magtape data interface register out
+                                // 0x68: MT Debug Register (read-only)
+                                // 0x70: RP Debug Regsister (read-only)
                                 // 0x78: Firmware Version Register (read-only
 
    always_ff @(posedge clk)
@@ -427,6 +425,7 @@ module CSL (
              regCONIR  <= 0;
              regDZCCR  <= 0;
              regLPCCR  <= 0;
+             regMTCCR  <= 0;
              regRPCCR  <= 0;
              regDUPCCR <= 0;
              regDCSR   <= 0;
@@ -449,8 +448,9 @@ module CSL (
                  8'h18 : regCONCSR[24:31] <= axiWDATA[ 7: 0];        // Console Control/Status Register
                  8'h1c : regDZCCR [24:31] <= axiWDATA[ 7: 0];        // DZ11 Console Control Register
                  8'h20 : regLPCCR [24:31] <= axiWDATA[ 7: 0];        // LP20 Console Control Register
-                 8'h24 : regRPCCR [24:31] <= axiWDATA[ 7: 0];        // RPXX Console Control Register
-                 8'h28 : regDUPCCR[24:31] <= axiWDATA[ 7: 0];        // DUP11 Console Control Register
+                 8'h24 : regRPCCR [24:31] <= axiWDATA[ 7: 0];        // RP Console Control Register
+                 8'h28 : regMTCCR [24:31] <= axiWDATA[ 7: 0];        // MT Console Control Register
+                 8'h2c : regDUPCCR[24:31] <= axiWDATA[ 7: 0];        // DUP11 Console Control Register
                  8'h3c : regDCSR  [24:31] <= axiWDATA[ 7: 0];        // Debug Control/Status Register
                  8'h40 : regDBAR  [28:35] <= axiWDATA[ 7: 0];        // Debug Breakpoint Address Register
                  8'h44 : regDBAR  [ 0: 3] <= axiWDATA[ 3: 0];        // Debug Breakpoint Address Register (HI)
@@ -467,8 +467,9 @@ module CSL (
                  8'h18 : regCONCSR[16:23] <= axiWDATA[15: 8];        // Console Control/Status Register
                  8'h1c : regDZCCR [16:23] <= axiWDATA[15: 8];        // DZ11 Console Control Register
                  8'h20 : regLPCCR [16:23] <= axiWDATA[15: 8];        // LP20 Console Control Register
-                 8'h24 : regRPCCR [16:23] <= axiWDATA[15: 8];        // RPXX Console Control Register
-                 8'h28 : regDUPCCR[16:23] <= axiWDATA[15: 8];        // DUP11 Console Control Register
+                 8'h24 : regRPCCR [16:23] <= axiWDATA[15: 8];        // RP Console Control Register
+                 8'h28 : regMTCCR [16:23] <= axiWDATA[15: 8];        // MT Console Control Register
+                 8'h2c : regDUPCCR[16:23] <= axiWDATA[15: 8];        // DUP11 Console Control Register
                  8'h3c : regDCSR  [16:23] <= axiWDATA[15: 8];        // Debug Control/Status Register
                  8'h40 : regDBAR  [20:27] <= axiWDATA[15: 8];        // Debug Breakpoint Address Register
                  8'h48 : regDBMR  [20:27] <= axiWDATA[15: 8];        // Debug Breakpoint Mask Register
@@ -483,8 +484,9 @@ module CSL (
                  8'h18 : regCONCSR[ 8:15] <= axiWDATA[23:16];        // Console Control/Status Register
                  8'h1c : regDZCCR [ 8:15] <= axiWDATA[23:16];        // DZ11 Console Control Register
                  8'h20 : regLPCCR [ 8:15] <= axiWDATA[23:16];        // LP20 Console Control Register
-                 8'h24 : regRPCCR [ 8:15] <= axiWDATA[23:16];        // RPXX Console Control Register
-                 8'h28 : regDUPCCR[ 8:15] <= axiWDATA[23:16];        // DUP11 Console Control Register
+                 8'h24 : regRPCCR [ 8:15] <= axiWDATA[23:16];        // RP Console Control Register
+                 8'h28 : regMTCCR [ 8:15] <= axiWDATA[23:16];        // MT Console Control Register
+                 8'h2c : regDUPCCR[ 8:15] <= axiWDATA[23:16];        // DUP11 Console Control Register
                  8'h3c : regDCSR  [ 8:15] <= axiWDATA[23:16];        // Debug Control/Status Register
                  8'h40 : regDBAR  [12:19] <= axiWDATA[23:16];        // Debug Breakpoint Address Register
                  8'h48 : regDBMR  [12:19] <= axiWDATA[23:16];        // Debug Breakpoint Mask Register
@@ -499,8 +501,9 @@ module CSL (
                  8'h18 : regCONCSR[ 0: 7] <= axiWDATA[31:24];        // Console Control/Status Register
                  8'h1c : regDZCCR [ 0: 7] <= axiWDATA[31:24];        // DZ11 Console Control Register
                  8'h20 : regLPCCR [ 0: 7] <= axiWDATA[31:24];        // LP20 Console Control Register
-                 8'h24 : regRPCCR [ 0: 7] <= axiWDATA[31:24];        // RPXX Console Control Register
-                 8'h28 : regDUPCCR[ 0: 7] <= axiWDATA[31:24];        // DUP11 Console Control Register
+                 8'h24 : regRPCCR [ 0: 7] <= axiWDATA[31:24];        // RP Console Control Register
+                 8'h28 : regMTCCR [ 0: 7] <= axiWDATA[31:24];        // MT Console Control Register
+                 8'h2c : regDUPCCR[ 0: 7] <= axiWDATA[31:24];        // DUP11 Console Control Register
                  8'h3c : regDCSR  [ 0: 7] <= axiWDATA[31:24];        // Debug Control/Status Register
                  8'h40 : regDBAR  [ 4:11] <= axiWDATA[31:24];        // Debug Breakpoint Address Register
                  8'h48 : regDBMR  [ 4:11] <= axiWDATA[31:24];        // Debug Breakpoint Mask Register
@@ -570,8 +573,12 @@ module CSL (
                     8'h18   : axiRDATA <= regSTAT;                   // Console Control/Status Register
                     8'h1c   : axiRDATA <= regDZCCR;                  // DZ11 Console Control Register
                     8'h20   : axiRDATA <= regLPRD;                   // LP20 Console Control Register
-                    8'h24   : axiRDATA <= regRPCCR;                  // RPXX Console Control Register
-                    8'h28   : axiRDATA <= regDUPRD;                  // DUP11 Console Control Register
+                    8'h24   : axiRDATA <= regRPCCR;                  // RP Console Control Register
+                    8'h28   : axiRDATA <= regMTCCR;                  // MT Console Control Register
+                    8'h2c   : axiRDATA <= regDUPRD;                  // DUP11 Console Control Register
+                    8'h30   : axiRDATA <= 0;                         // Spare
+                    8'h34   : axiRDATA <= 0;                         // Spare
+                    8'h38   : axiRDATA <= 0;                         // Spare
                     8'h3c   : axiRDATA <= regDEBCSR;                 // Debug Control/Status Register
                     8'h40   : axiRDATA <= regDBAR[4:35];             // Breakpoint Address Register
                     8'h44   : axiRDATA <= {28'b0, regDBAR[0:3]};     // Breakpoint Address Register (HI)
@@ -581,8 +588,12 @@ module CSL (
                     8'h54   : axiRDATA <= debITR[0 :31];             // Instruction Trace Register (HI)
                     8'h58   : axiRDATA <= debPCIR[32:63];            // Debug Program Counter and Intruction Register
                     8'h5c   : axiRDATA <= debPCIR[ 0:31];            // Debug Program Counter and Intruction Register (HI)
-                    8'h70   : axiRDATA <= rpDEBUG[32:63];            // RH11 Debug Register
-                    8'h74   : axiRDATA <= rpDEBUG[ 0:31];            // RH11 Debug Register (HI)
+                    8'h60   : axiRDATA <= mtDATA.mtDIRO[31: 0];      // MT Data Interface Register
+                    8'h64   : axiRDATA <= mtDATA.mtDIRO[63:32];      // MT Data Interface Register (HI)
+                    8'h68   : axiRDATA <= mtDATA.mtDEBUG[31: 0];     // MT Debug Register
+                    8'h6c   : axiRDATA <= mtDATA.mtDEBUG[63:32];     // MT Debug Register (HI)
+                    8'h70   : axiRDATA <= rpDATA.rpDEBUG[32:63];     // RP Debug Register
+                    8'h74   : axiRDATA <= rpDATA.rpDEBUG[ 0:31];     // RP Debug Register (HI)
                     8'h78   : axiRDATA <= {regREV[24:31], regREV[16:23], regREV[ 8:15], regREV[ 0: 7]};// Firmware Version Register
                     8'h7c   : axiRDATA <= {regREV[56:63], regREV[48:55], regREV[40:47], regREV[32:39]};// Firmware Version Register (HI)
                     default : axiRDATA <= 32'b0;
@@ -641,12 +652,25 @@ module CSL (
    assign dzRI  = `dzccrRI(regDZCCR);
 
    //
-   // RH11 Outputs
+   // RP Outputs
    //
 
-   assign rpDPR = `rpccrDPR(regRPCCR);
-   assign rpMOL = `rpccrMOL(regRPCCR);
-   assign rpWRL = `rpccrWRL(regRPCCR);
+   assign rpDATA.rpDPR = `rpccrDPR(regRPCCR);
+   assign rpDATA.rpMOL = `rpccrMOL(regRPCCR);
+   assign rpDATA.rpWRL = `rpccrWRL(regRPCCR);
+
+   //
+   // MT Outputs
+   //
+
+   assign mtDATA.mtDPR   = `mtccrDPR(regMTCCR);
+   assign mtDATA.mtMOL   = `mtccrMOL(regMTCCR);
+   assign mtDATA.mtWRL   = `mtccrWRL(regMTCCR);
+   assign mtDATA.mtWRLO  = wrPULSE & (axiAWADDR[7:0] == 8'h60);
+   assign mtDATA.mtWRHI  = wrPULSE & (axiAWADDR[7:0] == 8'h64);
+   assign mtDATA.mtDATAI = axiWDATA;
+   assign mtDATA.mtWSTRB = axiWSTRB;
+   assign mtDATA.mtWDAT  = 0;//regWDAT;
 
    //
    // LP26 Ouputs

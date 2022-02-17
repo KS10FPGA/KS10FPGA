@@ -149,6 +149,12 @@ module testbench;
 `endif
 
    //
+   // MT Debug
+   //
+
+   wire [63: 0] mtDIRO;
+
+   //
    // DE10 Nano Interfaces
    //
 
@@ -205,22 +211,23 @@ module testbench;
    // Control/Status Register Definitions
    //
 
-   localparam [ 0:31] statRESET     = 32'h00000001;
-   localparam [ 0:31] statINTR      = 32'h00000002;
-   localparam [ 0:31] statCACHEEN   = 32'h00000004;
-   localparam [ 0:31] statTRAPEN    = 32'h00000008;
-   localparam [ 0:31] statTIMEREN   = 32'h00000010;
-   localparam [ 0:31] statEXEC      = 32'h00000020;
-   localparam [ 0:31] statCONT      = 32'h00000040;
-   localparam [ 0:31] statRUN       = 32'h00000080;
-   localparam [ 0:31] statHALT      = 32'h00000100;
-   localparam [ 0:31] statNXMNXD    = 32'h00000200;
-   localparam [ 0:31] statGO        = 32'h00010000;
+   localparam [ 0:31] statRESET     = 32'h00000001,
+                      statINTR      = 32'h00000002,
+                      statCACHEEN   = 32'h00000004,
+                      statTRAPEN    = 32'h00000008,
+                      statTIMEREN   = 32'h00000010,
+                      statEXEC      = 32'h00000020,
+                      statCONT      = 32'h00000040,
+                      statRUN       = 32'h00000080,
+                      statHALT      = 32'h00000100,
+                      statNXMNXD    = 32'h00000200,
+                      statGO        = 32'h00010000;
 
 `ifdef SIM_SMMON
    localparam [ 0:35] valREGCIR     = 36'o254000_020000;  // SMMOM
 // localparam [ 0:35] valREGCIR     = 36'o254000_377000;  // BOOT
 `else
+// localparam [ 0:35] valREGCIR     = 36'o254000_377000;  // BOOT
    localparam [ 0:35] valREGCIR     = 36'o254000_030001;  // Basic diagnostics
 `endif
 
@@ -234,13 +241,18 @@ module testbench;
                       addrREGSTATUS = 32'h4000_0018,
                       addrREGDZCCR  = 32'h4000_001c,
                       addrREGLPCCR  = 32'h4000_0020,
-                      addrREGRHCCR  = 32'h4000_0024,
-                      addrREGDPCCR  = 32'h4000_0028,
+                      addrREGRPCCR  = 32'h4000_0024,
+                      addrREGMTCCR  = 32'h4000_0028,
+                      addrREGDPCCR  = 32'h4000_002c,
+                      addrREGCKMCCR = 32'h4000_0030,
                       addrDCSR      = 32'h4000_003c,
                       addrDBAR      = 32'h4000_0040,
                       addrDBMR      = 32'h4000_0048,
                       addrDITR      = 32'h4000_0050,
-                      addrRH11DEB   = 32'h4000_0070,
+                      addrPCIR      = 32'h4000_0058,
+                      addrMTDIR     = 32'h4000_0060,
+                      addrMTDEBUG   = 32'h4000_0068,
+                      addrRPDEBUG   = 32'h4000_0070,
                       addrVersion   = 32'h4000_0078;
 
    //
@@ -255,7 +267,7 @@ module testbench;
                       addrKOUT      = 18'o000035,
                       addrRHBASE    = 18'o000036,
                       addrRHUNIT    = 18'o000037,
-                      addrBOOTMAG   = 18'o000040;
+                      addrMTPARAM   = 18'o000040;
 
    //
    // Halt Status
@@ -272,243 +284,13 @@ module testbench;
    reg [`STRDEF] outBuf;
 
    //
-   // Task to write a 32-bit word to console register
+   // Semaphore to control access to console registers
+   // This ensures that the CTY and MT don't collide
    //
 
-   task conWRITE32;
-      input [0:31] addr;
-      input [0:31] data;
-      begin
-         @(posedge cpuCLK);
-         @(posedge cpuCLK);
-         axiAWADDR  <= addr;
-         axiAWVALID <= 1;
-         axiAWPROT  <= 0;
-         axiWDATA   <= data;
-         axiWVALID  <= 1;
-         axiWSTRB   <= 4'b1111;
-         @(posedge axiBVALID);
-         axiAWADDR  <= 32'bx;
-         axiAWVALID <= 0;
-         axiAWPROT  <= 3'bx;
-         axiWDATA   <= 32'bx;
-         axiWVALID  <= 0;
-         axiWSTRB   <= 4'b1111;
-         @(posedge cpuCLK);
-         @(posedge cpuCLK);
-      end
-   endtask
+   semaphore key;
 
-   //
-   // Task to read a 32-bit word from console register
-   //
-   // Note:
-   //  A 32-bit read requires 2 16-bit word operations.
-   //
-
-   task conREAD32;
-      input [0:31] addr;
-      output reg [0:31] data;
-      begin
-         @(posedge cpuCLK);
-         @(posedge cpuCLK);
-         axiARADDR  <= addr;
-         axiARPROT  <= 0;
-         axiARVALID <= 1;
-         @(posedge axiRVALID);
-         data <= axiRDATA;
-         axiRREADY <= 1;
-         @(posedge cpuCLK);
-         axiARADDR  <= 32'bx;
-         axiARPROT  <= 3'bx;
-         axiARVALID <= 0;
-         axiRREADY <= 0;
-         @(posedge cpuCLK);
-         @(posedge cpuCLK);
-      end
-   endtask
-
-   //
-   // Task to write a 36-bit word to console register
-   //
-   // Note:
-   //  A 36-bit write requires 2 32-bit word operations.
-   //
-
-   task conWRITE36;
-      input [0:31] addr;
-      input [0:35] data;
-      begin
-         conWRITE32(addr+0, data[ 4:35]);
-         conWRITE32(addr+4, {28'b0, data[0:3]});
-         #100;
-      end
-   endtask
-
-   //
-   // Task to read a 36-bit word from console register
-   //
-   // Note:
-   //  A 36-bit read requires 3 16-bit word operations.
-   //
-
-   task conREAD36;
-      input [0:31] addr;
-      output reg [0:35] data;
-      begin
-         conREAD32(addr+0, data[ 4:35]);
-         conREAD32(addr+4, data[ 0: 3]);
-         #100;
-      end
-   endtask
-
-   //
-   // Task to write a 64-bit word to console register
-   //
-   // Note:
-   //  A 64-bit write requires 2 32-bit word operations.
-   //
-
-   task conWRITE64;
-      input [0:31] addr;
-      input [0:63] data;
-      begin
-         conWRITE32(addr+0, data[32:63]);
-         conWRITE32(addr+4, data[ 0:31]);
-         #100;
-      end
-   endtask
-
-   //
-   // Task to read a 64-bit word from console register
-   //
-   // Note:
-   //  A 64-bit read requires 4 16-bit word operations.
-   //
-
-   task conREAD64;
-      input [0:31] addr;
-      output reg [0:63] data;
-      begin
-         conREAD32(addr+0, data[32:63]);
-         conREAD32(addr+4, data[ 0:31]);
-         #100;
-      end
-   endtask
-
-   //
-   // Task to write to KS10 memory
-   //
-   // Details
-   //  Write address.  Write data.
-   //
-
-   task conWRITEMEM;
-      input [18:35] address;
-      input [ 0:35] data;
-      begin
-         conWRITE36(addrREGADDR, {18'o010000, address});
-         conWRITE36(addrREGDATA, data);
-         conGO(address);
-      end
-   endtask
-
-   //
-   // Task to read from KS10 memory
-   //
-
-   task conREADMEM;
-      input  [18:35] address;
-      output [ 0:35] data;
-      begin
-         conWRITE36(addrREGADDR, {18'o040000, address});
-         conGO(address);
-         conREAD36(addrREGDATA, data);
-      end
-   endtask
-
-   //
-   // Task to read from KS10 memory (physical)
-   //
-
-   task conREADMEMP;
-      input  [18:35] address;
-      output [ 0:35] data;
-      reg    [ 0:15] status;
-      begin
-         conWRITE36(addrREGADDR, {18'o041000, address});
-         conGO(address);
-         conREAD36(addrREGDATA, data);
-      end
-   endtask
-
-   //
-   // Task to write to KS10 IO
-   //
-   // Details
-   //  Write address.  Write data.
-   //
-
-   task conWRITEIO;
-      input [14:35] address;
-      input [ 0:35] data;
-      begin
-         conWRITE36(addrREGADDR, {14'o00450, address}); // Write, Phys, IO
-         conWRITE36(addrREGDATA, data);
-         conGO(address);
-      end
-   endtask
-
-   //
-   // Task to read from KS10 IO
-   //
-
-   task conREADIO;
-      input  [14:35] address;
-      output [ 0:35] data;
-      reg    [ 0:15] status;
-      begin
-         conWRITE36(addrREGADDR, {14'o02050, address}); // Read, Phys, IO
-         conGO(address);
-         conREAD36(addrREGDATA, data);
-      end
-   endtask
-
-   //
-   // Set the GO bit then poll the GO bit.
-   // Whine about NXM/NXD response
-   //
-
-   task conGO;
-      input [18:35] address;
-      reg   [ 0:31] status;
-      begin
-
-         //
-         // Set GO bit
-         //
-
-         @(posedge cpuCLK);
-         @(posedge cpuCLK);
-         conREAD32(addrREGSTATUS, status);
-         status <= status + statGO;
-         @(posedge cpuCLK);
-         conWRITE32(addrREGSTATUS, status);
-         @(posedge cpuCLK);
-         conREAD32(addrREGSTATUS, status);
-         while (status & statGO)
-           begin
-              @(posedge cpuCLK);
-              conREAD32(addrREGSTATUS, status);
-           end
-         @(posedge cpuCLK);
-         if (status & statNXMNXD)
-           $display("[%11.3f] KS10: NXM/NXD at address %06o", $time/1.0e3,
-                    address);
-         conWRITE32(addrREGSTATUS, status & ~statNXMNXD);
-
-      end
-   endtask
+`include "conio.sv"
 
    //
    // Print Halt Status Block
@@ -730,27 +512,15 @@ module testbench;
    initial
      begin
 
+        //
+        // Initialize semaphore
+        //
+
+        key = new(1);
+
         $display("[%11.3f] KS10: Simulation Starting", $time/1.0e3);
 
         fd_cty = $fopen("cty_out.txt", "w");
-
-        //
-        // AXI Write Bus Outputs
-        //
-
-        axiAWADDR  <= 32'bx;
-        axiAWVALID <= 0;
-        axiWDATA   <= 32'bx;
-        axiWVALID  <= 0;
-        axiWSTRB   <= 4'b1111;
-
-        //
-        // AXI Read Bus Outputs
-        //
-
-        axiARADDR  <= 32'bx;
-        axiARVALID <= 0;
-        axiRREADY  <= 0;
 
         //
         //
@@ -780,10 +550,16 @@ module testbench;
         conWRITE32(addrREGLPCCR, 32'h02590001);
 
         //
+        // MT0 present, on-line, write-enabled
+        //
+
+        conWRITE32(addrREGMTCCR, 32'h00010100);
+
+        //
         // Enable UNIT0, UNIT1, and UNIT2 disk drives
         //
 
-        conWRITE32(addrREGRHCCR, 32'h00070700);
+        conWRITE32(addrREGRPCCR, 32'h00070700);
 
         //
         // Set jumper W3 and W6 of the DPCCR
@@ -821,16 +597,27 @@ module testbench;
         conREAD36(addrREGCIR, temp);
         $display("[%11.3f] KS10: CIR  is \"%12o\"", $time/1.0e3, temp);
 
-        conWRITEIO(22'o01776710, 36'o2); // Select Unit 2
+        conWRITEIO(22'o1776710, 36'o2); // Select Disk Unit 2
 
-        conREADIO(22'o01776726, temp);
-        $display("[%11.3f] KS10: RPDT is \"%12o\"", $time/1.0e3, temp);
+        conREADIO(22'o1776726, temp);
+        $display("[%11.3f] KS10: RPDT[2] is \"%6o\"", $time/1.0e3, temp);
 
-        conREADIO(22'o01776730, temp);
-        $display("[%11.3f] KS10: RPSN is \"%12o\"", $time/1.0e3, temp);
+        conREADIO(22'o1776730, temp);
+        $display("[%11.3f] KS10: RPSN[2] is \"%6o\"", $time/1.0e3, temp);
 
-        conREADIO(22'o01776712, temp);
-        $display("[%11.3f] KS10: RPDS is \"%12o\"", $time/1.0e3, temp);
+        conREADIO(22'o1776712, temp);
+        $display("[%11.3f] KS10: RPDS[2] is \"%6o\"", $time/1.0e3, temp);
+
+        conWRITEIO(22'o3772450, 36'o0); // Select Tape Unit 0
+
+        conREADIO(22'o3772466, temp);
+        $display("[%11.3f] KS10: MTDT[0] is \"%6o\"", $time/1.0e3, temp);
+
+        conREADIO(22'o3772470, temp);
+        $display("[%11.3f] KS10: MTSN[0] is \"%6o\"", $time/1.0e3, temp);
+
+        conREADIO(22'o3772452, temp);
+        $display("[%11.3f] KS10: MTDS[0] is \"%6o\"", $time/1.0e3, temp);
 
         conREAD64(addrVersion, temp64);
         $display("[%11.3f] KS10: FVR  is \"%c%c%c%c%c%c%c%c\".", $time/1.0e3,
@@ -862,10 +649,15 @@ module testbench;
              conWRITEMEM(addrCOUT,    36'o000000_000000);       // Console Output
              conWRITEMEM(addrKIN,     36'o000000_000000);       // Klinik Input
              conWRITEMEM(addrKOUT,    36'o000000_000000);       // Klinik Output
-             conWRITEMEM(addrRHBASE,  36'o000001_776700);       // RH Base Address
-//           conWRITEMEM(addrRHBASE,  36'o000000_000000);       // RH Base Address
+`ifdef RPBOOT
+             conWRITEMEM(addrRHBASE,  36'o000001_776700);       // RP Base Address
              conWRITEMEM(addrRHUNIT,  36'o000000_000002);       // Boot Disk Unit Number
-             conWRITEMEM(addrBOOTMAG, 36'o000000_000000);       // Boot Magtape Parameters
+             conWRITEMEM(addrMTPARAM, 36'o000000_000000);       // MT Parameters
+`else
+             conWRITEMEM(addrRHBASE,  36'o000003_772440);       // MT Base Address
+             conWRITEMEM(addrRHUNIT,  36'o000000_000000);       // Boot Tape Unit Number
+             conWRITEMEM(addrMTPARAM, 36'o000000_002000);       // MT Parameters (1600 BPI, COREDUMP, SLAVE 0
+`endif
 
              //
              // Start executing code (Push the Continue Button).
@@ -905,49 +697,78 @@ module testbench;
              // Handle CTY IO
              //
 
-             if (1)
-               begin
-//                $display("[%11.3f] KS10: Console Interrupted", $time/1.0e3);
+             key.get(1);
+             getchar(fd_cty);
 
-                  getchar(fd_cty);
+             `ifdef TEST_DSKCG
+                `include "test_dskcg.vh"
+             `endif
 
-                  `ifdef TEST_DSKCG
-                      `include "test_dskcg.vh"
-                  `endif
+             `ifdef TEST_DSDZA
+                `include "test_dsdza.vh"
+             `endif
 
-                  `ifdef TEST_DSDZA
-                      `include "test_dsdza.vh"
-                  `endif
+//           `define TEST_DSRPA
+             `ifdef TEST_DSRPA
+                `include "test_dsrpa.vh"
+             `endif
 
-                  `ifdef TEST_DSRPA
-                      `include "test_dsrpa.vh"
-                  `endif
+             `ifdef TEST_DSRMB
+                `include "test_dsrmb.vh"
+             `endif
 
-                  `ifdef TEST_DSRMB
-                      `include "test_dsrmb.vh"
-                  `endif
+             `ifdef TEST_DSLPA
+                 `include "test_dslpa.vh"
+             `endif
 
-                  `ifdef TEST_DSLPA
-                      `include "test_dslpa.vh"
-                  `endif
+             `ifdef TEST_DSDUA
+                 `include "test_dsdua.vh"
+             `endif
 
-                  `ifdef TEST_DSDUA
-                      `include "test_dsdua.vh"
-                  `endif
+             `ifdef TEST_DSKMA
+                 `include "test_dskma.vh"
+             `endif
 
-                  `ifdef TEST_DSKMA
-                      `include "test_dskma.vh"
-                  `endif
+             `define TEST_DSTUA
+             `ifdef TEST_DSTUA
+                 `include "test_dstua.vh"
+             `endif
 
-                  `ifdef TEST_DSUBA
-                      `include "test_dsuba.vh"
-                  `endif
+//           `define TEST_DSTUB
+             `ifdef TEST_DSTUB
+                 `include "test_dstub.vh"
+             `endif
 
-                  charout();
+             `ifdef TEST_DSUBA
+                 `include "test_dsuba.vh"
+             `endif
 
-               end
+             charout();
+             key.put(1);
+
           end
      end
+
+   //
+   // Thread to interact with the tape simulator
+   //
+
+`define SIMMT
+`ifdef SIMMT
+
+`include "mtsim.sv"
+
+   initial
+     begin
+        mtSIM_INIT();
+        forever
+          begin
+             key.get(1);
+             mtSIM_RUN(addrMTDIR);
+             key.put(1);
+          end
+     end
+`endif
 
    //
    // Periodically flush the output buffer
@@ -1033,7 +854,8 @@ module testbench;
       .axiBREADY        (axiBREADY),
       // CPU clock out
       .cpuCLK           (cpuCLK),
-      .cpuRST           (cpuRST)
+      .cpuRST           (cpuRST),
+      .mtDIRO           (mtDIRO)
    );
 
    //
@@ -1100,15 +922,15 @@ module testbench;
    wire       intr;
    wire       clken;
    wire [7:0] data;
-   integer    file;
+   integer    fd_lpt;
 
    //
-   // Open printer output file
+   // Open printer output fd_lpt
    //
 
    initial
      begin
-        file = $fopen("lpr_out.txt", "w");
+        fd_lpt = $fopen("lpr_out.txt", "w");
      end
 
    //
@@ -1152,8 +974,8 @@ module testbench;
      begin
         if (intr)
           begin
-             $fwrite(file, "%c", {1'b0, data[6:0]});
-             $fflush(file);
+             $fwrite(fd_lpt, "%c", {1'b0, data[6:0]});
+             $fflush(fd_lpt);
           end
      end
 

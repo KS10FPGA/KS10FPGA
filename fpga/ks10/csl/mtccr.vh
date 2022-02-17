@@ -3,17 +3,20 @@
 // KS-10 Processor
 //
 // Brief
-//   RPxx Control Status Register #1 (RPCS1)
+//   MT Console Control/Status Register Header File
+//
+// Details
+//   This file contains the MT Control/Status Register bit definitions.
 //
 // File
-//   rpcs1.v
+//   mtccr.vh
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2020-2021 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -35,59 +38,15 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`timescale 1ns/1ps
-`default_nettype none
+`ifndef __MTCCR_VH
+`define __MTCCR_VH
 
-`include "rpcs1.vh"
+//
+// MTCCR bits
+//
 
-module RPCS1 (
-      input  wire         clk,                  // Clock
-      input  wire         rst,                  // Reset
-      input  wire [35: 0] rpDATAI,              // RH Data In
-      input  wire         rpWRCS1,              // Write to CS1
-      input  wire         rpDRY,                // Drive ready
-      output wire [15: 0] rpCS1                 // rpCS1 Output
-   );
+`define mtccrDPR(reg) (reg[ 8:15])  // Drive Present
+`define mtccrMOL(reg) (reg[16:23])  // Media On-line
+`define mtccrWRL(reg) (reg[24:31])  // Write Locked
 
-   //
-   // RPCS1 Data Valid (DVA)
-   //
-   // Trace
-   //  M7774/RG6/E16
-   //
-
-   wire rpDVA = 1;
-
-   //
-   // RPCS1 Function (FUN)
-   //
-   // Trace
-   //  M7774/RG3/E25
-   //
-
-   reg [5:1] rpFUN;
-
-   always @(posedge clk)
-     begin
-        if (rst)
-          rpFUN <= 0;
-        else if (rpWRCS1 & rpDRY)
-          rpFUN <= `rpCS1_FUN(rpDATAI);
-     end
-
-   //
-   // RPCS1 GO
-   //
-   // Trace
-   //  M7774/RG3/E44
-   //
-
-   wire rpGO = !rpDRY;
-
-   //
-   // Build CS1 Register
-   //
-
-   assign rpCS1 = {4'b0, rpDVA, 5'b0, rpFUN, rpGO};
-
-endmodule
+`endif
