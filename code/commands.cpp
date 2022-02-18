@@ -999,7 +999,7 @@ static bool cmdCP(int argc, char *argv[]) {
         "  --stat[us]                        Display halt status\n"
         "  --cont[inue]                      Continue\n"
         "  --halt                            Halt\n"
-        "  --step[=count]		     Single step\n"
+        "  --step[=count]                    Single step\n"
         "  --cache[={en[able] | di[sable]}]  Control cache\n"
         "  --timer[={en[able] | di[sable]}]  Enable timer\n"
         "  --trap[={en[able]  | di[sable]}]  Enable traps\n"
