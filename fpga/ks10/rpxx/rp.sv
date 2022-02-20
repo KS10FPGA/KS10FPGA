@@ -224,8 +224,7 @@ module RP (
    );
 
    //
-   // FIXME:
-   //  Something is wrong here with rpREADOP
+   // NPR Direction
    //
 
    assign massbus.mbNPRO = rpREADOP;
