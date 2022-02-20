@@ -541,7 +541,7 @@ module MT (
    //  Sets RHCS1[CPE]
    //
 
-   assign massbus.mbCPE = `mtMR_MM(mtMR) & (`mtMR_MOP(mtMR) == mtMROP_EVPAR);
+   assign massbus.mbCPE = `mtMR_MM(mtMR) & (`mtMR_MOP(mtMR) == `mtMROP_EVPAR);
 
    //
    // Data Parity Error
@@ -549,7 +549,7 @@ module MT (
    //  Sets RHCS2[DPE]
    //
 
-   assign massbus.mbDPE = `mtMR_MM(mtMR) & (`mtMR_MOP(mtMR) == mtMROP_EVPAR) & massbus.mbREQO;
+   assign massbus.mbDPE = `mtMR_MM(mtMR) & (`mtMR_MOP(mtMR) == `mtMROP_EVPAR) & massbus.mbREQO;
 
    //
    // Multiplex registers back to RH11

@@ -733,6 +733,12 @@ WAVE_CSL := \
 	"add wave -noupdate -divider {CSL}" \
 	"add wave -noupdate -radix hex      -radixshowbase 0 -label {rst}                  {/testbench/uKS10/uCSL/rst}" \
 	"add wave -noupdate -radix binary   -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uCSL/clk}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQO}              {/testbench/uKS10/uCSL/cslBUS.busREQO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busACKI}              {/testbench/uKS10/uCSL/cslBUS.busACKI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busADDRO}             {/testbench/uKS10/uCSL/cslBUS.busADDRO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busDATAO}             {/testbench/uKS10/uCSL/cslBUS.busDATAO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busDATAI}             {/testbench/uKS10/uCSL/cslBUS.busDATAI}" \
+	"add wave -noupdate -divider {AXI BUS}" \
 	"add wave -noupdate -radix hex      -radixshowbase 0 -label {axiAWADDR}            {/testbench/uKS10/uCSL/axiAWADDR}" \
 	"add wave -noupdate -radix hex      -radixshowbase 0 -label {axiAWVALID}           {/testbench/uKS10/uCSL/axiAWVALID}" \
 	"add wave -noupdate -radix hex      -radixshowbase 0 -label {axiAWREADY}           {/testbench/uKS10/uCSL/axiAWREADY}" \
@@ -782,7 +788,8 @@ WAVE_CSL := \
 	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {state}                {/testbench/uKS10/uCSL/state}" \
 	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {timer}                {/testbench/uKS10/uCSL/timer}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busIO}                {/testbench/uKS10/uCSL/busIO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {regREV}               {/testbench/uKS10/uCSL/regREV}"
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {regREV}               {/testbench/uKS10/uCSL/regREV}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {asdf}                 {/testbench/uKS10/uCSL/asdf}"
 
 WAVE_DBM := \
 	"add wave -noupdate -divider {DBM}" \
@@ -1883,24 +1890,38 @@ VLOG_ARGS := \
 
 WAVE_LIST := \
 	$(WAVE_FIRST) \
+	$(WAVE_MEM) \
 	$(WAVE_CPU_INTF) \
 	$(WAVE_CPU) \
+	$(WAVE_CSL) \
 	$(WAVE_UBA1) \
+	$(WAVE_RH11A) \
+	$(WAVE_RP1) \
+	$(WAVE_UBA3) \
+	$(WAVE_RH11B) \
+	$(WAVE_MT) \
 	$(WAVE_LAST)
 
+#	$(WAVE_RP1) \
+#	$(WAVE_CPU_NXD) \
+#	$(WAVE_UBA4) \
+#	$(WAVE_UBE2) \
+#	$(WAVE_UBE3) \
+#	$(WAVE_UBE4) \
 #	$(WAVE_LP20) \
-#	$(WAVE_CSL) \
-#	$(WAVE_DZ11) \
-#	$(WAVE_MEM) \
-#	$(WAVE_INTF) \
-#	$(WAVE_ARB) \
-#	$(WAVE_KS10) \
-#	$(WAVE_UBA3) \
-#	$(WAVE_DUP11) \
-#	$(WAVE_DZ11) \
+#	$(WAVE_UBE1) \
+#	$(WAVE_UBE2) \
+#	$(WAVE_UBE3) \
+#	$(WAVE_UBE4) \
 #	$(WAVE_KMC11) \
-#	$(WAVE_RH11) \
-#	$(WAVE_SD) \
+#	$(WAVE_DZ11) \
+#	$(WAVE_PAGER) \
+#	$(WAVE_DISPPF) \
+#	$(WAVE_ARB) \
+#	$(WAVE_DZ11) \
+#	$(WAVE_INTF) \
+#	$(WAVE_KS10) \
+#	$(WAVE_DUP11) \
 
 $(QUESTA_DIR)/wave.do: makefile
 	@echo "Creating "$@ > /dev/stderr
@@ -2356,7 +2377,7 @@ cloc :
 #	$(CLOC) --by-file --exclude-dir=driverlib,SafeRTOS,lwiplib ../code
 
 #
-#
+# Check files for tabs, whitespace, and FIXMEs.
 #
 
 check :

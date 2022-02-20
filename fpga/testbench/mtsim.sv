@@ -46,14 +46,13 @@
 `define NULL 0
 `define EOF 32'hFFFF_FFFF
 
-   int        fd_tape;
-   int        fd_mtstat;
-   int        objcnt;
-   int        reccnt;
-   int        filcnt;
-   logic      lastTM;
-   reg [63:0] mtDIR;
-
+   int          fd_tape;
+   int          fd_mtstat;
+   int          objcnt;
+   int          reccnt;
+   int          filcnt;
+   logic        lastTM;
+   reg  [63: 0] mtDIR;
 
    //
    // mtDIR bits
@@ -73,16 +72,18 @@
                       mtDIR_SETTM  = (1 << 37),
                       mtDIR_CLRTM  = (1 << 36);
 
-   `define mtDIR_SS  58:56
-   `define mtDIR_DEN 55:53
-   `define mtDIR_FUN 52:48
-   `define mtDIR_FMT 47:44
+   `define mtDIR_BIT_SS  58:56
+   `define mtDIR_BIT_DEN 55:53
+   `define mtDIR_BIT_FUN 52:48
+   `define mtDIR_BIT_FMT 47:44
+   `define mtDIR_BIT_WCZ 43
+   `define mtDIR_BIT_FCZ 42
 
    //
    // Tape file metadata
    //
 
-   localparam [31:0]  h_EOT = 32'hffffffff,     // End-of-tape
+   localparam [31: 0] h_EOT = 32'hffffffff,     // End-of-tape
                       h_GAP = 32'hfffffffe,     // Erase gap
                       h_TM  = 32'h00000000;     // Tape mark
 
@@ -90,15 +91,15 @@
    // Supported tape formats
    //
 
-   localparam [3:0] mtFMT_CORDMP = 4'o00,
-                    mtFMT_NORMAL = 4'o03;
+   localparam [ 3: 0] mtFMT_CORDMP = 4'o00,
+                      mtFMT_NORMAL = 4'o03;
 
    //
    // Supported tape densities
    //
 
-   localparam [2:0] mtDEN_800NRZI = 3'o3,
-                    mtDEN_1600PE  = 3'o4;
+   localparam [ 2: 0] mtDEN_800NRZI = 3'o3,
+                      mtDEN_1600PE  = 3'o4;
 
    //
    // Constants for $fseek()
@@ -159,10 +160,10 @@
 
    task writeHeader(input [31:0] in);
       begin
-         $fwrite(fd_tape,"%c", in[ 7: 0]);
-         $fwrite(fd_tape,"%c", in[15: 8]);
-         $fwrite(fd_tape,"%c", in[23:16]);
-         $fwrite(fd_tape,"%c", in[31:24]);
+         $fwrite(fd_tape, "%c", in[ 7: 0]);
+         $fwrite(fd_tape, "%c", in[15: 8]);
+         $fwrite(fd_tape, "%c", in[23:16]);
+         $fwrite(fd_tape, "%c", in[31:24]);
       end
       $fflush(fd_tape);
    endtask
@@ -173,7 +174,7 @@
 
    function logic [35:0] readData;
       reg [0:3] bucket;
-      if (mtDIR[`mtDIR_FMT] == mtFMT_CORDMP)
+      if (mtDIR[`mtDIR_BIT_FMT] == mtFMT_CORDMP)
         begin
            readData[35:28] = $fgetc(fd_tape);
            readData[27:20] = $fgetc(fd_tape);
@@ -181,7 +182,7 @@
            readData[11: 4] = $fgetc(fd_tape);
            {bucket, readData[3:0]} = $fgetc(fd_tape);
         end
-      else if (mtDIR[`mtDIR_FMT] == mtFMT_NORMAL)
+      else if (mtDIR[`mtDIR_BIT_FMT] == mtFMT_NORMAL)
         begin
            readData[35:28] = $fgetc(fd_tape);
            readData[27:20] = $fgetc(fd_tape);
@@ -191,7 +192,7 @@
         end
       else
         begin
-           $fwrite(fd_mtstat, "[%11.3f] TAPE: Unsupported tape format. Format was %02o.\n", $time/1.0e3, mtDIR[`mtDIR_FMT]);
+           $fwrite(fd_mtstat, "[%11.3f] TAPE: Unsupported tape format. Format was %02o.\n", $time/1.0e3, mtDIR[`mtDIR_BIT_FMT]);
 //         $stop;
         end
    endfunction
@@ -201,24 +202,24 @@
    //
 
    task writeData(input [35:0] in);
-      if (mtDIR[`mtDIR_FMT] == mtFMT_CORDMP)
+      if (mtDIR[`mtDIR_BIT_FMT] == mtFMT_CORDMP)
         begin
-           $fwrite(fd_tape,"%c", in[35:28]);
-           $fwrite(fd_tape,"%c", in[27:20]);
-           $fwrite(fd_tape,"%c", in[19:12]);
-           $fwrite(fd_tape,"%c", in[11: 4]);
-           $fwrite(fd_tape,"%c", {4'b0, in[3:0]});
+           $fwrite(fd_tape, "%c", in[35:28]);
+           $fwrite(fd_tape, "%c", in[27:20]);
+           $fwrite(fd_tape, "%c", in[19:12]);
+           $fwrite(fd_tape, "%c", in[11: 4]);
+           $fwrite(fd_tape, "%c", {4'b0, in[3:0]});
         end
-      else if (mtDIR[`mtDIR_FMT] == mtFMT_NORMAL)
+      else if (mtDIR[`mtDIR_BIT_FMT] == mtFMT_NORMAL)
         begin
-           $fwrite(fd_tape,"%c", in[35:28]);
-           $fwrite(fd_tape,"%c", in[27:20]);
-           $fwrite(fd_tape,"%c", in[19:12]);
-           $fwrite(fd_tape,"%c", in[11: 4]);
+           $fwrite(fd_tape, "%c", in[35:28]);
+           $fwrite(fd_tape, "%c", in[27:20]);
+           $fwrite(fd_tape, "%c", in[19:12]);
+           $fwrite(fd_tape, "%c", in[11: 4]);
         end
       else
         begin
-           $fwrite(fd_mtstat, "[%11.3f] TAPE: Unsupported tape format. Format was %02o.\n", $time/1.0e3, mtDIR[`mtDIR_FMT]);
+           $fwrite(fd_mtstat, "[%11.3f] TAPE: Unsupported tape format. Format was %02o.\n", $time/1.0e3, mtDIR[`mtDIR_BIT_FMT]);
 //         $stop;
         end
       $fflush(fd_tape);
@@ -229,7 +230,7 @@
    //
 
    function int bytes_per_word(input [63:0] mtDIR);
-      bytes_per_word = (mtDIR[`mtDIR_FMT] == mtFMT_CORDMP) ? 5 : 4;
+      bytes_per_word = (mtDIR[`mtDIR_BIT_FMT] == mtFMT_CORDMP) ? 5 : 4;
    endfunction
 
    //
@@ -242,7 +243,7 @@
    task waitRewind(input [63:0] mtDIR);
       real nsec_per_byte;
       longint pos;
-      nsec_per_byte = (mtDIR[`mtDIR_DEN] == mtDEN_1600PE) ? mtSPD_1600BPI_REW : mtSPD_800BPI_REW;
+      nsec_per_byte = (mtDIR[`mtDIR_BIT_DEN] == mtDEN_1600PE) ? mtSPD_1600BPI_REW : mtSPD_800BPI_REW;
       pos = $ftell(fd_tape);
       #(nsec_per_byte * pos * 1ns);
    endtask
@@ -254,7 +255,7 @@
 
    task waitReadWrite(input [63:0] mtDIR, input int bytes);
       real nsec_per_byte;
-      nsec_per_byte = (mtDIR[`mtDIR_DEN] == mtDEN_1600PE) ? mtSPD_1600BPI_RW : mtSPD_800BPI_RW;
+      nsec_per_byte = (mtDIR[`mtDIR_BIT_DEN] == mtDEN_1600PE) ? mtSPD_1600BPI_RW : mtSPD_800BPI_RW;
       #(nsec_per_byte * bytes * 1ns);
    endtask
 
@@ -308,7 +309,7 @@
 
    task erase(input [31:0] addrMTDIR);
       int gaps;
-      gaps = (mtDIR[`mtDIR_DEN] == mtDEN_1600PE) ? 4800/4 : 2400/4;
+      gaps = (mtDIR[`mtDIR_BIT_DEN] == mtDEN_1600PE) ? 4800/4 : 2400/4;
       $fwrite(fd_mtstat, "[%11.3f] TAPE: Erase command.\n", $time/1.0e3);
       $fwrite(fd_mtstat, "[%11.3f] TAPE: GAPS is %0d\n", $time/1.0e3, gaps);
       $fflush(fd_mtstat);
@@ -393,7 +394,7 @@
                 conREAD64(addrMTDIR, mtDIR);
                 waitReadWrite(mtDIR, header);
 
-                if (mtDIR[42]) // WCZ
+                if (mtDIR[`mtDIR_BIT_FCZ])
                   begin
                      $fwrite(fd_mtstat, "[%11.3f] TAPE: Frame Count incremented to zero.\n", $time/1.0e3);
                      done = 1;
@@ -503,7 +504,7 @@
                 // This should not fail at BOF. We've already validated the tape file.
                 //
 
-    `ifdef PARANOID
+`ifdef PARANOID
 
                 if ($ftell(fd_tape) - header - 4 < 0)
                   begin
@@ -514,9 +515,9 @@
                 else
                   void'($fseek(fd_tape, -(header + 4), SEEK_CUR));
 
-    `else
+`else
                 void'($fseek(fd_tape, -(header + 4), SEEK_CUR));
-    `endif
+`endif
 
                 //
                 // Simulate delay from tape motion
@@ -591,8 +592,7 @@
       conREAD64(addrMTDIR, mtDIR);
       bpw = bytes_per_word(mtDIR);
 
-
-      length = 0;
+      length  = 0;
       wordcnt = 0;
 
       //
@@ -615,7 +615,7 @@
                 // If the Word Counter is zero, we are done.
                 //
 
-                if (mtDIR[43])
+                if (mtDIR[`mtDIR_BIT_WCZ])
                   begin
                      $fwrite(fd_mtstat, "[%11.3f] TAPE: Word Count incremented to zero.\n", $time/1.0e3);
                      $fflush(fd_mtstat);
@@ -650,11 +650,11 @@
 
                 wordcnt += 1;
                 data = mtDIR[35:0];
-/*FIXME*/       pos = $ftell(fd_tape);
+		pos = $ftell(fd_tape);
                 $fwrite(fd_mtstat, "[%11.3f] TAPE: Write Forward: Data was %06o,,%06o (wordcnt was %0d, pos was %0d, bpw was %0d)\n",
                         $time/1.0e3, data[35:18], data[17:0], wordcnt, $ftell(fd_tape), bpw);
                 writeData(data);
-/*FIXME*/       void'($fseek(fd_tape, pos+bpw, SEEK_SET));
+		void'($fseek(fd_tape, pos+bpw, SEEK_SET));
                 conWRITE64(addrMTDIR, 0);
 
              end
@@ -769,14 +769,14 @@
                      //
 
                      wordcnt += 1;
-/*FIXME*/            pos = $ftell(fd_tape);
+		     pos = $ftell(fd_tape);
                      data = {28'b0, readData()};
                      conWRITE64(addrMTDIR, mtDIR_STB | data);
 
                      $fwrite(fd_mtstat, "[%11.3f] TAPE: Read Forward: Data was %06o,,%06o (wordcnt was %0d, pos was %0d, header was %0d, bpw was %0d)\n",
                              $time/1.0e3, data[35:18], data[17:0], wordcnt, $ftell(fd_tape)-bpw, header, bpw);
 
-/*FIXME*/            void'($fseek(fd_tape, pos+bpw, SEEK_SET));
+		     void'($fseek(fd_tape, pos+bpw, SEEK_SET));
 
 
                      //
@@ -797,7 +797,7 @@
 
                      conREAD64(addrMTDIR, mtDIR);
 
-                     if (mtDIR[43]) // WCZ
+                     if (mtDIR[`mtDIR_BIT_WCZ])
                        begin
                           $fwrite(fd_mtstat, "[%11.3f] TAPE: Word Count incremented to zero.\n", $time/1.0e3);
                           done = 1;
@@ -971,7 +971,7 @@
                      //
 
                      conREAD64(addrMTDIR, mtDIR);
-                     if (mtDIR[43]) // WCZ
+                     if (mtDIR[`mtDIR_BIT_WCZ])
                        begin
                           $fwrite(fd_mtstat, "[%11.3f] TAPE: Word Count incremented to zero.\n", $time/1.0e3);
                           done = 1;
@@ -1056,16 +1056,13 @@
 
    task mtSIM_RUN(input [31:0] addrMTDIR);
       reg [63:0] mtDIR;
-
       begin
-
          conREAD64(addrMTDIR, mtDIR);
-
          if (!mtDIR[60])
            begin
               $fwrite(fd_mtstat, "[%11.3f] TAPE: Got GO.\n", $time/1.0e3);
               $fflush(fd_mtstat);
-              case (mtDIR[`mtDIR_FUN])
+              case (mtDIR[`mtDIR_BIT_FUN])
                 5'o00: nop(addrMTDIR);
                 5'o01: unload(addrMTDIR);
                 5'o03: rewind(addrMTDIR);
@@ -1095,7 +1092,6 @@
                   end
               $fflush(fd_mtstat);
            end
-
       end
    endtask
 

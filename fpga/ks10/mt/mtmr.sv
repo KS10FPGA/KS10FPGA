@@ -98,9 +98,9 @@ module MTMR (
    logic [3:0] mrMOP;
    logic       mrMC;
    logic [2:0] wrdly;
-   wire        toggle = ((mtGO & wrdly[2] & !wrdly[1] & mrMOP == (mtMROP_WRP1)) |
-                         (mtGO & wrdly[2] & !wrdly[1] & mrMOP == (mtMROP_WRP2)) |
-                         (mtGO & wrdly[2] & !wrdly[1] & mrMOP == (mtMROP_WRP3)));
+   wire        toggle = ((mtGO & wrdly[2] & !wrdly[1] & (mrMOP == `mtMROP_WRP1)) |
+                         (mtGO & wrdly[2] & !wrdly[1] & (mrMOP == `mtMROP_WRP2)) |
+                         (mtGO & wrdly[2] & !wrdly[1] & (mrMOP == `mtMROP_WRP3)));
 
    always_ff @(posedge clk)
      begin
