@@ -45,24 +45,24 @@
 #include "ks10.hpp"
 #include "vt100.hpp"
 
-#define DEBUG_TOP(...)          printf(__VA_ARGS__)
-#define DEBUG_HEADER(...)       //printf(__VA_ARGS__)
-#define DEBUG_UNLOAD(...)       //printf(__VA_ARGS__)
-#define DEBUG_REWIND(...)       //printf(__VA_ARGS__)
-#define DEBUG_PRESET(...)       //printf(__VA_ARGS__)
-#define DEBUG_ERASE(...)        //printf(__VA_ARGS__)
-#define DEBUG_WRTM(...)         //printf(__VA_ARGS__)
-#define DEBUG_RDFWD(...)        //printf(__VA_ARGS__)
-#define DEBUG_RDREV(...)        //printf(__VA_ARGS__)
-#define DEBUG_WRCHKFWD(...)     //printf(__VA_ARGS__)
-#define DEBUG_WRCHKREV(...)     //printf(__VA_ARGS__)
-#define DEBUG_WRFWD(...)        //printf(__VA_ARGS__)
-#define DEBUG_SPCFWD(...)       //printf(__VA_ARGS__)
-#define DEBUG_SPCREV(...)       //printf(__VA_ARGS__)
-#define DEBUG_BOTEOT(...)       printf(__VA_ARGS__)
-#define DEBUG_DELAY(...)        //printf(__VA_ARGS__)
-#define DEBUG_VALIDATE(...)     //printf(__VA_ARGS__)
-#define DEBUG_DATA(...)         //printf(__VA_ARGS__)
+#define DEBUG_TOP(...)          ({if (debug & debugTOP     ) printf(__VA_ARGS__);})
+#define DEBUG_HEADER(...)       ({if (debug & debugHEADER  ) printf(__VA_ARGS__);})
+#define DEBUG_UNLOAD(...)       ({if (debug & debugUNLOAD  ) printf(__VA_ARGS__);})
+#define DEBUG_REWIND(...)       ({if (debug & debugREWIND  ) printf(__VA_ARGS__);})
+#define DEBUG_PRESET(...)       ({if (debug & debugPRESET  ) printf(__VA_ARGS__);})
+#define DEBUG_ERASE(...)        ({if (debug & debugERASE   ) printf(__VA_ARGS__);})
+#define DEBUG_WRTM(...)         ({if (debug & debugWRTM    ) printf(__VA_ARGS__);})
+#define DEBUG_RDFWD(...)        ({if (debug & debugRDFWD   ) printf(__VA_ARGS__);})
+#define DEBUG_RDREV(...)        ({if (debug & debugRDREV   ) printf(__VA_ARGS__);})
+#define DEBUG_WRCHKFWD(...)     ({if (debug & debugWRCHKFWD) printf(__VA_ARGS__);})
+#define DEBUG_WRCHKREV(...)     ({if (debug & debugWRCHKREV) printf(__VA_ARGS__);})
+#define DEBUG_WRFWD(...)        ({if (debug & debugWRFWD   ) printf(__VA_ARGS__);})
+#define DEBUG_SPCFWD(...)       ({if (debug & debugSPCFWD  ) printf(__VA_ARGS__);})
+#define DEBUG_SPCREV(...)       ({if (debug & debugSPCREV  ) printf(__VA_ARGS__);})
+#define DEBUG_BOTEOT(...)       ({if (debug & debugBOTEOT  ) printf(__VA_ARGS__);})
+#define DEBUG_DELAY(...)        ({if (debug & debugDELAY   ) printf(__VA_ARGS__);})
+#define DEBUG_VALIDATE(...)     ({if (debug & debugVALIDATE) printf(__VA_ARGS__);})
+#define DEBUG_DATA(...)         ({if (debug & debugDATA    ) printf(__VA_ARGS__);})
 
 #define PARANOID
 
@@ -1267,7 +1267,7 @@ void tape_t::processCommand(void) {
 
     if (!isREADY(mtDIR)) {
 
-        DEBUG_TOP("TAPE: Got GO. FUN was \"%s\" (0%02o), DEN was \"%s\" (0%02o), FMT was \"%s\" (0%02o), SLV was %d.\n",
+        DEBUG_TOP("TAPE: Function was \"%s\" (0%02o), Density was \"%s\" (0%02o), Format was \"%s\" (0%02o), Slave was %d.\n",
                   mt_t::printFUN(function), function, mt_t::printDEN(density), density, mt_t::printFMT(format), format, getSS(mtDIR));
 
         if ((format == f_CORDMP) || (format == f_COMPAT)) {
@@ -1329,7 +1329,9 @@ void tape_t::processCommand(void) {
 
             //
             // Update BOT and EOT based on file position.
-            // Tape is 2400 feet at 800 bytes per inch or 1600 bytes per inch.
+            //
+            // The number of bytes per tape is a function of tape length and
+            // density
             //
 
             long fpos  = ftell(file);
@@ -1354,20 +1356,19 @@ void tape_t::processCommand(void) {
                 ks10_t::writeMTDIR(ks10_t::mtDIR_CLREOT);
             }
 
+#if 0
             printf("TAPE: --------> fpos = %ld (0x%08lx) <--------\n", fpos, fpos);
 
-
-            //#define DEBUG_REGS
-#ifdef DEBUG_REGS
             printf("TAPE: Done.\n");
-            //            mt_t::dumpMTCS1(03772440);
-            //            mt_t::dumpMTCS2(03772450);
+          //mt_t::dumpMTCS1(03772440);
+          //mt_t::dumpMTCS2(03772450);
             mt_t::dumpMTMR(03772464);
             mt_t::dumpMTDS(03772452);
             mt_t::dumpMTER(03772454);
-            //            mt_t::dumpMTWC(03772442);
-            //            mt_t::dumpMTFC(03772446);
-            //            mt_t::dumpMTTC(03772472);
+          //mt_t::dumpMTWC(03772442);
+          //mt_t::dumpMTFC(03772446);
+          //mt_t::dumpMTTC(03772472);
+
 #endif
 
         } else {
@@ -1375,9 +1376,7 @@ void tape_t::processCommand(void) {
         }
 
         ks10_t::writeMTDIR(ks10_t::mtDIR_READY);
-
     }
-
 }
 
 //!
@@ -1400,6 +1399,7 @@ void tape_t::validate(void) {
     bool lastTM = false;
     bool mismatch = false;
     bool logicalEOT = false;
+    bool physicalEOT = false;
     for (;;) {
         uint32_t header = readHeader();
         DEBUG_VALIDATE("TAPE: Header = 0x%08x, pos=%ld\n", header, ftell(file));
@@ -1408,6 +1408,7 @@ void tape_t::validate(void) {
             logicalEOT = false;
         } else if (header == h_EOT) {
             DEBUG_VALIDATE("TAPE: Physical EOT.\n");
+	    physicalEOT = true;
             break;
         } else if (header == h_ERR) {
             DEBUG_VALIDATE("Error.\n");
@@ -1419,6 +1420,7 @@ void tape_t::validate(void) {
         } else if ((header == h_TM) && lastTM) {
             logicalEOT = true;
             DEBUG_VALIDATE("TAPE: Logical EOT\n");
+            break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
             DEBUG_VALIDATE("TAPE: Tape Error.\n");
             break;
@@ -1439,7 +1441,7 @@ void tape_t::validate(void) {
 
     if (mismatch) {
         printf("TAPE: %sTape file is invalid. Found header and footer mismatches.%s\n", vt100fg_red, vt100at_rst);
-    } else if (!logicalEOT) {
+    } else if (physicalEOT && !logicalEOT) {
         printf("TAPE: %sTape file is invalid. Missing logical EOT.%s\n", vt100fg_red, vt100at_rst);
     } else {
         printf("TAPE: Tape file is valid.\n");
@@ -1451,23 +1453,41 @@ void tape_t::validate(void) {
 //!    Constructor
 //!
 //! \details
-//!    Open and validate the tape file
+//!    This function opens and validates the tape file; then initializes
+//!    the object
+//!
+//! \param [in] filename - 
+//!    File name of the tape file
+//!
+//! \param [in] tapeLength -
+//!    Length of the tape file in feet.
+//!
+//! \note:
+//!    Standard tape lengths were 800 feet, 2400 feet, and 3600 feet.
 //!
 
-tape_t::tape_t(const char *filename) : filcnt(1), objcnt(1), reccnt(1), statBOT(false), statEOT(false), lastTM(true) {
-    struct stat sb;
-    file = fopen(filename, "r+");
-    if (!file) {
-        printf("TAPE: Error opening file: %s\n", filename);
-        exit(EXIT_FAILURE);
-    } else if (fstat(fileno(file), &sb) == -1) {
-        perror("stat");
-        exit(EXIT_FAILURE);
-    } else {
-        fsize = sb.st_size;
-        printf("TAPE: Successfully opened tape file: \"%s\" (%ld bytes).\n", filename, fsize);
-    }
-    validate();
+tape_t::tape_t(const char *filename, unsigned int tapeLength, unsigned int debug) :
+    tapeLength(tapeLength),
+    debug(debug),
+    filcnt(1),
+    objcnt(1),
+    reccnt(1),
+    statBOT(false),
+    statEOT(false),
+    lastTM(true) {
+        struct stat sb;
+        file = fopen(filename, "r+");
+        if (!file) {
+            printf("TAPE: Error opening file: %s\n", filename);
+            exit(EXIT_FAILURE);
+        } else if (fstat(fileno(file), &sb) == -1) {
+            perror("stat");
+            exit(EXIT_FAILURE);
+        } else {
+            fsize = sb.st_size;
+            printf("TAPE: Successfully opened tape file: \"%s\" (%ld bytes).\n", filename, fsize);
+        }
+        validate();
 }
 
 //!
@@ -1483,6 +1503,9 @@ void tape_t::close(void) {
 //! \brief
 //!    This is a posix thread that is started by main.
 //!
+//! \param [in] arg -
+//!    Opaque pointer to parameters
+//!
 
 void *tape_t::processThread(void *arg) {
 
@@ -1490,7 +1513,7 @@ void *tape_t::processThread(void *arg) {
 
     bool should_exit = false;
     char *filename = (char *)arg;
-    tape_t tape(filename);
+    tape_t tape(filename, 2400, 0);
 
     do {
 

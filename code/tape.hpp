@@ -53,15 +53,39 @@ void *tapeThread(void *arg);
 
 class tape_t {
 
+    public:
+   
+        static const unsigned int debugTOP      = 0x00000001;
+        static const unsigned int debugHEADER   = 0x00000002;
+        static const unsigned int debugUNLOAD   = 0x00000004;
+        static const unsigned int debugREWIND   = 0x00000008;
+        static const unsigned int debugPRESET   = 0x00000010;
+        static const unsigned int debugERASE    = 0x00000020;
+        static const unsigned int debugWRTM     = 0x00000040;
+        static const unsigned int debugRDFWD    = 0x00000080;
+        static const unsigned int debugRDREV    = 0x00000100;
+        static const unsigned int debugWRCHKFWD = 0x00000200;
+        static const unsigned int debugWRCHKREV = 0x00000400;
+        static const unsigned int debugWRFWD    = 0x00000800;
+        static const unsigned int debugSPCFWD   = 0x00001000;
+        static const unsigned int debugSPCREV   = 0x00002000;
+        static const unsigned int debugBOTEOT   = 0x00004000;
+        static const unsigned int debugDELAY    = 0x00008000;
+        static const unsigned int debugVALIDATE = 0x00010000;
+        static const unsigned int debugDATA     = 0x00020000;
+
     private:
-        long fsize;			// file size
-        int  filcnt;
-        int  objcnt;
-        int  reccnt;
-        bool statBOT;
-        bool statEOT;
-        bool lastTM;
-        FILE *file;
+
+        unsigned int tapeLength;        // Length of tape in feet
+        unsigned int debug;             // Tape debugging
+        long fsize;                     // File size
+        int  filcnt;                    // File count
+        int  objcnt;                    // Object count
+        int  reccnt;                    // Record count
+        bool statBOT;                   // BOT state
+        bool statEOT;                   // EOT state
+        bool lastTM;                    // TM state
+        FILE *file;                     // File pointer
 
         enum header_t {
             h_EOT = 0xffffffff,         // End-of-tape
@@ -119,8 +143,24 @@ class tape_t {
             return (format == f_CORDMP) ? 5 : 4;
         }
 
+        //!
+        //! \brief
+        //!    Calculate the number of bytes per tape.
+        //!
+        //! \details
+        //!    This function calculates the number of bytes on the tape given
+        //!    the tape length in feet and the tape density in bytes per inch.
+        //!    This result is used to calculate the location of the EOT.
+        //!
+        //! \param density -
+        //!    Number of bytes per inch.
+        //!
+        //! \returns
+        //!    This returns the number of bytes that the tape can store.
+        //!
+
         int bytes_per_tape(uint8_t density) {
-            return (density == d_1600BPI) ? 2400 * 12 * 1600 : 2400 * 12 * 800;
+            return (density == d_1600BPI) ? tapeLength * 12 * 1600 : tapeLength * 12 * 800;
         }
 
         uint32_t readHeader(void);
@@ -149,7 +189,7 @@ class tape_t {
         void validate(void);
         void close(void);
         void processCommand(void);
-        tape_t(const char *filename);
+    tape_t(const char *filename, unsigned int tapeLength, unsigned int debug);
         static void *processThread(void *arg);
 };
 
