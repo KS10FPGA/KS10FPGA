@@ -59,6 +59,8 @@
 #include "config.hpp"
 #include "commands.hpp"
 
+#define __unused __attribute__((unused))
+
 //!
 //! \brief
 //!    Construct object to abstract the hardware
@@ -571,6 +573,8 @@ void printPCIR(uint64_t data) {
 
 static bool cmdBA(int argc, char *argv[]) {
 
+    int status __unused;
+
     const char *usage =
         "\n"
         "The \"bang\" command escapes to a sub-subprogram. The \"bang\" command is\n"
@@ -594,7 +598,7 @@ static bool cmdBA(int argc, char *argv[]) {
         case 0:
             break;
         case 1:
-            system("sh");
+            status = system("sh");
             break;
         case 2:
             if (strncasecmp(argv[1], "--help", 6) == 0)  {
@@ -619,7 +623,7 @@ static bool cmdBA(int argc, char *argv[]) {
                     }
                 }
             }
-            system(argv[1]);
+            status = system(argv[1]);
         }
     }
 
