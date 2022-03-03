@@ -48,7 +48,7 @@ DEVICE   := 5CSEBA6U23I7
 # What system?
 #
 
-#UNAME    := $(shell uname -s)
+UNAME    := $(shell uname -o)
 
 #
 # Project structure
@@ -62,15 +62,41 @@ MODELSIM_DIR := de10_top/modelsim
 QUARTUS_DIR  := de10_top/quartus
 
 #
-# Altera
+# Cygwin Quartus and ModelSim root directories
+#   $(QUARTUS_ROOTDIR) is an environment variable that is created when Windows Quartus is installed.
 #
 
-ALTERA       := /cygdrive/c/intelFPGA_lite/18.1/modelsim_ase/win32aloem/
-VLIB         := $(ALTERA)/vlib
-VMAP         := $(ALTERA)/vmap
-VLOG         := $(ALTERA)/vlog
-VOPT         := $(ALTERA)/vopt
-VSIM         := $(ALTERA)/vsim
+ifeq ($(UNAME), Cygwin)
+QUARTUS_BIN64 := $(shell cygpath -u ${QUARTUS_ROOTDIR})/bin64
+MODELSIM      := $(subst quartus,, $(shell cygpath -u ${QUARTUS_ROOTDIR}))modelsim_ase/win32aloem
+endif
+
+#
+# Quartus executables
+#
+
+QSYS-GENERATE := $(QUARTUS_BIN64)/qsys-generate
+QUARTUS_MAP   := $(QUARTUS_BIN64)/quartus_map
+QUARTUS_FIT   := $(QUARTUS_BIN64)/quartus_fit
+QUARTUS_ASM   := $(QUARTUS_BIN64)/quartus_asm
+QUARTUS_STA   := $(QUARTUS_BIN64)/quartus_sta
+QUARTUS_PGM   := $(QUARTUS_BIN64)/quartus_pgm
+QUARTUS_CPF   := $(QUARTUS_BIN64)/quartus_cpf
+JTAGCONFIG    := $(QUARTUS_BIN64)/jtagconfig
+
+#
+# Cygwin ModelSim root directory
+#
+
+#
+# ModelSim executables
+#
+
+VLIB         := $(MODELSIM)/vlib
+VMAP         := $(MODELSIM)/vmap
+VLOG         := $(MODELSIM)/vlog
+VOPT         := $(MODELSIM)/vopt
+VSIM         := $(MODELSIM)/vsim
 
 #
 # Other tools
@@ -79,6 +105,7 @@ VSIM         := $(ALTERA)/vsim
 IVERILOG     := iverilog
 VVP          := vvp
 CLOC         := cloc-1.62.exe
+OPENOCD      := /usr/local/openocd/bin/openocd
 
 #
 # Fix pipelining (the tee command)
@@ -163,6 +190,7 @@ SIM_ARGS := \
 # Synthesis Macro Definitions
 #
 # Macro Definitions
+#   SERIALNUM          *  Set the CPU serial number (decimal).  The default SERIALNUM is 4097.
 #   MAJOR_VER=\"XX\"   *  Set firmware version major revision (XX must be two ASCII digits)
 #   MINOR_VER=\"YY\"   *  Set firmware version minor revision (YY must be two ASCII digits)
 #   CLKFRQ=12500000    *  See clock freqency of CPU Clock (must match clock input)
@@ -194,6 +222,7 @@ SIM_ARGS := \
 #
 
 SYN_ARGS := \
+	SERIALNUM=4097 \
 	MAJOR_VER=\"00\" \
 	MINOR_VER=\"37\" \
         CLKFRQ=12500000 \
@@ -593,10 +622,20 @@ build: quartus
 
 #
 # Create the "Control ROM" microcode for microsequencer
-#  Change my serial number from 4097 (default) to 2020.
+#  Read the CPU Serial Number (SERIALNUM) from the SYN_ARGS variable.
+#  If SERIALNUM is not set, use a default.
+#  crom.awk will read the microcode from the microcode listing file, and
+#  edit the microcode and put CPU Serial Number into the microcode.
+#
 
-$(CROM_DAT): ks10/cpu/useq/ks10.mcr ks10/cpu/useq/crom.awk
-	awk -f ks10/cpu/useq/crom.awk ks10/cpu/useq/ks10.mcr > $(CROM_DAT)
+ifneq (, $(findstring SERIALNUM=, $(SYN_ARGS)))
+   SERIALNUM := $(shell echo $(SYN_ARGS) | sed -E s/.*SERIALNUM=\([0-9]*\).*/\\1/)
+else
+   SERIALNUM := 4097
+endif
+
+$(CROM_DAT): ks10/cpu/useq/ks10.mcr ks10/cpu/useq/crom.awk makefile
+	awk -v SERIALNUM=$(SERIALNUM) -f ks10/cpu/useq/crom.awk < ks10/cpu/useq/ks10.mcr > $(CROM_DAT)
 
 #
 # Create the "Dispatch ROM" microcode for microsequencer
@@ -2065,15 +2104,15 @@ PGM_ARGS := \
 	--quiet
 
 pgm: $(QUARTUS_DIR)/output_files/$(PROJECT).sof
-	quartus_pgm $(PGM_ARGS)
-	jtagconfig
+	$(QUARTUS_PGM) $(PGM_ARGS)
+	$(JTAGCONFIG)
 
 pgm1:
-	quartus_pgm $(PGM_ARGS)
-	jtagconfig
+	$(QUARTUS_PGM) $(PGM_ARGS)
+	$(JTAGCONFIG)
 
 $(PROJECT).rbf : $(QUARTUS_DIR)/output_files/$(PROJECT).sof
-	quartus_cpf -c -o bitstream_compression=on $(QUARTUS_DIR)/output_files/$(PROJECT).sof $(PROJECT).rbf
+	$(QUARTUS_CPF) -c -o bitstream_compression=on $(QUARTUS_DIR)/output_files/$(PROJECT).sof $(PROJECT).rbf
 
 #
 # Quartus Static Timing Analyzer
@@ -2091,7 +2130,7 @@ STA_ARGS := \
 	--rev=$(PROJECT)
 
 $(QUARTUS_DIR)/output_files/$(PROJECT).sta.rpt : $(QUARTUS_DIR)/output_files/$(PROJECT).asm.rpt
-	quartus_sta $(STA_ARGS) $(QUARTUS_DIR)/$(PROJECT)
+	$(QUARTUS_STA) $(STA_ARGS) $(QUARTUS_DIR)/$(PROJECT)
 
 #
 # Quartus Assembler.  This generates a programming image in SRAM Object File (.sof) format
@@ -2111,7 +2150,7 @@ ASM_ARGS := \
 	--rev=$(PROJECT)
 
 $(QUARTUS_DIR)/output_files/$(PROJECT).asm.rpt  $(QUARTUS_DIR)/output_files/$(PROJECT).sof : $(QUARTUS_DIR)/output_files/$(PROJECT).fit.rpt
-	quartus_asm $(ASM_ARGS) $(QUARTUS_DIR)/$(PROJECT)
+	$(QUARTUS_ASM) $(ASM_ARGS) $(QUARTUS_DIR)/$(PROJECT)
 
 #
 # Quartus Fitter.  This performs place-and-routes the design.
@@ -2132,7 +2171,7 @@ FIT_ARGS := \
 
 .DELETE_ON_ERROR:
 $(QUARTUS_DIR)/output_files/$(PROJECT).fit.rpt : $(QUARTUS_DIR)/output_files/$(PROJECT).map.rpt
-	quartus_fit $(FIT_ARGS) $(QUARTUS_DIR)/$(PROJECT)
+	$(QUARTUS_FIT) $(FIT_ARGS) $(QUARTUS_DIR)/$(PROJECT)
 
 #
 # Quartus Mapper.  This analyzes and synthesizes the design.
@@ -2166,7 +2205,7 @@ MAP_FILES := \
 
 .DELETE_ON_ERROR:
 $(QUARTUS_DIR)/output_files/$(PROJECT).map.rpt : $(MAP_FILES) $(RTL_FILES) $(DAT_FILES)
-	quartus_map $(MAP_ARGS) $(QUARTUS_DIR)/$(PROJECT)
+	$(QUARTUS_MAP) $(MAP_ARGS) $(QUARTUS_DIR)/$(PROJECT)
 
 #
 # QSYS (aka Plaform Designer) Command Line Arguments
@@ -2198,7 +2237,7 @@ QSYS_FILES := \
 	$(QUARTUS_DIR)/ks10_hw.tcl
 
 $(QUARTUS_DIR)/soc_system/synthesis/soc_system.v $(QUARTUS_DIR)/soc_system/synthesis/soc_system.qip : $(QSYS_FILES)
-	qsys-generate $(QSYS_ARGS) $(QUARTUS_DIR)/soc_system.qsys
+	$(QSYS-GENERATE) $(QSYS_ARGS) $(QUARTUS_DIR)/soc_system.qsys
 
 #
 # Disks

@@ -70,9 +70,27 @@ BEGIN {
 END {
     for (i = 0; i < 4096; i++) {
 	if (MAP2[i] == i) {
-	    printf "%03x%03x%03x%03x%03x%03x%03x%03x%03x	// CROM[%4o] = 108'o%04o_%04o_%04o_%04o_%04o_%04o_%04o_%04o_%04o;\n",
-		MAP[ 4,i], MAP[ 5,i], MAP[ 6,i], MAP[ 7,i], MAP[ 8,i], MAP[ 9,i], MAP[10,i], MAP[11,i], MAP[12,i], i,
-		MAP[ 4,i], MAP[ 5,i], MAP[ 6,i], MAP[ 7,i], MAP[ 8,i], MAP[ 9,i], MAP[10,i], MAP[11,i],	MAP[12,i]
+            #
+            # Edit the Microcode and insert the CPU Serial Number
+            #  Carefully check to ensure that we edit the correct microword.
+            #   1. The CROM address is 1700
+            #   2. Check all of the microcode fields to ensure they contain the expected data.
+            #   3. Ensure that the SERIALNUM will fit in 18 bits (i.e., it is less than 262144)
+            #   4. The lower 24 bits of the microcode (excluding serial number) are zero so there
+            #      is no need to merge microcode underneath the serial number.
+            #
+             if ((i == 01700) && (SERIALNUM < 262144) &&
+                 (MAP[ 4,i] == 00137) && (MAP[ 5,i] == 03771) && (MAP[ 6,i] == 00005) &&
+                 (MAP[ 7,i] == 04374) && (MAP[ 8,i] == 04007) && (MAP[ 9,i] == 00700) &&
+                 (MAP[10,i] == 00000) && (MAP[11,i] == 00001) && (MAP[12,i] == 00001)) {
+                 printf "%03x%03x%03x%03x%03x%03x%03x%03x%03x	// CROM[%4o] = 108'o%04o_%04o_%04o_%04o_%04o_%04o_%04o_%04o_%04o;	// Set CPU Serial Number to %d\n",
+                     MAP[ 4,i], MAP[ 5,i], MAP[ 6,i], MAP[ 7,i], MAP[ 8,i], MAP[ 9,i], MAP[10,i], SERIALNUM / 4096, SERIALNUM % 4096, i,
+                     MAP[ 4,i], MAP[ 5,i], MAP[ 6,i], MAP[ 7,i], MAP[ 8,i], MAP[ 9,i], MAP[10,i], SERIALNUM / 4096, SERIALNUM % 4096, SERIALNUM
+            } else  {
+                printf "%03x%03x%03x%03x%03x%03x%03x%03x%03x	// CROM[%4o] = 108'o%04o_%04o_%04o_%04o_%04o_%04o_%04o_%04o_%04o;\n",
+                    MAP[ 4,i], MAP[ 5,i], MAP[ 6,i], MAP[ 7,i], MAP[ 8,i], MAP[ 9,i], MAP[10,i], MAP[11,i], MAP[12,i], i,
+                    MAP[ 4,i], MAP[ 5,i], MAP[ 6,i], MAP[ 7,i], MAP[ 8,i], MAP[ 9,i], MAP[10,i], MAP[11,i], MAP[12,i]
+            }
 	} else {
 	    printf "%03x%03x%03x%03x%03x%03x%03x%03x%03x	// CROM[%4o] = 108'o%04o_%04o_%04o_%04o_%04o_%04o_%04o_%04o_%04o;	// Unused\n",
 		0, 0, 0, 0, 0, 0, 0, 0, 0, i,
