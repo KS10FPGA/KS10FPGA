@@ -56,10 +56,13 @@
 #include "lp20.hpp"
 #include "rh11.hpp"
 #include "dup11.hpp"
+#include "vt100.hpp"
 #include "config.hpp"
 #include "commands.hpp"
 
 #define __unused __attribute__((unused))
+
+void printPCIR(uint64_t data);
 
 //!
 //! \brief
@@ -172,7 +175,6 @@ void recallConfig(void) {
 //!
 
 bool consoleOutput(void) {
-    void printPCIR(uint64_t data);
     bool escape = false;
 
     const char cntl_e = 0x05;   // ^E
@@ -920,6 +922,10 @@ static bool cmdCE(int argc, char *argv[]) {
         "\n"
         "  [--en[able]]  Enable the cache.\n"
         "  [--dis[able]] Disable the cache.\n"
+        "\n"
+        "Although this command tells the KS10 to enable the cache, it doesn\'t do\n"
+        "anything. The KS10 FPGA uses very fast SSRAM memory and every memory\n"
+        "cycle completes in a single KS10 clock cycle.\n"
         "\n";
 
     static const struct option options[] = {
@@ -954,7 +960,7 @@ static bool cmdCE(int argc, char *argv[]) {
             switch(index) {
                 case 0:
                     printf(usage);
-                    break;
+                    return true;;
                 case 1:
                 case 2:
                 case 3:
@@ -996,10 +1002,10 @@ static bool cmdCP(int argc, char *argv[]) {
         "\n"
         "The \"CP[U]\" commands \n"
         "\n"
-        "  --reset                           Reset the KS10\n"
+        "  --reset                           Reset the KS10 and peripherals\n"
         "  --stat[us]                        Display halt status\n"
-        "  --cont[inue]                      Continue\n"
-        "  --halt                            Halt\n"
+        "  --co[ntinue]                      Continue\n"
+        "  --ha[lt]                          Halt\n"
         "  --step[=count]                    Single step\n"
         "  --cache[={en[able] | di[sable]}]  Control cache\n"
         "  --timer[={en[able] | di[sable]}]  Enable timer\n"
@@ -1948,150 +1954,143 @@ static bool cmdHA(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdHE(int argc, char *argv[]) {
+static bool cmdHE(int, char *[]) {
 
     const char *usage =
         "\n"
-        "For information about the command line processor, type:\n"
+
+        "Console Commands\n"
+        "------- --------\n"
         "\n"
-        "he --cmd[line]\n"
+        "  The terminal can be attached to the Console Processor. When this is the case,\n"
+        "  the user will be presented the \"KS10> \" prompt and the following console\n"
+        "  commands are available:\n"
         "\n"
-        "When the console is not connected to the KS10 (i.e., KS10> prompt is\n"
-        "present) the following commands are available:\n"
+        "   !: bang - escape to sub-shell or execute sub-program\n"
+        "   ?: help - print summary of all commands\n"
+        "  br: breakpoint\n"
+        "  ce: cache enable\n"
+        "  cl: clear screen\n"
+        "  co: continue after halt\n"
+        "  cp: control/configure the KS10 CPU\n"
+        "  da: disassemble memory\n"
+        "  dz: dz11 (tty) interface\n"
+        "  ex: execute a single KS10 instruction and stop\n"
+        "  go: load a program from console and optionally execute it\n"
+        "  ha: halt the KS10 processor\n"
+        "  he: print summary of all commands\n"
+        "  hs: print halt status word\n"
+        "  lp: lp20 (line printer) interface\n"
+        "  mr: master reset\n"
+        "  mt: mt (magtape) interface\n"
+        "  qu: quit the console and exit\n"
+        "  rd: read memory, IO, and registers\n"
+        "  rp: rp (disk) interface\n"
+        "  si: single step instruction(s)\n"
+        "  sh: shutdown monitor\n"
+        "  st: start program execution at address\n"
+        "  te: system timer enable\n"
+        "  tp: system traps enable\n"
+        "  tr: trace buffer control\n"
+        "  wr: write to memory and IO\n"
+        "  zm: zero memory\n"
         "\n"
-        " !: bang - escape to sub-shell or execute sub-program\n"
-        " ?: help - print summary of all commands\n"
-        "br: breakpoint\n"
-        "bt: boot\n"
-        "ce: cache enable\n"
-        "co: continue after halt\n"
-        "da: disassemble memory\n"
-        "dz: dz (tty) interface\n"
-        "ex: execute a command\n"
-        "go: load a program from console and run it\n"
-        "ha: halt the processor\n"
-        "he: print summary of all commands\n"
-        "hs: print halt status word\n"
-        "lp: lp (line printer) interface\n"
-        "mr: master reset\n"
-        "mt: mt (magtape) interface\n"
-        "qu: quit the console and exit\n"
-        "rd: read memory, IO, and registers\n"
-        "rp: rp (disk) interface\n"
-        "si: single step instruction\n"
-        "sh: shutdown monitor\n"
-        "st: start program execution at addres\n"
-        "te: system timer enable\n"
-        "tp: system traps enable\n"
-        "tr: trace buffer control\n"
-        "wr: write memory and IO\n"
-        "zm: zero memory\n"
+        "CTY Interface\n"
+        "--- ---------\n"
         "\n"
-        "When the console is connected to a running KS10 program, the following\n"
-        "character manipulation is performed by the console:\n"
+        "  When the KS10 processor is started, the terminal is automatically detached\n"
+        "  from the Console Processor and is automatically attached the KS10 CTY\n"
+        "  interface. Similarly, when the KS10 processor is halted, the terminal is\n"
+        "  detached from the KS10 CTY and is attached back to the Console Processor.\n"
         "\n"
-        "^C is caught and sent to the KS10 monitor program instead of performing\n"
-        "   the default \"INTR\" action to the console program.\n"
+        "  When the terminal is attached to the KS10 CTY interface, the following\n"
+        "  character manipulation is performed by the terminal interface:\n"
         "\n"
-        "^E will disconnect the console from the running KS10 CTY and escape back to\n"
-        "   the \"KS10> \" console prompt. You can re-connect back to the KS10\n"
-        "   at any time with the CO command. When you type ^E, the default signal\n"
-        "   actions for ^C (QUIT), ^Z (SUSP), and ^\\ (QUIT) characters are restored.\n"
+        "  ^C is caught and sent to the KS10 monitor program instead of performing the\n"
+        "     default \"INTR\" action to the console program.\n"
         "\n"
-        "   If you want to exit from a running KS10 program program back to the\n"
-        "   Linux shell, type \"^E^C\".\n"
+        "  ^E will detach the terminal from the KS10 CTY interface and attach back to the\n"
+        "     Console Processor and provide the \"KS10> \" prompt. It does not halt the\n"
+        "     KS10.\n"
         "\n"
-        "^L will set the printer on-line. This is useful for the interacting\n"
-        "   with the DSLPA diagnostic that keeps settting the printer off-line.\n"
+        "     You can re-attach the terminal back to the KS10 at any time with the \"CO\"\n"
+        "     (continue) command. If the KS10 is still running, the the CO command will\n"
+        "     re-attach the terminal back to the KS10 CTY. If the KS10 is halted, the\n"
+        "     \"CO\" command will \"continue\" the KS10 and then attach the terminal to\n"
+        "     the KS10 CTY.\n"
         "\n"
-        "^T prints the current program counter, prints the memory contents at the\n"
-        "   current program counter, and disassmbles the current instruction. This\n"
-        "   command generally satifies my curiousity about \"what\'s it doing?\".\n"
-        "   This capability is a hardware enhancement to the KS10 FPGA whereby the\n"
-        "   contents of the Program Counter and Instruction Register are available\n"
-        "   to the console and and does not require the KS10 to be operating. The\n"
-        "   output looks something like:\n"
+        "     When you type ^E or when the KS10 halts, the default signal actions for\n"
+        "     ^C (QUIT), ^Z (SUSP), and ^\\ (QUIT) characters are restored.\n"
         "\n"
-        "   057713  712153 000010   712 03 0 13 000010      RDIO    3,10(13)\n"
+        "     If you want to exit from a running KS10 program program back to the Linux\n"
+        "     shell, type \"^E^C\".\n"
         "\n"
-        "   or\n"
+        "  ^L will set the printer on-line. This is useful for the interacting with the\n"
+        "     DSLPA diagnostic that keeps settting the printer off-line.\n"
         "\n"
-        "   021627  606000 000400   606 00 0 00 000400      TRNN    400\n"
+        "  ^T prints the current program counter, prints the memory contents at the\n"
+        "     current program counter, and disassmbles the current instruction. This\n"
+        "     command generally satifies my curiousity about \"What\'s it doing?\".\n"
+        "     This capability is a hardware enhancement to the KS10 FPGA whereby the\n"
+        "     contents of the Program Counter and Instruction Register are available\n"
+        "     to the console and and does not require the KS10 to be operating. The\n"
+        "     output looks something like:\n"
         "\n"
-        "^Z is caught and sent to the KS10 monitor program instead of performing\n"
-        "   the default \"SUSP\" action to the console program.\n"
+        "     057713  712153 000010   712 03 0 13 000010      RDIO    3,10(13)\n"
         "\n"
-        "^\\ is caught and sent to the KS10 monitor program instead of performing\n"
-        "   the default \"QUIT\" action to the console program.\n"
+        "     or\n"
         "\n"
-        "You can type an escape character before the ^E, ^T, and ^L which will send\n"
-        "the ^E, ^T, or ^L character to the monitor running on the KS10 instead of\n"
-        "performing the operations described above.\n"
+        "     021627  606000 000400   606 00 0 00 000400      TRNN    400\n"
+        "\n"
+        "  ^Z is caught and sent to the KS10 monitor program instead of performing\n"
+        "     the default \"SUSP\" action to the console program.\n"
+        "\n"
+        "  ^\\ is caught and sent to the KS10 monitor program instead of performing\n"
+        "     the default \"QUIT\" action to the console program.\n"
+        "\n"
+        "  <ESC> The escape key will escape the ^E, ^T, and ^L behavior described above\n"
+        "     and send the ^E, ^T, or ^L character to the KS10 CTY.\n"
+        "\n"
+        "  <ESC><ESC> will send a single escape character to the KS10 CTY. The DEC\n"
+        "     monitors will generally echo a \"$\" character in response to an escape\n"
+        "     character. Note: I may want to select a different escape character.\n"
+        "     This selection makes running DDT and TECO very challenging.\n"
+        "\n"
+        "Command Line Editor\n"
+        "------- ---- ------\n"
+        "\n"
+        "  The console has a simple command line editor that provides both command\n"
+        "  recall and command line editing capabilities. The command line editing\n"
+        "  capabilities should be familiar to individuals with experience with the GNU\n"
+        "  readline functionality that is used by GNU \"bash\" or with GNU \"emacs\".\n"
+        "  The basic functionality is:\n"
+        "\n"
+        "  ^A  Move the cursor to the beginning of line. This is also attached to the\n"
+        "      home key.\n"
+        "  ^B  Move the cursor back one character. This is also attached to the left\n"
+        "      arrow key.\n"
+        "  ^D  Delete the character under the cursor. This is also attached to the\n"
+        "      delete key.\n"
+        "  ^E  Move the cursor to the end of the line. This is also attached to the end\n"
+        "      key\n"
+        "  ^F  Move the cursor forward one character. This is also attached to the right\n"
+        "      arrow key.\n"
+        "  ^G  Ring the bell or Alarm.\n"
+        "  ^H  Delete the character under the cursor and move the cursor backward one\n"
+        "      character. This is also attached to the backspace key.\n"
+        "  ^K  Erase from the cursor to the end of line.\n"
+        "  ^L  Redraw the command line.\n"
+        "  ^N  Recall next command. This is also attatched to the down arrow key.\n"
+        "  ^P  Recall previous command. This is also attached to the up arrow key.\n"
+        "  ^T  Transpose the character under the cursor with the character preceeding the\n"
+        "      cursor.\n"
+        "  ^U  Clear the line.\n"
+        "\n"
+        "  The command line \"rp boot\" is preloaded to the command line history for\n"
+        "  easy access to the boot command. My normal boot command is \"^P<RET>\".\n"
         "\n";
 
-    static const struct option options[] = {
-        {"cmd",     no_argument, 0, 0},  // 0
-        {"cmdline", no_argument, 0, 0},  // 1
-        {0,         0,           0, 0},  // 2
-    };
-
-    const char *cmdline_usage =
-        "\n"
-        "The console has a simple command line processor that provides both command\n"
-        "recall and command line editing capabilities. The command line editing\n"
-        "capabilities should be familiar to individuals with experience with the GNU\n"
-        "readline functionality that is used by GNU \"bash\" or with GNU \"emacs\".\n"
-        "The basic functionality is:\n"
-        "\n"
-        "^A  Move the cursor to the beginning of line. This is also attached to the\n"
-        "    home key.\n"
-        "^B  Move the cursor back one character. This is also attached to the left\n"
-        "    arrow key.\n"
-        "^D  Delete the character under the cursor. This is also attached to the\n"
-        "    delete key.\n"
-        "^E  Move the cursor to the end of the line. This is also attached to the end\n"
-        "    key\n"
-        "^F  Move the cursor forward one character. This is also attached to the right\n"
-        "    arrow key.\n"
-        "^G  Ring the bell or Alarm.\n"
-        "^H  Delete the character under the cursor and move the cursor backward one\n"
-        "    character. This is also attached to the backspace key.\n"
-        "^K  Erase from the cursor to the end of line.\n"
-        "^L  Redraw the command line.\n"
-        "^N  Recall next command. This is also attatched to the down arrow key.\n"
-        "^P  Recall previous command. This is also attached to the up arrow key.\n"
-        "^T  Transpose the character under the cursor with the character preceeding the\n"
-        "    cursor.\n"
-        "^U  Clear the line.\n";
-
-    //
-    // No argument
-    //
-
-    if (argc == 1) {
-        printf(usage);
-        return true;
-    }
-
-    opterr = 0;
-    for (;;) {
-        int index = 0;
-        int ret = getopt_long(argc, argv, "", options, &index);
-        if (ret == -1) {
-            break;
-        } else if (ret == '?') {
-            printf("help: unrecognized option: %s\n", argv[optind-1]);
-            return true;
-        } else {
-            switch (index) {
-                case 0:
-                case 1:
-                    printf(cmdline_usage);
-                    return true;
-            }
-        }
-    }
-
+    printf(usage);
     return true;
 }
 
@@ -2546,7 +2545,7 @@ static bool cmdMT_BOOT(int argc, char *argv[]) {
                 case 0:
                     // help switch
                     printf(usage);
-                    break;
+                    return true;
                 case 1:
                     // base switch
                     {
@@ -2721,7 +2720,7 @@ static bool cmdMT_CONF(int argc, char *argv[]) {
         "Presumably the KS10 system could support 8 Tape Formatters (or Tape Control\n"
         "Units (TCUs)) and each Tape Formatter can support 8 Tape Drives. In the\n"
         "KS10 FPGA implementation, only Tape Formatter Unit 0 is supported and is not\n"
-        "selectable.  The tape drive is selectable and is commonly called a slave\n"
+        "selectable. The tape drive is selectable and is commonly called a slave\n"
         "device.\n"
         "\n"
         "The configurations provided with this command is written to the Magatape\n"
@@ -2750,7 +2749,7 @@ static bool cmdMT_CONF(int argc, char *argv[]) {
         "                    Status Register (MTDS[WRL]) for the selected Tape Drive.\n"
         "   [--slave=slave]  Tape Drive (Slave) selection. This parameter must be\n"
         "                    provided before the \'--dpr\', \'--mol\', or \'-wrl\'\n"
-        "                    options.  Valid values of slave are 0-7. See example\n"
+        "                    options. Valid values of slave are 0-7. See example\n"
         "                    below.\n"
         "   [--tcu=unit]     Set the Magtape Tape Control Unit (TCU). Presumably the\n"
         "                    KS10 could support 8 TCUs (aka formatters; aka TM03s) and\n"
@@ -2791,7 +2790,7 @@ static bool cmdMT_CONF(int argc, char *argv[]) {
                "      mt boot slave is %d\n"
                "      mt parameters are:\n"
                "\n"
-               "      UNIT:   DPR MOL WRL BOOT\n",
+               "        DPR MOL WRL BOOT\n",
                mt.cfg.bootdiag ? "true" : "false",
                mt.cfg.param & 7);
 
@@ -2828,7 +2827,7 @@ static bool cmdMT_CONF(int argc, char *argv[]) {
                 case 0:
                     // conf help switch
                     printf(usage);
-                    break;
+                    return true;
                 case 1:
                 case 2:
                 case 3:
@@ -2939,23 +2938,28 @@ static bool cmdMT_SPACE(int argc, char *argv[]) {
         "multiple records and/or multiple files using the options below:\n"
         "\n"
         "   [--help]         Print help.\n"
-        "   [--fwd]]         Space forward file[s] or records[s].\n"
+        "   [--fwd]          Space forward file[s] or records[s].\n"
         "   [--rev]          Space reverse file[s] or records[s].\n"
         "   [--files=param]  Space multiple files per the parameter.\n"
         "   [--recs=param]   Space multiple records per the parameter.\n"
         "\n"
         "Note: Only of of the \"--files\" of \"--rec\" options can be provided. Not both.\n"
+        "\n"
+        "The default operation is to space forward one record.\n"
         "\n";
 
     static const struct option options[] = {
-        {"help",    no_argument,       0, 0},  // 0
-        {"fwd",     no_argument,       0, 0},  // 1
-        {"forward", no_argument,       0, 0},  // 2
-        {"rev",     no_argument,       0, 0},  // 3
-        {"reverse", no_argument,       0, 0},  // 4
-        {"files",   required_argument, 0, 0},  // 5
-        {"recs",    required_argument, 0, 0},  // 6
-        {0,         0,                 0, 0},  // 7
+        {"help",    no_argument,       0, 0},  //  0
+        {"fwd",     no_argument,       0, 0},  //  1
+        {"for",     no_argument,       0, 0},  //  2
+        {"forward", no_argument,       0, 0},  //  3
+        {"rev",     no_argument,       0, 0},  //  4
+        {"reverse", no_argument,       0, 0},  //  5
+        {"fil",     required_argument, 0, 0},  //  6
+        {"files",   required_argument, 0, 0},  //  7
+        {"rec",     required_argument, 0, 0},  //  8
+        {"recs",    required_argument, 0, 0},  //  9
+        {0,         0,                 0, 0},  // 10
     };
 
     bool fwdFound   = false;
@@ -2978,16 +2982,18 @@ static bool cmdMT_SPACE(int argc, char *argv[]) {
             switch (index) {
                 case 0: // --help
                     printf(usage);
-                    break;
+                    return true;
                 case 1:
-                case 2: // --fwd
+                case 2:
+                case 3: // --fwd
                     fwdFound = true;
                     break;
-                case 3:
-                case 4: // --rev
+                case 4:
+                case 5: // --rev
                     revFound = true;
                     break;
-                case 5: // --files
+                case 6:
+                case 7: // --files
                     files = strtol(optarg, NULL, 0);
                     filesFound = true;
                     if (files < 0) {
@@ -2995,7 +3001,8 @@ static bool cmdMT_SPACE(int argc, char *argv[]) {
                         return true;
                     }
                     break;
-                case 6: // --recs
+                case 8:
+                case 9: // --recs
                     recs = strtol(optarg, NULL, 0);
                     recsFound = true;
                     if (files < 0) {
@@ -3013,7 +3020,7 @@ static bool cmdMT_SPACE(int argc, char *argv[]) {
     }
 
     if (filesFound && recsFound) {
-        printf("mt space: both \"--files\" and \"--rec\" options provided\"\n\n%s", usage);
+        printf("mt space: both \"--files\" and \"--recs\" options provided\"\n\n%s", usage);
         return true;
     }
 
@@ -3027,11 +3034,14 @@ static bool cmdMT_SPACE(int argc, char *argv[]) {
             for (int i = 0; i < files; i++) {
                 mt.cmdSpaceRev(mt.cfg.param, 0);
             }
+            printf("mt space: reverse %d files.\n", files);
         } else {
             if (recsFound) {
                 mt.cmdSpaceRev(mt.cfg.param, recs);
+                printf("mt space: reverse %d recs.\n", recs);
             } else {
                 mt.cmdSpaceRev(mt.cfg.param, 1);
+                printf("mt space: reverse %d recs.\n", 1);
             }
         }
 
@@ -3045,11 +3055,14 @@ static bool cmdMT_SPACE(int argc, char *argv[]) {
             for (int i = 0; i < files; i++) {
                 mt.cmdSpaceFwd(mt.cfg.param, 0);
             }
+            printf("mt space: forward %d files.\n", files);
         } else {
             if (recsFound) {
                 mt.cmdSpaceFwd(mt.cfg.param, recs);
+                printf("mt space: forward %d recs.\n", recs);
             } else {
                 mt.cmdSpaceFwd(mt.cfg.param, 1);
+                printf("mt space: forward %d recs.\n", 1);
             }
         }
     }
@@ -3127,7 +3140,7 @@ static bool cmdMT_TEST(int argc, char *argv[]) {
             switch (index) {
                 case 0:
                     printf(usage);
-                    break;
+                    return true;
                 case 1:
                     mt.dumpRegs();
                     break;
@@ -3205,7 +3218,7 @@ static bool cmdMT(int argc, char *argv[]) {
         "  preset    Preset the Magtape\n"
         "  reset     Reset the Magtape hardware\n"
         "  rewind    Rewind the Magtape\n"
-        "  space     Skip records on the Magtape\n"
+        "  space     Skip records or files on the Magtape\n"
         "  stat      Print MT status\n"
         "  test      Test MT functionality\n"
         "  unload    Unload the Magtape\n"
@@ -3505,7 +3518,7 @@ static bool cmdRP_BOOT(int argc, char *argv[]) {
                 case 0:
                     // help switch
                     printf(usage);
-                    break;
+                    return true;
                 case 1:
                     // base switch
                     {
@@ -3879,7 +3892,7 @@ static bool cmdRP_TEST(int argc, char *argv[]) {
             switch (index) {
                 case 0:
                     printf(usage);
-                    break;
+                    return true;
                 case 1:
                     rp.dumpRegs();
                     break;
@@ -4024,11 +4037,13 @@ static bool cmdSI(int argc, char *argv[]) {
 
     if (argc == 1) {
         ks10_t::startSTEP();
+        printPCIR(ks10_t::readDPCIR());
         printf("si: single stepped\n");
     } else if (argc >= 2) {
         unsigned int num = parseOctal(argv[1]);
         for (unsigned int i = 0; i < num; i++) {
             ks10_t::startSTEP();
+            printPCIR(ks10_t::readDPCIR());
         }
         printf("si: single stepped %d instructions\n", num);
         if (argc >= 3) {
@@ -4232,7 +4247,7 @@ static bool cmdTE(int argc, char *argv[]) {
             switch(index) {
                 case 0:
                     printf(usage);
-                    break;
+                    return true;
                 case 1:
                 case 2:
                     ks10_t::trapEnable(false);
@@ -4318,7 +4333,7 @@ static bool cmdTP(int argc, char *argv[]) {
             switch(index) {
                 case 0:
                     printf(usage);
-                    break;
+                    return true;
                 case 1:
                 case 2:
                     ks10_t::trapEnable(false);
