@@ -491,13 +491,13 @@ void mt_t::executeCommand(uint16_t cmd, uint16_t param, uint16_t wordCnt, uint16
         }
 
         //
-        // Wait for ATA to assert again to indicate that the rewind is complete
+        // Wait for BOT to assert again to indicate that the rewind is complete
         //
         // Time out after 7 minutes
         //
 
         for (int i = 0; i < 420000; i++) {
-            if (ks10_t::readIO16(addrDS) & MTDS_ATA) {
+            if (ks10_t::readIO16(addrDS) & MTDS_BOT) {
                 ks10_t::writeIO(addrAS, 1 << unit);
                 break;
             }
@@ -899,7 +899,7 @@ void mt_t::testWrchk(uint16_t param) {
 //!
 //! \param [in] param
 //!    Magtape paramters (or contents of MTTC register)
-//!  
+//!
 //! \param [in] diagmode
 //!    Boot to SMMON
 //!
@@ -989,8 +989,6 @@ void mt_t::boot(uint16_t unit, uint16_t param, bool diagmode) {
 
     ks10_t::writeIO(addrAS, 0x00ff);
 
-#if 1
-
     //
     // Issue a Space Forward Command
     //
@@ -1005,38 +1003,6 @@ void mt_t::boot(uint16_t unit, uint16_t param, bool diagmode) {
     //
 
     executeCommand(MTCS1_FUN_RDFWD, param, 2*512, 0, vaddr);
-
-#endif
-
-
-#if 0
-
-    execCmd(MTCS1_FUN_SPCFWD, param);
-    execCmd(MTCS1_FUN_SPCREV, param);
-    execCmd(MTCS1_FUN_SPCFWD, param);
-    execCmd(MTCS1_FUN_RDFWD,  param, 2*512, 0, vaddr);
-
-#endif
-
-
-#if 0
-
-    execCmd(MTCS1_FUN_SPCFWD, param);
-    execCmd(MTCS1_FUN_RDFWD,  param, 2*512, 0, vaddr);
-    execCmd(MTCS1_FUN_RDREV,  param, 2*512, 0, vaddr);
-    execCmd(MTCS1_FUN_RDFWD,  param, 2*512, 0, vaddr);
-
-#endif
-
-#if 0
-
-    for (unsigned int addr = paddr; addr < (paddr+512); addr++) {
-        ks10_t::data_t data = ks10_t::readMem(addr);
-        printf("%012o: %s\n", addr, dasm(data));
-    }
-
-#endif
-
 
     //
     // Start executing monitor
