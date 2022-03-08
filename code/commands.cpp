@@ -1221,6 +1221,19 @@ static bool cmdCO(int argc, char *argv[]) {
 
 //!
 //! \brief
+//!    Clear screen
+//!
+//! \details
+//!    The <b>CL</b> clears the screen.
+//!
+
+static bool cmdCL(int, char *[]) {
+    printf("%s%s", vt100_hom, vt100_cls);
+    return true;
+}
+
+//!
+//! \brief
 //!    Disassemble Memory
 //!
 //! \details
@@ -4714,6 +4727,7 @@ bool executeCommand(char * buf) {
         {"BR", cmdBR},          // Breakpoint
         {"CE", cmdCE},          // Cache enable
         {"CO", cmdCO},          // Continue
+        {"CL", cmdCL},          // Clear screen
         {"CP", cmdCP},          // CPU
         {"DA", cmdDA},          // Disassemble
         {"DP", cmdDP},          // DUP11 Test
