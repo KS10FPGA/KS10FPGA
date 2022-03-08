@@ -63,8 +63,10 @@
 #define DEBUG_DELAY(...)        ({if (debug & debugDELAY   ) printf(__VA_ARGS__);})
 #define DEBUG_VALIDATE(...)     ({if (debug & debugVALIDATE) printf(__VA_ARGS__);})
 #define DEBUG_DATA(...)         ({if (debug & debugDATA    ) printf(__VA_ARGS__);})
+#define DEBUG_POS(...)          ({if (debug & debugPOS     ) printf(__VA_ARGS__);})
 
 #define PARANOID
+#undef  DEBUG_REGS
 
 //!
 //! \brief
@@ -891,6 +893,8 @@ void tape_t::writeForward(uint64_t mtDIR) {
     //
 
     writeHeader(length);
+    DEBUG_HEADER("TAPE: Header was %d (0x%08x), (pos=%ld)\n", length, length, ftell(file) - sizeof(length));
+
     long footPos = ftell(file);
     fsize = max(fsize, footPos);
 
@@ -901,6 +905,8 @@ void tape_t::writeForward(uint64_t mtDIR) {
 
     fseek(file, headPos, SEEK_SET);
     writeHeader(length);
+    DEBUG_HEADER("TAPE: Header was %d (0x%08x), (pos=%ld)\n", length, length, ftell(file) - sizeof(length));
+
     fseek(file, footPos, SEEK_SET);
 
     DEBUG_WRFWD("TAPE: Write Forward Done. Pos = %ld. Length = %d\n", ftell(file), length);
@@ -1275,6 +1281,7 @@ void tape_t::processCommand(void) {
 #ifdef DEBUG_REGS
             mt_t::dumpMTCS1(03772440);
             mt_t::dumpMTCS2(03772450);
+            mt_t::dumpMTMR(03772464);
             mt_t::dumpMTDS(03772452);
             mt_t::dumpMTER(03772454);
             mt_t::dumpMTWC(03772442);
@@ -1356,19 +1363,17 @@ void tape_t::processCommand(void) {
                 ks10_t::writeMTDIR(ks10_t::mtDIR_CLREOT);
             }
 
-#if 0
-            printf("TAPE: --------> fpos = %ld (0x%08lx) <--------\n", fpos, fpos);
+            DEBUG_POS("TAPE: fpos = %ld (0x%08lx) \n", fpos, fpos);
 
-            printf("TAPE: Done.\n");
-          //mt_t::dumpMTCS1(03772440);
-          //mt_t::dumpMTCS2(03772450);
+#ifdef DEBUG_REGS
+            mt_t::dumpMTCS1(03772440);
+            mt_t::dumpMTCS2(03772450);
             mt_t::dumpMTMR(03772464);
             mt_t::dumpMTDS(03772452);
             mt_t::dumpMTER(03772454);
-          //mt_t::dumpMTWC(03772442);
-          //mt_t::dumpMTFC(03772446);
-          //mt_t::dumpMTTC(03772472);
-
+            mt_t::dumpMTWC(03772442);
+            mt_t::dumpMTFC(03772446);
+            mt_t::dumpMTTC(03772472);
 #endif
 
         } else {
@@ -1408,7 +1413,7 @@ void tape_t::validate(void) {
             logicalEOT = false;
         } else if (header == h_EOT) {
             DEBUG_VALIDATE("TAPE: Physical EOT.\n");
-	    physicalEOT = true;
+            physicalEOT = true;
             break;
         } else if (header == h_ERR) {
             DEBUG_VALIDATE("Error.\n");
@@ -1456,7 +1461,7 @@ void tape_t::validate(void) {
 //!    This function opens and validates the tape file; then initializes
 //!    the object
 //!
-//! \param [in] filename - 
+//! \param [in] filename -
 //!    File name of the tape file
 //!
 //! \param [in] tapeLength -
@@ -1513,7 +1518,7 @@ void *tape_t::processThread(void *arg) {
 
     bool should_exit = false;
     char *filename = (char *)arg;
-    tape_t tape(filename, 2400, 0);
+    tape_t tape(filename, 2400);
 
     do {
 
