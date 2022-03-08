@@ -32,24 +32,54 @@
 #
 #******************************************************************************
 
-UNAME := $(shell uname -o)
-ifeq ($(UNAME),Cygwin)
-CROSS_COMPILE = arm-none-linux-gnueabihf-
+#
+# Cross compile on cygwin
+#  Compile -static because shared libraries don't match
+#
+
+UNAME := $(shell uname -po)
+ifeq ('$(UNAME)', 'unknown Cygwin')
+CROSS_COMPILE := arm-none-linux-gnueabihf-
+CFLAGS        := -static
+export PATH   := /usr/local/gcc-arm-10.3-2021.07-mingw-w64-i686-arm-none-linux-gnueabihf/bin:$(PATH)
 endif
 
-G++    := $(CROSS_COMPILE)g++
+#
+# Cross compile on WSL
+#
 
-CFLAGS := -O2 -W -Wall -lpthread -pipe -Wformat=0
+UNAME := $(shell uname -po)
+ifeq ('$(UNAME)', 'x86_64 GNU/Linux')
+CROSS_COMPILE := arm-linux-gnueabihf-
+CFLAGS        := -static
+endif
+
+#
+# Native compiler on target
+#
+
+G++    := $(CROSS_COMPILE)g++
+CFLAGS := $(CFLAGS) -Os -W -Wall -pthread -pipe -Wformat=0
 
 CFILES := commands.cpp config.cpp cursor.cpp dasm.cpp dz11.cpp dup11.cpp hist.cpp cmdline.cpp ks10.cpp lp20.cpp mt.cpp rp.cpp rh11.cpp tape.cpp main.cpp
 HFILES := commands.hpp config.hpp cursor.hpp dasm.hpp dz11.hpp dup11.hpp hist.hpp cmdline.hpp ks10.hpp lp20.hpp mt.hpp rp.hpp rh11.hpp tape.hpp uba.hpp
 
 console : $(CFILES) $(HFILES) makefile
 	$(G++) $(CFLAGS) $(CFILES) -o console
-ifeq ($(UNAME),Cygwin)
-	scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null console root@ks10:/home/root/
+	make xfer
+
+#
+# If cross compiling, transfer the executable from the Host to the Target
+#
+
+.PHONY: xfer
+
+xfer:
+ifneq ('$(UNAME)', 'armv7l GNU/Linux')
+	scp -B console root@ks10:/home/root/
 endif
 
+.PHONY: clean
 clean:
 	rm console
 
@@ -71,9 +101,9 @@ EXCLUDE := \
 
 check :
 	@echo "Tabs in:"
-	@-find . -type f | grep -v $(EXCLUDE) | grep -e '\.cpp$$' -e '\.hpp$$' -e '\.c$$' -e '\.h$$' -e '\.s$$' | xargs grep -P '\t'
+	@-find . -maxdepth 1 -type f | grep -v $(EXCLUDE) | grep -e '\.cpp$$' -e '\.hpp$$' -e '\.c$$' -e '\.h$$' -e '\.s$$' | xargs grep -P '\t'
 	@echo "Trailing white space in:"
-	@-find . -type f | grep -v $(EXCLUDE) | grep -e '\.cpp$$' -e '\.hpp$$' -e '\.c$$' -e '\.h$$' -e '\.s$$' | xargs grep -P '[ ]+$$'
+	@-find . -maxdepth 1 -type f | grep -v $(EXCLUDE) | grep -e '\.cpp$$' -e '\.hpp$$' -e '\.c$$' -e '\.h$$' -e '\.s$$' | xargs grep -P '[ ]+$$'
 	@echo "FIXMEs in:"
-	@-find . -type f | grep -v $(EXCLUDE) | grep -e '\.cpp$$' -e '\.hpp$$' -e '\.c$$' -e '\.h$$' -e '\.s$$' | xargs grep -i 'fixme'
+	@-find . -maxdepth 1 -type f | grep -v $(EXCLUDE) | grep -e '\.cpp$$' -e '\.hpp$$' -e '\.c$$' -e '\.h$$' -e '\.s$$' | xargs grep -i 'fixme'
 
