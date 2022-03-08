@@ -215,13 +215,10 @@ bool consoleOutput(void) {
 
         if (select(1, &fds, NULL, NULL, &tv) != 0) {
             int ch = getchar();
-#if 0
-            if (ch == '\e') {
-                escape = !escape;
+            if (!escape && ch == '\e') {
+                escape = true;
                 continue;
-            }
-#endif
-            if (!escape && (ch == cntl_e)) {
+            } else if (!escape && (ch == cntl_e)) {
                 printf("^E\n");
                 break;
             } else if (!escape && (ch == cntl_t)) {

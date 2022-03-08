@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
 
     printf("%s%s"
            "KS10: Console started.\n"
-           "KS10: Copyright 2012-2021 (c) Rob Doyle.  All rights reserved.\n",
+           "KS10: Copyright 2012-2022 (c) Rob Doyle.  All rights reserved.\n",
            vt100_hom, vt100_cls);
 
     //
@@ -175,7 +175,6 @@ int main(int argc, char *argv[]) {
 
     pthread_t tapeThreadID;
     const char *file = "red405a2.tap";
-    //const char *file = "temp.tap";
     status = pthread_create(&tapeThreadID, NULL, &tape_t::processThread, (void*)file);
     if (status != 0) {
         printf("KS10: pthread_create(tapeThread) returned \"%s\".\n", strerror(status));
