@@ -511,17 +511,16 @@ rp06_disk : makefile $(UNIT0) $(UNIT1) $(UNIT2)
 	@echo ""
 	@read -r -p "Are you sure you want to do that? [YES/NO] " prompt; \
 	if [[ $$prompt == "YES" || $$prompt == "yes" ]]; then \
-		echo "This will take a while.  Please be patient."; \
-		zcat $(UNIT0) | dd of=/dev/$(DEV) iflag=count_bytes oflag=seek_bytes count=309700K seek=0G; \
-		zcat $(UNIT1) | dd of=/dev/$(DEV) iflag=count_bytes oflag=seek_bytes count=309700K seek=1G; \
-		zcat $(UNIT2) | dd of=/dev/$(DEV) iflag=count_bytes oflag=seek_bytes count=309700K seek=2G; \
+		echo -e "This will take a while.  Please be patient."; \
+		echo -e "\nProgramming UNIT0:"; \
+		zcat $(UNIT0) | dd of=/dev/$(DEV) iflag=count_bytes oflag=seek_bytes count=309700K seek=0G status='progress'; \
+		echo -e "\nProgramming UNIT1:"; \
+		zcat $(UNIT1) | dd of=/dev/$(DEV) iflag=count_bytes oflag=seek_bytes count=309700K seek=1G status='progress'; \
+		echo -e "\nProgramming UNIT2:"; \
+		zcat $(UNIT2) | dd of=/dev/$(DEV) iflag=count_bytes oflag=seek_bytes count=309700K seek=2G status='progress'; \
         else \
 		echo "You must answer YES to write to SD Card!"; \
         fi
-
-crc16_tb: crc16_tb.v ../../ks10/utils/crc16.v
-	iverilog -W all -g2012 -s crc16_tb -o crc16_tb.vvp $?
-	vvp crc16_tb.vvp
 
 #
 # The SD Card Simulator uses a seperate file for each of the devices
