@@ -32,65 +32,32 @@
 #
 #******************************************************************************
 
-FPGA_LIST := \
-	fpga* \
-	code \
-	makefile
-
-ALL_LIST := \
-	fpga* \
-	code \
-	wiki \
-	makefile \
-	doc/Manual \
-	doc/Website
-
 ARGS :=\
+	--exclude=*.tgz \
+	--exclude=*.dsk \
+	--exclude=*.tap \
+	--exclude=*.tap.* \
+	--exclude=*.rp06 \
+	--exclude=*.rp06.* \
 	--exclude=fpga/esm_top/ise/isim/* \
 	--exclude=fpga/esm_top/ise/*.wdb \
-	--exclude=fpga*/testbench/*.dsk \
-	--exclude=fpga*/testbench/*.rp06.gz \
-	--exclude=fpga*/testbench/RCS/*.rp06.gz,v \
 	--exclude=fpga*/results/* \
 	--exclude=fpga*/*.wlf \
 	--exclude=fpga*/wlf* \
-	--exclude=fpga*/transcript
+	--exclude=fpga*/transcript \
+	--exclude=SIMH/* \
+	--exclude=results/* \
+	--exclude=testsuite/* \
+	--exclude='Tape and Disk Images' \
+	--exclude=tools/*.tap \
 
 all:
-	${MAKE} -C code console.bin
-	${MAKE} -C fpga ise/esm_ks10.mcs
+	${MAKE} -C code
+	${MAKE} -C fpga
 
 clean:
 	${MAKE} -C fpga clean
 	${MAKE} -C code clean
 
-rcsclean:
-	${MAKE} -C fpga rcsclean
-	${MAKE} -C code rcsclean
-
-rcsfetch:
-	${MAKE} -C fpga rcsfetch
-	${MAKE} -C code rcsfetch
-
-loadcode:
-	${MAKE} -C code load
-
-loadfpga:
-	${MAKE} -C fpga load
-
-loadall: loadcode loadfpga
-
-reset:
-	${MAKE} -C code reset
-
-isim:
-	${MAKE} -C fpga isim
-
 archive_all:
-	tar $(ARGS) -czvf ks10_all_`date '+%y%m%d'`.tgz $(ALL_LIST)
-
-archive_fpga:
-	tar $(ARGS) -czvf ks10_fpga_`date '+%y%m%d'`.tgz $(FPGA_LIST)
-
-archive_dist:
-	tar $(ARGS) --exclude-vcs -czvf ks10_dist_`date '+%y%m%d'`.tgz $(FPGA_LIST)
+	tar $(ARGS) --exclude-vcs -czvf ks10_all_`date '+%y%m%d'`.tgz *
