@@ -95,8 +95,8 @@ module STACK #(
    //  operation - otherwise the stack pointer does not change.
    //
 
-   reg  [ADDR_WIDTH-1:0] rd_addr;
-   wire [ADDR_WIDTH-1:0] wr_addr;
+   reg [ADDR_WIDTH-1:0] rd_addr;
+   reg [ADDR_WIDTH-1:0] wr_addr;
 
    always @(posedge clk)
      begin
@@ -122,8 +122,6 @@ module STACK #(
 
    //
    // Dual Ported Stack
-   //
-   // Details
    //
 
    reg [WIDTH-1:0] stack[BUFSZ-1:0];
