@@ -67,22 +67,23 @@ QUARTUS_DIR  := de10_top/quartus
 #
 
 ifeq ($(UNAME), Cygwin)
-QUARTUS_BIN64 := $(shell cygpath -u ${QUARTUS_ROOTDIR})/bin64
-MODELSIM      := $(subst quartus,, $(shell cygpath -u ${QUARTUS_ROOTDIR}))modelsim_ase/win32aloem
+QUARTUS_ROOTDIR := $(shell cygpath -u ${QUARTUS_ROOTDIR})
+MODELSIM        := $(subst quartus,, $(shell cygpath -u ${QUARTUS_ROOTDIR}))modelsim_ase/win32aloem
+QUESTA          := $(subst quartus,, $(shell cygpath -u ${QUARTUS_ROOTDIR}))questa_fse/win64/
 endif
 
 #
 # Quartus executables
 #
 
-QSYS-GENERATE := $(QUARTUS_BIN64)/qsys-generate
-QUARTUS_MAP   := $(QUARTUS_BIN64)/quartus_map
-QUARTUS_FIT   := $(QUARTUS_BIN64)/quartus_fit
-QUARTUS_ASM   := $(QUARTUS_BIN64)/quartus_asm
-QUARTUS_STA   := $(QUARTUS_BIN64)/quartus_sta
-QUARTUS_PGM   := $(QUARTUS_BIN64)/quartus_pgm
-QUARTUS_CPF   := $(QUARTUS_BIN64)/quartus_cpf
-JTAGCONFIG    := $(QUARTUS_BIN64)/jtagconfig
+QSYS-GENERATE := $(QUARTUS_ROOTDIR)/sopc_builder/bin/qsys-generate
+QUARTUS_MAP   := $(QUARTUS_ROOTDIR)/bin64/quartus_map
+QUARTUS_FIT   := $(QUARTUS_ROOTDIR)/bin64/quartus_fit
+QUARTUS_ASM   := $(QUARTUS_ROOTDIR)/bin64/quartus_asm
+QUARTUS_STA   := $(QUARTUS_ROOTDIR)/bin64/quartus_sta
+QUARTUS_PGM   := $(QUARTUS_ROOTDIR)/bin64/quartus_pgm
+QUARTUS_CPF   := $(QUARTUS_ROOTDIR)/bin64/quartus_cpf
+JTAGCONFIG    := $(QUARTUS_ROOTDIR)/bin64/jtagconfig
 
 #
 # Cygwin ModelSim root directory
@@ -224,7 +225,7 @@ SIM_ARGS := \
 SYN_ARGS := \
 	SERIALNUM=4097 \
 	MAJOR_VER=\"00\" \
-	MINOR_VER=\"37\" \
+	MINOR_VER=\"38\" \
         CLKFRQ=12500000 \
 	SSRAMx18 \
 	RPXX_SIMSEEK \
@@ -243,6 +244,31 @@ SYN_ARGS := \
 	UBE3 \
 	UBE4
 
+#
+# Simlation Macro Definitions
+#
+
+SIM_ARGS := \
+	SERIALNUM=2020 \
+	MAJOR_VER=\"00\" \
+	MINOR_VER=\"37\" \
+        CLKFRQ=12500000 \
+	SSRAMx18 \
+	RPXX_SIMSEEK \
+	RPXX_SIMDMD \
+	UBA1 \
+	RH11A \
+	UBA3 \
+	RH11B \
+	LP20 \
+	DZ11 \
+	DUP11 \
+	KMC11 \
+	UBA4 \
+	UBE1 \
+	UBE2 \
+	UBE3 \
+	UBE4
 #
 # Diagnostic Prefix
 #
@@ -297,8 +323,10 @@ RTL_FILES := \
 	ks10/massbus.sv \
         ks10/mtcslbus.sv \
         ks10/rpcslbus.sv \
+	ks10/brcslbus.sv \
 	ks10/ks10.sv \
 	ks10/arb/arb.sv \
+	ks10/breakpoint/breakpoint.sv \
 	ks10/csl/csl.sv \
 	ks10/cpu/alu.v \
 	ks10/cpu/apr.v \
@@ -459,12 +487,12 @@ SIM_FILES := \
 	$(TESTBENCH)/mtsim.sv \
 	$(TESTBENCH)/sdsim.v \
 
-ifneq (, $(findstring SSRAMx18, $(SYN_ARGS)))
+ifneq (, $(findstring SSRAMx18, $(SIM_ARGS)))
 SIM_FILES += \
 	$(TESTBENCH)/cy7c1463kv33.v
 endif
 
-ifneq (, $(findstring SSRAMx36, $(SYN_ARGS)))
+ifneq (, $(findstring SSRAMx36, $(SIM_ARGS)))
 SIM_FILES += \
 	$(TESTBENCH)/cy7c1460av33.v
 endif
@@ -510,7 +538,6 @@ INC_FILES := \
 	ks10/cpu/vma.vh \
 	ks10/cpu/useq/crom.vh  \
 	ks10/cpu/useq/drom.vh  \
-	ks10/csl/debcsr.vh \
 	ks10/csl/dupccr.vh \
 	ks10/csl/dzccr.vh \
 	ks10/csl/lpccr.vh \
@@ -624,8 +651,8 @@ build: quartus
 # Create the "Control ROM" microcode for microsequencer
 #  Read the CPU Serial Number (SERIALNUM) from the SYN_ARGS variable.
 #  If SERIALNUM is not set, use a default.
-#  crom.awk will read the microcode from the microcode listing file, and
-#  edit the microcode and put CPU Serial Number into the microcode.
+#  crom.awk will read the microcode from the microcode listing file, and edit
+#  the microcode in order to insert CPU Serial Number into the microcode.
 #
 
 ifneq (, $(findstring SERIALNUM=, $(SYN_ARGS)))
@@ -673,6 +700,22 @@ endif
 #
 # Questasim
 #
+
+WAVE_BRKPT := \
+	"add wave -noupdate -divider {Breakpoint}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rst}                  {/testbench/uKS10/uBRKPT/rst}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uBRKPT/clk}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR0}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBAR[0]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR0}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBMR[0]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR1}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBAR[1]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR1}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBMR[1]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR2}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBAR[2]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR2}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBMR[2]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR3}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBAR[3]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR3}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBMR[3]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {addrmatch}            {/testbench/uKS10/uBRKPT/addrmatch}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {d}                    {/testbench/uKS10/uBRKPT/d}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {brHALT}               {/testbench/uKS10/uBRKPT/brHALT}" \
 
 WAVE_BUSES := \
 	"add wave -noupdate -divider {BUSSES}" \
@@ -1977,11 +2020,11 @@ vsim:   $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBE
 	$(VSIM) -i testbench -do $(QUESTA_DIR)/wave.do
 
 questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBENCH)/ssram.dat $(DISKS) makefile $(QUESTA_DIR)/wave.do
-	$(VLIB) $(QUESTA_DIR)/work
-	$(VMAP) work $(QUESTA_DIR)/work
-	$(VLOG) $(SIM_FILES) $(RTL_FILES) $(VLOG_ARGS)
-	$(VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+DZ11+UART_TX+UART_RX -o testbench_opt -debugdb
-	$(VSIM) -i -debugdb testbench_opt &
+	test -d $(QUESTA_DIR)/work || $(QUESTA)/vlib $(QUESTA_DIR)/work
+	$(QUESTA)/vmap work $(QUESTA_DIR)/work
+	$(QUESTA)/vlog $(SIM_FILES) $(RTL_FILES) $(VLOG_ARGS)
+	$(QUESTA)/vopt testbench +acc=npr3+CPU+BRKPT -o testbench_opt -debugdb
+	$(QUESTA)/vsim -i -debugdb testbench_opt -do $(QUESTA_DIR)/wave.do
 
 #	$(VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+RH11+RPXX -o testbench_opt -debugdb
 #	$(VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+KMC11 -o testbench_opt -debugdb

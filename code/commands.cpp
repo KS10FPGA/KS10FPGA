@@ -211,6 +211,11 @@ bool consoleOutput(void) {
         //
         // Check STDIN for a character to send to the KS10
         //
+        //  The escape character escapes the ^E, ^L, and ^T commands
+        //
+        //  Typing two sequential escape characters will pass a single escape
+        //  character to the KS10 CTY.
+        //
 
         FD_ZERO(&fds);
         FD_SET(STDIN_FILENO, &fds);
@@ -470,85 +475,6 @@ static void dasmMEM(ks10_t::addr_t addr, unsigned int len) {
 
 //!
 //! \brief
-//!    Dump DBAR
-//!
-
-static void printDBAR(void) {
-    ks10_t::data_t dbar = ks10_t::readDBAR();
-    printf("DBAR      : %012llo\n"
-           "        FLAGS   :   %s%s%s%s%s%s\n"
-           "        ADDRESS :   %08llo\n",
-           dbar,
-           dbar & ks10_t::flagFetch ? "Fetch "    : "",
-           dbar & ks10_t::flagRead  ? "Read "     : "",
-           dbar & ks10_t::flagWrite ? "Write "    : "",
-           dbar & ks10_t::flagPhys  ? "Physical " : "",
-           dbar & ks10_t::flagIO    ? "IO "       : "",
-           dbar & ks10_t::flagByte  ? "Byte "     : "",
-           (dbar & ks10_t::flagIO)  ? dbar & ks10_t::dbarIOMASK : dbar & ks10_t::dbarMEMMASK);
-}
-
-//!
-//! \brief
-//!    Dump DBMR
-//!
-
-static void printDBMR(void) {
-    ks10_t::data_t dbmr = ks10_t::readDBMR();
-    printf("DBMR      : %012llo\n"
-           "        FLAGS   :   %s%s%s%s%s%s\n"
-           "        ADDRESS :   %08llo\n",
-           dbmr,
-           dbmr & ks10_t::flagFetch ? "Fetch "    : "",
-           dbmr & ks10_t::flagRead  ? "Read "     : "",
-           dbmr & ks10_t::flagWrite ? "Write "    : "",
-           dbmr & ks10_t::flagPhys  ? "Physical " : "",
-           dbmr & ks10_t::flagIO    ? "IO "       : "",
-           dbmr & ks10_t::flagByte  ? "Byte "     : "",
-           (dbmr & ks10_t::flagIO)  ? dbmr & ks10_t::dbmrIOMASK : dbmr & ks10_t::dbmrMEMMASK);
-}
-
-//!
-//! \brief
-//!   Function to print breakpoint trace hardware status
-//!
-
-static void printDEBUG(void) {
-    ks10_t::data_t dcsr = ks10_t::readDCSR();
-
-    printf("Breakpoint and Trace System Status: \n"
-           "  DCSR      : %012llo\n"
-           "    TREMPTY :   %s\n"
-           "    TRFULL  :   %s\n"
-           "    TRSTATE :   %s\n"
-           "    TRCMD   :   %s\n"
-           "    BRSTATE :   %s\n"
-           "    BRCMD   :   %s\n",
-           dcsr,
-           dcsr & ks10_t::dcsrEMPTY ? "True" : "False",
-           dcsr & ks10_t::dcsrFULL  ? "True" : "False",
-           (((dcsr & ks10_t::dcsrTRSTATE) == ks10_t::dcsrTRSTATE_IDLE) ? "Idle" :
-            (((dcsr & ks10_t::dcsrTRSTATE) == ks10_t::dcsrTRSTATE_ARMED) ? "Armed" :
-             (((dcsr & ks10_t::dcsrTRSTATE) == ks10_t::dcsrTRSTATE_ACTIVE) ? "Active" :
-              (((dcsr & ks10_t::dcsrTRSTATE) == ks10_t::dcsrTRSTATE_DONE) ? "Done" :
-               "Unknown")))),
-           (((dcsr & ks10_t::dcsrTRCMD) == ks10_t::dcsrTRCMD_RESET) ? "Reset" :
-            (((dcsr & ks10_t::dcsrTRCMD) == ks10_t::dcsrTRCMD_TRIG) ? "Trigger" :
-             (((dcsr & ks10_t::dcsrTRCMD) == ks10_t::dcsrTRCMD_MATCH) ? "Address Match" :
-              (((dcsr & ks10_t::dcsrTRCMD) == ks10_t::dcsrTRCMD_STOP) ? "Stop" :
-               "Unknown")))),
-           (((dcsr & ks10_t::dcsrBRSTATE) == ks10_t::dcsrBRSTATE_IDLE) ? "Idle" :
-            (((dcsr & ks10_t::dcsrBRSTATE) == ks10_t::dcsrBRSTATE_ARMED) ? "Armed" :
-             "Unknown")),
-           (((dcsr & ks10_t::dcsrBRCMD) == ks10_t::dcsrBRCMD_DISABLE) ? "Disable" :
-            (((dcsr & ks10_t::dcsrBRCMD) == ks10_t::dcsrBRCMD_MATCH) ? "Address Match" :
-             (((dcsr & ks10_t::dcsrBRCMD) == ks10_t::dcsrBRCMD_FULL) ? "Trace Full" :
-              (((dcsr & ks10_t::dcsrBRCMD) == ks10_t::dcsrBRCMD_BOTH) ? "Address Match or Trace Full" :
-               "Unknown")))));
-}
-
-//!
-//! \brief
 //!   Function to print trace data
 //!
 
@@ -635,10 +561,83 @@ static bool cmdBA(int argc, char *argv[]) {
 
 //!
 //! \brief
+//!    Dump BRAR or BRMR
+//!
+
+static void printBRxR(ks10_t::data_t dbxr, const char *regName) {
+    printf("%s: %012llo\n"
+           "       FLAGS   : %s%s%s%s%s%s\n"
+           "       ADDRESS : %08llo\n",
+           regName, dbxr,
+           dbxr & ks10_t::flagFetch ? "Fetch "    : "",
+           dbxr & ks10_t::flagRead  ? "Read "     : "",
+           dbxr & ks10_t::flagWrite ? "Write "    : "",
+           dbxr & ks10_t::flagPhys  ? "Physical " : "",
+           dbxr & ks10_t::flagIO    ? "IO "       : "",
+           dbxr & ks10_t::flagByte  ? "Byte "     : "",
+          (dbxr & ks10_t::flagIO)   ? dbxr & ks10_t::brarIOMASK : dbxr & ks10_t::brarMEMMASK);
+}
+
+//!
+//! \brief
+//!   Print breakproint status
+//!
+
+static void cmdBR_printStatus(char unit) {
+
+    ks10_t::data_t brar;
+    ks10_t::data_t brmr;
+
+    switch(unit) {
+        case '0':
+            brar = ks10_t::readBRAR(0);
+            brmr = ks10_t::readBRMR(0);
+            if ((brar == 0) && (brmr == 0)) {
+                printf("br0: breakpoint disabled\n");
+            } else {
+                printBRxR(brar, "BRAR0");
+                printBRxR(brmr, "BRMR0");
+            }
+            break;
+        case '1':
+            brar = ks10_t::readBRAR(1);
+            brmr = ks10_t::readBRMR(1);
+            if ((brar == 0) && (brmr == 0)) {
+                printf("br1: breakpoint disabled\n");
+            } else {
+                printBRxR(brar, "BRAR1");
+                printBRxR(brmr, "BRMR1");
+            }
+            break;
+        case '2':
+            brar = ks10_t::readBRAR(2);
+            brmr = ks10_t::readBRMR(2);
+            if ((brar == 0) && (brmr == 0)) {
+                printf("br2: breakpoint disabled\n");
+            } else {
+                printBRxR(brar, "BRAR2");
+                printBRxR(brmr, "BRMR2");
+            }
+            break;
+        case '3':
+            brar = ks10_t::readBRAR(3);
+            brmr = ks10_t::readBRMR(3);
+            if ((brar == 0) && (brmr == 0)) {
+                printf("br3: breakpoint disabled\n");
+            } else {
+                printBRxR(brar, "BRAR3");
+                printBRxR(brmr, "BRMR3");
+            }
+            break;
+    }
+}
+
+//!
+//! \brief
 //!   Breakpoint control
 //!
 //! \details
-//!    The <b>BR</b> (Breakpoint) command creates a hardware breakpoint.
+//!    The <b>BR#</b> (Breakpoint) command creates a hardware breakpoint.
 //!
 //! \param [in] argc
 //!    Number of arguments.
@@ -655,82 +654,127 @@ static bool cmdBR(int argc, char *argv[]) {
 
     const char *usage =
         "\n"
-        "The \"br\" command controls the breakpoint and trace hardware.\n"
+        "The \"br#\" command controls the hardware.\n"
         "\n"
-        "When a breakpoint is triggered, the processor will halt and the trace buffer\n"
-        "contains a list the previously executed instructions. For example, assume for\n"
-        "discussion that the trace buffer size is 1024 entries. When a breakpoint is\n"
-        "encountered, the trace buffer would contain the previous 1024 instructions.\n"
-        "Instructions executed before that are discarded from the trace buffer FIFO. Note:\n"
-        "The size of the trace buffer is a FPGA parameter which can be easily modified\n"
-        "but will required the FPGA firmware to be re-built. The trace buffer size is\n"
-        "limited by the amount of FPGA memory.\n"
+        "When a breakpoint condtion is triggered, the breakpoint hardware will halt the\n"
+        "processor. There are four independant sets of breakpoint registers which allows\n"
+        "up to four independant breakpoints to be configured simultaneously. The\n"
+        "breakpoint device monitors the address on the KS10 backplane bus and when an\n"
+        "address match is detected, the breakpoint hardware asserts the \"Console Halt\"\n"
+        "signal to the KS10 which stops the KS10 at the completion of the current\n"
+        "instruction.\n"
         "\n"
-        "When a tracepoint is triggered, the trace buffer will begin acquiring data. When\n"
-        "the trace buffer is full, the processor will halt.\n"
+        "usage: br[#] [options] \"break_condition\"\n"
         "\n"
-        "In summary, the breakpoint provides trace data before the trigger. The\n"
-        "tracepoint provides trace data after the trigger.\n"
+        "There are four sets of breakpoint registers. These are configured as follows:\n"
         "\n"
-        "usage: br [--help] [--mask=mask] [--trace] [trigger_condition]\n"
+        "  br  : Used to reference all breakpoints\n"
+        "  br0 : Breakpoint 0\n"
+        "  br1 : Breakpoint 1\n"
+        "  br2 : Breakpoint 2\n"
+        "  br3 : Breakpoint 3\n"
         "\n"
         "Valid options are:\n"
         "\n"
-        "  --help        Print help.\n"
-        "  --tr[ace]     Start tracing on a trigger condition instead of breakpoint on\n"
-        "                trigger conditions.\n"
-        "  --mask=mask   Set an address match mask. The mask parameter is a 22-bit octal\n"
-        "                constant that is masked against bits 14-35 of the address bus.\n"
-        "                Bits that are one in the mask argument are ignored when\n"
-        "                performing the address match comparison. The default mask is 0\n"
-        "                which includes all relevant address bits in the address match\n"
-        "                comparison. This allows breakpointing on a range of addresses\n"
-        "                with some limitations. See example below. This command sets the\n"
-        "                the Debug Breakpoint Mask Register (DBMR) albeit the bits are\n"
-        "                inverted to save typing on common uses.\n"
+        "  --help          Print help message and exit.\n"
+        "  --disable       Disable the specified breakpoint and exit.\n"
+        "  --mask=mask     Set an address match mask. This parameter modifies the\n"
+        "                  specified \"break condition\".  The mask parameter is a 22-bit\n"
+        "                  constant that is masked against bits 14-35 of the address bus.\n"
+        "                  Bits that are asserted in the address mask are ignored when\n"
+        "                  performing the address match comparison. The default mask is\n"
+        "                  0 and therefore all address bits are relevant to the address\n"
+        "                  match logic.\n"
         "\n"
-        "br with no trigger_condition will print the breakpoint status\n"
+        "One (and only one) of the following \"break condtions\" must be provided:\n"
         "\n"
-        "Valid trigger conditions are:\n"
-        "  <fetch addr>  Trigger on an instruction fetch operation and address match.\n"
-        "  <memrd addr>  Trigger on a memory read operation and address match.\n"
-        "  <memwr addr>  Trigger on a memory write operation and address match.\n"
-        "  <iord  addr>  Trigger on an IO read operation and address match.\n"
-        "  <iowr  addr>  Trigger on an IO write operation and address match.\n"
+        "  --fetch=addr    Break on an instruction fetch at the specified address.\n"
+        "  --mem=addr      Not impmented.\n"
+        "  --memrd=addr    Break on a memory read at the specified adress.\n"
+        "  --memwr=addr    Break on a memory write at the specified adress.\n"
+        "  --io=addr       Not impmented.\n"
+        "  --iord=addr     Break on an IO read at the specified adress.\n"
+        "  --iowr=addr     Break on an IO write at the specified adress.\n"
+        "  --raw=brar,brmr Provide low level inputs to the Debug Breakpoint Address\n"
+        "                  Register (BRAR) and Debug Breakpoint Mask Register (BRMR).\n"
+        "                  See the register descriptions for usage.\n"
         "\n"
-        "The addr (address) parameter described above is a 22-bit octal constant that\n"
-        "is matched against bits 14-35 of the address bus. Only one break option is\n"
-        "permitted. These commands set the Debug Breakpoint Address Register (DBAR).\n"
+        "Note: it is a quirk of the KS10 Backplane Bus implementation one must set two\n"
+        "breakpoints to break on either a read or a write.\n"
         "\n"
-        "Note: The trigger hardware cannot trigger on a memory read OR write condition\n"
-        "or a IO read OR write conditions.  This would require two trigger devices.\n"
+        "The addr, mask, brar and brmr parameters described above are 22-bit constants\n"
+        "that are matched against the KS10 Backplane Bus address bits 14-35.\n"
         "\n"
-        "The following command will break on an instruction fetch a address 030000.\n"
-        "\n"
-        "br fetch 030000\n"
-        "\n"
-        "The following command will breakpoint on any access to the magtape controller\n"
-        "which has io addresses in the range of 03772440 and 03772477.\n"
-        "\n"
-        "br io 03772440 --mask 037\n"
+        "Examples:\n"
+        "  \"br\" with no options will print the status of all four breakpoints.\n"
+        "  \"br0\" with no otions will print the status of breakpoint #0.\n"
+        "  \"br --disable\" will disable all breakpoints.\n"
+        "  \"br1 --disable\" will disable breakpoint #1\n"
+        "  \"br2 --fetch 030000\" will configure breakpoint #2 to break on an\n"
+        "      instruction fetch at address 030000.\n"
+        "  \"br2 --fetch 030000 --mask 3\" will configure breakpoint #2 to break on any\n"
+        "      instruction fetch between address 030000 and address 030003.\n"
+        "  \"br2 --iord 03772440 --mask 037;br3 --iowr 03772440 --mask 037\" will\n"
+        "      configure breakpoint #2 and breakpoint #3 to trigger on either a IO Read\n"
+        "      or IO Write to the Magtape Controller. The Magtape Controller has and\n"
+        "      IO addresses range of between 03772440 and 03772477 inclusive.\n"
         "\n";
 
+    //
+    // Command line options
+    //
+
     static const struct option options[] = {
-        {"help",   no_argument,       0, 0},  // 0
-        {"tr",     no_argument,       0, 0},  // 1
-        {"trace",  no_argument,       0, 0},  // 2
-        {"mask",   required_argument, 0, 0},  // 3
-        {0,        0,                 0, 0},  // 4
+        {"help",    no_argument,       0, 0},  //  0
+        {"disable", no_argument,       0, 0},  //  1
+        {"fetch",   required_argument, 0, 0},  //  2
+        {"mem",     required_argument, 0, 0},  //  3
+        {"memrd",   required_argument, 0, 0},  //  4
+        {"memwr",   required_argument, 0, 0},  //  5
+        {"io",      required_argument, 0, 0},  //  6
+        {"iord",    required_argument, 0, 0},  //  7
+        {"iowr",    required_argument, 0, 0},  //  8
+        {"mask",    required_argument, 0, 0},  //  9
+        {"raw",     required_argument, 0, 0},  // 10
+        {0,         0,                 0, 0},  // 11
     };
 
+    //
+    // Get breakpoint unit
+    //
+
+    char unit = argv[0][2];
+
+    //
+    // Print breakpoint status
+    //
+
     if (argc == 1) {
-        printf("br: status is:\n");
+        switch(unit) {
+            case '0' ... '3':
+                cmdBR_printStatus(unit);
+                break;
+            default:
+                unit = ' ';
+                for (int ch = '0'; ch < '4'; ch++) {
+                    cmdBR_printStatus(ch);
+                }
+                break;
+        }
         return true;
     }
 
+    //
+    // Process command line
+    //
+
     int index = 0;
-    bool trace = false;
-    ks10_t::data_t mask = 0;
+    ks10_t::addr_t addr = 0;
+    ks10_t::addr_t brar = 0;
+    ks10_t::addr_t brmr = 0;
+    ks10_t::addr_t mask = 0;
+    bool memrw = false;
+    bool iorw = false;
 
     opterr = 0;
     for (;;) {
@@ -742,20 +786,82 @@ static bool cmdBR(int argc, char *argv[]) {
             return true;
         } else {
             switch(index) {
-                case 0:
+                case 0: // help
                     printf(usage);
                     return true;
-                case 1:
-                case 2:
-                    trace = true;
+                case 1: // disable
+                    switch (unit) {
+                        case '0':
+                            ks10_t::writeBRAR(0, 0);
+                            ks10_t::writeBRMR(0, 0);
+                            printf("br0: breakpoint disabled\n");
+                            break;
+                        case '1':
+                            ks10_t::writeBRAR(1, 0);
+                            ks10_t::writeBRMR(1, 0);
+                            printf("br1: breakpoint disabled\n");
+                            break;
+                        case '2':
+                            ks10_t::writeBRAR(2, 0);
+                            ks10_t::writeBRMR(2, 0);
+                            printf("br2: breakpoint disabled\n");
+                            break;
+                        case '3':
+                            ks10_t::writeBRAR(3, 0);
+                            ks10_t::writeBRMR(3, 0);
+                            printf("br3: breakpoint disabled\n");
+                            break;
+                        case 0:
+                            for (int i = 0; i < 4; i++) {
+                                ks10_t::writeBRAR(i, 0);
+                                ks10_t::writeBRMR(i, 0);
+                            }
+                            printf("br: all breakpoints disabled\n");
+                            break;
+                    }
+                    return true;
+                case 2: //fetch
+                    addr = ks10_t::brmrMEMMASK & parseOctal(argv[optind-1]);
+                    brar = ks10_t::brarFETCH | addr;
+                    brmr = ks10_t::brmrFETCH | ks10_t::brmrMEMMASK;
                     break;
-                case 3:
-                    mask = parseOctal(optarg);
+                case 3: // mem
+                    memrw = true;
+                    printf("br --mem not implemented.\n");
+                    break;
+                case 4: // memrd
+                    addr = ks10_t::brmrMEMMASK & parseOctal(argv[optind-1]);
+                    brar = ks10_t::brarMEMRD | addr;
+                    brmr = ks10_t::brarMEMRD | ks10_t::brmrMEMMASK;
+                    break;
+                case 5: // memwr
+                    addr = ks10_t::brmrMEMMASK & parseOctal(argv[optind-1]);
+                    brar = ks10_t::brarMEMWR | addr;
+                    brmr = ks10_t::brarMEMWR | ks10_t::brmrMEMMASK;
+                    break;
+                case 6: // io
+                    printf("br --io not implemented.\n");
+                    iorw = true;
+                    break;
+                case 7: // iord
+                    addr = ks10_t::brmrIOMASK & parseOctal(argv[optind-1]);
+                    brar = ks10_t::brarIORD | addr;
+                    brmr = ks10_t::brarIORD | ks10_t::brmrIOMASK;
+                    break;
+                case 8: // iowr
+                    addr = ks10_t::brmrIOMASK & parseOctal(argv[optind-1]);
+                    brar = ks10_t::brarIOWR | addr;
+                    brmr = ks10_t::brarIOWR | ks10_t::brmrIOMASK;
+                    break;
+                case 9: // mask
+                    mask = ks10_t::brmrIOMASK & parseOctal(argv[optind-1]);
+                    break;
+                case 10: // raw
+                    printf("br --raw not implemented.\n");
                     break;
             }
         }
     }
-
 
 #if 1
     printf("argc = %d, index = %d, optind = %d\n", argc, index, optind);
@@ -765,127 +871,44 @@ static bool cmdBR(int argc, char *argv[]) {
     printf("arv[3] = %s\n", argv[3]);
     printf("arv[4] = %s\n", argv[4]);
     printf("arv[5] = %s\n", argv[5]);
-
-    printf("mask is 0%012llo. trace is %s\n", mask, trace ? "true" : "false");
-
 #endif
 
-    if (argc < optind + 2) {
-        printf("br: missing trigger condition\n%s", usage);
-        return true;
-    }
 
-    //
-    // Process trigger conditions
-    //
+#if 1
+    // In work...
 
-    ks10_t::data_t addr = ks10_t::dbmrMEMMASK & parseOctal(argv[optind+1]);
-
-    if (strncasecmp(argv[1], "fetch", 3) == 0) {
-        addr =  addr & ks10_t::dbarMEMMASK;
-        mask = ~mask & ks10_t::dbmrMEMMASK;
-        ks10_t::writeDBAR(ks10_t::dbarFETCH | addr);
-        ks10_t::writeDBMR(ks10_t::dbmrFETCH | mask);
-    } else if (strncasecmp(argv[1], "iord", 3) == 0) {
-        addr =  addr & ks10_t::dbarIOMASK;
-        mask = ~mask & ks10_t::dbmrIOMASK;
-        ks10_t::writeDBAR(ks10_t::dbarIORD | addr);
-        ks10_t::writeDBMR(ks10_t::dbmrIORD | ks10_t::dbmrIOMASK);
-    } else if (strncasecmp(argv[1], "iowr", 3) == 0) {
-        addr =  addr & ks10_t::dbarIOMASK;
-        mask = ~mask & ks10_t::dbmrIOMASK;
-        ks10_t::writeDBAR(ks10_t::dbarIOWR | addr);
-        ks10_t::writeDBMR(ks10_t::dbmrIOWR | mask);
-    } else if (strncasecmp(argv[1], "memrd", 4) == 0) {
-        addr =  addr & ks10_t::dbarMEMMASK;
-        mask = ~mask & ks10_t::dbmrMEMMASK;
-        ks10_t::writeDBAR(ks10_t::dbarMEMRD | addr);
-        ks10_t::writeDBMR(ks10_t::dbmrMEMRD | mask);
-    } else if (strncasecmp(argv[1], "memwr", 4) == 0) {
-        mask = ~mask & ks10_t::dbmrMEMMASK;
-        ks10_t::writeDBAR(ks10_t::dbarMEMWR | addr);
-        ks10_t::writeDBMR(ks10_t::dbmrMEMWR | ks10_t::dbmrMEMMASK);
-    } else {
-        printf(usage);
-        return true;
-    }
-
-    printf("Fetch: addr - 0%012llo, mask - 0%012llo\n", ks10_t::readDBAR(), ks10_t::readDBMR());
-
-    printDBAR();
-    printDBMR();
-
-    return true;
-
-}
-
-
-#ifdef OLDBR
-
-    const char *usage =
-        "\n"
-        "Control the breakpoint hardware.\n"
-        "\n"
-        "Usage: BR {FETCH | MEMRD | MEMWR | IORD | IOWR} Address\n"
-        "       BR OFF   - disable breakpoint\n"
-        "       BR MATCH - break on address match\n"
-        "       BR FULL  - break on trace buffer full\n"
-        "       BR BOTH  - break on buffer full or address match\n"
-        "       BR STAT  - display breakpoint registers\n";
-
-
-    ks10_t::data_t addr;
-
-    switch (argc) {
-        case 1:
-            printf(usage);
-            break;
-        case 2:
-            if (strncasecmp(argv[1], "off", 2) == 0) {
-                ks10_t::writeDCSR(ks10_t::dcsrBRCMD_DISABLE | (ks10_t::readDCSR() & ~ks10_t::dcsrBRCMD));
-            } else if (strncasecmp(argv[1], "match", 2) == 0) {
-                ks10_t::writeDCSR(ks10_t::dcsrBRCMD_MATCH   | (ks10_t::readDCSR() & ~ks10_t::dcsrBRCMD));
-            } else if (strncasecmp(argv[1], "full", 2) == 0) {
-                ks10_t::writeDCSR(ks10_t::dcsrBRCMD_FULL    | (ks10_t::readDCSR() & ~ks10_t::dcsrBRCMD));
-            } else if (strncasecmp(argv[1], "both", 2) == 0) {
-                ks10_t::writeDCSR(ks10_t::dcsrBRCMD_BOTH    | (ks10_t::readDCSR() & ~ks10_t::dcsrBRCMD));
-            } else if (strncasecmp(argv[1], "stat", 2) == 0) {
-                printDEBUG();
-            } else {
-                printf(usage);
-                return true;
-            }
-            break;
-        case 3:
-            addr = parseOctal(argv[2]);
-            if (strncasecmp(argv[1], "fetch", 5) == 0) {
-            } else if (strncasecmp(argv[1], "memrd", 5) == 0) {
-                ks10_t::writeDBAR(ks10_t::dbarMEMRD | addr);
-                ks10_t::writeDBMR(ks10_t::dbmrMEMRD | ks10_t::dbmrMEM);
-            } else if (strncasecmp(argv[1], "memwr", 5) == 0) {
-                ks10_t::writeDBAR(ks10_t::dbarMEMWR | addr);
-                ks10_t::writeDBMR(ks10_t::dbmrMEMWR | ks10_t::dbmrMEM);
-            } else if (strncasecmp(argv[1], "iord", 4) == 0) {
-                ks10_t::writeDBAR(ks10_t::dbarIORD | addr);
-                ks10_t::writeDBMR(ks10_t::dbmrIORD | ks10_t::dbmrIO);
-            } else if (strncasecmp(argv[1], "iowr", 4) == 0) {
-                ks10_t::writeDBAR(ks10_t::dbarIOWR | addr);
-                ks10_t::writeDBMR(ks10_t::dbmrIOWR | ks10_t::dbmrIO);
-             } else {
-                printf(usage);
-                return true;
-            }
-            break;
-        default:
-            printf(usage);
-    }
-    return true;
-
-}
+    (void) memrw;
+    (void) iorw;
 
 
 #endif
 
+    //
+    //
+    //
+
+    switch(unit) {
+        case '0':
+            ks10_t::writeBRAR(0, brar);
+            ks10_t::writeBRMR(0, brmr & ~mask);
+            break;
+        case '1':
+            ks10_t::writeBRAR(1, brar);
+            ks10_t::writeBRMR(1, brmr & ~mask);
+            break;
+        case '2':
+            ks10_t::writeBRAR(2, brar);
+            ks10_t::writeBRMR(2, brmr & ~mask);
+            break;
+        case '3':
+            ks10_t::writeBRAR(3, brar);
+            ks10_t::writeBRMR(3, brmr & ~mask);
+            break;
+    }
+
+    return true;
+
+}
 
 //!
 //! \brief
@@ -1184,10 +1207,6 @@ static bool cmdCO(int argc, char *argv[]) {
         "the \"bit-bucket\". Whether the KS10 was halted or not, the command will attach\n"
         "the console to the running KS10 program.\n"
         "\n"
-        "If the breakpoint hardware has been \"triggered\", we assume that we halted\n"
-        "because of the breakpoint, and this command will \"re-arm\" the breakpoint. See\n"
-        "the breakpoint command for more information.\n"
-        "\n"
         "Usage: co [--help]\n"
         "\n";
 
@@ -1209,12 +1228,6 @@ static bool cmdCO(int argc, char *argv[]) {
             printf(usage);
             return true;
         }
-    }
-
-    ks10_t::data_t dcsr = ks10_t::readDCSR();
-    if (((dcsr & ks10_t::dcsrBRCMD) == ks10_t::dcsrBRCMD_MATCH) && ((dcsr & ks10_t::dcsrBRSTATE) == ks10_t::dcsrBRSTATE_IDLE)) {
-        ks10_t::writeDCSR(ks10_t::dcsrBRCMD_MATCH | dcsr);
-        printf("co: re-arming breakpoint\n");
     }
 
     if (argc > 2) {
@@ -1754,7 +1767,7 @@ static bool cmdGO(int argc, char *argv[]) {
     // go --mt diag addr  4       1
     //
 
-#if 0
+#if 1
     printf("argc = %d, index = %d\n", argc, index);
     printf("arv[0] = %s\n", argv[0]);
     printf("arv[1] = %s\n", argv[1]);
@@ -1776,7 +1789,7 @@ static bool cmdGO(int argc, char *argv[]) {
     //
     // Load DSQDA diagnostic subroutines (SUBSM)
     //
-
+#if 0
     printf("go: loading SUBSM.\n");
     if (!loadCode("diag/subsm.sav")) {
         printf("go: failed to load diag/subsm.sav\n");
@@ -1790,7 +1803,7 @@ static bool cmdGO(int argc, char *argv[]) {
     if (!loadCode("diag/smddt.sav")) {
         printf("go: failed to load diag/smddt.sav\n");
     }
-
+#endif
     //
     // Load the proper the diagnostic monitor and set boot parameters.
     //
@@ -1851,6 +1864,8 @@ static bool cmdGO(int argc, char *argv[]) {
         } else if (strncasecmp("diag/dskac.sav", argv[index + 1], 10) == 0) {
             fixDSKAC();
         }
+    } else if (((argc == 1) && (index == 0)) || ((argc == 2) && (index == 1))) {
+        ;
     } else {
         printf("go: unrecognized command.\n%s", usage);
         return true;
@@ -2182,13 +2197,14 @@ static bool cmdLP(int argc, char *argv[]) {
         printf(usageTop);
 
     } else if (strncasecmp(argv[1], "break", 3) == 0) {
-
+#if 0
         static const ks10_t::addr_t flagPhys = 0x008000000ULL;
         static const ks10_t::addr_t flagIO   = 0x002000000ULL;
         ks10_t::writeDBAR(flagPhys | flagIO | 003775400ULL);            // break on IO operations to
         ks10_t::writeDBMR(flagPhys | flagIO | 017777700ULL);            // range of addresses
         ks10_t::writeDCSR(ks10_t::dcsrBRCMD_MATCH | (ks10_t::readDCSR() & ~ks10_t::dcsrBRCMD));
         printf("lp break: breakpoint set\n");
+#endif
         return true;
 
     } else if (strncasecmp(argv[1], "config", 3) == 0) {
@@ -2910,6 +2926,268 @@ static bool cmdMT_CONF(int argc, char *argv[]) {
     }
     return true;
 }
+
+//!
+//! \brief
+//!    Magtape dump
+//!
+//! \details
+//!    The <b>MT DUMP</b> command is the console interface to dump the
+//!    MT device registers.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//!
+//! \returns
+//!    True if the interpreter should print a prompt after completion;
+//!    otherwise false.
+//!
+
+bool cmdMT_DUMP(int argc, char *argv[]) {
+
+    static const char *usage =
+        "\n"
+        "The \"mt dump\" command prints the contents of the magtape device registers.\n"
+        "\n"
+        "Usage: mt dump [--help]\n"
+        "\n";
+
+    static const struct option options[] = {
+        {"help",    no_argument, 0, 0},  // 0
+        {0,         0,           0, 0},  // 1
+    };
+
+    opterr = 0;
+    for (;;) {
+        int index = 0;
+        int ret = getopt_long(argc, argv, "", options, &index);
+        if (ret == -1) {
+            break;
+        } else if (ret == '?') {
+            printf("mt dump: unrecognized option \"%s\"\n\n%s", argv[optind-1], usage);
+            return true;
+        } else if (index == 0) {
+            printf(usage);
+            return true;
+        }
+    }
+
+    mt.dumpRegs();
+    return true;
+}
+
+//!
+//! \brief
+//!    Magtape erase
+//!
+//! \details
+//!    The <b>MT ERASE</b> command writes an erase gap on the magtape media.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//!
+//! \returns
+//!    True if the interpreter should print a prompt after completion;
+//!    otherwise false.
+//!
+
+bool cmdMT_ERASE(int argc, char *argv[]) {
+
+    static const char *usage =
+        "\n"
+         "The \"mt erase\" command writes an erase gap on the magtape media.\n"
+        "\n"
+        "Usage: mt erase [--help]\n"
+        "\n";
+
+    static const struct option options[] = {
+        {"help",    no_argument, 0, 0},  // 0
+        {0,         0,           0, 0},  // 1
+    };
+
+    opterr = 0;
+    for (;;) {
+        int index = 0;
+        int ret = getopt_long(argc, argv, "", options, &index);
+        if (ret == -1) {
+            break;
+        } else if (ret == '?') {
+            printf("mt erase: unrecognized option \"%s\"\n\n%s", argv[optind-1], usage);
+            return true;
+        } else if (index == 0) {
+            printf(usage);
+            return true;
+        }
+    }
+
+    mt.cmdErase(mt.cfg.param);
+
+    return true;
+}
+
+//!
+//! \brief
+//!    Magtape preset
+//!
+//! \details
+//!    The <b>MT PRESET</b> command presets the magtape media.
+//!    MT device registers.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//!
+//! \returns
+//!    True if the interpreter should print a prompt after completion;
+//!    otherwise false.
+//!
+
+bool cmdMT_PRESET(int argc, char *argv[]) {
+
+   static const char *usage =
+       "\n"
+        "The \"mt preset\" command presets the magtape media.\n"
+        "\n"
+        "Usage: mt preset [--help]\n"
+        "\n";
+
+    static const struct option options[] = {
+        {"help",    no_argument, 0, 0},  // 0
+        {0,         0,           0, 0},  // 1
+    };
+
+    opterr = 0;
+    for (;;) {
+        int index = 0;
+        int ret = getopt_long(argc, argv, "", options, &index);
+        if (ret == -1) {
+            break;
+        } else if (ret == '?') {
+            printf("mt preset: unrecognized option \"%s\"\n\n%s", argv[optind-1], usage);
+            return true;
+        } else if (index == 0) {
+            printf(usage);
+            return true;
+        }
+    }
+
+    mt.cmdPreset(mt.cfg.param);
+
+    return true;
+}
+
+//!
+//! \brief
+//!    Magtape reset
+//!
+//! \details
+//!    The <b>MT RESET</b> command is the console interface to resest the
+//!    MT device registers.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//!
+//! \returns
+//!    True if the interpreter should print a prompt after completion;
+//!    otherwise false.
+//!
+
+bool cmdMT_RESET(int argc, char *argv[]) {
+
+   static const char *usage =
+       "\n"
+        "The \"mt reset\" command resets the magtape controller and transport.\n"
+        "\n"
+        "Usage: mt reset [--help]\n"
+        "\n";
+
+    static const struct option options[] = {
+        {"help",    no_argument, 0, 0},  // 0
+        {0,         0,           0, 0},  // 1
+    };
+
+    opterr = 0;
+    for (;;) {
+        int index = 0;
+        int ret = getopt_long(argc, argv, "", options, &index);
+        if (ret == -1) {
+            break;
+        } else if (ret == '?') {
+            printf("mt reset: unrecognized option \"%s\"\n\n%s", argv[optind-1], usage);
+            return true;
+        } else if (index == 0) {
+            printf(usage);
+            return true;
+        }
+    }
+
+    mt.clear();
+    return true;
+}
+
+//!
+//! \brief
+//!    Magtape rewind
+//!
+//! \details
+//!    The <b>MT REWIND</b> command rewinds the magtape media.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//!
+//! \returns
+//!    True if the interpreter should print a prompt after completion;
+//!    otherwise false.
+//!
+
+bool cmdMT_REWIND(int argc, char *argv[]) {
+
+   static const char *usage =
+       "\n"
+        "The \"mt rewind\" command rewinds the magtape media.\n"
+        "\n"
+        "Usage: mt rewind [--help]\n"
+        "\n";
+
+    static const struct option options[] = {
+        {"help",    no_argument, 0, 0},  // 0
+        {0,         0,           0, 0},  // 1
+    };
+
+    opterr = 0;
+    for (;;) {
+        int index = 0;
+        int ret = getopt_long(argc, argv, "", options, &index);
+        if (ret == -1) {
+            break;
+        } else if (ret == '?') {
+            printf("mt rewind: unrecognized option \"%s\"\n\n%s", argv[optind-1], usage);
+            return true;
+        } else if (index == 0) {
+            printf(usage);
+            return true;
+        }
+    }
+
+    mt.cmdRewind(mt.cfg.param);
+
+    return true;
+}
+
 //!
 //! \brief
 //!    Magtape space
@@ -3072,6 +3350,58 @@ static bool cmdMT_SPACE(int argc, char *argv[]) {
 
 //!
 //! \brief
+//!    Magtape status
+//!
+//! \details
+//!    The <b>MT STAT</b> command is the console interface to print
+//!    MT device status.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//!
+//! \returns
+//!    True if the interpreter should print a prompt after completion;
+//!    otherwise false.
+//!
+
+bool cmdMT_STAT(int argc, char *argv[]) {
+
+    static const char *usage =
+        "\n"
+        "The \"mt stat[us]\" prints the magtape controller status.\n"
+        "\n"
+        "Usage: mt stat[us] [--help]\n"
+        "\n";
+
+    static const struct option options[] = {
+        {"help",    no_argument, 0, 0},  // 0
+        {0,         0,           0, 0},  // 1
+    };
+
+    opterr = 0;
+    for (;;) {
+        int index = 0;
+        int ret = getopt_long(argc, argv, "", options, &index);
+        if (ret == -1) {
+            break;
+        } else if (ret == '?') {
+            printf("mt status: unrecognized option \"%s\"\n\n%s", argv[optind-1], usage);
+            return true;
+        } else if (index == 0) {
+            printf(usage);
+            return true;
+        }
+    }
+
+    ks10_t::printMTDEBUG();
+    return true;
+}
+
+//!
+//! \brief
 //!    Magtape test interface
 //!
 //! \details
@@ -3121,10 +3451,7 @@ static bool cmdMT_TEST(int argc, char *argv[]) {
         {"write",  no_argument, 0, 0},  // 6
         {"writ",   no_argument, 0, 0},  // 7
         {"wrchk",  no_argument, 0, 0},  // 8
-        {"rewind", no_argument, 0, 0},  // 9
-        {"preset", no_argument, 0, 0},  // 10
-        {"unload", no_argument, 0, 0},  // 11
-        {0,        0,           0, 0},  // 12
+        {0,        0,           0, 0},  // 9
     };
 
     opterr = 0;
@@ -3151,8 +3478,7 @@ static bool cmdMT_TEST(int argc, char *argv[]) {
                     mt.testInit(mt.cfg.param);
                     break;
                 case 4:
-                    printf("mt test: Reset not implemented yet\n");
-                    //                      mt.reset(mt.cfg.param);
+                    mt.clear();
                     break;
                 case 5:
                     mt.testRead(mt.cfg.param);
@@ -3164,18 +3490,62 @@ static bool cmdMT_TEST(int argc, char *argv[]) {
                 case 8:
                     mt.testWrchk(mt.cfg.param);
                     break;
-                case 9:
-                    mt.cmdRewind(mt.cfg.param);
-                    break;
-                case 10:
-                    mt.cmdPreset(mt.cfg.param);
-                    break;
-                case 11:
-                    mt.cmdUnload(mt.cfg.param);
-                    break;
             }
         }
     }
+    return true;
+}
+
+//!
+//! \brief
+//!    Magtape unload
+//!
+//! \details
+//!    The <b>MT UNLOAD</b> command is the console interface to unload/dismount
+//!    the MT media.
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the arguments.
+//!
+//! \returns
+//!    True if the interpreter should print a prompt after completion;
+//!    otherwise false.
+//!
+
+bool cmdMT_UNLOAD(int argc, char *argv[]) {
+
+    static const char *usage =
+        "\n"
+        "The \"mt unload\" command unloads the magtape media.\n"
+        "\n"
+        "Usage: mt unload [--help]\n"
+        "\n";
+
+    static const struct option options[] = {
+        {"help",    no_argument, 0, 0},  // 0
+        {0,         0,           0, 0},  // 1
+    };
+
+    opterr = 0;
+    for (;;) {
+        int index = 0;
+        int ret = getopt_long(argc, argv, "", options, &index);
+        if (ret == -1) {
+            break;
+        } else if (ret == '?') {
+            printf("mt unload: unrecognized option \"%s\"\n\n%s", argv[optind-1], usage);
+            return true;
+        } else if (index == 0) {
+            printf(usage);
+            return true;
+        }
+    }
+
+    mt.cmdUnload(mt.cfg.param);
+
     return true;
 }
 
@@ -3203,25 +3573,38 @@ static bool cmdMT(int argc, char *argv[]) {
     // Top level options and help
     //
 
-    static const char *usageTop =
+    static const char *usage =
         "\n"
         "The mt command provides an interface to configure and test the Magtape\n"
         "hardware.\n"
         "\n"
-        "Usage: mt [--help] <command> [<args>]\n"
+        "Usage: mt [--help] | [command [args] | [--help]]\n"
         "\n"
         "The mt commands are:\n"
-        "  boot      Boot from Magtape devices\n"
-        "  config    Configure Magtape\n"
-        "  dismount  Dismount the Magtape\n"
-        "  dump      Dump MT related registers\n"
-        "  preset    Preset the Magtape\n"
-        "  reset     Reset the Magtape hardware\n"
-        "  rewind    Rewind the Magtape\n"
-        "  space     Skip records or files on the Magtape\n"
-        "  stat      Print MT status\n"
-        "  test      Test MT functionality\n"
-        "  unload    Unload the Magtape\n"
+        "  boo[t]   Boot from Magtape devices\n"
+        "  con[fig] Configure Magtape\n"
+        "  dum[p]   Dump MT related registers\n"
+        "  era[se]  Write an erase gap on the Magtape\n"
+        "  pre[set] Preset the Magtape\n"
+        "  res[et]  Reset the Magtape hardware\n"
+        "  rew[ind] Rewind the Magtape\n"
+        "  spa[ce]  Skip records or files on the Magtape\n"
+        "  sta[t]   Print MT status\n"
+        "  tes[t]   Test MT functionality\n"
+        "  unl[oad] Unload the Magtape\n"
+        "\n"
+        "See also:\n"
+        "  mt boo[t]   --help\n"
+        "  mt con[fig] --help\n"
+        "  mt dum[p]   --help\n"
+        "  mt era[se]  --help\n"
+        "  mt pre[set] --help\n"
+        "  mt res[et]  --help\n"
+        "  mt rew[ind] --help\n"
+        "  mt spa[ce]  --help\n"
+        "  mt sta[t]   --help\n"
+        "  mt tes[t]   --help\n"
+        "  mt unl[oad] --help\n"
         "\n";
 
     //
@@ -3229,35 +3612,35 @@ static bool cmdMT(int argc, char *argv[]) {
     //
 
     if (argc == 1) {
-        printf(usageTop);
+        printf(usage);
         return true;
     }
 
     if (strncasecmp(argv[1], "--help", 4) == 0) {
-        printf(usageTop);
+        printf(usage);
         return true;
-    } else if (strncasecmp(argv[1], "boot", 4) == 0) {
+    } else if (strncasecmp(argv[1], "boot", 3) == 0) {
         return cmdMT_BOOT(argc, argv);
-    } else if (strncasecmp(argv[1], "conf", 4) == 0) {
+    } else if (strncasecmp(argv[1], "conf", 3) == 0) {
         return cmdMT_CONF(argc, argv);
-    } else if (strncasecmp(argv[1], "dismount", 4) == 0) {
-        mt.cmdUnload(mt.cfg.param);
-    } else if (strncasecmp(argv[1], "dump", 4) == 0) {
-        mt.dumpRegs();
-    } else if (strncasecmp(argv[1], "preset", 4) == 0) {
-        mt.cmdPreset(mt.cfg.param);
-    } else if (strncasecmp(argv[1], "reset", 4) == 0) {
-        mt.clear();
-    } else if (strncasecmp(argv[1], "rewind", 4) == 0) {
-        mt.cmdRewind(mt.cfg.param);
-    } else if (strncasecmp(argv[1], "space", 4) == 0) {
+    } else if (strncasecmp(argv[1], "dump", 3) == 0) {
+        return cmdMT_DUMP(argc, argv);
+    } else if (strncasecmp(argv[1], "erase", 3) == 0) {
+        return cmdMT_ERASE(argc, argv);
+    } else if (strncasecmp(argv[1], "preset", 3) == 0) {
+        return cmdMT_PRESET(argc, argv);
+    } else if (strncasecmp(argv[1], "reset", 3) == 0) {
+        return cmdMT_RESET(argc, argv);
+    } else if (strncasecmp(argv[1], "rewind", 3) == 0) {
+        return cmdMT_REWIND(argc, argv);
+    } else if (strncasecmp(argv[1], "space", 3) == 0) {
         return cmdMT_SPACE(argc, argv);
-    } else if (strncasecmp(argv[1], "stat", 4) == 0) {
-        ks10_t::printMTDEBUG();
-    } else if (strncasecmp(argv[1], "test", 4) == 0) {
+    } else if (strncasecmp(argv[1], "stat", 3) == 0) {
+        return cmdMT_STAT(argc, argv);
+    } else if (strncasecmp(argv[1], "test", 3) == 0) {
         return cmdMT_TEST(argc, argv);
-    } else if (strncasecmp(argv[1], "unload", 4) == 0) {
-        mt.cmdUnload(mt.cfg.param);
+    } else if (strncasecmp(argv[1], "unload",3) == 0) {
+        return cmdMT_UNLOAD(argc, argv);
     } else {
         printf("mt: unrecognized option \'%s\'\n", argv[1]);
     }
@@ -4378,19 +4761,20 @@ static bool cmdTR(int argc, char *argv[]) {
         "       TR STAT   : display instruction trace registers\n"
         "       TR DUMP   : print the contents of the trace buffer\n"
         "\n";
-
+#if 0
     static const char *header =
         "Dump of Trace Buffer:\n"
         "Entry\t  PC  \tOPC AC I XR   EA  \n"
         "-----\t------\t--- -- - -- ------\n";
-
+#endif
     switch (argc) {
         case 1:
-            printf("Debug Control/Status Register     : %012o\n", ks10_t::readDCSR());
-            printf("Debug Instruction Trace Register  : %018llo\n", ks10_t::readDITR());
             printf(usage);
             break;
         case 2:
+#if 1
+            (void)argv;
+#else
             if (strncasecmp(argv[1], "reset", 2) ==   0) {
                 ks10_t::writeDCSR(ks10_t::dcsrTRCMD_RESET | (ks10_t::readDCSR() & ~ks10_t::dcsrTRCMD));
             } else if (strncasecmp(argv[1], "trig",   2) == 0) {
@@ -4413,6 +4797,7 @@ static bool cmdTR(int argc, char *argv[]) {
             } else {
                 printf(usage);
             }
+#endif
             break;
         default:
             printf(usage);

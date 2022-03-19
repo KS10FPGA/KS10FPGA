@@ -590,7 +590,17 @@ void mt_t::cmdSpaceRev(uint16_t param, uint16_t frameCount) {
     (void) param;
     (void) frameCount;
     printf("mt cmdSpaceRev() not implemented.\n");
-//  executeCommand(MTCS1_FUN_SPCFWD, param, );
+//  executeCommand(MTCS1_FUN_SPCREV, param, );
+}
+
+//!
+//! \brief
+//!    Erase command
+//!
+
+void mt_t::cmdErase(uint16_t param) {
+    (void) param;
+    printf("mt cmdErase() not implemented.\n");
 }
 
 //!

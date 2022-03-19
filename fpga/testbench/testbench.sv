@@ -245,15 +245,20 @@ module testbench;
                       addrREGMTCCR  = 32'h4000_0028,
                       addrREGDPCCR  = 32'h4000_002c,
                       addrREGCKMCCR = 32'h4000_0030,
-                      addrDCSR      = 32'h4000_003c,
-                      addrDBAR      = 32'h4000_0040,
-                      addrDBMR      = 32'h4000_0048,
                       addrDITR      = 32'h4000_0050,
                       addrPCIR      = 32'h4000_0058,
                       addrMTDIR     = 32'h4000_0060,
                       addrMTDEBUG   = 32'h4000_0068,
                       addrRPDEBUG   = 32'h4000_0070,
-                      addrVersion   = 32'h4000_0078;
+                      addrBRAR0     = 32'h4000_0080,
+                      addrBRMR0     = 32'h4000_0088,
+                      addrBRAR1     = 32'h4000_0090,
+                      addrBRMR1     = 32'h4000_0098,
+                      addrBRAR2     = 32'h4000_00a0,
+                      addrBRMR2     = 32'h4000_00a8,
+                      addrBRAR3     = 32'h4000_00b0,
+                      addrBRMR3     = 32'h4000_00b8,
+                      addrVERSION   = 32'h4000_00f8;
 
    //
    // KS10 Addresses
@@ -573,13 +578,23 @@ module testbench;
         //
 
 `ifdef BRKPT
-        conWRITE36(addrDCSR, 36'o000000_040000);
-        conWRITE36(addrDBAR, 36'o140000_034776);
-        conWRITE36(addrDBMR, 36'o140003_777777);
+        conWRITE36(addrBRAR0, 36'o140000_020030);
+        conWRITE36(addrBRMR0, 36'o140003_777777);
+        conWRITE36(addrBRAR1, 36'o000000_000000);
+        conWRITE36(addrBRMR1, 36'o000000_000000);
+        conWRITE36(addrBRAR2, 36'o000000_000000);
+        conWRITE36(addrBRMR2, 36'o000000_000000);
+        conWRITE36(addrBRAR3, 36'o000000_000000);
+        conWRITE36(addrBRMR3, 36'o000000_000000);
 `else
-        conWRITE36(addrDCSR, 36'o000000_000000);
-        conWRITE36(addrDBAR, 36'o000000_000000);
-        conWRITE36(addrDBMR, 36'o000000_000000);
+        conWRITE36(addrBRAR0, 36'o000000_000000);
+        conWRITE36(addrBRMR0, 36'o000000_000000);
+        conWRITE36(addrBRAR1, 36'o000000_000000);
+        conWRITE36(addrBRMR1, 36'o000000_000000);
+        conWRITE36(addrBRAR2, 36'o000000_000000);
+        conWRITE36(addrBRMR2, 36'o000000_000000);
+        conWRITE36(addrBRAR3, 36'o000000_000000);
+        conWRITE36(addrBRMR3, 36'o000000_000000);
 `endif
 
         //
@@ -619,7 +634,7 @@ module testbench;
         conREADIO(22'o3772452, temp);
         $display("[%11.3f] KS10: MTDS[0] is \"%6o\"", $time/1.0e3, temp);
 
-        conREAD64(addrVersion, temp64);
+        conREAD64(addrVERSION, temp64);
         $display("[%11.3f] KS10: FVR  is \"%c%c%c%c%c%c%c%c\".", $time/1.0e3,
                  temp64[56:63], temp64[48:55], temp64[40:47], temp64[32:39],
                  temp64[24:31], temp64[16:23], temp64[ 8:15], temp64[ 0: 7]);

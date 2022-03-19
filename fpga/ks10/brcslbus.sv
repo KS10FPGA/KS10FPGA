@@ -3,20 +3,20 @@
 // KS-10 Processor
 //
 // Brief
-//   Debug Control/Status Register Header File
+//   KS10 Console to Breakpoint Device Interface
 //
 // Details
-//   This file contains the Debug Control/Status Register bit definitions.
+//   This file contains interface definitions for Breakpoint Device.
 //
 // File
-//   debcsr.vh
+//   brcslbus.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2020-2021 Rob Doyle
+// Copyright (C) 2022 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -38,18 +38,39 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifndef __DEBCSR_VH
-`define __DEBCSR_VH
+`default_nettype none
+`timescale 1ns/1ps
 
 //
-// RPCCR bits
+// BR/CSL Interface
 //
 
-`define dcsrBRCMD(reg)   (reg[ 9:11])  // Breakpoint command
-`define dcsrBRSTATE(reg) (reg[13:15])  // Breakpoint state
-`define dcsrTRCMD(reg)   (reg[24:26])  // Trace command
-`define dcsrTRSTATE(reg) (reg[27:29])  // Trace state
-`define dcsrTRFULL(reg)  (reg[30])     // Trace full
-`define dcsrTREMPTY(reg) (reg[31])     // Trace empty
+interface brcslbus;
+   logic        clk;                    // Clock
+   logic        rst;                    // Reset
+   logic [0:35] regBRAR[0:3];           // Breakpoint Address Registers
+   logic [0:35] regBRMR[0:3];           // Breakpoint Mask Registers
 
-`endif
+   //
+   // CSL Port
+   //
+
+   modport csl (
+      output clk,                       // Clock
+      output rst,                       // Reset
+      output regBRAR,                   // Breakpoint Address Registers
+      output regBRMR                    // Breakpoint Mask Registers
+   );
+
+   //
+   // BR Port
+   //
+
+   modport br (
+      input  clk,                       // Clock
+      input  rst,                       // Reset
+      input  regBRAR,                   // Breakpoint Address Registers
+      input  regBRMR                    // Breakpoint Mask Registers
+   );
+
+endinterface

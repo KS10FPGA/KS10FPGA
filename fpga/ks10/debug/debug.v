@@ -52,163 +52,11 @@ module DEBUG (
       input  wire [ 0:35] cpuHR,        // Instruction register
       input  wire         regsLOAD,     // Load registers
       input  wire         vmaLOAD,      // Load VMA
-      input  wire [ 0: 2] debBRCMD,     // Breakpoint command
-      output reg  [13:15] debBRSTATE,   // Breakpoint state
-      input  wire [24:26] debTRCMD,     // Trace command
-      output reg  [27:29] debTRSTATE,   // Trace state
-      output wire         debTRFULL,    // Trace full
-      output wire         debTREMPTY,   // Trace empty
-      input  wire [ 0:35] debBAR,       // Breakpoint address register
-      input  wire [ 0:35] debBMR,       // Breakpoint mask register
       output wire [ 0:63] debITR,       // ITR register
-      output reg  [ 0:63] debPCIR,      // PCIR register
-      input  wire         debBRCMD_WR,  // DCSR breakpoint command write
-      input  wire         debTRCMD_WR,  // DCSR trace command write
-      input  wire         debITR_RD,    // ITR read
-      output wire         debugHALT     // Halt signal to CPU
+      output reg  [ 0:63] debPCIR       // PCIR register
    );
 
-   //
-   // Match and mask
-   //
-
-   wire match = (cpuADDR & debBMR) == (debBAR & debBMR);
-
-   //
-   // Trace Trigger State Machine
-   //
-
-   localparam [2:0] trcmdRESET   = 0,
-                    trcmdTRIGGER = 1,
-                    trcmdADDRMAT = 2,
-                    trcmdSTOP    = 3;
-
-   localparam [2:0] trstateIDLE   = 0,
-                    trstateARMED  = 1,
-                    trstateACTIVE = 2,
-                    trstateDONE   = 3;
-
-   always @(posedge clk)
-     begin
-        if (rst)
-          debTRSTATE <= trstateIDLE;
-        else
-          if ((debTRCMD == trcmdRESET) & debTRCMD_WR)
-            debTRSTATE <= trstateIDLE;
-          else
-            case (debTRSTATE)
-              trstateIDLE:
-                if (debTRCMD_WR)
-                  case (debTRCMD)
-                    trcmdTRIGGER:
-                      debTRSTATE <= trstateACTIVE;
-                    trcmdADDRMAT:
-                      debTRSTATE <= trstateARMED;
-                  endcase
-              trstateARMED:
-                if (match)
-                  debTRSTATE <= trstateACTIVE;
-                else if ((debTRCMD == trcmdSTOP) & debTRCMD_WR)
-                  debTRSTATE <= trstateDONE;
-              trstateACTIVE:
-                if (debTRFULL | ((debTRCMD == trcmdSTOP) & debTRCMD_WR))
-                  debTRSTATE <= trstateDONE;
-              trstateDONE:
-                debTRSTATE <= trstateDONE;
-            endcase
-     end
-
-   //
-   // Breakpoint Trigger State Machine
-   //
-
-   localparam [2:0] brcmdDISABLE = 0,
-                    brcmdTRIG    = 1,
-                    brcmdFULL    = 2,
-                    brcmdEITHER  = 3;
-
-   localparam [2:0] brstateIDLE  = 0,
-                    brstateARMED = 1,
-                    brstateBREAK = 2;
-
-   always @(posedge clk)
-     begin
-        if (rst)
-          debBRSTATE <= trstateIDLE;
-        else
-          if ((debBRCMD == brcmdDISABLE) & debBRCMD_WR)
-            debBRSTATE <= brstateIDLE;
-          else
-            case (debBRSTATE)
-              brstateIDLE:
-                if (debBRCMD_WR)
-                  case (debBRCMD)
-                    brcmdTRIG,
-                    brcmdFULL,
-                    brcmdEITHER:
-                      debBRSTATE <= brstateARMED;
-                  endcase
-              brstateARMED:
-                if (((debBRCMD == brcmdTRIG)   & match ) |
-                    ((debBRCMD == brcmdFULL)   & debTRFULL) |
-                    ((debBRCMD == brcmdEITHER) & match ) |
-                    ((debBRCMD == brcmdEITHER) & debTRFULL))
-                  debBRSTATE <= brstateBREAK;
-              brstateBREAK:
-                debBRSTATE <= brstateIDLE;
-            endcase
-     end
-
-   //
-   // Instruction Trace Buffer (FIFO)
-   //
-
-   wire fifo_rd;
-   wire fifo_wr;
-   wire [ 0:35] fifoHR;
-   wire [18:35] fifoPC;
-
-   EDGETRIG #(
-      .POSEDGE    (0)
-   ) traceRD (
-      .clk        (clk),
-      .rst        (rst),
-      .clken      (1'b1),
-      .i          (debITR_RD),
-      .o          (fifo_rd)
-   );
-
-   EDGETRIG #(
-      .POSEDGE    (1)
-   ) traceWR (
-      .clk        (clk),
-      .rst        (rst),
-      .clken      (1'b1),
-      .i          (regsLOAD & (debTRSTATE == trstateACTIVE)),
-      .o          (fifo_wr)
-   );
-
-   FIFO #(
-      .SIZE       (1*1024),
-      .WIDTH      (54)
-   ) TRACE_BUFFER (
-      .clk        (clk),
-      .rst        (rst),
-      .clr        (debTRSTATE == trstateIDLE),
-      .clken      (1'b1),
-      .rd         (fifo_rd),
-      .wr         (fifo_wr),
-      .in         ({cpuPC, cpuHR}),
-      .out        ({fifoPC, fifoHR}),
-      .full       (debTRFULL),
-      .empty      (debTREMPTY)
-   );
-
-   //
-   // Instruction Trace Register
-   //
-
-   assign debITR = {10'b0, fifoPC, fifoHR};
+   assign debITR = 0;                   // FIXME:
 
    //
    // Program Counter and Instruction Register
@@ -221,12 +69,6 @@ module DEBUG (
         else if (regsLOAD)
           debPCIR <= {cpuPC, cpuHR};
      end
-
-   //
-   // Breakpoint Halt
-   //
-
-   assign debugHALT = debBRSTATE == brstateBREAK;
 
    //
    // Simulation Support

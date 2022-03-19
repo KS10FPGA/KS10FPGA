@@ -50,7 +50,7 @@ module CPU (
       input  wire  [ 1: 4] clkT,        // Clock
       ks10bus.device       cpuBUS,      // KS10 backplane bus
       // Breakpoint
-      input  wire          debugHALT,   // Breakpoint
+      input  wire          brHALT,      // Breakpoint
       // Console
       input  wire          cslRUN,      // Run
       input  wire          cslHALT,     // Halt
@@ -380,7 +380,7 @@ module CPU (
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
-      .debugHALT        (debugHALT),
+      .brHALT           (brHALT),
       .cslRUN           (cslRUN),
       .cslHALT          (cslHALT),
       .cslCONT          (cslCONT),

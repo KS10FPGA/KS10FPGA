@@ -136,24 +136,30 @@ class ks10_t {
         //!
 
         enum reg_offset_t : unsigned int {
-            regCONAROffset   = 0x00,                    //!< CONS  Address Register Offset
-            regCONDROffset   = 0x08,                    //!< CONS  Data Register Offset
-            regCONIROffset   = 0x10,                    //!< CONS  Instruction Register Offset
-            regCONCSROffset  = 0x18,                    //!< CONS  Control/Status Register Offset
-            regDZCCROffset   = 0x1c,                    //!< DZ11  Console Control Register
-            regLPCCROffset   = 0x20,                    //!< LP20  Console Control Register
-            regRPCCROffset   = 0x24,                    //!< RP    Console Control Register
-            regMTCCROffset   = 0x28,                    //!< MT    Console Control Register
-            regDUPCCROffset  = 0x2c,                    //!< DUP11 Console Control Register
-            regDEBCSROffset  = 0x3c,                    //!< DEBUG Control/Status Register
-            regDEBBAROffset  = 0x40,                    //!< DEBUG Breakpoint Address Register
-            regDEBBMROffset  = 0x48,                    //!< DEBUG Breakpoint Mask Register
-            regDEBITROffset  = 0x50,                    //!< DEBUG Instruction Trace Register
-            regDEBPCIROffset = 0x58,                    //!< DEBUG Program Counter and Instruction Register
-            regMTDIROffset   = 0x60,                    //!< MT    Data Interface Register
-            regMTDEBOffset   = 0x68,                    //!< MT    Debug Register
-            regRPDEBOffset   = 0x70,                    //!< RP    Debug Register
-            regVERSOffset    = 0x78,                    //!< FPGA  Version Register
+            regCONAROffset   = 0x00,                    //!< CONS Address Register Offset
+            regCONDROffset   = 0x08,                    //!< CONS Data Register Offset
+            regCONIROffset   = 0x10,                    //!< CONS Instruction Register Offset
+            regCONCSROffset  = 0x18,                    //!< CONS Control/Status Register Offset
+            regDZCCROffset   = 0x1c,                    //!< DZ11 Console Control Register
+            regLPCCROffset   = 0x20,                    //!< LP20 Console Control Register
+            regRPCCROffset   = 0x24,                    //!< RP   Console Control Register
+            regMTCCROffset   = 0x28,                    //!< MT   Console Control Register
+            regDUPCCROffset  = 0x2c,                    //!< DUP  Console Control Register
+            regKMCCCROffset  = 0x30,                    //!< KMC  Console Control Register
+            regDEBITROffset  = 0x50,                    //!< Instruction Trace Register
+            regDEBPCIROffset = 0x58,                    //!< Program Counter and Instruction Register
+            regMTDIROffset   = 0x60,                    //!< MT Data Interface Register
+            regMTDEBOffset   = 0x68,                    //!< MT Debug Register
+            regRPDEBOffset   = 0x70,                    //!< RP Debug Register
+            regBRAR0Offset   = 0x80,                    //!< Breakpoint Address Register #0
+            regBRMR0Offset   = 0x88,                    //!< Breakpoint Mask Register #0
+            regBRAR1Offset   = 0x90,                    //!< Breakpoint Address Register #1
+            regBRMR1Offset   = 0x98,                    //!< Breakpoint Mask Register #1
+            regBRAR2Offset   = 0xa0,                    //!< Breakpoint Address Register #2
+            regBRMR2Offset   = 0xa8,                    //!< Breakpoint Mask Register #2
+            regBRAR3Offset   = 0xb0,                    //!< Breakpoint Address Register #3
+            regBRMR3Offset   = 0xb8,                    //!< Breakpoint Mask Register #3
+            regVERSOffset    = 0xf8,                    //!< FPGA Version Register
         };
 
         //!
@@ -238,32 +244,32 @@ class ks10_t {
 
         //!
         //! \brief
-        //!    Debug Breakpoint Address Register Constants
+        //!    Breakpoint Address Register Constants
         //!
 
-        enum dbar_flags_t : addr_t {
-            dbarMEMMASK = memAddrMask,                  //!< 20-bit Memory Address Mask
-            dbarIOMASK  = ioAddrMask,                   //!< 22-bit IO Address Mask
-            dbarFETCH   = (flagFetch | flagRead),       //!< Fetch flags
-            dbarMEMRD   = (flagRead            ),       //!< Memory read flags
-            dbarMEMWR   = (flagWrite           ),       //!< Memory write flags
-            dbarIORD    = (flagRead  | flagIO  ),       //!< IO read flags
-            dbarIOWR    = (flagWrite | flagIO  ),       //!< IO write flags
+        enum brar_flags_t : addr_t {
+            brarMEMMASK = memAddrMask,                  //!< 20-bit Memory Address Mask
+            brarIOMASK  = ioAddrMask,                   //!< 22-bit IO Address Mask
+            brarFETCH   = (flagFetch | flagRead),       //!< Fetch flags
+            brarMEMRD   = (flagRead            ),       //!< Memory read flags
+            brarMEMWR   = (flagWrite           ),       //!< Memory write flags
+            brarIORD    = (flagRead  | flagIO  ),       //!< IO read flags
+            brarIOWR    = (flagWrite | flagIO  ),       //!< IO write flags
         };
 
         //!
         //! \brief
-        //!    Debug Breakpoint Mask Register Constants
+        //!    Breakpoint Mask Register Constants
         //!
 
-        enum dbmr_flags_t : addr_t {
-            dbmrMEMMASK = memAddrMask,                  //!< 20-bit Memory Address Mask
-            dbmrIOMASK  = ioAddrMask,                   //!< 22-bit IO Address Mask
-            dbmrFETCH   = (flagFetch | flagRead),       //!< Fetch flags
-            dbmrMEMRD   = (flagRead            ),       //!< Memory read flags
-            dbmrMEMWR   = (flagWrite           ),       //!< Memory write flags
-            dbmrIORD    = (flagRead  | flagIO  ),       //!< IO read flags
-            dbmrIOWR    = (flagWrite | flagIO  ),       //!< IO write flags
+        enum brmr_flags_t : addr_t {
+            brmrMEMMASK = memAddrMask,                  //!< 20-bit Memory Address Mask
+            brmrIOMASK  = ioAddrMask,                   //!< 22-bit IO Address Mask
+            brmrFETCH   = (flagFetch | flagRead),       //!< Fetch flags
+            brmrMEMRD   = (flagRead            ),       //!< Memory read flags
+            brmrMEMWR   = (flagWrite           ),       //!< Memory write flags
+            brmrIORD    = (flagRead  | flagIO  ),       //!< IO read flags
+            brmrIOWR    = (flagWrite | flagIO  ),       //!< IO write flags
         };
 
         //!
@@ -358,6 +364,8 @@ class ks10_t {
         static void writeIO16(addr_t addr, uint16_t data);
         static uint8_t readIO8(addr_t addr);
         static void writeIO8(addr_t addr, uint8_t data);
+        static uint32_t readKMCCCR(void);
+        static void writeKMCCCR(uint32_t data);
         static uint32_t readDUPCCR(void);
         static void writeDUPCCR(uint32_t data);
         static uint32_t readDZCCR(void);
@@ -368,12 +376,10 @@ class ks10_t {
         static void writeMTCCR(uint32_t data);
         static uint32_t readRPCCR(void);
         static void writeRPCCR(uint32_t data);
-        static uint32_t readDCSR(void);
-        static void writeDCSR(uint32_t data);
-        static data_t readDBAR(void);
-        static void writeDBAR(data_t data);
-        static data_t readDBMR(void);
-        static void writeDBMR(data_t data);
+        static data_t readBRAR(int unit);
+        static void writeBRAR(int unit, data_t data);
+        static data_t readBRMR(int unit);
+        static void writeBRMR(int unit, data_t data);
         static data_t readDITR(void);
         static data_t readDPCIR(void);
         static uint64_t getMTDEBUG(void);
@@ -453,14 +459,20 @@ class ks10_t {
         static volatile       uint32_t *regRPCCR;               //!< RP Console Control Register
         static volatile       uint32_t *regMTCCR;               //!< MT Console Control Register
         static volatile       uint32_t *regDUPCCR;              //!< DUP11 Console Control Register
-        static volatile       uint32_t *regDEBCSR;              //!< Debug Control/Status Register
-        static volatile       addr_t   *regDEBBAR;              //!< Debug Breakpoint Address Register
-        static volatile       addr_t   *regDEBBMR;              //!< Debug Breakpoint Mask Register
+        static volatile       uint32_t *regKMCCCR;              //!< KMC11 Console Control Register
         static volatile       uint64_t *regDEBITR;              //!< Debug Instruction Trace Register
         static volatile       uint64_t *regDEBPCIR;             //!< Debug Program Counter and Instruction Register
         static volatile       uint64_t *regMTDIR;               //!< MT Data Interface Register
         static volatile const uint64_t *regMTDEBUG;             //!< MT Debug Register
         static volatile const uint64_t *regRPDEBUG;             //!< RP Debug Register
+        static volatile       addr_t   *regBRAR0;               //!< Breakpoint Address Register #0
+        static volatile       addr_t   *regBRMR0;               //!< Breakpoint Mask Register #0
+        static volatile       addr_t   *regBRAR1;               //!< Breakpoint Address Register #1
+        static volatile       addr_t   *regBRMR1;               //!< Breakpoint Mask Register #1
+        static volatile       addr_t   *regBRAR2;               //!< Breakpoint Address Register #2
+        static volatile       addr_t   *regBRMR2;               //!< Breakpoint Mask Register #2
+        static volatile       addr_t   *regBRAR3;               //!< Breakpoint Address Register #3
+        static volatile       addr_t   *regBRMR3;               //!< Breakpoint Mask Register #3
         static          const char     *regVers;                //!< Firmware Version Register
 
         //
@@ -969,32 +981,32 @@ inline void ks10_t::writeDUPCCR(uint32_t data) {
 
 //!
 //! \brief
-//!    This function reads a 32-bit value from the Debug Control/Status Register
+//!    This function reads a 32-bit value from the KMCCCR
 //!
 //! \returns
-//!    contents of the DCSR register
+//!    contents of the KMCCCR register
 //!
 //! \note
 //!    This function is thread safe.
 //!
 
-inline uint32_t ks10_t::readDCSR(void) {
-    return *regDEBCSR;
+inline uint32_t ks10_t::readKMCCCR(void) {
+    return *regKMCCCR;
 }
 
 //!
 //! \brief
-//!    This function writes a 36-bit value to the Debug Control/Status Register
+//!    This function writes a 32-bit value to the KMCCCR
 //!
 //! \param data -
-//!    data is the data to be written to the Debug Control/Status Register
+//!    data is the data to be written to the KMCCCR
 //!
 //! \note
 //!    This function is thread safe.
 //!
 
-inline void ks10_t::writeDCSR(uint32_t data) {
-    *regDEBCSR = data;
+inline void ks10_t::writeKMCCCR(uint32_t data) {
+    *regKMCCCR = data;
 }
 
 //!
@@ -1002,15 +1014,21 @@ inline void ks10_t::writeDCSR(uint32_t data) {
 //!    This function reads a 36-bit value from the Breakpoint Address Register
 //!
 //! \returns
-//!    contents of the DBAR register
+//!    contents of the BRAR register
 //!
 //! \note
 //!    This function is thread safe.
 //!
 
-inline uint64_t ks10_t::readDBAR(void) {
+inline uint64_t ks10_t::readBRAR(int unit) {
+    uint64_t ret;
     LOCK();
-    uint64_t ret = *regDEBBAR;
+    switch(unit & 0x03) {
+        case 0: ret = *regBRAR0; break;
+        case 1: ret = *regBRAR1; break;
+        case 2: ret = *regBRAR2; break;
+        case 3: ret = *regBRAR3; break;
+    }
     UNLOCK();
     return ret;
 }
@@ -1026,9 +1044,14 @@ inline uint64_t ks10_t::readDBAR(void) {
 //!    This function is thread safe.
 //!
 
-inline void ks10_t::writeDBAR(uint64_t data) {
+inline void ks10_t::writeBRAR(int unit, uint64_t data) {
     LOCK();
-    *regDEBBAR = data;
+    switch(unit & 0x03) {
+        case 0: *regBRAR0 = data; break;
+        case 1: *regBRAR1 = data; break;
+        case 2: *regBRAR2 = data; break;
+        case 3: *regBRAR3 = data; break;
+    }
     UNLOCK();
 }
 
@@ -1037,15 +1060,21 @@ inline void ks10_t::writeDBAR(uint64_t data) {
 //!   This function reads a 36-bit value from the Breakpoint Mask Register
 //!
 //! \returns
-//!    contents of the DBMR register
+//!    contents of the BRMR register
 //!
 //! \note
 //!    This function is thread safe.
 //!
 
-inline uint64_t ks10_t::readDBMR(void) {
+inline uint64_t ks10_t::readBRMR(int unit) {
+    uint64_t ret;
     LOCK();
-    uint64_t ret = *regDEBBMR;
+    switch(unit & 0x03) {
+        case 0: ret = *regBRMR0; break;
+        case 1: ret = *regBRMR1; break;
+        case 2: ret = *regBRMR2; break;
+        case 3: ret = *regBRMR3; break;
+    }
     UNLOCK();
     return ret;
 }
@@ -1061,10 +1090,15 @@ inline uint64_t ks10_t::readDBMR(void) {
 //!    This function is thread safe.
 //!
 
-inline void ks10_t::writeDBMR(uint64_t data) {
+inline void ks10_t::writeBRMR(int unit, uint64_t data) {
     LOCK();
-    *regDEBBMR = data;
-    UNLOCK();
+    switch(unit & 0x03) {
+        case 0: *regBRMR0 = data; break;
+        case 1: *regBRMR1 = data; break;
+        case 2: *regBRMR2 = data; break;
+        case 3: *regBRMR3 = data; break;
+    }
+     UNLOCK();
 }
 
 //!

@@ -187,7 +187,6 @@
 `include "mtccr.vh"
 `include "rpccr.vh"
 `include "dupccr.vh"
-`include "debcsr.vh"
 `include "../uba/uba.vh"
 `include "../cpu/bus.vh"
 
@@ -261,29 +260,22 @@ module CSL (
       rpcslbus.csl         rpDATA,      // RP Interface
       // MT Interface
       mtcslbus.csl         mtDATA,      // MT Interface
+      // Breakpoint Interface
+      brcslbus.csl         brDATA,      // Breakpoint Interface
       // Debug Interfaces
-      output logic [ 9:11] debBRCMD,    // Debug Breakpoint command
-      input  wire  [13:15] debBRSTATE,  // Debug Breakpoint state
-      output logic [24:26] debTRCMD,    // Debug Trace command
-      input  wire  [27:29] debTRSTATE,  // Debug Trace state
-      input  wire          debTRFULL,   // Debug Trace full
-      input  wire          debTREMPTY,  // Debug Trace empty
-      output logic [ 0:35] debBAR,      // Debug Breakpoint Address Register
-      output logic [ 0:35] debBMR,      // Debug Breakpoint Mask Register
       input  wire  [ 0:63] debITR,      // Debug Instruction Trace Register
-      input  wire  [ 0:63] debPCIR,     // Debug Program Counter and Instruction Register
-      output logic         debTRCMD_WR, // Debug Trace command write
-      output logic         debBRCMD_WR, // Debug Breakpoint command write
-      output logic         debITR_RD    // Debug Instruction Trace Register Read
+      input  wire  [ 0:63] debPCIR      // Debug Program Counter and Instruction Register
    );
 
    //
    // Revision Info
    //
 
-   localparam [0:15] major  = `MAJOR_VER;
-   localparam [0:15] minor  = `MINOR_VER;
-   localparam [0:63] regREV = {"REV", major, ".", minor};
+   localparam [0:15] major   = `MAJOR_VER;
+   localparam [0:15] minor   = `MINOR_VER;
+   localparam [0:63] fver    = {"REV", major, ".", minor};
+   localparam [0:63] regFVER = {fver[56:63], fver[48:55], fver[40:47], fver[32:39],
+                                fver[24:31], fver[16:23], fver[ 8:15], fver[ 0: 7]};
 
    //
    // The Console is Device 0
@@ -402,18 +394,29 @@ module CSL (
    logic [0:31] regRPCCR;       // 0x24: RP Console Control Register
    logic [0:31] regMTCCR;       // 0x28: MT Console Control Register
    logic [0:31] regDUPCCR;      // 0x2c: DUP11 Console Control Register
-                                // 0x30: Spare
+   logic [0:31] regKMCCCR;      // 0x30: DUP11 Console Control Register
                                 // 0x34: Spare
                                 // 0x38: Spare
-   logic [0:31] regDCSR;        // 0x3c: Debug Control/Status Register
-   logic [0:35] regDBAR;        // 0x40: Debug Breakpoint Address Register
-   logic [0:35] regDBMR;        // 0x48: Debug Breakpoint Mask Register
+                                // 0x3c: Spare
+                                // 0x40: Spare
+                                // 0x44: Spare
+                                // 0x48: Space
+                                // 0x48: Spare
                                 // 0x50: Debug Instruction Trace Register (read-only)
                                 // 0x58: Debug Program Counter and Instruction Register (read-only)
                                 // 0x60: Magtape data interface register out
                                 // 0x68: MT Debug Register (read-only)
                                 // 0x70: RP Debug Regsister (read-only)
-                                // 0x78: Firmware Version Register (read-only
+                                // 0x78: Spare
+   logic [0:35] regBRAR0;       // 0x80: Breakpoint Address Register #0
+   logic [0:35] regBRMR0;       // 0x88: Breakpoint Mask Register #0
+   logic [0:35] regBRAR1;       // 0x90: Breakpoint Address Register #1
+   logic [0:35] regBRMR1;       // 0x98: Breakpoint Mask Register #1
+   logic [0:35] regBRAR2;       // 0xa0: Breakpoint Address Register #2
+   logic [0:35] regBRMR2;       // 0xa8: Breakpoint Mask Register #2
+   logic [0:35] regBRAR3;       // 0xb0: Breakpoint Address Register #3
+   logic [0:35] regBRMR3;       // 0xb8: Breakpoint Mask Register #3
+                                // 0xf8: Firmware Version Register (read-only
 
    always_ff @(posedge clk)
      begin
@@ -428,9 +431,15 @@ module CSL (
              regMTCCR  <= 0;
              regRPCCR  <= 0;
              regDUPCCR <= 0;
-             regDCSR   <= 0;
-             regDBAR   <= 0;
-             regDBMR   <= 0;
+             regKMCCCR <= 0;
+             regBRAR0  <= 0;
+             regBRMR0  <= 0;
+             regBRAR1  <= 0;
+             regBRMR1  <= 0;
+             regBRAR2  <= 0;
+             regBRMR2  <= 0;
+             regBRAR3  <= 0;
+             regBRMR3  <= 0;
           end
 
         else if (axiWREADY & axiWVALID & axiAWREADY & axiAWVALID)
@@ -451,11 +460,23 @@ module CSL (
                  8'h24 : regRPCCR [24:31] <= axiWDATA[ 7: 0];        // RP Console Control Register
                  8'h28 : regMTCCR [24:31] <= axiWDATA[ 7: 0];        // MT Console Control Register
                  8'h2c : regDUPCCR[24:31] <= axiWDATA[ 7: 0];        // DUP11 Console Control Register
-                 8'h3c : regDCSR  [24:31] <= axiWDATA[ 7: 0];        // Debug Control/Status Register
-                 8'h40 : regDBAR  [28:35] <= axiWDATA[ 7: 0];        // Debug Breakpoint Address Register
-                 8'h44 : regDBAR  [ 0: 3] <= axiWDATA[ 3: 0];        // Debug Breakpoint Address Register (HI)
-                 8'h48 : regDBMR  [28:35] <= axiWDATA[ 7: 0];        // Debug Breakpoint Mask Register
-                 8'h4c : regDBMR  [ 0: 3] <= axiWDATA[ 3: 0];        // Debug Breakpoint Mask Register (HI)
+                 8'h30 : regKMCCCR[24:31] <= axiWDATA[ 7: 0];        // KMC11 Console Control Register
+                 8'h80 : regBRAR0 [28:35] <= axiWDATA[ 7: 0];        // Breakpoint Address Register #0
+                 8'h84 : regBRAR0 [ 0: 3] <= axiWDATA[ 3: 0];        // Breakpoint Address Register #0 (HI)
+                 8'h88 : regBRMR0 [28:35] <= axiWDATA[ 7: 0];        // Breakpoint Mask Register #0
+                 8'h8c : regBRMR0 [ 0: 3] <= axiWDATA[ 3: 0];        // Breakpoint Mask Register #0 (HI)
+                 8'h90 : regBRAR1 [28:35] <= axiWDATA[ 7: 0];        // Breakpoint Address Register #1
+                 8'h94 : regBRAR1 [ 0: 3] <= axiWDATA[ 3: 0];        // Breakpoint Address Register #1 (HI)
+                 8'h98 : regBRMR1 [28:35] <= axiWDATA[ 7: 0];        // Breakpoint Mask Register #1
+                 8'h9c : regBRMR1 [ 0: 3] <= axiWDATA[ 3: 0];        // Breakpoint Mask Register #1 (HI)
+                 8'ha0 : regBRAR2 [28:35] <= axiWDATA[ 7: 0];        // Breakpoint Address Register #2
+                 8'ha4 : regBRAR2 [ 0: 3] <= axiWDATA[ 3: 0];        // Breakpoint Address Register #2 (HI)
+                 8'ha8 : regBRMR2 [28:35] <= axiWDATA[ 7: 0];        // Breakpoint Mask Register #2
+                 8'hac : regBRMR2 [ 0: 3] <= axiWDATA[ 3: 0];        // Breakpoint Mask Register #2 (HI)
+                 8'hb0 : regBRAR3 [28:35] <= axiWDATA[ 7: 0];        // Breakpoint Address Register #3
+                 8'hb4 : regBRAR3 [ 0: 3] <= axiWDATA[ 3: 0];        // Breakpoint Address Register #3 (HI)
+                 8'hb8 : regBRMR3 [28:35] <= axiWDATA[ 7: 0];        // Breakpoint Mask Register #3
+                 8'hbc : regBRMR3 [ 0: 3] <= axiWDATA[ 3: 0];        // Breakpoint Mask Register #3 (HI)
                endcase
 
              if (axiWSTRB[1])
@@ -470,9 +491,15 @@ module CSL (
                  8'h24 : regRPCCR [16:23] <= axiWDATA[15: 8];        // RP Console Control Register
                  8'h28 : regMTCCR [16:23] <= axiWDATA[15: 8];        // MT Console Control Register
                  8'h2c : regDUPCCR[16:23] <= axiWDATA[15: 8];        // DUP11 Console Control Register
-                 8'h3c : regDCSR  [16:23] <= axiWDATA[15: 8];        // Debug Control/Status Register
-                 8'h40 : regDBAR  [20:27] <= axiWDATA[15: 8];        // Debug Breakpoint Address Register
-                 8'h48 : regDBMR  [20:27] <= axiWDATA[15: 8];        // Debug Breakpoint Mask Register
+                 8'h30 : regKMCCCR[16:23] <= axiWDATA[15: 8];        // KMC11 Console Control Register
+                 8'h80 : regBRAR0 [20:27] <= axiWDATA[15: 8];        // Breakpoint Address Register #0
+                 8'h88 : regBRMR0 [20:27] <= axiWDATA[15: 8];        // Breakpoint Mask Register #0
+                 8'h90 : regBRAR1 [20:27] <= axiWDATA[15: 8];        // Breakpoint Address Register #1
+                 8'h98 : regBRMR1 [20:27] <= axiWDATA[15: 8];        // Breakpoint Mask Register #1
+                 8'ha0 : regBRAR2 [20:27] <= axiWDATA[15: 8];        // Breakpoint Address Register #2
+                 8'ha8 : regBRMR2 [20:27] <= axiWDATA[15: 8];        // Breakpoint Mask Register #2
+                 8'hb0 : regBRAR3 [20:27] <= axiWDATA[15: 8];        // Breakpoint Address Register #3
+                 8'hb8 : regBRMR3 [20:27] <= axiWDATA[15: 8];        // Breakpoint Mask Register #3
                endcase
 
             if (axiWSTRB[2])
@@ -487,9 +514,15 @@ module CSL (
                  8'h24 : regRPCCR [ 8:15] <= axiWDATA[23:16];        // RP Console Control Register
                  8'h28 : regMTCCR [ 8:15] <= axiWDATA[23:16];        // MT Console Control Register
                  8'h2c : regDUPCCR[ 8:15] <= axiWDATA[23:16];        // DUP11 Console Control Register
-                 8'h3c : regDCSR  [ 8:15] <= axiWDATA[23:16];        // Debug Control/Status Register
-                 8'h40 : regDBAR  [12:19] <= axiWDATA[23:16];        // Debug Breakpoint Address Register
-                 8'h48 : regDBMR  [12:19] <= axiWDATA[23:16];        // Debug Breakpoint Mask Register
+                 8'h30 : regKMCCCR[ 8:15] <= axiWDATA[23:16];        // KMC11 Console Control Register
+                 8'h80 : regBRAR0 [12:19] <= axiWDATA[23:16];        // Breakpoint Address Register #0
+                 8'h88 : regBRMR0 [12:19] <= axiWDATA[23:16];        // Breakpoint Mask Register #0
+                 8'h90 : regBRAR1 [12:19] <= axiWDATA[23:16];        // Breakpoint Address Register #1
+                 8'h98 : regBRMR1 [12:19] <= axiWDATA[23:16];        // Breakpoint Mask Register #1
+                 8'ha0 : regBRAR2 [12:19] <= axiWDATA[23:16];        // Breakpoint Address Register #2
+                 8'ha8 : regBRMR2 [12:19] <= axiWDATA[23:16];        // Breakpoint Mask Register #2
+                 8'hb0 : regBRAR3 [12:19] <= axiWDATA[23:16];        // Breakpoint Address Register #3
+                 8'hb8 : regBRMR3 [12:19] <= axiWDATA[23:16];        // Breakpoint Mask Register #3
                endcase
 
              if (axiWSTRB[3])
@@ -504,9 +537,15 @@ module CSL (
                  8'h24 : regRPCCR [ 0: 7] <= axiWDATA[31:24];        // RP Console Control Register
                  8'h28 : regMTCCR [ 0: 7] <= axiWDATA[31:24];        // MT Console Control Register
                  8'h2c : regDUPCCR[ 0: 7] <= axiWDATA[31:24];        // DUP11 Console Control Register
-                 8'h3c : regDCSR  [ 0: 7] <= axiWDATA[31:24];        // Debug Control/Status Register
-                 8'h40 : regDBAR  [ 4:11] <= axiWDATA[31:24];        // Debug Breakpoint Address Register
-                 8'h48 : regDBMR  [ 4:11] <= axiWDATA[31:24];        // Debug Breakpoint Mask Register
+                 8'h30 : regKMCCCR[ 0: 7] <= axiWDATA[31:24];        // KMC11 Console Control Register
+                 8'h80 : regBRAR0 [ 4:11] <= axiWDATA[31:24];        // Breakpoint Address Register #0
+                 8'h88 : regBRMR0 [ 4:11] <= axiWDATA[31:24];        // Breakpoint Mask Register #0
+                 8'h90 : regBRAR1 [ 4:11] <= axiWDATA[31:24];        // Breakpoint Address Register #1
+                 8'h98 : regBRMR1 [ 4:11] <= axiWDATA[31:24];        // Breakpoint Mask Register #1
+                 8'ha0 : regBRAR2 [ 4:11] <= axiWDATA[31:24];        // Breakpoint Address Register #2
+                 8'ha8 : regBRMR2 [ 4:11] <= axiWDATA[31:24];        // Breakpoint Mask Register #2
+                 8'hb0 : regBRAR3 [ 4:11] <= axiWDATA[31:24];        // Breakpoint Address Register #3
+                 8'hb8 : regBRMR3 [ 4:11] <= axiWDATA[31:24];        // Breakpoint Mask Register #3
                 endcase
           end
 
@@ -550,7 +589,6 @@ module CSL (
    wire [0:31] regSTAT   = {15'b0, cslGOSTAT, 6'b0, regCONCSR[22], cpuHALT, cpuRUN, cpuCONT, cpuEXEC, cslTIMEREN, cslTRAPEN, cslCACHEEN, 1'b0, cslRESET};
    wire [0:31] regLPRD   = {6'b0, lpCONFIG, 13'b0, lpSIXLPI, lpOVFU, lpONLINE};
    wire [0:31] regDUPRD  = {dupTXE, 3'b0, dupRI, dupCTS, dupDSR, dupDCD, dupTXFIFO, dupRXF, dupDTR, dupRTS, 1'b0, dupH325, dupW3, dupW5, dupW6, 8'b0};
-   wire [0:31] regDEBCSR = {9'b0, debBRCMD, 1'b0, debBRSTATE, 8'b0, debTRCMD, debTRSTATE, debTRFULL, debTREMPTY};
 
    always_ff @(posedge clk)
      begin
@@ -576,14 +614,14 @@ module CSL (
                     8'h24   : axiRDATA <= regRPCCR;                  // RP Console Control Register
                     8'h28   : axiRDATA <= regMTCCR;                  // MT Console Control Register
                     8'h2c   : axiRDATA <= regDUPRD;                  // DUP11 Console Control Register
-                    8'h30   : axiRDATA <= 0;                         // Spare
+                    8'h30   : axiRDATA <= regKMCCCR;                 // KMC11 Console Control Register
                     8'h34   : axiRDATA <= 0;                         // Spare
                     8'h38   : axiRDATA <= 0;                         // Spare
-                    8'h3c   : axiRDATA <= regDEBCSR;                 // Debug Control/Status Register
-                    8'h40   : axiRDATA <= regDBAR[4:35];             // Breakpoint Address Register
-                    8'h44   : axiRDATA <= {28'b0, regDBAR[0:3]};     // Breakpoint Address Register (HI)
-                    8'h48   : axiRDATA <= regDBMR[4:35];             // Breakpoint Mask Register
-                    8'h4c   : axiRDATA <= {28'b0, regDBMR[0:3]};     // Breakpoint Mask Register (HI)
+                    8'h3c   : axiRDATA <= 0;                         // Spare
+                    8'h40   : axiRDATA <= 0;                         // Spare
+                    8'h44   : axiRDATA <= 0;                         // Spare
+                    8'h48   : axiRDATA <= 0;                         // Spare
+                    8'h4c   : axiRDATA <= 0;                         // Spare
                     8'h50   : axiRDATA <= debITR[32:63];             // Instruction Trace Register
                     8'h54   : axiRDATA <= debITR[0 :31];             // Instruction Trace Register (HI)
                     8'h58   : axiRDATA <= debPCIR[32:63];            // Debug Program Counter and Intruction Register
@@ -594,8 +632,26 @@ module CSL (
                     8'h6c   : axiRDATA <= mtDATA.mtDEBUG[63:32];     // MT Debug Register (HI)
                     8'h70   : axiRDATA <= rpDATA.rpDEBUG[32:63];     // RP Debug Register
                     8'h74   : axiRDATA <= rpDATA.rpDEBUG[ 0:31];     // RP Debug Register (HI)
-                    8'h78   : axiRDATA <= {regREV[24:31], regREV[16:23], regREV[ 8:15], regREV[ 0: 7]};// Firmware Version Register
-                    8'h7c   : axiRDATA <= {regREV[56:63], regREV[48:55], regREV[40:47], regREV[32:39]};// Firmware Version Register (HI)
+                    8'h78   : axiRDATA <= 0;                         // Spare
+                    8'h7c   : axiRDATA <= 0;                         // Spare
+                    8'h80   : axiRDATA <= regBRAR0[4:35];            // Breakpoint Address Register #0
+                    8'h84   : axiRDATA <= {28'b0, regBRAR0[0:3]};    // Breakpoint Address Register #0 (HI)
+                    8'h88   : axiRDATA <= regBRMR0[4:35];            // Breakpoint Mask Register #0
+                    8'h8c   : axiRDATA <= {28'b0, regBRMR0[0:3]};    // Breakpoint Mask Register #0    (HI)
+                    8'h90   : axiRDATA <= regBRAR1[4:35];            // Breakpoint Address Register #1
+                    8'h94   : axiRDATA <= {28'b0, regBRAR1[0:3]};    // Breakpoint Address Register #1 (HI)
+                    8'h98   : axiRDATA <= regBRMR1[4:35];            // Breakpoint Mask Register #1
+                    8'h9c   : axiRDATA <= {28'b0, regBRMR1[0:3]};    // Breakpoint Mask Register #1    (HI)
+                    8'ha0   : axiRDATA <= regBRAR2[4:35];            // Breakpoint Address Register #2
+                    8'ha4   : axiRDATA <= {28'b0, regBRAR2[0:3]};    // Breakpoint Address Register #2 (HI)
+                    8'ha8   : axiRDATA <= regBRMR2[4:35];            // Breakpoint Mask Register #2
+                    8'hac   : axiRDATA <= {28'b0, regBRMR2[0:3]};    // Breakpoint Mask Register #2    (HI)
+                    8'hb0   : axiRDATA <= regBRAR3[4:35];            // Breakpoint Address Register #3
+                    8'hb4   : axiRDATA <= {28'b0, regBRAR3[0:3]};    // Breakpoint Address Register #3 (HI)
+                    8'hb8   : axiRDATA <= regBRMR3[4:35];            // Breakpoint Mask Register #3
+                    8'hbc   : axiRDATA <= {28'b0, regBRMR3[0:3]};    // Breakpoint Mask Register #3    (HI)
+                    8'hf8   : axiRDATA <= regFVER[32:63];            // Firmware Version Register
+                    8'hfc   : axiRDATA <= regFVER[ 0:31];            // Firmware Version Register (HI)
                     default : axiRDATA <= 32'b0;
                   endcase
                   axiRVALID <= 1;
@@ -723,31 +779,6 @@ module CSL (
      end
 
    //
-   // Debug Outputs
-   //
-
-   assign debBAR   = regDBAR;
-   assign debBMR   = regDBMR;
-   assign debBRCMD = `dcsrBRCMD(regDCSR);
-   assign debTRCMD = `dcsrTRCMD(regDCSR);
-
-   always_ff @(posedge clk)
-     begin
-        if (rst)
-          begin
-             debITR_RD   <= 0;
-             debTRCMD_WR <= 0;
-             debBRCMD_WR <= 0;
-          end
-        else
-          begin
-             debITR_RD   <= rdPULSE & axiWSTRB[3] & (axiARADDR[7:0] == 8'h54);                   // FIFO advances on MSB
-             debTRCMD_WR <= wrPULSE & axiWSTRB[0] & (axiAWADDR[7:0] == 8'h3c);
-             debBRCMD_WR <= wrPULSE & axiWSTRB[2] & (axiAWADDR[7:0] == 8'h3c);
-          end
-     end
-
-   //
    // Backplane Bus Read/Write State Machine
    //
    // Details
@@ -846,6 +877,21 @@ module CSL (
    //
 
    assign cslBUS.busINTRO = 0;
+
+   //
+   // Breakpoint Interface
+   //
+
+   assign brDATA.clk = clk;
+   assign brDATA.rst = rst;
+   assign brDATA.regBRAR[0] = regBRAR0;
+   assign brDATA.regBRAR[1] = regBRAR1;
+   assign brDATA.regBRAR[2] = regBRAR2;
+   assign brDATA.regBRAR[3] = regBRAR3;
+   assign brDATA.regBRMR[0] = regBRMR0;
+   assign brDATA.regBRMR[1] = regBRMR1;
+   assign brDATA.regBRMR[2] = regBRMR2;
+   assign brDATA.regBRMR[3] = regBRMR3;
 
 `ifndef SYNTHESIS
 

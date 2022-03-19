@@ -167,6 +167,7 @@ class mt_t : public rh11_t {
         static void dumpMTFC(ks10_t::addr_t addr);
         static void dumpMTTC(ks10_t::addr_t addr);
         void dumpRegs(void);
+        void cmdErase(uint16_t param);
         void cmdRewind(uint16_t param);
         void cmdUnload(uint16_t param);
         void cmdPreset(uint16_t param);

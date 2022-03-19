@@ -389,19 +389,15 @@ module KS10 (
    wire         lpTOF;                  // LP26 top of form
 
    //
-   // MT/CSL Interface
+   // Device Interfaces
    //
 
-   mtcslbus     mtCSLDATA();            // MT/CSL interface data
+   mtcslbus     mtCSLDATA();            // MT/CSL interface
+   rpcslbus     rpCSLDATA();            // RP/CSL interface
+   brcslbus     brCSLDATA();            // BR/CSL interface
 
    //
-   // RP/CSL Interfaces
-   //
-
-   rpcslbus     rpCSLDATA();            // RP/CSL interface data
-
-   //
-   // Backplane bus signals
+   // Backplane bus interfaces
    //
 
    ks10bus      cpuBUS();               // KS10 backplane bus
@@ -410,7 +406,7 @@ module KS10 (
    ks10bus      ubaBUS[1:4]();          // KS10 backplane bus
 
    //
-   // Unibuses between UBA adapters and UBA devices (x16)
+   // Unibuses between UBA adapters and UBA devices (x20)
    //   Four unibuses for each of the four unibus adapters
    //   UBA2 is not implementable and is tied off.
    //
@@ -418,7 +414,7 @@ module KS10 (
    unibus       unibus[1:4][1:5]();     // Unibus array
 
    //
-   // Massbuses
+   // Massbus interfaces
    //
 
    massbus massbusRP();                 // Massbus from RH11 to disk drives
@@ -432,20 +428,9 @@ module KS10 (
    wire [ 0:35] cpuHR;                  // Instruction Register
    wire         regsLOAD;               // Update registers
    wire         vmaLOAD;                // Update VMA
-   wire [ 9:11] debBRCMD;               // Breakpoint Command
-   wire [13:15] debBRSTATE;             // Breakpoint state
-   wire [24:26] debTRCMD;               // Trace Command
-   wire [27:29] debTRSTATE;             // Trace state
-   wire         debTRFULL;              // Trace full
-   wire         debTREMPTY;             // Trace empty
-   wire [ 0:35] debBAR;                 // Breakpoint Address Register
-   wire [ 0:35] debBMR;                 // Breakpoint Mask Register
    wire [ 0:63] debITR;                 // Instruction Trace Register
    wire [ 0:63] debPCIR;                // Program counter and instruction register
-   wire         debTRCMD_WR;            // Trace Command Write
-   wire         debBRCMD_WR;            // Breakpoint Command Write
-   wire         debITR_RD;              // Read Instruction Trace Register
-   wire         debugHALT;              // Breakpoint the CPU
+   wire         brHALT;                 // Breakpoint the CPU
 
    //
    // This simulates the H325 Loopback Connector which is required for the
@@ -505,7 +490,7 @@ module KS10 (
       .cpuPC            (cpuPC),
       .cpuHR            (cpuHR),
       // Breakpoint
-      .debugHALT        (debugHALT),
+      .brHALT           (brHALT),
       // Console
       .cslRUN           (cslRUN),
       .cslHALT          (cslHALT),
@@ -595,20 +580,11 @@ module KS10 (
       .mtDATA           (mtCSLDATA),
       // RP Interfaces
       .rpDATA           (rpCSLDATA),
+      // Breakpoint Interface
+      .brDATA           (brCSLDATA),
       // Debug Interface
-      .debTRCMD         (debTRCMD),
-      .debBRCMD         (debBRCMD),
-      .debBRSTATE       (debBRSTATE),
-      .debTRSTATE       (debTRSTATE),
-      .debTRFULL        (debTRFULL),
-      .debTREMPTY       (debTREMPTY),
-      .debBAR           (debBAR),
-      .debBMR           (debBMR),
       .debITR           (debITR),
-      .debPCIR          (debPCIR),
-      .debTRCMD_WR      (debTRCMD_WR),
-      .debBRCMD_WR      (debBRCMD_WR),
-      .debITR_RD        (debITR_RD)
+      .debPCIR          (debPCIR)
    );
 
    //
@@ -628,6 +604,16 @@ module KS10 (
    );
 
    //
+   // Breakpoint Interface
+   //
+
+   BRKPT uBRKPT (
+     .brCSLDATA        (brCSLDATA),
+     .cpuADDR          (cpuADDRO),
+     .brHALT           (brHALT)
+   );
+
+   //
    // Debug Interface
    //
 
@@ -639,20 +625,8 @@ module KS10 (
       .cpuHR            (cpuHR),
       .regsLOAD         (regsLOAD),
       .vmaLOAD          (vmaLOAD),
-      .debBRCMD         (debBRCMD),
-      .debBRSTATE       (debBRSTATE),
-      .debTRCMD         (debTRCMD),
-      .debTRSTATE       (debTRSTATE),
-      .debTRFULL        (debTRFULL),
-      .debTREMPTY       (debTREMPTY),
-      .debBAR           (debBAR),
-      .debBMR           (debBMR),
       .debITR           (debITR),
-      .debPCIR          (debPCIR),
-      .debBRCMD_WR      (debBRCMD_WR),
-      .debTRCMD_WR      (debTRCMD_WR),
-      .debITR_RD        (debITR_RD),
-      .debugHALT        (debugHALT)
+      .debPCIR          (debPCIR)
    );
 
 `ifdef UBA1
