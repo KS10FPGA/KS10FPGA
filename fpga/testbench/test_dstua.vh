@@ -19,6 +19,7 @@
 //      expects("^\\?\07",                                                     "TST76\033G", state[11]);
         expects("MOVE TAPE TO BOT, ON LINE, TYPE <CR>:",                       "\015",       state[12]);
         expects("MOVE TAPE OFF BOT, ON-LINE; TYPE <CR>:  ",                    "\015",       state[13]);
+        expects("SMMAG CMD - ",                                                "F\015",      state[14]);
 
 
 //64 0D 0D 0A 45 44 44 54 0D 0D 0D 0A 5E 5C 3F 07 0D 0D 0D 0A
