@@ -65,8 +65,7 @@ module RHBA (
    // always even for word addressing.
    //
    // In the RH11, the bus address can decrement supporting a 'reverse write-
-   // check' and a 'reverse read' operation.  The documents imply that this was
-   // never supported.  This is not implemented.
+   // check' and a 'reverse read' operation.
    //
    // Trace
    //  M7295/BCTC/E14
