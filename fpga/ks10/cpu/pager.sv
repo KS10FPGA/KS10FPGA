@@ -357,57 +357,55 @@ module PAGER (
    // To accomplish this, the pager stores the entire VMA associated with the
    // page fill.  The page translation is only valid for that single access.
    // When the VMA is modified (next instruction or next address), the page
-   // translation is returned as invalid.
+   // translation is returned as invalid.  This will force the microcode to
+   // reload the Pager.
    //
 
-   //
-   // Page Table Write
-   //
-
-   reg [14:35] vma;
+   reg [14:35] pageVMA;
    reg [0 :14] pageTABLE;
 
    always @(posedge clk)
      begin
         if (rst)
           begin
-             vma       <= 0;
+             pageVMA   <= 0;
              pageTABLE <= 0;
+             pageFLAGS <= 0;
+             pageADDR  <= 0;
           end
+
+        //
+        // Page Table Write
+        //
+
         else if (clken & pageWRITE)
           begin
              if (pageSWEEP)
                begin
-                  vma       <= 0;
+                  pageVMA   <= 0;
                   pageTABLE <= 0;
                end
              else
                begin
-                  vma       <= vmaREG[14:35];
+                  pageVMA   <= vmaREG[14:35];
                   pageTABLE <= {pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI};
                end
           end
+
+        //
+        // Page Table Read
+        //  If the VMA has changed, invalidate the Page Valid flag. Otherwise
+        //  lookup the paging.
+        //
+
+        else if (clken & vmaEN)
+          begin
+             if (`vmaADDR(dp) != pageVMA)
+               {pageFLAGS, pageADDR} <= 0;
+             else
+               {pageFLAGS, pageADDR} <= pageTABLE;
+          end
      end
-
-   //
-   // Page Table Read
-   //
-
-  always @(posedge clk)
-    begin
-       if (rst)
-         begin
-            pageFLAGS <= 0;
-            pageADDR  <= 0;
-         end
-       else if (clken & vmaEN)
-         begin
-            if (`vmaADDR(dp) == vma)
-              {pageFLAGS, pageADDR} <= pageTABLE;
-            else
-              {pageFLAGS, pageADDR} <= 0;
-         end
-    end
 
 `endif // !`ifndef PAGE_FAIL_TEST
 
