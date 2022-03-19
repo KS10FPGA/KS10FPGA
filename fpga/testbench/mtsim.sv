@@ -650,11 +650,11 @@
 
                 wordcnt += 1;
                 data = mtDIR[35:0];
-		pos = $ftell(fd_tape);
+                pos = $ftell(fd_tape);
                 $fwrite(fd_mtstat, "[%11.3f] TAPE: Write Forward: Data was %06o,,%06o (wordcnt was %0d, pos was %0d, bpw was %0d)\n",
                         $time/1.0e3, data[35:18], data[17:0], wordcnt, $ftell(fd_tape), bpw);
                 writeData(data);
-		void'($fseek(fd_tape, pos+bpw, SEEK_SET));
+                void'($fseek(fd_tape, pos+bpw, SEEK_SET));
                 conWRITE64(addrMTDIR, 0);
 
              end
@@ -769,14 +769,14 @@
                      //
 
                      wordcnt += 1;
-		     pos = $ftell(fd_tape);
+                     pos = $ftell(fd_tape);
                      data = {28'b0, readData()};
                      conWRITE64(addrMTDIR, mtDIR_STB | data);
 
                      $fwrite(fd_mtstat, "[%11.3f] TAPE: Read Forward: Data was %06o,,%06o (wordcnt was %0d, pos was %0d, header was %0d, bpw was %0d)\n",
                              $time/1.0e3, data[35:18], data[17:0], wordcnt, $ftell(fd_tape)-bpw, header, bpw);
 
-		     void'($fseek(fd_tape, pos+bpw, SEEK_SET));
+                     void'($fseek(fd_tape, pos+bpw, SEEK_SET));
 
 
                      //
