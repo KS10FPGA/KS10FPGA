@@ -229,7 +229,7 @@ bool consoleOutput(void) {
                 printf("^E\n");
                 break;
             } else if (!escape && (ch == cntl_t)) {
-                printPCIR(ks10_t::readDPCIR());
+                printPCIR(ks10_t::readPCIR());
             } else if (!escape && (ch == cntl_l)) {
                 ks10_t::writeLPCCR(ks10_t::lpONLINE | ks10_t::readLPCCR());
             } else {
@@ -654,7 +654,7 @@ static bool cmdBR(int argc, char *argv[]) {
 
     const char *usage =
         "\n"
-        "The \"br#\" command controls the hardware.\n"
+        "The \"br#\" command controls the breakpoint hardware.\n"
         "\n"
         "When a breakpoint condtion is triggered, the breakpoint hardware will halt the\n"
         "processor. There are four independant sets of breakpoint registers which allows\n"
@@ -3772,7 +3772,7 @@ static bool cmdRD(int argc, char *argv[]) {
     } else if (strncasecmp(argv[1], "hsb", 3) == 0) {
         printf("KS10: HSB is %012llo\n", ks10_t::rdHSB());
     } else if (strncasecmp(argv[1], "pc", 2) == 0) {
-        printPCIR(ks10_t::readDITR());
+        printPCIR(ks10_t::readPCIR());
     } else if (strncasecmp(argv[1], "ac", 2) == 0) {
         if (argc == 2) {
             for (unsigned int i = 0; i < 020; i++) {
@@ -4420,13 +4420,13 @@ static bool cmdSI(int argc, char *argv[]) {
 
     if (argc == 1) {
         ks10_t::startSTEP();
-        printPCIR(ks10_t::readDPCIR());
+        printPCIR(ks10_t::readPCIR());
         printf("si: single stepped\n");
     } else if (argc >= 2) {
         unsigned int num = parseOctal(argv[1]);
         for (unsigned int i = 0; i < num; i++) {
             ks10_t::startSTEP();
-            printPCIR(ks10_t::readDPCIR());
+            printPCIR(ks10_t::readPCIR());
         }
         printf("si: single stepped %d instructions\n", num);
         if (argc >= 3) {
@@ -4750,61 +4750,113 @@ static bool cmdTP(int argc, char *argv[]) {
 //!
 
 static bool cmdTR(int argc, char *argv[]) {
+
     static const char *usage =
         "\n"
-        "Control the instruction trace hardware.\n"
-        "Usage: TR {RESET TRIG MATCH SINGLE DUMP}\n"
-        "       TR RESET  : disables trace and flush the trace buffer\n"
-        "       TR TRIG   : trigger trace immediately\n"
-        "       TR MATCH  : trigger trace on address match\n"
-        "       TR STOP   : stop acquiring trace data\n"
-        "       TR STAT   : display instruction trace registers\n"
-        "       TR DUMP   : print the contents of the trace buffer\n"
-        "\n";
-#if 0
+        "The \"tr\" comand controls the instruction trace hardware.\n"
+        "\n"
+        "Usage: TR <options> <length>\n"
+        "\n"
+        "Valid options are:\n"
+        "  --help         Help\n"
+        "  --clr          Reset/Clear the trace buffer\n"
+        "  --clear        Reset/Clear the trace buffer\n"
+        "  --reset        Reset/Clear the trace buffer\n"
+        "  --rst          Reset/Clear the trace buffer\n"
+        "  --size         Prints the trace buffer size. The trace buffer size is fixed\n"
+        "                 when the FPGA is built. The maximum buffer size is only\n"
+        "                 limited by the amount of memory available in the FPGA.\n"
+        "\n"
+        "If the length is not provided, the default length is 32. If the length is\n"
+        "provided the length can be given in decimal, octal, or hex. If the length is\n"
+        " longer than the buffer size, the trace stops when the buffer is empty.\n"
+        "\n"
+        "Examples:\n"
+        "tr               Prints the last 32 samples of trace buffer.\n"
+        "tr 1024          Prints the last 1024 samples of the trace buffer is at least\n"
+        "                 1024 entries in length.\n"
+        "\n"
+        "I never remember the proper command to clear the trace buffer - so I added\n"
+        "them all.\n";
+
+    static const struct option options[] = {
+        {"help",  no_argument, 0, 0},  // 0
+        {"clr",   no_argument, 0, 1},  // 1
+        {"clear", no_argument, 0, 2},  // 2
+        {"reset", no_argument, 0, 3},  // 3
+        {"rst",   no_argument, 0, 4},  // 4
+        {"size",  no_argument, 0, 5},  // 5
+        {0,       0,           0, 6},  // 6
+    };
+
     static const char *header =
         "Dump of Trace Buffer:\n"
-        "Entry\t  PC  \tOPC AC I XR   EA  \n"
-        "-----\t------\t--- -- - -- ------\n";
-#endif
-    switch (argc) {
-        case 1:
-            printf(usage);
-            break;
-        case 2:
-#if 1
-            (void)argv;
-#else
-            if (strncasecmp(argv[1], "reset", 2) ==   0) {
-                ks10_t::writeDCSR(ks10_t::dcsrTRCMD_RESET | (ks10_t::readDCSR() & ~ks10_t::dcsrTRCMD));
-            } else if (strncasecmp(argv[1], "trig",   2) == 0) {
-                ks10_t::writeDCSR(ks10_t::dcsrTRCMD_TRIG  | (ks10_t::readDCSR() & ~ks10_t::dcsrTRCMD));
-            } else if (strncasecmp(argv[1], "match",  2) == 0) {
-               ks10_t::writeDCSR(ks10_t::dcsrTRCMD_MATCH  | (ks10_t::readDCSR() & ~ks10_t::dcsrTRCMD));
-            } else if (strncasecmp(argv[1], "stop",   4) == 0) {
-               ks10_t::writeDCSR(ks10_t::dcsrTRCMD_STOP   | (ks10_t::readDCSR() & ~ks10_t::dcsrTRCMD));
-            } else if (strncasecmp(argv[1], "stat",   4) == 0) {
-                printDEBUG();
-            } else if (strncasecmp(argv[1], "dump",   4) == 0) {
-                // Disable further trace acquisition
-                ks10_t::writeDCSR(ks10_t::dcsrTRCMD_STOP  | (ks10_t::readDCSR() & ~ks10_t::dcsrTRCMD));
-                printf(header);
-                for (int i = 0; (ks10_t::readDCSR() & ks10_t::dcsrEMPTY) != ks10_t::dcsrEMPTY; i++) {
-                    printf("%5d\t", i);
-                    printPCIR(ks10_t::readDITR());
-                }
-                printf("Trace Finished\n");
-            } else {
-                printf(usage);
-            }
-#endif
-            break;
-        default:
-            printf(usage);
-            break;
-    }
-    return true;
+        " Entry     PC      HI     LO    OPC AC I XR   EA  \n"
+        "-------  ------  ------ ------  --- -- - -- ------\n";
 
+    static const uint64_t itrCLR   = 0x8000000000000000;
+//  static const uint64_t itrFULL  = 0x4000000000000000;
+    static const uint64_t itrEMPTY = 0x2000000000000000;
+
+    opterr = 0;
+    for (;;) {
+        int index = 0;
+        int ret = getopt_long(argc, argv, "", options, &index);
+        if (ret == -1) {
+            break;
+        } else if (ret == '?') {
+            printf("tr: unrecognized option: %s\n", argv[optind-1]);
+            return true;
+        } else {
+            switch(index) {
+                case 0:
+                    printf(usage);
+                    return true;
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                    ks10_t::writeITR(itrCLR);
+                    printf("tr: trace buffer cleared\n");
+                    return true;
+                case 5:
+                    printf("tr: the trace buffer size is %d entries\n",
+                           1 << (int)((ks10_t::readITR() >> 56) & 0x1f));
+                    return true;
+            }
+        }
+    }
+
+    int num = 32;
+    if (argc == 2) {
+        num = strtol(argv[1], NULL, 0);
+    }
+
+    bool first = true;
+    for (int i = 0; i < num; i++) {
+        uint64_t itr = ks10_t::readITR();
+//      printf("0x%016llx\n", itr);
+        if (first) {
+            if (itr & itrEMPTY) {
+                printf("tr: trace buffer is empty\n");
+                return true;
+            } else {
+                printf(header);
+            }
+        } else {
+            printf("%7d  ", -i);
+            printPCIR(itr);
+            if ((itr & itrEMPTY) != 0) {
+                printf("tr: trace buffer is empty\n");
+                return true;
+            }
+        }
+        first = false;
+    }
+
+    printf("tr: trace finished\n"
+           "tr: more trace is available\n");
+    return true;
 }
 
 //!
@@ -4826,7 +4878,7 @@ static bool cmdWR(int argc, char *argv[]) {
         "\n"
         "The \"wr\" command writes to memory or Unibus IO.\n"
         "\n"
-        "Usage: wr [--help] <io addr data> | <mem addr data>\n"
+        "Usage: wr [--help] <io_addr data> | <mem_addr data>\n"
         "\n";
 
     static const struct option options[] = {

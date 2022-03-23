@@ -256,15 +256,11 @@ module CSL (
       output logic         lpOVFU,      // LP26 Optical Vertial Format Unit
       input  wire          lpSETOFFLN,  // LP26 Set offline
       output logic         lpONLINE,    // LP26 Status
-      // RP Interface
+      // Interface
       rpcslbus.csl         rpDATA,      // RP Interface
-      // MT Interface
       mtcslbus.csl         mtDATA,      // MT Interface
-      // Breakpoint Interface
       brcslbus.csl         brDATA,      // Breakpoint Interface
-      // Debug Interfaces
-      input  wire  [ 0:63] debITR,      // Debug Instruction Trace Register
-      input  wire  [ 0:63] debPCIR      // Debug Program Counter and Instruction Register
+      trcslbus.csl         trDATA       // Trace Interface
    );
 
    //
@@ -622,10 +618,10 @@ module CSL (
                     8'h44   : axiRDATA <= 0;                         // Spare
                     8'h48   : axiRDATA <= 0;                         // Spare
                     8'h4c   : axiRDATA <= 0;                         // Spare
-                    8'h50   : axiRDATA <= debITR[32:63];             // Instruction Trace Register
-                    8'h54   : axiRDATA <= debITR[0 :31];             // Instruction Trace Register (HI)
-                    8'h58   : axiRDATA <= debPCIR[32:63];            // Debug Program Counter and Intruction Register
-                    8'h5c   : axiRDATA <= debPCIR[ 0:31];            // Debug Program Counter and Intruction Register (HI)
+                    8'h50   : axiRDATA <= trDATA.trITR[32:63];       // Instruction Trace Register
+                    8'h54   : axiRDATA <= trDATA.trITR[0 :31];       // Instruction Trace Register (HI)
+                    8'h58   : axiRDATA <= trDATA.trPCIR[32:63];      // Program Counter and Intruction Register
+                    8'h5c   : axiRDATA <= trDATA.trPCIR[ 0:31];      // Program Counter and Intruction Register (HI)
                     8'h60   : axiRDATA <= mtDATA.mtDIRO[31: 0];      // MT Data Interface Register
                     8'h64   : axiRDATA <= mtDATA.mtDIRO[63:32];      // MT Data Interface Register (HI)
                     8'h68   : axiRDATA <= mtDATA.mtDEBUG[31: 0];     // MT Debug Register
@@ -892,6 +888,15 @@ module CSL (
    assign brDATA.regBRMR[1] = regBRMR1;
    assign brDATA.regBRMR[2] = regBRMR2;
    assign brDATA.regBRMR[3] = regBRMR3;
+
+   //
+   // Trace Interface
+   //
+
+   assign trDATA.clk   = clk;
+   assign trDATA.rst   = rst;
+   assign trDATA.trCLR = wrPULSE & (axiAWADDR[7:0] == 8'h54) & axiWDATA[31];
+   assign trDATA.trADV = rdPULSE & (axiARADDR[7:0] == 8'h54);
 
 `ifndef SYNTHESIS
 

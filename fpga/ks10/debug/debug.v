@@ -47,28 +47,11 @@
 module DEBUG (
       input  wire         rst,          // Reset
       input  wire         clk,          // Clock
-      input  wire [ 0:35] cpuADDR,      // Backplane address from CPU
       input  wire [18:35] cpuPC,        // Program counter
       input  wire [ 0:35] cpuHR,        // Instruction register
       input  wire         regsLOAD,     // Load registers
-      input  wire         vmaLOAD,      // Load VMA
-      output wire [ 0:63] debITR,       // ITR register
-      output reg  [ 0:63] debPCIR       // PCIR register
+      input  wire         vmaLOAD       // Load VMA
    );
-
-   assign debITR = 0;                   // FIXME:
-
-   //
-   // Program Counter and Instruction Register
-   //
-
-   always @(posedge clk)
-     begin
-        if (rst)
-          debPCIR <= 0;
-        else if (regsLOAD)
-          debPCIR <= {cpuPC, cpuHR};
-     end
 
    //
    // Simulation Support

@@ -1,6 +1,9 @@
 files.qsf
+de10_ks10.qsf
 c5_pin_model_dump.txt
 soc_system.sopcinfo
+de10_ks10_assignment_defaults.qdf
+hps_sdram_p0_summary.csv
 db/*
 hps_isw_handoff/*
 incremental_db/*

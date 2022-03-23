@@ -146,8 +146,8 @@ class ks10_t {
             regMTCCROffset   = 0x28,                    //!< MT   Console Control Register
             regDUPCCROffset  = 0x2c,                    //!< DUP  Console Control Register
             regKMCCCROffset  = 0x30,                    //!< KMC  Console Control Register
-            regDEBITROffset  = 0x50,                    //!< Instruction Trace Register
-            regDEBPCIROffset = 0x58,                    //!< Program Counter and Instruction Register
+            regITROffset     = 0x50,                    //!< Instruction Trace Register
+            regPCIROffset    = 0x58,                    //!< Program Counter and Instruction Register
             regMTDIROffset   = 0x60,                    //!< MT Data Interface Register
             regMTDEBOffset   = 0x68,                    //!< MT Debug Register
             regRPDEBOffset   = 0x70,                    //!< RP Debug Register
@@ -380,8 +380,9 @@ class ks10_t {
         static void writeBRAR(int unit, data_t data);
         static data_t readBRMR(int unit);
         static void writeBRMR(int unit, data_t data);
-        static data_t readDITR(void);
-        static data_t readDPCIR(void);
+        static data_t readITR(void);
+        static void writeITR(data_t data);
+        static data_t readPCIR(void);
         static uint64_t getMTDEBUG(void);
         static uint64_t getRPDEBUG(void);
         static uint64_t readMTDIR(void);
@@ -460,8 +461,8 @@ class ks10_t {
         static volatile       uint32_t *regMTCCR;               //!< MT Console Control Register
         static volatile       uint32_t *regDUPCCR;              //!< DUP11 Console Control Register
         static volatile       uint32_t *regKMCCCR;              //!< KMC11 Console Control Register
-        static volatile       uint64_t *regDEBITR;              //!< Debug Instruction Trace Register
-        static volatile       uint64_t *regDEBPCIR;             //!< Debug Program Counter and Instruction Register
+        static volatile       uint64_t *regITR;                 //!< Instruction Trace Register
+        static volatile       uint64_t *regPCIR;                //!< Program Counter and Instruction Register
         static volatile       uint64_t *regMTDIR;               //!< MT Data Interface Register
         static volatile const uint64_t *regMTDEBUG;             //!< MT Debug Register
         static volatile const uint64_t *regRPDEBUG;             //!< RP Debug Register
@@ -1103,25 +1104,38 @@ inline void ks10_t::writeBRMR(int unit, uint64_t data) {
 
 //!
 //! \brief
-//!    This function reads a 36-bit value from the Debug Instruction Trace
-//!    Register. The trace buffer automatically increments when the trace buffer
-//!    is read.
-//!
-//! \note
-//!    For some reason, a 64-bit load advances the Trace Buffer FIFO twice.
+//!    This function reads a 36-bit value from the Instruction Trace Register.
+//!    The trace buffer automatically increments when the trace buffer is read.
 //!
 //! \returns
-//!    Contents of the DITR register
+//!    Contents of the ITR register
 //!
 //! \note
 //!    This function is thread safe.
 //!
 
-inline uint64_t ks10_t::readDITR(void) {
+inline uint64_t ks10_t::readITR(void) {
     LOCK();
-    uint64_t ret = *regDEBITR;
+    uint64_t ret = *regITR;
     UNLOCK();
     return ret;
+}
+
+//!
+//! \brief
+//!    This function writess a 36-bit value to the Instruction Trace Register.
+//!
+//! \param data -
+//!    data is the data to be written to the ITR
+//!
+//! \note
+//!    This function is thread safe.
+//!
+
+inline void ks10_t::writeITR(uint64_t data) {
+    LOCK();
+    *regITR = data;
+    UNLOCK();
 }
 
 //!
@@ -1129,16 +1143,16 @@ inline uint64_t ks10_t::readDITR(void) {
 //!    This function reads a 64-bit value from the Debug Program Counter and
 //!    Instruction Register.
 //!
-//! \returns
-//!    contents of the DPCIR register
+//! \param data -
+//!    data is the data to be written to the MTDIR
 //!
 //! \note
 //!    This function is thread safe.
 //!
 
-inline uint64_t ks10_t::readDPCIR(void) {
+inline uint64_t ks10_t::readPCIR(void) {
     LOCK();
-    uint64_t ret = *regDEBPCIR;
+    uint64_t ret = *regPCIR;
     UNLOCK();
     return ret;
 }

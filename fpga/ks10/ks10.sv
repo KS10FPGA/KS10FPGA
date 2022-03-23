@@ -395,6 +395,7 @@ module KS10 (
    mtcslbus     mtCSLDATA();            // MT/CSL interface
    rpcslbus     rpCSLDATA();            // RP/CSL interface
    brcslbus     brCSLDATA();            // BR/CSL interface
+   trcslbus     trCSLDATA();            // TR/CSL interface
 
    //
    // Backplane bus interfaces
@@ -428,8 +429,6 @@ module KS10 (
    wire [ 0:35] cpuHR;                  // Instruction Register
    wire         regsLOAD;               // Update registers
    wire         vmaLOAD;                // Update VMA
-   wire [ 0:63] debITR;                 // Instruction Trace Register
-   wire [ 0:63] debPCIR;                // Program counter and instruction register
    wire         brHALT;                 // Breakpoint the CPU
 
    //
@@ -576,15 +575,10 @@ module KS10 (
       .lpOVFU           (lpOVFU),
       .lpSETOFFLN       (lpSETOFFLN),
       .lpONLINE         (lpONLINE),
-      // MT Interfaces
       .mtDATA           (mtCSLDATA),
-      // RP Interfaces
       .rpDATA           (rpCSLDATA),
-      // Breakpoint Interface
       .brDATA           (brCSLDATA),
-      // Debug Interface
-      .debITR           (debITR),
-      .debPCIR          (debPCIR)
+      .trDATA           (trCSLDATA)
    );
 
    //
@@ -608,9 +602,20 @@ module KS10 (
    //
 
    BRKPT uBRKPT (
-     .brCSLDATA        (brCSLDATA),
+     .brDATA           (brCSLDATA),
      .cpuADDR          (cpuADDRO),
      .brHALT           (brHALT)
+   );
+
+   //
+   // Trace Interface
+   //
+
+   TRACE uTRACE (
+     .trDATA           (trCSLDATA),
+     .cpuPC            (cpuPC),
+     .cpuHR            (cpuHR),
+     .regsLOAD         (regsLOAD)
    );
 
    //
@@ -620,13 +625,10 @@ module KS10 (
    DEBUG uDEBUG (
       .rst              (cpuRST),
       .clk              (cpuCLK),
-      .cpuADDR          (cpuADDRO),
       .cpuPC            (cpuPC),
       .cpuHR            (cpuHR),
       .regsLOAD         (regsLOAD),
-      .vmaLOAD          (vmaLOAD),
-      .debITR           (debITR),
-      .debPCIR          (debPCIR)
+      .vmaLOAD          (vmaLOAD)
    );
 
 `ifdef UBA1

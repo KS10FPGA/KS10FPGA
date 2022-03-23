@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2022 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -43,7 +43,7 @@
 `timescale 1ns/1ps
 
    module BRKPT (
-      brcslbus.br          brCSLDATA,           // Registers from CSL
+      brcslbus.br          brDATA,              // Interface from CSL
       input  wire  [ 0:35] cpuADDR,             // Backplane address from CPU
       output logic         brHALT               // Halt signal to CPU
    );
@@ -52,16 +52,16 @@
    // Fixup inputs
    //
 
-   wire        clk      = brCSLDATA.clk;
-   wire        rst      = brCSLDATA.rst;
-   wire [0:35] regBRAR0 = brCSLDATA.regBRAR[0];
-   wire [0:35] regBRMR0 = brCSLDATA.regBRMR[0];
-   wire [0:35] regBRAR1 = brCSLDATA.regBRAR[1];
-   wire [0:35] regBRMR1 = brCSLDATA.regBRMR[1];
-   wire [0:35] regBRAR2 = brCSLDATA.regBRAR[2];
-   wire [0:35] regBRMR2 = brCSLDATA.regBRMR[2];
-   wire [0:35] regBRAR3 = brCSLDATA.regBRAR[3];
-   wire [0:35] regBRMR3 = brCSLDATA.regBRMR[3];
+   wire        clk      = brDATA.clk;
+   wire        rst      = brDATA.rst;
+   wire [0:35] regBRAR0 = brDATA.regBRAR[0];
+   wire [0:35] regBRMR0 = brDATA.regBRMR[0];
+   wire [0:35] regBRAR1 = brDATA.regBRAR[1];
+   wire [0:35] regBRMR1 = brDATA.regBRMR[1];
+   wire [0:35] regBRAR2 = brDATA.regBRAR[2];
+   wire [0:35] regBRMR2 = brDATA.regBRMR[2];
+   wire [0:35] regBRAR3 = brDATA.regBRAR[3];
+   wire [0:35] regBRMR3 = brDATA.regBRMR[3];
 
    //
    // Match and mask

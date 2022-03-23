@@ -64,8 +64,8 @@ volatile uint32_t *ks10_t::regRPCCR;                    //!< RP Console Control 
 volatile uint32_t *ks10_t::regMTCCR;                    //!< MT Console Control Register
 volatile uint32_t *ks10_t::regDUPCCR;                   //!< DUP11 Console Control Register
 volatile uint32_t *ks10_t::regKMCCCR;                   //!< KMC11 Console Control Register
-volatile uint64_t *ks10_t::regDEBITR;                   //!< Debug Instruction Trace Register
-volatile uint64_t *ks10_t::regDEBPCIR ;                 //!< Debug Program Counter and Instruction Register
+volatile uint64_t *ks10_t::regITR;                      //!< Instruction Trace Register
+volatile uint64_t *ks10_t::regPCIR ;                    //!< Program Counter and Instruction Register
 volatile uint64_t *ks10_t::regMTDIR;                    //!< MT Data Interface Register
 volatile const uint64_t *ks10_t::regMTDEBUG;            //!< MT Debug Register
 volatile const uint64_t *ks10_t::regRPDEBUG;            //!< RP Debug Register
@@ -155,30 +155,30 @@ ks10_t::ks10_t(bool debug) {
         }
     }
 
-    regAddr      = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regCONAROffset]);    // Console Address Register
-    regData      = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONDROffset]);    // Console Data Register
-    regCIR       = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONIROffset]);    // KS10 Console Instruction Register
-    regStat      = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regCONCSROffset]);   // Console Control/Status Register
-    regDZCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDZCCROffset]);    // DZ11 Console Control Register
-    regLPCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regLPCCROffset]);    // LP20 Console Control Register
-    regRPCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regRPCCROffset]);    // RP  Console Control Register
-    regMTCCR     = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regMTCCROffset]);    // MT  Console Control Register
-    regDUPCCR    = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDUPCCROffset]);   // DUP Console Control Register
-    regKMCCCR    = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regKMCCCROffset]);   // KMC Console Control Register
-    regDEBITR    = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regDEBITROffset]);   // Debug Instruction Trace Register
-    regDEBPCIR   = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regDEBPCIROffset]);  // Debug Program Counter and Instruction Register
-    regMTDIR     = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regMTDIROffset]);    // MT Data Interface Register
-    regMTDEBUG   = reinterpret_cast<volatile const uint64_t *>(&fpgaAddrVirt[regMTDEBOffset]);    // MT Debug Register
-    regRPDEBUG   = reinterpret_cast<volatile const uint64_t *>(&fpgaAddrVirt[regRPDEBOffset]);    // RP Debug Register
-    regBRAR0     = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRAR0Offset]);    // Breakpoint Address Register
-    regBRMR0     = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRMR0Offset]);    // Breakpoint Mask Register
-    regBRAR1     = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRAR1Offset]);    // Breakpoint Address Register
-    regBRMR1     = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRMR1Offset]);    // Breakpoint Mask Register
-    regBRAR2     = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRAR2Offset]);    // Breakpoint Address Register
-    regBRMR2     = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRMR2Offset]);    // Breakpoint Mask Register
-    regBRAR3     = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRAR3Offset]);    // Breakpoint Address Register
-    regBRMR3     = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRMR3Offset]);    // Breakpoint Mask Register
-    regVers      = reinterpret_cast<         const char     *>(&fpgaAddrVirt[regVERSOffset]);     // Firmware Version Register
+    regAddr    = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regCONAROffset]);    // Console Address Register
+    regData    = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONDROffset]);    // Console Data Register
+    regCIR     = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONIROffset]);    // KS10 Console Instruction Register
+    regStat    = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regCONCSROffset]);   // Console Control/Status Register
+    regDZCCR   = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDZCCROffset]);    // DZ11 Console Control Register
+    regLPCCR   = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regLPCCROffset]);    // LP20 Console Control Register
+    regRPCCR   = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regRPCCROffset]);    // RP  Console Control Register
+    regMTCCR   = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regMTCCROffset]);    // MT  Console Control Register
+    regDUPCCR  = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regDUPCCROffset]);   // DUP Console Control Register
+    regKMCCCR  = reinterpret_cast<volatile       uint32_t *>(&fpgaAddrVirt[regKMCCCROffset]);   // KMC Console Control Register
+    regITR     = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regITROffset]);      // Instruction Trace Register
+    regPCIR    = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regPCIROffset]);     // Program Counter and Instruction Register
+    regMTDIR   = reinterpret_cast<volatile       uint64_t *>(&fpgaAddrVirt[regMTDIROffset]);    // MT Data Interface Register
+    regMTDEBUG = reinterpret_cast<volatile const uint64_t *>(&fpgaAddrVirt[regMTDEBOffset]);    // MT Debug Register
+    regRPDEBUG = reinterpret_cast<volatile const uint64_t *>(&fpgaAddrVirt[regRPDEBOffset]);    // RP Debug Register
+    regBRAR0   = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRAR0Offset]);    // Breakpoint Address Register
+    regBRMR0   = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRMR0Offset]);    // Breakpoint Mask Register
+    regBRAR1   = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRAR1Offset]);    // Breakpoint Address Register
+    regBRMR1   = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRMR1Offset]);    // Breakpoint Mask Register
+    regBRAR2   = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRAR2Offset]);    // Breakpoint Address Register
+    regBRMR2   = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRMR2Offset]);    // Breakpoint Mask Register
+    regBRAR3   = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRAR3Offset]);    // Breakpoint Address Register
+    regBRMR3   = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regBRMR3Offset]);    // Breakpoint Mask Register
+    regVers    = reinterpret_cast<         const char     *>(&fpgaAddrVirt[regVERSOffset]);     // Firmware Version Register
 }
 
 //!

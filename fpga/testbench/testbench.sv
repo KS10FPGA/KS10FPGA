@@ -44,6 +44,50 @@
 `define STRLEN 80
 `define STRDEF 0:`STRLEN*8-1
 
+//
+// Default starting address (SMMON)
+//
+
+`ifndef STARTADDR
+ `define STARTADDR 18'o020000
+`endif
+
+//
+// Default breakpoint settings
+//
+
+`ifndef valBRAR0
+ `define valBRAR0 36'o000000_000000
+`endif
+
+`ifndef valBRMR0
+ `define valBRMR0 36'o000000_000000
+`endif
+
+`ifndef valBRAR1
+ `define valBRAR1 36'o000000_000000
+`endif
+
+`ifndef valBRMR1
+ `define valBRMR1 36'o000000_000000
+`endif
+
+`ifndef valBRAR2
+ `define valBRAR2 36'o000000_000000
+`endif
+
+`ifndef valBRMR2
+ `define valBRMR2 36'o000000_000000
+`endif
+
+`ifndef valBRAR3
+ `define valBRAR3 36'o000000_000000
+`endif
+
+`ifndef valBRMR3
+ `define valBRMR3 36'o000000_000000
+`endif
+
 module testbench;
 
    //
@@ -223,13 +267,7 @@ module testbench;
                       statNXMNXD    = 32'h00000200,
                       statGO        = 32'h00010000;
 
-`ifdef SIM_SMMON
-   localparam [ 0:35] valREGCIR     = 36'o254000_020000;  // SMMOM
-// localparam [ 0:35] valREGCIR     = 36'o254000_377000;  // BOOT
-`else
-// localparam [ 0:35] valREGCIR     = 36'o254000_377000;  // BOOT
-   localparam [ 0:35] valREGCIR     = 36'o254000_030001;  // Basic diagnostics
-`endif
+   localparam [ 0:35] valREGCIR     = {18'o254000, `STARTADDR};
 
    //
    // Register Addresses from Console Interface
@@ -574,39 +612,25 @@ module testbench;
         conWRITE32(addrREGDPCCR, 32'h00000d00);
 
         //
-        // Initialize the Debug Registers
+        // Initialize the Breakpoint Registers
         //
 
-`ifdef BRKPT
-        conWRITE36(addrBRAR0, 36'o140000_020030);
-        conWRITE36(addrBRMR0, 36'o140003_777777);
-        conWRITE36(addrBRAR1, 36'o000000_000000);
-        conWRITE36(addrBRMR1, 36'o000000_000000);
-        conWRITE36(addrBRAR2, 36'o000000_000000);
-        conWRITE36(addrBRMR2, 36'o000000_000000);
-        conWRITE36(addrBRAR3, 36'o000000_000000);
-        conWRITE36(addrBRMR3, 36'o000000_000000);
-`else
-        conWRITE36(addrBRAR0, 36'o000000_000000);
-        conWRITE36(addrBRMR0, 36'o000000_000000);
-        conWRITE36(addrBRAR1, 36'o000000_000000);
-        conWRITE36(addrBRMR1, 36'o000000_000000);
-        conWRITE36(addrBRAR2, 36'o000000_000000);
-        conWRITE36(addrBRMR2, 36'o000000_000000);
-        conWRITE36(addrBRAR3, 36'o000000_000000);
-        conWRITE36(addrBRMR3, 36'o000000_000000);
-`endif
+`undef valBRAR0
+`undef valBRMR0
+`define valBRAR0 36'o140000_020030
+`define valBRMR0 36'o140003_777777
+
+        conWRITE36(addrBRAR0, `valBRAR0);
+        conWRITE36(addrBRMR0, `valBRMR0);
+        conWRITE36(addrBRAR1, `valBRAR1);
+        conWRITE36(addrBRMR1, `valBRMR1);
+        conWRITE36(addrBRAR2, `valBRAR2);
+        conWRITE36(addrBRMR2, `valBRMR2);
+        conWRITE36(addrBRAR3, `valBRAR3);
+        conWRITE36(addrBRMR3, `valBRMR3);
 
         //
-        // Write to Control/Status Register
-        // Release RESET and set RUN.
-        //
-
-        conWRITE32(addrREGSTATUS, statRUN);
-        $display("[%11.3f] KS10: Starting KS10", $time/1.0e3);
-
-        //
-        // Readback Console Instruction Register
+        // Readback Some Console Register
         //
 
         conREAD36(addrREGCIR, temp);
@@ -635,9 +659,17 @@ module testbench;
         $display("[%11.3f] KS10: MTDS[0] is \"%6o\"", $time/1.0e3, temp);
 
         conREAD64(addrVERSION, temp64);
-        $display("[%11.3f] KS10: FVR  is \"%c%c%c%c%c%c%c%c\".", $time/1.0e3,
+        $display("[%11.3f] KS10: FVR  is \"%c%c%c%c %c%c%c%c\".", $time/1.0e3,
                  temp64[56:63], temp64[48:55], temp64[40:47], temp64[32:39],
                  temp64[24:31], temp64[16:23], temp64[ 8:15], temp64[ 0: 7]);
+
+        //
+        // Write to Control/Status Register
+        // Release RESET and set RUN.
+        //
+
+        conWRITE32(addrREGSTATUS, statRUN);
+        $display("[%11.3f] KS10: Starting KS10", $time/1.0e3);
 
         //
         // Handle Startup.
@@ -655,7 +687,7 @@ module testbench;
              printHaltStatus;
 
              //
-             // Initialize Console Interface
+             // Initialize Console Communcations Area
              //
 
              conWRITEMEM(addrSWITCH,  36'o000000_000000);       // Initialize Switch Register
@@ -778,6 +810,7 @@ module testbench;
         mtSIM_INIT();
         forever
           begin
+             #100
              key.get(1);
              mtSIM_RUN(addrMTDIR);
              key.put(1);

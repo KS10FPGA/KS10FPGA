@@ -162,32 +162,6 @@ OPENOCD      := /usr/local/openocd/bin/openocd
 DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the -RD00-XXXX suffix
 
 #
-# Simulator Macro Definitions
-#
-#   ENABLE_TIMER     Enable 1 ms timer.  Slows simulation.  (See testbench)
-#   SIM_SMMON        Boot to SMMON instead of diagnostic app (See testbench)
-#   SIM_CTY          Simulate the CTY (See testbench)
-#   SIM_LPR          Simulate LPR
-#   SIM_SDHC         Simulate the SDHC Card
-#   SIM_SDHC_OFFLINE Simulate the SDHC as offline
-#   STOP_ON_COMPLETE Stop simulation when test is complete (See debug.v)
-#   STOP_ON_STUCK_PC Stop simulating when PC gets stuck.
-#   DEBUG_DSKAA      Diagnostic information (See debug.v)
-#   DEBUG=DSKAA      Diagnostic information (See debug.v)
-
-#        SIM_SMMON \
-
-SIM_ARGS := \
-	SIM_CTY \
-	SIM_LPR \
-	SIM_SDHC \
-	ENABLE_TIMER \
-	STOP_ON_STUCK_PC \
-	DEBUG_$(DIAGBASE) \
-	DEBUG=$(DIAGBASE) \
-	DIAG=$(DIAG)
-
-#
 # Synthesis Macro Definitions
 #
 # Macro Definitions
@@ -245,10 +219,61 @@ SYN_ARGS := \
 	UBE4
 
 #
-# Simlation Macro Definitions
+# Simulator Macro Definitions
+#
+#   ENABLE_TIMER          Enable 1 ms timer.  Slows simulation.  (See testbench)
+#   SIM_SMMON             Boot to SMMON instead of diagnostic app (See testbench)
+#   SIM_CTY               Simulate the CTY (See testbench)
+#   SIM_LPR               Simulate LPR
+#   SIM_SDHC              Simulate the SDHC Card
+#   SIM_SDHC_OFFLINE      Simulate the SDHC as offline
+#   STOP_ON_COMPLETE      Stop simulation when test is complete (See debug.v)
+#   STOP_ON_STUCK_PC      Stop simulating when PC gets stuck.
+#   DEBUG_DSKAA           Diagnostic information (See debug.v)
+#   DEBUG=DSKAA           Diagnostic information (See debug.v)
+#   STARTADDR=18\'o020000 SMMON
+#   STARTADDR=18\'o300001 Diagnostics
+#
+#   SERIALNUM          *  Set the CPU serial number (decimal).  The default SERIALNUM is 4097.
+#   MAJOR_VER=\"XX\"   *  Set firmware version major revision (XX must be two ASCII digits)
+#   MINOR_VER=\"YY\"   *  Set firmware version minor revision (YY must be two ASCII digits)
+#   CLKFRQ=12500000    *  See clock freqency of CPU Clock (must match clock input)
+#   SSRAMx18           ** Use 18-bit wide external SSRAM
+#   SSRAMx36           ** Use 36-bit wide external SSRAM
+#   SSRAM_BLKRAM       ** Use 36-bit wide internal Block RAM.
+#   RPXX_SIMSEEK          Simulate RPXX seek accurately but slowly
+#   RPXX_SIMSEARCH        Simulate RPXX search accurately bus slowly
+#   RPXX_SIMDMD           Simulate RPXX diagnostic mode
+#   DUP11_FASTCLK         Run the synchronous serial clock at 100 KHz instead of 10 KHz
+#   UBA1                  Include UBA1
+#   UBA3                  Include UBA3
+#   UBA4                  Include UBA4
+#   RH11A                 Include a RH11 with a Disk Controller attached to UBA1
+#   RH11B                 Include a RH11 with a Tape Controller attached to UBA3
+#   DZ11                  Include a DZ11 Terminal Multiplexer Interface attached to UBA3
+#   KMC11                 Include a KMC11 Microprocessor  attached to UBA3
+#   DUP11                 Include a DUP11 Synchronous Interface attached to UBA3
+#   LP20                  Include a LP20/LP26 Printer Interface attached to UBA3
+#   UBE1                  Include UBE1 Unibus Exerciser attached to UBA4
+#   UBE2                  Include UBE2 Unibus Exerciser attached to UBA4
+#   UBE3                  Include UBE3 Unibus Exerciser attached to UBA4
+#   UBE4                  Include UBE4 Unibus Exerciser attached to UBA4
+#   UBE5                  Include UBE5 Unibus Exerciser attached to UBA4
+#   PAGE_FAIL_TEST        Stress test PAGE FAIL logic
+#
+# * MUST BE SET
+# ** SELECT one SSRAM option
 #
 
 SIM_ARGS := \
+	SIM_LPR \
+	SIM_SDHC \
+	ENABLE_TIMER \
+	STOP_ON_STUCK_PC \
+	DEBUG_$(DIAGBASE) \
+	DEBUG=$(DIAGBASE) \
+	DIAG=$(DIAG) \
+	STARTADDR=18\'o020000 \
 	SERIALNUM=2020 \
 	MAJOR_VER=\"00\" \
 	MINOR_VER=\"37\" \
@@ -260,7 +285,8 @@ SIM_ARGS := \
 	RH11A \
 	UBA3 \
 	RH11B \
-	LP20 \
+
+#	LP20 \
 	DZ11 \
 	DUP11 \
 	KMC11 \
@@ -324,6 +350,7 @@ RTL_FILES := \
         ks10/mtcslbus.sv \
         ks10/rpcslbus.sv \
 	ks10/brcslbus.sv \
+        ks10/trcslbus.sv \
 	ks10/ks10.sv \
 	ks10/arb/arb.sv \
 	ks10/breakpoint/breakpoint.sv \
@@ -434,6 +461,7 @@ RTL_FILES := \
         ks10/mt/mtmr.sv \
         ks10/mt/mttc.sv \
         ks10/mt/mtctrl.sv \
+	ks10/trace/trace.sv \
 	ks10/uba/uba.sv \
 	ks10/uba/ubamr.sv \
 	ks10/uba/ubasr.sv \
@@ -447,6 +475,7 @@ RTL_FILES := \
 	ks10/ube/ubecsr2.sv \
 	ks10/utils/crc16.v \
 	ks10/utils/fifo.v \
+	ks10/utils/lifo.sv \
 	ks10/utils/edgetrig.v \
 	ks10/utils/usrt/usrt_rx.v \
 	ks10/utils/usrt/usrt_tx.v \
@@ -705,17 +734,37 @@ WAVE_BRKPT := \
 	"add wave -noupdate -divider {Breakpoint}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rst}                  {/testbench/uKS10/uBRKPT/rst}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uBRKPT/clk}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR0}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBAR[0]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR0}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBMR[0]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR1}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBAR[1]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR1}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBMR[1]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR2}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBAR[2]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR2}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBMR[2]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR3}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBAR[3]}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR3}                {/testbench/uKS10/uBRKPT/brCSLDATA.brDBMR[3]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR0}                {/testbench/uKS10/uBRKPT/brDATA.regBRAR[0]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR0}                {/testbench/uKS10/uBRKPT/brDATA.regBRMR[0]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR1}                {/testbench/uKS10/uBRKPT/brDATA.regBRAR[1]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR1}                {/testbench/uKS10/uBRKPT/brDATA.regBRMR[1]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR2}                {/testbench/uKS10/uBRKPT/brDATA.regBRAR[2]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR2}                {/testbench/uKS10/uBRKPT/brDATA.regBRMR[2]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR3}                {/testbench/uKS10/uBRKPT/brDATA.regBRAR[3]}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR3}                {/testbench/uKS10/uBRKPT/brDATA.regBRMR[3]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {addrmatch}            {/testbench/uKS10/uBRKPT/addrmatch}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {d}                    {/testbench/uKS10/uBRKPT/d}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {brHALT}               {/testbench/uKS10/uBRKPT/brHALT}" \
+
+WAVE_TRACE := \
+	"add wave -noupdate -divider {Breakpoint}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rst}                  {/testbench/uKS10/uTRACE/rst}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uTRACE/clk}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuPC}                {/testbench/uKS10/uTRACE/cpuPC}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuHR}                {/testbench/uKS10/uTRACE/cpuHR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {regsLOAD}             {/testbench/uKS10/uTRACE/regsLOAD}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {trPCIR}               {/testbench/uKS10/uTRACE/trPCIR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {trADV}                {/testbench/uKS10/uTRACE/trDATA.trADV}"\
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {push}                 {/testbench/uKS10/uTRACE/push}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {pop}                  {/testbench/uKS10/uTRACE/pop}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rd_addr}              {/testbench/uKS10/uTRACE/TRACEBUF/rd_addr}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {wr_addr}              {/testbench/uKS10/uTRACE/TRACEBUF/wr_addr}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {depth}                {/testbench/uKS10/uTRACE/TRACEBUF/depth}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {stack}                {/testbench/uKS10/uTRACE/TRACEBUF/stack}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {full}                 {/testbench/uKS10/uTRACE/full}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {empty}                {/testbench/uKS10/uTRACE/empty}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {trCLR}                  {/testbench/uKS10/uTRACE/trDATA.trCLR}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clr}                  {/testbench/uKS10/uTRACE/clr}" \
 
 WAVE_BUSES := \
 	"add wave -noupdate -divider {BUSSES}" \
@@ -839,14 +888,14 @@ WAVE_CSL := \
 	"add wave -noupdate -radix hex      -radixshowbase 0 -label {axiBVALID}            {/testbench/uKS10/uCSL/axiBVALID}" \
 	"add wave -noupdate -radix hex      -radixshowbase 0 -label {axiBREADY}            {/testbench/uKS10/uCSL/axiBREADY}" \
 	"add wave -noupdate -radix hex      -radixshowbase 0 -label {axiWVALID}            {/testbench/uKS10/uCSL/axiWVALID}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQI}              {/testbench/uKS10/uCSL/busREQI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQO}              {/testbench/uKS10/uCSL/busREQO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busACKI}              {/testbench/uKS10/uCSL/busACKI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busACKO}              {/testbench/uKS10/uCSL/busACKO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busADDRI}             {/testbench/uKS10/uCSL/busADDRI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busADDRO}             {/testbench/uKS10/uCSL/busADDRO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busDATAI}             {/testbench/uKS10/uCSL/busDATAI}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busDATAO}             {/testbench/uKS10/uCSL/busDATAO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQI}              {/testbench/uKS10/uCSL/cslBUS.busREQI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busREQO}              {/testbench/uKS10/uCSL/cslBUS.busREQO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busACKI}              {/testbench/uKS10/uCSL/cslBUS.busACKI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busACKO}              {/testbench/uKS10/uCSL/cslBUS.busACKO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busADDRI}             {/testbench/uKS10/uCSL/cslBUS.busADDRI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busADDRO}             {/testbench/uKS10/uCSL/cslBUS.busADDRO}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busDATAI}             {/testbench/uKS10/uCSL/cslBUS.busDATAI}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busDATAO}             {/testbench/uKS10/uCSL/cslBUS.busDATAO}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {regCONIR}             {/testbench/uKS10/uCSL/regCONIR}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {regCONDR}             {/testbench/uKS10/uCSL/regCONDR}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {regCONAR}             {/testbench/uKS10/uCSL/regCONAR}" \
@@ -860,7 +909,6 @@ WAVE_CSL := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rdPULSE}              {/testbench/uKS10/uCSL/rdPULSE}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {wrPULSE}              {/testbench/uKS10/uCSL/wrPULSE}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cslGO}                {/testbench/uKS10/uCSL/cslGO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {lpSETONLN}            {/testbench/uKS10/uCSL/lpSETONLN}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {lpSETOFFLN}           {/testbench/uKS10/uCSL/lpSETOFFLN}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cslRUN}               {/testbench/uKS10/uCSL/cslRUN}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cslHALT}              {/testbench/uKS10/uCSL/cslHALT}" \
@@ -868,10 +916,10 @@ WAVE_CSL := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cslEXEC}              {/testbench/uKS10/uCSL/cslEXEC}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cslINTR}              {/testbench/uKS10/uCSL/cslINTR}" \
 	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {state}                {/testbench/uKS10/uCSL/state}" \
-	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {timer}                {/testbench/uKS10/uCSL/timer}" \
+	"add wave -noupdate -radix unsigned -radixshowbase 0 -label {cslNXDTIM}            {/testbench/uKS10/uCSL/cslNXDTIM}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {busIO}                {/testbench/uKS10/uCSL/busIO}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {regREV}               {/testbench/uKS10/uCSL/regREV}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {asdf}                 {/testbench/uKS10/uCSL/asdf}"
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {regFVER}              {/testbench/uKS10/uCSL/regFVER}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {trCLR}                {/testbench/uKS10/uCSL/trDATA.trCLR}"
 
 WAVE_DBM := \
 	"add wave -noupdate -divider {DBM}" \
@@ -1029,7 +1077,7 @@ WAVE_MEM := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {ssramDI}              {/testbench/uKS10/uMEM/ssramDI}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {ssramDO}              {/testbench/uKS10/uMEM/ssramDO}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {SSRAM addreg}         {/testbench/SSRAM/addreg}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {SSRAM do}             {/testbench/SSRAM/do}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {SSRAM dor}            {/testbench/SSRAM/dor}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {tristate}             {/testbench/SSRAM/tristate}"
 
 #	"add wave -noupdate -radix octal    -radixshowbase 0 -label {mem[0]}               {/testbench/SSRAM/mem[0]}" \
@@ -1968,7 +2016,6 @@ VLOG_ARGS := \
 	+define+UNIT6_DSK=\"$(UNIT6_DSK)\" \
 	+define+UNIT7_DSK=\"$(UNIT7_DSK)\" \
 	$(addprefix +define+, $(SIM_ARGS)) \
-	$(addprefix +define+, $(SYN_ARGS))
 
 WAVE_LIST := \
 	$(WAVE_FIRST) \
@@ -2023,7 +2070,7 @@ questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBE
 	test -d $(QUESTA_DIR)/work || $(QUESTA)/vlib $(QUESTA_DIR)/work
 	$(QUESTA)/vmap work $(QUESTA_DIR)/work
 	$(QUESTA)/vlog $(SIM_FILES) $(RTL_FILES) $(VLOG_ARGS)
-	$(QUESTA)/vopt testbench +acc=npr3+CPU+BRKPT -o testbench_opt -debugdb
+	$(QUESTA)/vopt testbench +acc=npr3+CPU+BRKPT+TRACE -o testbench_opt -debugdb
 	$(QUESTA)/vsim -i -debugdb testbench_opt -do $(QUESTA_DIR)/wave.do
 
 #	$(VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+RH11+RPXX -o testbench_opt -debugdb
@@ -2039,7 +2086,6 @@ questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBE
 iverilog : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBENCH)/ssram.dat $(DISKS) makefile
 	$(IVERILOG) -W all -g2012 -s testbench -o $(IVERILOG_DIR)/sim.vvp \
 	$(addprefix -D , $(SIM_ARGS)) \
-	$(addprefix -D , $(SYN_ARGS)) \
 	-D SSRAM_DAT=\"$(TESTBENCH)/ssram.dat\" \
 	-D CROM_DAT=\"$(CROM_DAT)\" \
 	-D DROM_DAT=\"$(DROM_DAT)\" \
@@ -2148,11 +2194,9 @@ PGM_ARGS := \
 
 pgm: $(QUARTUS_DIR)/output_files/$(PROJECT).sof
 	$(QUARTUS_PGM) $(PGM_ARGS)
-	$(JTAGCONFIG)
 
 pgm1:
 	$(QUARTUS_PGM) $(PGM_ARGS)
-	$(JTAGCONFIG)
 
 $(PROJECT).rbf : $(QUARTUS_DIR)/output_files/$(PROJECT).sof
 	$(QUARTUS_CPF) -c -o bitstream_compression=on $(QUARTUS_DIR)/output_files/$(PROJECT).sof $(PROJECT).rbf
