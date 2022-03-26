@@ -734,6 +734,7 @@ WAVE_BRKPT := \
 	"add wave -noupdate -divider {Breakpoint}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {rst}                  {/testbench/uKS10/uBRKPT/rst}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {clk}                  {/testbench/uKS10/uBRKPT/clk}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuADDR}              {/testbench/uKS10/uBRKPT/cpuADDR}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR0}                {/testbench/uKS10/uBRKPT/brDATA.regBRAR[0]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBMR0}                {/testbench/uKS10/uBRKPT/brDATA.regBRMR[0]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {DBAR1}                {/testbench/uKS10/uBRKPT/brDATA.regBRAR[1]}" \
@@ -822,7 +823,8 @@ WAVE_CPU := \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {AC15}                 {/testbench/uKS10/uCPU/uRAMFILE/ram[15]}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {vmaREG}               {/testbench/uKS10/uCPU/vmaREG}" \
 	"add wave -noupdate -radix octal    -radixshowbase 0 -label {regIR}                {/testbench/uKS10/uCPU/regIR}" \
-	"add wave -noupdate -radix octal    -radixshowbase 0 -label {pageFAIL}             {/testbench/uKS10/uCPU/pageFAIL}"
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {pageFAIL}             {/testbench/uKS10/uCPU/pageFAIL}" \
+	"add wave -noupdate -radix octal    -radixshowbase 0 -label {cpuRUN}               {/testbench/uKS10/uCPU/cpuRUN}"
 
 WAVE_CPU_INTF := \
 	"add wave -noupdate -divider {CPU Interface}" \

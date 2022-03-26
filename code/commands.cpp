@@ -689,10 +689,11 @@ static bool cmdBR(int argc, char *argv[]) {
         "One (and only one) of the following \"break condtions\" must be provided:\n"
         "\n"
         "  --fetch=addr    Break on an instruction fetch at the specified address.\n"
-        "  --mem=addr      Not impmented.\n"
+        "  --mem=addr      Break on a memory read or memory write at the specified\n"
+        "                  address.\n"
         "  --memrd=addr    Break on a memory read at the specified adress.\n"
         "  --memwr=addr    Break on a memory write at the specified adress.\n"
-        "  --io=addr       Not impmented.\n"
+        "  --io=addr       Break on an IO read or an IO write at the specified address.\n"
         "  --iord=addr     Break on an IO read at the specified adress.\n"
         "  --iowr=addr     Break on an IO write at the specified adress.\n"
         "  --raw=brar,brmr Provide low level inputs to the Debug Breakpoint Address\n"
@@ -773,8 +774,6 @@ static bool cmdBR(int argc, char *argv[]) {
     ks10_t::addr_t brar = 0;
     ks10_t::addr_t brmr = 0;
     ks10_t::addr_t mask = 0;
-    bool memrw = false;
-    bool iorw = false;
 
     opterr = 0;
     for (;;) {
@@ -821,40 +820,52 @@ static bool cmdBR(int argc, char *argv[]) {
                     }
                     return true;
                 case 2: //fetch
-                    addr = ks10_t::brmrMEMMASK & parseOctal(argv[optind-1]);
+                    addr = ks10_t::brarMEMMASK & parseOctal(argv[optind-1]);
                     brar = ks10_t::brarFETCH | addr;
                     brmr = ks10_t::brmrFETCH | ks10_t::brmrMEMMASK;
                     break;
                 case 3: // mem
-                    memrw = true;
-                    printf("br --mem not implemented.\n");
+                    // Setting both brarMEMWR and brarMEMRD isn't a valid bus
+                    // cycle but we use this combination of bits to tell the
+                    // trace hardware that we want to breakpoint on either an
+                    // memory read or a memory write. The breakpoint hardware
+                    // decodes this combination bits and does the right thing.
+                    addr = ks10_t::brarMEMMASK & parseOctal(argv[optind-1]);
+                    brar = ks10_t::brarMEMWR | ks10_t::brarMEMRD | addr;
+                    brmr = ks10_t::brmrMEMWR | ks10_t::brmrMEMWR | ks10_t::brmrMEMMASK;
                     break;
                 case 4: // memrd
-                    addr = ks10_t::brmrMEMMASK & parseOctal(argv[optind-1]);
+                    addr = ks10_t::brarMEMMASK & parseOctal(argv[optind-1]);
                     brar = ks10_t::brarMEMRD | addr;
-                    brmr = ks10_t::brarMEMRD | ks10_t::brmrMEMMASK;
+                    brmr = ks10_t::brmrMEMRD | ks10_t::brmrMEMMASK;
                     break;
                 case 5: // memwr
-                    addr = ks10_t::brmrMEMMASK & parseOctal(argv[optind-1]);
+                    addr = ks10_t::brarMEMMASK & parseOctal(argv[optind-1]);
                     brar = ks10_t::brarMEMWR | addr;
-                    brmr = ks10_t::brarMEMWR | ks10_t::brmrMEMMASK;
+                    brmr = ks10_t::brmrMEMWR | ks10_t::brmrMEMMASK;
                     break;
                 case 6: // io
-                    printf("br --io not implemented.\n");
-                    iorw = true;
+                    // Setting both brarIOWR and brarIOMRD isn't a valid bus
+                    // cycle but we use this combination of bits to tell the
+                    // trace hardware that we want to breakpoint on either an
+                    // IO read or an IO write. The breakpoint hardware decodes
+                    // this combination of bits and does the right thing.
+                    addr = ks10_t::brarIOMASK & parseOctal(argv[optind-1]);
+                    brar = ks10_t::brarIORD | ks10_t::brarIOWR | addr;
+                    brmr = ks10_t::brmrIORD | ks10_t::brmrIOWR | ks10_t::brmrIOMASK;
                     break;
                 case 7: // iord
-                    addr = ks10_t::brmrIOMASK & parseOctal(argv[optind-1]);
+                    addr = ks10_t::brarIOMASK & parseOctal(argv[optind-1]);
                     brar = ks10_t::brarIORD | addr;
-                    brmr = ks10_t::brarIORD | ks10_t::brmrIOMASK;
+                    brmr = ks10_t::brmrIORD | ks10_t::brmrIOMASK;
                     break;
                 case 8: // iowr
-                    addr = ks10_t::brmrIOMASK & parseOctal(argv[optind-1]);
+                    addr = ks10_t::brarIOMASK & parseOctal(argv[optind-1]);
                     brar = ks10_t::brarIOWR | addr;
-                    brmr = ks10_t::brarIOWR | ks10_t::brmrIOMASK;
+                    brmr = ks10_t::brmrIOWR | ks10_t::brmrIOMASK;
                     break;
                 case 9: // mask
-                    mask = ks10_t::brmrIOMASK & parseOctal(argv[optind-1]);
+                    mask = ks10_t::brarIOMASK & parseOctal(argv[optind-1]);
                     break;
                 case 10: // raw
                     printf("br --raw not implemented.\n");
@@ -873,18 +884,8 @@ static bool cmdBR(int argc, char *argv[]) {
     printf("arv[5] = %s\n", argv[5]);
 #endif
 
-
-#if 1
-    // In work...
-
-    (void) memrw;
-    (void) iorw;
-
-
-#endif
-
     //
-    //
+    // Set the breakpoint registers
     //
 
     switch(unit) {
