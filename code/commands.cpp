@@ -1386,14 +1386,16 @@ static bool cmdDZ_TEST(int argc, char *argv[]) {
         "The mt test commands are:\n"
         "   [--help]         Print help.\n"
         "   [--tx port]      Test transmitter. This test will transmit a message out\n"
-        "                    selected serial port. Valid values of port is 0-7.\n"
+        "                    selected serial port at 9600N81. Valid values of port is\n"
+        "                    0-7.\n"
         "   [--rx port]      Test receiver. This test will print the characters\n"
-        "                    received  from the selected serial on the console.\n"
-        "                    Type ^C to exit. Valid values of port is 0-7.\n"
-        "   [--ec[ho] port]  Loopback transmitter to receiver. This will echo characters\n"
-        "                    received on the selected serial port back to the associated\n"
-        "                    serial transmitter. Type ^C to exit. Valid values of port\n"
+        "                    received from the selected serial port at 9600N81 on the\n"
+        "                    console. Type ^C on the TTY to exit. Valid values of port\n"
         "                    is 0-7.\n"
+        "   [--ec[ho] port]  Loopback transmitter to receiver at 9600N81. This will echo\n"
+        "                    characters received on the selected serial port back to the\n"
+        "                    associated serial port. Type ^C on the TTY to exit. Valid\n"
+        "                    values of port is 0-7.\n"
         "\n";
 
     static const struct option options[] = {
@@ -1431,7 +1433,6 @@ static bool cmdDZ_TEST(int argc, char *argv[]) {
                 case 1:
                 case 2:
                     if ((*optarg >= '0') && (*optarg <= '7')) {
-                        printf("optarg is %c\n", *optarg);
                         dz.testECHO(*optarg - '0');
                     } else {
                         printf("dz test echo: port arguments out of range\n");

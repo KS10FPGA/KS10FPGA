@@ -102,7 +102,7 @@ void dz11_t::dumpRegs(void) {
 //!    Setup a DZ11 line
 //!
 //! \param line -
-//!    line number
+//!    Line number (0-7)
 //!
 
 void dz11_t::setup(unsigned int line) {
@@ -145,7 +145,7 @@ void dz11_t::setup(unsigned int line) {
 //!    Print a test message on the selected DZ11 output
 //!
 //! \param line
-//!    ASCII line number
+//!    Line number (0-7)
 //!
 
 void dz11_t::testTX(int line) {
@@ -160,8 +160,8 @@ void dz11_t::testTX(int line) {
     // Print test message
     //
 
-    char testmsg[] = "This is a test on DZ11 line ?.\r\n";
-    testmsg[28] = line;
+    char testmsg[80];
+    sprintf(testmsg, "This is a test on DZ11 line %d.\r\n", line);
     char *s = testmsg;
 
     while (*s != 0) {
@@ -187,12 +187,12 @@ void dz11_t::testTX(int line) {
 //!    Echo the selected TTY input to the console.
 //!
 //! \param line
-//!    ASCII line number
+//!    Line number (0-7)
 //!
 
 void dz11_t::testRX(int line) {
 
-    printf("Characters typed on TTY%c should echo on the console. ^C to exit.\n", line);
+    printf("Characters typed on TTY%d should echo on the console. Type ^C on TTY%d to exit.\n", line, line);
 
     //
     // Initialize the DZ11 for this line
@@ -245,12 +245,13 @@ void dz11_t::testRX(int line) {
 //!    Echo the selected TTY input to the back to the TTY output.
 //!
 //! \param line
-//!    ASCII line number
+//!    Line number
 //!
 
 void dz11_t::testECHO(int line) {
 
-    printf("Characters typed on TTY%c should echo. ^C to exit.\n", line);
+    printf("Characters typed on TTY%d should echo back to TTY%d.\n"
+           "Type ^C on TTY%d to exit.\n", line, line, line);
 
     //
     // Initialize the DZ11 for this line
