@@ -1,7 +1,7 @@
 #!/bin/sh
 DIAG=ks_diag_gs.tap
 [ -d files ] || mkdir files
-[ -f $DIAG.gz ] && gunzip $DIAG.gz
+[ -f $DIAG.gz ] && gunzip -k $DIAG.gz
 ../../tools/tapeutils/t10backup -x diagnostics..beware.txt     -f $DIAG && mv diagnostics..beware.txt     files/beware.txt
 ../../tools/tapeutils/t10backup -x diagnostics..convrt.sav     -f $DIAG && mv diagnostics..convrt.sav     files/convrt.sav
 ../../tools/tapeutils/t10backup -x diagnostics..czdmgd.bin     -f $DIAG && mv diagnostics..czdmgd.bin     files/czdmgd.bin
