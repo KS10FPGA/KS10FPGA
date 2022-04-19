@@ -54,59 +54,70 @@ UNAME    := $(shell uname -o)
 # Project structure
 #
 
-MAINDEC      := ../maindec
-TESTBENCH    := testbench
-QUESTA_DIR   := de10_top/questa
-IVERILOG_DIR := de10_top/iverilog
-MODELSIM_DIR := de10_top/modelsim
-QUARTUS_DIR  := de10_top/quartus
+MAINDEC       := ../maindec
+TESTBENCH     := testbench
+QUESTA_DIR    := de10_top/questa
+IVERILOG_DIR  := de10_top/iverilog
+MODELSIM_DIR  := de10_top/modelsim
+QUARTUS_DIR   := de10_top/quartus
 
 #
-# Cygwin Quartus and ModelSim root directories
-#   $(QUARTUS_ROOTDIR) is an environment variable that is created when Windows Quartus is installed.
+# $(QUARTUS_ROOTDIR) is an environment variable that is created when Quartus
+# is installed for both the windows and linux environments.
+#
+# For the Cygwin build environment, $(QUARTUS_ROOTDIR) must be modified from a
+# windows-like path to a unix-like path using cygwin 'cygpath'.
+#
+# For the Linux build environment, $(QUARTUS_ROOTDIR) is already correct.
 #
 
 ifeq ($(UNAME), Cygwin)
-QUARTUS_ROOTDIR := $(shell cygpath -u ${QUARTUS_ROOTDIR})
-MODELSIM        := $(subst quartus,, $(shell cygpath -u ${QUARTUS_ROOTDIR}))modelsim_ase/win32aloem
-QUESTA          := $(subst quartus,, $(shell cygpath -u ${QUARTUS_ROOTDIR}))questa_fse/win64/
+QUARTUS_ROOTDIR := $(shell cygpath -u $(QUARTUS_ROOTDIR))/bin64
 endif
 
 #
 # Quartus executables
 #
 
-QSYS-GENERATE := $(QUARTUS_ROOTDIR)/sopc_builder/bin/qsys-generate
-QUARTUS_MAP   := $(QUARTUS_ROOTDIR)/bin64/quartus_map
-QUARTUS_FIT   := $(QUARTUS_ROOTDIR)/bin64/quartus_fit
-QUARTUS_ASM   := $(QUARTUS_ROOTDIR)/bin64/quartus_asm
-QUARTUS_STA   := $(QUARTUS_ROOTDIR)/bin64/quartus_sta
-QUARTUS_PGM   := $(QUARTUS_ROOTDIR)/bin64/quartus_pgm
-QUARTUS_CPF   := $(QUARTUS_ROOTDIR)/bin64/quartus_cpf
-JTAGCONFIG    := $(QUARTUS_ROOTDIR)/bin64/jtagconfig
-
-#
-# Cygwin ModelSim root directory
-#
+QSYS-GENERATE := $(QUARTUS_ROOTDIR)/../sopc_builder/bin/qsys-generate
+QUARTUS_MAP   := $(QUARTUS_ROOTDIR)/quartus_map
+QUARTUS_FIT   := $(QUARTUS_ROOTDIR)/quartus_fit
+QUARTUS_ASM   := $(QUARTUS_ROOTDIR)/quartus_asm
+QUARTUS_STA   := $(QUARTUS_ROOTDIR)/quartus_sta
+QUARTUS_PGM   := $(QUARTUS_ROOTDIR)/quartus_pgm
+QUARTUS_CPF   := $(QUARTUS_ROOTDIR)/quartus_cpf
+JTAGCONFIG    := $(QUARTUS_ROOTDIR)/jtagconfig
 
 #
 # ModelSim executables
 #
 
-VLIB         := $(MODELSIM)/vlib
-VMAP         := $(MODELSIM)/vmap
-VLOG         := $(MODELSIM)/vlog
-VOPT         := $(MODELSIM)/vopt
-VSIM         := $(MODELSIM)/vsim
+MODELSIM      := $(QUARTUS_ROOTDIR)/../../modelsim_ase/win32aloem
+MSIM_VLIB     := $(MODELSIM)/vlib
+MSIM_VMAP     := $(MODELSIM)/vmap
+MSIM_VLOG     := $(MODELSIM)/vlog
+MSIM_VOPT     := $(MODELSIM)/vopt
+MSIM_VSIM     := $(MODELSIM)/vsim
+
+#
+# QuestaSim executables
+#
+
+QUESTASIM     := $(QUARTUS_ROOTDIR)/../../questa_fse/win64/
+QSIM_VLIB     := $(QUESTASIM)/vlib
+QSIM_VMAP     := $(QUESTASIM)/vmap
+QSIM_VLOG     := $(QUESTASIM)/vlog
+QSIM_VOPT     := $(QUESTASIM)/vopt
+QSIM_VSIM     := $(QUESTASIM)/vsim
 
 #
 # Other tools
 #
 
-IVERILOG     := iverilog
-VVP          := vvp
-CLOC         := cloc-1.62.exe
-OPENOCD      := /usr/local/openocd/bin/openocd
+IVERILOG      := iverilog
+VVP           := vvp
+CLOC          := cloc-1.62.exe
+OPENOCD       := /usr/local/openocd/bin/openocd
 
 #
 # Fix pipelining (the tee command)
@@ -119,7 +130,9 @@ OPENOCD      := /usr/local/openocd/bin/openocd
 # status, or zero if all commands exit successfully.
 #
 
+ifeq ($(UNAME), Cygwin)
 .SHELLFLAGS = -o pipefail -ec
+endif
 
 #
 # Initialized Memory Contents (Simulation only)
@@ -165,10 +178,10 @@ DIAGBASE := $(shell echo "$(DIAG)" | sed -e 's/-.*//')     # strip the -RD00-XXX
 # Synthesis Macro Definitions
 #
 # Macro Definitions
-#   SERIALNUM          *  Set the CPU serial number (decimal).  The default SERIALNUM is 4097.
-#   MAJOR_VER=\"XX\"   *  Set firmware version major revision (XX must be two ASCII digits)
-#   MINOR_VER=\"YY\"   *  Set firmware version minor revision (YY must be two ASCII digits)
-#   CLKFRQ=12500000    *  See clock freqency of CPU Clock (must match clock input)
+#   SERIALNUM           * Set the CPU serial number (decimal).  The default SERIALNUM is 4097.
+#   MAJOR_VER=\"XX\"    * Set firmware version major revision (XX must be two ASCII digits)
+#   MINOR_VER=\"YY\"    * Set firmware version minor revision (YY must be two ASCII digits)
+#   CLKFRQ=12500000     * See clock freqency of CPU Clock (must match clock input)
 #   SSRAMx18           ** Use 18-bit wide external SSRAM
 #   SSRAMx36           ** Use 36-bit wide external SSRAM
 #   SSRAM_BLKRAM       ** Use 36-bit wide internal Block RAM.
@@ -234,10 +247,10 @@ SYN_ARGS := \
 #   STARTADDR=18\'o020000 SMMON
 #   STARTADDR=18\'o300001 Diagnostics
 #
-#   SERIALNUM          *  Set the CPU serial number (decimal).  The default SERIALNUM is 4097.
-#   MAJOR_VER=\"XX\"   *  Set firmware version major revision (XX must be two ASCII digits)
-#   MINOR_VER=\"YY\"   *  Set firmware version minor revision (YY must be two ASCII digits)
-#   CLKFRQ=12500000    *  See clock freqency of CPU Clock (must match clock input)
+#   SERIALNUM           * Set the CPU serial number (decimal).  The default SERIALNUM is 4097.
+#   MAJOR_VER=\"XX\"    * Set firmware version major revision (XX must be two ASCII digits)
+#   MINOR_VER=\"YY\"    * Set firmware version minor revision (YY must be two ASCII digits)
+#   CLKFRQ=12500000     * See clock freqency of CPU Clock (must match clock input)
 #   SSRAMx18           ** Use 18-bit wide external SSRAM
 #   SSRAMx36           ** Use 36-bit wide external SSRAM
 #   SSRAM_BLKRAM       ** Use 36-bit wide internal Block RAM.
@@ -251,7 +264,7 @@ SYN_ARGS := \
 #   RH11A                 Include a RH11 with a Disk Controller attached to UBA1
 #   RH11B                 Include a RH11 with a Tape Controller attached to UBA3
 #   DZ11                  Include a DZ11 Terminal Multiplexer Interface attached to UBA3
-#   KMC11                 Include a KMC11 Microprocessor  attached to UBA3
+#   KMC11                 Include a KMC11 Microprocessor attached to UBA3
 #   DUP11                 Include a DUP11 Synchronous Interface attached to UBA3
 #   LP20                  Include a LP20/LP26 Printer Interface attached to UBA3
 #   UBE1                  Include UBE1 Unibus Exerciser attached to UBA4
@@ -261,7 +274,7 @@ SYN_ARGS := \
 #   UBE5                  Include UBE5 Unibus Exerciser attached to UBA4
 #   PAGE_FAIL_TEST        Stress test PAGE FAIL logic
 #
-# * MUST BE SET
+#  * MUST BE SET
 # ** SELECT one SSRAM option
 #
 
@@ -273,6 +286,8 @@ SIM_ARGS := \
 	DEBUG_$(DIAGBASE) \
 	DEBUG=$(DIAGBASE) \
 	DIAG=$(DIAG) \
+	valBRAR0=36\'o050203772440 \
+	valBRMR0=36\'o050217777740 \
 	STARTADDR=18\'o020000 \
 	SERIALNUM=2020 \
 	MAJOR_VER=\"00\" \
@@ -2063,23 +2078,22 @@ $(QUESTA_DIR)/wave.do: makefile
 	done
 
 vsim:   $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBENCH)/ssram.dat $(DISKS) makefile $(QUESTA_DIR)/wave.do
-	test -d $(QUESTA_DIR)/work || $(VLIB) $(QUESTA_DIR)/work
-	$(VMAP) work $(QUESTA_DIR)/work
-	$(VLOG) $(SIM_FILES) $(RTL_FILES) $(VLOG_ARGS)
-	$(VSIM) -i testbench -do $(QUESTA_DIR)/wave.do
+	test -d $(QUESTA_DIR)/work || $(MSIM_VLIB) $(QUESTA_DIR)/work
+	$(MSIM_VMAP) work $(QUESTA_DIR)/work
+	$(MSIM_VLOG) $(SIM_FILES) $(RTL_FILES) $(VLOG_ARGS)
+	$(MSIM_VSIM) -i testbench -do $(QUESTA_DIR)/wave.do
 
 questa: $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(DAT_FILES) $(SIM_DISK) $(TESTBENCH)/ssram.dat $(DISKS) makefile $(QUESTA_DIR)/wave.do
-	test -d $(QUESTA_DIR)/work || $(QUESTA)/vlib $(QUESTA_DIR)/work
-	$(QUESTA)/vmap work $(QUESTA_DIR)/work
-	$(QUESTA)/vlog $(SIM_FILES) $(RTL_FILES) $(VLOG_ARGS)
-	$(QUESTA)/vopt testbench +acc=npr3+CPU+BRKPT+TRACE -o testbench_opt -debugdb
-	$(QUESTA)/vsim -i -debugdb testbench_opt -do $(QUESTA_DIR)/wave.do
+	test -d $(QUESTA_DIR)/work || $(QSIM_VLIB) $(QUESTA_DIR)/work
+	$(QSIM_VMAP) work $(QUESTA_DIR)/work
+	$(QSIM_VLOG) $(SIM_FILES) $(RTL_FILES) $(VLOG_ARGS)
+	$(QSIM_VOPT) testbench +acc=npr3+CPU+BRKPT+TRACE -o testbench_opt -debugdb
+	$(QSIM_VSIM) -i -debugdb testbench_opt -do $(QUESTA_DIR)/wave.do
 
-#	$(VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+RH11+RPXX -o testbench_opt -debugdb
-#	$(VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+KMC11 -o testbench_opt -debugdb
-#	$(VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+DUP11+USRT_TX+USRT_RX+CRC16 -o testbench_opt -debugdb
-#	$(VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+LP20+LP26 -o testbench_opt -debugdb
-
+#	$(QSIM_VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+RH11+RPXX -o testbench_opt -debugdb
+#	$(QSIM_VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+KMC11 -o testbench_opt -debugdb
+#	$(QSIM_VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+DUP11+USRT_TX+USRT_RX+CRC16 -o testbench_opt -debugdb
+#	$(QSIM_VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+LP20+LP26 -o testbench_opt -debugdb
 
 #
 # iverilog
