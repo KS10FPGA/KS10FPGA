@@ -1,0 +1,13 @@
+line = ["label"] instr
+
+instr = expr [ ",,"  expr ]
+        | op [ operand ]
+
+op = "name" | number
+
+operand = [ expr "," ] ["@"] [ expr ] ["(" expr ")"]
+
+expr = number { ( "+" | "-" ) number }
+
+number = [ "+" | "-" ]  "octal" | "decimal" | "name"
+
