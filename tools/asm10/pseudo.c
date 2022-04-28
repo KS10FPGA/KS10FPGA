@@ -1,8 +1,11 @@
-
-#include <stdlib.h>
+#define _GNU_SOURCE
 #include "asm10.h"
 #include "pseudo.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
 
+extern void write_word(word *word, int literal_mode, char *pstring, char *oline);
 
 void set_addr(pop *p,
 	      int l,

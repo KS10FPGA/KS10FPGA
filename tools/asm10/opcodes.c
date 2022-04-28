@@ -1,3 +1,4 @@
+#include <strings.h>
 
 /* Just a list of the PDP-10 opcode names in numberic order. */
 char *opcode_names[] = {

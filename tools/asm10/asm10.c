@@ -7,6 +7,7 @@
  *
  */
 
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -17,6 +18,7 @@
 #include "ctype-asm.h"
 #include "asm10.h"
 #include "sym.h"
+#include "opcodes.h"
 #include "pseudo.h"
 
 /* These globals could all go into a state structure but it's just as
@@ -371,8 +373,8 @@ void parse_line(char *line)
   oline = line;
   t = get_token(&line);
 
-#define BOB_WAS_HERE
-#ifdef BOB_WAS_HERE  
+#define ROB_WAS_HERE
+#ifdef ROB_WAS_HERE
   if ((pass == 2) && (t.type == eol) && t.token[0] == ';') {
       printf("\t;%s", line);
   } else
