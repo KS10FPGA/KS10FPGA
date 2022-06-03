@@ -96,7 +96,6 @@ void dz11_t::dumpRegs(void) {
            ks10_t::readDZCCR());
 }
 
-
 //!
 //! \brief
 //!    Setup a DZ11 line
@@ -125,6 +124,7 @@ void dz11_t::setup(unsigned int line) {
     // Configure Line Parameter Register for 9600,N,8,1
     //
 
+    line &= 0x0007;
     ks10_t::writeIO(addrLPR, 0x1e18 | line);
 
     //
@@ -154,7 +154,7 @@ void dz11_t::testTX(int line) {
     // Initialize the DZ11 for this line
     //
 
-    setup(line & 0x0007);
+    setup(line);
 
     //
     // Print test message
@@ -192,13 +192,14 @@ void dz11_t::testTX(int line) {
 
 void dz11_t::testRX(int line) {
 
-    printf("Characters typed on TTY%d should echo on the console. Type ^C on TTY%d to exit.\n", line, line);
+    printf("Characters typed on TTY%d should echo on the console.\n"
+           "Type ^C on TTY%d to exit.\n", line, line);
 
     //
     // Initialize the DZ11 for this line
     //
 
-    setup(line & 0x0007);
+    setup(line);
 
     //
     // Test receiver
@@ -257,7 +258,7 @@ void dz11_t::testECHO(int line) {
     // Initialize the DZ11 for this line
     //
 
-    setup(line & 0x0007);
+    setup(line);
 
     //
     // Test echo
