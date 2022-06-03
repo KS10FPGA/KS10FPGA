@@ -527,18 +527,18 @@ DISKS := \
 
 SIM_FILES := \
 	$(TESTBENCH)/testbench.sv \
-	$(TESTBENCH)/dumpregs.v \
+	$(TESTBENCH)/dumpregs.sv \
 	$(TESTBENCH)/mtsim.sv \
-	$(TESTBENCH)/sdsim.v \
+	$(TESTBENCH)/sdsim.sv \
 
 ifneq (, $(findstring SSRAMx18, $(SIM_ARGS)))
 SIM_FILES += \
-	$(TESTBENCH)/cy7c1463kv33.v
+	$(TESTBENCH)/cy7c1463kv33.sv
 endif
 
 ifneq (, $(findstring SSRAMx36, $(SIM_ARGS)))
 SIM_FILES += \
-	$(TESTBENCH)/cy7c1460av33.v
+	$(TESTBENCH)/cy7c1460av33.sv
 endif
 
 #
