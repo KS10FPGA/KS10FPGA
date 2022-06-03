@@ -21,6 +21,10 @@
         expects("MOVE TAPE OFF BOT, ON-LINE; TYPE <CR>:  ",                    "\015",       state[13]);
         expects("SMMAG CMD - ",                                                "F\015",      state[14]);
 
-
+//
+//Can I launch DDT from here?
+//
+//This is the response from the "D" response to "WHAT TEST"
 //64 0D 0D 0A 45 44 44 54 0D 0D 0D 0A 5E 5C 3F 07 0D 0D 0D 0A
+//
 //C<CR><CR><LF>EDDT<CR><CR><CR><LF>^\?<07><CR><CR><CR><LF>
