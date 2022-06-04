@@ -6,14 +6,14 @@
 //   KS-10 FPGA Test Bench
 //
 // File
-//   testbench.v
+//   testbench.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2022 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -561,7 +561,7 @@ module testbench;
 
         key = new(1);
 
-        $display("[%11.3f] KS10: Simulation Starting", $time/1.0e3);
+        $display("[%11.3f] KS10: Starting %s Diagnostic Simulation.", $time/1.0e3, `DIAG);
 
         fd_cty = $fopen("cty_out.txt", "w");
 
@@ -614,11 +614,6 @@ module testbench;
         //
         // Initialize the Breakpoint Registers
         //
-
-`undef valBRAR0
-`undef valBRMR0
-`define valBRAR0 36'o140000_020030
-`define valBRMR0 36'o140003_777777
 
         conWRITE36(addrBRAR0, `valBRAR0);
         conWRITE36(addrBRMR0, `valBRMR0);
@@ -747,46 +742,43 @@ module testbench;
              key.get(1);
              getchar(fd_cty);
 
-             `ifdef TEST_DSKCG
+             `ifdef DIAG_DSKCG
                 `include "test_dskcg.vh"
              `endif
 
-             `ifdef TEST_DSDZA
+             `ifdef DIAG_DSDZA
                 `include "test_dsdza.vh"
              `endif
 
-//           `define TEST_DSRPA
-             `ifdef TEST_DSRPA
+             `ifdef DIAG_DSRPA
                 `include "test_dsrpa.vh"
              `endif
 
-             `ifdef TEST_DSRMB
+             `ifdef DIAG_DSRMB
                 `include "test_dsrmb.vh"
              `endif
 
-             `ifdef TEST_DSLPA
+             `ifdef DIAG_DSLPA
                  `include "test_dslpa.vh"
              `endif
 
-             `ifdef TEST_DSDUA
+             `ifdef DIAG_DSDUA
                  `include "test_dsdua.vh"
              `endif
 
-             `ifdef TEST_DSKMA
+             `ifdef DIAG_DSKMA
                  `include "test_dskma.vh"
              `endif
 
-             `define TEST_DSTUA
-             `ifdef TEST_DSTUA
+             `ifdef DIAG_DSTUA
                  `include "test_dstua.vh"
              `endif
 
-//           `define TEST_DSTUB
-             `ifdef TEST_DSTUB
+             `ifdef DIAG_DSTUB
                  `include "test_dstub.vh"
              `endif
 
-             `ifdef TEST_DSUBA
+             `ifdef DIAG_DSUBA
                  `include "test_dsuba.vh"
              `endif
 

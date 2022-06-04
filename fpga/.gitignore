@@ -3,6 +3,7 @@ dupstatus.txt
 dzstatus.txt
 kmcstatus.txt
 lpstatus.txt
+mtstatus.txt
 rhstatus.txt
 uba1status.txt
 uba3status.txt
@@ -11,3 +12,4 @@ modelsim.ini
 lpr_out.txt
 transcript
 *.wlf
+tmp
