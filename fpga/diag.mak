@@ -1,4 +1,7 @@
 
+$(DIAGTAPE) : $(DIAGTAPE).gz
+	gunzip -k $(DIAGTAPE).gz
+
 #
 # Generic rule for building most diagnostics. There are some special
 # rules below for diagnostics that require special handling.
