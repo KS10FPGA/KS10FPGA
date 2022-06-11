@@ -1,25 +1,16 @@
-CFLAGS = -g
+CFLAGS = -g -O3 -W -Wall -Wno-char-subscripts
 
-FILES = asm10.o opcodes.o ctype-asm.o sym.o opcodes.o pseudo.o
+CFILES = asm10.c ctype-asm.c opcodes.c pseudo.c sym.c
+HFILES = asm10.h ctype-asm.h opcodes.h pseudo.h sym.h
 
-asm10: $(FILES)
+asm10 :
+	$(CC) $(CFLAGS) $(CFILES) -DKS10 -o asm10
 
-asm10.o: asm10.h
-
-ctype-asm.o: ctype-asm.h
-
-sym.o: sym.h
-
-opcodes.o: opcodes.h
-
-pseudo.o: pseudo.h
-
-#install: asm10
-#	cp asm10 ~/bin/
-
-test: asm10
+test : asm10
 	./asm10 test.asm
+	./asm10 mtboot.asm -o mtboot.lst
 
-clean:
+clean :
+	rm -f *~ .*~
 	rm -f $(FILES)
-	rm -f asm10.exe
+	rm -f asm10.exe asm10 *.out *.lst

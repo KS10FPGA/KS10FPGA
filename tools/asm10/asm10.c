@@ -17,9 +17,9 @@
 
 #include "ctype-asm.h"
 #include "asm10.h"
-#include "sym.h"
 #include "opcodes.h"
 #include "pseudo.h"
+#include "sym.h"
 
 /* These globals could all go into a state structure but it's just as
  * easy this way */
@@ -59,7 +59,7 @@ void token_free(token *t)
 /* returns the token, * updates *line to after the parsed out token */
 token get_token(char **line)
 {
-  char *start, *end;
+  char *start, *end = NULL;
   token t = {0, 0, 0, 0, 0};
 
   /* skip leading whitespace */
@@ -117,7 +117,7 @@ token get_token(char **line)
     if (*end == ':') {
       end++;
       t.type = label;
-    } else if ((t.value = opcode_lookup(t.token)) != -1) {
+    } else if ((t.value = opcode_lookup(t.token)) != (unsigned int)-1) {
       t.type = opcode;
     } else {
       t.type = name;
@@ -143,7 +143,7 @@ void write_word(word *word,
 		char *oline)
 {
   if (pass == 2)
-    fprintf(ofile, "%06o\t%06o %06o  %s %s",
+    fprintf(ofile, "%06lo\t%06lo %06lo  %s %s",
 	    (literal_mode ? literal_address : address)&HALF_MASK,
 	    word->lh&HALF_MASK, word->rh&HALF_MASK,
 	    pstring ? pstring : "", oline ? oline : "\n");
@@ -158,7 +158,7 @@ void write_word(word *word,
 void write_finish()
 {
   if (pass == 2)
-    fprintf(ofile, "\n777777\t000000 %06o\n", start_address);
+    fprintf(ofile, "\n777777\t000000 %06lo\n", start_address);
 }
 
 
@@ -190,7 +190,7 @@ void parse_inst(char **line,
   enum state stack[10];
   int sp = 0;
   word word = {0,0};
-  fullword e, e2;		/* "return" value from expr */
+  fullword e = 0, e2;		/* "return" value from expr */
   inst inst = { 0, 0, 0, 0, 0};
   char *parsed = 0;
   char *tline;
@@ -247,7 +247,7 @@ void parse_inst(char **line,
       state = worddone;
       continue;
     case worddone:
-      asprintf(&parsed, "%6o,,%-6o          ", word.lh&HALF_MASK, word.rh&HALF_MASK);
+      asprintf(&parsed, "%6lo,,%-6lo          ", word.lh&HALF_MASK, word.rh&HALF_MASK);
       write_word(&word, literal_mode, parsed, oline);
       if (parsed) free(parsed);
       state = done;

@@ -18,7 +18,7 @@ char *sym_new(char *name,
 {
   struct symbol *sym;
 
-  if (sym_lookup(name) == -1) {
+  if (sym_lookup(name) == (halfword)-1) {
     if ((sym = malloc(sizeof(struct symbol))) == 0) {
       fprintf(stderr, "Out of memory allocating symbol '%s'\n", name);
       exit(1);
@@ -48,5 +48,5 @@ halfword sym_lookup(char *name)
     if (strcmp(name, sym->name) == 0)
       return sym->value;
   }
-  return -1;
+  return (halfword)-1;
 }

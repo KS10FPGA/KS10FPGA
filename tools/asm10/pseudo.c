@@ -12,14 +12,20 @@ void set_addr(pop *p,
 	      char *oline,
 	      inst *inst)
 {
+  (void)p;
+  (void)l;
+  (void)oline;
   address = inst->y;
 }
 
 void set_start(pop *p,
-	       int l,
+	      int l,
 	      char *oline,
 	      inst *inst)
 {
+  (void)p;
+  (void)l;
+  (void)oline;
   start_address = inst->y;
 }
 
@@ -33,7 +39,7 @@ void psop(pop *p,
 
   word.lh = p->value | (inst->ac << 5) | (inst->i << 1) | inst->x;
   word.rh = inst->y & HALF_MASK;
-  asprintf(&parsed, "%03o %02o %1o %02o %06o      ", p->value>>9, inst->ac, inst->i, inst->x, inst->y);
+  asprintf(&parsed, "%03lo %02o %1o %02o %06o      ", p->value>>9, inst->ac, inst->i, inst->x, inst->y);
   write_word(&word, literal_mode, parsed, oline);
   if (parsed) free(parsed);
 }

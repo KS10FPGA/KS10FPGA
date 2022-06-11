@@ -1,4 +1,5 @@
 #include <strings.h>
+#include "opcodes.h"
 
 /* Just a list of the PDP-10 opcode names in numberic order. */
 char *opcode_names[] = {
@@ -74,7 +75,6 @@ char *opcode_names[] = {
   "tro",     "tlo",     "troe",    "tloe",    "troa",    "tloa",    "tron",    "tlon",
   "tdo",     "tso",     "tdoe",    "tsoe",    "tdoa",    "tsoa",    "tdon",    "tson",
 
-#define KS10
 #ifdef KS10
 
   "OP700",  "OP701",  "OP702",  "IOT703", "UMOVE",  "UMOVEM", "IOT706", "IOT707",
@@ -114,5 +114,5 @@ unsigned int opcode_lookup(char *op)
     if (strcasecmp(op, *cp) == 0)
       return opcode;
   }
-  return -1;
+  return (unsigned int)-1;
 }
