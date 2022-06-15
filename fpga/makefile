@@ -124,7 +124,13 @@ MERGE36         := $(TOOLDIR)/merge/merge36.awk
 SAV2VERILOG     := $(TOOLDIR)/sav2verilog/sav2verilog
 T10BACKUP       := $(TOOLDIR)/tapeutils/t10backup
 DIAGTAPE        := $(TAPEDIR)/KS10\ Diagnostics/ks_diag_gs.tap
-REDTAPE         := $(TAPEDIR)/RED\ PACK\ 405A2/red405a2.tap.gz
+
+REDPACKDIR      := $(TAPEDIR)/RED\ PACK\ 405A2
+REDTAPE         := $(REDPACKDIR)/red405a2.tap.gz
+REDPACK         := $(REDPACKDIR)/red405a2.rp06.gz
+
+MICROCODEDIR    := $(TAPEDIR)/KS10\ Microcode
+MICROCODETAPE   := $(MICROCODEDIR)/CRAM4K_Microcode.tap.gz
 
 #
 # Fix pipelining (the tee command)
@@ -570,6 +576,15 @@ DISKS := \
 build : quartus
 
 #
+# Get microcode from tape
+#
+
+MICROCODEFILE := $(MICROCODEDIR)/cram4k.mcr
+
+$(MICROCODEFILE) : $(MICROCODETAPE)
+	make -C $(MICROCODEDIR) cram4k.mcr
+
+#
 # DROM Microcode Initialization
 #
 
@@ -580,8 +595,8 @@ DROM_DAT := \
 # Create the "Dispatch ROM" microcode for microsequencer
 #
 
-$(DROM_DAT) : ks10/cpu/useq/ks10.mcr ks10/cpu/useq/drom.awk
-	awk -f ks10/cpu/useq/drom.awk ks10/cpu/useq/ks10.mcr > $(DROM_DAT)
+$(DROM_DAT) : ks10/cpu/useq/drom.awk $(MICROCODEFILE) makefile
+	awk -f ks10/cpu/useq/drom.awk $(MICROCODEFILE) > $(DROM_DAT)
 
 #
 # CROM Microcode Initialization
@@ -604,8 +619,8 @@ else
    SERIALNUM := 4097
 endif
 
-$(CROM_DAT) : ks10/cpu/useq/ks10.mcr ks10/cpu/useq/crom.awk makefile
-	awk -v SERIALNUM=$(SERIALNUM) -f ks10/cpu/useq/crom.awk < ks10/cpu/useq/ks10.mcr > $(CROM_DAT)
+$(CROM_DAT) : ks10/cpu/useq/crom.awk $(MICROCODEFILE) makefile
+	awk -v SERIALNUM=$(SERIALNUM) -f ks10/cpu/useq/crom.awk $(MICROCODEFILE) > $(CROM_DAT)
 
 #
 # Simulation testbench files
@@ -1072,6 +1087,7 @@ clean_rtl :
 clean_vsim : clean_questa
 
 clean_questa :
+	rm -rf tmp
 	rm -rf $(QUESTA_DIR)/work
 	rm -f  $(QUESTA_DIR)/esm_ks10.cr.mti \
 	       $(QUESTA_DIR)/esm_ks10.mpf \

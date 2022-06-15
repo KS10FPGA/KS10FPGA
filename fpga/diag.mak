@@ -1,6 +1,6 @@
 
 $(DIAGTAPE) : $(DIAGTAPE).gz
-	gunzip -k $(DIAGTAPE).gz
+	gunzip -c $(DIAGTAPE).gz > $(DIAGTAPE)
 
 #
 # Generic rule for building most diagnostics. There are some special
