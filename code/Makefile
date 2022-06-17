@@ -81,7 +81,7 @@ endif
 
 .PHONY: clean
 clean:
-	rm console
+	rm -f console
 
 archive_all:
 	tar -czvf ks10_code_all_`date '+%y%m%d'`.tgz *
