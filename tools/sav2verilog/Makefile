@@ -1,3 +1,7 @@
+#
+# Copyright 2022 Rob Doyle
+# SPDX-License-Identifier: GPL-2.0
+#
 
 sav2verilog : sav2verilog.c
 	gcc -O2 -W -Wall -Dx36 sav2verilog.c -o sav2verilog
