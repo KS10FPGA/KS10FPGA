@@ -293,7 +293,7 @@ class tape_t {
         void close(void);
         void processCommand(void);
         tape_t(const char *filename, unsigned int tapeLength = 2400, unsigned int debug = 0);
-        static void *processThread(void *arg);
+        static void tapeThread(void);
 };
 
 #endif

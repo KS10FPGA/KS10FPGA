@@ -36,6 +36,8 @@
 //
 //******************************************************************************
 
+#include <thread>
+
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -67,7 +69,7 @@ static const char *prompt = "KS10> ";
 //!    the FPGA IO Mutex locking.
 //!
 
-void *__noreturn haltThread(void *) {
+void __noreturn haltThread(void) {
     bool halted = true;
     printf("KS10: Halt Status thread started.\n");
     for (;;) {
@@ -92,7 +94,7 @@ void *__noreturn haltThread(void *) {
 //!    the FPGA IO Mutex locking.
 //!
 
-void * __noreturn ctyThread(void *) {
+void __noreturn ctyThread(void) {
     printf("KS10: CTY thread started.\n");
     for (;;) {
         int ch = ks10_t::getchar();
@@ -151,35 +153,19 @@ int main(int argc, char *argv[]) {
     // Create the Halt Status thread
     //
 
-    pthread_t haltThreadID;
-    int status = pthread_create(&haltThreadID, NULL, &haltThread, NULL);
-    if (status != 0) {
-        printf("KS10: pthread_create(haltThread) returned \"%s\".\n", strerror(status));
-        exit(EXIT_FAILURE);
-    }
+    std::thread thread1(haltThread);
 
     //
     // Create CTY thread
     //
 
-    pthread_t ctyThreadID;
-    status = pthread_create(&ctyThreadID, NULL, &ctyThread, NULL);
-    if (status != 0) {
-        printf("KS10: pthread_create(ctyThread) returned \"%s\".\n", strerror(status));
-        exit(EXIT_FAILURE);
-    }
+    std::thread thread2(ctyThread);
 
     //
-    // Create TAPE thread
+    // Create Tape Thread
     //
 
-    pthread_t tapeThreadID;
-    const char *file = "red405a2.tap";
-    status = pthread_create(&tapeThreadID, NULL, &tape_t::processThread, (void*)file);
-    if (status != 0) {
-        printf("KS10: pthread_create(tapeThread) returned \"%s\".\n", strerror(status));
-        exit(EXIT_FAILURE);
-    }
+    std::thread thread3(tape_t::tapeThread);
 
     usleep(1000);
 
