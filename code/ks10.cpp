@@ -40,9 +40,10 @@
 //! \{
 //
 
+#include <mutex>
+
 #include <stdio.h>
 #include <fcntl.h>
-#include <pthread.h>
 #include <sys/mman.h>
 
 #include "vt100.hpp"
@@ -50,8 +51,7 @@
 
 int ks10_t::fd;                                         //!< /dev/mem file descriptor
 bool ks10_t::debug;                                     //!< Debug mode
-pthread_mutex_t ks10_t::lock;                           //!< FPGA access mutex
-pthread_mutexattr_t ks10_t::attr;                       //!< FPGA access mutex attributes
+std::mutex ks10_t::fpga_mutex;                          //!< FPGA access mutex
 char *ks10_t::fpgaAddrVirt;                             //!< FPGA Base Virtual Address
 
 volatile ks10_t::addr_t *ks10_t::regAddr;               //!< Console Address Register
@@ -126,35 +126,6 @@ ks10_t::ks10_t(bool debug) {
         }
     }
 
-    //
-    // Create a pthread mutex
-    //
-
-    int status;
-    if ((status = pthread_mutexattr_init(&attr)) != 0) {
-        printf("KS10: pthread_mutexattr_init() returned %d.\n"
-               "      Aborting.\n", status);
-        if (!debug) {
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    if ((status = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK)) != 0) {
-        printf("KS10: pthread_mutexattr_settype() returned %d.\n"
-               "      Aborting.\n", status);
-        if (!debug) {
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    if ((status = pthread_mutex_init(&lock, &attr)) != 0) {
-        printf("KS10: pthread_mutex_init() returned %d.\n"
-               "      Aborting.\n", status);
-        if (!debug) {
-            exit(EXIT_FAILURE);
-        }
-    }
-
     regAddr    = reinterpret_cast<volatile       addr_t   *>(&fpgaAddrVirt[regCONAROffset]);    // Console Address Register
     regData    = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONDROffset]);    // Console Data Register
     regCIR     = reinterpret_cast<volatile       data_t   *>(&fpgaAddrVirt[regCONIROffset]);    // KS10 Console Instruction Register
@@ -192,7 +163,7 @@ ks10_t::ks10_t(bool debug) {
 //!
 
 ks10_t::~ks10_t(void) {
-    pthread_mutex_destroy(&lock);
+    fpga_mutex.~mutex();
     if (munmap(fpgaAddrVirt, fpgaAddrSize) != 0) {
         printf("KS10: munmap() failed.\n");
     }
