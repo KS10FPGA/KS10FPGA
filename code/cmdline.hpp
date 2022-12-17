@@ -39,6 +39,7 @@
 
 #include "hist.hpp"
 #include "cursor.hpp"
+#include "commands.hpp"
 
 class cmdline_t {
     private:
@@ -64,8 +65,9 @@ class cmdline_t {
         } state;
         char cmdline[80];
         unsigned int cmdlen;
+        command_t &command;
     public:
-        cmdline_t(unsigned int promptSize);
+        cmdline_t(command_t &command, unsigned int promptSize);
         bool process(int ch);
 };
 

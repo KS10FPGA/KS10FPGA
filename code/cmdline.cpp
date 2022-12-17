@@ -61,7 +61,7 @@
 //!    length of the prompt so that the cmdline interpreter will not backspace over the prompt
 //!
 
-cmdline_t::cmdline_t(unsigned int promptSize) : cursor(promptSize), state(stateNONE), cmdlen(0) {
+cmdline_t::cmdline_t(command_t &command, unsigned int promptSize) : cursor(promptSize), state(stateNONE), cmdlen(0), command(command) {
     static const char cmd[] = "rp boot";
     hist.save(cmd, sizeof(cmd)-1);
     memset(cmdline, 0, sizeof(cmdline));
@@ -197,7 +197,7 @@ bool cmdline_t::newline(void) {
     cursor.putchar('\n');
     debug("cmdline: \"%s\" (%d)\n", cmdline, cmdlen);
     cmdlen = 0;
-    bool ret = executeCommand(cmdline);
+    bool ret = command.execute(cmdline);
     memset(cmdline, 0, sizeof(cmdline));
     return ret;
 }

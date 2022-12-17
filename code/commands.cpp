@@ -123,7 +123,7 @@ static const char *cpucfg_file = ".ks10/cpu.cfg";
 //!    Recall Configuration
 //!
 
-void recallConfig(void) {
+void command_t::recallConfig(void) {
 
     //
     // Initialize the device objects
@@ -174,7 +174,7 @@ void recallConfig(void) {
 //!    send the ^E, ^T, or ^L to the monitor running on the KS10.
 //!
 
-bool consoleOutput(void) {
+bool command_t::consoleOutput(void) {
     bool escape = false;
 
     const char cntl_e = 0x05;   // ^E
@@ -496,7 +496,7 @@ void printPCIR(uint64_t data) {
 //!    Normally you cannot edit the command line, but ...
 //!
 
-static bool cmdBA(int argc, char *argv[]) {
+bool command_t::cmdBA(int argc, char *argv[]) {
 
     int status __unused;
 
@@ -580,7 +580,7 @@ static void printBRxR(ks10_t::data_t dbxr, const char *regName) {
 
 //!
 //! \brief
-//!   Print breakproint status
+//!   Print breakpoint status
 //!
 
 static void cmdBR_printStatus(char unit) {
@@ -650,7 +650,7 @@ static void cmdBR_printStatus(char unit) {
 //!    otherwise false.
 //!
 
-static bool cmdBR(int argc, char *argv[]) {
+bool command_t::cmdBR(int argc, char *argv[]) {
 
     const char *usage =
         "\n"
@@ -679,7 +679,7 @@ static bool cmdBR(int argc, char *argv[]) {
         "  --help          Print help message and exit.\n"
         "  --disable       Disable the specified breakpoint and exit.\n"
         "  --mask=mask     Set an address match mask. This parameter modifies the\n"
-        "                  specified \"break condition\".  The mask parameter is a 22-bit\n"
+        "                  specified \"break condition\". The mask parameter is a 22-bit\n"
         "                  constant that is masked against bits 14-35 of the address bus.\n"
         "                  Bits that are asserted in the address mask are ignored when\n"
         "                  performing the address match comparison. The default mask is\n"
@@ -934,7 +934,7 @@ static bool cmdBR(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdCE(int argc, char *argv[]) {
+bool command_t::cmdCE(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The \"ce\" commands controls the operation of the KS10 cache.\n"
@@ -970,6 +970,10 @@ static bool cmdCE(int argc, char *argv[]) {
         printf("ce: the cache currently %s.\n", ks10_t::cacheEnable() ? "enabled" : "disabled");
         return true;
     }
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -1021,7 +1025,7 @@ static bool cmdCE(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdCP(int argc, char *argv[]) {
+bool command_t::cmdCPU(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The \"CP[U]\" commands \n"
@@ -1065,6 +1069,10 @@ static bool cmdCP(int argc, char *argv[]) {
                ks10_t::timerEnable() ? "enabled" : "disabled");
         return true;
     }
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -1199,7 +1207,7 @@ static bool cmdCP(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdCO(int argc, char *argv[]) {
+bool command_t::cmdCO(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The \"co\" command continues the KS10. If the KS10 is halted, this command will\n"
@@ -1215,6 +1223,10 @@ static bool cmdCO(int argc, char *argv[]) {
         {"help",    no_argument, 0, 0},  // 0
         {0,         0,           0, 0},  // 1
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -1247,7 +1259,7 @@ static bool cmdCO(int argc, char *argv[]) {
 //!    The <b>CL</b> clears the screen.
 //!
 
-static bool cmdCL(int, char *[]) {
+bool command_t::cmdCL(int, char *[]) {
     printf("%s%s", vt100_hom, vt100_cls);
     return true;
 }
@@ -1271,7 +1283,7 @@ static bool cmdCL(int, char *[]) {
 //!    otherwise false.
 //!
 
-static bool cmdDA(int argc, char *argv[]) {
+bool command_t::cmdDA(int argc, char *argv[]) {
 
     const char *usage =
         "\n"
@@ -1284,6 +1296,10 @@ static bool cmdDA(int argc, char *argv[]) {
         {"help",    no_argument, 0, 0},  // 0
         {0,         0,           0, 0},  // 1
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -1330,7 +1346,7 @@ static bool cmdDA(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdDP(int argc, char *argv[]) {
+bool command_t::cmdDUP(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
     printf("dp: command not implemented.\n");
@@ -1416,6 +1432,10 @@ static bool cmdDZ_TEST(int argc, char *argv[]) {
         return true;
     }
 
+    //
+    // Process command line
+    //
+
     opterr = 0;
     for (;;) {
         int index = 0;
@@ -1476,7 +1496,7 @@ static bool cmdDZ_TEST(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdDZ(int argc, char *argv[]) {
+bool command_t::cmdDZ(int argc, char *argv[]) {
 
     const char *usageTop =
         "\n"
@@ -1538,7 +1558,7 @@ static bool cmdDZ(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdEX(int argc, char *argv[]) {
+bool command_t::cmdEX(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The \"ex\" command executes the instruction provided as an argument. It does\n"
@@ -1561,6 +1581,10 @@ static bool cmdEX(int argc, char *argv[]) {
         printf("ex: instruction argument required\n%s", usage);
         return true;
     }
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -1690,7 +1714,7 @@ void fixDSKAC(void) {
 //!    otherwise false.
 //!
 
-static bool cmdGO(int argc, char *argv[]) {
+bool command_t::cmdGO(int argc, char *argv[]) {
 
     const char *usage =
         "\n"
@@ -1740,6 +1764,10 @@ static bool cmdGO(int argc, char *argv[]) {
         {"mt",      no_argument, 0, 0},  // 1
         {0,         0,           0, 0},  // 2
     };
+
+    //
+    // Process command line
+    //
 
     int index = 0;
     opterr = 0;
@@ -1917,7 +1945,7 @@ static bool cmdGO(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdHA(int argc, char *argv[]) {
+bool command_t::cmdHA(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The \"ha\' command HALTs the KS10\n"
@@ -1929,6 +1957,10 @@ static bool cmdHA(int argc, char *argv[]) {
         {"help",    no_argument, 0, 0},  // 0
         {0,         0,           0, 0},  // 1
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -1971,7 +2003,7 @@ static bool cmdHA(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdHE(int, char *[]) {
+bool command_t::cmdHE(int, char *[]) {
 
     const char *usage =
         "\n"
@@ -2120,7 +2152,7 @@ static bool cmdHE(int, char *[]) {
 //!    otherwise false.
 //!
 
-static bool cmdHS(int argc, char *argv[]) {
+bool command_t::cmdHS(int argc, char *argv[]) {
 
     const char *usage =
         "\n"
@@ -2133,6 +2165,10 @@ static bool cmdHS(int argc, char *argv[]) {
         {"help",    no_argument, 0, 0},  // 0
         {0,         0,           0, 0},  // 2
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -2172,7 +2208,7 @@ static bool cmdHS(int argc, char *argv[]) {
 //!    You can't change the serial configuration without recompiling.
 //!
 
-static bool cmdLP(int argc, char *argv[]) {
+bool command_t::cmdLP(int argc, char *argv[]) {
 
     const char *usageTop =
         "\n"
@@ -2191,6 +2227,7 @@ static bool cmdLP(int argc, char *argv[]) {
 
     if (argc < 2) {
         printf("lp : missing argument\n");
+        printf(usageTop);
         return true;
     }
 
@@ -2356,7 +2393,7 @@ static bool cmdLP(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdMR(int argc, char *argv[]) {
+bool command_t::cmdMR(int argc, char *argv[]) {
 
     const char *usage =
         "\n"
@@ -2398,6 +2435,10 @@ static bool cmdMR(int argc, char *argv[]) {
         }
         return false;
     }
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -2548,6 +2589,10 @@ static bool cmdMT_BOOT(int argc, char *argv[]) {
         printf("mt boot: missing argument\n");
         return true;
     }
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -2830,6 +2875,10 @@ static bool cmdMT_CONF(int argc, char *argv[]) {
         return true;
     }
 
+    //
+    // Process command line
+    //
+
     int unit = -1;
     opterr = 0;
     for (;;) {
@@ -2962,6 +3011,10 @@ bool cmdMT_DUMP(int argc, char *argv[]) {
         {0,         0,           0, 0},  // 1
     };
 
+    //
+    // Process command line
+    //
+
     opterr = 0;
     for (;;) {
         int index = 0;
@@ -3012,6 +3065,10 @@ bool cmdMT_ERASE(int argc, char *argv[]) {
         {"help",    no_argument, 0, 0},  // 0
         {0,         0,           0, 0},  // 1
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -3066,6 +3123,10 @@ bool cmdMT_PRESET(int argc, char *argv[]) {
         {0,         0,           0, 0},  // 1
     };
 
+    //
+    // Process command line
+    //
+
     opterr = 0;
     for (;;) {
         int index = 0;
@@ -3119,6 +3180,10 @@ bool cmdMT_RESET(int argc, char *argv[]) {
         {0,         0,           0, 0},  // 1
     };
 
+    //
+    // Process command line
+    //
+
     opterr = 0;
     for (;;) {
         int index = 0;
@@ -3169,6 +3234,10 @@ bool cmdMT_REWIND(int argc, char *argv[]) {
         {"help",    no_argument, 0, 0},  // 0
         {0,         0,           0, 0},  // 1
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -3248,6 +3317,10 @@ static bool cmdMT_SPACE(int argc, char *argv[]) {
     bool filesFound = false;
     int  recs  = 0;
     int  files = 0;
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -3383,6 +3456,10 @@ bool cmdMT_STAT(int argc, char *argv[]) {
         {0,         0,           0, 0},  // 1
     };
 
+    //
+    // Process command line
+    //
+
     opterr = 0;
     for (;;) {
         int index = 0;
@@ -3455,6 +3532,10 @@ static bool cmdMT_TEST(int argc, char *argv[]) {
         {"wrchk",  no_argument, 0, 0},  // 8
         {0,        0,           0, 0},  // 9
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -3531,6 +3612,10 @@ bool cmdMT_UNLOAD(int argc, char *argv[]) {
         {0,         0,           0, 0},  // 1
     };
 
+    //
+    // Process command line
+    //
+
     opterr = 0;
     for (;;) {
         int index = 0;
@@ -3569,7 +3654,7 @@ bool cmdMT_UNLOAD(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdMT(int argc, char *argv[]) {
+bool command_t::cmdMT(int argc, char *argv[]) {
 
     //
     // Top level options and help
@@ -3659,7 +3744,7 @@ static bool cmdMT(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdQU(int /*argc*/, char */*argv*/[]) {
+bool command_t::cmdQU(int /*argc*/, char */*argv*/[]) {
 
     struct termios ctrl;
     tcgetattr(STDIN_FILENO, &ctrl);
@@ -3687,7 +3772,7 @@ static bool cmdQU(int /*argc*/, char */*argv*/[]) {
 //!    otherwise false.
 //!
 
-static bool cmdRD(int argc, char *argv[]) {
+bool command_t::cmdRD(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The \"rd\" command reads from memory, Unibus IO, APR IO, and ACs.\n"
@@ -3700,6 +3785,10 @@ static bool cmdRD(int argc, char *argv[]) {
         {"help",  no_argument, 0, 0},  // 0
         {0,       0,           0, 0},  // 1
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -3888,6 +3977,10 @@ static bool cmdRP_BOOT(int argc, char *argv[]) {
         printf("rp boot: missing argument\n");
         return true;
     }
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -4102,6 +4195,10 @@ static bool cmdRP_CONF(int argc, char *argv[]) {
         return true;
     }
 
+    //
+    // Process command line
+    //
+
     int unit = -1;
     opterr = 0;
     for (;;) {
@@ -4264,6 +4361,10 @@ static bool cmdRP_TEST(int argc, char *argv[]) {
         return true;
     }
 
+    //
+    // Process command line
+    //
+
     opterr = 0;
     for (;;) {
         int index = 0;
@@ -4320,7 +4421,7 @@ static bool cmdRP_TEST(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdRP(int argc, char *argv[]) {
+bool command_t::cmdRP(int argc, char *argv[]) {
 
     //
     // Top level options and help
@@ -4392,7 +4493,7 @@ static bool cmdRP(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdSI(int argc, char *argv[]) {
+bool command_t::cmdSI(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The command \"si\" single steps the KS10.\n"
@@ -4404,6 +4505,10 @@ static bool cmdSI(int argc, char *argv[]) {
         {"help",    no_argument, 0, 0},  // 0
         {0,         0,           0, 0},  // 1
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -4455,7 +4560,7 @@ static bool cmdSI(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdSH(int argc, char *argv[]) {
+bool command_t::cmdSH(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The command \"sh\" shuts-down TOPS20.\n"
@@ -4467,6 +4572,10 @@ static bool cmdSH(int argc, char *argv[]) {
         {"help",    no_argument, 0, 0},  // 0
         {0,         0,           0, 0},  // 1
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -4515,7 +4624,7 @@ static bool cmdSH(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdST(int argc, char *argv[]) {
+bool command_t::cmdST(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The \"st\" command starts the KS10 at supplied address. It essentially sets\n"
@@ -4528,6 +4637,10 @@ static bool cmdST(int argc, char *argv[]) {
         {"help",    no_argument, 0, 0},  // 0
         {0,         0,           0, 0},  // 1
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -4587,7 +4700,7 @@ static bool cmdST(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdTE(int argc, char *argv[]) {
+bool command_t::cmdTE(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The \"te\" commands controls the operation of the KS10 system timer.\n"
@@ -4618,6 +4731,10 @@ static bool cmdTE(int argc, char *argv[]) {
         printf("tp: the timer currently %s.\n", ks10_t::trapEnable() ? "enabled" : "disabled");
         return true;
     }
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -4673,7 +4790,7 @@ static bool cmdTE(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdTP(int argc, char *argv[]) {
+bool command_t::cmdTP(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The \"tp\" commands controls the operation of the KS10 trap system.\n"
@@ -4704,6 +4821,10 @@ static bool cmdTP(int argc, char *argv[]) {
         printf("tp: traps are currently %s.\n", ks10_t::trapEnable() ? "enabled" : "disabled");
         return true;
     }
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -4751,7 +4872,7 @@ static bool cmdTP(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdTR(int argc, char *argv[]) {
+bool command_t::cmdTR(int argc, char *argv[]) {
 
     static const char *usage =
         "\n"
@@ -4799,6 +4920,10 @@ static bool cmdTR(int argc, char *argv[]) {
     static const uint64_t itrCLR   = 0x8000000000000000;
 //  static const uint64_t itrFULL  = 0x4000000000000000;
     static const uint64_t itrEMPTY = 0x2000000000000000;
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -4875,7 +5000,7 @@ static bool cmdTR(int argc, char *argv[]) {
 //!    Array of pointers to the arguments.
 //!
 
-static bool cmdWR(int argc, char *argv[]) {
+bool command_t::cmdWR(int argc, char *argv[]) {
     const char *usage =
         "\n"
         "The \"wr\" command writes to memory or Unibus IO.\n"
@@ -4887,6 +5012,10 @@ static bool cmdWR(int argc, char *argv[]) {
         {"help",  no_argument, 0, 0},  // 0
         {0,       0,           0, 0},  // 1
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -4957,7 +5086,7 @@ static bool cmdWR(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdZM(int argc, char *argv[]) {
+bool command_t::cmdZM(int argc, char *argv[]) {
 
     const char *usage =
         "\n"
@@ -4970,6 +5099,10 @@ static bool cmdZM(int argc, char *argv[]) {
         {"help",  no_argument, 0, 0},  // 0
         {0,       0,           0, 0},  // 1
     };
+
+    //
+    // Process command line
+    //
 
     opterr = 0;
     for (;;) {
@@ -5017,7 +5150,7 @@ static bool cmdZM(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-static bool cmdZZ(int argc, char *argv[]) {
+bool command_t::cmdZZ(int argc, char *argv[]) {
 
     printf("%s\n", dasm(0213000000000ULL));  // "MOVNS"
     printf("%s\n", dasm(0213200000000ULL));  // "MOVNS 4,0"
@@ -5164,7 +5297,7 @@ static bool cmdZZ(int argc, char *argv[]) {
 //!    otherwise false.
 //!
 
-bool executeCommand(char * buf) {
+bool command_t::execute(char * buf) {
 
     //
     // List of Commands
@@ -5172,40 +5305,40 @@ bool executeCommand(char * buf) {
 
     struct cmdList_t {
         const char * name;
-        bool (*function)(int argc, char *argv[]);
+            bool (command_t::*function)(int argc, char *argv[]);
     };
 
     static const cmdList_t cmdList[] = {
-        {"!",  cmdBA},          // Bang
-        {"?",  cmdHE},          // Help
-        {"BR", cmdBR},          // Breakpoint
-        {"CE", cmdCE},          // Cache enable
-        {"CO", cmdCO},          // Continue
-        {"CL", cmdCL},          // Clear screen
-        {"CP", cmdCP},          // CPU
-        {"DA", cmdDA},          // Disassemble
-        {"DP", cmdDP},          // DUP11 Test
-        {"DZ", cmdDZ},          // DZ11 Test
-        {"EX", cmdEX},          // Execute
-        {"GO", cmdGO},          // GO
-        {"HA", cmdHA},          // Halt
-        {"HE", cmdHE},          // Help
-        {"HS", cmdHS},          // Halt status
-        {"LP", cmdLP},          // LPxx configuration
-        {"MR", cmdMR},
-        {"MT", cmdMT},          // Magtape boot
-        {"QU", cmdQU},          // Quit
-        {"RD", cmdRD},          // Simple memory read
-        {"RP", cmdRP},          // RPxx Configuration
-        {"SH", cmdSH},
-        {"SI", cmdSI},
-        {"ST", cmdST},
-        {"TE", cmdTE},
-        {"TP", cmdTP},
-        {"TR", cmdTR},          // Trace
-        {"WR", cmdWR},          // Simple memory write
-        {"ZM", cmdZM},          // Zero memory
-        {"ZZ", cmdZZ},          // Testing
+        {"!",  &command_t::cmdBA},          // Bang
+        {"?",  &command_t::cmdHE},          // Help
+        {"BR", &command_t::cmdBR},          // Breakpoint
+        {"CE", &command_t::cmdCE},          // Cache enable
+        {"CO", &command_t::cmdCO},          // Continue
+        {"CL", &command_t::cmdCL},          // Clear screen
+        {"CP", &command_t::cmdCPU},         // CPU
+        {"DA", &command_t::cmdDA},          // Disassemble
+        {"DU", &command_t::cmdDUP},         // DUP11 Test
+        {"DZ", &command_t::cmdDZ},          // DZ11 Test
+        {"EX", &command_t::cmdEX},          // Execute
+        {"GO", &command_t::cmdGO},          // GO
+        {"HA", &command_t::cmdHA},          // Halt
+        {"HE", &command_t::cmdHE},          // Help
+        {"HS", &command_t::cmdHS},          // Halt status
+        {"LP", &command_t::cmdLP},          // LPxx configuration
+        {"MR", &command_t::cmdMR},
+        {"MT", &command_t::cmdMT},          // Magtape boot
+        {"QU", &command_t::cmdQU},          // Quit
+        {"RD", &command_t::cmdRD},          // Simple memory read
+        {"RP", &command_t::cmdRP},          // RPxx Configuration
+        {"SH", &command_t::cmdSH},           // Escape to shell
+        {"SI", &command_t::cmdSI},          // Step instruction
+        {"ST", &command_t::cmdST},          // Start
+        {"TE", &command_t::cmdTE},          // Timer enable
+        {"TP", &command_t::cmdTP},          // Trap enable
+        {"TR", &command_t::cmdTR},          // Trace
+        {"WR", &command_t::cmdWR},          // Simple memory write
+        {"ZM", &command_t::cmdZM},          // Zero memory
+        {"ZZ", &command_t::cmdZZ},          // Testing
     };
 
     const int numCMD = sizeof(cmdList)/sizeof(cmdList_t);
@@ -5275,7 +5408,7 @@ bool executeCommand(char * buf) {
             for (int i = 0; i < numCMD; i++) {
                 if ((cmdList[i].name[0] == toupper(argv[0][0])) &&
                     (cmdList[i].name[1] == toupper(argv[0][1]))) {
-                    ret = (*cmdList[i].function)(argc, argv);
+                    ret = (this->*cmdList[i].function)(argc, argv);
                     found = true;
                     break;
                 }

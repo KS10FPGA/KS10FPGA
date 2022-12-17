@@ -196,12 +196,6 @@ int main(int argc, char *argv[]) {
     ks10.boot();
 
     //
-    // Recall configuration
-    //
-
-    recallConfig();
-
-    //
     // Check RP Initialization Status
     //
 
@@ -218,6 +212,12 @@ int main(int argc, char *argv[]) {
     }
 
     //
+    // Create command parser
+    //
+
+    command_t command;
+
+    //
     // Set stdio to unbuffered and no echo
     //
 
@@ -230,7 +230,7 @@ int main(int argc, char *argv[]) {
     // Process characters
     //
 
-    cmdline_t cmdline(strlen(prompt));
+    cmdline_t cmdline(command, strlen(prompt));
 
     fd_set fds;
     struct timeval tv = {0, 0};

@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2021 Rob Doyle
+// Copyright (C) 2013-2022 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -371,7 +371,7 @@ bool rp_t::bootBlock(ks10_t::addr_t paddr, ks10_t::addr_t vaddr,
                                 printf("KS10: Booting from address %07llo.\n", paddr);
                                 ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
                                 ks10_t::startRUN();
-                                consoleOutput();
+                                command_t::consoleOutput();
                                 return true;
                             } else {
                                 printf("KS10: Monitor Pre-Boot is invalid.\n");

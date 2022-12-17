@@ -1021,6 +1021,6 @@ void mt_t::boot(uint16_t unit, uint16_t param, bool diagmode) {
     printf("KS10: Booting from address %07llo.\n", paddr);
     ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
     ks10_t::startRUN();
-    consoleOutput();
+    command_t::consoleOutput();
 
 }
