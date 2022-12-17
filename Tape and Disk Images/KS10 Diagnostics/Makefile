@@ -1,3 +1,8 @@
+#
+# Copyright 2022 Rob Doyle
+# SPDX-License-Identifier: GPL-2.0
+#
+
 FILEDIR   := files
 T10BACKUP := ../../tools/tapeutils/t10backup
 DIAGTAPE  := ks_diag_gs.tap

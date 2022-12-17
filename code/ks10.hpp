@@ -39,10 +39,11 @@
 #ifndef __KS10_HPP
 #define __KS10_HPP
 
+#include <mutex>
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <pthread.h>
 
 //!
 //! \brief
@@ -436,8 +437,7 @@ class ks10_t {
 
         static int fd;                                          //!< /dev/mem file descriptor
         static bool debug;                                      //!< debug mode
-        static pthread_mutex_t lock;                            //!< FPGA access mutex
-        static pthread_mutexattr_t attr;                        //!< FPGA mutex attribute
+        static std::mutex fpga_mutex;                           //!< FPGA access mutex
 
         //
         // Misc constants
@@ -541,7 +541,7 @@ class ks10_t {
 //! \{
 
 inline void ks10_t::lockMutex(void) {
-    pthread_mutex_lock(&lock);
+    fpga_mutex.lock();
 }
 
 //!
@@ -554,7 +554,7 @@ inline void ks10_t::lockMutex(void) {
 //!
 
 inline void ks10_t::unlockMutex(void) {
-    pthread_mutex_unlock(&lock);
+    fpga_mutex.unlock();
 }
 
 //!

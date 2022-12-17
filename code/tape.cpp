@@ -35,8 +35,9 @@
 //
 //******************************************************************************
 
+#include <exception>
+
 #include <stdio.h>
-#include <pthread.h>
 #include <unistd.h>
 
 #include "mt.hpp"
@@ -1512,12 +1513,11 @@ void tape_t::close(void) {
 //!    Opaque pointer to parameters
 //!
 
-void *tape_t::processThread(void *arg) {
+void tape_t::tapeThread(void) {
 
     printf("KS10: Tape thread started.\n");
-
+    const char *filename = "red405a2.tap";
     bool should_exit = false;
-    char *filename = (char *)arg;
     tape_t tape(filename, 2400);
 
     do {
@@ -1528,7 +1528,6 @@ void *tape_t::processThread(void *arg) {
     } while (!should_exit);
 
     tape.close();
-    pthread_exit(0);
-    return NULL;
+    std::terminate();
 
 }

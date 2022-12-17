@@ -1,3 +1,8 @@
+#
+# Copyright 2022 Rob Doyle
+# SPDX-License-Identifier: GPL-2.0
+#
+
 TAPEFILE  := CRAM4K_Microcode.tap
 T10BACKUP := ../../tools/tapeutils/t10backup
 
@@ -9,91 +14,94 @@ T10KL     :=  t10kl.cmd  t10kl.mic  t10kl.mcr  t10kl.ram  t10kl.uld
 
 all : $(MICS) $(CMDS) $(CRAM4K) $(T10KI) $(T10KL)
 
+$(T10BACKUP) :
+	make -C ../../tools/tapeutils
+
 $(TAPEFILE) : $(TAPEFILE).gz
 	gunzip -c $< > $@
 
-tapedir : $(TAPEFILE)
+tapedir : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -t -f $(TAPEFILE)
 
-extend.mic : $(TAPEFILE)
+extend.mic : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-flt.mic : $(TAPEFILE)
+flt.mic : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-inout.mic : $(TAPEFILE)
+inout.mic : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-ks10.mic : $(TAPEFILE)
+ks10.mic : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-pagef.mic : $(TAPEFILE)
+pagef.mic : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-simple.mic : $(TAPEFILE)
+simple.mic : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-smfile.mic : $(TAPEFILE)
+smfile.mic : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-ks10.cmd : $(TAPEFILE)
+ks10.cmd : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
 #
 # CRAM4K
 #
 
-cram4k.cmd : $(TAPEFILE)
+cram4k.cmd : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-cram4k.mic : $(TAPEFILE)
+cram4k.mic : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-cram4k.mcr : $(TAPEFILE)
+cram4k.mcr : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-cram4k.ram : $(TAPEFILE)
+cram4k.ram : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-cram4k.uld : $(TAPEFILE)
+cram4k.uld : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
 #
 # T10KI
 #
 
-t10ki.cmd : $(TAPEFILE)
+t10ki.cmd : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-t10ki.mic : $(TAPEFILE)
+t10ki.mic : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-t10ki.mcr : $(TAPEFILE)
+t10ki.mcr : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-t10ki.ram : $(TAPEFILE)
+t10ki.ram : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-t10ki.uld : $(TAPEFILE)
+t10ki.uld : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
 #
 # T10KL
 #
 
-t10kl.cmd : $(TAPEFILE)
+t10kl.cmd : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-t10kl.mic : $(TAPEFILE)
+t10kl.mic : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-t10kl.mcr : $(TAPEFILE)
+t10kl.mcr : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-t10kl.ram : $(TAPEFILE)
+t10kl.ram : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
-t10kl.uld : $(TAPEFILE)
+t10kl.uld : $(TAPEFILE) $(T10BACKUP)
 	$(T10BACKUP) -x $@ -f $(TAPEFILE)
 
 #
