@@ -53,8 +53,8 @@
 
 module KS10 (
       // Clock/Reset
-      input  wire         memRST,       // Reset
-      input  wire         memCLK,       // Memory Clock
+      input  wire         rst,          // Reset
+      input  wire         clk,          // Clock
       output wire         cpuCLK,       // CPU clock
       output wire         cpuRST,       // CPU reset
       // AXI4-Lite Interface
@@ -188,8 +188,8 @@ module KS10 (
        .REF_JITTER         (0.010)
    )
    iPLL_BASE (
-       .RST                (memRST),
-       .CLKIN              (memCLK),
+       .RST                (rst),
+       .CLKIN              (clk),
        .CLKFBIN            (clkfbout_buf),
        .CLKOUT0            (clkPHS[1]),
        .CLKOUT1            (clkPHS[2]),
@@ -243,12 +243,12 @@ module KS10 (
       .pll_type                 ("General"),
       .pll_subtype              ("General")
     ) PLL (
-      .rst                      (memRST),
+      .rst                      (rst),
       .outclk                   ({clkT[4], clkT[3], clkT[2], clkT[1]}),
       .locked                   (locked),
       .fboutclk                 (),
       .fbclk                    (1'b0),
-      .refclk                   (memCLK)
+      .refclk                   (clk)
     );
 
 `endif
@@ -260,7 +260,7 @@ module KS10 (
    reg [2:0] d;
    always @(posedge clkT[1])
      begin
-        if (memRST)
+        if (rst)
           d <= 3'b111;
         else
           d <= {d[1:0], !locked};
@@ -277,9 +277,9 @@ module KS10 (
                     t3 = 4'b0110,
                     t4 = 4'b0011;
 
-   always @(posedge memCLK)
+   always @(posedge clk)
      begin
-        if (memRST)
+        if (rst)
           begin
              clkT   <= t1;
              cslRST <= 1;
@@ -586,8 +586,8 @@ module KS10 (
    //
 
    MEM uMEM (
-      .rst              (memRST),
-      .memCLK           (memCLK),
+      .rst              (rst),
+      .memCLK           (clk),
       .clkT             (clkT),
       .memBUS           (memBUS),
       .SSRAM_CLK        (SSRAM_CLK),

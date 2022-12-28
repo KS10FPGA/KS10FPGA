@@ -13,7 +13,7 @@
 #
 #******************************************************************************
 #
-# Copyright (C) 2013-2021 Rob Doyle
+# Copyright (C) 2013-2022 Rob Doyle
 #
 # This file is part of the KS10 FPGA Project
 #
@@ -860,7 +860,7 @@ $(QUARTUS_DIR)/files.qsf : makefile
 	@echo "# This file is created by the Makefile." >> $@
 	@echo "# Do not edit." >> $@
 	@echo "#" >> $@
-	@echo 'set_global_assignment -name VERILOG_FILE ./$(PROJECT).v' >> $@;
+	@echo 'set_global_assignment -name VERILOG_FILE ./$(PROJECT).sv' >> $@;
 	@for FILE in $(RTL_FILES); \
 	do \
 	    echo 'set_global_assignment -name VERILOG_FILE ../../'$$FILE >> $@; \
@@ -1013,7 +1013,7 @@ MAP_ARGS := \
 	$(addprefix --verilog_macro=, $(KS10_SYNDEVS)) \
 
 MAP_FILES := \
-	$(QUARTUS_DIR)/$(PROJECT).v \
+	$(QUARTUS_DIR)/$(PROJECT).sv \
 	$(QUARTUS_DIR)/$(PROJECT).qsf \
 	$(QUARTUS_DIR)/$(PROJECT).srf \
 	$(QUARTUS_DIR)/files.qsf \
@@ -1051,7 +1051,7 @@ QSYS_FILES := \
 	$(QUARTUS_DIR)/$(PROJECT).qpf \
 	$(QUARTUS_DIR)/$(PROJECT).sdc \
 	$(QUARTUS_DIR)/$(PROJECT).tcl \
-	$(QUARTUS_DIR)/$(PROJECT).v \
+	$(QUARTUS_DIR)/$(PROJECT).sv \
 	$(QUARTUS_DIR)/ks10_hw.tcl
 
 $(QUARTUS_DIR)/soc_system/synthesis/soc_system.v $(QUARTUS_DIR)/soc_system/synthesis/soc_system.qip : $(QSYS_FILES)

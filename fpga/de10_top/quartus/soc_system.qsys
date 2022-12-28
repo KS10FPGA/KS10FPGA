@@ -22,19 +22,11 @@
          type = "boolean";
       }
    }
-   element clock_bridge_0
-   {
-      datum _sortIndex
-      {
-         value = "2";
-         type = "int";
-      }
-   }
    element hps
    {
       datum _sortIndex
       {
-         value = "4";
+         value = "2";
          type = "int";
       }
       datum sopceditor_expanded
@@ -48,14 +40,6 @@
       datum _sortIndex
       {
          value = "1";
-         type = "int";
-      }
-   }
-   element reset_bridge_0
-   {
-      datum _sortIndex
-      {
-         value = "3";
          type = "int";
       }
    }
@@ -201,21 +185,16 @@
  <parameter name="useTestBenchNamingPattern" value="false" />
  <instanceScript></instanceScript>
  <interface name="clk" internal="clk.clk_in" type="clock" dir="end" />
- <interface
-   name="cpuclk"
-   internal="clock_bridge_0.out_clk_1"
-   type="clock"
-   dir="start" />
- <interface name="cpurst" internal="ks10.cpuRST" type="reset" dir="start" />
  <interface name="dz" internal="ks10.DZ11" type="conduit" dir="end" />
  <interface name="esd" internal="ks10.ESD" type="conduit" dir="end" />
  <interface name="fp" internal="ks10.FP" type="conduit" dir="end" />
- <interface
-   name="h2f"
-   internal="reset_bridge_0.out_reset"
-   type="reset"
-   dir="start" />
+ <interface name="h2f" internal="hps.h2f_reset" type="reset" dir="start" />
  <interface name="hps_io" internal="hps.hps_io" type="conduit" dir="end" />
+ <interface
+   name="hps_user0"
+   internal="hps.h2f_user0_clock"
+   type="clock"
+   dir="start" />
  <interface name="lp" internal="ks10.LP26" type="conduit" dir="end" />
  <interface name="memory" internal="hps.memory" type="conduit" dir="end" />
  <interface name="reset" internal="clk.clk_in_reset" type="reset" dir="end" />
@@ -227,15 +206,6 @@
   <parameter name="clockFrequencyKnown" value="true" />
   <parameter name="inputClockFrequency" value="0" />
   <parameter name="resetSynchronousEdges" value="NONE" />
- </module>
- <module
-   name="clock_bridge_0"
-   kind="altera_clock_bridge"
-   version="18.1"
-   enabled="1">
-  <parameter name="DERIVED_CLOCK_RATE" value="0" />
-  <parameter name="EXPLICIT_CLOCK_RATE" value="0" />
-  <parameter name="NUM_CLOCK_OUTPUTS" value="2" />
  </module>
  <module name="hps" kind="altera_hps" version="18.1" enabled="1">
   <parameter name="ABSTRACT_REAL_COMPARE_TEST" value="false" />
@@ -349,7 +319,7 @@
   <parameter name="F2SCLK_WARMRST_Enable" value="false" />
   <parameter name="F2SDRAM_Type" value="" />
   <parameter name="F2SDRAM_Width" value="" />
-  <parameter name="F2SINTERRUPT_Enable" value="false" />
+  <parameter name="F2SINTERRUPT_Enable" value="true" />
   <parameter name="F2S_Width" value="0" />
   <parameter name="FIX_READ_LATENCY" value="8" />
   <parameter name="FORCED_NON_LDC_ADDR_CMD_MEM_CK_INVERT" value="false" />
@@ -584,7 +554,7 @@
   <parameter name="REF_CLK_FREQ_PARAM_VALID" value="false" />
   <parameter name="S2FCLK_COLDRST_Enable" value="false" />
   <parameter name="S2FCLK_PENDINGRST_Enable" value="false" />
-  <parameter name="S2FCLK_USER0CLK_Enable" value="false" />
+  <parameter name="S2FCLK_USER0CLK_Enable" value="true" />
   <parameter name="S2FCLK_USER1CLK_Enable" value="false" />
   <parameter name="S2FCLK_USER1CLK_FREQ" value="100.0" />
   <parameter name="S2FCLK_USER2CLK" value="4" />
@@ -705,7 +675,7 @@
   <parameter name="dbg_trace_clk_div" value="0" />
   <parameter name="desired_can0_clk_mhz" value="100.0" />
   <parameter name="desired_can1_clk_mhz" value="100.0" />
-  <parameter name="desired_cfg_clk_mhz" value="100.0" />
+  <parameter name="desired_cfg_clk_mhz" value="50.0" />
   <parameter name="desired_emac0_clk_mhz" value="250.0" />
   <parameter name="desired_emac1_clk_mhz" value="250.0" />
   <parameter name="desired_gpio_db_clk_hz" value="32000" />
@@ -768,17 +738,6 @@
   <parameter name="use_default_mpu_clk" value="true" />
  </module>
  <module name="ks10" kind="ks10" version="1.0" enabled="1" />
- <module
-   name="reset_bridge_0"
-   kind="altera_reset_bridge"
-   version="18.1"
-   enabled="1">
-  <parameter name="ACTIVE_LOW_RESET" value="1" />
-  <parameter name="AUTO_CLK_CLOCK_RATE" value="0" />
-  <parameter name="NUM_RESET_OUTPUTS" value="1" />
-  <parameter name="SYNCHRONOUS_EDGES" value="both" />
-  <parameter name="USE_RESET_REQUEST" value="0" />
- </module>
  <connection
    kind="avalon"
    version="18.1"
@@ -788,28 +747,13 @@
   <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
- <connection kind="clock" version="18.1" start="clk.clk" end="ks10.memCLK" />
+ <connection kind="clock" version="18.1" start="clk.clk" end="ks10.clk" />
  <connection
    kind="clock"
    version="18.1"
    start="ks10.cpuCLK"
-   end="clock_bridge_0.in_clk" />
- <connection
-   kind="clock"
-   version="18.1"
-   start="clock_bridge_0.out_clk"
-   end="reset_bridge_0.clk" />
- <connection
-   kind="clock"
-   version="18.1"
-   start="clock_bridge_0.out_clk"
    end="hps.h2f_lw_axi_clock" />
- <connection kind="reset" version="18.1" start="clk.clk_reset" end="ks10.memRST" />
- <connection
-   kind="reset"
-   version="18.1"
-   start="hps.h2f_reset"
-   end="reset_bridge_0.in_reset" />
+ <connection kind="reset" version="18.1" start="clk.clk_reset" end="ks10.rst" />
  <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />
  <interconnectRequirement for="$system" name="qsys_mm.maxAdditionalLatency" value="1" />
 </system>

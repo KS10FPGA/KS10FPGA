@@ -7,14 +7,14 @@
 //
 // Details
 //
-//   de10_ks10.v
+//   de10_ks10.sv
 //
 // Author
 //   Rob Doyle - doyle (at) cox (dot) net
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2020 Rob Doyle
+// Copyright (C) 2012-2022 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -41,12 +41,12 @@
 `timescale 1ns/1ps
 
 //`define HDMI
-  
+
 module de10_ks10 (
       // Clock
       input  wire         FPGA_CLK1_50,         // 50 MHz Clock
       // HDMI Interface
-`ifdef HDMI                  
+`ifdef HDMI
       inout  wire         HDMI_I2C_SCL,         // HDMI I2C clock
       inout  wire         HDMI_I2C_SDA,         // HDMI I2C data
       inout  wire         HDMI_I2S,             // HDMI I2S audio data
@@ -59,7 +59,7 @@ module de10_ks10 (
       output wire         HDMI_TX_HS,           // HDMI horizontal sync
       input  wire         HDMI_TX_INT,          // HDMI interrupt
       output wire         HDMI_TX_VS,           // HDMI vertical sync
-`endif                  
+`endif
       // HPS DDR3 Interface
       output wire [14: 0] HPS_DDR3_ADDR,        // DDR3 address
       output wire [ 2: 0] HPS_DDR3_BA,          // DDR3 bank address
@@ -266,7 +266,7 @@ module de10_ks10 (
       .hps_io_hps_io_gpio_inst_GPIO54  (HPS_KEY),              // .hps_io_gpio_inst_GPIO54
       .hps_io_hps_io_gpio_inst_GPIO61  (HPS_GSENSOR_INT),      // .hps_io_gpio_inst_GPIO61
       //HDMI
-`ifdef HDMI                  
+`ifdef HDMI
       .clk_65_clk                      (HDMI_TX_CLK),          // PLL clock output
       .hdmi_vid_clk                    (HDMI_TX_CLK),          // HDMI Video clock input
       .hdmi_vid_data                   (HDMI_TX_D),            // HDMI data
@@ -277,7 +277,7 @@ module de10_ks10 (
       .hdmi_vid_f                      (),                     // HDMI
       .hdmi_vid_h                      (),                     // HDMI
       .hdmi_vid_v                      (),                     // HDMI
-`endif                  
+`endif
       // LEDS
       .rpxx_leds                       (/*FIXME*/),            // RPXX LEDS
       // SD Card
