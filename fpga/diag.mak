@@ -325,28 +325,34 @@ $(TMP_DIR)/paging.patch.dat : makefile
 
 $(TMP_DIR)/dsdza.patch.dat : makefile
 	echo -e ""                                                           >  $(TMP_DIR)/dsdza.patch.dat
-	echo -e "@3ba8"                                                      >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035650] = 000000006000 ( 0:   50 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035651] = 000000006000 ( 1:   75 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035652] = 000000006000 ( 2:  110 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035653] = 000000006000 ( 3:  134 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035654] = 000000006000 ( 4:  150 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035655] = 000000006000 ( 5:  300 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035656] = 000000006000 ( 6:  600 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035657] = 000000006000 ( 7: 1200 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035660] = 000000006000 ( 8: 1800 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035661] = 000000006000 ( 9: 2000 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035662] = 000000006000 (10: 2400 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035663] = 000000006000 (11: 3600 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035664] = 000000006000 (12: 4800 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035665] = 000000006000 (13: 7200 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "0000000c0\t\t// mem[035666] = 0000000000c0 (14: 9600 baud)" >> $(TMP_DIR)/dsdza.patch.dat
-	echo -e "000006000\t\t// mem[035667] = 000000006000 (15:19200 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035650] = 000000006000 ( 0:   50 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035651] = 000000006000 ( 1:   75 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035652] = 000000006000 ( 2:  110 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035653] = 000000006000 ( 3:  134 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035654] = 000000006000 ( 4:  150 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035655] = 000000006000 ( 5:  300 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035656] = 000000006000 ( 6:  600 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035657] = 000000006000 ( 7: 1200 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035660] = 000000006000 ( 8: 1800 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035661] = 000000006000 ( 9: 2000 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035662] = 000000006000 (10: 2400 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035663] = 000000006000 (11: 3600 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035664] = 000000006000 (12: 4800 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035665] = 000000006000 (13: 7200 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035666] = 000000000100 (14: 9600 baud)" >> $(TMP_DIR)/dsdza.patch.dat
+	echo -e "000000000\t\t// mem[035667] = 000000000100 (15:19200 baud)" >> $(TMP_DIR)/dsdza.patch.dat
 
 #
 # Start with different tests
 #
-#	echo -e "000003669\t\t// mem[034376] = 000000033151"                 >>  $(TMP_DIR)/dsdza.patch.dat
+#	echo -e "000000000\t\t// mem[034376] = 000000032224 (TEST24)"        >> $(TMP_DIR)/dsdza.patch.dat
+#	echo -e "000000000\t\t// mem[034376] = 000000032374 (TEST25)"        >> $(TMP_DIR)/dsdza.patch.dat
+#	echo -e "000000000\t\t// mem[034376] = 000000032567 (TEST26)"        >> $(TMP_DIR)/dsdza.patch.dat
+#	echo -e "000000000\t\t// mem[034376] = 000000032721 (TEST27)"        >> $(TMP_DIR)/dsdza.patch.dat
+#	echo -e "000000000\t\t// mem[034376] = 000000033044 (TEST30)"        >> $(TMP_DIR)/dsdza.patch.dat
+#	echo -e "000000000\t\t// mem[034376] = 000000033151 (TEST31)"        >> $(TMP_DIR)/dsdza.patch.dat
+#	echo -e "000000000\t\t// mem[034376] = 000000033260 (TEST32)"        >> $(TMP_DIR)/dsdza.patch.dat
+#	echo -e "000000000\t\t// mem[034376] = 000000033437 (TEST33)"        >> $(TMP_DIR)/dsdza.patch.dat
 
 #
 # Patches for DSUBA

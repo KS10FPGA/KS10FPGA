@@ -710,7 +710,7 @@ $(TESTBENCH)/ks_diag_gs.tap : $(DIAG_TAPE).gz
 #
 
 $(TESTBENCH)/red405a2.tap : $(REDPACK_TAPE)
-	bzcat $< > $@
+	bzcat $(REDPACK_TAPE) > $@
 
 #
 # The testbench needs RED PACK
@@ -731,7 +731,7 @@ $(TESTBENCH)/dskb.rp06 : $(TOPS10_TAPE)
 #
 
 $(TESTBENCH)/dskc.rp06 : $(TOPS10_TAPE)
-	tar -jxvf $(TOPS10_TAPE) dskb.dsk -O > $@
+	tar -jxvf $(TOPS10_TAPE) dskc.dsk -O > $@
 
 #
 # VSIM/QUESTA Simulation
