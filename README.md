@@ -44,7 +44,7 @@ and Mouser.
   <li>LP26 Printer with Direct Access Vertical Format Unit</li>
   <li>DUP11 Synchronous Serial Interface</li>
   <li>KMC11 General Purpose Processor</li>
-  <li>Unibus Excerciser (to test the Unibus Adapter)</li>
+  <li>Unibus Excerciser (X4) to test the Unibus Adapters</li>
 </ul>
 
 Detailed design information can be found on the wiki pages at:
