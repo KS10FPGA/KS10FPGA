@@ -19,7 +19,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2022 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -56,7 +56,7 @@
 `ifdef SYNTHESIS
    `define CLOCKFRQ (`CLKFRQ)
 `else
-   `define CLOCKFRQ ((`CLKFRQ)/10)
+   `define CLOCKFRQ ((`CLKFRQ)/25)
 `endif
 
 module UART_BRG (
