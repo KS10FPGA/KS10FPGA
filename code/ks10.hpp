@@ -312,13 +312,21 @@ class ks10_t {
         //!
 
         enum lpccr_bits_t : uint32_t {
-            lpSTOPBITS = 0x00010000,                    //!<
-            lpPARITY   = 0x00060000,                    //!<
-            lpLENGTH   = 0x00180000,                    //!<
-            lpBAUDRATE = 0x03e00000,                    //!<
-            lpSIXLPI   = 0x00000004,                    //!<
-            lpOVFU     = 0x00000002,                    //!<
-            lpONLINE   = 0x00000001,                    //!<
+            lpSTOPBITS    = 0x00010000,                    //!< LP Stopbits Mask
+            lpPARITY      = 0x00060000,                    //!< LP Parity Mask
+            lpPARITY_NONE = 0x00000000,                    //!< LP No Parity
+            lpPARITY_ODD  = 0x00020000,                    //!< LP Odd Parity
+            lpPARITY_EVEN = 0x00040000,                    //!< LP Even Parity
+            lpPARITY_MARK = 0x00060000,                    //!< LP Mark Parity
+            lpLENGTH      = 0x00180000,                    //!< LP Length Mask
+            lpLENGTH_5    = 0x00000000,                    //!< LP Length 5 bits
+            lpLENGTH_6    = 0x00080000,                    //!< LP Length 6 bits
+            lpLENGTH_7    = 0x00100000,                    //!< LP Length 7 bits
+            lpLENGTH_8    = 0x00180000,                    //!< LP Length 8 bits
+            lpBAUDRATE    = 0x03e00000,                    //!<
+            lpSIXLPI      = 0x00000004,                    //!<
+            lpOVFU        = 0x00000002,                    //!<
+            lpONLINE      = 0x00000001,                    //!<
         };
 
         //!

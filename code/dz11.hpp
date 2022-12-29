@@ -73,31 +73,22 @@ class dz11_t {
         const ks10_t::addr_t addrTDR;
 
         //
-        //! Control and Status Register (CSR) definitions
-        //
-
-        static const ks10_t::data_t DZCSR_TRDY  = 0x8000;         //!< Transmit Ready
-        static const ks10_t::data_t DZCSR_RDONE = 0x0080;         //!< Receiver Done
-        static const ks10_t::data_t DZCSR_MSE   = 0x0020;         //!< Master Scan Enable
-        static const ks10_t::data_t DZCSR_CLR   = 0x0010;         //!< Clear
-
-        //
         // UBA object
         //
 
         uba_t uba;
 
-        //
-        // LP non-volatile configuration
-        //
-
-        struct dzcfg_t {
-            uint32_t dzccr;
-        } cfg;
-
         void setup(unsigned int line);
 
     public:
+
+        uint16_t readTCR(void) {
+            return ks10_t::readIO16(addrTCR);
+        }
+
+        void writeTCR(uint16_t data) {
+            ks10_t::writeIO16(addrTCR, data);
+        }
 
         //
         // DZ11 Base Addresses
@@ -109,15 +100,27 @@ class dz11_t {
         static const uint32_t baseADDR4 = 03760040;      //!< base address #4
 
         //
+        //! Control and Status Register (CSR) definitions
+        //
+
+        static const ks10_t::data_t DZCSR_TRDY  = 0x8000;         //!< Transmit Ready
+        static const ks10_t::data_t DZCSR_RDONE = 0x0080;         //!< Receiver Done
+        static const ks10_t::data_t DZCSR_MSE   = 0x0020;         //!< Master Scan Enable
+        static const ks10_t::data_t DZCSR_CLR   = 0x0010;         //!< Clear
+
+        //
         // Public Functions
         //
 
-        void recallConfig(void);
-        void saveConfig(void);
         void testTX(int line);
         void testRX(int line);
         void testECHO(int line);
         void dumpRegs(void);
+
+        //!
+        //! \brief
+        //!    Constructor. Setup register addresses.
+        //!
 
         dz11_t(uint32_t baseADDR = baseADDR1) :
             addrCSR ((baseADDR & 07777770) + offsetCSR ),
@@ -129,7 +132,6 @@ class dz11_t {
             uba(baseADDR) {
                 ;
         }
-
 };
 
 #endif

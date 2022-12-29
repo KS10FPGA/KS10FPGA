@@ -43,38 +43,35 @@
 #include "dasm.hpp"
 #include "rh11.hpp"
 #include "vt100.hpp"
-#include "config.hpp"
 #include "commands.hpp"
 
 #define MT_VERBOSE
 
 //!
 //! \brief
-//!    Configuration file name
-//!
-
-static const char *cfg_file = ".ks10/mt.cfg";
-
-//!
-//! \brief
 //!    Print the tape density
 //!
 
-const char *mt_t::printDEN(uint8_t den) {
-    switch (den) {
+const char *mt_t::printDEN(uint16_t den) {
+    switch (den & 0x0007) {
         case 0:
-            return "200 BPI NRZI";
+            return "200 BPI NRZ";
         case 1:
-            return "556 BPI NRZI";
+            return "556 BPI NRZ";
         case 2:
-            return "800 BPI NRZI";
+            return "800 BPI NRZ";
         case 3:
-            return "800 BPI NRZI";
+            return "800 BPI NRZ";
         case 4:
             return "1600 BPI PE";
-        default:
-            return "Unknown";
+        case 5:
+            return "DEN 5";
+        case 6:
+            return "DEN 6";
+        case 7:
+            return "DEN 7";
     }
+    return "";
 }
 
 //!
@@ -82,8 +79,8 @@ const char *mt_t::printDEN(uint8_t den) {
 //!    Print the tape format
 //!
 
-const char *mt_t::printFMT(uint8_t fmt) {
-    switch (fmt) {
+const char *mt_t::printFMT(uint16_t fmt) {
+    switch (fmt & 0x000f) {
         case 0:
             return "PDP-10 Core Dump";
         case 1:
@@ -93,17 +90,17 @@ const char *mt_t::printFMT(uint8_t fmt) {
         case 3:
             return "PDP-10 Normal";
         case 4:
-            return "4";
+            return "FMT 4 (004)";
         case 5:
-            return "5";
+            return "FMT 5 (005)";
         case 6:
-            return "6";
+            return "FMT 6 (006)";
         case 7:
-            return "7";
+            return "FMT 7 (007)";
         case 010:
-            return "010";
+            return "FMT 8 (010)";
         case 011:
-            return "011";
+            return "FMT 9 (011)";
         case 012:
             return "PDP-11 Normal";
         case 013:
@@ -111,11 +108,11 @@ const char *mt_t::printFMT(uint8_t fmt) {
         case 014:
             return "PDP-15 Normal";
         case 015:
-            return "015";
+            return "FMT 13 (015)";
         case 016:
-            return "016";
+            return "FMT 14 (016)";
         case 017:
-            return "017";
+            return "FMT 15 (017)";
         default:
             return "Unknown";
     }
@@ -126,7 +123,7 @@ const char *mt_t::printFMT(uint8_t fmt) {
 //!    Print the function
 //!
 
-const char *mt_t::printFUN(uint8_t fun) {
+const char *mt_t::printFUN(uint16_t fun) {
     switch (fun) {
         case 000: return "NOP";
         case 001: return "Unload";
@@ -151,7 +148,7 @@ const char *mt_t::printFUN(uint8_t fun) {
 //!    Print the Maintenance OPeration (MOP)
 //!
 
-const char *mt_t::printMOP(uint8_t mop) {
+const char *mt_t::printMOP(uint16_t mop) {
     switch (mop) {
         case 000: return "NOP";
         case 001: return "Interchange Read";
@@ -333,43 +330,17 @@ void mt_t::dumpMTTC(ks10_t::addr_t addr) {
 
 //!
 //! \brief
-//!    Recall the non-volatile MT configuration from file
-//!
-
-void mt_t::recallConfig(void) {
-    if (!config_t::read(cfg_file, &cfg, sizeof(cfg))) {
-        printf("KS10: Unable to read \"%s\".  Using defaults.\n", cfg_file);
-        cfg.mtccr    = 0x000101fe;
-        cfg.baseaddr = 03772440;
-        cfg.param    = 00000000;
-        cfg.unit     = 00000000;
-        cfg.bootdiag = false;
-        config_t::write(cfg_file, &cfg, sizeof(cfg));
-    }
-    // Initialize the MT Console Control Register
-    ks10_t::writeMTCCR(cfg.mtccr);
-    // Initialize Console Communcations Area
-    ks10_t::writeMem(ks10_t::rhbaseADDR, cfg.baseaddr);
-    ks10_t::writeMem(ks10_t::rhunitADDR, cfg.unit);
-}
-
-//!
-//! \brief
-//!    Save the non-volatile MT configuration to file
-//!
-
-void mt_t::saveConfig(void) {
-    if (config_t::write(cfg_file, &cfg, sizeof(cfg))) {
-        printf("      mt: sucessfully wrote configuration file \"%s\".\n", cfg_file);
-    }
-}
-
-//!
-//! \brief
 //!   Dump MT registers
 //!
+//! \todo
+//!   This doesn't select the drive correctly
+//!
 
-void mt_t::dumpRegs(void) {
+void mt_t::dumpRegs(uint16_t tcu, uint16_t param) {
+
+    (void) tcu;
+    (void) param;
+
     dumpMTCS1(addrCS1);
     dumpMTCS2(addrCS2);
     dumpMTDS(addrDS);
@@ -395,22 +366,33 @@ void mt_t::dumpRegs(void) {
            ks10_t::readMTCCR());
 }
 
-void mt_t::executeCommand(uint16_t cmd, uint16_t param, uint16_t wordCnt, uint16_t frameCnt, ks10_t::addr_t vaddr) {
+//!
+//! \brief
+//!   executeCommand()
+//!
+
+void mt_t::executeCommand(uint16_t tcu, uint16_t param, uint16_t cmd, uint16_t wordCnt, uint16_t frameCnt, ks10_t::addr_t vaddr) {
 
 #if 1
 
+    //
+    // Mask off slave select
+    //
+
+    uint16_t unit = param & MTTC_SS;
+
     switch (cmd) {
         case MTCS1_FUN_DRVCLR:
-            printf("KS10: Drive clear command.\n");
+            printf("KS10: Unit %d: Drive clear command.\n", unit);
             break;
         case MTCS1_FUN_REWIND:
-            printf("KS10: Rewind commmand.\n");
+            printf("KS10: Unit %d: Rewind commmand.\n", unit);
             break;
         case MTCS1_FUN_SPCFWD:
-            printf("KS10: Space forward commmand.\n");
+            printf("KS10: Unit %d: Space forward commmand.\n", unit);
             break;
         case MTCS1_FUN_RDFWD:
-            printf("KS10: Read forward command.\n");
+            printf("KS10: Unit %d: Read forward command.\n", unit);
             break;
     }
 
@@ -456,7 +438,7 @@ void mt_t::executeCommand(uint16_t cmd, uint16_t param, uint16_t wordCnt, uint16
     //  The unit is not selectable
     //
 
-    ks10_t::writeIO(addrCS2, unit & 7);
+    ks10_t::writeIO(addrCS2, tcu & 7);
 
     //
     // Set MTTC
@@ -484,7 +466,7 @@ void mt_t::executeCommand(uint16_t cmd, uint16_t param, uint16_t wordCnt, uint16
 
         for (int i = 0; i < 20000; i++) {
             if (ks10_t::readIO16(addrDS) & MTDS_DRY) {
-                ks10_t::writeIO(addrAS, 1 << unit);
+                ks10_t::writeIO(addrAS, 1 << tcu);
                 break;
             }
             usleep(1000);
@@ -498,7 +480,7 @@ void mt_t::executeCommand(uint16_t cmd, uint16_t param, uint16_t wordCnt, uint16
 
         for (int i = 0; i < 420000; i++) {
             if (ks10_t::readIO16(addrDS) & MTDS_BOT) {
-                ks10_t::writeIO(addrAS, 1 << unit);
+                ks10_t::writeIO(addrAS, 1 << tcu);
                 break;
             }
             usleep(1000);
@@ -547,8 +529,8 @@ void mt_t::executeCommand(uint16_t cmd, uint16_t param, uint16_t wordCnt, uint16
 //!    Rewind the selected tape transport
 //!
 
-void mt_t::cmdRewind(uint16_t param) {
-    executeCommand(MTCS1_FUN_REWIND, param);
+void mt_t::cmdRewind(uint16_t tcu, uint16_t param) {
+    executeCommand(tcu, param, MTCS1_FUN_REWIND);
 }
 
 //!
@@ -556,8 +538,8 @@ void mt_t::cmdRewind(uint16_t param) {
 //!    Unload the selected tape transport
 //!
 
-void mt_t::cmdUnload(uint16_t param) {
-    executeCommand(MTCS1_FUN_UNLOAD, param);
+void mt_t::cmdUnload(uint16_t tcu, uint16_t param) {
+    executeCommand(tcu, param, MTCS1_FUN_UNLOAD);
 }
 
 //!
@@ -565,8 +547,8 @@ void mt_t::cmdUnload(uint16_t param) {
 //!    Preset the selected tape transport
 //!
 
-void mt_t::cmdPreset(uint16_t param) {
-    executeCommand(MTCS1_FUN_PRESET, param);
+void mt_t::cmdPreset(uint16_t tcu, uint16_t param) {
+    executeCommand(tcu, param, MTCS1_FUN_PRESET);
 }
 
 //!
@@ -574,7 +556,8 @@ void mt_t::cmdPreset(uint16_t param) {
 //!    Space forward command
 //!
 
-void mt_t::cmdSpaceFwd(uint16_t param, uint16_t frameCount) {
+void mt_t::cmdSpaceFwd(uint16_t tcu, uint16_t param, uint16_t frameCount) {
+    (void) tcu;
     (void) param;
     (void) frameCount;
     printf("mt cmdSpaceFwd() not implemented.\n");
@@ -586,7 +569,8 @@ void mt_t::cmdSpaceFwd(uint16_t param, uint16_t frameCount) {
 //!    Space reverse command
 //!
 
-void mt_t::cmdSpaceRev(uint16_t param, uint16_t frameCount) {
+void mt_t::cmdSpaceRev(uint16_t tcu, uint16_t param, uint16_t frameCount) {
+    (void) tcu;
     (void) param;
     (void) frameCount;
     printf("mt cmdSpaceRev() not implemented.\n");
@@ -598,7 +582,8 @@ void mt_t::cmdSpaceRev(uint16_t param, uint16_t frameCount) {
 //!    Erase command
 //!
 
-void mt_t::cmdErase(uint16_t param) {
+void mt_t::cmdErase(uint16_t tcu, uint16_t param) {
+    (void) tcu;
     (void) param;
     printf("mt cmdErase() not implemented.\n");
 }
@@ -611,7 +596,7 @@ void mt_t::cmdErase(uint16_t param) {
 //!    Selected tape parameters
 //!
 
-void mt_t::testInit(uint16_t param) {
+void mt_t::testInit(uint16_t tcu, uint16_t param) {
 
     bool fail = false;
 
@@ -620,7 +605,7 @@ void mt_t::testInit(uint16_t param) {
     // Tape Controller Unit is always 0
     //
 
-    ks10_t::writeIO(addrCS2, (ks10_t::readIO(addrCS2) & ~MTCS2_UNIT) | (unit & 7));
+    ks10_t::writeIO(addrCS2, (ks10_t::readIO(addrCS2) & ~MTCS2_UNIT) | (tcu & 7));
 
     //
     // Set MTTC
@@ -708,7 +693,7 @@ void mt_t::testInit(uint16_t param) {
 //!    Selected tape parameters
 //!
 
-void mt_t::testRead(uint16_t param) {
+void mt_t::testRead(uint16_t tcu, uint16_t param) {
 
     bool pass = true;
     const int words              = 128;
@@ -720,7 +705,7 @@ void mt_t::testRead(uint16_t param) {
     // Select tape
     //
 
-    ks10_t::writeIO(addrCS2, (ks10_t::readIO(addrCS2) & ~MTCS2_UNIT) | (unit & 7));
+    ks10_t::writeIO(addrCS2, (ks10_t::readIO(addrCS2) & ~MTCS2_UNIT) | (tcu & 7));
 
     //
     // Check if tape in on-line
@@ -759,7 +744,7 @@ void mt_t::testRead(uint16_t param) {
 //!    Selected tape parameters
 //!
 
-void mt_t::testWrite(uint16_t param) {
+void mt_t::testWrite(uint16_t tcu, uint16_t param) {
 
     bool pass = true;
     const unsigned int words     = 128;
@@ -783,7 +768,7 @@ void mt_t::testWrite(uint16_t param) {
     // Select tape
     //
 
-    ks10_t::writeIO(addrCS2, (ks10_t::readIO(addrCS2) & ~MTCS2_UNIT) | (unit & 7));
+    ks10_t::writeIO(addrCS2, (ks10_t::readIO(addrCS2) & ~MTCS2_UNIT) | (tcu & 7));
 
     //
     // Check if tape in on-line
@@ -834,7 +819,7 @@ void mt_t::testWrite(uint16_t param) {
 //!    Magtape paramters (or contents of MTTC register)
 //!
 
-void mt_t::testWrchk(uint16_t param) {
+void mt_t::testWrchk(uint16_t tcu, uint16_t param) {
 
     bool pass = true;
     const unsigned int words     = 128;
@@ -859,7 +844,7 @@ void mt_t::testWrchk(uint16_t param) {
     // Select tape (unit)
     //
 
-    ks10_t::writeIO(addrCS2, (ks10_t::readIO(addrCS2) & ~MTCS2_UNIT) | (unit & 7));
+    ks10_t::writeIO(addrCS2, (ks10_t::readIO(addrCS2) & ~MTCS2_UNIT) | (tcu & 7));
 
     //
     // Check if tape in on-line
@@ -904,8 +889,8 @@ void mt_t::testWrchk(uint16_t param) {
 //! \brief
 //!    Bootstrap from MT
 //!
-//! \param [in] unit
-//!    Selected tape unit
+//! \param [in] tcu
+//!    Selected tape control unit
 //!
 //! \param [in] param
 //!    Magtape paramters (or contents of MTTC register)
@@ -914,15 +899,15 @@ void mt_t::testWrchk(uint16_t param) {
 //!    Boot to SMMON
 //!
 
-void mt_t::boot(uint16_t unit, uint16_t param, bool diagmode) {
+void mt_t::boot(uint16_t tcu, uint16_t param, bool diagmode) {
 
     const ks10_t::addr_t paddr = 01000;         // KS10 address of tape buffer
     const ks10_t::addr_t vaddr = 04000;         // UBA address of tape buffer
 
     if (diagmode) {
-        printf("KS10: Boot to diagnostic.\n");
+        printf("KS10: mt boot: diagnostic mode\n");
     } else {
-        printf("KS10: Boot to monitor.\n");
+        printf("KS10: mt boot: monitor mode\n");
     }
 
     //
@@ -942,7 +927,7 @@ void mt_t::boot(uint16_t unit, uint16_t param, bool diagmode) {
     // Select tape control unit
     //
 
-    ks10_t::writeIO(addrCS2, unit & 7);
+    ks10_t::writeIO(addrCS2, tcu & 7);
 
     //
     // Set MTTC
@@ -990,7 +975,7 @@ void mt_t::boot(uint16_t unit, uint16_t param, bool diagmode) {
     //
 
     if (!(mtds & MTDS_BOT)) {
-        executeCommand(MTCS1_FUN_REWIND, param);
+        executeCommand(tcu, param, MTCS1_FUN_REWIND);
     }
 
     //
@@ -1005,20 +990,20 @@ void mt_t::boot(uint16_t unit, uint16_t param, bool diagmode) {
     //  This command skips over the microcode
     //
 
-    executeCommand(MTCS1_FUN_SPCFWD, param);
+    executeCommand(tcu, param, MTCS1_FUN_SPCFWD);
 
     //
     // This function reads the Magtape Monitor Boot Strap Program.  See
     //  MAINDEC-10-DSQDF.SEQ starting at line 4913 for more information.
     //
 
-    executeCommand(MTCS1_FUN_RDFWD, param, 2*512, 0, vaddr);
+    executeCommand(tcu, param, MTCS1_FUN_RDFWD, 2*512, 0, vaddr);
 
     //
     // Start executing monitor
     //
 
-    printf("KS10: Booting from address %07llo.\n", paddr);
+    printf("KS10: mt boot: starting address %07llo.\n", paddr);
     ks10_t::writeRegCIR((ks10_t::opJRST << 18) | paddr);
     ks10_t::startRUN();
     command_t::consoleOutput();

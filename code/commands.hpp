@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2020 Rob Doyle
+// Copyright (C) 2013-2022 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -45,7 +45,7 @@
 
 class command_t {
     private:
-        void recallConfig(void);
+        void initialize(void);
 
         bool cmdBA(int argc, char *argv[]);
         bool cmdBR(int argc, char *argv[]);
@@ -80,7 +80,7 @@ class command_t {
     public:
         bool execute(char * buf);
         command_t(void) {
-            recallConfig();
+            initialize();
         }
         static bool consoleOutput(void);
 

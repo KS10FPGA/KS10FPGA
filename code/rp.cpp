@@ -42,45 +42,9 @@
 #include "uba.hpp"
 #include "rh11.hpp"
 #include "vt100.hpp"
-#include "config.hpp"
 #include "commands.hpp"
 
 #undef RP_VERBOSE
-
-static const char *cfg_file = ".ks10/rp.cfg";
-
-//!
-//! \brief
-//!    Recall the non-volatile RP configuration from file
-//!
-
-void rp_t::recallConfig(void) {
-    if (!config_t::read(cfg_file, &cfg, sizeof(cfg))) {
-        printf("KS10: Unable to read \"%s\".  Using defaults.\n", cfg_file);
-        cfg.rpccr    = 0x070707f8;
-        cfg.baseaddr = 01776700;
-        cfg.unit     = 00000000;
-        cfg.bootdiag = false;
-        config_t::write(cfg_file, &cfg, sizeof(cfg));
-
-    }
-    // Initialize the RP Console Control Register
-    ks10_t::writeRPCCR(cfg.rpccr);
-    // Initialize Console Communcations Area
-    ks10_t::writeMem(ks10_t::rhbaseADDR, cfg.baseaddr);
-    ks10_t::writeMem(ks10_t::rhunitADDR, cfg.unit);
-}
-
-//!
-//! \brief
-//!    Save the non-volatile RP configuration to file
-//!
-
-void rp_t::saveConfig(void) {
-    if (config_t::write(cfg_file, &cfg, sizeof(cfg))) {
-        printf("      rp: sucessfully wrote configuration file \"%s\".\n", cfg_file);
-    }
-}
 
 //!
 //! \brief

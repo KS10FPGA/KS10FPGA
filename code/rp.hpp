@@ -16,7 +16,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2021 Rob Doyle
+// Copyright (C) 2013-2022 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -92,17 +92,6 @@ class rp_t : public rh11_t {
         static const uint32_t baseADDR_RP = 01776700;
 
         //
-        // RP non-volatile configuration
-        //
-
-        struct cfg_t {
-            uint32_t rpccr;             // Console control register
-            uint32_t baseaddr;          // Base address (includes UBA field)
-            uint8_t  unit;              // Selected disk unit
-            bool     bootdiag;          // Boot to diagnostic monitor
-        } cfg;
-
-        //
         // Public Functions
         //
 
@@ -112,9 +101,13 @@ class rp_t : public rh11_t {
         void testRead(uint16_t unit);
         void testWrite(uint16_t unit);
         void testWrchk(uint16_t unit);
-        void recallConfig(void);
-        void saveConfig(void);
         void boot(uint16_t unit, bool diagmode = false);
+
+        //!
+        //! \brief
+        //!    Constructor. Setup register addresses.
+        //!
+
         rp_t(uint32_t baseADDR = baseADDR_RP) : rh11_t(baseADDR) {
             ;
         }

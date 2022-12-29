@@ -61,8 +61,8 @@ endif
 G++    := $(CROSS_COMPILE)g++
 CFLAGS := $(CFLAGS) -Os -W -Wall -pthread -pipe -Wformat=0
 
-CFILES := commands.cpp config.cpp cursor.cpp dasm.cpp dz11.cpp dup11.cpp hist.cpp cmdline.cpp ks10.cpp lp20.cpp mt.cpp rp.cpp rh11.cpp tape.cpp main.cpp
-HFILES := commands.hpp config.hpp cursor.hpp dasm.hpp dz11.hpp dup11.hpp hist.hpp cmdline.hpp ks10.hpp lp20.hpp mt.hpp rp.hpp rh11.hpp tape.hpp uba.hpp
+CFILES := commands.cpp cursor.cpp dasm.cpp dz11.cpp dup11.cpp hist.cpp cmdline.cpp ks10.cpp lp20.cpp mt.cpp rp.cpp rh11.cpp tape.cpp main.cpp
+HFILES := commands.hpp cursor.hpp dasm.hpp dz11.hpp dup11.hpp hist.hpp cmdline.hpp ks10.hpp lp20.hpp mt.hpp rp.hpp rh11.hpp tape.hpp uba.hpp
 
 console : $(CFILES) $(HFILES) makefile
 	$(G++) $(CFLAGS) $(CFILES) -o console
@@ -81,6 +81,7 @@ endif
 
 .PHONY: clean
 clean:
+	rm -f *~ .*~
 	rm -f console
 
 archive_all:

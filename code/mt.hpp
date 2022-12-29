@@ -107,35 +107,24 @@ class mt_t : public rh11_t {
         // MT Tape Control (MTTC) Definitions
         //
 
+        static const uint16_t MTTC_DEN     = 003400;
+        static const uint16_t MTTC_FMT     = 000360;
         static const uint16_t MTTC_SS      = 0000007;
+
+        static const uint16_t MTTC_DEN800NRZ = 001400;
+        static const uint16_t MTTC_DEN1600PE = 002000;
+        static const uint16_t MTTC_FMT10CORE = 000000;
+        static const uint16_t MTTC_FMT10NORM = 000060;
 
         //
         // Private Functions
         //
 
-        void executeCommand(uint16_t cmd, uint16_t param, uint16_t wordCnt = 0, uint16_t frameCnt = 0, ks10_t::addr_t = 0);
-
-        //
-        // Default TCU
-        //
-
-        static const uint16_t unit = 0;
+        void executeCommand(uint16_t tcu, uint16_t param, uint16_t cmd, uint16_t wordCnt = 0, uint16_t frameCnt = 0, ks10_t::addr_t = 0);
 
     public:
 
         static const uint32_t baseADDR_MT = 03772440;
-
-        //
-        // MT non-volatile configuration
-        //
-
-        struct cfg_t {
-            uint32_t mtccr;             // Console control register
-            uint32_t baseaddr;          // Base address (includes UBA field)
-            uint16_t param;             // Tape parameters (sets MTTC) (include slave and density)
-            uint8_t  unit;              // Selected tape control unit (TCU)
-            bool     bootdiag;          // Boot to diagnostic monitor
-        } cfg;
 
         //!
         //! \brief
@@ -154,10 +143,154 @@ class mt_t : public rh11_t {
             return (in == 0) ? 0 : ~in + 1;
         }
 
-        static const char *printDEN(uint8_t den);
-        static const char *printFMT(uint8_t fmt);
-        static const char *printFUN(uint8_t fun);
-        static const char *printMOP(uint8_t mop);
+        //!
+        //! \brief
+        //!   Set the Write Lock status for selected unit
+        //!
+
+        static uint32_t writeLock(uint32_t mtccr, unsigned int unit, bool state) {
+            if (unit < 8) {
+                if (state) {
+                    mtccr |=  (1 << (0 + unit));
+                } else {
+                    mtccr &= ~(1 << (0 + unit));
+                }
+            }
+            return mtccr;
+        }
+
+        //!
+        //! \brief
+        //!   Return the Write Lock status for selected unit
+        //!
+
+        static bool writeLock(uint32_t mtccr, unsigned int unit) {
+            if (unit >= 8) {
+                return false;
+            }
+            return ((mtccr >> (0 + unit)) & 1);
+        }
+
+        //!
+        //! \brief
+        //!   Set the Media Online status for selected unit
+        //!
+
+        static uint32_t online(uint32_t mtccr, unsigned int unit, bool state) {
+            if (unit < 8) {
+                if (state) {
+                    mtccr |=  (1 << (8 + unit));
+                } else {
+                    mtccr &= ~(1 << (8 + unit));
+                }
+            }
+            return mtccr;
+        }
+
+        //!
+        //! \brief
+        //!   Return the Media Online status for selected unit
+        //!
+
+        static bool online(uint32_t mtccr, unsigned int unit) {
+            if (unit >= 8) {
+                return false;
+            }
+            return ((mtccr >> (8 + unit)) & 1);
+        }
+
+        //!
+        //! \brief
+        //!   Set the Media Online status for selected unit
+        //!
+
+        static uint32_t present(uint32_t mtccr, unsigned int unit, bool state) {
+            if (unit < 8) {
+                if (state) {
+                    mtccr |=  (1 << (16 + unit));
+                } else {
+                    mtccr &= ~(1 << (16 + unit));
+                }
+            }
+            return mtccr;
+        }
+
+        //!
+        //! \brief
+        //!   Return the drive present status for selected unit
+        //!
+
+        static bool present(uint32_t mtccr, unsigned int unit) {
+            if (unit >= 8) {
+                return false;
+            }
+            return ((mtccr >> (16 + unit)) & 1);
+        }
+
+        //!
+        //! \brief
+        //!   Set the format in the parameter variable
+        //!
+
+        static uint16_t format(uint16_t param, uint16_t fmt) {
+            static const uint16_t fmtmask = 000360;
+            return (param & ~fmtmask) | (fmt << 4);
+        }
+
+        //!
+        //! \brief
+        //!   Print the format in the parameter variable
+        //!
+
+        static const char *format(uint16_t param) {
+            static const uint16_t fmtmask = 000360;
+            return printFMT((param & fmtmask) >> 4);
+        }
+
+        //!
+        //! \brief
+        //!   Set the density in the parameter variable
+        //!
+
+        static uint16_t density(uint16_t param, uint16_t den) {
+            static const unsigned int denmask = 003400;
+            return (param & ~denmask) | (den << 8);
+        }
+
+        //!
+        //! \brief
+        //!   Print the density in the parameter variable
+        //!
+
+        static const char *density(uint16_t param) {
+            static const unsigned int denmask = 003400;
+            return printDEN((param & denmask) >> 8);
+        }
+
+        //!
+        //! \brief
+        //!   Set the slave in the parameter variable
+        //!
+
+        static uint16_t slave(uint16_t param, uint16_t slv) {
+            static const uint16_t slvmask = 000007;
+            return (param & ~slvmask) | (slv << 0);
+        }
+
+        //!
+        //! \brief
+        //!   Print the drive present status for selected unit
+        //!
+
+        static const char *slave(uint16_t param) {
+            static const uint16_t slvmask = 000007;
+            return printFMT((param & slvmask) >> 0);
+        }
+
+        static const char *printDEN(uint16_t den);
+        static const char *printFMT(uint16_t fmt);
+        static const char *printFUN(uint16_t fun);
+        static const char *printMOP(uint16_t mop);
         static void dumpMTCS1(ks10_t::addr_t addr);
         static void dumpMTCS2(ks10_t::addr_t addr);
         static void dumpMTDS(ks10_t::addr_t addr);
@@ -166,20 +299,25 @@ class mt_t : public rh11_t {
         static void dumpMTWC(ks10_t::addr_t addr);
         static void dumpMTFC(ks10_t::addr_t addr);
         static void dumpMTTC(ks10_t::addr_t addr);
-        void dumpRegs(void);
-        void cmdErase(uint16_t param);
-        void cmdRewind(uint16_t param);
-        void cmdUnload(uint16_t param);
-        void cmdPreset(uint16_t param);
-        void cmdSpaceFwd(uint16_t param, uint16_t frameCount);
-        void cmdSpaceRev(uint16_t param, uint16_t frameCount);
-        void testInit(uint16_t param);
-        void testRead(uint16_t param);
-        void testWrite(uint16_t param);
-        void testWrchk(uint16_t param);
-        void recallConfig(void);
-        void saveConfig(void);
-        void boot(uint16_t unit, uint16_t param, bool diagmode = false);
+
+        void dumpRegs(uint16_t tcu, uint16_t param);
+        void cmdErase(uint16_t tcu, uint16_t param);
+        void cmdRewind(uint16_t tcu, uint16_t param);
+        void cmdUnload(uint16_t tcu, uint16_t param);
+        void cmdPreset(uint16_t tcu, uint16_t param);
+        void cmdSpaceFwd(uint16_t tcu, uint16_t param, uint16_t frameCount);
+        void cmdSpaceRev(uint16_t tcu, uint16_t param, uint16_t frameCount);
+        void testInit(uint16_t tcu, uint16_t param);
+        void testRead(uint16_t tcu, uint16_t param);
+        void testWrite(uint16_t tcu, uint16_t param);
+        void testWrchk(uint16_t tcu, uint16_t param);
+        void boot(uint16_t tcu, uint16_t param, bool diagmode = false);
+
+        //!
+        //! \brief
+        //!    Constructor. Setup register addresses.
+        //!
+
         mt_t(int32_t baseADDR = baseADDR_MT) : rh11_t(baseADDR) {
             ;
         }

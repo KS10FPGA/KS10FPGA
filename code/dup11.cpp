@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2021 Rob Doyle
+// Copyright (C) 2013-2022 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -37,43 +37,10 @@
 //******************************************************************************
 //
 
-#include "stdio.h"
+#include <stdio.h>
+
 #include "uba.hpp"
 #include "dup11.hpp"
-#include "config.hpp"
-
-//!
-//! \brief
-//!    Configuration file name
-//!
-
-static const char *cfg_file = ".ks10/dup11.cfg";
-
-//!
-//! \brief
-//!    Recall the non-volatile DUP configuration from file
-//!
-
-void dup11_t::recallConfig(void) {
-    if (!config_t::read(cfg_file, &cfg, sizeof(cfg))) {
-        printf("KS10: Unable to read \"%s\".  Using defaults.\n", cfg_file);
-    }
-
-    // Init DUPCCR for now
-    ks10_t::writeDUPCCR(ks10_t::dupH325 | ks10_t::dupW3 | ks10_t::dupW6);
-}
-
-//!
-//! \brief
-//!    Save the non-volatile DUP configuration to file
-//!
-
-void dup11_t::saveConfig(void) {
-    cfg.dupccr = ks10_t::readDZCCR();
-    if (config_t::write(cfg_file, &cfg, sizeof(cfg))) {
-        printf("      dup: sucessfully wrote configuration file \"%s\".\n", cfg_file);
-    }
-}
 
 //!
 //! \brief

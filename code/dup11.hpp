@@ -16,7 +16,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2021 Rob Doyle
+// Copyright (C) 2013-2022 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -38,6 +38,7 @@
 #ifndef __DUP11_HPP
 #define __DUP11_HPP
 
+#include "uba.hpp"
 #include "ks10.hpp"
 
 //!
@@ -74,14 +75,6 @@ class dup11_t {
 
         uba_t uba;
 
-        //
-        // LP non-volatile configuration
-        //
-
-        struct dzcfg_t {
-            uint32_t dupccr;
-        } cfg;
-
     public:
 
         //
@@ -95,9 +88,12 @@ class dup11_t {
         // Public Functions
         //
 
-        void recallConfig(void);
-        void saveConfig(void);
         void dumpRegs(void);
+
+        //!
+        //! \brief
+        //!    Constructor. Setup register addresses.
+        //!
 
         dup11_t(uint32_t baseADDR = baseADDR1) :
             addrRXCSR ((baseADDR & 07777770) + offsetRXCSR ),
@@ -108,7 +104,6 @@ class dup11_t {
             uba(baseADDR) {
             ;
         }
-
 };
 
 #endif

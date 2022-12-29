@@ -39,8 +39,11 @@
 #include <thread>
 
 #include <ctype.h>
+#include <error.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <getopt.h>
 #include <termios.h>
 #include <sys/select.h>
 
@@ -115,12 +118,78 @@ void __noreturn ctyThread(void) {
 
 //!
 //! \brief
+//!    Process Initialization File
+//!
+//! \param command -
+//!    Reference to Command Processing object
+//!
+//! \param filename - 
+//!    "ini" filename to read and process
+//!
+//! \param debug -
+//!    Enable debug when true.
+//!
+
+void processIniFile(command_t &command, const char *filename, bool debug = false) {
+
+    FILE *fp = fopen(filename, "r");
+
+    if (fp == NULL) {
+        printf("KS10: Unable to open initialization file: \"%s\".\n", filename);
+        return;
+    }
+
+    size_t len = 0;
+    ssize_t nread;
+    char *cmd = NULL;
+
+    printf("KS10: Processing Initialization File \"%s\"%c\n", filename, debug ? ':' : '.');
+    while ((nread = getline(&cmd, &len, fp)) != -1) {
+        // Replace newline with null termination
+        cmd[nread-1] = 0;
+        if (debug) {
+            printf("KS10:  %s\n", cmd);
+        }
+        command.execute(cmd);
+    }
+    fclose(fp);
+
+}
+
+//!
+//! \brief
 //!    Main Program
 //!
 
 int main(int argc, char *argv[]) {
 
-    const bool debugKS10 = (argc == 2) && (strncasecmp(argv[1], "--debug", 5) == 0);
+    bool debugKS10 = false;
+
+    const char *usage =
+        "\n"
+        "Start the KS10 Console Application\n"
+        "\n"
+        "usage: console [options]\n"
+        "\n"
+        "Valid options are:\n"
+        "\n"
+        "  --help          Print this help message and exit.\n"
+        "  --debug         Enable verbose debugging at startup.\n"
+        "  --ini=inifile   Execute the commands in the initialization file after startup.\n"
+        "  --ver[sion]     Print the build date and exit.\n"
+        "\n"
+        "At startup and before any other initialization files are processed, the console\n"
+        "application will execute the commands the file: \"ks10.ini\".\n"
+        "\n";
+
+    static const struct option options[] = {
+        {"help",    no_argument,       0, 0},  // 0
+        {"ver",     no_argument,       0, 0},  // 1
+        {"version", no_argument,       0, 0},  // 2
+        {"debug",   no_argument,       0, 0},  // 3
+        {"ini",     required_argument, 0, 0},  // 4
+        {0,         0,                 0, 0},  // 5
+    };
 
     //
     // Print startup message
@@ -130,6 +199,46 @@ int main(int argc, char *argv[]) {
            "KS10: Console started.\n"
            "KS10: Copyright 2012-2022 (c) Rob Doyle.  All rights reserved.\n",
            vt100_hom, vt100_cls);
+
+    //
+    // Process command line
+    //
+
+    char * arglist[16];
+    unsigned int argcnt = 0;
+    opterr = 0;
+    for (;;) {
+        int index = 0;
+        int ret = getopt_long(argc, argv, "", options, &index);
+        if (ret == -1) {
+            break;
+        } else if (ret == '?') {
+            printf("lp: unrecognized option: %s\n", argv[optind-1]);
+            return true;
+        } else {
+            switch (index) {
+                case 0:
+                    // help
+                    printf(usage);
+                    return EXIT_SUCCESS;
+                case 1:
+                case 2:
+                    // version
+                    printf("KS10: Console Application built %s\n", __DATE__);
+                    return EXIT_SUCCESS;
+                case 3:
+                    // debug
+                    debugKS10 = true;
+                    break;
+                case 4:
+                    // ini
+                    if (argcnt < sizeof(arglist) / sizeof(arglist[0])) {
+                        arglist[argcnt++] = optarg;
+                    }
+                    break;
+            }
+        }
+    }
 
     //
     // Initialize the KS10 object
@@ -160,12 +269,6 @@ int main(int argc, char *argv[]) {
     //
 
     std::thread thread2(ctyThread);
-
-    //
-    // Create Tape Thread
-    //
-
-    std::thread thread3(tape_t::tapeThread);
 
     usleep(1000);
 
@@ -202,6 +305,15 @@ int main(int argc, char *argv[]) {
     //
 
     command_t command;
+
+    //
+    // Process the ".ini" file
+    //
+
+    processIniFile(command, "ks10.ini", debugKS10);
+    for (unsigned int i = 0; i < argcnt; i++) {
+        processIniFile(command, arglist[i], debugKS10);
+    }
 
     //
     // Set stdio to unbuffered and no echo

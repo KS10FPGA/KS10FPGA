@@ -17,7 +17,7 @@
 //
 //******************************************************************************
 //
-// Copyright (C) 2013-2021 Rob Doyle
+// Copyright (C) 2013-2022 Rob Doyle
 //
 // This file is part of the KS10 FPGA Project
 //
@@ -91,14 +91,6 @@ class lp20_t {
 
         uba_t uba;
 
-        //
-        // LP non-volatile configuration
-        //
-
-        struct lpcfg_t {
-            uint32_t lpccr;
-        } cfg;
-
     public:
 
         //
@@ -112,12 +104,15 @@ class lp20_t {
         // Public Functions
         //
 
-        void recallConfig(void);
-        void saveConfig(void);
         void initialize(void);
         void testRegs(void);
         void dumpRegs(void);
         void printFile(const char *filename);
+
+        //!
+        //! \brief
+        //!    Constructor. Setup register addresses.
+        //!
 
         lp20_t(uint32_t baseADDR = baseADDR1) :
             addrCSRA((baseADDR & 07777760) + offsetCSRA),

@@ -62,7 +62,7 @@
 //!
 
 cmdline_t::cmdline_t(command_t &command, unsigned int promptSize) : cursor(promptSize), state(stateNONE), cmdlen(0), command(command) {
-    static const char cmd[] = "rp boot";
+    static const char cmd[] = "rp boot --unit=2 --diag";
     hist.save(cmd, sizeof(cmd)-1);
     memset(cmdline, 0, sizeof(cmdline));
 }

@@ -45,6 +45,7 @@
 #include "dasm.hpp"
 #include "ks10.hpp"
 #include "vt100.hpp"
+#include "commands.hpp"
 
 #define DEBUG_TOP(...)          ({if (debug & debugTOP     ) printf(__VA_ARGS__);})
 #define DEBUG_HEADER(...)       ({if (debug & debugHEADER  ) printf(__VA_ARGS__);})
@@ -103,7 +104,7 @@
 inline void tape_t::waitReadWrite(uint8_t density, unsigned int bytes) {
     float usec_per_byte = (density == d_1600BPI) ? 1.0e6/120000.0 : 1.0e6/60000.0;
     float microsec = (float)bytes * usec_per_byte;
-    DEBUG_DELAY("TAPE: Read/write delay is %.1f ms.\n", microsec * 0.001);
+    DEBUG_DELAY("TAPE: Unit %d: Read/write delay is %.1f ms.\n", unit, microsec * 0.001);
     usleep((unsigned int)microsec + 0.5);
 }
 
@@ -125,7 +126,7 @@ inline void tape_t::waitReadWrite(uint8_t density, unsigned int bytes) {
 inline void tape_t::waitRewind(uint8_t density, unsigned int offset) {
     float usec_per_byte = (density == d_1600BPI) ? 1.0e6/560000.0 : 1.0e6/280000.0;
     float microsec = (float)offset * usec_per_byte;
-    DEBUG_DELAY("TAPE: Rewind delay is %.1f ms.\n", microsec * 0.001);
+    DEBUG_DELAY("TAPE: Unit %d: Rewind delay is %.1f ms.\n", unit, microsec * 0.001);
     usleep((unsigned int)microsec + 0.5);
 }
 
@@ -147,9 +148,9 @@ uint32_t tape_t::readHeader(void) {
     uint8_t buf[4];
     const unsigned int bufsiz = sizeof(buf)/sizeof(buf[0]);
 
-    size_t nread = fread(buf, sizeof(buf[0]), bufsiz, file);
+    size_t nread = fread(buf, sizeof(buf[0]), bufsiz, fp);
     if (nread != bufsiz) {
-        DEBUG_HEADER("TAPE: Error: readHeader() - fread() returned %d.\n", nread);
+        DEBUG_HEADER("TAPE: Unit %d: Error: readHeader() - fread() returned %d.\n", unit, nread);
         return h_EOT;
     }
 
@@ -177,9 +178,9 @@ int tape_t::writeHeader(uint32_t header) {
     buf[2] = ((header & 0x00ff0000) >> 16);
     buf[3] = ((header & 0xff000000) >> 24);
 
-    size_t nwrite = fwrite(buf, sizeof(buf[0]), bufsiz, file);
+    size_t nwrite = fwrite(buf, sizeof(buf[0]), bufsiz, fp);
     if (nwrite != bufsiz) {
-        printf("TAPE: Error: writeHeader() - fwrite() returned %d.\n", nwrite);
+        printf("TAPE: Unit %d: Error: writeHeader() - fwrite() returned %d.\n", unit, nwrite);
         return -1;
     }
     return 0;
@@ -211,9 +212,9 @@ inline int tape_t::readDataCORDMP(ks10_t::data_t &data) {
     uint8_t buf[5];
     const unsigned int bufsiz = sizeof(buf)/sizeof(buf[0]);
 
-    size_t nread = fread(buf, sizeof(buf[0]), bufsiz, file);
+    size_t nread = fread(buf, sizeof(buf[0]), bufsiz, fp);
     if (nread != bufsiz) {
-        printf("TAPE: Error: readData(CoreDump) - fread() returned %d.\n", nread);
+        printf("TAPE: Unit %d: Error: readData(CoreDump) - fread() returned %d.\n", unit, nread);
         return -1;
     }
 
@@ -250,9 +251,9 @@ inline int tape_t::readDataCOMPAT(ks10_t::data_t &data) {
     uint8_t buf[4];
     const unsigned int bufsiz = sizeof(buf)/sizeof(buf[0]);
 
-    size_t nread = fread(buf, sizeof(buf[0]), bufsiz, file);
+    size_t nread = fread(buf, sizeof(buf[0]), bufsiz, fp);
     if (nread != bufsiz) {
-        printf("TAPE: Error: readData(Compat) - fread() returned %d.\n", nread);
+        printf("TAPE: Unit %d: Error: readData(Compat) - fread() returned %d.\n", unit, nread);
         return -1;
     }
 
@@ -319,9 +320,9 @@ int tape_t::writeDataCORDMP(ks10_t::data_t data) {
     buf[3] = ((data & 0x000000ff0) >>  4);
     buf[4] = ((data & 0x00000000f) >>  0);
 
-    size_t nwrite = fwrite(buf, sizeof(buf[0]), bufsiz, file);
+    size_t nwrite = fwrite(buf, sizeof(buf[0]), bufsiz, fp);
     if (nwrite != bufsiz) {
-        printf("TAPE: Error: writeCoreDump() - fwrite() returned %d.\n", nwrite);
+        printf("TAPE: Unit %d: Error: writeCoreDump() - fwrite() returned %d.\n", unit, nwrite);
         return -1;
     }
 
@@ -353,9 +354,9 @@ int tape_t::writeDataCOMPAT(ks10_t::data_t data) {
     buf[2] = ((data & 0x0000ff000) >> 12);
     buf[3] = ((data & 0x000000ff0) >>  4);
 
-    size_t nwrite = fwrite(buf, sizeof(buf[0]), bufsiz, file);
+    size_t nwrite = fwrite(buf, sizeof(buf[0]), bufsiz, fp);
     if (nwrite != bufsiz) {
-        printf("TAPE: Error: writeCoreDump() - fwrite() returned %d.\n", nwrite);
+        printf("TAPE: Unit %d: Error: writeCoreDump() - fwrite() returned %d.\n", unit, nwrite);
         return -1;
     }
     return 0;
@@ -400,13 +401,13 @@ int tape_t::writeData(ks10_t::data_t data, uint8_t format) {
 //!
 
 void tape_t::unload(uint64_t mtDIR) {
-    DEBUG_UNLOAD("TAPE: Unload.\n");
+    DEBUG_UNLOAD("TAPE: Unit %d: Unload.\n", unit);
     objcnt = 1;
     reccnt = 1;
     filcnt = 1;
-    waitRewind(getDEN(mtDIR), ftell(file));
-    fseek(file, 0, SEEK_SET);
-    DEBUG_UNLOAD("TAPE: Unload Done. Pos = %ld.\n", ftell(file));
+    waitRewind(getDEN(mtDIR), ftell(fp));
+    fseek(fp, 0, SEEK_SET);
+    DEBUG_UNLOAD("TAPE: Unit %d: Unload Done. Pos = %ld.\n", unit, ftell(fp));
 }
 
 //!
@@ -421,13 +422,13 @@ void tape_t::unload(uint64_t mtDIR) {
 //!
 
 void tape_t::rewind(uint64_t mtDIR) {
-    DEBUG_REWIND("TAPE: Rewind.\n");
+    DEBUG_REWIND("TAPE: Unit %d: Rewind.\n", unit);
     objcnt = 1;
     reccnt = 1;
     filcnt = 1;
-    waitRewind(getDEN(mtDIR), ftell(file));
-    fseek(file, 0, SEEK_SET);
-    DEBUG_REWIND("TAPE: Rewind Done. Pos = %ld.\n", ftell(file));
+    waitRewind(getDEN(mtDIR), ftell(fp));
+    fseek(fp, 0, SEEK_SET);
+    DEBUG_REWIND("TAPE: Unit %d: Rewind Done. Pos = %ld.\n", unit, ftell(fp));
 }
 
 //!
@@ -442,13 +443,13 @@ void tape_t::rewind(uint64_t mtDIR) {
 //!
 
 void tape_t::preset(uint64_t mtDIR) {
-    DEBUG_PRESET("TAPE: Preset.\n");
+    DEBUG_PRESET("TAPE: Unit %d: Preset.\n", unit);
     objcnt = 1;
     reccnt = 1;
     filcnt = 1;
-    waitRewind(getDEN(mtDIR), ftell(file));
-    fseek(file, 0, SEEK_SET);
-    DEBUG_PRESET("TAPE: Preset Done. Pos = %ld.\n", ftell(file));
+    waitRewind(getDEN(mtDIR), ftell(fp));
+    fseek(fp, 0, SEEK_SET);
+    DEBUG_PRESET("TAPE: Unit %d: Preset Done. Pos = %ld.\n", unit, ftell(fp));
 }
 
 //!
@@ -474,31 +475,31 @@ void tape_t::preset(uint64_t mtDIR) {
 //!
 
 void tape_t::erase(uint64_t mtDIR) {
-    DEBUG_ERASE("TAPE: Erase.\n");
+    DEBUG_ERASE("TAPE: Unit %d: Erase.\n", unit);
 
     size_t bytes = (getDEN(mtDIR) == d_1600BPI) ? 3 * 1600 : 3 * 800;
     int gaps = bytes / sizeof(h_GAP);
 
     uint32_t header = readHeader();
-    DEBUG_HEADER("TAPE: Header was %d (0x%08x), (pos=%ld)\n", header, header, ftell(file) - sizeof(header));
+    DEBUG_HEADER("TAPE: Unit %d: Header was %d (0x%08x), (pos=%ld)\n", unit, header, header, ftell(fp) - sizeof(header));
 
     if (header < 0xffff0000) {
 
-        DEBUG_ERASE("TAPE: Header was valid. Writing GAP and updating the following record.\n");
+        DEBUG_ERASE("TAPE: Unit %d: Header was valid. Writing GAP and updating the following record.\n", unit);
         for (int i = 0; i < gaps; i++) {
             writeHeader(h_GAP);
         }
 
-        DEBUG_ERASE("TAPE: Header - bytes was %d (0x%08x).\n", header - bytes, header - bytes);
+        DEBUG_ERASE("TAPE: Unit %d: Header - bytes was %d (0x%08x).\n", unit, header - bytes, header - bytes);
 
         writeHeader(header - bytes);
-        fseek(file, header - bytes, SEEK_CUR);
+        fseek(fp, header - bytes, SEEK_CUR);
         writeHeader(header - bytes);
-        fseek(file, -(header - bytes) - 2 * sizeof(header), SEEK_CUR);
+        fseek(fp, -(header - bytes) - 2 * sizeof(header), SEEK_CUR);
 
     } else {
 
-        DEBUG_ERASE("TAPE: Header was not valid. Just writing GAP.\n");
+        DEBUG_ERASE("TAPE: Unit %d: Header was not valid. Just writing GAP.\n", unit);
         for (int i = 0; i < gaps + 1; i++) {
             writeHeader(h_GAP);
         }
@@ -507,12 +508,12 @@ void tape_t::erase(uint64_t mtDIR) {
         // This erase can potentially make the file larger.
         //
 
-        fsize = max(fsize, ftell(file));
+        fsize = max(fsize, ftell(fp));
     }
 
     usleep(40000);
 
-    DEBUG_ERASE("TAPE: Erase Done. Pos = %ld.\n", ftell(file));
+    DEBUG_ERASE("TAPE: Unit %d: Erase Done. Pos = %ld.\n", unit, ftell(fp));
 }
 
 //!
@@ -525,11 +526,11 @@ void tape_t::erase(uint64_t mtDIR) {
 //!
 
 void tape_t::writeTapeMark(uint64_t /*mtDIR*/) {
-    DEBUG_WRTM("TAPE: Write Tape Mark.\n");
+    DEBUG_WRTM("TAPE: Unit %d: Write Tape Mark.\n", unit);
     writeHeader(h_TM);
     ks10_t::writeMTDIR(ks10_t::mtDIR_SETTM);
-    fsize = max(fsize, ftell(file));
-    DEBUG_WRTM("TAPE: Write Tape Mark Done. Pos = %ld.\n", ftell(file));
+    fsize = max(fsize, ftell(fp));
+    DEBUG_WRTM("TAPE: Unit %d: Write Tape Mark Done. Pos = %ld.\n", unit, ftell(fp));
 }
 
 //!
@@ -560,47 +561,47 @@ void tape_t::writeTapeMark(uint64_t /*mtDIR*/) {
 
 void tape_t::spaceForward(uint64_t /*mtDIR*/) {
 
-    DEBUG_SPCFWD("TAPE: Space Forward.\n");
+    DEBUG_SPCFWD("TAPE: Unit %d: Space Forward.\n", unit);
     bool done = false;
 
     do {
 
         uint32_t header = readHeader();
-        DEBUG_HEADER("TAPE: Header was %d (0x%08x), (pos=%ld)\n", header, header, ftell(file) - sizeof(header));
+        DEBUG_HEADER("TAPE: Unit %d: Header was %d (0x%08x), (pos=%ld)\n", unit, header, header, ftell(fp) - sizeof(header));
 
         if (header == h_GAP) {
             continue;
         } else if (header == h_EOT) {
-            DEBUG_SPCFWD("TAPE: Physical EOT. Signal EOT.\n");
+            DEBUG_SPCFWD("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
             break;
         } else if (header == h_ERR) {
-            DEBUG_SPCFWD("TAPE: Header Error.\n");
+            DEBUG_SPCFWD("TAPE: Unit %d: Header Error.\n", unit);
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
-            DEBUG_SPCFWD("TAPE: Header Error.\n");
+            DEBUG_SPCFWD("TAPE: Unit %d: Header Error.\n", unit);
             break;
         } else if ((header == h_TM) && !lastTM) {
-            DEBUG_SPCFWD("TAPE: Found Tape Mark. Signal Tape Mark.\n");
-            DEBUG_SPCFWD("TAPE: obj=%3d, fpos=%7ld, End of tape file %d.\n", objcnt, ftell(file), filcnt);
+            DEBUG_SPCFWD("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
+            DEBUG_SPCFWD("TAPE: Unit %d: obj=%3d, fpos=%7ld, End of tape file %d.\n", unit, objcnt, ftell(fp), filcnt);
             filcnt += 1;
             objcnt += 1;
             reccnt = 1;
             lastTM = 1;
             done = true;
         } else if ((header == h_TM) && lastTM) {
-            DEBUG_SPCFWD("TAPE: obj=%3d, fpos=%7ld, Logical EOT.\n", objcnt, ftell(file));
+            DEBUG_SPCFWD("TAPE: Unit %d: obj=%3d, fpos=%7ld, Logical EOT.\n", unit, objcnt, ftell(fp));
             lastTM = 1;
             done = true;
         } else {
 
             if (lastTM) {
-                DEBUG_SPCFWD("TAPE: Processing tape file %d.\n", filcnt);
+                DEBUG_SPCFWD("TAPE: Unit %d: Processing tape file %d.\n", unit, filcnt);
             }
 
             unsigned int length = header & 0xffff;
 
-            DEBUG_SPCFWD("TAPE: obj=%3d, fpos=%7ld, rec=%2d, len=%d.\n", objcnt, ftell(file), reccnt, length);
+            DEBUG_SPCFWD("TAPE: Unit %d: obj=%3d, fpos=%7ld, rec=%2d, len=%d.\n", unit, objcnt, ftell(fp), reccnt, length);
 
             //
             // Increment the Frame Counter
@@ -618,15 +619,15 @@ void tape_t::spaceForward(uint64_t /*mtDIR*/) {
             //
 
 #ifdef PARANOID
-            if (ftell(file) + (long)length + (long)sizeof(header) > fsize) {
-                DEBUG_SPCFWD("TAPE: Space Forward. Would space forward past EOT.\n");
+            if (ftell(fp) + (long)length + (long)sizeof(header) > fsize) {
+                DEBUG_SPCFWD("TAPE: Unit %d: Space Forward. Would space forward past EOT.\n", unit);
                 done = true;
                 break;
             } else {
-                fseek(file, length + sizeof(header), SEEK_CUR);
+                fseek(fp, length + sizeof(header), SEEK_CUR);
             }
 #else
-            fseek(file, length + sizeof(header), SEEK_CUR);
+            fseek(fp, length + sizeof(header), SEEK_CUR);
 #endif
 
             //
@@ -641,7 +642,7 @@ void tape_t::spaceForward(uint64_t /*mtDIR*/) {
             //
 
             if (isFCZ(mtDIR)) {
-                DEBUG_SPCFWD("TAPE: Space Forward. Frame Count incremented to zero.\n");
+                DEBUG_SPCFWD("TAPE: Unit %d: Space Forward. Frame Count incremented to zero.\n", unit);
                 done = true;
             }
         }
@@ -656,7 +657,7 @@ void tape_t::spaceForward(uint64_t /*mtDIR*/) {
 
     } while (!done);
 
-    DEBUG_SPCFWD("TAPE: Space Forward Done. Pos = %ld.\n", ftell(file));
+    DEBUG_SPCFWD("TAPE: Unit %d: Space Forward Done. Pos = %ld.\n", unit, ftell(fp));
 }
 
 //!
@@ -667,7 +668,7 @@ void tape_t::spaceForward(uint64_t /*mtDIR*/) {
 
 void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
 
-    DEBUG_SPCREV("TAPE: Space Reverse.\n");
+    DEBUG_SPCREV("TAPE: Unit %d: Space Reverse.\n", unit);
     bool done = false;
 
     do {
@@ -676,8 +677,8 @@ void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
         // Check for BOT
         //
 
-        if (ftell(file) < 4) {
-            DEBUG_SPCREV("TAPE: Space Reverse. Backspaced from BOT.\n");
+        if (ftell(fp) < 4) {
+            DEBUG_SPCREV("TAPE: Unit %d: Space Reverse. Backspaced from BOT.\n", unit);
             break;
         }
 
@@ -686,43 +687,43 @@ void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
         //
 
         uint32_t header;
-        fseek(file, -sizeof(header), SEEK_CUR);
+        fseek(fp, -sizeof(header), SEEK_CUR);
         header = readHeader();
-        DEBUG_HEADER("TAPE: Header was %d (0x%08x), (pos=%ld)\n", header, header, ftell(file) - sizeof(header));
-        fseek(file, -sizeof(header), SEEK_CUR);
+        DEBUG_HEADER("TAPE: Unit %d: Header was %d (0x%08x), (pos=%ld)\n", unit, header, header, ftell(fp) - sizeof(header));
+        fseek(fp, -sizeof(header), SEEK_CUR);
 
         if (header == h_GAP) {
             continue;
         } else if (header == h_EOT) {
-            DEBUG_SPCREV("TAPE: Physical EOT. Signal EOT.\n");
+            DEBUG_SPCREV("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
             break;
         } else if (header == h_ERR) {
-            DEBUG_SPCREV("TAPE: Header Error.\n");
+            DEBUG_SPCREV("TAPE: Unit %d: Header Error.\n", unit);
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
-            DEBUG_SPCREV("TAPE: Header Error.\n");
+            DEBUG_SPCREV("TAPE: Unit %d: Header Error.\n", unit);
             break;
         } else if ((header == h_TM) && !lastTM) {
-            DEBUG_SPCREV("TAPE: Found Tape Mark. Signal Tape Mark.\n");
-            DEBUG_SPCREV("TAPE: obj=%3d, fpos=%7ld, End of tape file %d.\n", objcnt, ftell(file), filcnt);
+            DEBUG_SPCREV("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
+            DEBUG_SPCREV("TAPE: Unit %d: obj=%3d, fpos=%7ld, End of tape file %d.\n", unit, objcnt, ftell(fp), filcnt);
             filcnt -= 1;
             objcnt -= 1;
             reccnt = -1;
             lastTM = 1;
             done = true;
         } else if ((header == h_TM) && lastTM) {
-            DEBUG_SPCREV("TAPE: obj=%3d, fpos=%7ld, Logical EOT.\n", objcnt, ftell(file));
+            DEBUG_SPCREV("TAPE: Unit %d: obj=%3d, fpos=%7ld, Logical EOT.\n", unit, objcnt, ftell(fp));
             lastTM = 1;
             done = true;
         } else {
 
             if (lastTM) {
-                DEBUG_SPCREV("TAPE: Processing tape file %d.\n", filcnt);
+                DEBUG_SPCREV("TAPE: Unit %d: Processing tape file %d.\n", unit, filcnt);
             }
 
             unsigned int length = header & 0xffff;
-            DEBUG_SPCREV("TAPE: obj=%3d, fpos=%7ld, rec=%2d, len=%d.\n", objcnt, ftell(file), reccnt, length);
+            DEBUG_SPCREV("TAPE: Unit %d: obj=%3d, fpos=%7ld, rec=%2d, len=%d.\n", unit, objcnt, ftell(fp), reccnt, length);
             ks10_t::writeMTDIR(ks10_t::mtDIR_INCFC);
             objcnt -= 1;
             reccnt -= 1;
@@ -733,15 +734,15 @@ void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
             //
 
 #ifdef PARANOID
-            if (ftell(file) - (long)length - (long)sizeof(header) < 0) {
-                DEBUG_SPCREV("TAPE: Space Reverse. Would space backward past BOT.\n");
+            if (ftell(fp) - (long)length - (long)sizeof(header) < 0) {
+                DEBUG_SPCREV("TAPE: Unit %d: Space Reverse. Would space backward past BOT.\n", unit);
                 done = true;
                 break;
             } else {
-                fseek(file, -(length + sizeof(header)), SEEK_CUR);
+                fseek(fp, -(length + sizeof(header)), SEEK_CUR);
             }
 #else
-            fseek(file, -(length + sizeof(header)), SEEK_CUR);
+            fseek(fp, -(length + sizeof(header)), SEEK_CUR);
 #endif
 
             //
@@ -756,7 +757,7 @@ void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
             //
 
             if (isFCZ(mtDIR)) {
-                DEBUG_SPCREV("TAPE: Space Reverse. Frame Count incremented to zero.\n");
+                DEBUG_SPCREV("TAPE: Unit %d: Space Reverse. Frame Count incremented to zero.\n", unit);
                 done = true;
             }
         }
@@ -771,7 +772,7 @@ void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
 
     } while (!done);
 
-    DEBUG_SPCREV("TAPE: Space Reverse Done. Pos = %ld.\n", ftell(file));
+    DEBUG_SPCREV("TAPE: Unit %d: Space Reverse Done. Pos = %ld.\n", unit, ftell(fp));
 }
 
 //!
@@ -780,9 +781,9 @@ void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
 //!
 
 void tape_t::writeCheckForward(uint64_t mtDIR) {
-    DEBUG_WRCHKFWD("TAPE: Write Check Forward.\n");
+    DEBUG_WRCHKFWD("TAPE: Unit %d: Write Check Forward.\n", unit);
     readForward(mtDIR);
-    DEBUG_WRCHKFWD("TAPE: Write Check Forward Done.\n");
+    DEBUG_WRCHKFWD("TAPE: Unit %d: Write Check Forward Done.\n", unit);
 }
 
 //!
@@ -791,9 +792,9 @@ void tape_t::writeCheckForward(uint64_t mtDIR) {
 //!
 
 void tape_t::writeCheckReverse(uint64_t mtDIR) {
-    DEBUG_WRCHKREV("TAPE: Write Check Reverse.\n");
+    DEBUG_WRCHKREV("TAPE: Unit %d: Write Check Reverse.\n", unit);
     readReverse(mtDIR);
-    DEBUG_WRCHKREV("TAPE: Write Check Reverse Done.\n");
+    DEBUG_WRCHKREV("TAPE: Unit %d: Write Check Reverse Done.\n", unit);
 }
 
 //!
@@ -808,7 +809,7 @@ void tape_t::writeCheckReverse(uint64_t mtDIR) {
 
 void tape_t::writeForward(uint64_t mtDIR) {
 
-    DEBUG_WRFWD("TAPE: Write Forward.\n");
+    DEBUG_WRFWD("TAPE: Unit %d: Write Forward.\n", unit);
     int length = 0;
     uint8_t density = getDEN(mtDIR);
     uint8_t format = getFMT(mtDIR);
@@ -819,7 +820,7 @@ void tape_t::writeForward(uint64_t mtDIR) {
     // update the initial header later when we know the record size
     //
 
-    long headPos = ftell(file);
+    long headPos = ftell(fp);
     writeHeader(0);
 
     for (;;) {
@@ -839,7 +840,7 @@ void tape_t::writeForward(uint64_t mtDIR) {
 
             mtDIR = ks10_t::readMTDIR();
             if (isFCZ(mtDIR) || isWCZ(mtDIR)) {
-                DEBUG_WRFWD("TAPE: Write Forward. %s Count is zero.\n", isWCZ(mtDIR) ? "Frame" : "Word");
+                DEBUG_WRFWD("TAPE: Unit %d: Write Forward. %s Count is zero.\n", unit, isWCZ(mtDIR) ? "Frame" : "Word");
                 break;
             }
 
@@ -866,7 +867,7 @@ void tape_t::writeForward(uint64_t mtDIR) {
 
             uint64_t data = getDATA(mtDIR);
             writeData(data, getFMT(mtDIR));
-//          printf("%06o %06o: pos=%ld\n", ks10_t::lh(data), ks10_t::rh(data), ftell(file)-bpw);
+//          printf("Unit %d: %06o %06o: pos=%ld\n", unit, ks10_t::lh(data), ks10_t::rh(data), ftell(fp)-bpw);
             ks10_t::writeMTDIR(0);
 
         } else {
@@ -894,9 +895,9 @@ void tape_t::writeForward(uint64_t mtDIR) {
     //
 
     writeHeader(length);
-    DEBUG_HEADER("TAPE: Header was %d (0x%08x), (pos=%ld)\n", length, length, ftell(file) - sizeof(length));
+    DEBUG_HEADER("TAPE: Unit %d: Header was %d (0x%08x), (pos=%ld)\n", unit, length, length, ftell(fp) - sizeof(length));
 
-    long footPos = ftell(file);
+    long footPos = ftell(fp);
     fsize = max(fsize, footPos);
 
     //
@@ -904,13 +905,13 @@ void tape_t::writeForward(uint64_t mtDIR) {
     // position after the footer.
     //
 
-    fseek(file, headPos, SEEK_SET);
+    fseek(fp, headPos, SEEK_SET);
     writeHeader(length);
-    DEBUG_HEADER("TAPE: Header was %d (0x%08x), (pos=%ld)\n", length, length, ftell(file) - sizeof(length));
+    DEBUG_HEADER("TAPE: Unit %d: Header was %d (0x%08x), (pos=%ld)\n", unit, length, length, ftell(fp) - sizeof(length));
 
-    fseek(file, footPos, SEEK_SET);
+    fseek(fp, footPos, SEEK_SET);
 
-    DEBUG_WRFWD("TAPE: Write Forward Done. Pos = %ld. Length = %d\n", ftell(file), length);
+    DEBUG_WRFWD("TAPE: Unit %d: Write Forward Done. Pos = %ld. Length = %d\n", unit, ftell(fp), length);
 }
 
 //!
@@ -948,7 +949,7 @@ void tape_t::writeForward(uint64_t mtDIR) {
 
 void tape_t::readForward(uint64_t mtDIR) {
 
-    DEBUG_RDFWD("TAPE: Read Forward.\n");
+    DEBUG_RDFWD("TAPE: Unit %d: Read Forward.\n", unit);
 
     bool done = false;
     unsigned int total = 0;
@@ -959,33 +960,33 @@ void tape_t::readForward(uint64_t mtDIR) {
     do {
 
         uint32_t header  = readHeader();
-        DEBUG_HEADER("TAPE: Header was %d (0x%08x), (pos=%ld)\n", header, header, ftell(file) - sizeof(header));
+        DEBUG_HEADER("TAPE: Unit %d: Header was %d (0x%08x), (pos=%ld)\n", unit, header, header, ftell(fp) - sizeof(header));
 
         if (header == h_GAP) {
             continue;
         } else if (header == h_EOT) {
-            DEBUG_RDFWD("TAPE: Physical EOT. Signal EOT.\n");
+            DEBUG_RDFWD("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
             break;
         } else if (header == h_ERR) {
-            DEBUG_RDFWD("TAPE: Header Error.\n");
+            DEBUG_RDFWD("TAPE: Unit %d: Header Error.\n", unit);
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
-            DEBUG_RDFWD("TAPE: Header Error.\n");
+            DEBUG_RDFWD("TAPE: Unit %d: Header Error.\n", unit);
             break;
         } else if ((header == h_TM) && !lastTM) {
-            DEBUG_RDFWD("TAPE: Found Tape Mark. Signal Tape Mark.\n");
-            DEBUG_RDFWD("TAPE: obj=%3d, fpos=%7ld, End of tape file %d.\n", objcnt, ftell(file), filcnt);
+            DEBUG_RDFWD("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
+            DEBUG_RDFWD("TAPE: Unit %d: obj=%3d, fpos=%7ld, End of tape file %d.\n", unit, objcnt, ftell(fp), filcnt);
             filcnt += 1;
             objcnt += 1;
             reccnt += 1;
             break;
         } else if ((header == h_TM) && lastTM) {
-            DEBUG_RDFWD("TAPE: obj=%3d, fpos=%7ld, Logical EOT.\n", objcnt, ftell(file));
+            DEBUG_RDFWD("TAPE: Unit %d: obj=%3d, fpos=%7ld, Logical EOT.\n", unit, objcnt, ftell(fp));
             break;
         } else {
             if (lastTM) {
-                DEBUG_RDFWD("TAPE: Processing tape file %d.\n", filcnt);
+                DEBUG_RDFWD("TAPE: Unit %d: Processing tape file %d.\n", unit, filcnt);
             }
 
             unsigned int length = header & 0xffff;
@@ -998,7 +999,7 @@ void tape_t::readForward(uint64_t mtDIR) {
             // In COMPAT mode, the frame counter is incremented 4 times.
             //
 
-            DEBUG_RDFWD("TAPE: obj=%3d, fpos=%7ld, rec=%2d, len=%d (%d words).\n", objcnt, ftell(file), reccnt, length, length / bpw);
+            DEBUG_RDFWD("TAPE: Unit %d: obj=%3d, fpos=%7ld, rec=%2d, len=%d (%d words).\n", unit, objcnt, ftell(fp), reccnt, length, length / bpw);
             objcnt += 1;
             reccnt += 1;
 
@@ -1012,7 +1013,7 @@ void tape_t::readForward(uint64_t mtDIR) {
                 ks10_t::data_t data;
                 int status = readData(format, data);
                 if (status < 0) {
-                    DEBUG_RDFWD("TAPE: Read Forward. Found EOF reading data.\n");
+                    DEBUG_RDFWD("TAPE: Unit %d: Read Forward. Found EOF reading data.\n", unit);
                     done = true;
                     break;
                 }
@@ -1022,8 +1023,8 @@ void tape_t::readForward(uint64_t mtDIR) {
                 //
 
                 ks10_t::writeMTDIR(ks10_t::mtDIR_STB | data);
-//              DEBUG_DATA("TAPE: %s pos=%ld\n", dasm(data), ftell(file));
-                DEBUG_DATA("TAPE: %06o %06o: pos=%ld\n", ks10_t::lh(data), ks10_t::rh(data), ftell(file));
+//              DEBUG_DATA("TAPE: Unit %d: %s pos=%ld\n", unit, dasm(data), ftell(fp));
+                DEBUG_DATA("TAPE: Unit %d: %06o %06o: pos=%ld\n", unit, ks10_t::lh(data), ks10_t::rh(data), ftell(fp));
 
                 //
                 // Increment the Frame Counter
@@ -1043,7 +1044,7 @@ void tape_t::readForward(uint64_t mtDIR) {
 
                 uint64_t mtDIR = ks10_t::readMTDIR();
                 if (isWCZ(mtDIR)) {
-                    DEBUG_WRFWD("TAPE: Read Forward. Word Count is zero.\n");
+                    DEBUG_WRFWD("TAPE: Unit %d: Read Forward. Word Count is zero.\n", unit);
                     done = true;
                     break;
                 }
@@ -1073,7 +1074,7 @@ void tape_t::readForward(uint64_t mtDIR) {
 
     } while (!done);
 
-    DEBUG_RDFWD("TAPE: Read Forward Done. Read %d words.\n", total);
+    DEBUG_RDFWD("TAPE: Unit %d: Read Forward Done. Read %d words.\n", unit, total);
 }
 
 //!
@@ -1108,7 +1109,7 @@ void tape_t::readForward(uint64_t mtDIR) {
 
 void tape_t::readReverse(uint64_t mtDIR) {
 
-    DEBUG_RDREV("TAPE: Read Reverse.\n");
+    DEBUG_RDREV("TAPE: Unit %d: Read Reverse.\n", unit);
 
     bool done = false;
     unsigned int total = 0;
@@ -1118,42 +1119,42 @@ void tape_t::readReverse(uint64_t mtDIR) {
 
     do {
 
-        if (ftell(file) < 4) {
-            DEBUG_RDREV("TAPE: Read Reverse. Backspaced from BOT.\n");
+        if (ftell(fp) < 4) {
+            DEBUG_RDREV("TAPE: Unit %d: Read Reverse. Backspaced from BOT.\n", unit);
             break;
         }
 
         uint32_t header;
-        fseek(file, -sizeof(header), SEEK_CUR);
+        fseek(fp, -sizeof(header), SEEK_CUR);
         header = readHeader();
-        DEBUG_HEADER("TAPE: Header was %d (0x%08x), (pos=%ld)\n", header, header, ftell(file) - sizeof(header));
-        fseek(file, -sizeof(header), SEEK_CUR);
+        DEBUG_HEADER("TAPE: Unit %d: Header was %d (0x%08x), (pos=%ld)\n", unit, header, header, ftell(fp) - sizeof(header));
+        fseek(fp, -sizeof(header), SEEK_CUR);
 
         if (header == h_GAP) {
             continue;
         } else if (header == h_EOT) {
-            DEBUG_RDREV("TAPE: Physical EOT. Signal EOT.\n");
+            DEBUG_RDREV("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
             break;
         } else if (header == h_ERR) {
-            DEBUG_RDREV("TAPE: Header Error.\n");
+            DEBUG_RDREV("TAPE: Unit %d: Header Error.\n", unit);
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
-            DEBUG_RDREV("TAPE: Header Error.\n");
+            DEBUG_RDREV("TAPE: Unit %d: Header Error.\n");
             break;
         } else if ((header == h_TM) && !lastTM) {
-            DEBUG_RDREV("TAPE: Found Tape Mark. Signal Tape Mark.\n");
-            DEBUG_RDREV("TAPE: obj=%3d, fpos=%7ld, End of tape file %d.\n", objcnt, ftell(file), filcnt);
+            DEBUG_RDREV("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
+            DEBUG_RDREV("TAPE: Unit %d: obj=%3d, fpos=%7ld, End of tape file %d.\n", unit, objcnt, ftell(fp), filcnt);
             filcnt -= 1;
             objcnt -= 1;
             reccnt = -1;
             break;
         } else if ((header == h_TM) && lastTM) {
-            DEBUG_RDREV("TAPE: obj=%3d, fpos=%7ld, Logical EOT.\n", objcnt, ftell(file));
+            DEBUG_RDREV("TAPE: Unit %d: obj=%3d, fpos=%7ld, Logical EOT.\n", unit, objcnt, ftell(fp));
             break;
         } else {
             if (lastTM) {
-                DEBUG_RDREV("TAPE: Processing tape file %d.\n", filcnt);
+                DEBUG_RDREV("TAPE: Unit %d: Processing tape file %d.\n", unit, filcnt);
             }
 
             unsigned int length = header & 0xffff;
@@ -1168,7 +1169,7 @@ void tape_t::readReverse(uint64_t mtDIR) {
             // In COMPAT mode, the frame counter is incremented 4 times.
             //
 
-            DEBUG_RDREV("TAPE: obj=%3d, fpos=%7ld, rec=%2d, len=%d (%d words).\n", objcnt, ftell(file), reccnt, length, length / bpw);
+            DEBUG_RDREV("TAPE: Unit %d: obj=%3d, fpos=%7ld, rec=%2d, len=%d (%d words).\n", unit, objcnt, ftell(fp), reccnt, length, length / bpw);
             objcnt -= 1;
             reccnt -= 1;
 
@@ -1178,8 +1179,8 @@ void tape_t::readReverse(uint64_t mtDIR) {
                 // Check for beginning of file
                 //
 
-                if (ftell(file) < 4) {
-                    DEBUG_RDREV("TAPE: Read Reverse. Backspaced from BOT reading data.\n");
+                if (ftell(fp) < 4) {
+                    DEBUG_RDREV("TAPE: Unit %d: Read Reverse. Backspaced from BOT reading data.\n", unit);
                     break;
                 }
 
@@ -1187,19 +1188,19 @@ void tape_t::readReverse(uint64_t mtDIR) {
                 // Read a word of data from the Tape File
                 //
 
-                fseek(file, -bpw, SEEK_CUR);
+                fseek(fp, -bpw, SEEK_CUR);
                 ks10_t::data_t data;
                 readData(format, data);
-                fseek(file, -bpw, SEEK_CUR);
-//              DEBUG_DATA("TAPE: %s pos=%ld\n", dasm(data), ftell(file));
-                DEBUG_DATA("TAPE: %06o %06o: pos=%ld\n", ks10_t::lh(data), ks10_t::rh(data), ftell(file));
+                fseek(fp, -bpw, SEEK_CUR);
+//              DEBUG_DATA("TAPE: Unit %d: %s pos=%ld\n", unit, dasm(data), ftell(fp));
+                DEBUG_DATA("TAPE: Unit %d: %06o %06o: pos=%ld\n", unit, ks10_t::lh(data), ks10_t::rh(data), ftell(fp));
 
                 //
                 // Write data to Tape Controller
                 //
 
                 ks10_t::writeMTDIR(ks10_t::mtDIR_STB | data);
-                DEBUG_DATA("TAPE: %s pos=%ld\n", dasm(data), ftell(file));
+                DEBUG_DATA("TAPE: Unit %d: %s pos=%ld\n", unit, dasm(data), ftell(fp));
 
                 //
                 // Increment the Frame Counter
@@ -1219,7 +1220,7 @@ void tape_t::readReverse(uint64_t mtDIR) {
 
                 uint64_t mtDIR = ks10_t::readMTDIR();
                 if (isWCZ(mtDIR)) {
-                    DEBUG_RDREV("TAPE: Read Reverse. Word Count is zero.\n");
+                    DEBUG_RDREV("TAPE: Unit %d: Read Reverse. Word Count is zero.\n", unit);
                     done = true;
                     break;
                 }
@@ -1230,9 +1231,9 @@ void tape_t::readReverse(uint64_t mtDIR) {
             // This should not fail at BOF. We've already validated the tape file.
             //
 
-            fseek(file, -sizeof(header), SEEK_CUR);
+            fseek(fp, -sizeof(header), SEEK_CUR);
             readHeader();
-            fseek(file, -sizeof(header), SEEK_CUR);
+            fseek(fp, -sizeof(header), SEEK_CUR);
 
             //
             // Simulate delay from tape motion
@@ -1251,7 +1252,7 @@ void tape_t::readReverse(uint64_t mtDIR) {
 
     } while (!done);
 
-    DEBUG_RDREV("TAPE: Read Reverse Done.\n");
+    DEBUG_RDREV("TAPE: Unit %d: Read Reverse Done.\n", unit);
 }
 
 //!
@@ -1274,114 +1275,117 @@ void tape_t::processCommand(void) {
 
     if (!isREADY(mtDIR)) {
 
-        DEBUG_TOP("TAPE: Function was \"%s\" (0%02o), Density was \"%s\" (0%02o), Format was \"%s\" (0%02o), Slave was %d.\n",
-                  mt_t::printFUN(function), function, mt_t::printDEN(density), density, mt_t::printFMT(format), format, getSS(mtDIR));
+        if (getSS(mtDIR) == unit) {
 
-        if ((format == f_CORDMP) || (format == f_COMPAT)) {
+            DEBUG_TOP("TAPE: Unit %d: Function was \"%s\" (0%02o), Density was \"%s\" (0%02o), Format was \"%s\" (0%02o), Slave was %d.\n",
+                      unit, mt_t::printFUN(function), function, mt_t::printDEN(density), density, mt_t::printFMT(format), format, getSS(mtDIR));
 
-#ifdef DEBUG_REGS
-            mt_t::dumpMTCS1(03772440);
-            mt_t::dumpMTCS2(03772450);
-            mt_t::dumpMTMR(03772464);
-            mt_t::dumpMTDS(03772452);
-            mt_t::dumpMTER(03772454);
-            mt_t::dumpMTWC(03772442);
-            mt_t::dumpMTFC(03772446);
-            mt_t::dumpMTTC(03772472);
-#endif
-
-            switch (function) {
-                case 000:
-                    DEBUG_TOP("TAPE: NOP\n");
-                    break;
-                case 001:
-                    unload(mtDIR);
-                    break;
-                case 003:
-                    rewind(mtDIR);
-                    break;
-                case 010:
-                    preset(mtDIR);
-                    break;
-                case 012:
-                    erase(mtDIR);
-                    break;
-                case 013:
-                    writeTapeMark(mtDIR);
-                    break;
-                case 014:
-                    spaceForward(mtDIR);
-                    break;
-                case 015:
-                    spaceReverse(mtDIR);
-                    break;
-                case 024:
-                    writeCheckForward(mtDIR);
-                    break;
-                case 027:
-                    writeCheckReverse(mtDIR);
-                    break;
-                case 030:
-                    writeForward(mtDIR);
-                    break;
-                case 034:
-                    readForward(mtDIR);
-                    break;
-                case 037:
-                    readReverse(mtDIR);
-                    break;
-                default:
-                    DEBUG_TOP("TAPE: Unrecognized function.\n");
-                    break;
-            }
-
-            //
-            // Update BOT and EOT based on file position.
-            //
-            // The number of bytes per tape is a function of tape length and
-            // density
-            //
-
-            long fpos  = ftell(file);
-            int  bpt   = bytes_per_tape(density);
-            bool isEOT = (fpos > bpt);
-
-            if ((fpos == 0) && (!statBOT)) {
-                statBOT = true;
-                DEBUG_BOTEOT("TAPE: BOT is true.\n");
-                ks10_t::writeMTDIR(ks10_t::mtDIR_SETBOT);
-            } else if ((fpos != 0) && (statBOT)) {
-                statBOT = false;
-                DEBUG_BOTEOT("TAPE: BOT is false.\n");
-                ks10_t::writeMTDIR(ks10_t::mtDIR_CLRBOT);
-            } else if (isEOT && !statEOT) {
-                statEOT = true;
-                DEBUG_BOTEOT("TAPE: EOT is true.\n");
-                ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
-            } else if (!isEOT && statEOT) {
-                statEOT = false;
-                DEBUG_BOTEOT("TAPE: EOT is false.\n");
-                ks10_t::writeMTDIR(ks10_t::mtDIR_CLREOT);
-            }
-
-            DEBUG_POS("TAPE: fpos = %ld (0x%08lx) \n", fpos, fpos);
+            if ((format == f_CORDMP) || (format == f_COMPAT)) {
 
 #ifdef DEBUG_REGS
-            mt_t::dumpMTCS1(03772440);
-            mt_t::dumpMTCS2(03772450);
-            mt_t::dumpMTMR(03772464);
-            mt_t::dumpMTDS(03772452);
-            mt_t::dumpMTER(03772454);
-            mt_t::dumpMTWC(03772442);
-            mt_t::dumpMTFC(03772446);
-            mt_t::dumpMTTC(03772472);
+                mt_t::dumpMTCS1(03772440);
+                mt_t::dumpMTCS2(03772450);
+                mt_t::dumpMTMR(03772464);
+                mt_t::dumpMTDS(03772452);
+                mt_t::dumpMTER(03772454);
+                mt_t::dumpMTWC(03772442);
+                mt_t::dumpMTFC(03772446);
+                mt_t::dumpMTTC(03772472);
 #endif
 
-        } else {
-            printf("TAPE: Unsupported PDP10 Tape Format. Format was 0%o\n", format);
+                switch (function) {
+                    case 000:
+                        DEBUG_TOP("TAPE: NOP\n");
+                        break;
+                    case 001:
+                        unload(mtDIR);
+                        break;
+                    case 003:
+                        rewind(mtDIR);
+                        break;
+                    case 010:
+                        preset(mtDIR);
+                        break;
+                    case 012:
+                        erase(mtDIR);
+                        break;
+                    case 013:
+                        writeTapeMark(mtDIR);
+                        break;
+                    case 014:
+                        spaceForward(mtDIR);
+                        break;
+                    case 015:
+                        spaceReverse(mtDIR);
+                        break;
+                    case 024:
+                        writeCheckForward(mtDIR);
+                        break;
+                    case 027:
+                        writeCheckReverse(mtDIR);
+                        break;
+                    case 030:
+                        writeForward(mtDIR);
+                        break;
+                    case 034:
+                        readForward(mtDIR);
+                        break;
+                    case 037:
+                        readReverse(mtDIR);
+                        break;
+                    default:
+                        DEBUG_TOP("TAPE: Unrecognized function.\n");
+                        break;
+                }
+
+                //
+                // Update BOT and EOT based on file position.
+                //
+                // The number of bytes per tape is a function of tape length and
+                // density
+                //
+
+                long fpos  = ftell(fp);
+                int  bpt   = bytes_per_tape(density);
+                bool isEOT = (fpos > bpt);
+
+                if ((fpos == 0) && (!statBOT)) {
+                    statBOT = true;
+                    DEBUG_BOTEOT("TAPE: Unit %d: BOT is true.\n", unit);
+                    ks10_t::writeMTDIR(ks10_t::mtDIR_SETBOT);
+                } else if ((fpos != 0) && (statBOT)) {
+                    statBOT = false;
+                    DEBUG_BOTEOT("TAPE: Unit %d: BOT is false.\n", unit);
+                    ks10_t::writeMTDIR(ks10_t::mtDIR_CLRBOT);
+                } else if (isEOT && !statEOT) {
+                    statEOT = true;
+                    DEBUG_BOTEOT("TAPE: Unit %d: EOT is true.\n", unit);
+                    ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
+                } else if (!isEOT && statEOT) {
+                    statEOT = false;
+                    DEBUG_BOTEOT("TAPE: Unit %d: EOT is false.\n", unit);
+                    ks10_t::writeMTDIR(ks10_t::mtDIR_CLREOT);
+                }
+
+                DEBUG_POS("TAPE: Unit %d: fpos = %ld (0x%08lx) \n", unit, fpos, fpos);
+
+#ifdef DEBUG_REGS
+                mt_t::dumpMTCS1(03772440);
+                mt_t::dumpMTCS2(03772450);
+                mt_t::dumpMTMR(03772464);
+                mt_t::dumpMTDS(03772452);
+                mt_t::dumpMTER(03772454);
+                mt_t::dumpMTWC(03772442);
+                mt_t::dumpMTFC(03772446);
+                mt_t::dumpMTTC(03772472);
+#endif
+
+            } else {
+                printf("TAPE: Unit %d: Unsupported PDP10 Tape Format. Format was 0%o\n", unit, format);
+            }
+
+            ks10_t::writeMTDIR(ks10_t::mtDIR_READY);
         }
-
-        ks10_t::writeMTDIR(ks10_t::mtDIR_READY);
     }
 }
 
@@ -1408,92 +1412,50 @@ void tape_t::validate(void) {
     bool physicalEOT = false;
     for (;;) {
         uint32_t header = readHeader();
-        DEBUG_VALIDATE("TAPE: Header = 0x%08x, pos=%ld\n", header, ftell(file));
+        DEBUG_VALIDATE("TAPE: Unit %d: Header = 0x%08x, pos=%ld\n", unit, header, ftell(fp));
         if (header == h_GAP) {
             lastTM = false;
             logicalEOT = false;
         } else if (header == h_EOT) {
-            DEBUG_VALIDATE("TAPE: Physical EOT.\n");
+            DEBUG_VALIDATE("TAPE: Unit %d: Physical EOT.\n", unit);
             physicalEOT = true;
             break;
         } else if (header == h_ERR) {
-            DEBUG_VALIDATE("Error.\n");
+            DEBUG_VALIDATE("TAPE: Unit %d: Error.\n", unit);
             break;
         } else if ((header == h_TM) && !lastTM) {
             lastTM = true;
             logicalEOT = false;
-            DEBUG_VALIDATE("TAPE: Tape Mark.\n");
+            DEBUG_VALIDATE("TAPE: Unit %d: Tape Mark.\n", unit);
         } else if ((header == h_TM) && lastTM) {
             logicalEOT = true;
-            DEBUG_VALIDATE("TAPE: Logical EOT\n");
+            DEBUG_VALIDATE("TAPE: Unit %d: Logical EOT\n", unit);
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
-            DEBUG_VALIDATE("TAPE: Tape Error.\n");
+            DEBUG_VALIDATE("TAPE: Unit %d: Tape Error.\n", unit);
             break;
         } else {
             lastTM = false;
             uint32_t length = header & 0xffff;
-            fseek(file, length, SEEK_CUR);
+            fseek(fp, length, SEEK_CUR);
             uint32_t footer = readHeader();
-            DEBUG_VALIDATE("TAPE: Footer = 0x%08x, pos=%ld\n", footer, ftell(file));
+            DEBUG_VALIDATE("TAPE: Unit %d: Footer = 0x%08x, pos=%ld\n", unit, footer, ftell(fp));
             if (header != footer) {
-                DEBUG_VALIDATE("TAPE: Header and footer mismatch.\n");
+                DEBUG_VALIDATE("TAPE: Unit %d: Header and footer mismatch.\n", unit);
                 mismatch = true;
             }
         }
     }
 
-    fseek(file, 0L, SEEK_SET);
+    fseek(fp, 0L, SEEK_SET);
 
     if (mismatch) {
-        printf("TAPE: %sTape file is invalid. Found header and footer mismatches.%s\n", vt100fg_red, vt100at_rst);
+        printf("TAPE: Unit %d: %sTape file is invalid. Found header and footer mismatches.%s\n", unit, vt100fg_red, vt100at_rst);
     } else if (physicalEOT && !logicalEOT) {
-        printf("TAPE: %sTape file is invalid. Missing logical EOT.%s\n", vt100fg_red, vt100at_rst);
+        printf("TAPE: Unit %d: %sTape file is invalid. Missing logical EOT.%s\n", unit, vt100fg_red, vt100at_rst);
     } else {
-        printf("TAPE: Tape file is valid.\n");
+        printf("TAPE: Unit %d: Tape file is valid.\n", unit);
     }
-}
-
-//!
-//! \brief
-//!    Constructor
-//!
-//! \details
-//!    This function opens and validates the tape file; then initializes
-//!    the object
-//!
-//! \param [in] filename -
-//!    File name of the tape file
-//!
-//! \param [in] tapeLength -
-//!    Length of the tape file in feet.
-//!
-//! \note:
-//!    Standard tape lengths were 800 feet, 2400 feet, and 3600 feet.
-//!
-
-tape_t::tape_t(const char *filename, unsigned int tapeLength, unsigned int debug) :
-    tapeLength(tapeLength),
-    debug(debug),
-    filcnt(1),
-    objcnt(1),
-    reccnt(1),
-    statBOT(false),
-    statEOT(false),
-    lastTM(true) {
-        struct stat sb;
-        file = fopen(filename, "r+");
-        if (!file) {
-            printf("TAPE: Error opening file: %s\n", filename);
-            exit(EXIT_FAILURE);
-        } else if (fstat(fileno(file), &sb) == -1) {
-            perror("stat");
-            exit(EXIT_FAILURE);
-        } else {
-            fsize = sb.st_size;
-            printf("TAPE: Successfully opened tape file: \"%s\" (%ld bytes).\n", filename, fsize);
-        }
-        validate();
 }
 
 //!
@@ -1502,32 +1464,80 @@ tape_t::tape_t(const char *filename, unsigned int tapeLength, unsigned int debug
 //!
 
 void tape_t::close(void) {
-    fclose(file);
+    fclose(fp);
 }
 
 //!
 //! \brief
-//!    This is a posix thread that is started by main.
-//!
-//! \param [in] arg -
-//!    Opaque pointer to parameters
+//!    This is a std::thread that is started when the tape file is mounted.
 //!
 
-void tape_t::tapeThread(void) {
+void tape_t::processThread(void) {
 
-    printf("KS10: Tape thread started.\n");
-    const char *filename = "red405a2.tap";
-    bool should_exit = false;
-    tape_t tape(filename, 2400);
+    printf("TAPE: Unit %d: Tape thread started.\n", unit);
 
-    do {
-
-        tape.processCommand();
+    while (attached) {
+        processCommand();
         usleep(10);
+    };
 
-    } while (!should_exit);
-
-    tape.close();
-    std::terminate();
+    close();
+    printf("TAPE: Unit %d: Tape thread exited.\n", unit);
 
 }
+
+//!
+//! \brief
+//!    Constructor
+//!
+//! \details
+//!    This function initializes the object, validates the tape file, and starts a
+//!    thread to process requests.
+//!
+//! \param [in] unit -
+//!    Tape unit number.
+//!
+//! \param [in] fp -
+//!    FILE pointer to open tape file.
+//!
+//! \param [in] length -
+//!    Length of the tape file in feet.
+//!
+//! \param [in] attached -
+//!    Reference to atomic variable that indicates that the tape file is attached. When
+//!    'attached' negates, the thread should exit.
+//!
+//! \param [in] debug -
+//!    Enable various types a vebose debugging.
+//!
+//! \note:
+//!    Standard tape lengths were 800 feet, 2400 feet, and 3600 feet.
+//!
+
+tape_t::tape_t(unsigned int unit, FILE *fp, unsigned int tapeLength, std::atomic<bool> &attached, off_t fsize, uint32_t &debug) :
+    unit(unit),
+    attached(attached),
+    tapeLength(tapeLength),
+    debug(debug),
+    fsize(fsize),
+    filcnt(1),
+    objcnt(1),
+    reccnt(1),
+    statBOT(false),
+    statEOT(false),
+    lastTM(true),
+    fp(fp) {
+
+        //
+        // Verify that the tape file is valid
+        //
+
+        validate();
+
+        //
+        // Start the process thread to handle requests
+        //
+
+        thread = std::thread(&tape_t::processThread, this);
+}
+

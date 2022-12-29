@@ -38,13 +38,14 @@
 #ifndef __TAPE_HPP
 #define __TAPE_HPP
 
+#include <atomic>
+#include <thread>
+
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include "ks10.hpp"
-
-void *tapeThread(void *arg);
 
 //!
 //! \brief
@@ -55,16 +56,19 @@ class tape_t {
 
     private:
 
+        unsigned int unit;              //!< Unit
+        std::atomic<bool> &attached;    //!< Attached
         unsigned int tapeLength;        //!< Length of tape in feet
-        unsigned int debug;             //!< Tape debugging
-        long fsize;                     //!< File size
+        uint32_t &debug;                //!< Tape debugging
+        off_t fsize;                    //!< File size
         int  filcnt;                    //!< File count
         int  objcnt;                    //!< Object count
         int  reccnt;                    //!< Record count
         bool statBOT;                   //!< BOT state
         bool statEOT;                   //!< EOT state
         bool lastTM;                    //!< TM state
-        FILE *file;                     //!< File pointer
+        FILE *fp;                       //!< File pointer
+        std::thread thread;             //!< Thread object
 
         //!
         //! \brief
@@ -257,6 +261,7 @@ class tape_t {
 
     public:
 
+        static const unsigned int debugNONE     = 0x00000000;
         static const unsigned int debugTOP      = 0x00000001;
         static const unsigned int debugHEADER   = 0x00000002;
         static const unsigned int debugUNLOAD   = 0x00000004;
@@ -292,8 +297,8 @@ class tape_t {
         void validate(void);
         void close(void);
         void processCommand(void);
-        tape_t(const char *filename, unsigned int tapeLength = 2400, unsigned int debug = 0);
-        static void tapeThread(void);
+        void processThread(void);
+        tape_t(unsigned int unit, FILE *fp, unsigned int length, std::atomic<bool> &attached, off_t fsize, uint32_t &debug);
 };
 
 #endif
