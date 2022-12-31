@@ -5222,6 +5222,90 @@ static bool cmdRP_CONF(int argc, char *argv[]) {
 
 //!
 //! \brief
+//!    Print RP Status
+//!
+//! \param [in] argc
+//!    Number of arguments.
+//!
+//! \param [in] argv
+//!    Array of pointers to the argument.
+//!
+//! \returns
+//!    True if the interpreter should print a prompt after completion;
+//!    otherwise false.
+//!
+
+static bool cmdRP_STAT(int argc, char *argv[]) {
+
+   static const char *usage =
+        "\n"
+        "The \"rp stat\" command print the status of the RP state machine.\n"
+
+        "\n"
+        "Usage: rp stat [--help] command\n"
+        "\n"
+        "The rp stat commands are:\n"
+        "   [--help]      Print help.\n"
+        "   [--sum[mary]] Print summary only.\n"
+        "\n";
+
+    static const struct option options[] = {
+        {"help",    no_argument, 0, 0},  // 0
+        {"sum",     no_argument, 0, 0},  // 1
+        {"summary", no_argument, 0, 0},  // 2
+        {0,         0,           0, 0},  // 3
+    };
+
+    //
+    // Process command line
+    //
+
+    bool summary = false;
+    opterr = 0;
+
+    for (;;) {
+        int index = 0;
+        int ret = getopt_long(argc, argv, "", options, &index);
+        if (ret == -1) {
+            break;
+        } else if (ret == '?') {
+            printf("rp test: unrecognized option: %s\n", argv[optind-1]);
+            return true;
+        } else {
+            switch (index) {
+                case 0:
+                    // help
+                    printf(usage);
+                    return true;
+                case 1:
+                case 2:
+                    // summary
+                    summary = true;
+                    break;
+            }
+        }
+    }
+
+    if (summary) {
+        uint64_t rpdebug = ks10_t::getRPDEBUG();
+        if (rpdebug >> 56 == ks10_t::rpIDLE) {
+            printf("KS10: RP06 successfully initialized SDHC media.\n");
+        } else if (rpdebug >> 40 == 0x7e0c80) {
+            printf("KS10: %sRP06 cannot utilize SDSC media.  Use SDHC media.%s\n", vt100fg_red, vt100at_rst);
+        } else {
+            printf("KS10: %sRP06 failed to initialize SDHC media.%s\n", vt100fg_red, vt100at_rst);
+            ks10_t::printRPDEBUG();
+        }
+    } else {
+        ks10_t::printRPDEBUG();
+    }
+
+    return true;
+
+}
+
+//!
+//! \brief
 //!    Test RP
 //!
 //! \param [in] argc
@@ -5239,8 +5323,8 @@ static bool cmdRP_TEST(int argc, char *argv[]) {
 
     static const char *usage =
         "\n"
-        "The \"rp test\" command performs various tests on the RH11, TM03, and\n"
-        "TU45 that are attached to the KS10.\n"
+        "The \"rp test\" command performs various tests on the RH11, and RP disks\n"
+        "that are attached to the KS10.\n"
         "\n"
         "Usage: rp test [--help] command\n"
         "\n"
@@ -5381,7 +5465,7 @@ bool command_t::cmdRP(int argc, char *argv[]) {
     } else if (strncasecmp(argv[1], "reset", 4) == 0) {
         rp.clear();
     } else if (strncasecmp(argv[1], "stat", 4) == 0) {
-        ks10_t::printRPDEBUG();
+        cmdRP_STAT(argc, argv);
     } else if (strncasecmp(argv[1], "test", 4) == 0) {
         return cmdRP_TEST(argc, argv);
     } else {

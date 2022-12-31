@@ -123,7 +123,7 @@ void __noreturn ctyThread(void) {
 //! \param command -
 //!    Reference to Command Processing object
 //!
-//! \param filename - 
+//! \param filename -
 //!    "ini" filename to read and process
 //!
 //! \param debug -
@@ -285,22 +285,6 @@ int main(int argc, char *argv[]) {
     ks10.boot();
 
     //
-    // Check RP Initialization Status
-    //
-
-    sleep(1);
-
-    uint64_t rpdebug = ks10.getRPDEBUG();
-    if (rpdebug >> 56 == ks10_t::rpIDLE) {
-        printf("KS10: RP06 successfully initialized SDHC media.\n");
-    } else if (rpdebug >> 40 == 0x7e0c80) {
-        printf("KS10: %sRP06 cannot utilize SDSC media.  Use SDHC media.%s\n", vt100fg_red, vt100at_rst);
-    } else {
-        printf("KS10: %sRP06 failed to initialize SDHC media.%s\n", vt100fg_red, vt100at_rst);
-        ks10.printRPDEBUG();
-    }
-
-    //
     // Create command parser
     //
 
@@ -332,6 +316,12 @@ int main(int argc, char *argv[]) {
 
     fd_set fds;
     struct timeval tv = {0, 0};
+
+    //
+    // Wait for commands to process before printing prompt
+    //
+
+    usleep (250000);
 
     for (;;) {
 
