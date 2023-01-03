@@ -219,14 +219,14 @@ module testbench;
    //  Clock is inverted every 10.0 ns
    //
 
-   reg memCLK;                  // Memory Clock
+   reg clk;                  // Memory Clock
    initial
      begin
-        memCLK <= 0;
+        clk <= 0;
         forever
           begin
-             #10.0 memCLK <= 0;
-             #10.0 memCLK <= 1;
+             #10.0 clk <= 0;
+             #10.0 clk <= 1;
           end
      end
 
@@ -235,15 +235,15 @@ module testbench;
    //
 
    integer rstcnt = 0;
-   reg memRST = 1;
+   reg rst = 1;
 
-   always @(posedge memCLK)
+   always @(posedge clk)
      begin
-        if (memRST)
+        if (rst)
           begin
              if (rstcnt == 16)
                begin
-                  memRST <= 0;
+                  rst <= 0;
                   $display("[%11.3f] KS10: Negating Reset", $time/1.0e3);
                end
              else
@@ -824,8 +824,8 @@ module testbench;
    //
 
    KS10 uKS10 (
-      .memRST           (memRST),
-      .memCLK           (memCLK),
+      .rst              (rst),
+      .clk              (clk),
       // Front Panel
       .SW_RESET_N       (SW_RESET_N),
       .SW_BOOT_N        (SW_BOOT_N),
