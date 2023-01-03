@@ -184,7 +184,7 @@ endif
 KS10_SYN := \
 	SERIALNUM=2020 \
 	MAJOR_VER=\"00\" \
-	MINOR_VER=\"38\" \
+	MINOR_VER=\"39\" \
         CLKFRQ=12500000 \
 	SSRAMx18 \
 	RPXX_SIMSEEK \
