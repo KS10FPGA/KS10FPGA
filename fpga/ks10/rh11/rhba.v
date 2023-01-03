@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2023 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -65,7 +65,8 @@ module RHBA (
    // always even for word addressing.
    //
    // In the RH11, the bus address can decrement supporting a 'reverse write-
-   // check' and a 'reverse read' operation.
+   // check' and a 'reverse read' operation.  The reverse operations are used
+   // by tape drives but not disk drives.
    //
    // Trace
    //  M7295/BCTC/E14
