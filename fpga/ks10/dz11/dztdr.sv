@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2023 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -48,13 +48,14 @@
 module DZTDR (
       input  wire         clk,                  // Clock
       input  wire         rst,                  // Reset
-      input  wire         clr,                  // Clear
+      input  wire         devRESET,             // Device Reset from UBA
       input  wire         devLOBYTE,            // Device Low Byte
       input  wire         devHIBYTE,            // Device High Byte
       input  wire [35: 0] dzDATAI,              // DZ Data In
       input  wire         tdrWRITE,             // Write to TDR
       output reg  [ 7: 0] uartTXLOAD,           // Load UART
       input  wire [ 7: 0] uartTXEMPTY,          // UART is empty
+      input  wire         csrCLR,               // Controller clear
       input  wire         csrMSE,               // Master Scan Enable
       input  wire [ 7: 0] tcrLIN,               // Transmitter Control Register Line
       output reg  [ 2: 0] tdrTLINE,             // Transmitter Line Bits
@@ -79,7 +80,7 @@ module DZTDR (
 
    always_ff @(posedge clk)
      begin
-        if (rst | clr)
+        if (rst | devRESET | csrCLR)
           begin
              scan     <= 0;
              tdrTLINE <= 0;
@@ -195,9 +196,28 @@ module DZTDR (
      end
 
    //
-   // Build TDR.  Break is not implemented.
+   // Break register
+   //  While a BRK bit is set, the associated line transmits zeros continuously.
+   //
+   // Trace:
+   //  M7819/S5/E16
+   //  M7819/S5/E17
    //
 
-   assign regTDR = {8'b0, `dzTDR_TBUF(dzDATAI)};
+   logic [7:0] tdrBRK;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | devRESET | csrCLR)
+          tdrBRK <= 0;
+        else if (tdrWRITE & devHIBYTE)
+          tdrBRK <= `dzTDR_BRK(dzDATAI);
+     end
+
+   //
+   // Build TDR.
+   //
+
+   assign regTDR = {tdrBRK[7:0], `dzTDR_TBUF(dzDATAI)};
 
 endmodule

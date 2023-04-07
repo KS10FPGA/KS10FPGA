@@ -19,7 +19,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2023 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -118,6 +118,8 @@ module DZUART (
    // UART Receiver
    //
 
+   wire intr;
+
    UART_RX ttyRX (
        .clk    (clk),
        .rst    (rst),
@@ -129,11 +131,38 @@ module DZUART (
        .rxd    (rxd),
        .rfull  (rxclr),
        .full   (rxfull),
-       .intr   (),
+       .intr   (intr),
        .data   (rxdata),
        .pare   (rxpare),
        .frme   (rxfrme),
        .ovre   ()
    );
+
+`ifndef SYNTHESIS
+
+   //
+   // Debugging crutches
+   //
+
+   logic [0:7] txDATA;
+   logic [0:7] rxDATA;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | clr)
+          begin
+             rxDATA <= 0;
+             txDATA <= 0;
+          end
+        else
+          begin
+             if (intr)
+               rxDATA <= rxdata;
+             if (txload)
+               txDATA <= txdata;
+          end
+     end
+
+`endif
 
 endmodule

@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2023 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -59,7 +59,13 @@ module DZTCR (
    // Data Terminal Ready Register (DTR)
    //
    // Details
-   //   The DTR register is not reset by CSR[CLR].
+   //  The DTR register is not reset by CSR[CLR].
+   //
+   // Trace:
+   //  M7819/S5/E38
+   //  M7819/S5/E39
+   //  M7819/S5/E40
+   //  M7819/S5/E41
    //
 
    logic [7:0] tcrDTR;
@@ -76,7 +82,11 @@ module DZTCR (
    // Line Enable Register (LIN)
    //
    // Details
-   //   The DTR register is reset by CSR[CLR].
+   //  The DTR register is reset by CSR[CLR].
+   //
+   // Trace:
+   //  M7819/S6/E34
+   //  M7819/S6/E42
    //
 
    logic [7:0] tcrLIN;

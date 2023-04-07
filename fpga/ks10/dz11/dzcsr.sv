@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2023 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -78,6 +78,9 @@ module DZCSR (
    //
    // CSR Transmitter Interrupt Enable (TIE)
    //
+   // Trace
+   //  M7819/S6/E26
+   //
 
    logic csrTIE;
 
@@ -91,6 +94,9 @@ module DZCSR (
 
    //
    // CSR SILO Alarm Enable(SAE)
+   //
+   // Trace
+   //  M7819/S6/E26
    //
 
    logic csrSAE;
@@ -106,6 +112,9 @@ module DZCSR (
    //
    // CSR Receiver Interrupt Enable (RIE)
    //
+   // Trace
+   //  M7819/S6/E27
+   //
 
    logic csrRIE;
 
@@ -119,6 +128,9 @@ module DZCSR (
 
    //
    // CSR Master Scan Enable (MSE)
+   //
+   // Trace
+   //  M7819/S6/E27
    //
 
    logic csrMSE;
@@ -137,6 +149,9 @@ module DZCSR (
    // Details
    //  See note associated with CSRPER parameter
    //
+   // Trace
+   //  M7819/S6/E27
+   //
 
    logic [9:0] clrCOUNT;
    always_ff @(posedge clk)
@@ -153,6 +168,9 @@ module DZCSR (
 
    //
    // CSR Maintenance Mode (MAINT)
+   //
+   // Trace
+   //  M7819/S6/E27
    //
 
    logic csrMAINT;

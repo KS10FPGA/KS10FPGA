@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2023 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -62,7 +62,11 @@ module DZRBUF (
    // UART receiver scanner
    //
    // Details
-   //  This just increments the RX scan signal when Master Scan Enable is asserted.
+   //  This just increments the RX scan signal when Master Scan Enable (MSE) is
+   //  asserted.
+   //
+   // Trace
+   //  M7819/S9/E105
    //
 
    logic [2:0] rxSCAN;
@@ -166,6 +170,12 @@ module DZRBUF (
    //
    // Receive data SILO
    //
+   // Trace
+   //  M7819/S11/E57
+   //  M7819/S11/E58
+   //  M7819/S11/E59
+   //  M7819/S11/E60
+   //
 
    logic        full;
    logic        empty;
@@ -217,6 +227,10 @@ module DZRBUF (
 
    //
    // RBUF[DVAL]
+   //  This is DV on the schematic.
+   //
+   // Trace
+   //  M7819/S9/E85
    //
 
    logic rbufDVAL;
@@ -241,6 +255,9 @@ module DZRBUF (
    //  to the FIFO. If the software doesn't empty the FIFO, the SA will be
    //  incorrect.
    //
+   // Trace
+   //  M7819/S9/E79
+   //
 
    logic [0:4] countSA;
 
@@ -257,6 +274,9 @@ module DZRBUF (
    //
    // The Silo Alarm is a asserted when the 16th word is written to the FIFO.
    // The Silo Alarm is negated after reading the RBUF or clearing SAE.
+   //
+   // Trace
+   //  M7819/S9/E77
    //
 
    always_ff @(posedge clk)

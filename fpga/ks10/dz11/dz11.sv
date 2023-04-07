@@ -30,7 +30,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2023 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -199,6 +199,7 @@
    wire [ 7:0] tcrLIN   = `dzTCR_LIN(regTCR);
 
    wire [ 7:0] uartTXDATA = `dzTDR_TBUF(regTDR);
+   wire [ 7:0] tdrBRK     = `dzTDR_BRK (regTDR);
 
    wire        dzINIT = devRESET | csrCLR;
 
@@ -265,7 +266,23 @@
    assign uartRXD = csrMAINT ? dzTXD[7:0] : dzRXD[7:0];
 
    //
-   // Generate an array of eight UARTS
+   // Generate an array of eight UARTS and 8 Baud Rate Generators
+   //
+   // Trace (BRGS)
+   //  M7819/S11/E53
+   //  M7819/S11/E54
+   //  M7819/S11/E55
+   //  M7819/S11/E56
+   //
+   // Trace (UARTS)
+   //  M7819/S12/E44
+   //  M7819/S12/E45
+   //  M7819/S12/E46
+   //  M7819/S12/E47
+   //  M7819/S12/E48
+   //  M7819/S12/E49
+   //  M7819/S12/E50
+   //  M7819/S12/E51
    //
 
    generate
@@ -306,13 +323,14 @@
    DZTDR TDR (
       .clk        (clk),
       .rst        (rst),
-      .clr        (dzINIT),
+      .devRESET   (devRESET),
       .devLOBYTE  (devLOBYTE),
       .devHIBYTE  (devHIBYTE),
       .dzDATAI    (dzDATAI),
       .tdrWRITE   (tdrWRITE),
       .uartTXLOAD (uartTXLOAD),
       .uartTXEMPTY(uartTXEMPTY),
+      .csrCLR     (csrCLR),
       .csrMSE     (csrMSE),
       .tcrLIN     (tcrLIN),
       .tdrTLINE   (tdrTLINE),
@@ -389,6 +407,18 @@
    //
    // Bus Mux and little-endian to big-endian bus swap.
    //
+   // Trace
+   //  M7819/S7/E19
+   //  M7819/S7/E20
+   //  M7819/S7/E30
+   //  M7819/S7/E31
+   //  M7819/S7/E32
+   //  M7819/S7/E33
+   //  M7819/S7/E38
+   //  M7819/S7/E39
+   //  M7819/S7/E40
+   //  M7819/S7/E41
+   //
 
    always_comb
      begin
@@ -410,9 +440,15 @@
 
    //
    // Serial output data
+   //  While a BRK bit is set, the associated line transmits zeros continuously.
+   //
+   // Trace:
+   //  M7819/S5/E7
+   //  M7819/S5/E8
+   //  M7819/S5/E9
    //
 
-   assign dzTXD = uartTXD;
+   assign dzTXD = uartTXD & ~tdrBRK;
 
    //
    // Interrupt output

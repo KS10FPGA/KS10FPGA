@@ -16,7 +16,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2012-2021 Rob Doyle
+// Copyright (C) 2012-2023 Rob Doyle
 //
 // This source file may be used and distributed without restriction provided
 // that this copyright statement is not removed from the file and that any
@@ -65,6 +65,17 @@ module DZMSR (
 
    //
    // MSR Register
+   //
+   // Trace
+   //  M7819/S4/E1
+   //  M7819/S4/E2
+   //  M7819/S4/E3
+   //  M7819/S4/E4
+   //  M7819/S4/E5
+   //  M7819/S4/E6
+   //  M7819/S4/E12
+   //  M7819/S4/E13
+   //  M7819/S4/E14
    //
 
    always_ff @(posedge clk)
