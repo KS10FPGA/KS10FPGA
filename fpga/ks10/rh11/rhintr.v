@@ -105,11 +105,19 @@ module RHINTR (
    //
    // Interrupt request
    //
+   //  The Special Conditions (attention) interrupt is only requested when
+   //  interrupts are enabled.  IE is cleared by the interrupt acknowledge, so
+   //  without this an attention between transfers raises a request that the
+   //  program never enabled.  That request is withdrawn when the program
+   //  clears RHAS and, if that happens while the CPU is taking the interrupt,
+   //  no UBA answers the WRU cycle and the CPU takes an unvectored
+   //  interrupt (DSRMB reports "UNKNOWN INTERRUPT").
+   //
    // Trace
    //  M7296/CSRA/E17B
    //  M7296/CSRA/E17C
    //
 
-   assign rhIRQ = rhIFF | (rhSC & rhRDY);
+   assign rhIRQ = rhIFF | (rhSC & rhRDY & rhIE);
 
 endmodule

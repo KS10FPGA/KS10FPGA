@@ -178,7 +178,14 @@ module DEBUG (
                `endif
 //             `include "debug_smmon.vh"
 
+               //
+               // Define SIM_NOPCTRACE to suppress the per-instruction trace
+               // on long simulation runs.
+               //
+
+`ifndef SIM_NOPCTRACE
                $display("[%11.3f] %15s: PC is %06o", $time/1.0e3, test, PC);
+`endif
           end
      end
 

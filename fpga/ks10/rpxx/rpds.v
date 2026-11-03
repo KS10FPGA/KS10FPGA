@@ -250,4 +250,39 @@ module RPDS (
    assign rpDS = {dsATA, dsERR, dsPIP, dsMOL, dsWRL, dsLST,
                   dsPGM, dsDPR, dsDRY, dsVV,  6'b0};
 
+   //
+   // Attention monitor (define SIM_RHMON to enable)
+   //
+   // Reports which condition sets ATA and when a composite error appears.
+   //
+
+`ifndef SYNTHESIS
+`ifdef SIM_RHMON
+
+   reg lastERR;
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          lastERR <= 0;
+        else
+          begin
+             lastERR <= dsERR;
+             if (!(rpINIT | rpCLRATA | rpDRVCLR) & !dsATA &
+                 (rpSETATA | (rpMOL != lastMOL) | (rpGO & dsERR)))
+               $display("[%11.3f] RHMON %m: ATA set by%s%s%s. DRY=%b PIP=%b ER1=%06o ER2=%06o ER3=%06o",
+                        $time/1.0e3,
+                        rpSETATA            ? " SETATA (command complete)" : "",
+                        (rpMOL != lastMOL)  ? " MOL change"                : "",
+                        (rpGO & dsERR)      ? " GO with ERR"               : "",
+                        rpDRY, rpPIP, rpER1, rpER2, rpER3);
+             if (dsERR & !lastERR)
+               $display("[%11.3f] RHMON %m: ERR set. DRY=%b ER1=%06o ER2=%06o ER3=%06o",
+                        $time/1.0e3, rpDRY, rpER1, rpER2, rpER3);
+          end
+     end
+
+`endif
+`endif
+
 endmodule

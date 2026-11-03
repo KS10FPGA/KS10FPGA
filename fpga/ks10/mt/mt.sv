@@ -604,6 +604,34 @@ module MT (
    assign massbus.mbDRY    = `mtDS_DRY(mtDS);
 
    //
+   // Drive Ready for each unit.  There is one formatter, so every unit
+   // reports the formatter's DRY.
+   //
+
+   assign massbus.mbDRYA[0] = `mtDS_DRY(mtDS);
+   assign massbus.mbDRYA[1] = `mtDS_DRY(mtDS);
+   assign massbus.mbDRYA[2] = `mtDS_DRY(mtDS);
+   assign massbus.mbDRYA[3] = `mtDS_DRY(mtDS);
+   assign massbus.mbDRYA[4] = `mtDS_DRY(mtDS);
+   assign massbus.mbDRYA[5] = `mtDS_DRY(mtDS);
+   assign massbus.mbDRYA[6] = `mtDS_DRY(mtDS);
+   assign massbus.mbDRYA[7] = `mtDS_DRY(mtDS);
+
+   //
+   // Composite Error for each unit.  There is one formatter, so every unit
+   // reports the formatter's ERR.
+   //
+
+   assign massbus.mbERRA[0] = `mtDS_ERR(mtDS);
+   assign massbus.mbERRA[1] = `mtDS_ERR(mtDS);
+   assign massbus.mbERRA[2] = `mtDS_ERR(mtDS);
+   assign massbus.mbERRA[3] = `mtDS_ERR(mtDS);
+   assign massbus.mbERRA[4] = `mtDS_ERR(mtDS);
+   assign massbus.mbERRA[5] = `mtDS_ERR(mtDS);
+   assign massbus.mbERRA[6] = `mtDS_ERR(mtDS);
+   assign massbus.mbERRA[7] = `mtDS_ERR(mtDS);
+
+   //
    // Drive Available (MTCS1[DVA])
    //
 

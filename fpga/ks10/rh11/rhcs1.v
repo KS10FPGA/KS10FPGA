@@ -64,6 +64,8 @@ module RHCS1 (
       input  wire         rhATA,                // RPxx Attention
       input  wire         rhDVA,                // RPxx Drive available  (RHCS1[DVA])
       input  wire         rhDRY,                // RPxx Drive Ready      (RHDS [DRY ])
+      input  wire         rhCRDY,               // Controller Ready
+      input  wire         rhEXC,                // Drive exception during transfer
       input  wire [17:16] rhBA,                 // rhBA address extension
       output reg          rhGO,                 // RHCS1[GO]
       output wire [15: 0] rhCS1                 // rhCS1 output
@@ -80,7 +82,7 @@ module RHCS1 (
    //  M7296/CSRB/E22
    //
 
-   wire statTRE = rhDLT | rhWCE | rhUPE | rhNED | rhNEM | rhPGE | rhMXF | rhDPE;
+   wire statTRE = rhDLT | rhWCE | rhUPE | rhNED | rhNEM | rhPGE | rhMXF | rhDPE | rhEXC;
 
    reg lastTRE;
 
@@ -139,12 +141,14 @@ module RHCS1 (
 
    //
    // CS1 Ready (RDY)
+   //  This is the controller ready flag (see rh11.sv), not the DRY bit of
+   //  the selected drive.
    //
    // Trace
    //  M7296/CSRA/E3
    //
 
-   wire cs1DRY = rhDRY;
+   wire cs1RDY = rhCRDY;
 
    //
    // CS1 Port Select (PSEL)
@@ -240,6 +244,6 @@ module RHCS1 (
    //
 
    assign rhCS1 = {cs1SC, cs1TRE, cs1CPE, 1'b0, rhDVA, cs1PSEL,
-                   rhBA[17:16], cs1DRY, cs1IE, cs1FUN, cs1GO};
+                   rhBA[17:16], cs1RDY, cs1IE, cs1FUN, cs1GO};
 
 endmodule

@@ -1395,6 +1395,48 @@ module UBA (
           end
      end
 
+   //
+   // State monitor (define SIM_UBAMON to enable)
+   //  Reports the bridge staying in one non-idle state for more than
+   //  SIM_UBAMON_CLKS clocks (default 12), and the reason it left.
+   //
+
+`ifdef SIM_UBAMON
+
+`ifndef SIM_UBAMON_CLKS
+ `define SIM_UBAMON_CLKS 12
+`endif
+
+   logic [0:4] monSTATE;
+   integer     monCNT;
+
+   always_ff @(posedge clk)
+     if (rst)
+       begin
+          monSTATE <= stateIDLE;
+          monCNT   <= 0;
+       end
+     else
+       begin
+          monSTATE <= state;
+          if (state != monSTATE)
+            begin
+               if ((monSTATE != stateIDLE) & (monCNT > `SIM_UBAMON_CLKS))
+                 $display("[%11.3f] UBAMON%0d: Left state %0d -> %0d after %0d clocks. REQI=%b ADDRI=%012o devREQI1=%b",
+                          $time/1.0e3, ubaNUM, monSTATE, state, monCNT, ks10bus.busREQI, ks10bus.busADDRI, devREQI[1]);
+               monCNT <= 1;
+            end
+          else
+            begin
+               monCNT <= monCNT + 1;
+               if ((state != stateIDLE) & (monCNT == 1000))
+                 $display("[%11.3f] UBAMON%0d: Stuck in state %0d for 1000 clocks. REQI=%b ADDRI=%012o ACKO=%b devREQI1=%b",
+                          $time/1.0e3, ubaNUM, state, ks10bus.busREQI, ks10bus.busADDRI, ks10bus.busACKO, devREQI[1]);
+            end
+       end
+
+`endif
+
 `endif
 
 endmodule

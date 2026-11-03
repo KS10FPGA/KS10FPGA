@@ -465,6 +465,8 @@ module KS10 (
    //
 
    ARB uARB (
+      .rst              (cpuRST),
+      .clk              (cpuCLK),
       .cpuBUS           (cpuBUS),
       .cslBUS           (cslBUS),
       .ubaBUS           (ubaBUS),

@@ -152,7 +152,8 @@ module RP (
               .rpSDACK   (rpSDACK[i]),
               .rpSDLSA   (rpSDLSA[i]),
               .rpACTIVE  (rpLEDS[i]),
-              .rpINCRSECT(rpINCSECT)
+              .rpINCRSECT(rpINCSECT),
+              .rpWCZ     (massbus.mbWCZ)
            );
 
         end
@@ -253,6 +254,34 @@ module RP (
    //
 
    assign massbus.mbDRY    = `rpDS_DRY(rpDS[massbus.mbUNIT]);
+
+   //
+   // Drive Ready for each unit.  The RH11 uses this to see the end of a data
+   // transfer when another unit is selected.
+   //
+
+   assign massbus.mbDRYA[0] = `rpDS_DRY(rpDS[0]);
+   assign massbus.mbDRYA[1] = `rpDS_DRY(rpDS[1]);
+   assign massbus.mbDRYA[2] = `rpDS_DRY(rpDS[2]);
+   assign massbus.mbDRYA[3] = `rpDS_DRY(rpDS[3]);
+   assign massbus.mbDRYA[4] = `rpDS_DRY(rpDS[4]);
+   assign massbus.mbDRYA[5] = `rpDS_DRY(rpDS[5]);
+   assign massbus.mbDRYA[6] = `rpDS_DRY(rpDS[6]);
+   assign massbus.mbDRYA[7] = `rpDS_DRY(rpDS[7]);
+
+   //
+   // Composite Error for each unit.  The RH11 uses this to see a drive
+   // exception during a data transfer.
+   //
+
+   assign massbus.mbERRA[0] = `rpDS_ERR(rpDS[0]);
+   assign massbus.mbERRA[1] = `rpDS_ERR(rpDS[1]);
+   assign massbus.mbERRA[2] = `rpDS_ERR(rpDS[2]);
+   assign massbus.mbERRA[3] = `rpDS_ERR(rpDS[3]);
+   assign massbus.mbERRA[4] = `rpDS_ERR(rpDS[4]);
+   assign massbus.mbERRA[5] = `rpDS_ERR(rpDS[5]);
+   assign massbus.mbERRA[6] = `rpDS_ERR(rpDS[6]);
+   assign massbus.mbERRA[7] = `rpDS_ERR(rpDS[7]);
 
    //
    // Drive Available (MTCS1[DVA])

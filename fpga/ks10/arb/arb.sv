@@ -41,7 +41,11 @@
 `default_nettype none
 `timescale 1ns/1ps
 
+`include "../cpu/bus.vh"
+
 module ARB (
+      input  wire        rst,           // Reset
+      input  wire        clk,           // Clock
       ks10bus.arbiter    cpuBUS,        // KS10 backplane bus to CPU
       ks10bus.arbiter    cslBUS,        // KS10 backplane bus to CSL
       ks10bus.arbiter    ubaBUS[1:4],   // KS10 backplane bus to UBA
@@ -104,12 +108,91 @@ module ARB (
    assign cpuINTRO = (ubaINTRI[1] | ubaINTRI[2] |  ubaINTRI[3] | ubaINTRI[4]);
 
    //
+   // Interrupt Acknowledge Lock
+   //
+   // Details:
+   //  The bus is arbitrated on every clock cycle, so a console request can
+   //  take the bus in the middle of a CPU bus cycle.  WRU and interrupt
+   //  vector cycles cannot be restarted: the device that supplies the
+   //  vector clears its interrupt request when it does so.  If the UBA
+   //  acknowledge is routed to the console, the CPU repeats the vector
+   //  read, finds no interrupting device and gets a vector of zero (an
+   //  Illegal Interrupt Instruction halt).
+   //
+   //  Once the CPU has been granted the bus for a WRU or vector cycle, the
+   //  console is locked out until the CPU removes the request.
+   //
+   //  The UBAs are not locked out.  A UBA can be committed to a DMA cycle
+   //  before it requests the bus (stateDEVtoMEM0).  Locking it out stalls
+   //  the UBA until its DMA timer expires, and the UBA only answers WRU and
+   //  vector cycles when it is idle, so the CPU's WRU cycle times out
+   //  (an unvectored "unknown" interrupt through EPT+40+2N) and the DMA
+   //  word is lost.  A UBA DMA cycle is short and the UBA services the CPU
+   //  as soon as it returns to idle.
+   //
+
+   wire  cpuINTA  = cpuREQI & `busIO(cpuADDRI) & (`busWRU(cpuADDRI) | `busVECT(cpuADDRI));
+   wire  cpuGRANT = !cslREQI;
+   logic cpuLOCK;
+
+   always_ff @(posedge clk)
+     if (rst)
+       cpuLOCK <= 0;
+     else
+       cpuLOCK <= cpuINTA & (cpuLOCK | cpuGRANT);
+
+   //
+   // Hold off the console after a CPU IO cycle has been acknowledged
+   //
+   //  The CPU keeps its request asserted after an IO cycle has completed,
+   //  until the VMA is loaded again.  If the console takes the bus in that
+   //  window, the UBA sees the request go away and come back, and performs
+   //  the IO cycle a second time (duplicate device reads and writes, and a
+   //  stray ACK that can complete the CPU's next IO cycle early).
+   //
+   //  Once a CPU IO cycle (including WRU and vector cycles) has been
+   //  acknowledged, the console is held off until the CPU's request goes
+   //  away or changes, or for at most 63 clocks.  UBA DMA is not held off
+   //  (the UBA DMA timeout is only a few clocks).
+   //
+
+   logic [0:35] holdADDR;
+   logic        holdACT;
+   logic [0: 5] holdCNT;
+
+   wire holdSAME = holdACT & cpuREQI & (cpuADDRI == holdADDR);
+   wire cslBLOCK = holdSAME & (holdCNT != 0);
+   wire cpuIOACK = cpuREQI & `busIO(cpuADDRI) & cpuACKO;
+
+   always_ff @(posedge clk)
+     if (rst)
+       begin
+          holdADDR <= 0;
+          holdACT  <= 0;
+          holdCNT  <= 0;
+       end
+     else if (holdSAME)
+       begin
+          if (holdCNT != 0)
+            holdCNT <= holdCNT - 1'b1;
+       end
+     else if (cpuIOACK)
+       begin
+          holdADDR <= cpuADDRI;
+          holdACT  <= 1;
+          holdCNT  <= 6'd63;
+       end
+     else
+       holdACT <= 0;
+
+   //
    // Bus Request Arbitration
    //
    // Details:
    //  Console has highest priority
    //  Unibus has next priority
    //  CPU has lowest priority
+   //  Console is locked out while cpuLOCK is asserted
    //
 
    always_comb
@@ -151,7 +234,7 @@ module ARB (
         //  The console can access the memory or the unibus
         //
 
-        if (cslREQI)
+        if (cslREQI & !cpuLOCK & !cslBLOCK)
           begin
              ubaREQO[1]  = 1;
              ubaREQO[2]  = 1;
@@ -402,5 +485,30 @@ module ARB (
            assign ubaBUS[i].busINTRI = 0;               // UBA Interrupt Out
         end
    endgenerate
+
+   //
+   // Simulation monitor: report who takes the bus away from a CPU IO cycle
+   // that has already been acknowledged.
+   //
+
+`ifndef SYNTHESIS
+`ifdef SIM_ARBMON
+
+   logic [0:35] monADDR;
+   logic        monACK;
+
+   always_ff @(posedge clk)
+     begin
+        monADDR <= cpuADDRI;
+        monACK  <= cpuREQI & `busIO(cpuADDRI) & cpuACKO;
+        if (monACK & cpuREQI & (cpuADDRI == monADDR) & !cpuACKO)
+          $display("[%11.3f] ARBMON: ACK lost on CPU IO cycle Addr=%012o: cslREQ=%b cpuLOCK=%b ubaREQ=%b%b%b%b ubaACK=%b%b%b%b memACK=%b",
+                   $time/1.0e3, cpuADDRI, cslREQI, cpuLOCK,
+                   ubaREQI[1], ubaREQI[2], ubaREQI[3], ubaREQI[4],
+                   ubaACKI[1], ubaACKI[2], ubaACKI[3], ubaACKI[4], memACKI);
+     end
+
+`endif
+`endif
 
 endmodule
