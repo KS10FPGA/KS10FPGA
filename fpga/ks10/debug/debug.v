@@ -183,7 +183,10 @@ module DEBUG (
                // on long simulation runs.
                //
 
-`ifndef SIM_NOPCTRACE
+`ifdef SIM_IRTRACE
+               $display("[%11.3f] %15s: PC is %06o IR is %012o", $time/1.0e3, test, PC, IR);
+`elsif SIM_NOPCTRACE
+`else
                $display("[%11.3f] %15s: PC is %06o", $time/1.0e3, test, PC);
 `endif
           end

@@ -782,44 +782,33 @@ module testbench;
              key.get(1);
              getchar(fd_cty);
 
+             //
+             // Diagnostics without their own script use test_default.vh,
+             // which answers the TTY SWITCH CONTROL dialog.
+             //
+
              `ifdef DIAG_DSKCG
                 `include "test_dskcg.vh"
-             `endif
-
-             `ifdef DIAG_DSDZA
+             `elsif DIAG_DSDZA
                 `include "test_dsdza.vh"
-             `endif
-
-             `ifdef DIAG_DSRPA
+             `elsif DIAG_DSRPA
                 `include "test_dsrpa.vh"
-             `endif
-
-             `ifdef DIAG_DSRMB
+             `elsif DIAG_DSRMB
                 `include "test_dsrmb.vh"
-             `endif
-
-             `ifdef DIAG_DSLPA
+             `elsif DIAG_DSLPA
                  `include "test_dslpa.vh"
-             `endif
-
-             `ifdef DIAG_DSDUA
+             `elsif DIAG_DSDUA
                  `include "test_dsdua.vh"
-             `endif
-
-             `ifdef DIAG_DSKMA
+             `elsif DIAG_DSKMA
                  `include "test_dskma.vh"
-             `endif
-
-             `ifdef DIAG_DSTUA
+             `elsif DIAG_DSTUA
                  `include "test_dstua.vh"
-             `endif
-
-             `ifdef DIAG_DSTUB
+             `elsif DIAG_DSTUB
                  `include "test_dstub.vh"
-             `endif
-
-             `ifdef DIAG_DSUBA
+             `elsif DIAG_DSUBA
                  `include "test_dsuba.vh"
+             `else
+                 `include "test_default.vh"
              `endif
 
              charout();

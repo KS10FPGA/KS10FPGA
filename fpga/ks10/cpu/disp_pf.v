@@ -205,18 +205,50 @@ module DISP_PF (
    //
    // Page fail enable
    //
+   // Details
+   //  A page failure on a memory cycle is taken on the microinstruction that
+   //  waits for that cycle (MEM WAIT), and that microinstruction is the one
+   //  saved on the stack and re-executed after a page refill ("MICROWORD
+   //  ADDRESS OF INSTRUCTION DOING MEM WAIT IS SAVED ON THE STACK" in the
+   //  microcode).
+   //
+   //  The microcode can put other microinstructions between the one that
+   //  starts the cycle and the MEM WAIT.  For example, POPJ does
+   //
+   //      [ARX]_AC, LOAD VMA, START READ
+   //      [ARX]_[ARX]+#, #/777777          ; decrement the stack pointer
+   //      MEM READ, [PC]_MEM
+   //
+   //  Previously the page fail was taken on the microinstruction right after
+   //  the start.  That microinstruction executed, then was re-executed after
+   //  the refill, so POPJ decremented the stack pointer twice (DSKCG halts
+   //  with "PLERR1" after the CMPS page fail test).
+   //
+   //  pfPEND is set when a memory cycle starts and the page fail check is
+   //  made on the next microinstruction that does a MEM WAIT.  A MEM WAIT that
+   //  also starts a new cycle checks the old cycle and leaves the new one
+   //  pending.  ABORT MEM CYCLE (SPEC/MEMCLR) discards a pending check.
+   //
 
-   reg pfEN;
+   reg  pfPEND;
+   wire memWAIT = `cromMEM_CYCLE & `cromMEM_WAIT;
+   wire pfEN    = pfPEND & memWAIT;
 
    always @(posedge clk)
      begin
         if (rst)
-          pfEN <= 0;
+          pfPEND <= 0;
         else if (clken)
-          if (!pfEN)
-            pfEN <= pfCYCLE;
-          else
-            pfEN <= 0;
+          begin
+             if (pageFAIL)
+               pfPEND <= 0;
+             else if (pfEN)
+               pfPEND <= pfCYCLE;
+             else if (pfCYCLE)
+               pfPEND <= 1;
+             else if (specMEMCLR)
+               pfPEND <= 0;
+          end
      end
 
    //
