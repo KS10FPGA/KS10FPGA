@@ -198,7 +198,29 @@ module PAGER (
    // Page Table Write Addressing
    //
 
-   wire [ 0: 8] writeAddr     = vmaREG[18:26];
+   //
+   // Details
+   //  A page table load (LOAD PAGE TABLE) writes the entry addressed by the
+   //  VMA.
+   //
+   //  A page table sweep (SPEC/SWEEP) clears the entry addressed by the data
+   //  path of the *next* microinstruction - the microinstruction during
+   //  which pageSWEEP and pageWRITE are asserted.  The microcode is written
+   //  this way:
+   //
+   //      [BR]_#, #/1001, SWEEP    ; start sweep
+   //      READ [AR], SWEEP         ; clears page 377
+   //      [AR]_[AR]-[BR], SWEEP    ; clears pages 376, 375, ...
+   //      WORK[PTA.U]_0            ; clears page 000 ("CLEAR LAST ENTRY")
+   //
+   //  The VMA is loaded from the data path of the microinstruction that has
+   //  the SWEEP, so using the VMA here was one microinstruction early: the
+   //  sweep cleared page 001 (from the 1001 constant) and pages 377 to 001,
+   //  but never page 000.  Pages 000 and 400 share that entry, so a stale
+   //  page 000 or page 400 mapping survived WREBR/WRUBR.
+   //
+
+   wire [ 0: 8] writeAddr     = pageSWEEP ? dp[18:26] : vmaREG[18:26];
 
    //
    // Page Table Read Addressing
@@ -315,33 +337,91 @@ module PAGER (
    //   DPM6/E192
    //
 
-   reg [0:1][0:14] pageTABLE[0:255];
+   //
+   //  The page table is built as two separate 256x15 memories, one for the
+   //  even half (VMA bit 18 = 0, pages 000-377) and one for the odd half
+   //  (VMA bit 18 = 1, pages 400-777).  A sweep step must clear both halves
+   //  of an entry in the same clock.
+   //
+   //  This was previously written as a single two-dimensional array
+   //  (reg [0:1][0:14] pageTABLE[0:255]) that wrote both halves at once.
+   //  The simulator models that exactly, but Quartus inferred it as a single
+   //  512x14 simple dual-port RAM with one write port, which cannot write
+   //  two words in one clock - so on the hardware a sweep did not clear the
+   //  whole page table.  DSKEA then used stale translations to physical
+   //  pages 43/44 (left behind by PAGRD/PGWRT) during its paged BLT test,
+   //  overwrote its RPEAT variable at 043737, and looped forever in RLBAS0.
+   //  Two separate memories, each with its own write enable, infer
+   //  correctly.
+   //
+
+   reg  [0:14] pageTABLE0[0:255];       // Pages 000-377
+   reg  [0:14] pageTABLE1[0:255];       // Pages 400-777
+   reg  [0:14] readData0;
+   reg  [0:14] readData1;
+   reg         readSel;
+
+   wire [0:14] writeData = pageSWEEP ? 15'b0 : {pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI};
+   wire        writeEN0  = clken & pageWRITE & (pageSWEEP | !writeAddr[0]);
+   wire        writeEN1  = clken & pageWRITE & (pageSWEEP |  writeAddr[0]);
+   wire        readEN    = clken & vmaEN & !pageWRITE;
+
+   //
+   // The FPGA RAM is zero (all pages invalid) after configuration.  Do the
+   // same in simulation.  Otherwise an entry that was never written reads as
+   // X, which DISP_PF does not treat as a page failure, and the simulation
+   // misses page failures that happen on the hardware.
+   //
+
+`ifndef SYNTHESIS
+   initial
+     for (int i = 0; i < 256; i++)
+       begin
+          pageTABLE0[i] = 0;
+          pageTABLE1[i] = 0;
+       end
+`endif
+
+   //
+   // Page Table Memory (pages 000-377)
+   //
 
    always @(posedge clk)
      begin
-
-        //
-        // Page Table Write
-        //
-
-        if (clken & pageWRITE)
-          begin
-             if (pageSWEEP)
-               begin
-                  pageTABLE[writeAddr[1:8]][0] <= 15'b0;
-                  pageTABLE[writeAddr[1:8]][1] <= 15'b0;
-               end
-             else
-               pageTABLE[writeAddr[1:8]][writeAddr[0]] <= {pageVALID, pageWRITEABLE, pageCACHEABLE, vmaUSER, pageADDRI};
-          end
-
-        //
-        // Page Table Read
-        //
-
-        else if (clken & vmaEN)
-          {pageFLAGS, pageADDR} <= pageTABLE[readAddr[1:8]][readAddr[0]];
+        if (writeEN0)
+          pageTABLE0[writeAddr[1:8]] <= writeData;
+        if (readEN)
+          readData0 <= pageTABLE0[readAddr[1:8]];
      end
+
+   //
+   // Page Table Memory (pages 400-777)
+   //
+
+   always @(posedge clk)
+     begin
+        if (writeEN1)
+          pageTABLE1[writeAddr[1:8]] <= writeData;
+        if (readEN)
+          readData1 <= pageTABLE1[readAddr[1:8]];
+     end
+
+   //
+   // Page Table Read
+   //  The lookup is registered when the VMA is loaded.  The registered
+   //  half select picks the result.
+   //
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          readSel <= 0;
+        else if (readEN)
+          readSel <= readAddr[0];
+     end
+
+   always @*
+     {pageFLAGS, pageADDR} = readSel ? readData1 : readData0;
 
 `endif // !`ifdef QUARTUS
 

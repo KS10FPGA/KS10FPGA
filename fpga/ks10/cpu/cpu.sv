@@ -338,6 +338,7 @@ module CPU (
       .dp               (dp),
       .crom             (crom),
       .vmaREG           (vmaREG),
+      .pageFLAGS        (pageFLAGS),
       .pageADDR         (pageADDR),
       .aprFLAGS         (aprFLAGS),
       .piCURPRI         (piCURPRI),
