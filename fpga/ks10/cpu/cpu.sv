@@ -228,13 +228,34 @@ module CPU (
    );
 
    //
+   // Execute clock enable
+   //
+   // Details
+   //  When a microinstruction page fails, the microsequencer jumps to the
+   //  page fail handler and saves the address of that microinstruction,
+   //  which is re-executed when the handler returns.  The microinstruction
+   //  that page fails must not change anything, because the page fail
+   //  handler and the instruction cleanup code assume that it has not run.
+   //  For example, POPJ does "MEM READ, [PC]_MEM": if it were allowed to
+   //  load the PC, the page fail handler would back up the popped PC
+   //  instead of the PC of the POPJ.
+   //
+   //  clkenEX is used by the logic that is changed by microinstructions.
+   //  The timer, the console interface, the VMA (which already checks
+   //  pageFAIL) and the page fail dispatch itself use clkenDP.
+   //
+
+   logic clkenEX;
+   assign clkenEX = clkenDP & !pageFAIL;
+
+   //
    // Arithmetic Logic Unit
    //
 
    ALU uALU (
       .clk              (clkT[1]),
       .rst              (rst),
-      .clken            (clkenDP),
+      .clken            (clkenEX),
       .crom             (crom),
       .aluIN            (dbus),
       .aluFLAGS         (aluFLAGS),
@@ -250,7 +271,7 @@ module CPU (
    APR uAPR (
       .clk              (clkT[1]),
       .rst              (rst),
-      .clken            (clkenDP),
+      .clken            (clkenEX),
       .crom             (crom),
       .dp               (dp),
       .nxmINTR          (nxmINTR),
@@ -275,7 +296,7 @@ module CPU (
    DISP_NI uDISP_NI (
       .clk              (clkT[1]),
       .rst              (rst),
-      .clken            (clkenDP),
+      .clken            (clkenEX),
       .crom             (crom),
       .aprFLAGS         (aprFLAGS),
       .pcFLAGS          (pcFLAGS),
@@ -364,7 +385,7 @@ module CPU (
 
    DROM uDROM (
       .clk              (clkT[1]),
-      .clken            (clkenDP),
+      .clken            (clkenEX),
       .dbus             (dbus),
       .crom             (crom),
       .drom             (drom)
@@ -398,7 +419,7 @@ module CPU (
    PI uPI (
       .clk              (clkT[1]),
       .rst              (rst),
-      .clken            (clkenDP),
+      .clken            (clkenEX),
       .crom             (crom),
       .dp               (dp),
       .aprINTR          (aprINTR),
@@ -415,7 +436,7 @@ module CPU (
    REGIR uIR (
       .clk              (clkT[1]),
       .rst              (rst),
-      .clken            (clkenDP),
+      .clken            (clkenEX),
       .crom             (crom),
       .dbus             (dbus),
       .prevEN           (prevEN),
@@ -492,7 +513,7 @@ module CPU (
    PAGER uPAGER (
       .clk              (clkT[1]),
       .rst              (rst),
-      .clken            (clkenDP),
+      .clken            (clkenEX),
       .crom             (crom),
       .drom             (drom),
       .dp               (dp),
@@ -508,7 +529,7 @@ module CPU (
    PCFLAGS uPCFLAGS (
       .clk              (clkT[1]),
       .rst              (rst),
-      .clken            (clkenDP),
+      .clken            (clkenEX),
       .crom             (crom),
       .dp               (dp),
       .scad             (scad),
@@ -525,7 +546,7 @@ module CPU (
    PXCT uPXCT (
       .clk              (clkT[1]),
       .rst              (rst),
-      .clken            (clkenDP),
+      .clken            (clkenEX),
       .crom             (crom),
       .dp               (dp),
       .prevEN           (prevEN),
@@ -539,7 +560,7 @@ module CPU (
    RAMFILE uRAMFILE (
       .clk              (clkT[2]),
       .rst              (rst),
-      .clken            (1'b1),
+      .clken            (!pageFAIL),
       .crom             (crom),
       .dbus             (dbus),
       .regIR            (regIR),
@@ -556,7 +577,7 @@ module CPU (
    SCAD uSCAD (
       .clk              (clkT[1]),
       .rst              (rst),
-      .clken            (clkenDP),
+      .clken            (clkenEX),
       .crom             (crom),
       .dp               (dp),
       .scSIGN           (scSIGN),

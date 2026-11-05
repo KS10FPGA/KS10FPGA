@@ -254,6 +254,23 @@ module DISP_PF (
    //
    // Interrupt enable
    //
+   // Details
+   //  NXM interrupts are only dispatched after an instruction fetch.
+   //
+   //  PI and 1 ms timer interrupts are also dispatched on the MEM WAIT of
+   //  any memory cycle that is not physical (intrMEM).  The microcode
+   //  relies on this to interrupt long instructions.  For example, the
+   //  normal BLT loop has no interrupt check of its own: the interrupt
+   //  page fail backs up the PC and the BLT cleanup saves the pointers in
+   //  the AC so that the BLT resumes after the interrupt (DSKDA
+   //  "INTERRUPT DID NOT OCCUR DURING BLT").  A timer page fail updates
+   //  the clock and restarts the memory cycle (PF125).
+   //
+   //  Physical cycles are not interrupted.  These are IO cycles and the
+   //  references made by the page fail and interrupt microcode itself,
+   //  which would otherwise page fail again.  The page table walk (RDPT)
+   //  checks for interrupts itself (SKIP IRPT) before its physical read.
+   //
 
    reg intrEN;
 
@@ -264,6 +281,8 @@ module DISP_PF (
         else if (clken)
           intrEN <= fetchCYCLE;
      end
+
+   wire intrMEM = intrEN | (pfEN & !vmaPHYS);
 
    //
    // Page failure types
@@ -288,17 +307,17 @@ module DISP_PF (
              pageFAIL <= 1;
              dispatch <= dispNXM;
           end
-        else if (intrEN & piINTR)
+        else if (intrMEM & piINTR)
           begin
              pageFAIL <= 1;
              dispatch <= dispINTR;
           end
-        else if (intrEN & timerINTR & pageINVALID)
+        else if (intrMEM & timerINTR & pageINVALID)
           begin
              pageFAIL <= 1;
              dispatch <= dispTIMPAGFAIL;
           end
-        else if (intrEN & timerINTR)
+        else if (intrMEM & timerINTR)
           begin
              pageFAIL <= 1;
              dispatch <= dispINTR;
@@ -334,5 +353,20 @@ module DISP_PF (
           else if (specMEMCLR)
             dispPF <= 0;
      end
+
+   //
+   // Interrupt page fail monitor (define SIM_INTRMON to enable)
+   //  Reports interrupts taken on a data cycle (not after an instruction
+   //  fetch).
+   //
+
+`ifndef SYNTHESIS
+`ifdef SIM_INTRMON
+   always @(posedge clk)
+     if (clken & pageFAIL & !intrEN & ((dispatch == dispINTR) | (dispatch == dispTIMPAGFAIL)))
+       $display("[%11.3f] INTRMON: %s interrupt page fail on data cycle. VMA=%012o next J=%04o",
+                $time/1.0e3, piINTR ? "PI" : "timer", vmaREG, `cromJ);
+`endif
+`endif
 
 endmodule

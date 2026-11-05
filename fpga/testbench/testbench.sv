@@ -789,6 +789,8 @@ module testbench;
 
              `ifdef DIAG_DSKCG
                 `include "test_dskcg.vh"
+             `elsif DIAG_DSKDA
+                `include "test_dskda.vh"
              `elsif DIAG_DSDZA
                 `include "test_dsdza.vh"
              `elsif DIAG_DSRPA

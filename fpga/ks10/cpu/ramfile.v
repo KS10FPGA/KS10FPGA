@@ -323,14 +323,16 @@ module RAMFILE (
    // Clock RAM on T2
    //
 
+   //  clken is negated on a microinstruction that page fails, so that
+   //  microinstruction does not write the RAMFILE.  The read address is
+   //  always updated.
+   //
+
    always @(posedge clk)
      begin
-        if (clken)
-          begin
-             if (ramfileWRITE)
-               ram[addr] <= dbus;
-             rd_addr <= addr;
-          end
+        if (clken & ramfileWRITE)
+          ram[addr] <= dbus;
+        rd_addr <= addr;
      end
 
    assign ramfile = ram[rd_addr];
