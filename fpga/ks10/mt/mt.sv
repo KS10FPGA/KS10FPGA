@@ -119,7 +119,7 @@ module MT (
    wire  [ 2: 0] mtDEN    = `mtTC_DEN(mtTC);            // Density
    wire  [ 3: 0] mtFMT    = `mtTC_FMT(mtTC);            // Format
    wire  [ 2: 0] mtSS     = `mtTC_SS(mtTC);             // Slave Select
-// wire          mtEVPAR  = `mtTC_EVPAR(mtTC);          // Even parity
+   wire          mtEVPAR  = `mtTC_EVPAR(mtTC);          // Even parity
 
    //
    // Unit select
@@ -329,13 +329,13 @@ module MT (
    //  6. Space forward when frame count is zero
    //  7. Space reverse when frame count is zero
    //  8. Write forward operation when frame count is zero
-   //  9. Read  forward operation in NRZI mode when frame count is less that 13
-   // 10. Read  reverse operation in NRZI mode when frame count is less that 13
-   // 11. Write forward operation in NRZI mode when frame count is less that 13
+   //  9. Write forward operation in NRZI mode when frame count is less that 13
    //
    // Note:
    //  The MTFC register stores the twos-complement of the Frame Count.  The
-   //  constant "0177763" is -13.
+   //  constant "0177763" is -13.  Reads do not check it: the frame count is
+   //  cleared when a read starts, so its old value means nothing.  A space that
+   //  stops early at EOT leaves it non-zero.  See DSTUA TST167.
    //
 
    wire mtSETNEF = ((mtFUN_WRFWD    &  mtWRL) |
@@ -349,10 +349,6 @@ module MT (
                     (mtFUN_WRFWD    & !mtFCS) |
                     (mtFUN_WRFWD    & !(mtDEN == `mtTC_DEN_1600) &  mtPES & !mtBOT) |
                     (mtFUN_WRFWD    &  (mtDEN == `mtTC_DEN_1600) & !mtPES & !mtBOT) |
-                    (mtFUN_RDFWD    & !(mtDEN == `mtTC_DEN_1600) & (mtFC > 16'o177763)) |
-                    (mtFUN_RDREV    & !(mtDEN == `mtTC_DEN_1600) & (mtFC > 16'o177763)) |
-                    (mtFUN_WRCHKFWD & !(mtDEN == `mtTC_DEN_1600) & (mtFC > 16'o177763)) |
-                    (mtFUN_WRCHKREV & !(mtDEN == `mtTC_DEN_1600) & (mtFC > 16'o177763)) |
                     (mtFUN_WRFWD    & !(mtDEN == `mtTC_DEN_1600) & (mtFC > 16'o177763)));
 
    //
@@ -384,7 +380,7 @@ module MT (
 
    wire mtSETOPI  = 0;                  // Operation Incomplete  (MTER[OPI]) : FIXME: Not implemented
    wire mtSETDTE  = 0;                  // Drive Timing Error    (MTER[DTE]) : FIXME: Not implemented
-   wire mtSETFCE  = 0;                  // Frame Count Error     (MTER[FCE]) : FIXME: Not implemented
+   logic mtSETFCE;                      // Frame Count Error     (MTER[FCE]) : from MTCTRL
    wire mtSETDPAR = 0;                  // Data Bus Parity Error (MTER[DPAR]): Not testable with RH11.  See DSTUA TST67.
 
    //
@@ -515,6 +511,7 @@ module MT (
       .mtWRL       (mtWRL),
       .mtDEN       (mtDEN),
       .mtFMT       (mtFMT),
+      .mtEVPAR     (mtEVPAR),
       .mtFUN       (mtFUN),
       .mtFUNGO     (mtFUNGO),
       .mtSS        (mtSS),
@@ -532,7 +529,8 @@ module MT (
       .mtPES       (mtPES),
       .mtMDF       (mtMDF),
       .mtSDWN      (mtSDWN),
-      .mtINCFC     (mtINCFC)
+      .mtINCFC     (mtINCFC),
+      .mtSETFCE    (mtSETFCE)
    );
 
    //

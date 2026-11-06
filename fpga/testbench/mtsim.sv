@@ -404,6 +404,7 @@
            if (header == h_TM)
              begin
                 lastTM = 1;
+                conWRITE64(addrMTDIR, mtDIR_INCFC);     // A tape mark counts as a record
                 conWRITE64(addrMTDIR, mtDIR_SETTM);
              end
            else
@@ -542,6 +543,7 @@
            if (header == h_TM)
              begin
                 lastTM = 1;
+                conWRITE64(addrMTDIR, mtDIR_INCFC);     // A tape mark counts as a record
                 conWRITE64(addrMTDIR, mtDIR_SETTM);
              end
            else
@@ -610,6 +612,13 @@
            conREAD64(addrMTDIR, mtDIR);
            if (mtDIR[62])
              begin
+
+                //
+                // The two halves of MTDIR are read separately, so the data can
+                // be older than STB.  It is stable once STB is seen. Read again.
+                //
+
+                conREAD64(addrMTDIR, mtDIR);
 
                 //
                 // If the Word Counter is zero, we are done.
