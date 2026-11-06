@@ -517,8 +517,13 @@ void mt_t::executeCommand(uint16_t tcu, uint16_t param, uint16_t cmd, uint16_t w
     //
     // Check for Frame Count Errors
     //
+    //  A Space Forward with a Frame Count of zero spaces to the tape mark.
+    //  The Frame Counter never reaches zero, so FCE is expected.
+    //
 
-    if (ks10_t::readIO16(addrER) & MTER_FCE) {
+    bool spaceToTM = (cmd == MTCS1_FUN_SPCFWD) && (frameCnt == 0);
+
+    if (!spaceToTM && (ks10_t::readIO16(addrER) & MTER_FCE)) {
         printf("KS10: Frame Count Error\n");
     }
 

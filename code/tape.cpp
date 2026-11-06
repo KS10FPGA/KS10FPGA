@@ -671,7 +671,7 @@ void tape_t::spaceForward(uint64_t /*mtDIR*/) {
             continue;
         } else if (header == h_EOT) {
             DEBUG_SPCFWD("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
-            ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
+            physEOT = true;
             break;
         } else if (header == h_ERR) {
             DEBUG_SPCFWD("TAPE: Unit %d: Header Error.\n", unit);
@@ -798,7 +798,7 @@ void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
             continue;
         } else if (header == h_EOT) {
             DEBUG_SPCREV("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
-            ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
+            physEOT = true;
             break;
         } else if (header == h_ERR) {
             DEBUG_SPCREV("TAPE: Unit %d: Header Error.\n", unit);
@@ -1118,7 +1118,7 @@ void tape_t::readForward(uint64_t mtDIR) {
             continue;
         } else if (header == h_EOT) {
             DEBUG_RDFWD("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
-            ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
+            physEOT = true;
             break;
         } else if (header == h_ERR) {
             DEBUG_RDFWD("TAPE: Unit %d: Header Error.\n", unit);
@@ -1132,10 +1132,10 @@ void tape_t::readForward(uint64_t mtDIR) {
             filcnt += 1;
             objcnt += 1;
             reccnt += 1;
-            break;
+            done = true;
         } else if ((header == h_TM) && lastTM) {
             DEBUG_RDFWD("TAPE: Unit %d: obj=%3d, fpos=%7ld, Logical EOT.\n", unit, objcnt, ftell(fp));
-            break;
+            done = true;
         } else {
             if (lastTM) {
                 DEBUG_RDFWD("TAPE: Unit %d: Processing tape file %d.\n", unit, filcnt);
@@ -1253,9 +1253,17 @@ void tape_t::readForward(uint64_t mtDIR) {
             if (!aborted) {
                 usleep(c_readStop);
             }
+
+            //
+            // The drive stops in the gap after a record, even if the Word
+            // Count is not zero.  The Frame Counter gives the record length.
+            //
+
+            done = true;
         }
 
         if (header == h_TM) {
+            usleep(c_readGap + c_readStop);            // Tape motion over the tape mark
             lastTM = true;
             ks10_t::writeMTDIR(ks10_t::mtDIR_SETTM);
         } else {
@@ -1325,7 +1333,7 @@ void tape_t::readReverse(uint64_t mtDIR) {
             continue;
         } else if (header == h_EOT) {
             DEBUG_RDREV("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
-            ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
+            physEOT = true;
             break;
         } else if (header == h_ERR) {
             DEBUG_RDREV("TAPE: Unit %d: Header Error.\n", unit);
@@ -1339,10 +1347,10 @@ void tape_t::readReverse(uint64_t mtDIR) {
             filcnt -= 1;
             objcnt -= 1;
             reccnt = -1;
-            break;
+            done = true;
         } else if ((header == h_TM) && lastTM) {
             DEBUG_RDREV("TAPE: Unit %d: obj=%3d, fpos=%7ld, Logical EOT.\n", unit, objcnt, ftell(fp));
-            break;
+            done = true;
         } else {
             if (lastTM) {
                 DEBUG_RDREV("TAPE: Unit %d: Processing tape file %d.\n", unit, filcnt);
@@ -1470,9 +1478,17 @@ void tape_t::readReverse(uint64_t mtDIR) {
             if (!aborted) {
                 usleep(c_readStop);
             }
+
+            //
+            // The drive stops in the gap after a record, even if the Word
+            // Count is not zero.  The Frame Counter gives the record length.
+            //
+
+            done = true;
         }
 
         if (header == h_TM) {
+            usleep(c_readGap + c_readStop);            // Tape motion over the tape mark
             lastTM = true;
             ks10_t::writeMTDIR(ks10_t::mtDIR_SETTM);
         } else {
@@ -1522,6 +1538,13 @@ void tape_t::processCommand(void) {
                 mt_t::dumpMTFC(03772446);
                 mt_t::dumpMTTC(03772472);
 #endif
+
+                //
+                // EOT from running off the end of the tape file lasts until the
+                // next command.
+                //
+
+                physEOT = false;
 
                 switch (function) {
                     case 000:
@@ -1577,7 +1600,7 @@ void tape_t::processCommand(void) {
 
                 long fpos  = ftell(fp);
                 int  bpt   = bytes_per_tape(density);
-                bool isEOT = (fpos > bpt);
+                bool isEOT = (fpos > bpt) || physEOT;
 
                 if ((fpos == 0) && (!statBOT)) {
                     statBOT = true;
@@ -1767,6 +1790,7 @@ tape_t::tape_t(unsigned int unit, FILE *fp, unsigned int tapeLength, std::atomic
     reccnt(1),
     statBOT(false),
     statEOT(false),
+    physEOT(false),
     lastTM(true),
     fp(fp) {
 

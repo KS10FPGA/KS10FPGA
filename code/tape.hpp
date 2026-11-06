@@ -66,6 +66,7 @@ class tape_t {
         int  reccnt;                    //!< Record count
         bool statBOT;                   //!< BOT state
         bool statEOT;                   //!< EOT state
+        bool physEOT;                   //!< Ran off the end of the tape file
         bool lastTM;                    //!< TM state
         FILE *fp;                       //!< File pointer
         std::thread thread;             //!< Thread object
