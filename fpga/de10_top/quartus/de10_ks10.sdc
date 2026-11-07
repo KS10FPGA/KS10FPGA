@@ -4,7 +4,6 @@
 
 create_clock -period "1.0 MHz"  [get_ports HPS_I2C0_SCL]
 create_clock -period "1.0 MHz"  [get_ports HPS_I2C1_SCL]
-create_clock -period "20.0 MHz" [get_ports SD_SCLK]
 create_clock -period "50.0 MHz" [get_ports FPGA_CLK1_50]
 create_clock -period "60.0 MHz" [get_ports HPS_USB_CLK]
 
@@ -18,12 +17,9 @@ create_clock -period "60.0 MHz" [get_ports HPS_USB_CLK]
 #set_output_delay -clock altera_reserved_tck 3             [get_ports altera_reserved_tdo]
 
 #
-# SDHC Card
+# SD Card detect and write protect
 #
 
-set_input_delay  -clock SD_SCLK -clock_fall 3 [get_ports SD_MISO]
-set_output_delay -clock SD_SCLK 3             [get_ports SD_MOSI]
-set_output_delay -clock SD_SCLK 3             [get_ports SD_SS_N]
 set_false_path   -from                        [get_ports SD_CD]
 set_false_path   -from                        [get_ports SD_WP]
 
@@ -37,25 +33,81 @@ set_false_path   -from                        [get_ports SD_WP]
 # soc_system:u0|KS10:ks10|clkT[3]
 # soc_system:u0|KS10:ks10|clkT[4]
  
-#
-# SSRAM
-#
-
-# CY7C1463KV33 tCDV
-set_input_delay  -clock [get_clocks SSRAM_CLK] -max  6.5 [get_ports {SSRAM_D*}]
-#set_input_delay  -clock [get_clocks {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -min  0.0 [get_ports {SSRAM_D*}]
-# CY7C1463KV33 tAS
-#set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -max  1.5 [get_ports {SSRAM_A*}]
-#set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -max  1.5 [get_ports {SSRAM_WE_N}]
-# CY7C1463KV33 tAH
-#set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -min -0.5 [get_ports {SSRAM_A*}]
-#set_output_delay -clock {u0|pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} -min -0.5 [get_ports {SSRAM_WE_N}]
-
 ##
 ## PLL Clocks
 ##
 
 derive_pll_clocks
+
+#
+# SDHC Card
+#
+#  SDSPI generates SD_SCLK from the CPU clock.  It is an output and nothing in
+#  the FPGA is clocked by it.  Each half period is at least two CPU clocks, so
+#  the fastest rate is 320 ns.  See stateTXL and stateTXH in sdspi.v.
+#
+#  MOSI and SS_N change on the falling edge.  MISO is sampled on the rising edge.
+#  The multicycle paths select those edges.  Otherwise the CPU clock edges either
+#  side of SD_SCLK are checked, and the logic only uses one in four.
+#
+
+set clkT1 {u0|ks10|PLL|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}
+
+create_generated_clock -name SD_SCLK -master_clock $clkT1 -source [get_pins $clkT1] -divide_by 4 [get_ports SD_SCLK]
+
+# SD Card: tISU = 5 ns, tIH = 5 ns, tODLY = 14 ns, tOH = 0 ns
+set_output_delay -clock SD_SCLK -max  5.0 [get_ports {SD_MOSI SD_SS_N}]
+set_output_delay -clock SD_SCLK -min -5.0 [get_ports {SD_MOSI SD_SS_N}]
+set_input_delay  -clock SD_SCLK -clock_fall -max 14.0 [get_ports SD_MISO]
+set_input_delay  -clock SD_SCLK -clock_fall -min  0.0 [get_ports SD_MISO]
+
+set_multicycle_path -from [get_clocks $clkT1] -to [get_ports {SD_MOSI SD_SS_N}] -start -setup 2
+set_multicycle_path -from [get_clocks $clkT1] -to [get_ports {SD_MOSI SD_SS_N}] -start -hold  3
+set_multicycle_path -from [get_ports SD_MISO] -to [get_clocks $clkT1] -end -setup 2
+set_multicycle_path -from [get_ports SD_MISO] -to [get_clocks $clkT1] -end -hold  3
+
+#
+# SSRAM
+#
+#  NOT ACTIVE.  These constraints are kept for reference only.  Without them
+#  the SSRAM interface has no timing paths at all.  A build with them enabled
+#  improved the reported SSRAM slack but failed DSMMA test 6 (PHYTST) on the
+#  second pass: CPU reads returned the right half-word as zero, left half-word
+#  correct, at varying addresses about 32 words apart.  The SSRAM held the
+#  right data and the console read it correctly.  The cause is not known.  A
+#  build without them passes DSMMA.  Run DSMMA (LH 400000, RH 6000 for a quick
+#  check) after any rebuild that enables them.
+#
+#  SSRAM_CLK is the inverted 50 MHz clock, so it rises at 10, 30, 50 and 70 ns
+#  in the 80 ns CPU cycle.  See mem.sv.
+#
+#  A read samples the address at 10 and 30 ns and captures the data in ssramDI
+#  at 30 and 50 ns.  The first address comes from the T1 edge at 0 ns, so the
+#  10 ns check on SSRAM_A is real.  It fails on the slow timing models and only
+#  just passes on the fast ones.
+#
+#  A write samples the data at 50 and 70 ns.  The bus enables the data pins at
+#  T1 so those paths have 50 ns.
+#
+#  ssramBRD is an estimate of the board delay.  The data sheet values are from
+#  CY7C1463KV33 (133 MHz), Infineon 001-96065.
+#
+
+#set ssramOUT {SSRAM_A[*] SSRAM_WE_N SSRAM_ADV SSRAM_D[*]}
+#set ssramBRD 1.0
+#
+#create_generated_clock -name SSRAM_CLK -source [get_ports FPGA_CLK1_50] -invert [get_ports SSRAM_CLK]
+#
+## SSRAM: tCDV = 6.5 ns, tDOH = 2.5 ns
+#set_input_delay  -clock SSRAM_CLK -max [expr {6.5 + 2.0 * $ssramBRD}] [get_ports {SSRAM_D[*]}]
+#set_input_delay  -clock SSRAM_CLK -min 2.5                            [get_ports {SSRAM_D[*]}]
+#
+## SSRAM: tAS = tWES = tDS = 1.5 ns, tAH = tWEH = tDH = 0.5 ns
+#set_output_delay -clock SSRAM_CLK -max [expr {1.5 + $ssramBRD}] [get_ports $ssramOUT]
+#set_output_delay -clock SSRAM_CLK -min -0.5                     [get_ports $ssramOUT]
+#
+#set_multicycle_path -from [get_clocks $clkT1] -to [get_ports {SSRAM_D[*]}] -end -setup 3
+#set_multicycle_path -from [get_clocks $clkT1] -to [get_ports {SSRAM_D[*]}] -end -hold  2
 
 ##
 ## Set Clock Latency
