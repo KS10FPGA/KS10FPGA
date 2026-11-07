@@ -3356,8 +3356,8 @@ static bool cmdMT_MOUNT(int argc, char *argv[]) {
                    mt_t::online(mtccr, i)    ? 'X' : ' ',
                    mt_t::writeLock(mtccr, i) ? 'X' : ' ',
                    mt_cfg.drive[i].attached  ? 'X' : ' ',
-                   mt_t::density(mt_cfg.drive[i].param),
                    mt_t::format(mt_cfg.drive[i].param),
+                   mt_t::density(mt_cfg.drive[i].param),
                    mt_cfg.drive[i].length,
                    mt_cfg.drive[i].filename);
         }

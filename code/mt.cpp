@@ -736,7 +736,43 @@ void mt_t::testRead(uint16_t tcu, uint16_t param) {
         ks10_t::writeMem(paddr + i, pattern);
     }
 
-    executeCommand(MTCS1_FUN_RDFWD, param, words, 0, vaddr);
+    //
+    // Read a record
+    //  The Word Count Register counts 18-bit words, two per KS10 word.
+    //
+
+    executeCommand(tcu, param, MTCS1_FUN_RDFWD, 2 * words, 0, vaddr);
+
+    //
+    // Check that the words either side of the buffer were not changed
+    //
+
+    if (ks10_t::readMem(paddr - 1) != pattern) {
+        printf("KS10: Tape read wrote below the buffer.\n");
+        pass = false;
+    }
+
+    if (ks10_t::readMem(paddr + words) != pattern) {
+        printf("KS10: Tape read wrote past the end of the buffer.\n");
+        pass = false;
+    }
+
+    //
+    // Check that some data was transferred
+    //
+
+    bool changed = false;
+    for (int i = 0; i < words; i++) {
+        if (ks10_t::readMem(paddr + i) != pattern) {
+            changed = true;
+            break;
+        }
+    }
+
+    if (!changed) {
+        printf("KS10: Tape read transferred no data.\n");
+        pass = false;
+    }
 
     printf("KS10: Tape read test %s.\n", pass ? "passed" : "failed");
 }
