@@ -197,10 +197,15 @@ static void rpSetBootParam(void) {
 //! \brief
 //!    Set tape boot parameters in the Console Communications memory area
 //!
+//! \details
+//!    Location 37 is the RH11 unit, which is the TM03 (TCU) number.  The
+//!    slave is in the tape parameters at location 40, with the density and
+//!    format.  See MSDRIVE and MSSLAVE in MAINDEC-10-DSQDF.
+//!
 
-static void mtSetBootParam(uint32_t unit) {
+static void mtSetBootParam(uint32_t tcu, uint32_t unit) {
     ks10_t::writeMem(ks10_t::rhbaseADDR, mt_cfg.baseaddr);
-    ks10_t::writeMem(ks10_t::rhunitADDR, unit);
+    ks10_t::writeMem(ks10_t::rhunitADDR, tcu);
     ks10_t::writeMem(ks10_t::mtparmADDR, mt_cfg.drive[unit].param);
 }
 
@@ -2262,7 +2267,7 @@ bool command_t::cmdGO(int argc, char *argv[]) {
 
     if (index == 1) {
 
-        mtSetBootParam(0);
+        mtSetBootParam(0, 0);
         printf("go: loading SMMAG.\n");
         if (!loadCode("diag/smmag.sav")) {
             printf("go: failed to load diag/smmag.sav\n");
@@ -3155,7 +3160,7 @@ static bool cmdMT_BOOT(int argc, char *argv[]) {
                 case 2:
                 case 3:
                     // unit switch
-                    PARSE_UNIT("boot", true);
+                    PARSE_UNIT("boot", false);
                     break;
                 case 4:
                     // tcu switch
@@ -3199,7 +3204,7 @@ static bool cmdMT_BOOT(int argc, char *argv[]) {
     // Boot from disk using the selected boot image
     //
 
-    mtSetBootParam(unit);
+    mtSetBootParam(tcu, unit);
     mt.boot(tcu, mt_cfg.drive[unit].param, mt_cfg.bootdiag);
 
     return true;
@@ -4579,7 +4584,7 @@ bool cmdMT_UNLOAD(int argc, char *argv[]) {
         }
     }
 
-    mtSetBootParam(unit);
+    mtSetBootParam(tcu, unit);
 
     mt.cmdUnload(tcu, mt_cfg.drive[unit].param);
 
