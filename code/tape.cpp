@@ -672,12 +672,15 @@ void tape_t::spaceForward(uint64_t /*mtDIR*/) {
         } else if (header == h_EOT) {
             DEBUG_SPCFWD("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             physEOT = true;
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if (header == h_ERR) {
             DEBUG_SPCFWD("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
             DEBUG_SPCFWD("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header == h_TM) && !lastTM) {
             DEBUG_SPCFWD("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
@@ -799,12 +802,15 @@ void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
         } else if (header == h_EOT) {
             DEBUG_SPCREV("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             physEOT = true;
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if (header == h_ERR) {
             DEBUG_SPCREV("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
             DEBUG_SPCREV("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header == h_TM) && !lastTM) {
             DEBUG_SPCREV("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
@@ -1119,12 +1125,15 @@ void tape_t::readForward(uint64_t mtDIR) {
         } else if (header == h_EOT) {
             DEBUG_RDFWD("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             physEOT = true;
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if (header == h_ERR) {
             DEBUG_RDFWD("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
             DEBUG_RDFWD("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header == h_TM) && !lastTM) {
             DEBUG_RDFWD("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
@@ -1334,12 +1343,15 @@ void tape_t::readReverse(uint64_t mtDIR) {
         } else if (header == h_EOT) {
             DEBUG_RDREV("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             physEOT = true;
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if (header == h_ERR) {
             DEBUG_RDREV("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
             DEBUG_RDREV("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header == h_TM) && !lastTM) {
             DEBUG_RDREV("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
