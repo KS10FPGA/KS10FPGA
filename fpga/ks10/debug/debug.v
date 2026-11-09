@@ -183,7 +183,11 @@ module DEBUG (
                // on long simulation runs.
                //
 
-`ifdef SIM_IRTRACE
+`ifdef SIM_TRACE_AFTER
+               // PC/IR trace only after `SIM_TRACE_AFTER microseconds
+               if ($time/1.0e3 >= `SIM_TRACE_AFTER)
+                 $display("[%11.3f] %15s: PC is %06o IR is %012o", $time/1.0e3, test, PC, IR);
+`elsif SIM_IRTRACE
                $display("[%11.3f] %15s: PC is %06o IR is %012o", $time/1.0e3, test, PC, IR);
 `elsif SIM_NOPCTRACE
 `else

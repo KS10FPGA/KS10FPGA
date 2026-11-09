@@ -640,9 +640,15 @@ module testbench;
 
         //
         // Enable UNIT0, UNIT1, and UNIT2 disk drives
+        //  SIM_DEFS="RP_MOL=n" selects other drives (bit 0 = unit 0),
+        //  for example RP_MOL=199 for units 0, 1, 2, 6, and 7.
         //
 
+`ifdef RP_MOL
+        conWRITE32(addrREGRPCCR, {8'h00, 8'(`RP_MOL), 8'(`RP_MOL), 8'h00});
+`else
         conWRITE32(addrREGRPCCR, 32'h00070700);
+`endif
 
         //
         // Set jumper W3 and W6 of the DPCCR
