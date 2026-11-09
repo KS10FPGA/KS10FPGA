@@ -205,4 +205,20 @@ module UBASR (
                       statINTLO, statPWR, 1'b0, statDXF, statINI, statPIH,
                       statPIL};
 
+`ifndef SYNTHESIS
+`ifdef SIM_UBAMON
+   //
+   // Report when the sticky TMO/NXD error bits are set (SIM_UBAMON)
+   //
+
+   always @(posedge clk)
+     begin
+        if (setNXD & !statNXD)
+          $display("[%11.3f] UBAMON %m: NXD set", $time/1.0e3);
+        if ((setTMO | setNXD) & !statTMO)
+          $display("[%11.3f] UBAMON %m: TMO set (setTMO=%b setNXD=%b)", $time/1.0e3, setTMO, setNXD);
+     end
+`endif
+`endif
+
 endmodule
