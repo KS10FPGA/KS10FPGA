@@ -164,6 +164,29 @@ module ARB (
    wire cslBLOCK = holdSAME & (holdCNT != 0);
    wire cpuIOACK = cpuREQI & `busIO(cpuADDRI) & cpuACKO;
 
+   //
+   // Console IO to a UBA that is waiting for memory
+   //
+   // Details:
+   //  A UBA is single threaded.  Once it has committed to a DMA cycle
+   //  (stateDEVtoMEM0/1) it cannot service an IO request until the memory
+   //  cycle completes.  If the console (which has priority) presents an IO
+   //  request for that UBA, the console waits for the UBA and the UBA
+   //  waits for the bus.  Only the UBA's 8 clock DMA timer breaks the
+   //  deadlock: the DMA word is retried but the sticky UBASR[TMO] is left
+   //  set.  The console 'rp boot' polls RHCS1 throughout each read, so
+   //  TOPS-10 BOOT then found UBASR[TMO] set and would not read the disk.
+   //
+   //  Let that UBA have the memory cycle first.  The console request is
+   //  still pending and is serviced when the UBA returns to idle.
+   //
+
+   wire cslDEFER = `busIO(cslADDRI) &
+                   (((`busDEV(cslADDRI) == 4'd1) & ubaREQI[1]) |
+                    ((`busDEV(cslADDRI) == 4'd2) & ubaREQI[2]) |
+                    ((`busDEV(cslADDRI) == 4'd3) & ubaREQI[3]) |
+                    ((`busDEV(cslADDRI) == 4'd4) & ubaREQI[4]));
+
    always_ff @(posedge clk)
      if (rst)
        begin
@@ -234,7 +257,7 @@ module ARB (
         //  The console can access the memory or the unibus
         //
 
-        if (cslREQI & !cpuLOCK & !cslBLOCK)
+        if (cslREQI & !cpuLOCK & !cslBLOCK & !cslDEFER)
           begin
              ubaREQO[1]  = 1;
              ubaREQO[2]  = 1;
