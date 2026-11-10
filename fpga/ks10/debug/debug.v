@@ -126,7 +126,9 @@ module DEBUG (
                lastIR = $time;
                $display("[%11.3f] %15s: PC is %06o (stuck).", $time/1.0e3, test, PC);
 `ifdef STOP_ON_STUCK_PC
+`ifndef SIM_CSLDMA                // the console test holds off the CTY
                $stop;
+`endif
 `endif
             end
      end

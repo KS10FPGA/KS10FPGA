@@ -66,6 +66,16 @@
  `define RPBOOT_UNIT 36'o000000_000002
 `endif
 
+//
+// Delay (ns) between an Expect() match and the response.  The default
+// suits the normal CPU speed; slow runs (e.g. PAGE_FAIL_TEST) need more
+// or the diagnostic discards the reply while it is still flushing output.
+//
+
+`ifndef SIM_EXPECT_DELAY
+ `define SIM_EXPECT_DELAY 100000
+`endif
+
 `ifndef STARTADDR
  `define STARTADDR 18'o020000
 `endif
@@ -573,7 +583,7 @@ module testbench;
                    // before the KS10 software is ready.
                    //
 
-                   #100000;
+                   #(`SIM_EXPECT_DELAY);
                    puts(outString);
                    state = 1;
                    //$display("[%11.3f] KS10: outBuf is \"%s\".", outBuf);
@@ -768,6 +778,49 @@ module testbench;
           end
 
        @(negedge haltLED)
+
+`ifdef SIM_CSLDMA
+
+        //
+        // Do what the console 'rp boot' does: read one disk block by DMA
+        // while polling RHCS1 from the console, then report UBA1 status.
+        // Repeated with the console polling as fast as it can, to catch a
+        // console IO cycle that collides with a UBA DMA cycle.
+        //
+
+        begin : csldma
+           integer blk, polls;
+           for (blk = 0; blk < 3; blk = blk + 1)
+             begin
+                conWRITEIO(22'o1776710, 36'o000040);            // RHCS2 = CLR
+                conWRITEIO(22'o1776710, 36'o000000);            // Unit 0
+                conWRITEIO(22'o1763001, 36'o140001);            // UBA page 1 -> 1000, FTM, VLD
+                conWRITEIO(22'o1776716, 36'o000377);            // Clear attentions
+                conWRITEIO(22'o1776700, 36'o000021);            // Read-in preset
+                conWRITEIO(22'o1776702, 36'o176000);            // WC = -1024
+                conWRITEIO(22'o1776704, 36'o004000);            // BA = 4000
+                conWRITEIO(22'o1776706, blk + 1);               // DA
+                conWRITEIO(22'o1776734, 36'o000000);            // DC
+                conWRITEIO(22'o1776700, 36'o000071);            // Read data
+                polls = 0;
+                temp  = 0;
+                while (!temp[28])
+                  begin
+                     conREADIO(22'o1776700, temp);
+                     polls = polls + 1;
+                  end
+                $display("[%11.3f] CSLDMA: block %0d done after %0d CS1 polls, CS1=%06o", $time/1.0e3, blk + 1, polls, temp[18:35]);
+                conREADIO(22'o1763100, temp);
+                $display("[%11.3f] CSLDMA: UBA1 SR = %06o%s", $time/1.0e3, temp[18:35], temp[18] ? "  <<< TMO SET" : "");
+                conREADIO(22'o1776710, temp);
+                $display("[%11.3f] CSLDMA: RHCS2 = %06o", $time/1.0e3, temp[18:35]);
+             end
+           conREADMEM(18'o001000, temp);
+           $display("[%11.3f] CSLDMA: mem[1000] = %012o", $time/1.0e3, temp);
+           $stop;
+        end
+
+`endif
 
         //
         // Console Processing and Monitoring
