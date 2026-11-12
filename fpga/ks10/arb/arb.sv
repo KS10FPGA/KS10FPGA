@@ -60,6 +60,7 @@ module ARB (
    logic [0:35] cpuADDRI;               // CPU Address
    logic [0:35] cpuDATAI;               // CPU Data In
    logic        cpuACKO;                // CPU Bus Acknowledge Out
+   logic        cpuGNT;                 // CPU has the bus this clock
    logic [0:35] cpuDATAO;               // CPU Data Out
    logic [1: 7] cpuINTRO;               // CPU Interrupt Out
 
@@ -162,7 +163,6 @@ module ARB (
 
    wire holdSAME = holdACT & cpuREQI & (cpuADDRI == holdADDR);
    wire cslBLOCK = holdSAME & (holdCNT != 0);
-   wire cpuIOACK = cpuREQI & `busIO(cpuADDRI) & cpuACKO;
 
    //
    // Console IO to a UBA that is waiting for memory
@@ -186,6 +186,38 @@ module ARB (
                     ((`busDEV(cslADDRI) == 4'd2) & ubaREQI[2]) |
                     ((`busDEV(cslADDRI) == 4'd3) & ubaREQI[3]) |
                     ((`busDEV(cslADDRI) == 4'd4) & ubaREQI[4]));
+
+   //
+   // Which UBA (if any) has the bus for DMA on this clock
+   //
+
+   logic [0:2] dmaOWN;
+
+   always_comb
+     if (cslREQI & !cpuLOCK & !cslBLOCK & !cslDEFER)
+       dmaOWN = 0;
+     else if (ubaREQI[1])
+       dmaOWN = 1;
+     else if (ubaREQI[2])
+       dmaOWN = 2;
+     else if (ubaREQI[3])
+       dmaOWN = 3;
+     else if (ubaREQI[4])
+       dmaOWN = 4;
+     else
+       dmaOWN = 0;
+
+   //
+   // A UBA acknowledged the CPU's IO cycle while another UBA had the bus
+   //
+
+   wire fwdACK = (dmaOWN != 0) & cpuREQI & `busIO(cpuADDRI) &
+                 (((dmaOWN != 1) & ubaACKI[1]) |
+                  ((dmaOWN != 2) & ubaACKI[2]) |
+                  ((dmaOWN != 3) & ubaACKI[3]) |
+                  ((dmaOWN != 4) & ubaACKI[4]));
+
+   wire cpuIOACK = cpuREQI & `busIO(cpuADDRI) & (cpuACKO | fwdACK);
 
    always_ff @(posedge clk)
      if (rst)
@@ -229,6 +261,7 @@ module ARB (
         memREQO     = 0;
 
         cpuACKO     = 0;
+        cpuGNT      = 0;
         cslACKO     = 0;
         ubaACKO[1]  = 0;
         ubaACKO[2]  = 0;
@@ -392,6 +425,7 @@ module ARB (
 
         else if (cpuREQI)
           begin
+             cpuGNT      = 1;
              cslREQO     = 1;
              ubaREQO[1]  = 1;
              ubaREQO[2]  = 1;
@@ -444,6 +478,36 @@ module ARB (
                cpuDATAO = 0;
 
           end
+
+        //
+        // Keep a CPU IO cycle going during UBA DMA
+        //
+        // Details
+        //  A UBA DMA cycle has priority over the CPU.  If it took the bus in
+        //  the middle of a CPU IO cycle, the UBA doing the IO cycle saw its
+        //  bus request go away and ended the cycle: an IO read aborted (and
+        //  was done again later), or, after the acknowledge, the cycle ended
+        //  before the CPU saw it.  On an interrupt vector cycle the device
+        //  had given its vector, the CPU then read zero, and TOPS-20 halted
+        //  with an Illegal Interrupt Instruction.
+        //
+        //  While UBA 'n' is doing DMA, the CPU's IO request is still shown to
+        //  the other UBAs.  They do not use the memory bus for an IO cycle,
+        //  and the UBA holds its acknowledge and data until the request goes
+        //  away, so the CPU gets them when it has the bus again.
+        //
+
+        if (dmaOWN != 0)
+          begin
+             if (cpuREQI & `busIO(cpuADDRI))
+               for (int j = 1; j <= 4; j++)
+                 if (j != dmaOWN)
+                   begin
+                      ubaREQO[j]  = 1;
+                      ubaADDRO[j] = cpuADDRI;
+                      ubaDATAO[j] = cpuDATAI;
+                   end
+          end
      end
 
    //
@@ -454,7 +518,15 @@ module ARB (
 // assign cpuACKI  = cpuBUS.busACKO;    // CPU Acknowledge In (CPU is not a target)
    assign cpuADDRI = cpuBUS.busADDRO;   // CPU Address In
    assign cpuDATAI = cpuBUS.busDATAO;   // CPU Data In
-   assign cpuBUS.busREQI  = 0;          // CPU Request Out (CPU is not a target)
+   //
+   // The CPU is never a bus target, so its request input is used to tell
+   // the CPU that it has the bus on this clock.  Console and UBA DMA
+   // requests have priority over the CPU; a busy disk can hold the CPU off
+   // for many clocks.  The CPU's IO timeout (NXD) must only count clocks
+   // where the CPU's IO request is actually presented to the devices.
+   //
+
+   assign cpuBUS.busREQI  = cpuGNT;     // CPU has the bus (CPU is not a target)
    assign cpuBUS.busACKI  = cpuACKO;    // CPU Acknowldge Out
    assign cpuBUS.busADDRI = 0;          // CPU Address Out (CPU is not a target)
    assign cpuBUS.busDATAI = cpuDATAO;   // CPU Data Out
@@ -532,6 +604,105 @@ module ARB (
      end
 
 `endif
+
+   //
+   // Simulation monitor: report every WRU and vector cycle that the CPU
+   // completes, which UBA acknowledges were asserted, and the data the CPU
+   // was given.
+   //
+
+`ifdef SIM_VECMON
+
+   logic vmACK;
+
+   always_ff @(posedge clk)
+     begin
+        vmACK <= cpuREQI & cpuACKO;
+        if (cpuREQI & cpuACKO & !vmACK & `busIO(cpuADDRI) &
+            (`busWRU(cpuADDRI) | `busVECT(cpuADDRI))
+`ifndef SIM_VECMON_VERBOSE
+            // anomalies only: zero data, ack from memory/console, more than
+            // one UBA ack, or a vector ack from a UBA other than the one
+            // addressed
+            & ((cpuDATAO == 0) | memACKI | cslACKI |
+               ((ubaACKI[1] + ubaACKI[2] + ubaACKI[3] + ubaACKI[4]) != 1) |
+               (`busVECT(cpuADDRI) & !ubaACKI[`busDEV(cpuADDRI)]))
+`endif
+           )
+          $display("[%11.3f] VECMON: CPU %s Addr=%012o Data=%012o ubaACK=%b%b%b%b memACK=%b cslACK=%b dmaOWN=%0d",
+                   $time/1.0e3, `busWRU(cpuADDRI) ? "WRU " : "VECT", cpuADDRI, cpuDATAO,
+                   ubaACKI[1], ubaACKI[2], ubaACKI[3], ubaACKI[4], memACKI, cslACKI, dmaOWN);
+     end
+
+   //
+   // Every ms: DMA words granted per UBA, console cycles, and how many
+   // CPU WRU/vector cycles were held off by a UBA DMA or console cycle.
+   //
+
+   integer vmDMA[1:4];
+   integer vmCSL, vmINTA, vmINTADMA, vmINTACSL;
+   logic   vmINTAPEND, vmDMASEEN, vmCSLSEEN;
+   time    vmNEXT;
+
+   wire vmCPUINTA = cpuREQI & `busIO(cpuADDRI) & (`busWRU(cpuADDRI) | `busVECT(cpuADDRI));
+
+   initial
+     begin
+        for (int i = 1; i <= 4; i++) vmDMA[i] = 0;
+        vmCSL = 0; vmINTA = 0; vmINTADMA = 0; vmINTACSL = 0;
+        vmINTAPEND = 0; vmDMASEEN = 0; vmCSLSEEN = 0;
+        vmNEXT = 1000000;
+     end
+
+   always @(posedge clk)
+     begin
+        for (int i = 1; i <= 4; i++)
+          if ((dmaOWN == i) & memACKI)
+            vmDMA[i] = vmDMA[i] + 1;
+        if (cslREQI & cslACKO)
+          vmCSL = vmCSL + 1;
+        if (vmCPUINTA & !vmINTAPEND)
+          begin
+             vmINTAPEND = 1;
+             vmDMASEEN  = 0;
+             vmCSLSEEN  = 0;
+          end
+        if (vmINTAPEND)
+          begin
+             if (dmaOWN != 0) vmDMASEEN = 1;
+             if (cslREQI & !cpuLOCK & !cslBLOCK & !cslDEFER) vmCSLSEEN = 1;
+             if (cpuACKO | !vmCPUINTA)
+               begin
+                  vmINTA = vmINTA + 1;
+                  if (vmDMASEEN) vmINTADMA = vmINTADMA + 1;
+                  if (vmCSLSEEN) vmINTACSL = vmINTACSL + 1;
+                  vmINTAPEND = 0;
+               end
+          end
+        if ($time >= vmNEXT)
+          begin
+             $display("[%11.3f] VECMON: DMA words uba1=%0d uba3=%0d uba4=%0d csl=%0d  WRU/VECT cycles=%0d held by DMA=%0d by CSL=%0d  cslREQ=%b cslADDR=%012o LOCK=%b BLOCK=%b DEFER=%b",
+                      $time/1.0e3, vmDMA[1], vmDMA[3], vmDMA[4], vmCSL, vmINTA, vmINTADMA, vmINTACSL,
+                      cslREQI, cslADDRI, cpuLOCK, cslBLOCK, cslDEFER);
+             vmNEXT = vmNEXT + 1000000;
+          end
+     end
+
+`endif
+
+   //
+   // Simulation monitor: print CPU memory writes to 200000-277777 (results
+   // area of generated test programs such as fptest.dat)
+   //
+
+`ifdef SIM_RESMON
+   logic [18:35] rmLAST;
+   always @(posedge clk)
+     if (cpuREQI & !`busIO(cpuADDRI) & `busWRITE(cpuADDRI) & memACKI & cpuGNT &
+         (cpuADDRI[14:17] == 0) & (cpuADDRI[18:20] == 3'b010))
+       $display("RESMON %06o %012o", cpuADDRI[18:35], cpuDATAI);
+`endif
+
 `endif
 
 endmodule
