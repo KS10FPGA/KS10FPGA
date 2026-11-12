@@ -60,6 +60,7 @@ module NXD (
       input  wire [0: 35] cpuADDRO,             // Bus Address
       input  wire         cpuREQO,              // CPU Bus Request
       input  wire         cpuACKI,              // CPU Bus Acknowledge
+      input  wire         cpuGNT,               // CPU has the bus
       output wire         ioWAIT,               // IO Wait
       output wire         ioBUSY                // IO Busy
    );
@@ -150,6 +151,7 @@ module NXD (
    reg  [0:35] lastADDR;
    reg         lastREQ;
    reg         served;
+   reg         lastACK;
 
    wire sameREQ  = lastREQ & cpuREQO & (lastADDR == cpuADDRO);
    wire newCYCLE = busIO & cpuREQO & !cpuACKI & !(served & sameREQ);
@@ -166,11 +168,13 @@ module NXD (
              lastADDR <= 0;
              lastREQ  <= 0;
              served   <= 0;
+             lastACK  <= 0;
           end
         else
           begin
              lastADDR <= cpuADDRO;
              lastREQ  <= cpuREQO;
+             lastACK  <= cpuACKI;
              served   <= setSERVED | (served & sameREQ);
           end
      end
@@ -201,6 +205,34 @@ module NXD (
                    state  <= stateCNT;
                 end
 
+              //
+              // IO cycle acknowledged in the same clock as the request.
+              //  The memory controller answers the Memory Status Register
+              //  (IO address 100000) combinationally.  Without this the IO
+              //  cycle never went busy, the microcode IOWAIT timed out and
+              //  the RDIO/WRIO page failed (PFW 200000 = IO not busy).
+              //  TOPS-20 reads the MSR at login and stopped with BUGHLT
+              //  IONXM.
+              //
+              //  Only plain IO cycles, and only when the acknowledge was
+              //  not already asserted on the previous clock.  The UBA holds
+              //  its acknowledge until the request drops, and the request
+              //  can stay asserted when the PI microcode goes straight from
+              //  the WRU cycle to the vector cycle.  Taking that held
+              //  acknowledge as the answer to the vector cycle let the CPU
+              //  read the WRU response as the vector, and TOPS-20 halted
+              //  with an Illegal Interrupt Instruction.
+              //
+
+              else if (busIO & cpuREQO & cpuACKI & !lastACK & !busWRU & !busVECT &
+                       !(served & sameREQ))
+                begin
+                   wru    <= 0;
+                   vect   <= 0;
+                   busy   <= 1;
+                   state  <= stateACKIO;
+                end
+
             //
             // Wait for ACK.  Timeout if the ACK never occurs.
             //
@@ -215,8 +247,20 @@ module NXD (
                    else
                      state <= stateACKIO;
                 end
+              //
+              // Only count clocks where the arbiter is giving the bus to
+              // the CPU.  UBA DMA (e.g. a disk transfer) has priority over
+              // the CPU and could use up the whole timeout before the IO
+              // request ever reached the device.  On a vector cycle the
+              // CPU then read a vector of zero and halted with an Illegal
+              // Interrupt Instruction, and the device's acknowledge came
+              // later and was lost.
+              //
               else if (nxmcnt != 0)
-                nxmcnt <= nxmcnt - 1'b1;
+                begin
+                   if (cpuGNT)
+                     nxmcnt <= nxmcnt - 1'b1;
+                end
               else
                 state <= stateNOACK;
 
