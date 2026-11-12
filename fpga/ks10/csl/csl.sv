@@ -255,6 +255,7 @@ module CSL (
       input  wire          lpSIXLPI,    // LP26 Line spacing
       output logic         lpOVFU,      // LP26 Optical Vertial Format Unit
       input  wire          lpSETOFFLN,  // LP26 Set offline
+      input  wire  [ 0:12] lpOFFDBG,    // LP26 Debug: why it last went offline
       output logic         lpONLINE,    // LP26 Status
       // Interface
       rpcslbus.csl         rpDATA,      // RP Interface
@@ -583,7 +584,7 @@ module CSL (
 
    wire cslGOSTAT = cslBUS.busREQO;
    wire [0:31] regSTAT   = {15'b0, cslGOSTAT, 6'b0, regCONCSR[22], cpuHALT, cpuRUN, cpuCONT, cpuEXEC, cslTIMEREN, cslTRAPEN, cslCACHEEN, 1'b0, cslRESET};
-   wire [0:31] regLPRD   = {6'b0, lpCONFIG, 13'b0, lpSIXLPI, lpOVFU, lpONLINE};
+   wire [0:31] regLPRD   = {6'b0, lpCONFIG, lpOFFDBG, lpSIXLPI, lpOVFU, lpONLINE};
    wire [0:31] regDUPRD  = {dupTXE, 3'b0, dupRI, dupCTS, dupDSR, dupDCD, dupTXFIFO, dupRXF, dupDTR, dupRTS, 1'b0, dupH325, dupW3, dupW5, dupW6, 8'b0};
 
    always_ff @(posedge clk)

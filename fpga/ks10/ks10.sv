@@ -374,6 +374,7 @@ module KS10 (
 
    wire [ 0:31] lpCCR;                  // LP26 Console Control Register
    wire         lpSETOFFLN;             // LP26 set offline
+   wire [ 0:12] lpOFFDBG;               // LP26 debug: why it last went offline
    wire         lpONLINE;               // LP26 status
    wire         lpOVFU;                 // LP26 has optical vertical format unit
    wire [ 6:15] lpCONFIG;               // LP26 serial configuration
@@ -576,6 +577,7 @@ module KS10 (
       .lpSIXLPI         (lpSIXLPI),
       .lpOVFU           (lpOVFU),
       .lpSETOFFLN       (lpSETOFFLN),
+      .lpOFFDBG         (lpOFFDBG),
       .lpONLINE         (lpONLINE),
       .mtDATA           (mtCSLDATA),
       .rpDATA           (rpCSLDATA),
@@ -943,6 +945,7 @@ module KS10 (
       .lpTOF            (lpTOF),
       .lpPARERR         (lpPARERR),
       .lpSETOFFLN       (lpSETOFFLN),
+      .lpOFFDBG         (lpOFFDBG),
       .lpVFURDY         (lpVFURDY),
       .lpSIXLPI         (lpSIXLPI),
       .lpDEMAND         (lpDEMAND)
@@ -962,6 +965,7 @@ module KS10 (
    assign unibus[3][2].devDATAO = 0;
    assign LP_TXD                = 0;
    assign lpSETOFFLN            = 0;
+   assign lpOFFDBG              = 0;
    assign lpSIXLPI              = 0;
 
 `endif
