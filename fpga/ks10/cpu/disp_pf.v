@@ -86,6 +86,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+// `define NO_DATA_INTR	        // TREV
+`ifdef SIM_DATA_INTR            // simulation: test with data-cycle interrupts on
+`undef NO_DATA_INTR
+`endif
+
 `default_nettype none
 `timescale 1ns/1ps
 
@@ -230,8 +235,20 @@ module DISP_PF (
    //  pending.  ABORT MEM CYCLE (SPEC/MEMCLR) discards a pending check.
    //
 
+   //  The microcode waits for memory either with the MEM field (MEM READ,
+   //  MEM WRITE) or with SPEC/WAIT (SPEC MEM READ).  SPEC MEM READ is used by
+   //  the double floating point operand fetch (A READ dispatch 51, used by
+   //  DFAD, DFSB, DFMP and DFDV).  When only the MEM field was recognised,
+   //  a page fail on that operand was taken one microinstruction late: the
+   //  first operand word and its exponent (SC/FE) were taken from a read
+   //  that never happened, the refill only re-read the second word, and the
+   //  instruction gave a wrong result or a false No Divide / overflow
+   //  (ALGOL UETP "FLOATING POINT OVERFLOW" in DFDV).
+   //
+
    reg  pfPEND;
-   wire memWAIT = `cromMEM_CYCLE & `cromMEM_WAIT;
+   wire specMEMWAIT = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMWAIT);
+   wire memWAIT = (`cromMEM_CYCLE & `cromMEM_WAIT) | specMEMWAIT;
    wire pfEN    = pfPEND & memWAIT;
 
    always @(posedge clk)
@@ -293,7 +310,11 @@ module DISP_PF (
      end
 
    wire vmaWRITE = `vmaWRITE(vmaREG);
+`ifdef NO_DATA_INTR
+   wire intrMEM  = intrEN;              // EXPERIMENT: fetch-only interrupts
+`else
    wire intrMEM  = intrEN | (pfEN & !vmaPHYS & !vmaWRITE);
+`endif
 
    //
    // Page failure types

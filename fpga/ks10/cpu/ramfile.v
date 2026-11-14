@@ -265,7 +265,8 @@ module RAMFILE (
    //
 
    wire specMEMCLR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR);
-   wire memWAIT    = `cromMEM_CYCLE & `cromMEM_WAIT;
+   wire specMEMWAIT = `cromSPEC_EN_10 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMWAIT);
+   wire memWAIT    = (`cromMEM_CYCLE & `cromMEM_WAIT) | specMEMWAIT;     // MEM field or SPEC/WAIT
 
    reg memABORT;
 
