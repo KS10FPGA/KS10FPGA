@@ -301,11 +301,27 @@ module NXD (
             // Un-acked IO Cycle
             //
 
+            //  A WRU cycle that timed out stays here while the WRU request is
+            //  on the bus.  The PI microcode can then go straight from the
+            //  WRU to the vector cycle (STRTIO at 3726), and the VMA keeps
+            //  the WRU flag until that new cycle is loaded.  Leave on
+            //  wruDONE as stateACKWRU does, so that the vector cycle starts
+            //  from stateIDLE and waits for its acknowledge.
+            //
+            //  Previously only !busWRU was checked, which is first true on
+            //  the vector cycle itself.  The vector cycle's MEM READ did not
+            //  wait (ioWAIT is only asserted from stateIDLE and stateCNT),
+            //  read a vector of zero, and TOPS-20 halted with an Illegal
+            //  Interrupt Instruction.  This happens when the UBA answers the
+            //  WRU on the same clock that the timeout expires: the CPU takes
+            //  the WRU data and goes on to the vector cycle.
+            //
+
             stateNOACK:
               if (wru)
                 begin
                    busy <= 0;
-                   if (!busWRU)
+                   if (!busWRU | wruDONE)
                      state <= stateIDLE;
                 end
               else
