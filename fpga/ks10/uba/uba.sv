@@ -327,6 +327,42 @@ module UBA (
 `else
    wire    simVECDROP = 0;
 `endif
+
+   //
+   // Simulation only: SIM_WRUDROP=n makes UBA3 ignore its n'th WRU request
+   // (and every 64th one after it) for SIM_WRUDROPLEN clocks, so the WRU is
+   // answered late, near or after the CPU's IO timeout.
+   //
+
+`ifdef SIM_WRUDROP
+`ifndef SIM_WRUDROPLEN
+`define SIM_WRUDROPLEN 32
+`endif
+   integer wdCOUNT = 0;
+   integer wdHOLD  = 0;
+   logic   wdLAST  = 0;
+   wire    wdNEW   = wruREAD & wruHIT & !wdLAST & (ubaNUM == 3);
+   wire    wdHIT   = wdNEW & (wdCOUNT >= `SIM_WRUDROP) & (((wdCOUNT - `SIM_WRUDROP) % 64) == 0);
+   wire    simWRUDROP = wdHIT | (wdHOLD != 0);
+   always @(posedge clk)
+     begin
+        wdLAST <= wruREAD & wruHIT;
+        if (wdHOLD != 0)
+          wdHOLD <= wdHOLD - 1;
+        else if (wdNEW)
+          begin
+             wdCOUNT <= wdCOUNT + 1;
+             if (wdHIT)
+               begin
+                  wdHOLD <= `SIM_WRUDROPLEN;
+                  $display("[%11.3f] WRUDROP: UBA%0d ignoring WRU #%0d for %0d clocks",
+                           $time/1.0e3, ubaNUM, wdCOUNT, `SIM_WRUDROPLEN);
+               end
+          end
+     end
+`else
+   wire    simWRUDROP = 0;
+`endif
    logic      [ 0: 3] cntNXD;                           // Timeout timer
    logic      [ 0: 4] state;                            // State variable
 
@@ -617,7 +653,7 @@ module UBA (
            // CPU is doing a WRU bus cycle
            //
 
-           else if (ks10bus.busREQI & wruREAD & wruHIT)
+           else if (ks10bus.busREQI & wruREAD & wruHIT & !simWRUDROP)
              begin
                 ks10bus.busACKO  <= 1;
                 ks10bus.busDATAO <= wruRESP;

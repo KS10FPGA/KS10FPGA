@@ -62,6 +62,33 @@ module ARB (
    logic        cpuACKO;                // CPU Bus Acknowledge Out
    logic        cpuGNT;                 // CPU has the bus this clock
    logic [0:35] cpuDATAO;               // CPU Data Out
+
+   //
+   // Simulation only: SIM_BUSSTEAL takes the bus away from the CPU at random
+   // (bursts of 1..6 clocks, about 25% of the time), as UBA DMA does on the
+   // board, to look for CPU paths that misbehave when a bus cycle is held
+   // off or interrupted.
+   //
+
+`ifdef SIM_BUSSTEAL
+   logic simSTEAL;
+   int   simSTEALCNT;
+   always @(posedge clk)
+     if (rst)
+       begin
+          simSTEAL    <= 0;
+          simSTEALCNT <= 0;
+       end
+     else if (simSTEALCNT != 0)
+       simSTEALCNT <= simSTEALCNT - 1;
+     else
+       begin
+          simSTEAL    <= (($urandom % 4) == 0);
+          simSTEALCNT <= $urandom % 6;
+       end
+`else
+   wire simSTEAL = 0;
+`endif
    logic [1: 7] cpuINTRO;               // CPU Interrupt Out
 
    //
@@ -423,7 +450,7 @@ module ARB (
         //  tristated bus with pullups.
         //
 
-        else if (cpuREQI)
+        else if (cpuREQI & !simSTEAL)
           begin
              cpuGNT      = 1;
              cslREQO     = 1;
@@ -701,6 +728,25 @@ module ARB (
      if (cpuREQI & !`busIO(cpuADDRI) & `busWRITE(cpuADDRI) & memACKI & cpuGNT &
          (cpuADDRI[14:17] == 0) & (cpuADDRI[18:20] == 3'b010))
        $display("RESMON %06o %012o", cpuADDRI[18:35], cpuDATAI);
+`endif
+
+   //
+   // Simulation monitor: every CPU memory read/write acknowledged between
+   // SIM_MEMMON_FROM and SIM_MEMMON_TO (ns): address word and data.
+   //
+
+`ifdef SIM_MEMMON
+`ifndef SIM_MEMMON_FROM
+ `define SIM_MEMMON_FROM 0
+`endif
+`ifndef SIM_MEMMON_TO
+ `define SIM_MEMMON_TO 0
+`endif
+   always @(posedge clk)
+     if (cpuREQI & !`busIO(cpuADDRI) & memACKI & cpuGNT &
+         ($time >= `SIM_MEMMON_FROM) & ($time <= `SIM_MEMMON_TO))
+       $display("[%11.3f] MEMMON: %s addr=%012o data=%012o", $time/1.0e3,
+                `busWRITE(cpuADDRI) ? "WR" : "RD", cpuADDRI, `busWRITE(cpuADDRI) ? cpuDATAI : memDATAI);
 `endif
 
 `endif
