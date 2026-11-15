@@ -62,6 +62,7 @@ module KMCSEQ (
       output logic [ 9:0] kmcPC,        // Program Counter
       output logic [ 9:0] kmcMNTADDR,   // Maintenance Address Register
       output logic [15:0] kmcMNTINST,   // Maintenance Instruction Register
+      output logic [15:0] kmcCRAMOUTD,  // CRAM contents at kmcMNTADDR
       output logic [15:0] kmcCRAM       // Control ROM
    );
 
@@ -178,11 +179,32 @@ module KMCSEQ (
    logic [15:0] kmcCRAMR;
    logic [15:0] kmcCRAM_MEM[0:1023];
 
+   //
+   // Port A (maintenance address): CRAM write, and the CRAM read-back used
+   // by SEL6 when CRAM OUT (ROM O) is set.  The host reads the CRAM by
+   // writing the address to SEL4, setting CRAM OUT and reading SEL6.
+   // TOPS-20 (KDPSRV BTKLC4) loads all 1024 words and then verifies them
+   // this way; SEL6 used to return the maintenance instruction register
+   // (the last word written) instead, so the verify failed (KMCBRK,
+   // KMCLOD).  With CRAM IN also set, SEL6 shows the maintenance
+   // instruction register instead, as the CRAM bus does (see kmc11.sv);
+   // DSKMA relies on that.
+   //
+
    always_ff @(posedge clk)
      begin
         if (kmcCRAMOUT & kmcCRAMWR)
           kmcCRAM_MEM[kmcMNTADDR] <= kmcMNTINST;
-        else if (kmcCRAMCLKEN)
+        kmcCRAMOUTD <= kmcCRAM_MEM[kmcMNTADDR];
+     end
+
+   //
+   // Port B (program counter): instruction fetch.
+   //
+
+   always_ff @(posedge clk)
+     begin
+        if (kmcCRAMCLKEN & !(kmcCRAMOUT & kmcCRAMWR))
           kmcCRAMR <= kmcCRAM_MEM[kmcPC];
      end
 

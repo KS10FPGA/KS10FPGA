@@ -196,6 +196,7 @@ module KMC11 (
    logic [15: 0] kmcCSR6;                               // CSR6
    logic [ 9: 0] kmcMNTADDR;                            // Maintenance address register
    logic [15: 0] kmcMNTINST;                            // Maintenance instruction register
+   logic [15: 0] kmcCRAMOUTD;                           // CRAM contents at maintenance address
    logic         kmcMPBUSY;                             // Multiport RAM Busy
 
    //
@@ -383,6 +384,7 @@ module KMC11 (
       .kmcPC       (kmcPC),
       .kmcMNTADDR  (kmcMNTADDR),
       .kmcMNTINST  (kmcMNTINST),
+      .kmcCRAMOUTD (kmcCRAMOUTD),
       .kmcCRAM     (kmcCRAM)
    );
 
@@ -618,7 +620,7 @@ module KMC11 (
                  unibus.devDATAO = {20'b0, kmcCSR4};
              if (sel6READ)
                if (kmcCRAMOUT)
-                 unibus.devDATAO = {20'b0, kmcMNTINST};
+                 unibus.devDATAO = {20'b0, kmcCRAMIN ? kmcMNTINST : kmcCRAMOUTD};  // CRAM bus
                else
                  unibus.devDATAO = {20'b0, kmcCSR6};
           end
