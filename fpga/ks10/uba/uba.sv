@@ -770,6 +770,7 @@ module UBA (
                   devDATAO[3] <= devDATAI[1];
                   devDATAO[4] <= devDATAI[1];
                   devDATAO[5] <= devDATAI[1];
+                  cntNXD      <= timeout;
                   state       <= stateDEVtoIO;
                end
 
@@ -814,6 +815,7 @@ module UBA (
                   devDATAO[3] <= devDATAI[2];
                   devDATAO[4] <= devDATAI[2];
                   devDATAO[5] <= devDATAI[2];
+                  cntNXD      <= timeout;
                   state       <= stateDEVtoIO;
                end
 
@@ -858,6 +860,7 @@ module UBA (
                   devDATAO[3] <= devDATAI[3];
                   devDATAO[4] <= devDATAI[3];
                   devDATAO[5] <= devDATAI[3];
+                  cntNXD      <= timeout;
                   state       <= stateDEVtoIO;
                end
 
@@ -902,6 +905,7 @@ module UBA (
                   devDATAO[3] <= devDATAI[4];
                   devDATAO[4] <= devDATAI[4];
                   devDATAO[5] <= devDATAI[4];
+                  cntNXD      <= timeout;
                   state       <= stateDEVtoIO;
                end
 
@@ -946,6 +950,7 @@ module UBA (
                   devDATAO[3] <= devDATAI[5];
                   devDATAO[4] <= devDATAI[5];
                   devDATAO[5] <= devDATAI[5];
+                  cntNXD      <= timeout;
                   state       <= stateDEVtoIO;
                end
 
@@ -1130,6 +1135,15 @@ module UBA (
          //  DSKMA Test.65 does a NPR IO write through the UBA to it's own CSR4
          //  DSKMA Test.66 does a NPR IO read through the UBA to it's own CSR4.
          //
+         //  Timeout if no device answers.  Otherwise the UBA waits here
+         //  until the device gives up (the KMC11 NXM timer is 2 us), and
+         //  cannot answer the CPU in the meantime.  A WRU to this UBA then
+         //  ran past the CPU's 32 clock IO timeout (NXD), and a register
+         //  access to one of its devices would have failed with IO NXM.
+         //  After the timeout the UBA goes back to IDLE, where CPU requests
+         //  are served first; a device that is still requesting is then
+         //  retried.
+         //
 
          stateDEVtoIO:
            begin
@@ -1139,7 +1153,7 @@ module UBA (
                    devDATAO[devSEL] <= devDATAI[1];
                    state            <= stateDONE;
                 end
-              if (devACKI[2])
+              else if (devACKI[2])
                 begin
                    devACKO[devSEL]  <= 1;
                    devDATAO[devSEL] <= devDATAI[2];
@@ -1164,6 +1178,10 @@ module UBA (
                    state            <= stateDONE;
                 end
               else if (!devREQI[devSEL])
+                state <= stateDONE;
+              else if (cntNXD != 0)
+                cntNXD <= cntNXD - 1'b1;
+              else
                 state <= stateDONE;
            end
 
