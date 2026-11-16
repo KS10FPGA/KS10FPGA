@@ -377,10 +377,16 @@ module UART_TX (
 
    //
    // Parity
+   //  Only over the bits that are sent.  The upper bits of the data are
+   //  not cleared for 5, 6 or 7 bit characters (TOPS-20 puts its own
+   //  parity bit in bit 7), and used to be included.
    //
 
-   wire evenpar = (txREG[0] ^ txREG[1] ^ txREG[2] ^ txREG[3] ^
-                   txREG[4] ^ txREG[5] ^ txREG[6] ^ txREG[7]);
+   wire [7:0] txMASK = (length == `UARTLEN_5) ? 8'h1f :
+                       (length == `UARTLEN_6) ? 8'h3f :
+                       (length == `UARTLEN_7) ? 8'h7f : 8'hff;
+
+   wire evenpar = ^(txREG & txMASK);
 
    //
    // Data selector for TXD

@@ -359,17 +359,23 @@ module UART_RX (
             // Receive parity bit
             //  Check parity
             //
+            //  Even parity: the parity bit makes the number of ones even,
+            //  so it equals the XOR of the data bits; error if it does not.
+            //  Odd parity: error if it does.  These were inverted (the DZ11
+            //  hid it by also swapping even and odd, which then made the
+            //  transmitter send the wrong parity).
+            //
 
             statePARITY:
               if (clken)
                 if (brdiv == 0)
                   begin
                      if (parity == `UARTPAR_EVEN)
-                       pare <= (din == (rxREG[0] ^ rxREG[1] ^ rxREG[2] ^
+                       pare <= (din != (rxREG[0] ^ rxREG[1] ^ rxREG[2] ^
                                         rxREG[3] ^ rxREG[4] ^ rxREG[5] ^
                                         rxREG[6] ^ rxREG[7]));
                      else
-                       pare <= (din != (rxREG[0] ^ rxREG[1] ^ rxREG[2] ^
+                       pare <= (din == (rxREG[0] ^ rxREG[1] ^ rxREG[2] ^
                                         rxREG[3] ^ rxREG[4] ^ rxREG[5] ^
                                         rxREG[6] ^ rxREG[7]));
                      brdiv <= 15;

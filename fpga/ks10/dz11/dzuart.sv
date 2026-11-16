@@ -83,6 +83,17 @@ module DZUART (
      end
 
    //
+   // Parity
+   //
+   //  DZ11 LPR: bit 6 = PARITY ENABLE, bit 7 = ODD PARITY.  The UART codes
+   //  are NONE 00, ODD 01, EVEN 11 (uart.vh).  LPR[7:6] used to be passed
+   //  straight through, so DZ even parity (01) became UART odd and DZ odd
+   //  parity (11) became UART even.
+   //
+
+   wire [1:0] uartPAR = {`dzLPR_PAR(lprREG) == 2'b01, `dzLPR_PAR(lprREG) == 2'b01 | `dzLPR_PAR(lprREG) == 2'b11};
+
+   //
    // UART Baud Rate Generator
    //
 
@@ -105,7 +116,7 @@ module DZUART (
        .clr    (clr),
        .clken  (clken),
        .length (`dzLPR_LEN(lprREG)),
-       .parity (`dzLPR_PAR(lprREG)),
+       .parity (uartPAR),
        .stop   (`dzLPR_STOP(lprREG)),
        .load   (txload),
        .data   (txdata),
@@ -126,7 +137,7 @@ module DZUART (
        .clr    (clr),
        .clken  (`dzLPR_RXEN(lprREG) & clken),
        .length (`dzLPR_LEN(lprREG)),
-       .parity (`dzLPR_PAR(lprREG)),
+       .parity (uartPAR),
        .stop   (`dzLPR_STOP(lprREG)),
        .rxd    (rxd),
        .rfull  (rxclr),
