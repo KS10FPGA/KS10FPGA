@@ -558,6 +558,21 @@ module UBA (
        end
 
      else
+      begin
+
+       //
+       // Clear the timeout counters while idle.
+       //  A cycle that is answered leaves its counter part way down.  The
+       //  vector state used to count that stale value (0 = no wait at all),
+       //  and a counter left at 1 held setTMO/setNXD on, so the status bit
+       //  could not be cleared.  Any load below in the same clock wins.
+       //
+
+       if (state == stateIDLE)
+         begin
+            cntTMO <= 0;
+            cntNXD <= 0;
+         end
 
        case (state)
          stateIDLE:
@@ -1076,8 +1091,8 @@ module UBA (
                 devREQO[5]       <= 0;
                 state            <= stateWAITVECREQ;
              end
-           else if (cntTMO != 0)
-             cntTMO <= cntTMO - 1'b1;
+           else if (cntNXD != 0)                // Was cntTMO, which the entry
+             cntNXD <= cntNXD - 1'b1;           // to this state never loaded
            else
              begin
                 ks10bus.busREQO <= 0;
@@ -1584,6 +1599,7 @@ module UBA (
               state       <= stateIDLE;
            end
        endcase
+      end
 
    assign devRESET = statINI;
    assign setNXD   = (cntNXD == 1);
@@ -1733,7 +1749,7 @@ module UBA (
 `endif
           if (!(devREQO[1] & devACKI[1]) & !(devREQO[2] & devACKI[2]) &
               !(devREQO[3] & devACKI[3]) & !(devREQO[4] & devACKI[4]) &
-              !(devREQO[5] & devACKI[5]) & (cntTMO == 0))
+              !(devREQO[5] & devACKI[5]) & (cntNXD == 0))
             $display("[%11.3f] VECMON: UBA%0d vector cycle timed out, no device. devREQO=%b%b%b%b%b",
                      $time/1.0e3, ubaNUM, devREQO[1], devREQO[2], devREQO[3], devREQO[4], devREQO[5]);
        end
