@@ -305,20 +305,32 @@ module RAMFILE (
    reg [0:35] ram [0:1023];
    reg [0: 9] rd_addr;
 
-`ifndef SYNTHESIS
+   //  The Process Use Register (WORK[PUR], word 220) is not initialized by
+   //  the microcode, and on a real KS10 it powers up with random contents.
+   //  The TOPS-20 MTBOOT never writes it, and loads CST MASK (WRCSTM 40124)
+   //  from a word its own relocation has just swapped out, so CSTM is
+   //  whatever was left at 774124.  With PUR = 0 (FPGA RAM after
+   //  configuration) and no age bit in that leftover, every CST update
+   //  writes an age of zero, and the next refill of that page page faults,
+   //  including MTBOOT's own page fail handler (hang at 775451, usually on
+   //  the first tape boot after loading the FPGA).  Give PUR a non-zero age
+   //  at configuration, as the real machine's RAM almost always has.
+   //  TOPS-20 loads its own PUR (WRPUR) once it is running.
+   //
+
+   localparam [0:35] PUR_INIT = 36'o010000_000000;
+
    integer i;
 
    initial
      begin
         for (i = 0; i < 1024; i = i + 1)
-          begin
-             if (i == 15)
-               ram[i] = 36'o777577_030303;      // (Initialize stack pointer)
-             else
-               ram[i] = 0;
-          end
-     end
+          ram[i] = 0;
+        ram[10'o220] = PUR_INIT;
+`ifndef SYNTHESIS
+        ram[15] = 36'o777577_030303;    // (Initialize stack pointer)
 `endif
+     end
 
    //
    // Clock RAM on T2
@@ -352,6 +364,23 @@ module RAMFILE (
          ((`cromRAMADDR_SEL != `cromRAMADDR_SEL_VMA) | !`cromMEM_CYCLE))
        $display("[%11.3f] FMMON: AC ref write with RAMADR/%o: ram[%04o] <= %012o (was %012o). VMA=%012o next J=%04o MEM=%b",
                 $time/1.0e3, `cromRAMADDR_SEL, addr, dbus, ram[addr], vmaREG, `cromJ, `cromMEM_CYCLE);
+`endif
+`endif
+
+   //
+   // Workspace write monitor (define SIM_WORKMON to enable)
+   //  Reports writes to the paging workspace words: SPB 215, CBR 216,
+   //  CSTM 217, PUR 220, PTA.E 423, PTA.U 424 (any RAMFILE region).
+   //
+
+`ifndef SYNTHESIS
+`ifdef SIM_WORKMON
+   always @(posedge clk)
+     if (clken & ramfileWRITE &
+         ((addr[1:9] == 9'o215) | (addr[1:9] == 9'o216) | (addr[1:9] == 9'o217) |
+          (addr[1:9] == 9'o220) | (addr[1:9] == 9'o423) | (addr[1:9] == 9'o424)))
+       $display("[%11.3f] WORKMON: ram[%04o] <= %012o (was %012o) RAMADR/%o FMWRITE=%b VMA=%012o",
+                $time/1.0e3, addr, dbus, ram[addr], `cromRAMADDR_SEL, `cromFMWRITE, vmaREG);
 `endif
 `endif
 
