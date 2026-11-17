@@ -2669,7 +2669,6 @@ static bool cmdLP_CONFIG(int argc, char *argv[]) {
         "                               \"no\"   - Use no parity\n"
         "                               \"even\" - Use even parity\n"
         "                               \"odd\"  - Use odd parity\n"
-        "                               \"mark\" - Use mark parity\n"
         "                               The default is no parity\n"
         "  [--stop=nstop                Set printer number of stop bits. Valid number of:\n"
         "                               stop bits are 1 and 2. The default is 2 stop bits.\n"
@@ -2711,7 +2710,7 @@ static bool cmdLP_CONFIG(int argc, char *argv[]) {
             "Unknown", "Unknown"," Unknown", "Unknown",
         };
 
-        const char *parityTable[] = {"N", "O", "E", "M"};
+        const char *parityTable[] = {"N", "O", "?", "E"};   // Matches UART: 00=none, 01=odd, 11=even
 
         printf("        LPCCR                     : 0x%08x\n"
                "        Vertical Format Unit      : %s\n"
@@ -2834,8 +2833,6 @@ static bool cmdLP_CONFIG(int argc, char *argv[]) {
                         lpccr = ks10_t::lpPARITY_ODD | (lpccr &~ ks10_t::lpPARITY);
                     } else if (tolower(optarg[0]) == 'n') {
                         lpccr = ks10_t::lpPARITY_NONE | (lpccr &~ ks10_t::lpPARITY);
-                    } else if (tolower(optarg[0]) == 'm') {
-                        lpccr = ks10_t::lpPARITY_MARK | (lpccr &~ ks10_t::lpPARITY);
                     } else {
                         printf("lp config: unrecognized option \'--%s=%s\'\n", options[index].name, optarg);
                     }

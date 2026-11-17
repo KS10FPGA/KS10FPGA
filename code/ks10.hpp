@@ -316,8 +316,7 @@ class ks10_t {
             lpPARITY      = 0x00060000,                    //!< LP Parity Mask
             lpPARITY_NONE = 0x00000000,                    //!< LP No Parity
             lpPARITY_ODD  = 0x00020000,                    //!< LP Odd Parity
-            lpPARITY_EVEN = 0x00040000,                    //!< LP Even Parity
-            lpPARITY_MARK = 0x00060000,                    //!< LP Mark Parity
+            lpPARITY_EVEN = 0x00060000,                    //!< LP Even Parity (UART has no mark parity)
             lpLENGTH      = 0x00180000,                    //!< LP Length Mask
             lpLENGTH_5    = 0x00000000,                    //!< LP Length 5 bits
             lpLENGTH_6    = 0x00080000,                    //!< LP Length 6 bits
