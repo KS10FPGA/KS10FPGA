@@ -130,6 +130,7 @@ module UBA (
    logic        setNXD;                                 // Set NXD
    logic        setTMO;                                 // Set TMO
    logic        pageFAIL;                               // Page failure
+   logic        pageCHECK;                              // Page fail is checked this state
 
    //
    // Device request on any device input
@@ -165,6 +166,8 @@ module UBA (
    wire statREAD   = ubaREAD  & (busADDR[18:35] == statADDR [18:35]);
    wire statWRITE  = ubaWRITE & (busADDR[18:35] == statADDR [18:35]);
    wire maintWRITE = ubaWRITE & (busADDR[18:35] == maintADDR[18:35]);
+   wire vdbgREAD   = ubaREAD  & (busADDR[18:35] >= (ubaADDR + 18'o110)) &
+                                (busADDR[18:35] <= (ubaADDR + 18'o113));  // Vector debug (763110-763113)
    wire devREAD    = ubaREAD  & (busADDR[18:28] != ubaADDR  [18:28]) & !regUBAMR;
    wire devWRITE   = ubaWRITE & (busADDR[18:28] != ubaADDR  [18:28]) & !regUBAMR;
    wire loopREAD   = ubaREAD  & (busADDR[18:28] != ubaADDR  [18:28]) &  regUBAMR;
@@ -202,7 +205,7 @@ module UBA (
       .devINTR    (devINTRI),
       .statWRITE  (statWRITE),
       .setNXD     (setNXD),
-      .setTMO     (setTMO | pageFAIL),
+      .setTMO     (setTMO | (pageFAIL & pageCHECK)),
       .regUBASR   (regUBASR)
    );
 
@@ -287,8 +290,200 @@ module UBA (
    logic      [ 0:35] loopADDR;                         // Loopback Addr
    logic      [ 0: 2] devSEL;                           // Device select
    logic      [ 0: 3] cntTMO;                           // Timeout timer
+
+   //
+   // Simulation only: SIM_VECDROP=n makes UBA3 ignore its n'th interrupt
+   // vector request (and every 64th one after it) for 80 clocks, so the
+   // CPU's vector cycle times out.  Used to see how the CPU handles a
+   // vector cycle that nobody answers.
+   //
+
+`ifdef SIM_VECDROP
+`ifndef SIM_VECDROPLEN
+`define SIM_VECDROPLEN 80
+`endif
+   integer vdCOUNT = 0;
+   integer vdHOLD  = 0;
+   logic   vdLAST  = 0;
+   wire    vdNEW   = ks10bus.busREQI & vectREAD & !vdLAST & (ubaNUM == 3);
+   wire    vdHIT   = vdNEW & (vdCOUNT >= `SIM_VECDROP) & (((vdCOUNT - `SIM_VECDROP) % 64) == 0);
+   wire    simVECDROP = vdHIT | (vdHOLD != 0);
+   always @(posedge clk)
+     begin
+        vdLAST <= ks10bus.busREQI & vectREAD;
+        if (vdHOLD != 0)
+          vdHOLD <= vdHOLD - 1;
+        else if (vdNEW)
+          begin
+             vdCOUNT <= vdCOUNT + 1;
+             if (vdHIT)
+               begin
+                  vdHOLD <= `SIM_VECDROPLEN;
+                  $display("[%11.3f] VECDROP: UBA%0d ignoring vector request #%0d (addr %012o) for %0d clocks",
+                           $time/1.0e3, ubaNUM, vdCOUNT, ks10bus.busADDRI, `SIM_VECDROPLEN);
+               end
+          end
+     end
+`else
+   wire    simVECDROP = 0;
+`endif
    logic      [ 0: 3] cntNXD;                           // Timeout timer
    logic      [ 0: 4] state;                            // State variable
+
+   //
+   // Vector debug capture (read-only, 763110-763112 on this bridge)
+   //
+   //  Records the last CPU vector cycle to this bridge that ended without
+   //  the bridge returning a vector (the CPU then reads 0 and halts with
+   //  ILLII).
+   //
+   //  763110: [0:3]   count of unanswered vector cycles (saturates at 17)
+   //          [4:6]   PI level of the last WRU this bridge answered
+   //          [7:10]  0
+   //          [11:15] slots selected while the vector cycle was pending
+   //                  (slot 1..5 = bits 11..15)
+   //          [16:35] device interrupt requests when the vector cycle
+   //                  started: slot 1 BR7..BR4 in [16:19] .. slot 5 in [32:35]
+   //  763111: [16:35] device interrupt requests at the last answered WRU
+   //  763112: [16:35] device interrupt requests when the vector cycle ended
+   //          [0:7]   clocks the vector cycle was visible (saturates at 377)
+   //          [8:12]  device NPR requests (devREQI slot 1..5) at the start
+   //          [13]    busACKO at the start
+   //  763113: [0:4]   UBA state when the vector cycle started
+   //          [5:9]   UBA state when it ended
+   //          [10:14] UBA state on the clock before it started
+   //          [16:35] states visited while it was visible (state 0 = bit 16
+   //                  .. state 19 = bit 35)
+   //
+   //  States: 0 IDLE, 1 CPUtoDEV, 2 CPUtoVEC, 3/4 DEVtoMEM0/1, 5 DEVtoIO,
+   //          6-14 loopback, 15 WAITREG, 16 WAITBUSREQ, 17 WAITDEVREQ,
+   //          18 WAITVECREQ, 19 DONE
+   //
+   //  UBA3 slots: 1 DZ11, 2 LP20, 3 DUP11, 4 KMC11, 5 RH11 (tape)
+   //
+
+   wire  [0:19] vdbgINTR = {devINTRI[1], devINTRI[2], devINTRI[3], devINTRI[4], devINTRI[5]};
+   logic        vdbgLAST;
+   logic        vdbgACKD;
+   logic [0: 4] vdbgSELM;
+   logic [0:19] vdbgSNAP;
+   logic [0:19] vdbgWRU;
+   logic [0: 2] vdbgWRUPI;
+   logic [0: 3] vdbgCNT;
+   logic [0:35] regVDBG0;
+   logic [0:35] regVDBG1;
+   logic [0:35] regVDBG2;
+   logic [0:35] regVDBG3;
+   logic [0: 7] vdbgCLKS;
+   logic [0: 4] vdbgST0;
+   logic [0: 4] vdbgSTP;
+   logic [0: 4] vdbgPREV;
+   logic [0:19] vdbgSTM;
+   logic [0: 4] vdbgDREQ;
+   logic        vdbgACK0;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst)
+          begin
+             regVDBG3  <= 0;
+             vdbgCLKS  <= 0;
+             vdbgST0   <= 0;
+             vdbgSTP   <= 0;
+             vdbgPREV  <= 0;
+             vdbgSTM   <= 0;
+             vdbgDREQ  <= 0;
+             vdbgACK0  <= 0;
+          end
+        else
+          begin
+             vdbgPREV <= state;
+             if (vectREAD & !vdbgLAST)
+               begin
+                  vdbgCLKS <= 1;
+                  vdbgST0  <= state;
+                  vdbgSTP  <= vdbgPREV;
+                  vdbgSTM  <= 20'b1 << (19 - state);
+                  vdbgDREQ <= {devREQI[1], devREQI[2], devREQI[3], devREQI[4], devREQI[5]};
+                  vdbgACK0 <= ks10bus.busACKO;
+               end
+             else if (vectREAD)
+               begin
+                  if (vdbgCLKS != 8'hff)
+                    vdbgCLKS <= vdbgCLKS + 1'b1;
+                  vdbgSTM <= vdbgSTM | (20'b1 << (19 - state));
+               end
+             else if (vdbgLAST & !vdbgACKD)
+               regVDBG3 <= {vdbgST0, state, vdbgSTP, 1'b0, vdbgSTM};
+          end
+     end
+
+   always_ff @(posedge clk)
+     begin
+        if (rst)
+          begin
+             vdbgLAST  <= 0;
+             vdbgACKD  <= 0;
+             vdbgSELM  <= 0;
+             vdbgSNAP  <= 0;
+             vdbgWRU   <= 0;
+             vdbgWRUPI <= 0;
+             vdbgCNT   <= 0;
+             regVDBG0  <= 0;
+             regVDBG1  <= 0;
+             regVDBG2  <= 0;
+          end
+        else
+          begin
+             vdbgLAST <= vectREAD;
+             if ((state == stateIDLE) & wruREAD & wruHIT)
+               begin
+                  vdbgWRU   <= vdbgINTR;
+                  vdbgWRUPI <= busPI;
+               end
+             if (vectREAD & !vdbgLAST)
+               begin
+                  vdbgACKD <= 0;
+                  vdbgSELM <= 0;
+                  vdbgSNAP <= vdbgINTR;
+               end
+             else if (vectREAD)
+               begin
+                  if (state == stateCPUtoVEC)
+                    vdbgSELM <= vdbgSELM | {devREQO[1], devREQO[2], devREQO[3], devREQO[4], devREQO[5]};
+                  if (ks10bus.busACKO)
+                    vdbgACKD <= 1;
+               end
+             else if (vdbgLAST & !vdbgACKD)
+               begin
+                  vdbgCNT  <= (vdbgCNT == 4'hf) ? vdbgCNT : vdbgCNT + 1'b1;
+                  regVDBG0 <= {((vdbgCNT == 4'hf) ? vdbgCNT : vdbgCNT + 1'b1), vdbgWRUPI, 4'b0, vdbgSELM, vdbgSNAP};
+                  regVDBG1 <= {16'b0, vdbgWRU};
+                  regVDBG2 <= {vdbgCLKS, vdbgDREQ, vdbgACK0, 2'b0, vdbgINTR};
+`ifndef SYNTHESIS
+                  $display("[%11.3f] UBA%0d: unanswered vector cycle. sel=%05b start=%020b wru(pi%0d)=%020b end=%020b clks=%0d st0=%0d prev=%0d end=%0d mask=%020b dreq=%05b ack0=%b",
+                           $time/1.0e3, ubaNUM, vdbgSELM, vdbgSNAP, vdbgWRUPI, vdbgWRU, vdbgINTR,
+                           vdbgCLKS, vdbgST0, vdbgSTP, state, vdbgSTM, vdbgDREQ, vdbgACK0);
+`endif
+               end
+          end
+     end
+
+   //
+   // UBAPAGE computes pageFAIL combinationally from devREQ and the
+   // registered pageADDRI.  Outside the states below pageADDRI is stale
+   // (the previous transfer, with its IO flag replaced by flagREAD or
+   // flagWRITE), so a device request that arrives then would be checked
+   // against the wrong address.  If the monitor has since invalidated that
+   // map entry, the sticky UBASR[TMO] gets set although no transfer fails.
+   // TOPS-10 BOOT then refuses to read the disk (R11INI sees TMO) and
+   // probably TOPS-20 stalls after "System restarting".  Only set TMO for a page
+   // fail in the states that act on it.
+   //
+
+   assign pageCHECK = ((state == stateDEVtoMEM0)  |
+                       (state == stateLOOPtoMEM0) |
+                       (state == stateMEMtoLOOP0));
 
    always_ff @(posedge clk)
      if (rst | devRESET)
@@ -403,6 +598,22 @@ module UBA (
              end
 
            //
+           // CPU is reading the vector debug registers (763110-763112)
+           //
+
+           else if (ks10bus.busREQI & vdbgREAD)
+             begin
+                ks10bus.busACKO  <= 1;
+                case (busADDR[34:35])
+                  2'd0:    ks10bus.busDATAO <= regVDBG0;
+                  2'd1:    ks10bus.busDATAO <= regVDBG1;
+                  2'd2:    ks10bus.busDATAO <= regVDBG2;
+                  default: ks10bus.busDATAO <= regVDBG3;
+                endcase
+                state <= stateWAITBUSREQ;
+             end
+
+           //
            // CPU is doing a WRU bus cycle
            //
 
@@ -444,7 +655,7 @@ module UBA (
            //  highest priority device to provide the interrupt vector.
            //
 
-           else if (ks10bus.busREQI & vectREAD)
+           else if (ks10bus.busREQI & vectREAD & !simVECDROP)
              begin
                 if (devINTRI[1][7])
                   devREQO[1] <= 1;
@@ -1391,7 +1602,7 @@ module UBA (
                $fwrite(file, "[%11.3f] UBA%d: Nonexistent memory (TMO). Addr = %012o.\n",
                        $time/1.0e3, ubaNUM, addr);
 
-             if (pageFAIL)
+             if (pageFAIL & pageCHECK)
                $fwrite(file, "[%11.3f] UBA%d: Page Failure (TMO). Addr = %012o.\n",
                        $time/1.0e3, ubaNUM, addr);
 
@@ -1446,6 +1657,31 @@ module UBA (
                  $display("[%11.3f] UBAMON%0d: Stuck in state %0d for 1000 clocks. REQI=%b ADDRI=%012o ACKO=%b devREQI1=%b",
                           $time/1.0e3, ubaNUM, state, ks10bus.busREQI, ks10bus.busADDRI, ks10bus.busACKO, devREQI[1]);
             end
+       end
+
+`endif
+
+   //
+   // Simulation monitor: report every interrupt vector that a device gives
+   // to this UBA, and vector cycles that end without a device answering.
+   //
+
+`ifdef SIM_VECMON
+
+   always_ff @(posedge clk)
+     if (state == stateCPUtoVEC)
+       begin
+`ifdef SIM_VECMON_VERBOSE
+          for (int i = 1; i <= 5; i++)
+            if (devREQO[i] & devACKI[i])
+              $display("[%11.3f] VECMON: UBA%0d dev%0d gave vector %06o Addr=%012o",
+                       $time/1.0e3, ubaNUM, i, devDATAI[i][18:35], ks10bus.busADDRI);
+`endif
+          if (!(devREQO[1] & devACKI[1]) & !(devREQO[2] & devACKI[2]) &
+              !(devREQO[3] & devACKI[3]) & !(devREQO[4] & devACKI[4]) &
+              !(devREQO[5] & devACKI[5]) & (cntTMO == 0))
+            $display("[%11.3f] VECMON: UBA%0d vector cycle timed out, no device. devREQO=%b%b%b%b%b",
+                     $time/1.0e3, ubaNUM, devREQO[1], devREQO[2], devREQO[3], devREQO[4], devREQO[5]);
        end
 
 `endif

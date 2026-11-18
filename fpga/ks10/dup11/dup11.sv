@@ -136,7 +136,7 @@ module DUP11 (
 
    wire dupREAD  = /*FIXME: unibus.devREQI & */devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV);
    wire dupWRITE = /*FIXME: unibus.devREQI & */devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dupDEV);
-   wire vectREAD = /*FIXME: unibus.devREQI & */devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == dupDEV);
+   wire vectREAD = unibus.devREQI & devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == dupDEV);
 
    //
    // Address Decoding

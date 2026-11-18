@@ -103,6 +103,15 @@ module FIFO #(
    assign full  = (depth == SIZE - 1);
 
    //
+   // A read and a write on the same clock must both take effect.  Previously
+   // neither pointer moved, so the element read was not removed (it was read
+   // again) and the element written was lost.
+   //
+
+   wire doRD = clken & rd & !empty;
+   wire doWR = clken & wr & (!full | doRD);
+
+   //
    // Read Address
    //
 
@@ -110,7 +119,7 @@ module FIFO #(
      begin
         if (rst | clr)
           rd_addr <= 0;
-        else if (clken & rd & !wr & !empty)
+        else if (doRD)
           if (rd_addr == SIZE - 1)
             rd_addr <= 0;
           else
@@ -125,7 +134,7 @@ module FIFO #(
      begin
         if (rst | clr)
           wr_addr <= 0;
-        else if (clken & wr & !rd & !full)
+        else if (doWR)
           if (wr_addr == SIZE - 1)
             wr_addr <= 0;
           else
@@ -142,9 +151,9 @@ module FIFO #(
      begin
         if (rst | clr)
           depth <= 0;
-        else if (clken & rd & !wr & !empty)
+        else if (doRD & !doWR)
           depth <= depth - 1'b1;
-        else if (clken & wr & !rd & !full)
+        else if (doWR & !doRD)
           depth <= depth + 1'b1;
      end
 

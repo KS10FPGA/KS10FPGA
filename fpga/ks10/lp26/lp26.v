@@ -67,7 +67,8 @@ module LP26 (
       output wire         lpSETOFFLN,   // Printer should go offline
       output reg          lpVFURDY,     // Printer VFU is ready
       output reg          lpSIXLPI,     // Printer is in 6 LPI mode
-      output wire         lpDEMAND      // Printer is ready for another character
+      output wire         lpDEMAND,     // Printer is ready for another character
+      output reg  [ 0:12] lpOFFDBG      // Debug: why the printer last went offline
 );
 
    //
@@ -110,7 +111,10 @@ module LP26 (
    //
 
    reg        [7:0] lpDVFULEN;
-   localparam [7:0] lpOVFULEN = 8'd66;
+   //  Like lpDVFULEN, lpOVFULEN is the number of the last line on the form
+   //  (lines 0-65 of a 66 line form).  It was 66, which made the optical
+   //  form 67 lines long.
+   localparam [7:0] lpOVFULEN = 8'd65;
    wire       [7:0] lpVFULEN  = lpOVFU ? lpOVFULEN : lpDVFULEN;
 
    //
@@ -1134,22 +1138,32 @@ module LP26 (
                //  DSLPA TEST.114
                //
 
+               //  The line is checked for the channel before the overrun
+               //  count.  A skip to a channel that is a whole form away (e.g.
+               //  a form feed at top of form) reaches that line with the
+               //  count equal to the form length.  Checking the count first
+               //  took the printer offline instead of printing a blank page.
+               //  TOPS-20 sends a form feed at top of form when it starts the
+               //  printer.
+               //
+
                stateVFUCHAN:
-                 if (lpCOUNT == lpVFULEN)
+                 if (!lpVFURDY)
+                   state <= stateVFUOFFLN;
+                 else if (lpVFUMATCH(lpOVFU ? lpOVFUDAT[lpLCTR] : lpDVFUDAT[lpLCTR], lpDATA))
+                   begin
+                      lpCOUNT <= 0;
+                      state   <= stateVFUPRINT;
+                   end
+                 else if (lpCOUNT == lpVFULEN)
                    state <= stateVFUOFFLN;
                  else
-                   if (lpVFUMATCH(lpOVFU ? lpOVFUDAT[lpLCTR] : lpDVFUDAT[lpLCTR], lpDATA))
-                     begin
-                        lpCOUNT <= 0;
-                        state   <= stateVFUPRINT;
-                     end
-                   else
-                     begin
-                        lpLCTR  <= (lpLCTR == lpVFULEN) ? 8'b0 : lpLCTR + 1'b1;
-                        lpLFCNT <= lpLFCNT + 1'b1;
-                        lpCOUNT <= lpCOUNT + 1'b1;
-                        state   <= stateDLY2;
-                     end
+                   begin
+                      lpLCTR  <= (lpLCTR == lpVFULEN) ? 8'b0 : lpLCTR + 1'b1;
+                      lpLFCNT <= lpLFCNT + 1'b1;
+                      lpCOUNT <= lpCOUNT + 1'b1;
+                      state   <= stateDLY2;
+                   end
 
                stateDLY2:
                  state <= stateVFUCHAN;
@@ -1166,21 +1180,22 @@ module LP26 (
                //
 
                stateVFUVT:
-                 if (lpCOUNT == lpVFULEN)
+                 if (!lpVFURDY)
+                   state <= stateVFUOFFLN;
+                 else if (lpVFUMATCH(lpOVFU ? lpOVFUDAT[lpLCTR] : lpDVFUDAT[lpLCTR], 8'd1))
+                   begin
+                      lpCOUNT <= 0;
+                      state   <= stateVFUPRINT;
+                   end
+                 else if (lpCOUNT == lpVFULEN)
                    state <= stateVFUOFFLN;
                  else
-                   if (lpVFUMATCH(lpOVFU ? lpOVFUDAT[lpLCTR] : lpDVFUDAT[lpLCTR], 8'd1))
-                     begin
-                        lpCOUNT <= 0;
-                        state   <= stateVFUPRINT;
-                     end
-                   else
-                     begin
-                        lpLCTR  <= (lpLCTR == lpVFULEN) ? 8'b0 : lpLCTR + 1'b1;
-                        lpLFCNT <= lpLFCNT + 1'b1;
-                        lpCOUNT <= lpCOUNT + 1'b1;
-                        state   <= stateDLY3;
-                     end
+                   begin
+                      lpLCTR  <= (lpLCTR == lpVFULEN) ? 8'b0 : lpLCTR + 1'b1;
+                      lpLFCNT <= lpLFCNT + 1'b1;
+                      lpCOUNT <= lpCOUNT + 1'b1;
+                      state   <= stateDLY3;
+                   end
 
                stateDLY3:
                  state <= stateVFUVT;
@@ -1332,6 +1347,59 @@ module LP26 (
      end
 
    assign lpSETOFFLN = (state == stateVFUOFFLN);
+
+   //
+   // Debug: record why the printer last went offline
+   //
+   //  lpOFFDBG[0:2]  : 1 = paper instruction with channel > 12 (stateIDLE)
+   //                   2 = STOP or overrun while loading the DAVFU (stateVFUODD)
+   //                   3 = channel not found in the VFU (stateVFUCHAN)
+   //                   4 = vertical tab, channel 2 not found (stateVFUVT)
+   //                   7 = other
+   //  lpOFFDBG[3]    : PI bit of the last character received
+   //  lpOFFDBG[4:11] : last character received
+   //  lpOFFDBG[12]   : valid
+   //
+   //  It is read by the console in bits 16-28 of the LP Console Control
+   //  Register (the "lp conf" LPCCR value).  It is only cleared by reset.
+   //
+
+   reg [4:0] lastSTATE;
+   reg       lastPI;
+   reg [8:1] lastDATA;
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          begin
+             lastSTATE <= 0;
+             lastPI    <= 0;
+             lastDATA  <= 0;
+             lpOFFDBG  <= 0;
+          end
+        else
+          begin
+             lastSTATE <= state;
+             if (lpSTROBE)
+               begin
+                  lastPI   <= lpPI;
+                  lastDATA <= lpDATA;
+               end
+             if ((state == stateVFUOFFLN) & (lastSTATE != stateVFUOFFLN))
+               begin
+                  case (lastSTATE)
+                    stateIDLE    : lpOFFDBG[0:2] <= 3'd1;
+                    stateVFUODD  : lpOFFDBG[0:2] <= 3'd2;
+                    stateVFUCHAN : lpOFFDBG[0:2] <= 3'd3;
+                    stateVFUVT   : lpOFFDBG[0:2] <= 3'd4;
+                    default      : lpOFFDBG[0:2] <= 3'd7;
+                  endcase
+                  lpOFFDBG[3]    <= lastPI;
+                  lpOFFDBG[4:11] <= lastDATA;
+                  lpOFFDBG[12]   <= 1;
+               end
+          end
+     end
 
    //
    // Software handshaking to printer

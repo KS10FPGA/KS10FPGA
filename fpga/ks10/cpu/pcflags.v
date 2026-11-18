@@ -361,8 +361,17 @@ module PCFLAGS (
           flagUSER <= 0;
         else if (clken & selPCFLAGS)
           begin
+             //
+             // HOLD USER prevents clearing USER in user mode, also when
+             // the flags are loaded.  JRSTF and XJRSTF load the flags with
+             // HOLD USER set, so a user program cannot leave user mode.
+             // Without this a user JRSTF with USER clear in the flag word
+             // put the CPU in exec mode at the user PC (TOPS-20 KS20
+             // program: "JRSTF @[.+1]" to drop USER IOT, then BUGHLT
+             // ILLUUO on the zero word at exec 323).
+             //
              if (`cromLDFLAGS)
-               flagUSER <= dpUSER;
+               flagUSER <= dpUSER | (`cromHOLDUSER & flagUSER);
              else if (`cromHOLDUSER)
                flagUSER <= flagUSER;
              else

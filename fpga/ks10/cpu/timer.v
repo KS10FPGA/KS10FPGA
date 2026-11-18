@@ -182,17 +182,27 @@ module TIMER (
    //  DPMC/E3
    //
 
+   //  The MSB transition is only one clock long.  It used to be sampled only
+   //  when clken was asserted, so a millisecond that ended while the CPU was
+   //  stalled (memory or IO wait) was lost.  The microcode then never added
+   //  that millisecond to the time base, the hardware count had wrapped, and
+   //  RDTIME went backwards by about 1 ms.  TOPS-20 job runtimes jumped by
+   //  2^40 ticks (74.5 hours) and batch jobs failed with TIME LIMIT
+   //  EXCEEDED.
+   //
+   //  The transition now sets the flag on any clock.  It also wins over a
+   //  clear in the same clock, since the clear is for the previous
+   //  millisecond.
+   //
+
    always @(posedge clk)
      begin
         if (rst)
           timerINTR <= 0;
-        else if (clken)
-          begin
-             if (timerRST)
-               timerINTR <= 0;
-             else if (timerEN & !currMSB & lastMSB)
-               timerINTR <= 1;
-          end
+        else if (timerEN & !currMSB & lastMSB)
+          timerINTR <= 1;
+        else if (clken & timerRST)
+          timerINTR <= 0;
      end
 
    //

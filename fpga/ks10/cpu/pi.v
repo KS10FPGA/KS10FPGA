@@ -65,7 +65,8 @@ module PI (
       input  wire [1:  7] ubaINTR,      // Unibus request
       output wire [0:  2] piREQPRI,     // Requested Interrupt Priority
       output wire [0:  2] piCURPRI,     // Current Prioity Interrupt number
-      output reg          piINTR        // Interrupt Request
+      output reg          piINTR,       // Interrupt Request
+      output reg          piDBGHALT     // Debug: PI hardware left off
    );
 
    //
@@ -109,6 +110,50 @@ module PI (
              piENABLED <= ~dp[29:35];
           end
      end
+
+   //
+   // DEBUG: PI hardware left off
+   //
+   //  The PI cycle (PI10, microword 3672) and XJEN (microword 0325) turn the
+   //  PI hardware off with LOAD PI.  Both must reload it from [PI] at PIEXIT
+   //  before the next instruction is dispatched.  TOPS-20 has been seen to
+   //  stop taking interrupts while RDPI (the microcode [PI]) says the PI
+   //  system is on, which is what happens if some path (e.g. a page fail)
+   //  skips that reload.
+   //
+   //  piOFFTMP is set by those two LOAD PIs and cleared by any other LOAD PI
+   //  (normally PIEXIT).  If the next instruction dispatch (J = 0110) happens
+   //  while it is still set, piDBGHALT halts the CPU so that the instruction
+   //  trace shows the path that leaked.  piDBGHALT is cleared by the next
+   //  LOAD PI or reset.  Define NO_PI_WATCHDOG to remove it.
+   //
+
+`ifndef NO_PI_WATCHDOG
+   reg piOFFTMP;
+   wire tmpOFF = (`cromJ == 12'o3673) | (`cromJ == 12'o0335);
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          begin
+             piOFFTMP  <= 0;
+             piDBGHALT <= 0;
+          end
+        else if (clken)
+          begin
+             if (specLOADPI)
+               begin
+                  piOFFTMP  <= tmpOFF;
+                  piDBGHALT <= 0;
+               end
+             else if (piOFFTMP & (`cromJ == 12'o0110))
+               piDBGHALT <= 1;
+          end
+     end
+`else
+   always @(posedge clk)
+     piDBGHALT <= 0;
+`endif
 
    //
    // Interrupt Enable / Masking

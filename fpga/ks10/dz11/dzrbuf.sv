@@ -185,6 +185,14 @@ module DZRBUF (
 
    assign writeDATA = {rbufOVRE, uartRXFRME[rxSCAN], uartRXPARE[rxSCAN], 1'b0, rxSCAN, uartRXDATA[rxSCAN]};
 
+   //
+   // Only remove an entry from the silo when the RBUF word that was just read
+   // had DVAL set, i.e. the CPU actually received that character.
+   //
+
+   logic [15:0] rbufHOLD;
+   wire pop = rd & rbufHOLD[15];
+
    FIFO #(
       .SIZE     (65),
       .WIDTH    (15)
@@ -193,7 +201,7 @@ module DZRBUF (
       .rst      (rst),
       .clr      (clr),
       .clken    (1'b1),
-      .rd       (rd),
+      .rd       (pop),
       .wr       (wr),
       .in       (writeDATA),
       .out      (readDATA),
@@ -233,13 +241,21 @@ module DZRBUF (
    //  M7819/S9/E85
    //
 
+   // DVAL must describe the word now at the FIFO output.  The FIFO output is
+   // registered one clock after the pointers move, so register !empty on
+   // every clock.  Previously DVAL was loaded on the read pulse itself, i.e.
+   // from the state before the pop, so after the last character was read
+   // DVAL stayed set and the next RBUF read (TOPS-20 reads until DVAL=0)
+   // returned a stale word as a second character.
+   //
+
    logic rbufDVAL;
 
    always_ff @(posedge clk)
      begin
         if (rst | clr)
           rbufDVAL <= 0;
-        else if (rd | wr_dly)
+        else
           rbufDVAL <= !empty;
      end
 
@@ -296,6 +312,34 @@ module DZRBUF (
    //  RBUF[DVAL] is the FIFO Status.  Everything else is read from the FIFO.
    //
 
-   assign regRBUF = {rbufDVAL, readDATA};
+   //  The value presented to the bus is held constant for the whole RBUF read
+   //  (rbufHOLD only loads while RBUF is not being read).  A character that
+   //  arrives during a read that returned DVAL=0 therefore stays in the silo
+   //  for the next read instead of being popped unseen (see 'pop' above).
+   //
+
+   //  After a pop the FIFO output and DVAL take one clock to update, so the
+   //  held value reads as empty (DVAL=0) until they have settled.
+   //
+
+   logic popSETTLE;
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | clr)
+          popSETTLE <= 0;
+        else
+          popSETTLE <= pop;
+     end
+
+   always_ff @(posedge clk)
+     begin
+        if (rst | clr | pop)
+          rbufHOLD <= 0;
+        else if (!rbufREAD & !popSETTLE)
+          rbufHOLD <= {rbufDVAL, readDATA};
+     end
+
+   assign regRBUF = rbufHOLD;
 
 endmodule

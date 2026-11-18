@@ -213,6 +213,33 @@ module APR (
    //  DPMB/E158
    //
 
+   //  The microcode changes the APR flags with a read-modify-write:
+   //  [BRX]_APR, modify, then SPEC/APR FLAGS a few microinstructions
+   //  later (WRAPR, and TOCK for the interval timer).  A console
+   //  interrupt that arrived inside that window was overwritten with the
+   //  old (clear) value and lost.  The CTY output then stalled until the
+   //  next console interrupt (typing a character).
+   //
+   //  cslPEND remembers a console interrupt that the microcode has not
+   //  read yet.  It is cleared when the APR flags are read onto the DBUS
+   //  (DBUS/DBM, DBM/APR FLAGS), and while it is set a flag load cannot
+   //  clear the flag.
+   //
+
+   wire readAPR = (`cromDBUS_SEL == `cromDBUS_SEL_DBM) &
+                  (`cromDBM_SEL  == `cromDBM_SEL_SCADPFAPR);
+
+   reg cslPEND;
+   always @(posedge clk)
+     begin
+        if (rst)
+          cslPEND <= 1'b0;
+        else if (cslINTR)
+          cslPEND <= 1'b1;
+        else if (clken & readAPR)
+          cslPEND <= 1'b0;
+     end
+
    reg aprFLAG31;
    always @(posedge clk)
      begin
@@ -221,7 +248,7 @@ module APR (
         else if (cslINTR)
           aprFLAG31 <= 1'b1;
         else if (clken & specAPRFLAGS)
-          aprFLAG31 <= dp[31];
+          aprFLAG31 <= dp[31] | cslPEND;
      end
 
    //

@@ -128,7 +128,7 @@ module KMC11 (
 
    wire kmcREAD  = /* FIXME: unibus.devREQI & */ devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV);
    wire kmcWRITE = /* FIXME: unibus.devREQI & */ devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == kmcDEV);
-   wire vectREAD = /* FIXME: unibus.devREQI & */ devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == kmcDEV);
+   wire vectREAD = unibus.devREQI & devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == kmcDEV);
 
    //
    // Address Decoding
@@ -559,7 +559,19 @@ module KMC11 (
                             !(unibus.devREQO &  kmcNPRO) & sel2READ  |
                             !(unibus.devREQO &  kmcNPRO) & sel4READ  |
                             !(unibus.devREQO &  kmcNPRO) & sel6READ  |
-                            !(unibus.devREQO &  kmcNPRO) & vectREAD);
+                            vectREAD);
+
+   //
+   //  The NPR gating above is for the KMC's IO NPRs to its own registers
+   //  (DSKMA Test.65 and Test.66).  It must not apply to the interrupt
+   //  vector cycle.  The KMC clears its interrupt on vectREAD (kmcIACK).
+   //  With an NPR out pending it did not acknowledge, so the interrupt was
+   //  lost and the CPU read a vector of zero.  With an NPR in pending it
+   //  acknowledged but drove the NPR data instead of the vector (see the
+   //  bus mux below).  Both halted TOPS-20 with an Illegal Interrupt
+   //  Instruction (vector 0 from UBA3).  The UBA only asks for the vector
+   //  in its idle state, so it never samples the NPR data at that time.
+   //
 
    //
    // Bus Mux and little-endian to big-endian bus swap
@@ -581,17 +593,17 @@ module KMC11 (
           else
 `ifdef KMC_BROKE_RPW
             case ({kmcBYTE, kmcNPROA[1:0]})
-              3'b000: unibus.devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word
-              3'b001: unibus.devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word
-              3'b010: unibus.devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word
-              3'b011: unibus.devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word
-              3'b100: unibus.devDATAO <= {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word, low  byte (not RPW)
-              3'b101: unibus.devDATAO <= {2'b0, kmcNPROD[15: 8],  kmcRPWD[25:18], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word, high byte (RPW)
-              3'b110: unibus.devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0,  kmcRPWD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word, low  byte (RPW)
-              3'b111: unibus.devDATAO <= {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8],  kmcRPWD[ 7: 0]};     // Odd  word, high byte (RPW)
+              3'b000: unibus.devDATAO = {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word
+              3'b001: unibus.devDATAO = {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word
+              3'b010: unibus.devDATAO = {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word
+              3'b011: unibus.devDATAO = {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word
+              3'b100: unibus.devDATAO = {2'b0, kmcNPROD[15: 8], kmcNPROD[ 7: 0], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word, low  byte (not RPW)
+              3'b101: unibus.devDATAO = {2'b0, kmcNPROD[15: 8],  kmcRPWD[25:18], 2'b0,  kmcRPWD[15: 8],  kmcRPWD[ 7: 0]};     // Even word, high byte (RPW)
+              3'b110: unibus.devDATAO = {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0,  kmcRPWD[15: 8], kmcNPROD[ 7: 0]};     // Odd  word, low  byte (RPW)
+              3'b111: unibus.devDATAO = {2'b0,  kmcRPWD[33:26],  kmcRPWD[25:18], 2'b0, kmcNPROD[15: 8],  kmcRPWD[ 7: 0]};     // Odd  word, high byte (RPW)
             endcase
 `else
-            unibus.devDATAO <= {2'b0, kmcNPROD[15:0], 2'b0, kmcNPROD[15:0]};
+            unibus.devDATAO = {2'b0, kmcNPROD[15:0], 2'b0, kmcNPROD[15:0]};
 `endif
         else
           begin
@@ -609,12 +621,12 @@ module KMC11 (
                  unibus.devDATAO = {20'b0, kmcMNTINST};
                else
                  unibus.devDATAO = {20'b0, kmcCSR6};
-             if (vectREAD)
-               if (kmcVECTXXX4)
-                 unibus.devDATAO = {20'b0, kmcVECT4[20:35]};
-               else
-                 unibus.devDATAO = {20'b0, kmcVECT0[20:35]};
           end
+        if (vectREAD)
+          if (kmcVECTXXX4)
+            unibus.devDATAO = {20'b0, kmcVECT4[20:35]};
+          else
+            unibus.devDATAO = {20'b0, kmcVECT0[20:35]};
      end
 
    //

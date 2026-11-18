@@ -129,7 +129,15 @@
 
    wire dzREAD   = /*FIXME: unibus.devREQI & */devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV);
    wire dzWRITE  = /*FIXME: unibus.devREQI & */devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == dzDEV);
-   wire vectREAD = /*FIXME: unibus.devREQI & */devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == dzDEV);
+   //
+   // The vector read must be qualified with this device's request.  The
+   // UBA requests a vector only from the highest priority interrupting
+   // device but presents the vector address to every device.  Without
+   // devREQI the DZ11 took every vector cycle on its UBA (e.g. the tape
+   // RH11's) as its own interrupt acknowledge, which cleared its pending
+   // interrupt without it being serviced.
+   //
+   wire vectREAD = unibus.devREQI & devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == dzDEV);
 
    //
    // Address Decoding
