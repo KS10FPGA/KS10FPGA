@@ -75,6 +75,7 @@ module RPXX (
       input  wire         rpWRL,                // Write Lock
       input  wire         rpDPR,                // Drive Present
       input  wire         rpINCRSECT,           // Increment Sector
+      input  wire         rpWCZ,                // RH Word count is zero
       input  wire [ 4: 0] rpREGSEL,             // Massbus Register Select
       input  wire         rpREAD,               // Massbus Read
       input  wire         rpWRITE,              // Massbus Write
@@ -331,8 +332,15 @@ module RPXX (
    // Trace
    //  M7786/SS4/E47
    //
+   //  A transfer that ends exactly on the last sector of the pack is not an
+   //  overflow: the sector address still increments, but no mid-transfer
+   //  seek is needed because the word count is already zero.  Without the
+   //  word count check, a WRITE to the last track of the pack sets AOE and
+   //  aborts (DSRMB OPDTST at CYL 1456 SURF 22).  Diagnostic mode is left
+   //  unchanged.
+   //
 
-   wire rpSETAOE  = (rpINCSECT & (rpSA == rpSECNUM) & (rpTA == rpTRKNUM) & (rpDCA == rpCYLNUM));
+   wire rpSETAOE  = (rpINCSECT & (rpDMD | !rpWCZ) & (rpSA == rpSECNUM) & (rpTA == rpTRKNUM) & (rpDCA == rpCYLNUM));
 
    //
    // Last sector transferred

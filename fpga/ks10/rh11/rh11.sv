@@ -393,6 +393,89 @@ module RH11 (
                    (rhWRREG00 & rhRDY & (`rhCS1_FUN(rhDATAI) == 5'o37) & `rhCS1_GO(rhDATAI)));  //                        Read Reverse
 
    //
+   // Program Error
+   //  A data transfer command (functions 24 through 37) while the controller
+   //  is busy is a program error.  The command is not passed to the drive.
+   //
+
+   wire rhSETPGE = (rhWRREG00 & devLOBYTE & !rhRDY & `rhCS1_GO(rhDATAI) &
+                    (`rhCS1_FUN(rhDATAI) >= 5'o24));
+
+   reg rhPGEGO;
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          rhPGEGO <= 0;
+        else
+          rhPGEGO <= rhSETPGE;
+     end
+
+   //
+   // Controller Ready (RHCS1[RDY])
+   //  RDY is a controller flag.  It is not the DRY bit of the selected drive.
+   //  A data transfer command clears it and it is set again when the drive
+   //  doing the transfer is ready.  The transfer drive is remembered so that
+   //  selecting another drive (RHCS2[UNIT]) during a transfer, for example to
+   //  read its registers or start a seek, does not change RDY.
+   //
+   //  If the drive never goes busy, RDY is set again when the drive raises
+   //  ATA (command rejected) or after a timeout.
+   //
+   //  Drive Exception
+   //   On the Massbus, a drive that has an error during a data transfer
+   //   asserts EXC and the RH11 sets RHCS1[TRE].  This is modelled by
+   //   watching the composite error (RHDS[ERR]) of the transfer drive: if
+   //   it sets while the transfer is in progress, TRE is set.  An error
+   //   that was already present when the command was issued is ignored.
+   //   DSRPA TEST-326 checks this after forcing an OPI error.
+   //
+
+   reg       ctlRDY;                    // Controller ready
+   reg [2:0] xfrUNIT;                   // Drive doing the transfer
+   reg       xfrBUSY;                   // Transfer drive has gone busy
+   reg [9:0] xfrTIME;                   // Clocks since the transfer started
+   reg       xfrLASTERR;                // Transfer drive ERR last clock
+
+   wire xfrDRY = massbus.mbDRYA[xfrUNIT];
+   wire xfrATA = massbus.mbATA[xfrUNIT];
+   wire xfrERR = massbus.mbERRA[xfrUNIT];
+   wire rhEXC  = !ctlRDY & xfrERR & !xfrLASTERR;
+
+   always @(posedge clk)
+     begin
+        if (rst | devRESET | rhCLR)
+          begin
+             ctlRDY     <= 1;
+             xfrUNIT    <= 0;
+             xfrBUSY    <= 0;
+             xfrTIME    <= 0;
+             xfrLASTERR <= 1;
+          end
+        else if (rhCLRGO)
+          begin
+             ctlRDY     <= 0;
+             xfrUNIT    <= rhUNIT;
+             xfrBUSY    <= 0;
+             xfrTIME    <= 0;
+             xfrLASTERR <= 1;
+          end
+        else if (!ctlRDY)
+          begin
+             xfrLASTERR <= xfrERR;
+             if (!xfrDRY)
+               xfrBUSY <= 1;
+             if (xfrTIME != 10'o1777)
+               xfrTIME <= xfrTIME + 1'b1;
+             if ((xfrBUSY & xfrDRY) |
+                 (!xfrBUSY & xfrDRY & xfrATA & (xfrTIME >= 10'd64)) |
+                 (!xfrBUSY & xfrDRY & (xfrTIME == 10'o1777)) |
+                 rhNED)
+               ctlRDY <= 1;
+          end
+     end
+
+   //
    // Controller Parity Error
    //  Massbus device is sending inverted parity to RH11 in maintenance mode.
    //
@@ -427,6 +510,8 @@ module RH11 (
       .rhATA      (rhATA),
       .rhDVA      (rhDVA),
       .rhDRY      (rhDRY),
+      .rhCRDY     (ctlRDY),
+      .rhEXC      (rhEXC),
       .rhBA       (rhBA[17:16]),
       .rhGO       (rhGO),
       .rhCS1      (rhCS1)
@@ -482,7 +567,7 @@ module RH11 (
       .devHIBYTE  (devHIBYTE),
       .rhDATAI    (rhDATAI),
       .rhcs2WRITE (rhWRREG10),
-      .rhCMDGO    (rhGO),
+      .rhCMDGO    (rhSETPGE),
       .rhCLRGO    (rhCLRGO),
       .rhCLRTRE   (rhCLRTRE),
       .rhCLR      (rhCLR),
@@ -644,7 +729,7 @@ module RH11 (
    assign massbus.mbWRITE  = rhWRITE & rhREGEXT;
    assign massbus.mbREGSEL = rhREGSEL;
    assign massbus.mbFUN    = rhFUN;
-   assign massbus.mbGO     = rhGO;
+   assign massbus.mbGO     = rhGO & !rhPGEGO;
    assign massbus.mbUNIT   = rhUNIT;
    assign massbus.mbPAT    = rhPAT;
    assign massbus.mbWCZ    = (rhWC == 0);
@@ -680,6 +765,69 @@ module RH11 (
              $fflush(file);
           end
      end
+
+   //
+   // Interrupt and attention monitor (define SIM_RHMON to enable)
+   //
+   // Reports why the interrupt flip-flop sets, interrupt requests and
+   // acknowledges, RDY transitions, commands, unit selects and changes to
+   // the attention summary.
+   //
+
+`ifdef SIM_RHMON
+
+   reg        lastIRQ;
+   reg        lastRDYMON;
+   reg [15:0] lastAS;
+   reg [ 2:0] lastUNIT;
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          begin
+             lastIRQ    <= 0;
+             lastRDYMON <= 0;
+             lastAS     <= 0;
+             lastUNIT   <= 0;
+          end
+        else
+          begin
+             lastIRQ    <= rhIRQ;
+             lastRDYMON <= rhRDY;
+             lastAS     <= rhAS;
+             lastUNIT   <= rhUNIT;
+
+             if (rhRDY & !INTR.lastRDY & rhIE & !INTR.rhIFF)
+               $display("[%11.3f] RHMON %m: IFF set by RDY edge. Unit=%o CS1=%06o AS=%03o",
+                        $time/1.0e3, rhUNIT, rhCS1, rhAS);
+             if (rhWRREG00 & devLOBYTE & `rhCS1_RDY(rhDATAI) & `rhCS1_IE(rhDATAI))
+               $display("[%11.3f] RHMON %m: IFF set by CS1 write of RDY+IE. Data=%06o Unit=%o CS1=%06o",
+                        $time/1.0e3, rhDATAI[15:0], rhUNIT, rhCS1);
+             if (rhIRQ & !lastIRQ)
+               $display("[%11.3f] RHMON %m: IRQ asserted (IFF=%b SC&RDY=%b IE=%b). Unit=%o CS1=%06o AS=%03o",
+                        $time/1.0e3, INTR.rhIFF, rhSC & rhRDY, rhIE, rhUNIT, rhCS1, rhAS);
+             if (rhIACK)
+               $display("[%11.3f] RHMON %m: IACK. Unit=%o CS1=%06o AS=%03o",
+                        $time/1.0e3, rhUNIT, rhCS1, rhAS);
+             if (rhRDY != lastRDYMON)
+               $display("[%11.3f] RHMON %m: RDY %b->%b. Unit=%o UnitChanged=%b",
+                        $time/1.0e3, lastRDYMON, rhRDY, rhUNIT, rhUNIT != lastUNIT);
+             if (rhUNIT != lastUNIT)
+               $display("[%11.3f] RHMON %m: Unit select %o->%o. RDY=%b IE=%b",
+                        $time/1.0e3, lastUNIT, rhUNIT, rhRDY, rhIE);
+             if (rhWRREG00 & devLOBYTE & `rhCS1_GO(rhDATAI))
+               $display("[%11.3f] RHMON %m: Command. Data=%06o Fun=%02o Unit=%o RDY=%b",
+                        $time/1.0e3, rhDATAI[15:0], `rhCS1_FUN(rhDATAI), rhUNIT, rhRDY);
+             if (rhAS != lastAS)
+               $display("[%11.3f] RHMON %m: AS %03o->%03o",
+                        $time/1.0e3, lastAS, rhAS);
+             if (rhREAD & unibus.devACKO & rhISDISK)
+               $display("[%11.3f] RHMON %m: Read reg %02o = %06o. Unit=%o",
+                        $time/1.0e3, devADDR - rhADDR, unibus.devDATAO[20:35], rhUNIT);
+          end
+     end
+
+`endif
 
 `endif
 

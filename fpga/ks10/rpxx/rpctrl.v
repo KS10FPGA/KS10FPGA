@@ -1248,8 +1248,12 @@ module RPCTRL (
                // Wait for SD to complete Read/Write operaton
                //
                // The controller should abort on a invalid address when it
-               // occurs on a mid-transfer seek.  Keep rpCC updated on mid-
-               // transfer seeks.
+               // occurs on a mid-transfer seek.  Keep rpCC and the head
+               // position updated on mid-transfer seeks.  If head_pos is
+               // left behind, the next seek back across the cylinder
+               // boundary looks like a seek off the edge of the pack and
+               // check_ski() sets a false RPER3[SKI] error (DSRMB OPDTST
+               // "SPURIOUS ATTENTION FROM AN ONLINE DRIVE").
                //
 
                stateDATA:
@@ -1257,7 +1261,10 @@ module RPCTRL (
                     if (rpSETAOE | rpSDACK | rpCLBERR)
                       state <= stateDONE;
                     else
-                      rpCC <= rpDC;
+                      begin
+                         rpCC     <= rpDC;
+                         head_pos <= rpDC;
+                      end
                  end
 
                //

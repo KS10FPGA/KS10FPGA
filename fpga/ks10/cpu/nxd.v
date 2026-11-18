@@ -129,8 +129,51 @@ module NXD (
    reg wru;
    reg vect;
    reg busy;
-   reg [0:3] nxmcnt;
+   reg [0:5] nxmcnt;
    reg [0:3] state;
+
+   //
+   // Served request
+   //
+   //  The CPU request stays asserted after an IO cycle has completed, until
+   //  the VMA is loaded again.  If the console or a UBA DMA takes the bus in
+   //  that window, the ACK goes away and the old request would look like a
+   //  new IO cycle.  The UBA then answers it again, and the state machine
+   //  is left in stateACKIO after the microcode has done its last
+   //  CLR IO LATCH.  The next WRU then does not wait for its ACK, the CPU
+   //  reads zero and takes an unvectored interrupt.
+   //
+   //  'served' marks the current request as already completed.  It is
+   //  cleared when the request goes away or the address changes.
+   //
+
+   reg  [0:35] lastADDR;
+   reg         lastREQ;
+   reg         served;
+
+   wire sameREQ  = lastREQ & cpuREQO & (lastADDR == cpuADDRO);
+   wire newCYCLE = busIO & cpuREQO & !cpuACKI & !(served & sameREQ);
+
+   wire setSERVED = ((state == stateACKIO ) & ioCLEAR) |
+                    ((state == stateACKWRU) & wruDONE) |
+                    ((state == stateACKVEC) & !busVECT) |
+                    ((state == stateIDLE  ) & busIO & cpuREQO & cpuACKI);
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          begin
+             lastADDR <= 0;
+             lastREQ  <= 0;
+             served   <= 0;
+          end
+        else
+          begin
+             lastADDR <= cpuADDRO;
+             lastREQ  <= cpuREQO;
+             served   <= setSERVED | (served & sameREQ);
+          end
+     end
 
    always @(posedge clk)
      begin
@@ -149,12 +192,12 @@ module NXD (
             //
 
             stateIDLE:
-              if (busIO & cpuREQO & !cpuACKI)
+              if (newCYCLE)
                 begin
                    wru    <= busWRU;
                    vect   <= busVECT;
                    busy   <= 1;
-                   nxmcnt <= 10;
+                   nxmcnt <= 32;          // Allow time for a UBA DMA cycle to finish
                    state  <= stateCNT;
                 end
 
@@ -231,9 +274,63 @@ module NXD (
    // Outputs
    //
 
-   assign ioBUSY = ((busIO & cpuREQO & !cpuACKI & (state == stateIDLE)) | busy);
+   assign ioBUSY = ((newCYCLE & (state == stateIDLE)) | busy);
 
-   assign ioWAIT = ((busIO & cpuREQO & !cpuACKI & (state == stateIDLE)) |
+   assign ioWAIT = ((newCYCLE & (state == stateIDLE)) |
                     (busIO & cpuREQO & !cpuACKI & (state == stateCNT)));
+
+   //
+   // IO cycle monitor (define SIM_NXDMON to enable)
+   //  Reports every WRU and vector cycle (clocks to acknowledge), IO
+   //  cycles that time out, and IO cycles that start with the acknowledge
+   //  already asserted (a stale acknowledge from the previous cycle).
+   //
+
+`ifndef SYNTHESIS
+`ifdef SIM_NXDMON
+
+   reg [0:35] monADDR;
+   reg        monREQ;
+   integer    monCNT;
+   reg        monSUP;
+
+   always @(posedge clk)
+     if (rst)
+       begin
+          monADDR <= 0;
+          monREQ  <= 0;
+          monCNT  <= 0;
+          monSUP  <= 0;
+       end
+     else
+       begin
+          monADDR <= cpuADDRO;
+          monREQ  <= cpuREQO;
+          if (busIO & cpuREQO & cpuACKI & (!monREQ | (monADDR != cpuADDRO)) & (state == stateIDLE))
+            $display("[%11.3f] NXDMON: IO cycle started with ACK already asserted. Addr=%012o PrevAddr=%012o PrevREQ=%b",
+                     $time/1.0e3, cpuADDRO, monADDR, monREQ);
+          if ((state == stateIDLE) & busIO & cpuREQO & !cpuACKI & served & sameREQ & monREQ & (monADDR == cpuADDRO) & !monSUP)
+            $display("[%11.3f] NXDMON: ACK dropped on a completed IO request; not restarting the cycle. Addr=%012o",
+                     $time/1.0e3, cpuADDRO);
+          monSUP <= (state == stateIDLE) & busIO & cpuREQO & !cpuACKI & served & sameREQ;
+          if ((state == stateIDLE) & newCYCLE)
+            monCNT <= 1;
+          else if (state == stateCNT)
+            begin
+               monCNT <= monCNT + 1;
+               if (cpuACKI & (wru | vect))
+                 $display("[%11.3f] NXDMON: %s cycle acknowledged after %0d clocks. Addr=%012o",
+                          $time/1.0e3, wru ? "WRU" : "VECT", monCNT, cpuADDRO);
+               else if (cpuACKI & (monCNT > 8))
+                 $display("[%11.3f] NXDMON: IO cycle acknowledged after %0d clocks. Addr=%012o",
+                          $time/1.0e3, monCNT, cpuADDRO);
+               else if (!cpuACKI & (nxmcnt == 0))
+                 $display("[%11.3f] NXDMON: %s cycle timed out after %0d clocks. Addr=%012o",
+                          $time/1.0e3, wru ? "WRU" : vect ? "VECT" : "IO", monCNT, cpuADDRO);
+            end
+       end
+
+`endif
+`endif
 
 endmodule

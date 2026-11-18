@@ -205,22 +205,71 @@ module DISP_PF (
    //
    // Page fail enable
    //
+   // Details
+   //  A page failure on a memory cycle is taken on the microinstruction that
+   //  waits for that cycle (MEM WAIT), and that microinstruction is the one
+   //  saved on the stack and re-executed after a page refill ("MICROWORD
+   //  ADDRESS OF INSTRUCTION DOING MEM WAIT IS SAVED ON THE STACK" in the
+   //  microcode).
+   //
+   //  The microcode can put other microinstructions between the one that
+   //  starts the cycle and the MEM WAIT.  For example, POPJ does
+   //
+   //      [ARX]_AC, LOAD VMA, START READ
+   //      [ARX]_[ARX]+#, #/777777          ; decrement the stack pointer
+   //      MEM READ, [PC]_MEM
+   //
+   //  Previously the page fail was taken on the microinstruction right after
+   //  the start.  That microinstruction executed, then was re-executed after
+   //  the refill, so POPJ decremented the stack pointer twice (DSKCG halts
+   //  with "PLERR1" after the CMPS page fail test).
+   //
+   //  pfPEND is set when a memory cycle starts and the page fail check is
+   //  made on the next microinstruction that does a MEM WAIT.  A MEM WAIT that
+   //  also starts a new cycle checks the old cycle and leaves the new one
+   //  pending.  ABORT MEM CYCLE (SPEC/MEMCLR) discards a pending check.
+   //
 
-   reg pfEN;
+   reg  pfPEND;
+   wire memWAIT = `cromMEM_CYCLE & `cromMEM_WAIT;
+   wire pfEN    = pfPEND & memWAIT;
 
    always @(posedge clk)
      begin
         if (rst)
-          pfEN <= 0;
+          pfPEND <= 0;
         else if (clken)
-          if (!pfEN)
-            pfEN <= pfCYCLE;
-          else
-            pfEN <= 0;
+          begin
+             if (pageFAIL)
+               pfPEND <= 0;
+             else if (pfEN)
+               pfPEND <= pfCYCLE;
+             else if (pfCYCLE)
+               pfPEND <= 1;
+             else if (specMEMCLR)
+               pfPEND <= 0;
+          end
      end
 
    //
    // Interrupt enable
+   //
+   // Details
+   //  NXM interrupts are only dispatched after an instruction fetch.
+   //
+   //  PI and 1 ms timer interrupts are also dispatched on the MEM WAIT of
+   //  any memory cycle that is not physical (intrMEM).  The microcode
+   //  relies on this to interrupt long instructions.  For example, the
+   //  normal BLT loop has no interrupt check of its own: the interrupt
+   //  page fail backs up the PC and the BLT cleanup saves the pointers in
+   //  the AC so that the BLT resumes after the interrupt (DSKDA
+   //  "INTERRUPT DID NOT OCCUR DURING BLT").  A timer page fail updates
+   //  the clock and restarts the memory cycle (PF125).
+   //
+   //  Physical cycles are not interrupted.  These are IO cycles and the
+   //  references made by the page fail and interrupt microcode itself,
+   //  which would otherwise page fail again.  The page table walk (RDPT)
+   //  checks for interrupts itself (SKIP IRPT) before its physical read.
    //
 
    reg intrEN;
@@ -232,6 +281,8 @@ module DISP_PF (
         else if (clken)
           intrEN <= fetchCYCLE;
      end
+
+   wire intrMEM = intrEN | (pfEN & !vmaPHYS);
 
    //
    // Page failure types
@@ -256,17 +307,17 @@ module DISP_PF (
              pageFAIL <= 1;
              dispatch <= dispNXM;
           end
-        else if (intrEN & piINTR)
+        else if (intrMEM & piINTR)
           begin
              pageFAIL <= 1;
              dispatch <= dispINTR;
           end
-        else if (intrEN & timerINTR & pageINVALID)
+        else if (intrMEM & timerINTR & pageINVALID)
           begin
              pageFAIL <= 1;
              dispatch <= dispTIMPAGFAIL;
           end
-        else if (intrEN & timerINTR)
+        else if (intrMEM & timerINTR)
           begin
              pageFAIL <= 1;
              dispatch <= dispINTR;
@@ -302,5 +353,20 @@ module DISP_PF (
           else if (specMEMCLR)
             dispPF <= 0;
      end
+
+   //
+   // Interrupt page fail monitor (define SIM_INTRMON to enable)
+   //  Reports interrupts taken on a data cycle (not after an instruction
+   //  fetch).
+   //
+
+`ifndef SYNTHESIS
+`ifdef SIM_INTRMON
+   always @(posedge clk)
+     if (clken & pageFAIL & !intrEN & ((dispatch == dispINTR) | (dispatch == dispTIMPAGFAIL)))
+       $display("[%11.3f] INTRMON: %s interrupt page fail on data cycle. VMA=%012o next J=%04o",
+                $time/1.0e3, piINTR ? "PI" : "timer", vmaREG, `cromJ);
+`endif
+`endif
 
 endmodule

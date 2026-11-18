@@ -13,3 +13,5 @@ lpr_out.txt
 transcript
 *.wlf
 tmp
+testsuite
+results_*.txt

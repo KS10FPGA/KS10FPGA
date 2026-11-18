@@ -343,4 +343,34 @@ module USEQ (
       .addrOUT  (dispRET)
    );
 
+   //
+   // Microcode address trace (define SIM_UTRACE to enable)
+   //  Prints the address of each microinstruction executed between
+   //  SIM_UTRACE_FROM and SIM_UTRACE_TO (ns).
+   //
+
+`ifndef SYNTHESIS
+`ifdef SIM_UTRACE
+
+`ifndef SIM_UTRACE_FROM
+ `define SIM_UTRACE_FROM 0
+`endif
+`ifndef SIM_UTRACE_TO
+ `define SIM_UTRACE_TO 0
+`endif
+
+   reg [0:11] traceADDR;
+
+   always @(posedge clk)
+     begin
+        if (clken)
+          traceADDR <= addr;
+        if (clken & ($time >= `SIM_UTRACE_FROM) & ($time <= `SIM_UTRACE_TO))
+          $display("[%11.3f] UTRACE: %04o -> %04o%s%s%s", $time/1.0e3, traceADDR, addr,
+                   pageFAIL ? " PAGEFAIL" : "", call ? " CALL" : "", ret ? " RET" : "");
+     end
+
+`endif
+`endif
+
 endmodule

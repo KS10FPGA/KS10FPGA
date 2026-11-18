@@ -45,6 +45,20 @@
 `define STRDEF 0:`STRLEN*8-1
 
 //
+// DSRMB test and drive selection (see test_dsrmb.vh). Override with
+// "make DIAG=DSRMB DSRMB_TEST=1 DSRMB_DRIVE=1 ..." to select another
+// test or drive.
+//
+
+`ifndef DSRMB_TEST
+`define DSRMB_TEST "10"
+`endif
+
+`ifndef DSRMB_DRIVE
+`define DSRMB_DRIVE "2"
+`endif
+
+//
 // Default starting address (SMMON)
 //
 
@@ -421,6 +435,23 @@ module testbench;
    endfunction
 
    //
+   // This function returns true if the console output buffer ends with the
+   // pattern string.  Strings are right justified and zero padded.
+   //
+
+   function ctyMatch;
+      input [`STRDEF] buffer;
+      input [`STRDEF] pattern;
+      reg   [`STRDEF] mask;
+      begin
+         mask = 0;
+         while ((pattern & ~mask) != 0)
+           mask = {mask, 8'hff};
+         ctyMatch = ((buffer & mask) == pattern);
+      end
+   endfunction
+
+   //
    // This task polls the console output register.  When the VALID bit is
    // asserted, a character is present.  When the character has been read, the
    // valid bit is cleared.
@@ -439,6 +470,15 @@ module testbench;
                             temp[28:35]);
                    $fwrite(fd, "%s", temp[28:35]);
                    inBuf = {inBuf, temp[28:35]};
+`ifdef STOP_ON_CTY
+                   if (ctyMatch(inBuf, `STOP_ON_CTY))
+                     begin
+                        $fflush(fd);
+                        $display("[%11.3f] KS10: CTY output matched \"%s\".  Stopping.",
+                                 $time/1.0e3, `STOP_ON_CTY);
+                        $stop;
+                     end
+`endif
                 end
               else if ((temp[28:35] == 8'h0a) || (temp[28:35] == 8'h0d))
                 begin
@@ -742,44 +782,37 @@ module testbench;
              key.get(1);
              getchar(fd_cty);
 
+             //
+             // Diagnostics without their own script use test_default.vh,
+             // which answers the TTY SWITCH CONTROL dialog.
+             //
+
              `ifdef DIAG_DSKCG
                 `include "test_dskcg.vh"
-             `endif
-
-             `ifdef DIAG_DSDZA
+             `elsif DIAG_DSKEC
+                `include "test_dskec.vh"
+             `elsif DIAG_DSKDA
+                `include "test_dskda.vh"
+             `elsif DIAG_DSDZA
                 `include "test_dsdza.vh"
-             `endif
-
-             `ifdef DIAG_DSRPA
+             `elsif DIAG_DSRPA
                 `include "test_dsrpa.vh"
-             `endif
-
-             `ifdef DIAG_DSRMB
+             `elsif DIAG_DSRMB
                 `include "test_dsrmb.vh"
-             `endif
-
-             `ifdef DIAG_DSLPA
+             `elsif DIAG_DSLPA
                  `include "test_dslpa.vh"
-             `endif
-
-             `ifdef DIAG_DSDUA
+             `elsif DIAG_DSDUA
                  `include "test_dsdua.vh"
-             `endif
-
-             `ifdef DIAG_DSKMA
+             `elsif DIAG_DSKMA
                  `include "test_dskma.vh"
-             `endif
-
-             `ifdef DIAG_DSTUA
+             `elsif DIAG_DSTUA
                  `include "test_dstua.vh"
-             `endif
-
-             `ifdef DIAG_DSTUB
+             `elsif DIAG_DSTUB
                  `include "test_dstub.vh"
-             `endif
-
-             `ifdef DIAG_DSUBA
+             `elsif DIAG_DSUBA
                  `include "test_dsuba.vh"
+             `else
+                 `include "test_default.vh"
              `endif
 
              charout();
@@ -943,9 +976,13 @@ module testbench;
    //
    // SD Card Simulation
    //
+   // SDSIM synchronizes SD_SCLK before using it. It must be clocked faster
+   // than cpuCLK or it falls an SCLK edge behind when the SD controller
+   // switches the SPI interface to the fast clock rate.
+   //
 
    SDSIM SD (
-      .clk          (cpuCLK),
+      .clk          (clk),
       .rst          (cpuRST),
       .SD_MISO      (SD_MISO),
       .SD_MOSI      (SD_MOSI),

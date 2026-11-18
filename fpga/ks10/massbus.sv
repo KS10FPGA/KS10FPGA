@@ -80,6 +80,8 @@ interface massbus;
    logic         mbDVA;                 // Drive available
    logic         mbDPR;                 // Drive present
    logic         mbDRY;                 // Drive ready
+   logic         mbDRYA[0:7];           // Drive ready (each unit)
+   logic         mbERRA[0:7];           // Composite error (each unit)
    logic [15: 0] mbREGDAT;              // Register data
    logic         mbREGACK;              // Register ack
 
@@ -119,6 +121,8 @@ interface massbus;
       input  mbDVA,
       input  mbDPR,
       input  mbDRY,
+      input  mbDRYA,
+      input  mbERRA,
       input  mbREGDAT,
       input  mbREGACK
    );
@@ -158,6 +162,8 @@ interface massbus;
       output mbDVA,
       output mbDPR,
       output mbDRY,
+      output mbDRYA,
+      output mbERRA,
       output mbREGDAT,
       output mbREGACK
    );

@@ -247,7 +247,42 @@ module RAMFILE (
    //  DPMA/E54
    //
 
-   wire ramfileWRITE = ((vmaACREF & vmaWRITE) | (`cromFMWRITE));
+   //  A write to an AC through the VMA only happens on the microinstruction
+   //  that completes the memory cycle (MEM WRITE, which has MEM and WAIT
+   //  set).  Without this qualifier, every microinstruction between
+   //  START WRITE and MEM WRITE also wrote the RAMFILE, at whatever address
+   //  it selected.  EDIT (EDFLT) does "VMA_[BR], START WRITE" with the mark
+   //  pointer address 0 (an AC), then "[BR]_AC[DSTP]", which zeroed the
+   //  destination pointer (DSKCG "ERROR IN EDIT - SIGST").
+   //
+   //  A write cycle that page fails never reaches its MEM WRITE, so the VMA
+   //  keeps the write flag.  The page fail handler then does ABORT MEM CYCLE
+   //  (which loads VMA address 0 but not the cycle flags), so the VMA looks
+   //  like a write to AC0 until the next cycle starts.  The first refill
+   //  read ("START READ" with MEM WAIT) would then write AC0 with whatever
+   //  was on the DBUS.  memABORT blocks AC writes from ABORT MEM CYCLE until
+   //  a new cycle loads the VMA cycle flags.
+   //
+
+   wire specMEMCLR = `cromSPEC_EN_20 & (`cromSPEC_SEL == `cromSPEC_SEL_MEMCLR);
+   wire memWAIT    = `cromMEM_CYCLE & `cromMEM_WAIT;
+
+   reg memABORT;
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          memABORT <= 0;
+        else if (clken)
+          begin
+             if (specMEMCLR)
+               memABORT <= 1;
+             else if (memWAIT)
+               memABORT <= 0;
+          end
+     end
+
+   wire ramfileWRITE = ((vmaACREF & vmaWRITE & memWAIT & !memABORT) | (`cromFMWRITE));
 
    //
    // RAMFILE Memory
@@ -288,16 +323,35 @@ module RAMFILE (
    // Clock RAM on T2
    //
 
+   //  clken is negated on a microinstruction that page fails, so that
+   //  microinstruction does not write the RAMFILE.  The read address is
+   //  always updated.
+   //
+
    always @(posedge clk)
      begin
-        if (clken)
-          begin
-             if (ramfileWRITE)
-               ram[addr] <= dbus;
-             rd_addr <= addr;
-          end
+        if (clken & ramfileWRITE)
+          ram[addr] <= dbus;
+        rd_addr <= addr;
      end
 
    assign ramfile = ram[rd_addr];
+
+   //
+   // AC reference write monitor (define SIM_FMMON to enable)
+   //  Reports AC reference RAMFILE writes on a clock whose RAMFILE address
+   //  is not selected by the VMA, and whether the write was made (MEM=1)
+   //  or suppressed (MEM=0).
+   //
+
+`ifndef SYNTHESIS
+`ifdef SIM_FMMON
+   always @(posedge clk)
+     if (clken & vmaACREF & vmaWRITE & !`cromFMWRITE &
+         ((`cromRAMADDR_SEL != `cromRAMADDR_SEL_VMA) | !`cromMEM_CYCLE))
+       $display("[%11.3f] FMMON: AC ref write with RAMADR/%o: ram[%04o] <= %012o (was %012o). VMA=%012o next J=%04o MEM=%b",
+                $time/1.0e3, `cromRAMADDR_SEL, addr, dbus, ram[addr], vmaREG, `cromJ, `cromMEM_CYCLE);
+`endif
+`endif
 
 endmodule

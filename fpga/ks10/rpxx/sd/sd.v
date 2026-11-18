@@ -1446,15 +1446,23 @@ module SD (
                //
                // stateREAD11
                //  Read byte[7] of data from disk.  This byte is discarded.
+               //  If RHWC is zero, the transfer is complete - discard the
+               //  rest of the sector without writing it to memory.
+               //  Otherwise begin a DMA write cycle.
                //
 
                stateREAD11:
                  begin
                     if (spiDONE)
                       begin
-                         devREQO  <= 1;
-                         devDATAO <= !rhWCZ ? tempDATA : 0;
-                         state    <= stateREAD12;
+                         if (rhWCZ)
+                           state    <= stateREAD13;
+                         else
+                           begin
+                              devREQO  <= 1;
+                              devDATAO <= tempDATA;
+                              state    <= stateREAD12;
+                           end
                       end
                  end
 
@@ -1821,11 +1829,12 @@ module SD (
                //
                // stateWRITE07
                //  Write byte[0] of data to disk.  (LS Byte)
+               //  The zero fill after RHWC is zero does not advance RHBA.
                //
 
                stateWRITE07:
                  begin
-                    sdINCBA <= 1;
+                    sdINCBA <= !rhWCZ;
                     sdINCWC <= !rhWCZ;
                     spiOP   <= `spiTR;
                     spiTXD  <= tempDATA[28:35];
@@ -2762,5 +2771,40 @@ module SD (
    //
 
    assign sdDEBUG = {state, sdERR, sdVAL, 8'h00, sdWRCNT, sdRDCNT};
+
+   //
+   // SD state machine monitor (define SIM_RHMON to enable).  Reports
+   // read/write failures.  Define SIM_SPIMON as well for a trace of
+   // every SPI byte.
+   //
+
+`ifndef SYNTHESIS
+`ifdef SIM_RHMON
+
+   reg [7:0] lastSTATE;
+
+   always @(posedge clk)
+     begin
+        if (rst)
+          lastSTATE <= 0;
+        else
+          begin
+             lastSTATE <= state;
+`ifdef SIM_SPIMON
+             if (spiOP != `spiNOP)
+               $display("[%11.3f] SPIMON: state=%3d op=%0d tx=%02x",
+                        $time/1.0e3, state, spiOP, spiTXD);
+             if (spiDONE)
+               $display("[%11.3f] SPIMON: state=%3d rx=%02x",
+                        $time/1.0e3, state, spiRXD);
+`endif
+             if ((state == stateRWFAIL) & (lastSTATE != stateRWFAIL))
+               $display("[%11.3f] SPIMON: RWFAIL from state %0d. sdERR=%0d sdVAL=%02x",
+                        $time/1.0e3, lastSTATE, sdERR, sdVAL);
+          end
+     end
+
+`endif
+`endif
 
 endmodule

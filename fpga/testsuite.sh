@@ -1,7 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Script to execute the regressions tests
+#
+# Usage:
+#   ./testsuite.sh              Run all of the tests listed below
+#   ./testsuite.sh DSKAA DSKAB  Run only the named tests
+#   SIM=iverilog ./testsuite.sh Use Icarus Verilog instead of QuestaSim
+#
+# Each test is built and simulated (batch mode) by the Makefile target
+# testsuite/<DIAG>.txt.  The make output for each test is saved in
+# testsuite/<DIAG>.build.log so build failures can be diagnosed.
 #
 
 FILES="\
@@ -22,16 +31,16 @@ FILES="\
     DSKCB
     DSKCC
     DSKCD
-    DSKCE-RD00
-    DSKCF-RD00
-    DSKDA-RD00
-    DSKEA-RD00
-    DSKEB-RD00
-    DSKEC-RD00
+    DSKCE
+    DSKCF
+    DSKDA
+    DSKEA
+    DSKEB
+    DSKEC
     DSKFA
-    DSUBA-RD00
-    DSDZA-RD00
-    DSRPA-RD00
+    DSUBA
+    DSDZA
+    DSRPA
     DSMMA
     DSMMB
     DSMMC
@@ -39,30 +48,28 @@ FILES="\
     DSKCG
 "
 
+if [ $# -gt 0 ]; then
+    FILES="$*"
+fi
+
 DIR=testsuite
 RESFILE=results_`date '+%y%m%d_%H%M'`.txt
-PREFIX=MAINDEC-10-
 
 RED='\e[0;31m'
 GRN='\e[0;32m'
 END='\e[0m'
 
-date "+Testing performed on %a, %b %d %Y." | tee ${RESFILE}
-if [ ! -f esm_top/testbench/ssram.awk ]; then
-    co -q "esm_top/testbench/ssram.awk"
-fi
+mkdir -p ${DIR}
 
+date "+Testing performed on %a, %b %d %Y." | tee ${RESFILE}
 date "+[%r] Testing started." | tee -a ${RESFILE}
 for FILE in ${FILES}
 do
-    if [ ! -f ../maindec/${PREFIX}${FILE}.SEQ ]; then
-        co -q "../maindec/${PREFIX}${FILE}.SEQ"
-    fi
     date "+[%r] Testing ${FILE}$" | tr $ \\t | tr -d \\n | expand -t 20 | tee -a ${RESFILE}
-    make -B -s DIAG=${FILE} ${DIR}/${FILE}.vvp 2> /dev/null > /dev/null
+    rm -f ${DIR}/${FILE}.txt
+    make -s DIAG=${FILE} ${DIR}/${FILE}.txt > ${DIR}/${FILE}.build.log 2>&1
     RETVAL=$?
     if [ ${RETVAL} -eq 0 ]; then
-        vvp -n ${DIR}/${FILE}.vvp > ${DIR}/${FILE}.txt
         if grep -q "Test Completed" ${DIR}/${FILE}.txt; then
             echo -e "${GRN}Test Pass${END}" | tee -a ${RESFILE}
         else
@@ -70,7 +77,7 @@ do
         fi
         tail -n 6 ${DIR}/${FILE}.txt >> ${RESFILE}
     else
-        echo -e "${RED}Build Fail${END}" | tee -a ${RESFILE}
+        echo -e "${RED}Build Fail${END} (see ${DIR}/${FILE}.build.log)" | tee -a ${RESFILE}
     fi
 done
 date "+[%r] Testing completed." | tee -a ${RESFILE}

@@ -70,6 +70,7 @@ module MTCTRL (
       input  wire          mtWCZ,               // Word count is zero
       input  wire  [ 2: 0] mtDEN,               // Density
       input  wire  [ 3: 0] mtFMT,               // Format
+      input  wire          mtEVPAR,             // Even parity
       input  wire  [ 5: 1] mtFUN,               // Function
       input  wire          mtFUNGO,             // GO bit
       input  wire  [ 2: 0] mtSS,                // Slave Select
@@ -87,14 +88,15 @@ module MTCTRL (
       output logic         mtPES,               // Phase encoded status
       output logic [ 8: 0] mtMDF,               // Maintenance Data Field
       output logic         mtSDWN,              // Settle down
-      output logic         mtINCFC              // Increment frame counter
+      output logic         mtINCFC,             // Increment frame counter
+      output wire          mtSETFCE             // Frame count error
    );
 
    //
    // Parity Function
    //
 
-   function [8:0] parity(logic [35:0] d, logic [3:0] fmt);
+   function [8:0] parity(logic [35:0] d, logic [3:0] fmt, logic evpar);
       case (fmt)
         `mtTC_FMT_CORDMP:
           begin
@@ -106,8 +108,14 @@ module MTCTRL (
              parity[3] = d[30] ^ d[22] ^ d[14] ^ d[ 6] ^ d[ 2];
              parity[2] = d[29] ^ d[21] ^ d[13] ^ d[ 5] ^ d[ 1];
              parity[1] = d[28] ^ d[20] ^ d[12] ^ d[ 4] ^ d[ 0];
-             parity[0] = parity[8] ^ parity[7] ^ parity[6] ^ parity[5] ^
-                         parity[4] ^ parity[3] ^ parity[2] ^ parity[1]; // vertical parity
+             //
+             // Five frames per word, each with its own parity bit.  With odd
+             // parity, each frame inverts its parity bit so the word inverts
+             // the LRC parity bit once.  See DSTUA GETLRC.  (COMPAT has four
+             // frames, so the inversions cancel.)
+             //
+             parity[0] = (parity[8] ^ parity[7] ^ parity[6] ^ parity[5] ^
+                          parity[4] ^ parity[3] ^ parity[2] ^ parity[1] ^ !evpar); // vertical parity
           end
         `mtTC_FMT_COMPAT:
           begin
@@ -156,7 +164,10 @@ module MTCTRL (
    // Timing parameters
    //
 
-   localparam [31:0] mtACCLVAL = (0.0032000 * `CLKFRQ);   // Offset delay (2.8 ms)
+   localparam [31:0] mtACCLVAL = (0.0032000 * `CLKFRQ);   // Offset delay (3.2 ms)
+   localparam [31:0] mtACCLWRB = (0.0525000 * `CLKFRQ);   // Write at BOT (52.5 ms)
+   localparam [31:0] mtACCLRDB = (0.0065000 * `CLKFRQ);   // Read at BOT (6.5 ms)
+   localparam [31:0] mtACCLRD  = (0.0006250 * `CLKFRQ);   // Read not at BOT (625 us)
    localparam [31:0] mtSDWNVAL = (0.0100000 * `CLKFRQ);   // Settle-down timer (10.0 ms)
 
    //
@@ -213,6 +224,20 @@ module MTCTRL (
         else
           mtINCFC <= mtWRHI & mtWSTRB[3] & mtCSLDATAI[bINCFC];
      end
+
+   //
+   // Frame Count Error (MTER[FCE])
+   //
+   //  A space operation increments the Frame Counter once for each record
+   //  (or tape mark) that it spaces over.  When the space operation stops
+   //  before the Frame Counter reaches zero (it stopped at a tape mark, BOT
+   //  or EOT) the formatter sets FCE.
+   //
+   //  See DSTUA TST114-TST122 subtests 8 and 9.
+   //
+
+   assign mtSETFCE = ((state == stateEXECCMD) & mtREADY & !mtFCZ &
+                      ((mtFUN == `mtCS1_FUN_SPCFWD) | (mtFUN == `mtCS1_FUN_SPCREV)));
 
    //
    // mtDIR[BOT] - Beginning of tape
@@ -323,6 +348,8 @@ module MTCTRL (
    //
    //  mtPES is asserted when the tape transport is written in PE mode at BOT.
    //
+   //  A write forward, a write tape mark or an erase all write on the tape.
+   //
    //  Each tape transport maintains its own mtPES signal
    //
 
@@ -341,7 +368,9 @@ module MTCTRL (
              mtPESA[6] <= 0;
              mtPESA[7] <= 0;
           end
-        else if ((state == stateIDLE) & (mtFUN == `mtCS1_FUN_WRFWD) & mtBOT)
+        else if ((state == stateIDLE) & mtBOT & ((mtFUN == `mtCS1_FUN_WRFWD) |
+                                                 (mtFUN == `mtCS1_FUN_WRTM ) |
+                                                 (mtFUN == `mtCS1_FUN_ERASE)))
           mtPESA[mtSS] <= (mtDEN == `mtTC_DEN_1600);
         else if (mtSLA)
           mtPESA[mtSS] <= 0;
@@ -709,12 +738,25 @@ module MTCTRL (
                       //
                       // Everything else
                       //
+                      //  The TU77 takes much longer to start from BOT.
+                      //
 
                       default:
                         begin
                            mtDRY     <= 0;
-                           mtACCLTIM <= mtACCLVAL;
                            state     <= stateACCL;
+                           case (mtFUN)
+                             `mtCS1_FUN_WRFWD:
+                               mtACCLTIM <= mtBOT ? mtACCLWRB : mtACCLVAL;
+                             `mtCS1_FUN_RDFWD,
+                             `mtCS1_FUN_WRCHKFWD:
+                               mtACCLTIM <= mtBOT ? mtACCLRDB : mtACCLRD;
+                             `mtCS1_FUN_RDREV,
+                             `mtCS1_FUN_WRCHKREV:
+                               mtACCLTIM <= mtACCLRD;
+                             default:
+                               mtACCLTIM <= mtACCLVAL;
+                           endcase
                         end
 
                     endcase
@@ -858,7 +900,10 @@ module MTCTRL (
                          mtREQO <= 0;
                          mtSTB  <= 1;
                          mtDIRD <= mtDATAI;     // endian swap here
-                         mtMDF  <= mtMDF ^ parity(mtDATAI, mtFMT);
+                         // The NPR after the last word only tells the software
+                         // that the transfer is done.  It is not written to tape.
+                         if (!mtWCZ & !mtFCZ)
+                           mtMDF <= mtMDF ^ parity(mtDATAI, mtFMT, mtEVPAR);
                          state  <= stateWRITE2;
                       end
                  end
@@ -984,9 +1029,18 @@ module MTCTRL (
                // stateDONE:
                //  Report drive ready
                //
+               //  ATA is asserted at the end of a data transfer when EOT is up.
+               //  See DSTUA TST167.
+               //
 
                stateDONE:
                  begin
+                    if (mtEOT & ((mtFUN == `mtCS1_FUN_WRFWD   ) |
+                                 (mtFUN == `mtCS1_FUN_RDFWD   ) |
+                                 (mtFUN == `mtCS1_FUN_RDREV   ) |
+                                 (mtFUN == `mtCS1_FUN_WRCHKFWD) |
+                                 (mtFUN == `mtCS1_FUN_WRCHKREV)))
+                      mtATA <= 1;
                     mtGO      <= 0;
                     mtPIP     <= 0;
                     mtDRY     <= 1;

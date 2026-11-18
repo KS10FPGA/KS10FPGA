@@ -66,6 +66,7 @@ class tape_t {
         int  reccnt;                    //!< Record count
         bool statBOT;                   //!< BOT state
         bool statEOT;                   //!< EOT state
+        bool physEOT;                   //!< Ran off the end of the tape file
         bool lastTM;                    //!< TM state
         FILE *fp;                       //!< File pointer
         std::thread thread;             //!< Thread object
@@ -256,7 +257,9 @@ class tape_t {
         int  writeDataCORDMP(ks10_t::data_t);
         int  writeDataCOMPAT(ks10_t::data_t);
         int  writeData(ks10_t::data_t, uint8_t format);
+        float usecPerFrame(uint8_t density);
         void waitReadWrite(uint8_t density, unsigned int bytes);
+        void waitFrames(uint64_t start, unsigned int frames, uint8_t density);
         void waitRewind(uint8_t density, unsigned int bytes);
 
     public:

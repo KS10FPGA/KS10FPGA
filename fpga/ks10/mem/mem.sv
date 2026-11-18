@@ -320,6 +320,41 @@ module MEM (
           $display("[%11.3f] KS10: Memory Status Register Written", $time/1.0e3);
      end
 
+   //
+   // Memory write monitor (define SIM_MEMMON to enable)
+   //  Reports writes to the PI locations (EPT+40 to EPT+57), the UBA
+   //  vector table pointers (EPT+100 to EPT+107), and the address range
+   //  SIM_MEMMON_LO to SIM_MEMMON_HI (octal).  The EPT is assumed to be
+   //  at physical address 0.
+   //
+
+`ifdef SIM_MEMMON
+
+`ifndef SIM_MEMMON_LO
+ `define SIM_MEMMON_LO 'o076740
+`endif
+
+`ifndef SIM_MEMMON_HI
+ `define SIM_MEMMON_HI 'o077077
+`endif
+
+   logic        lastMEMWRITE;
+   logic [16:35] lastMEMADDR;
+
+   always_ff @(posedge clkT[3])
+     begin
+        lastMEMWRITE <= memWRITE;
+        lastMEMADDR  <= busMEMADDR;
+        if (memWRITE & (!lastMEMWRITE | (busMEMADDR != lastMEMADDR)) &
+            (((busMEMADDR >= 'o000040) & (busMEMADDR <= 'o000057)) |
+             ((busMEMADDR >= 'o000100) & (busMEMADDR <= 'o000107)) |
+             ((busMEMADDR >= `SIM_MEMMON_LO) & (busMEMADDR <= `SIM_MEMMON_HI))))
+          $display("[%11.3f] MEMMON: Write mem[%06o] = %012o. Flags=%05o",
+                   $time/1.0e3, busMEMADDR, memBUS.busDATAI, memBUS.busADDRI[0:13]);
+     end
+
+`endif
+
 `endif
 
 endmodule

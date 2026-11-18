@@ -71,6 +71,7 @@
 
 `include "apr.vh"
 `include "vma.vh"
+`include "pager.vh"
 `include "useq/crom.vh"
 
 module BUS (
@@ -79,6 +80,7 @@ module BUS (
       input  wire [ 0: 35] dp,          // Data path
       input  wire [ 0:107] crom,        // Control ROM Data
       input  wire [ 0: 35] vmaREG,      // VMA Register
+      input  wire [ 0:  3] pageFLAGS,   // Page Flags
       input  wire [16: 26] pageADDR,    // Page Address
       input  wire [22: 35] aprFLAGS,    // APR Flags
       input  wire [ 0:  2] piCURPRI,    // Current Interrupt Priority
@@ -113,6 +115,34 @@ module BUS (
    wire pagedREF = !vmaPHYS & flagPAGEEN;
 
    //
+   // Page Failure
+   //
+   // Details
+   //  A paged memory reference that will page fail must not reach the bus.
+   //  These are the same conditions that DISP_PF uses to page fail the
+   //  cycle (page not valid, user/exec mismatch, or write test to a page
+   //  that is not writeable).
+   //
+   //  The page fail is only taken when the microcode does the MEM WAIT, but
+   //  the bus request is made as soon as the VMA is loaded and memory is
+   //  written on every clock that the request is present.  The write data is
+   //  not on the data path until the MEM WRITE, so a write to a page that
+   //  was not in the page table wrote whatever was on the data path to
+   //  the stale physical page from the page table entry (usually page 0).
+   //  DSKEC "MOVEM 0,600" with KI paging enabled wrote zero to the EPT
+   //  entry for exec page 0 and then looped forever in the page fail trap
+   //  handler.
+   //
+   //  The page table lookup is registered when the VMA is loaded, so the
+   //  page flags are valid whenever the VMA is.
+   //
+
+   wire pageFAIL = pagedREF & !vmaACREF &
+                   (!`pageVALID(pageFLAGS) |
+                    (`vmaUSER(vmaREG) != `pageUSER(pageFLAGS)) |
+                    (vmaWRTEST & !`pageWRITEABLE(pageFLAGS)));
+
+   //
    // The WRU cycle and VECTOR cycle are merged into a single long bus
    // transaction.  This splits the transaction in half so that the WRU and
    // VECTOR cycle and be arbitrated independantly.  This takes a clock cycle
@@ -130,12 +160,13 @@ module BUS (
 
    //
    // Bus Request Output
-   //  Don't do bus requests in response to AC references.
+   //  Don't do bus requests in response to AC references or for paged
+   //  references that will page fail.
    //
 
-   assign cpuREQO = (vmaREAD   & !vmaACREF) |
-                    (vmaWRITE  & !vmaACREF) |
-                    (vmaWRTEST & !vmaACREF) |
+   assign cpuREQO = (vmaREAD   & !vmaACREF & !pageFAIL) |
+                    (vmaWRITE  & !vmaACREF & !pageFAIL) |
+                    (vmaWRTEST & !vmaACREF & !pageFAIL) |
                     (vmaVECT              ) |
                     (vmaWRU    & !addr3666);
 

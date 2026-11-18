@@ -38,6 +38,7 @@
 #include <exception>
 
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "mt.hpp"
@@ -84,28 +85,108 @@
     _a > _b ? _a : _b;        \
 })
 
+//
+// TU77 motion timing, in microseconds.  These are the times that DSTUA expects
+// from a TU77.  The start-up (ACCL) time comes from the FPGA, not from here.
+//
+
+static const uint64_t     c_minWait   =    10;  // Minimum wait for the Word Counter
+static const unsigned int c_readGap   =  3450;  // Inter-record gap after ACCL negates
+static const unsigned int c_readStop  =   500;  // Last frame to SDWN on a read
+static const unsigned int c_writeStop =  1940;  // Last frame to SDWN on a write
+static const unsigned int c_eraseTime = 31500;  // Erase, less ACCL
+static const unsigned int c_writeTM   = 32800;  // Write Tape Mark, less ACCL
+
+//!
+//! \brief
+//!    Get a monotonic time
+//!
+//! \returns
+//!    Time in microseconds
+//!
+
+static inline uint64_t nowUsec(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000;
+}
+
 //!
 //! \brief
 //!    Wait a delay proportional to number of bytes at the current recording
 //!    density.
 //!
 //! \details
-//!    The tape drive reads and writes at 75 inches-per-second (nominally).
+//!    The TU77 reads and writes at 125 inches-per-second (nominally).
 //!
 //!    With a recording density of 800 bytes-per-inch and with a read/write
-//!    speed of 75 inches-per-second, data is transferred at 60,000
+//!    speed of 125 inches-per-second, data is transferred at 100,000
 //!    bytes-per-second.
 //!
 //!    With a recording density of 1600 bytes-per-inch and with a read/write
-//!    speed of 75 inches-per-second, data is transferred at 120,000
+//!    speed of 125 inches-per-second, data is transferred at 200,000
 //!    bytes-per-second.
 //!
 
 inline void tape_t::waitReadWrite(uint8_t density, unsigned int bytes) {
-    float usec_per_byte = (density == d_1600BPI) ? 1.0e6/120000.0 : 1.0e6/60000.0;
-    float microsec = (float)bytes * usec_per_byte;
+    float microsec = (float)bytes * usecPerFrame(density);
     DEBUG_DELAY("TAPE: Unit %d: Read/write delay is %.1f ms.\n", unit, microsec * 0.001);
     usleep((unsigned int)microsec + 0.5);
+}
+
+//!
+//! \brief
+//!    Time taken for one frame to pass the tape head at the current recording
+//!    density.
+//!
+//! \param [in] density -
+//!    Recording density
+//!
+//! \returns
+//!    Microseconds per frame
+//!
+
+inline float tape_t::usecPerFrame(uint8_t density) {
+    return (density == d_1600BPI) ? 1.0e6/200000.0 : 1.0e6/100000.0;
+}
+
+//!
+//! \brief
+//!    Wait until a number of frames have passed the tape head.
+//!
+//! \details
+//!    Tape data is transferred at the speed of the tape.  A word only lasts
+//!    for 20 to 50 microseconds, and usleep() cannot wait for such a short
+//!    time, so the last part of the wait spins on the clock.
+//!
+//!    The time is measured from the start of the record, so a transfer that
+//!    gets delayed by the operating system catches up again.  It always waits
+//!    for a minimum time because the caller is about to look at the Word
+//!    Counter, and the NPR that updates the Word Counter has to finish first.
+//!
+//! \param [in] start -
+//!    Time of the first frame in the record
+//!
+//! \param [in] frames -
+//!    Number of frames that must have passed since the start of the record
+//!
+//! \param [in] density -
+//!    Recording density
+//!
+
+inline void tape_t::waitFrames(uint64_t start, unsigned int frames, uint8_t density) {
+    uint64_t now    = nowUsec();
+    uint64_t target = start + (uint64_t)((float)frames * usecPerFrame(density));
+
+    if (target < now + c_minWait) {
+        target = now + c_minWait;
+    }
+    if (target - now > 200) {
+        usleep((unsigned int)(target - now - 150));
+    }
+    while (nowUsec() < target) {
+        ;
+    }
 }
 
 //!
@@ -480,27 +561,43 @@ void tape_t::erase(uint64_t mtDIR) {
     size_t bytes = (getDEN(mtDIR) == d_1600BPI) ? 3 * 1600 : 3 * 800;
     int gaps = bytes / sizeof(h_GAP);
 
-    uint32_t header = readHeader();
-    DEBUG_HEADER("TAPE: Unit %d: Header was %d (0x%08x), (pos=%ld)\n", unit, header, header, ftell(fp) - sizeof(header));
+    //
+    // Look at what is on the tape, then go back so the gap starts at the
+    // current position.
+    //
 
-    if (header < 0xffff0000) {
+    long pos = ftell(fp);
+    uint32_t header = readHeader();
+    DEBUG_HEADER("TAPE: Unit %d: Header was %d (0x%08x), (pos=%ld)\n", unit, header, header, pos);
+    fseek(fp, pos, SEEK_SET);
+
+    //
+    // Only a record that is longer than the gap can be shortened. Anything
+    // else (a short record, a tape mark, a gap, the end of the tape, or old
+    // data left after a shorter record was written over a longer one) is
+    // just overwritten.
+    //
+
+    if (((header & 0xffff0000) == 0) && (header > bytes)) {
+
+        long remain = (long)header - (long)bytes;
 
         DEBUG_ERASE("TAPE: Unit %d: Header was valid. Writing GAP and updating the following record.\n", unit);
         for (int i = 0; i < gaps; i++) {
             writeHeader(h_GAP);
         }
 
-        DEBUG_ERASE("TAPE: Unit %d: Header - bytes was %d (0x%08x).\n", unit, header - bytes, header - bytes);
+        DEBUG_ERASE("TAPE: Unit %d: Header - bytes was %ld.\n", unit, remain);
 
-        writeHeader(header - bytes);
-        fseek(fp, header - bytes, SEEK_CUR);
-        writeHeader(header - bytes);
-        fseek(fp, -(header - bytes) - 2 * sizeof(header), SEEK_CUR);
+        writeHeader(remain);
+        fseek(fp, remain, SEEK_CUR);
+        writeHeader(remain);
+        fseek(fp, -(remain + 2 * (long)sizeof(header)), SEEK_CUR);
 
     } else {
 
         DEBUG_ERASE("TAPE: Unit %d: Header was not valid. Just writing GAP.\n", unit);
-        for (int i = 0; i < gaps + 1; i++) {
+        for (int i = 0; i < gaps; i++) {
             writeHeader(h_GAP);
         }
 
@@ -511,7 +608,7 @@ void tape_t::erase(uint64_t mtDIR) {
         fsize = max(fsize, ftell(fp));
     }
 
-    usleep(40000);
+    usleep(c_eraseTime);
 
     DEBUG_ERASE("TAPE: Unit %d: Erase Done. Pos = %ld.\n", unit, ftell(fp));
 }
@@ -530,6 +627,7 @@ void tape_t::writeTapeMark(uint64_t /*mtDIR*/) {
     writeHeader(h_TM);
     ks10_t::writeMTDIR(ks10_t::mtDIR_SETTM);
     fsize = max(fsize, ftell(fp));
+    usleep(c_writeTM);
     DEBUG_WRTM("TAPE: Unit %d: Write Tape Mark Done. Pos = %ld.\n", unit, ftell(fp));
 }
 
@@ -573,7 +671,7 @@ void tape_t::spaceForward(uint64_t /*mtDIR*/) {
             continue;
         } else if (header == h_EOT) {
             DEBUG_SPCFWD("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
-            ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
+            physEOT = true;
             break;
         } else if (header == h_ERR) {
             DEBUG_SPCFWD("TAPE: Unit %d: Header Error.\n", unit);
@@ -638,17 +736,21 @@ void tape_t::spaceForward(uint64_t /*mtDIR*/) {
             waitReadWrite(getDEN(mtDIR), length);
 
             //
-            // Done when frame count is incremented to zero
+            // Done when frame count is incremented to zero.  The drive also stops
+            // after one record when EOT is up.  The frame count is left non-zero
+            // and the RTL sets FCE.  See DSTUA TST167.
             //
 
-            if (isFCZ(mtDIR)) {
+            if (isFCZ(mtDIR) || (ftell(fp) > bytes_per_tape(getDEN(mtDIR)))) {
                 DEBUG_SPCFWD("TAPE: Unit %d: Space Forward. Frame Count incremented to zero.\n", unit);
                 done = true;
             }
         }
 
         if (header == h_TM) {
+            usleep(c_readGap + c_readStop);            // Tape motion over the tape mark
             lastTM = true;
+            ks10_t::writeMTDIR(ks10_t::mtDIR_INCFC);   // A tape mark counts as a record
             ks10_t::writeMTDIR(ks10_t::mtDIR_SETTM);
         } else {
             lastTM = false;
@@ -696,7 +798,7 @@ void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
             continue;
         } else if (header == h_EOT) {
             DEBUG_SPCREV("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
-            ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
+            physEOT = true;
             break;
         } else if (header == h_ERR) {
             DEBUG_SPCREV("TAPE: Unit %d: Header Error.\n", unit);
@@ -753,17 +855,21 @@ void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
             waitReadWrite(getDEN(mtDIR), length);
 
             //
-            // Done when frame count is incremented to zero
+            // Done when frame count is incremented to zero.  The drive also stops
+            // after one record when EOT is up.  The frame count is left non-zero
+            // and the RTL sets FCE.  See DSTUA TST167.
             //
 
-            if (isFCZ(mtDIR)) {
+            if (isFCZ(mtDIR) || (ftell(fp) > bytes_per_tape(getDEN(mtDIR)))) {
                 DEBUG_SPCREV("TAPE: Unit %d: Space Reverse. Frame Count incremented to zero.\n", unit);
                 done = true;
             }
         }
 
         if (header == h_TM) {
+            usleep(c_readGap + c_readStop);            // Tape motion over the tape mark
             lastTM = true;
+            ks10_t::writeMTDIR(ks10_t::mtDIR_INCFC);   // A tape mark counts as a record
             ks10_t::writeMTDIR(ks10_t::mtDIR_SETTM);
         } else {
             lastTM = false;
@@ -823,6 +929,10 @@ void tape_t::writeForward(uint64_t mtDIR) {
     long headPos = ftell(fp);
     writeHeader(0);
 
+    uint64_t start = 0;
+    uint64_t lastWord = 0;
+    bool aborted = false;
+
     for (;;) {
 
         //
@@ -840,7 +950,7 @@ void tape_t::writeForward(uint64_t mtDIR) {
 
             mtDIR = ks10_t::readMTDIR();
             if (isFCZ(mtDIR) || isWCZ(mtDIR)) {
-                DEBUG_WRFWD("TAPE: Unit %d: Write Forward. %s Count is zero.\n", unit, isWCZ(mtDIR) ? "Frame" : "Word");
+                DEBUG_WRFWD("TAPE: Unit %d: Write Forward. %s Count is zero.\n", unit, isWCZ(mtDIR) ? "Word" : "Frame");
                 break;
             }
 
@@ -854,10 +964,13 @@ void tape_t::writeForward(uint64_t mtDIR) {
             // In COMPAT mode, the Frame Counter is incremented 4 times.
             //
 
+            if (length == 0) {
+                start = nowUsec();
+            }
+
             for (int i = 0; i < bpw; i++) {
                 ks10_t::writeMTDIR(ks10_t::mtDIR_INCFC | ks10_t::mtDIR_STB);
                 length += 1;
-                usleep(1);
             }
 
             //
@@ -868,20 +981,59 @@ void tape_t::writeForward(uint64_t mtDIR) {
             uint64_t data = getDATA(mtDIR);
             writeData(data, getFMT(mtDIR));
 //          printf("Unit %d: %06o %06o: pos=%ld\n", unit, ks10_t::lh(data), ks10_t::rh(data), ftell(fp)-bpw);
-            ks10_t::writeMTDIR(0);
 
-        } else {
+            //
+            // The next word is released at the speed of the tape.
+            //
+
+            waitFrames(start, length, density);
+            ks10_t::writeMTDIR(0);
+            lastWord = nowUsec();
+
+        } else if (isREADY(mtDIR)) {
+
+            //
+            // The FPGA asserts READY by itself when a Massbus Init or a Drive
+            // Clear aborts the operation.  No more data will arrive for this
+            // record.  Any data that arrives later belongs to the next command.
+            //
+
+            DEBUG_WRFWD("TAPE: Unit %d: Write Forward aborted after %d bytes.\n", unit, length);
+            aborted = true;
+            break;
+
+        } else if (nowUsec() - lastWord > 1000) {
+
+            //
+            // The tape has not started yet
+            //
 
             usleep(100);
 
         }
+
+        //
+        // Otherwise the NPR for the next word is in progress.  It will finish
+        // in a few microseconds, which is much shorter than a usleep().
+        //
     }
 
     //
-    // Simulate tape speed
+    // An aborted write that transferred nothing leaves no record on the tape.
     //
 
-    waitReadWrite(density, length);
+    if (aborted && (length == 0)) {
+        fseek(fp, headPos, SEEK_SET);
+        return;
+    }
+
+    //
+    // Wait for the tape to pass the end of the record
+    //
+
+    if (!aborted) {
+        usleep(c_writeStop);
+    }
 
     //
     // Update status
@@ -966,7 +1118,7 @@ void tape_t::readForward(uint64_t mtDIR) {
             continue;
         } else if (header == h_EOT) {
             DEBUG_RDFWD("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
-            ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
+            physEOT = true;
             break;
         } else if (header == h_ERR) {
             DEBUG_RDFWD("TAPE: Unit %d: Header Error.\n", unit);
@@ -980,10 +1132,10 @@ void tape_t::readForward(uint64_t mtDIR) {
             filcnt += 1;
             objcnt += 1;
             reccnt += 1;
-            break;
+            done = true;
         } else if ((header == h_TM) && lastTM) {
             DEBUG_RDFWD("TAPE: Unit %d: obj=%3d, fpos=%7ld, Logical EOT.\n", unit, objcnt, ftell(fp));
-            break;
+            done = true;
         } else {
             if (lastTM) {
                 DEBUG_RDFWD("TAPE: Unit %d: Processing tape file %d.\n", unit, filcnt);
@@ -1002,6 +1154,16 @@ void tape_t::readForward(uint64_t mtDIR) {
             DEBUG_RDFWD("TAPE: Unit %d: obj=%3d, fpos=%7ld, rec=%2d, len=%d (%d words).\n", unit, objcnt, ftell(fp), reccnt, length, length / bpw);
             objcnt += 1;
             reccnt += 1;
+
+            //
+            // Cross the inter-record gap.
+            //
+
+            usleep(c_readGap);
+
+            bool aborted = false;
+            unsigned int frames = 0;
+            uint64_t start = nowUsec();
 
             for (unsigned int i = 0; i < length; i += bpw) {
 
@@ -1032,19 +1194,46 @@ void tape_t::readForward(uint64_t mtDIR) {
 
                 for (int j = 0; j < bpw; j++) {
                     ks10_t::writeMTDIR(ks10_t::mtDIR_INCFC);
-                    usleep(1);
                 }
                 total  += 1;
+                frames += bpw;
 
                 //
-                // Wait for a short time for the Frame Count and Word Counter
-                // to increment then check the Word Counter. If the Word
-                // Counter is zero, we are done.
+                // Wait for this word to pass the tape head. That also gives
+                // the Frame Count and Word Counter time to increment.
                 //
+                // The FPGA asserts READY by itself when a Massbus Init or a
+                // Drive Clear aborts the operation.
+                //
+
+                waitFrames(start, frames, density);
 
                 uint64_t mtDIR = ks10_t::readMTDIR();
-                if (isWCZ(mtDIR)) {
+                long remain = (long)length - (long)frames;
+                if (isREADY(mtDIR)) {
+                    DEBUG_RDFWD("TAPE: Unit %d: Read Forward aborted.\n", unit);
+                    if (remain > 0) {
+                        fseek(fp, remain, SEEK_CUR);
+                    }
+                    aborted = true;
+                    done = true;
+                    break;
+                } else if (isWCZ(mtDIR)) {
                     DEBUG_WRFWD("TAPE: Unit %d: Read Forward. Word Count is zero.\n", unit);
+
+                    //
+                    // The transfer has finished, but the tape keeps going until
+                    // the end of the record. The Frame Counter counts every
+                    // frame in the record.
+                    //
+
+                    if (remain > 0) {
+                        waitFrames(start, length, density);
+                        for (long j = 0; j < remain; j++) {
+                            ks10_t::writeMTDIR(ks10_t::mtDIR_INCFC);
+                        }
+                        fseek(fp, remain, SEEK_CUR);
+                    }
                     done = true;
                     break;
                 }
@@ -1058,13 +1247,23 @@ void tape_t::readForward(uint64_t mtDIR) {
             readHeader();
 
             //
-            // Simulate delay from tape motion
+            // Wait for the tape to pass the end of the record
             //
 
-            waitReadWrite(density, length);
+            if (!aborted) {
+                usleep(c_readStop);
+            }
+
+            //
+            // The drive stops in the gap after a record, even if the Word
+            // Count is not zero.  The Frame Counter gives the record length.
+            //
+
+            done = true;
         }
 
         if (header == h_TM) {
+            usleep(c_readGap + c_readStop);            // Tape motion over the tape mark
             lastTM = true;
             ks10_t::writeMTDIR(ks10_t::mtDIR_SETTM);
         } else {
@@ -1134,7 +1333,7 @@ void tape_t::readReverse(uint64_t mtDIR) {
             continue;
         } else if (header == h_EOT) {
             DEBUG_RDREV("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
-            ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
+            physEOT = true;
             break;
         } else if (header == h_ERR) {
             DEBUG_RDREV("TAPE: Unit %d: Header Error.\n", unit);
@@ -1148,10 +1347,10 @@ void tape_t::readReverse(uint64_t mtDIR) {
             filcnt -= 1;
             objcnt -= 1;
             reccnt = -1;
-            break;
+            done = true;
         } else if ((header == h_TM) && lastTM) {
             DEBUG_RDREV("TAPE: Unit %d: obj=%3d, fpos=%7ld, Logical EOT.\n", unit, objcnt, ftell(fp));
-            break;
+            done = true;
         } else {
             if (lastTM) {
                 DEBUG_RDREV("TAPE: Unit %d: Processing tape file %d.\n", unit, filcnt);
@@ -1172,6 +1371,16 @@ void tape_t::readReverse(uint64_t mtDIR) {
             DEBUG_RDREV("TAPE: Unit %d: obj=%3d, fpos=%7ld, rec=%2d, len=%d (%d words).\n", unit, objcnt, ftell(fp), reccnt, length, length / bpw);
             objcnt -= 1;
             reccnt -= 1;
+
+            //
+            // Cross the inter-record gap.
+            //
+
+            usleep(c_readGap);
+
+            bool aborted = false;
+            unsigned int frames = 0;
+            uint64_t start = nowUsec();
 
             for (unsigned int i = 0; i < length; i += bpw) {
 
@@ -1208,19 +1417,46 @@ void tape_t::readReverse(uint64_t mtDIR) {
 
                 for (int j = 0; j < bpw; j++) {
                     ks10_t::writeMTDIR(ks10_t::mtDIR_INCFC);
-                    usleep(1);
                 }
-                total += 1;
+                total  += 1;
+                frames += bpw;
 
                 //
-                // Wait for a short time for the Frame Count and Word Counter
-                // to increment then check the Word Counter. If the Word
-                // Counter is zero, we are done.
+                // Wait for this word to pass the tape head. That also gives
+                // the Frame Count and Word Counter time to increment.
                 //
+                // The FPGA asserts READY by itself when a Massbus Init or a
+                // Drive Clear aborts the operation.
+                //
+
+                waitFrames(start, frames, density);
 
                 uint64_t mtDIR = ks10_t::readMTDIR();
-                if (isWCZ(mtDIR)) {
+                long remain = (long)length - (long)frames;
+                if (isREADY(mtDIR)) {
+                    DEBUG_RDREV("TAPE: Unit %d: Read Reverse aborted.\n", unit);
+                    if (remain > 0) {
+                        fseek(fp, -remain, SEEK_CUR);
+                    }
+                    aborted = true;
+                    done = true;
+                    break;
+                } else if (isWCZ(mtDIR)) {
                     DEBUG_RDREV("TAPE: Unit %d: Read Reverse. Word Count is zero.\n", unit);
+
+                    //
+                    // The transfer has finished, but the tape keeps going until
+                    // the start of the record. The Frame Counter counts every
+                    // frame in the record.
+                    //
+
+                    if (remain > 0) {
+                        waitFrames(start, length, density);
+                        for (long j = 0; j < remain; j++) {
+                            ks10_t::writeMTDIR(ks10_t::mtDIR_INCFC);
+                        }
+                        fseek(fp, -remain, SEEK_CUR);
+                    }
                     done = true;
                     break;
                 }
@@ -1236,13 +1472,23 @@ void tape_t::readReverse(uint64_t mtDIR) {
             fseek(fp, -sizeof(header), SEEK_CUR);
 
             //
-            // Simulate delay from tape motion
+            // Wait for the tape to pass the start of the record
             //
 
-            waitReadWrite(density, length);
+            if (!aborted) {
+                usleep(c_readStop);
+            }
+
+            //
+            // The drive stops in the gap after a record, even if the Word
+            // Count is not zero.  The Frame Counter gives the record length.
+            //
+
+            done = true;
         }
 
         if (header == h_TM) {
+            usleep(c_readGap + c_readStop);            // Tape motion over the tape mark
             lastTM = true;
             ks10_t::writeMTDIR(ks10_t::mtDIR_SETTM);
         } else {
@@ -1292,6 +1538,13 @@ void tape_t::processCommand(void) {
                 mt_t::dumpMTFC(03772446);
                 mt_t::dumpMTTC(03772472);
 #endif
+
+                //
+                // EOT from running off the end of the tape file lasts until the
+                // next command.
+                //
+
+                physEOT = false;
 
                 switch (function) {
                     case 000:
@@ -1347,7 +1600,7 @@ void tape_t::processCommand(void) {
 
                 long fpos  = ftell(fp);
                 int  bpt   = bytes_per_tape(density);
-                bool isEOT = (fpos > bpt);
+                bool isEOT = (fpos > bpt) || physEOT;
 
                 if ((fpos == 0) && (!statBOT)) {
                     statBOT = true;
@@ -1357,7 +1610,9 @@ void tape_t::processCommand(void) {
                     statBOT = false;
                     DEBUG_BOTEOT("TAPE: Unit %d: BOT is false.\n", unit);
                     ks10_t::writeMTDIR(ks10_t::mtDIR_CLRBOT);
-                } else if (isEOT && !statEOT) {
+                }
+
+                if (isEOT && !statEOT) {
                     statEOT = true;
                     DEBUG_BOTEOT("TAPE: Unit %d: EOT is true.\n", unit);
                     ks10_t::writeMTDIR(ks10_t::mtDIR_SETEOT);
@@ -1406,6 +1661,16 @@ void tape_t::processCommand(void) {
 //!
 
 void tape_t::validate(void) {
+
+    //
+    // An empty file is a blank tape.  There is nothing to validate.
+    //
+
+    if (fsize == 0) {
+        printf("TAPE: Unit %d: Tape file is blank.\n", unit);
+        return;
+    }
+
     bool lastTM = false;
     bool mismatch = false;
     bool logicalEOT = false;
@@ -1525,6 +1790,7 @@ tape_t::tape_t(unsigned int unit, FILE *fp, unsigned int tapeLength, std::atomic
     reccnt(1),
     statBOT(false),
     statEOT(false),
+    physEOT(false),
     lastTM(true),
     fp(fp) {
 

@@ -103,7 +103,13 @@ MSIM_VSIM       := $(MODELSIM)/vsim
 # QuestaSim executables
 #
 
-QUESTASIM       := $(QUARTUS_ROOTDIR)/../../questa_fse/win64/
+#
+# QuestaSim is no longer bundled under $(QUARTUS_ROOTDIR) in newer Quartus
+# releases. Use the copy of vsim on the PATH if there is one. Override with
+# "make QUESTASIM=<dir>" if necessary.
+#
+
+QUESTASIM       ?= $(or $(dir $(shell which vsim 2>/dev/null)),$(QUARTUS_ROOTDIR)/../../questa_fse/win64/)
 QSIM_VLIB       := $(QUESTASIM)/vlib
 QSIM_VMAP       := $(QUESTASIM)/vmap
 QSIM_VLOG       := $(QUESTASIM)/vlog
@@ -231,7 +237,39 @@ KS10_SIM := \
 	SIM_SDHC \
 	ENABLE_TIMER \
 	STOP_ON_STUCK_PC \
-	STARTADDR=$(STARTDIAG)
+	STARTADDR=$(STARTDIAG) \
+	$(SIM_DEFS)
+
+#
+# Extra simulator macros from the command line.
+#
+#   SIM_DEFS=SIM_RHMON  Log RH11 interrupt and drive attention activity
+#   SIM_DEFS=SIM_SPIMON Trace every SD card SPI byte (with SIM_RHMON)
+#   SIM_DEFS=SIM_NOPCTRACE
+#                       Do not print the PC of every instruction
+#   SIM_DEFS=SIM_MEMMON Log writes to the EPT PI/UBA locations and to
+#                       SIM_MEMMON_LO..SIM_MEMMON_HI (see ks10/mem/mem.sv)
+#   SIM_DEFS=SIM_NXDMON Log CPU WRU/vector cycles, IO timeouts and stale
+#                       acknowledges (see ks10/cpu/nxd.v)
+#   SIM_DEFS=SIM_UBAMON Log UBA states held longer than 12 clocks
+#                       (see ks10/uba/uba.sv)
+#   (several may be given, e.g. SIM_DEFS="SIM_RHMON SIM_NOPCTRACE")
+#   STOP_ON_CTY=str     Stop when the CTY output ends with str (no spaces)
+#   DSRMB_DRIVE=n       Select the DSRMB drive (default 2)
+#   DSRMB_TEST=n     Select the DSRMB test (see testbench/test_dsrmb.vh)
+#
+
+ifdef DSRMB_TEST
+    KS10_SIM += DSRMB_TEST=\"$(DSRMB_TEST)\"
+endif
+
+ifdef DSRMB_DRIVE
+    KS10_SIM += DSRMB_DRIVE=\"$(DSRMB_DRIVE)\"
+endif
+
+ifdef STOP_ON_CTY
+    KS10_SIM += STOP_ON_CTY=\"$(STOP_ON_CTY)\"
+endif
 
 #
 # Devices that will be synthesized or simulated in the design
@@ -737,24 +775,34 @@ $(TESTBENCH)/dskc.rp06 : $(TOPS10_TAPE)
 # VSIM/QUESTA Simulation
 #
 
+# Questa work library.  Override to run two simulations at once.
+
+SIM_WORK ?= $(QUESTA_DIR)/work
+
 VLOG_ARGS := \
-	-work $(QUESTA_DIR)/work \
+	-work $(SIM_WORK) \
 	-lint \
 	+incdir+ks10 \
 	+incdir+ks10/uba \
+	+incdir+ks10/ube \
 	+incdir+ks10/cpu \
 	+incdir+ks10/cpu/useq \
+	+incdir+ks10/csl \
 	+incdir+ks10/debug \
 	+incdir+ks10/dup11 \
 	+incdir+ks10/dz11 \
-	+incdir+ks10/dz11/uart \
+	+incdir+ks10/kmc11 \
 	+incdir+ks10/lp20 \
+	+incdir+ks10/lp26 \
 	+incdir+ks10/mem \
+	+incdir+ks10/mt \
 	+incdir+ks10/rh11 \
-	+incdir+ks10/rh11/rpxx \
-	+incdir+ks10/rh11/sd \
+	+incdir+ks10/rpxx \
+	+incdir+ks10/rpxx/sd \
 	+incdir+ks10/utils \
 	+incdir+ks10/utils/uart \
+	+incdir+ks10/utils/usrt \
+	+incdir+testbench \
 	+define+SSRAM_DAT=\"$(TESTBENCH)/ssram.dat\" \
 	+define+CROM_DAT=\"$(CROM_DAT)\" \
 	+define+DROM_DAT=\"$(DROM_DAT)\" \
@@ -804,6 +852,39 @@ questa : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(CROM_DAT) $(DROM_DAT) $(SIM_DI
 	$(QSIM_VOPT) testbench +acc=npr3+CPU+BRKPT+TRACE -o testbench_opt -debugdb
 	$(QSIM_VSIM) -i -debugdb testbench_opt -do $(QUESTA_DIR)/wave.do
 
+#
+# Batch (no GUI) simulation.  This is used by testsuite.sh.
+#
+#   make DIAG=DSKAA testsuite/DSKAA.txt               (QuestaSim)
+#   make DIAG=DSKAA SIM=iverilog testsuite/DSKAA.txt  (Icarus Verilog)
+#
+# The simulator transcript is written to the target file.  The simulation
+# runs until the testbench stops (test complete, CPU halt, or stuck PC).
+# With QuestaSim, set SIM_RUN to limit the run time, for example
+# SIM_RUN="500 ms".  To run two simulations at once, give the second one
+# its own work library and output directory, for example
+# SIM_WORK=de10_top/questa/work2 TESTSUITE_DIR=testsuite2.
+#
+# The SSRAM image is always refreshed because $(TESTBENCH)/ssram.dat depends
+# only on the diagnostic file and not on the $(DIAG) setting.
+#
+
+TESTSUITE_DIR ?= testsuite
+SIM           ?= questa
+SIM_RUN       ?= -all
+
+$(TESTSUITE_DIR)/$(DIAG).txt : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(CROM_DAT) $(DROM_DAT) $(DIAG_FILE) $(TESTBENCH)/red405a2.tap $(DISKS) chkram
+	mkdir -p $(TESTSUITE_DIR)
+	cp $(DIAG_FILE) $(TESTBENCH)/ssram.dat
+    ifeq ($(SIM), iverilog)
+	$(IVERILOG) $(IVERILOG_ARGS) -D STOP_ON_COMPLETE -o $(TESTSUITE_DIR)/$(DIAG).vvp $(SIM_FILES) $(RTL_FILES)
+	$(VVP) -n $(TESTSUITE_DIR)/$(DIAG).vvp > $@
+    else
+	test -d $(SIM_WORK) || $(QSIM_VLIB) $(SIM_WORK)
+	$(QSIM_VLOG) -quiet $(SIM_FILES) $(RTL_FILES) $(VLOG_ARGS) +define+STOP_ON_COMPLETE
+	$(QSIM_VSIM) -c -lib $(SIM_WORK) testbench -do "run $(SIM_RUN); quit -f" > $@
+    endif
+
 #	$(QSIM_VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+RH11+RPXX -o testbench_opt -debugdb
 #	$(QSIM_VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+KMC11 -o testbench_opt -debugdb
 #	$(QSIM_VOPT) testbench +acc=npr3+CPU+UBA+DEBUG+DUP11+USRT_TX+USRT_RX+CRC16 -o testbench_opt -debugdb
@@ -813,9 +894,11 @@ questa : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(CROM_DAT) $(DROM_DAT) $(SIM_DI
 # iverilog
 #
 
-iverilog : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(CROM_DAT) $(DROM_DAT) $(SIM_DISK) $(TESTBENCH)/ssram.dat $(DISKS) makefile chkram
-	$(IVERILOG) -W all -g2012 -s testbench -o $(IVERILOG_DIR)/sim.vvp \
+IVERILOG_ARGS := \
+	-W all -g2012 -s testbench \
+	$(addprefix -D , $(KS10_SYN)) \
 	$(addprefix -D , $(KS10_SIM)) \
+	$(addprefix -D , $(KS10_SIMDEVS)) \
 	-D SSRAM_DAT=\"$(TESTBENCH)/ssram.dat\" \
 	-D CROM_DAT=\"$(CROM_DAT)\" \
 	-D DROM_DAT=\"$(DROM_DAT)\" \
@@ -839,15 +922,20 @@ iverilog : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(CROM_DAT) $(DROM_DAT) $(SIM_
 	-I ks10/lp20 \
 	-I ks10/lp26 \
 	-I ks10/mem \
+	-I ks10/mt \
 	-I ks10/rh11 \
-	-I ks10/rh11/rpxx \
-	-I ks10/rh11/sd \
+	-I ks10/rpxx \
+	-I ks10/rpxx/sd \
 	-I ks10/uba \
+	-I ks10/ube \
 	-I ks10/utils \
 	-I ks10/utils/uart \
 	-I ks10/utils/usrt \
-	-I testbench \
-	$(SIM_FILES) $(RTL_FILES)
+	-I testbench
+
+iverilog : $(SIM_FILES) $(RTL_FILES) $(INC_FILES) $(CROM_DAT) $(DROM_DAT) $(SIM_DISK) $(TESTBENCH)/ssram.dat $(DISKS) makefile chkram
+	mkdir -p $(IVERILOG_DIR)
+	$(IVERILOG) $(IVERILOG_ARGS) -o $(IVERILOG_DIR)/sim.vvp $(SIM_FILES) $(RTL_FILES)
 	$(VVP) -n $(IVERILOG_DIR)/sim.vvp | tee $(IVERILOG_DIR)/sim.log
 
 #

@@ -80,7 +80,6 @@ ALL_DAT := \
 	$(TMP_DIR)/dsmmc.dat \
 	$(TMP_DIR)/dsmmd.dat \
 	$(TMP_DIR)/dsrma.dat \
-	$(TMP_DIR)/dsrmb.dat \
 	$(TMP_DIR)/dsrpa.dat \
 
 #
@@ -110,6 +109,38 @@ $(TMP_DIR)/dsdza.dat : $(T10BACKUP) $(DIAG_TAPE) $(SAV2VERILOG) $(TMP_DIR)/dsqda
 	../$(SAV2VERILOG) dsdza.sav dsdza.tmp.dat; \
 	cat dsqda.dat dsqdb.dat dsqdc.dat dsdza.tmp.dat dsqda.patch.dat dsdza.patch.dat | awk -f ../$(MERGE18) -vfilename=dsdza.dat > dsdza.dat; \
 	rm -f dsdza.sav dsdza.tmp.dat
+
+#
+# DSRMB (RH11/RP06 Reliability Diagnostic)
+#
+# SBINIT clears all of memory (1024K words) before the diagnostic starts.
+# That takes hours of simulation time. The simulated SSRAM is initialized
+# to zero, so the clear is skipped by patching the 'CAILE 2,7' that controls
+# the memory section loop at 004263 to a JFCL.
+#
+# All DSRMB delays (e.g. 600 ms after a recalibrate, 1 ms polling steps of
+# the 128 ms SC/TRE timeout) go through the routine at 041663, which converts
+# milliseconds to RDTIME ticks with 'IMULI 0,10000' at 041666.  That is
+# patched to 'IMULI 0,100' so every delay is 64 times shorter in simulation.
+#
+# The SC/TRE wait at 041703 polls CS1 in 1 ms steps after starting a
+# transfer and never ends early on a good transfer.  Its timeout must
+# outlast the (slow, SD card based) simulated transfer, otherwise DSRMB
+# changes the UBA paging while the DMA is still running and the RH11 gets
+# a NEM.  The step at 041707 ('MOVEI 0,1') is patched to 'MOVEI 0,4'.
+#
+
+$(TMP_DIR)/dsrmb.patch.dat : makefile
+	echo -e "568000000\t\t// mem[004263] = 255000000000" >  $(TMP_DIR)/dsrmb.patch.dat
+	echo -e "488000040\t\t// mem[041666] = 221000000100" >> $(TMP_DIR)/dsrmb.patch.dat
+	echo -e "408000004\t\t// mem[041707] = 201000000004" >> $(TMP_DIR)/dsrmb.patch.dat
+
+$(TMP_DIR)/dsrmb.dat : $(T10BACKUP) $(DIAG_TAPE) $(SAV2VERILOG) $(TMP_DIR)/dsqda.dat $(TMP_DIR)/dsqdb.dat $(TMP_DIR)/dsqdc.dat $(TMP_DIR)/dsqda.patch.dat $(TMP_DIR)/dsrmb.patch.dat
+	cd $(TMP_DIR); \
+	../$(T10BACKUP) -i -x diagnostics..dsrmb.sav -f ../$(DIAG_TAPE); \
+	../$(SAV2VERILOG) dsrmb.sav dsrmb.tmp.dat; \
+	cat dsqda.dat dsqdb.dat dsqdc.dat dsrmb.tmp.dat dsqda.patch.dat dsrmb.patch.dat | awk -f ../$(MERGE18) -vfilename=dsrmb.dat > dsrmb.dat; \
+	rm -f dsrmb.sav dsrmb.tmp.dat
 
 #
 # DSTUA (RH11/TM03/TU45 Tape Drive)

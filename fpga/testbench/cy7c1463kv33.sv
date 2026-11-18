@@ -187,6 +187,9 @@ initial
      noti1_5    = 0;
      noti1_6    = 0;
      noti2      = 0;
+     // zero memory so locations not in the image don't read as X
+     for (int i = 0; i <= `no_words; i++)
+       mem[i] = 0;
      $readmemh(`SSRAM_DAT, mem);
 
   end
