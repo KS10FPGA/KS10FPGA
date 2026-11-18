@@ -77,6 +77,11 @@ module LPINTR (
    //    and the interrupt with it.  Events in stateVECTREAD and stateWAIT
    //    are still not kept: the CSRA read that ends the interrupt shows
    //    them.
+   //  - An event while IDLE with interrupts disabled (IE clear) is also
+   //    kept in 'pend', and requests the interrupt as soon as IE is set.
+   //    It used to be dropped, so a program that set IE after the event
+   //    never got the interrupt.  Like the SIMH LP20, the request is held
+   //    until it is raised or the LP20 is initialized (CSRA INIT).
    //
 
    reg [2:0] state;
@@ -84,11 +89,11 @@ module LPINTR (
 
    always @(posedge clk)
      begin
-        if (rst)
+        if (rst | lpINIT)
           pend <= 0;
-        else if (lpINIT | (state == stateIDLE))
-          pend <= 0;
-        else if ((state == stateDONE) & lpSETIRQ)
+        else if ((state == stateIDLE) & lpIE)
+          pend <= 0;                    // Raised now (or nothing held)
+        else if (((state == stateDONE) | (state == stateIDLE)) & lpSETIRQ)
           pend <= 1;
      end
 
