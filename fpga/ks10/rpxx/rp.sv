@@ -50,6 +50,7 @@
 `timescale 1ns/1ps
 
 `include "rpds.vh"
+`include "rpof.vh"
 
 module RP (
       massbus.slave        massbus,                     // Massbus interface
@@ -188,6 +189,31 @@ module RP (
    assign massbus.mbREGACK = (massbus.mbREGSEL <= 5'o17);
 
    //
+   // Sector headers
+   //
+   //  The SD Card image does not store sector headers so Read Header and
+   //  Data makes them from the current sector address of the drive that is
+   //  using the SD Card.  The 36-bit layout is the same as DSRMB uses:
+   //
+   //   Word 1: LH = FMT22 (010000) | cylinder, RH = track << 8 | sector
+   //   Word 2: LH = key field 1, RH = key field 2 (zero)
+   //
+   //  The key field holds the serial number of the drive that formatted
+   //  the pack.  This drive's serial number is used.
+   //
+
+   wire [ 0:35] rpSDHDR1 = {2'b0, 3'b0, `rpOF_FMT22(rpOF[rpSCAN]), 2'b0, rpDC[rpSCAN][9:0],
+                            2'b0, rpDA[rpSCAN]};
+   wire [ 0:35] rpSDHDR2 = {2'b0, rpSN[rpSCAN], 18'b0};
+
+   //
+   //  The RM03 header is two 16-bit words (one 36-bit word); it has no key
+   //  words.  The RP04/05/06 header has two more key words (two 36-bit words).
+   //
+
+   wire         rpSDHDRONE = (`getTYPE(rpSCAN) == `rpRM03);
+
+   //
    // SD Controller
    //
 
@@ -212,6 +238,9 @@ module RP (
       // RPXX interface
       .rpSDOP     (rpSDOP[rpSCAN]),
       .rpSDLSA    (rpSDLSA[rpSCAN]),
+      .rpSDHDR1   (rpSDHDR1),
+      .rpSDHDR2   (rpSDHDR2),
+      .rpSDHDRONE (rpSDHDRONE),
       .rpSDREQ    (rpSDREQ),
       .rpSDACK    (rpSDACK),
       // SD Output

@@ -69,6 +69,9 @@ module SD (
       // RPXX
       input  wire [ 2: 0] rpSDOP,               // RP Operation
       input  wire [20: 0] rpSDLSA,              // RP Linear sector address
+      input  wire [ 0:35] rpSDHDR1,             // RP Sector header word 1
+      input  wire [ 0:35] rpSDHDR2,             // RP Sector header word 2
+      input  wire         rpSDHDRONE,           // RP Sector header is one word (RM03)
       input  wire [ 7: 0] rpSDREQ,              // RP requests SD
       output reg  [ 7: 0] rpSDACK,              // SD has finished with RP
       // Output
@@ -196,6 +199,13 @@ module SD (
                     stateWRCHK15  = 92,
                     stateWRCHK16  = 93,
                     stateWRCHK17  = 94,
+                    // Extra header states
+                    stateREADH04  = 95,
+                    stateREADH05  = 96,
+                    stateWRITEH04 = 97,
+                    stateWRITEH05 = 98,
+                    stateWRCHKH04 = 99,
+                    stateWRCHKH05 = 100,
                     // Other States
                     stateFINI     = 122,
                     stateACKRP    = 123,
@@ -209,8 +219,7 @@ module SD (
    //
 
    reg [ 0:35] tempDATA;                // Temporary
-   reg [ 0:35] header1;                 // Header word 1
-   reg [ 0:35] header2;                 // Header word 2
+   reg         hdrOP;                   // Header operation (headers on every sector)
 
    //
    // Input from SPI machine
@@ -269,8 +278,7 @@ module SD (
              sectADDR  <= 0;
              loopCNT   <= 0;
              tempDATA  <= 0;
-             header1   <= 0;
-             header2   <= 0;
+             hdrOP     <= 0;
              timeout   <= nTIM;
           end
         else
@@ -310,8 +318,6 @@ module SD (
                stateRESET:
                  begin
                     tempDATA <= 0;
-                    header1  <= 0;
-                    header2  <= 0;
                     timeout  <= nTIM;
                     loopCNT  <= 0;
                     state    <= stateINIT00;
@@ -1024,6 +1030,7 @@ module SD (
 
                         `sdopRD:
                           begin
+                             hdrOP    <= 0;
                              sdREADOP <= 1;
                              sectCNT  <= 0;
                              sectADDR <= {8'b0, sdSCAN, rpSDLSA};
@@ -1042,6 +1049,7 @@ module SD (
 
                         `sdopRDH:
                           begin
+                             hdrOP    <= 1;
                              sdREADOP <= 1;
                              sectCNT  <= 0;
                              sectADDR <= {8'b0, sdSCAN, rpSDLSA};
@@ -1060,6 +1068,7 @@ module SD (
 
                         `sdopWR:
                           begin
+                             hdrOP    <= 0;
                              sdREADOP <= 0;
                              sectCNT  <= 0;
                              sectADDR <= {8'b0, sdSCAN, rpSDLSA};
@@ -1078,6 +1087,7 @@ module SD (
 
                         `sdopWRH:
                           begin
+                             hdrOP    <= 1;
                              sdREADOP <= 0;
                              sectCNT  <= 0;
                              sectADDR <= {8'b0, sdSCAN, rpSDLSA};
@@ -1096,6 +1106,7 @@ module SD (
 
                         `sdopWRCHK:
                           begin
+                             hdrOP    <= 0;
                              sdREADOP <= 0;
                              sectCNT  <= 0;
                              sectADDR <= {8'b0, sdSCAN, rpSDLSA};
@@ -1114,6 +1125,7 @@ module SD (
 
                         `sdopWRCHKH:
                           begin
+                             hdrOP    <= 1;
                              sdREADOP <= 0;
                              sectCNT  <= 0;
                              sectADDR <= {8'b0, sdSCAN, rpSDLSA};
@@ -1135,14 +1147,22 @@ module SD (
 
                //
                // stateREADH00
-               //  Read the first word of the sector header
+               //  Send the first word of the sector header to memory.
+               //  The header is made from the sector address because the
+               //  SD Card image does not store headers.  Read Header and
+               //  Data sends a header before every sector.
                //
 
                stateREADH00:
                  begin
-                    devREQO  <= 1;
-                    devDATAO <= header1;
-                    state    <= stateREADH01;
+                    if (rhWCZ)
+                      state <= stateREAD00;
+                    else
+                      begin
+                         devREQO  <= 1;
+                         devDATAO <= rpSDHDR1;
+                         state    <= stateREADH01;
+                      end
                  end
 
                //
@@ -1155,7 +1175,7 @@ module SD (
                     if (devACKI)
                       begin
                          sdINCBA <= 1;
-                         sdINCWC <= !rhWCZ;
+                         sdINCWC <= 1;
                          state   <= stateREADH02;
                       end
                     else
@@ -1164,31 +1184,56 @@ module SD (
 
                //
                // stateREADH02
-               //  Read the second word of the sector header
+               //  Wait for RHWC to update
                //
 
                stateREADH02:
                  begin
-                    devREQO  <= 1;
-                    devDATAO <= header2;
-                    state    <= stateREADH03;
+                    state <= stateREADH03;
                  end
 
                //
                // stateREADH03
-               //  Store the second word of the sector header
+               //  Send the second word of the sector header to memory.
                //
 
                stateREADH03:
                  begin
+                    if (rhWCZ | rpSDHDRONE)
+                      state <= stateREAD00;
+                    else
+                      begin
+                         devREQO  <= 1;
+                         devDATAO <= rpSDHDR2;
+                         state    <= stateREADH04;
+                      end
+                 end
+
+               //
+               // stateREADH04
+               //  Store the second word of the sector header
+               //
+
+               stateREADH04:
+                 begin
                     if (devACKI)
                       begin
                          sdINCBA <= 1;
-                         sdINCWC <= !rhWCZ;
-                         state   <= stateREAD00;
+                         sdINCWC <= 1;
+                         state   <= stateREADH05;
                       end
                     else
                       devREQO <= 1;
+                 end
+
+               //
+               // stateREADH05
+               //  Wait for RHWC to update
+               //
+
+               stateREADH05:
+                 begin
+                    state <= stateREAD00;
                  end
 
                //
@@ -1594,7 +1639,7 @@ module SD (
                stateREAD19:
                  begin
                     if (rpSDREQ[sdSCAN])
-                      state <= stateREAD00;
+                      state <= (hdrOP & !sectCNT) ? stateREADH00 : stateREAD00;
                     else
                       begin
                          loopCNT <= 0;
@@ -1605,18 +1650,26 @@ module SD (
 
                //
                // stateWRITEH00
-               //  Read first word of sector header from memory
+               //  Read first word of sector header from memory.
+               //  The SD Card image does not store headers so the header
+               //  words are discarded.  Write Header and Data takes a
+               //  header before every sector.
                //
 
                stateWRITEH00:
                  begin
-                    devREQO <= 1;
-                    state   <= stateWRITEH01;
+                    if (rhWCZ)
+                      state <= stateWRITE00;
+                    else
+                      begin
+                         devREQO <= 1;
+                         state   <= stateWRITEH01;
+                      end
                  end
 
                //
                // stateWRITEH01
-               //  Save the first word of the sector header
+               //  Discard the first word of the sector header
                //
 
                stateWRITEH01:
@@ -1624,8 +1677,7 @@ module SD (
                     if (devACKI)
                       begin
                          sdINCBA <= 1;
-                         sdINCWC <= !rhWCZ;
-                         header1 <= devDATAI;
+                         sdINCWC <= 1;
                          state   <= stateWRITEH02;
                       end
                     else
@@ -1634,31 +1686,55 @@ module SD (
 
                //
                // stateWRITEH02
-               //  Read second word of sector header from memory
+               //  Wait for RHWC to update
                //
 
                stateWRITEH02:
                  begin
-                    devREQO <= 1;
-                    state   <= stateWRITEH03;
+                    state <= stateWRITEH03;
                  end
 
                //
                // stateWRITEH03
-               //  Save the second word of the sector header
+               //  Read second word of sector header from memory
                //
 
                stateWRITEH03:
                  begin
+                    if (rhWCZ | rpSDHDRONE)
+                      state <= stateWRITE00;
+                    else
+                      begin
+                         devREQO <= 1;
+                         state   <= stateWRITEH04;
+                      end
+                 end
+
+               //
+               // stateWRITEH04
+               //  Discard the second word of the sector header
+               //
+
+               stateWRITEH04:
+                 begin
                     if (devACKI)
                       begin
                          sdINCBA <= 1;
-                         sdINCWC <= !rhWCZ;
-                         header2 <= devDATAI;
-                         state   <= stateWRITE00;
+                         sdINCWC <= 1;
+                         state   <= stateWRITEH05;
                       end
                     else
                       devREQO <= 1;
+                 end
+
+               //
+               // stateWRITEH05
+               //  Wait for RHWC to update
+               //
+
+               stateWRITEH05:
+                 begin
+                    state <= stateWRITE00;
                  end
 
                //
@@ -2223,7 +2299,7 @@ module SD (
                stateWRITE25:
                  begin
                     if (rpSDREQ[sdSCAN])
-                      state <= stateWRITE00;
+                      state <= (hdrOP & !sectCNT) ? stateWRITEH00 : stateWRITE00;
                     else
                       begin
                          loopCNT <= 0;
@@ -2234,14 +2310,21 @@ module SD (
 
                //
                // stateWRCHKH00
-               //  Read the first word of the sector header
+               //  Read the first word of the sector header from memory.
+               //  It is checked against the header made from the sector
+               //  address.  Write Check Header and Data checks a header
+               //  before every sector.
                //
 
                stateWRCHKH00:
                  begin
-                    devREQO  <= 1;
-                    devDATAO <= header1;
-                    state    <= stateWRCHKH01;
+                    if (rhWCZ)
+                      state <= stateWRCHK00;
+                    else
+                      begin
+                         devREQO <= 1;
+                         state   <= stateWRCHKH01;
+                      end
                  end
 
                //
@@ -2254,8 +2337,8 @@ module SD (
                     if (devACKI)
                       begin
                          sdINCBA  <= 1;
-                         sdINCWC  <= !rhWCZ;
-                         sdSETWCE <= (header1 != devDATAI);
+                         sdINCWC  <= 1;
+                         sdSETWCE <= (rpSDHDR1 != devDATAI);
                          state    <= stateWRCHKH02;
                       end
                     else
@@ -2264,32 +2347,56 @@ module SD (
 
                //
                // stateWRCHKH02
-               //  Read the second word of the sector header
+               //  Wait for RHWC to update
                //
 
                stateWRCHKH02:
                  begin
-                    devREQO  <= 1;
-                    devDATAO <= header1;
-                    state    <= stateWRCHKH03;
+                    state <= stateWRCHKH03;
                  end
 
                //
                // stateWRCHKH03
-               //  Check the second word of the sector header
+               //  Read the second word of the sector header from memory
                //
 
                stateWRCHKH03:
                  begin
+                    if (rhWCZ | rpSDHDRONE)
+                      state <= stateWRCHK00;
+                    else
+                      begin
+                         devREQO <= 1;
+                         state   <= stateWRCHKH04;
+                      end
+                 end
+
+               //
+               // stateWRCHKH04
+               //  Check the second word of the sector header
+               //
+
+               stateWRCHKH04:
+                 begin
                     if (devACKI)
                       begin
                          sdINCBA  <= 1;
-                         sdINCWC  <= !rhWCZ;
-                         sdSETWCE <= (header1 != devDATAI);
-                         state    <= stateWRCHK00;
+                         sdINCWC  <= 1;
+                         sdSETWCE <= (rpSDHDR2 != devDATAI);
+                         state    <= stateWRCHKH05;
                       end
                     else
                       devREQO <= 1;
+                 end
+
+               //
+               // stateWRCHKH05
+               //  Wait for RHWC to update
+               //
+
+               stateWRCHKH05:
+                 begin
+                    state <= stateWRCHK00;
                  end
 
                //
@@ -2665,7 +2772,7 @@ module SD (
                stateWRCHK17:
                  begin
                     if (rpSDREQ[sdSCAN])
-                      state <= stateWRCHK00;
+                      state <= (hdrOP & !sectCNT) ? stateWRCHKH00 : stateWRCHK00;
                     else
                       begin
                          loopCNT <= 0;

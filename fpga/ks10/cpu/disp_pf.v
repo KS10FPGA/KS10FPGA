@@ -271,6 +271,16 @@ module DISP_PF (
    //  which would otherwise page fail again.  The page table walk (RDPT)
    //  checks for interrupts itself (SKIP IRPT) before its physical read.
    //
+   //  Write cycles are not interrupted either.  The bus request goes out
+   //  when the VMA is loaded (bus.v), before the MEM WAIT where the page
+   //  fail is taken, so the write cannot be stopped.  The page fail
+   //  inhibits the "MEM WRITE, MEM_[AR]" microword, the memory latches
+   //  whatever is on the data path, and FIXPC re-executes the instruction
+   //  on the corrupted word.  For example, an interrupt on the write of
+   //  AOS -1(17) zeroed the return address on the stack and DSRMB jumped
+   //  to 0 (RM03/RP06 VERIFY).  The read of a read-modify-write can still
+   //  be interrupted because nothing has been written yet.
+   //
 
    reg intrEN;
 
@@ -282,7 +292,8 @@ module DISP_PF (
           intrEN <= fetchCYCLE;
      end
 
-   wire intrMEM = intrEN | (pfEN & !vmaPHYS);
+   wire vmaWRITE = `vmaWRITE(vmaREG);
+   wire intrMEM  = intrEN | (pfEN & !vmaPHYS & !vmaWRITE);
 
    //
    // Page failure types

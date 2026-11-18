@@ -568,6 +568,13 @@ int ks10_t::getchar(void) {
     if ((ch & ctyVALID) != 0) {
         __writeMem(ctyoutADDR, 0);
         unlockMutex();
+        //
+        // Tell the KS10 that the character has been taken (CTY output
+        // done), like the 8080 front end does.  Interrupt driven CTY
+        // output in the monitors waits for this interrupt; without it
+        // TOPS-10 only outputs one character every few seconds.
+        //
+        cpuIntr();
         return ch & 0x7f;
     }
     unlockMutex();

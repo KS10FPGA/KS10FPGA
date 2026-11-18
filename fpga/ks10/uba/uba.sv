@@ -180,6 +180,19 @@ module UBA (
    wire          statINI = `statINI(regUBASR);
    wire  [ 0: 2] statPIH = `statPIH(regUBASR);
    wire  [ 0: 2] statPIL = `statPIL(regUBASR);
+   wire          statHI  = `statHI(regUBASR);
+   wire          statLO  = `statLO(regUBASR);
+
+   //
+   // WRU response
+   //  Only respond to a WRU cycle when this bridge has an interrupt pending
+   //  at the PI level being serviced, like the DEC UBA.  Answering whenever
+   //  the level matched PIH or PIL let UBA1 claim an interrupt that belonged
+   //  to UBA3 (both use the same levels), and the vector cycle then found no
+   //  device on UBA1 ("Illegal Interrupt Instruction" halt).
+   //
+
+   wire wruHIT = (statHI & (busPI == statPIH)) | (statLO & (busPI == statPIL));
 
    UBASR SR (
       .rst        (rst),
@@ -393,7 +406,7 @@ module UBA (
            // CPU is doing a WRU bus cycle
            //
 
-           else if (ks10bus.busREQI & wruREAD & ((busPI == statPIH) | (busPI == statPIL)))
+           else if (ks10bus.busREQI & wruREAD & wruHIT)
              begin
                 ks10bus.busACKO  <= 1;
                 ks10bus.busDATAO <= wruRESP;

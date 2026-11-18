@@ -62,6 +62,10 @@
 // Default starting address (SMMON)
 //
 
+`ifndef RPBOOT_UNIT
+ `define RPBOOT_UNIT 36'o000000_000002
+`endif
+
 `ifndef STARTADDR
  `define STARTADDR 18'o020000
 `endif
@@ -634,15 +638,26 @@ module testbench;
 
         //
         // MT0 present, on-line, write-enabled
+        //  SIM_DEFS="MT_CCR=0" makes all tape drives not present.
         //
 
+`ifdef MT_CCR
+        conWRITE32(addrREGMTCCR, `MT_CCR);
+`else
         conWRITE32(addrREGMTCCR, 32'h00010100);
+`endif
 
         //
         // Enable UNIT0, UNIT1, and UNIT2 disk drives
+        //  SIM_DEFS="RP_MOL=n" selects other drives (bit 0 = unit 0),
+        //  for example RP_MOL=199 for units 0, 1, 2, 6, and 7.
         //
 
+`ifdef RP_MOL
+        conWRITE32(addrREGRPCCR, {8'h00, 8'(`RP_MOL), 8'(`RP_MOL), 8'h00});
+`else
         conWRITE32(addrREGRPCCR, 32'h00070700);
+`endif
 
         //
         // Set jumper W3 and W6 of the DPCCR
@@ -733,7 +748,7 @@ module testbench;
              conWRITEMEM(addrKOUT,    36'o000000_000000);       // Klinik Output
 `ifdef RPBOOT
              conWRITEMEM(addrRHBASE,  36'o000001_776700);       // RP Base Address
-             conWRITEMEM(addrRHUNIT,  36'o000000_000002);       // Boot Disk Unit Number
+             conWRITEMEM(addrRHUNIT,  `RPBOOT_UNIT);           // Boot Disk Unit Number
              conWRITEMEM(addrMTPARAM, 36'o000000_000000);       // MT Parameters
 `else
              conWRITEMEM(addrRHBASE,  36'o000003_772440);       // MT Base Address
@@ -809,6 +824,8 @@ module testbench;
                  `include "test_dstua.vh"
              `elsif DIAG_DSTUB
                  `include "test_dstub.vh"
+             `elsif DIAG_T10BOOT
+                 `include "test_t10boot.vh"
              `elsif DIAG_DSUBA
                  `include "test_dsuba.vh"
              `else
