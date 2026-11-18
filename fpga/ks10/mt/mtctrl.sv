@@ -235,9 +235,21 @@ module MTCTRL (
    //
    //  See DSTUA TST114-TST122 subtests 8 and 9.
    //
+   //  A read or write check that reads a tape mark also sets FCE.  FCE sets
+   //  ERR, which raises ATA and, because the transfer is still in progress,
+   //  Massbus EXC (RHCS1[TRE]).  This follows SIMH pdp11_tu.c ("tape mark on
+   //  a data transfer sets FCE and Massbus EXC").  The console software sets
+   //  or clears TM for each record a read passes, so TM is current here.
+   //
 
-   assign mtSETFCE = ((state == stateEXECCMD) & mtREADY & !mtFCZ &
-                      ((mtFUN == `mtCS1_FUN_SPCFWD) | (mtFUN == `mtCS1_FUN_SPCREV)));
+   wire mtRDFUN = ((mtFUN == `mtCS1_FUN_RDFWD   ) |
+                   (mtFUN == `mtCS1_FUN_RDREV   ) |
+                   (mtFUN == `mtCS1_FUN_WRCHKFWD) |
+                   (mtFUN == `mtCS1_FUN_WRCHKREV));
+
+   assign mtSETFCE = ((state == stateEXECCMD) & mtREADY &
+                      ((!mtFCZ & ((mtFUN == `mtCS1_FUN_SPCFWD) | (mtFUN == `mtCS1_FUN_SPCREV))) |
+                       (mtTM & mtRDFUN)));
 
    //
    // mtDIR[BOT] - Beginning of tape

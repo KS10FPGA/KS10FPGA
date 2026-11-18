@@ -672,12 +672,15 @@ void tape_t::spaceForward(uint64_t /*mtDIR*/) {
         } else if (header == h_EOT) {
             DEBUG_SPCFWD("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             physEOT = true;
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if (header == h_ERR) {
             DEBUG_SPCFWD("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
             DEBUG_SPCFWD("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header == h_TM) && !lastTM) {
             DEBUG_SPCFWD("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
@@ -799,12 +802,15 @@ void tape_t::spaceReverse(uint64_t /*mtDIR*/) {
         } else if (header == h_EOT) {
             DEBUG_SPCREV("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             physEOT = true;
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if (header == h_ERR) {
             DEBUG_SPCREV("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
             DEBUG_SPCREV("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header == h_TM) && !lastTM) {
             DEBUG_SPCREV("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
@@ -1119,12 +1125,15 @@ void tape_t::readForward(uint64_t mtDIR) {
         } else if (header == h_EOT) {
             DEBUG_RDFWD("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             physEOT = true;
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if (header == h_ERR) {
             DEBUG_RDFWD("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
             DEBUG_RDFWD("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header == h_TM) && !lastTM) {
             DEBUG_RDFWD("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
@@ -1334,12 +1343,15 @@ void tape_t::readReverse(uint64_t mtDIR) {
         } else if (header == h_EOT) {
             DEBUG_RDREV("TAPE: Unit %d: Physical EOT. Signal EOT.\n", unit);
             physEOT = true;
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if (header == h_ERR) {
             DEBUG_RDREV("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header >= 0xff000000) && (header <= 0xffff0000)) {
-            DEBUG_RDREV("TAPE: Unit %d: Header Error.\n");
+            DEBUG_RDREV("TAPE: Unit %d: Header Error.\n", unit);
+            ks10_t::writeMTDIR(ks10_t::mtDIR_CLRTM);    // Stopped without reading a tape mark
             break;
         } else if ((header == h_TM) && !lastTM) {
             DEBUG_RDREV("TAPE: Unit %d: Found Tape Mark. Signal Tape Mark.\n", unit);
@@ -1526,7 +1538,19 @@ void tape_t::processCommand(void) {
             DEBUG_TOP("TAPE: Unit %d: Function was \"%s\" (0%02o), Density was \"%s\" (0%02o), Format was \"%s\" (0%02o), Slave was %d.\n",
                       unit, mt_t::printFUN(function), function, mt_t::printDEN(density), density, mt_t::printFMT(format), format, getSS(mtDIR));
 
-            if ((format == f_CORDMP) || (format == f_COMPAT)) {
+            //
+            // Only data transfers depend on the format.  The TM03 sets FMTE
+            // and aborts a transfer with any other format, so it doesn't get
+            // here.  Motion commands such as rewind work with any format.
+            //
+
+            bool xfer = ((function == 024) ||           // Write check forward
+                         (function == 027) ||           // Write check reverse
+                         (function == 030) ||           // Write forward
+                         (function == 034) ||           // Read forward
+                         (function == 037));            // Read reverse
+
+            if (!xfer || (format == f_CORDMP) || (format == f_COMPAT)) {
 
 #ifdef DEBUG_REGS
                 mt_t::dumpMTCS1(03772440);

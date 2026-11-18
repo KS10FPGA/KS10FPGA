@@ -126,7 +126,9 @@ module DEBUG (
                lastIR = $time;
                $display("[%11.3f] %15s: PC is %06o (stuck).", $time/1.0e3, test, PC);
 `ifdef STOP_ON_STUCK_PC
+`ifndef SIM_CSLDMA                // the console test holds off the CTY
                $stop;
+`endif
 `endif
             end
      end
@@ -183,7 +185,14 @@ module DEBUG (
                // on long simulation runs.
                //
 
-`ifdef SIM_IRTRACE
+`ifdef SIM_TRACE_AFTER
+               // PC/IR trace only after `SIM_TRACE_AFTER microseconds
+`ifndef SIM_TRACE_UNTIL
+ `define SIM_TRACE_UNTIL 1.0e12
+`endif
+               if (($time/1.0e3 >= `SIM_TRACE_AFTER) && ($time/1.0e3 <= `SIM_TRACE_UNTIL))
+                 $display("[%11.3f] %15s: PC is %06o IR is %012o", $time/1.0e3, test, PC, IR);
+`elsif SIM_IRTRACE
                $display("[%11.3f] %15s: PC is %06o IR is %012o", $time/1.0e3, test, PC, IR);
 `elsif SIM_NOPCTRACE
 `else

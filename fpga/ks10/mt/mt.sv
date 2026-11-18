@@ -69,7 +69,6 @@ module MT (
    parameter [15: 0] mtDRVTYP = (`mtDT_TM03|`mtDT_TU77);// Drive type (TM03/TU77)
    parameter [15: 0] mtDRVSN  = `mtSN_SN0;              // Drive serial number
    parameter [ 2: 0] mtTCUNUM = 0;                      // Only TCU 0 implemented
-   parameter [ 3: 0] mtSLVADR = `mtSLV_SLV0;            // Slave Addresse
 
    //
    // Massbus Addressing
@@ -188,7 +187,7 @@ module MT (
    logic         mtSLA;                                 // MTDS[SLA]
    wire          mtMOL = mtSEL & mtCSLDATA.mtMOL[mtSS]; // MTDS[MOL]
    wire          mtWRL = mtSEL & mtCSLDATA.mtWRL[mtSS]; // MTDS[WRL]
-   wire          mtDPR = mtCSLDATA.mtDPR[mtUNIT];       // MTDS[DPR]
+   wire          mtDPR = mtSEL & (mtCSLDATA.mtDPR != 0);  // MTDS[DPR] (TM03 present if any slave is)
    wire          mtERR = `mtDS_ERR(mtDS);               // MTDS[ERR]
 
    //
@@ -552,19 +551,25 @@ module MT (
    //
    // Multiplex registers back to RH11
    //
-   //  Negate MTDS[MOL] in deselected slaves
+   //  The TM03 supports eight slaves (tape transports).  MTDS already holds
+   //  the status of the selected slave (MOL, WRL, BOT and EOT are kept for
+   //  each slave).  MTDT[SPR] and MTSN describe the selected slave: SPR is
+   //  asserted and the serial number is returned only if that slave is
+   //  present.  Each slave has its own serial number (`mtSN_SN0 + slave).
    //
+
+   wire mtSPR = mtCSLDATA.mtDPR[mtSS];                  // Selected slave present
 
    always_comb
      begin
         case (massbus.mbREGSEL)
-          5'o01:   massbus.mbREGDAT = (mtSS == mtSLVADR) ? mtDS : mtDS & 16'o167777;
+          5'o01:   massbus.mbREGDAT = mtDS;
           5'o02:   massbus.mbREGDAT = mtER;
           5'o03:   massbus.mbREGDAT = mtMR;
           5'o05:   massbus.mbREGDAT = mtFC;
-          5'o06:   massbus.mbREGDAT = (mtSS == mtSLVADR) ? mtDRVTYP : mtDRVTYP & 16'o175777;
+          5'o06:   massbus.mbREGDAT = mtSPR ? mtDRVTYP : mtDRVTYP & 16'o175777;
           5'o07:   massbus.mbREGDAT = mtCC;
-          5'o10:   massbus.mbREGDAT = (mtSS == mtSLVADR) ? mtDRVSN : 16'o000000;
+          5'o10:   massbus.mbREGDAT = mtSPR ? mtDRVSN + mtSS : 16'o000000;
           5'o11:   massbus.mbREGDAT = mtTC;
           default: massbus.mbREGDAT = 16'b0;
         endcase

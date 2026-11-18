@@ -43,6 +43,7 @@
 `include "useq/crom.vh"
 `include "useq/drom.vh"
 `include "apr.vh"
+`include "bus.vh"
 
 module CPU (
       input  wire          rst,         // Reset
@@ -98,6 +99,7 @@ module CPU (
    //
 
    logic piINTR;                // Priority Interrupt
+   logic piDBGHALT;             // Debug: PI hardware left off (pi.v)
    logic [ 0: 2] piCURPRI;      // Current Interrupt Priority
    logic [ 0: 2] piREQPRI;      // Requested Interrupt Priority
 
@@ -348,6 +350,46 @@ module CPU (
    );
 
    //
+   // IO read data latch
+   //
+   //  The CPU reads IO data straight off the bus in the MEM READ
+   //  microinstruction, which can be some clocks after the acknowledge.
+   //  UBA DMA has priority over the CPU, and if it takes the bus in that
+   //  window the arbiter no longer routes the UBA's acknowledge and data to
+   //  the CPU, and the CPU reads zero.  On a vector cycle that is an
+   //  Illegal Interrupt Instruction halt (T0 = 0), with the device believing
+   //  its vector was delivered.
+   //
+   //  Keep the data from the acknowledge until the CPU's request goes away
+   //  or changes.  The latch is cleared on a new request, so an
+   //  unacknowledged cycle (e.g. a WRU with nobody interrupting) still reads
+   //  zero.  Memory cycles use the bus data directly as before.
+   //
+
+   logic [0:35] ioDATA;
+   logic [0:35] lastIOADDR;
+   logic        lastIOREQ;
+
+   always_ff @(posedge clkT[1])
+     if (rst)
+       begin
+          ioDATA     <= 0;
+          lastIOADDR <= 0;
+          lastIOREQ  <= 0;
+       end
+     else
+       begin
+          lastIOADDR <= cpuBUS.busADDRO;
+          lastIOREQ  <= cpuBUS.busREQO;
+          if (cpuBUS.busACKI)
+            ioDATA <= cpuBUS.busDATAI;
+          else if (!(lastIOREQ & cpuBUS.busREQO & (lastIOADDR == cpuBUS.busADDRO)))
+            ioDATA <= 0;
+       end
+
+   wire [0:35] cpuDATAI = (`busIO(cpuBUS.busADDRO) & !cpuBUS.busACKI) ? ioDATA : cpuBUS.busDATAI;
+
+   //
    // Data Bus
    //
 
@@ -361,7 +403,7 @@ module CPU (
       .aprFLAGS         (aprFLAGS),
       .timerCOUNT       (timerCOUNT),
       .vmaREG           (vmaREG),
-      .cpuDATAI         (cpuBUS.busDATAI),
+      .cpuDATAI         (cpuDATAI),
       .dbm              (dbm)
    );
 
@@ -402,7 +444,7 @@ module CPU (
       .rst              (rst),
       .clken            (clkenDP),
       .crom             (crom),
-      .brHALT           (brHALT),
+      .brHALT           (brHALT | piDBGHALT),
       .cslRUN           (cslRUN),
       .cslHALT          (cslHALT),
       .cslCONT          (cslCONT),
@@ -427,7 +469,8 @@ module CPU (
       .ubaINTR          (cpuBUS.busINTRI),
       .piREQPRI         (piREQPRI),
       .piCURPRI         (piCURPRI),
-      .piINTR           (piINTR)
+      .piINTR           (piINTR),
+      .piDBGHALT        (piDBGHALT)
    );
 
    //
@@ -489,6 +532,7 @@ module CPU (
       .cpuADDRO         (cpuBUS.busADDRO),
       .cpuREQO          (cpuBUS.busREQO),
       .cpuACKI          (cpuBUS.busACKI),
+      .cpuGNT           (cpuBUS.busREQI),
       .ioWAIT           (ioWAIT),
       .ioBUSY           (ioBUSY)
    );

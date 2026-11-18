@@ -46,7 +46,7 @@ module DZINTR (
       input  wire rst,                  // Reset
       input  wire clr,                  // Clear
       input  wire dzIACK,               // Interrupt vector cycle
-      output reg  rxVECTOR,             // RX Vector
+      output wire rxVECTOR,             // RX Vector
       input  wire csrRIE,               // RX Interrupt enable
       input  wire csrRRDY,              // RX Interrupt set
       input  wire rbufREAD,             // RX Interrupt done
@@ -131,8 +131,18 @@ module DZINTR (
             stateACT:
               if (txclr)
                 txstate <= stateWAIT;
+            //
+            // The interrupt is also complete when TRDY negates without a
+            // TDR write.  When a line has no more characters to send the
+            // driver clears the line's TCR bit instead of writing the TDR
+            // (TOPS-10/TOPS-20 do this at the end of every message).
+            // The scanner then drops TRDY, and when it later finds another
+            // line ready it must be able to interrupt again.  Waiting only
+            // for a TDR write here locked out every later transmitter
+            // interrupt until a DZ11 clear.
+            //
             stateWAIT:
-              if (tdrWRITE)
+              if (tdrWRITE | !csrTRDY)
                 txstate <= stateDONE;
             stateDONE:
               if (!tdrWRITE)
@@ -168,38 +178,60 @@ module DZINTR (
    //   will be processed first.
    //
 
+   //   The vector that is driven on the bus and the interrupt that is
+   //   completed must come from the same sample of the receiver interrupt.
+   //   rxVECTOR used to be cleared on entry to stateVECTREAD and set from
+   //   rxINTR one clock later.  An acknowledge on the first clock of
+   //   stateVECTREAD drove the transmitter vector but then completed the
+   //   receiver interrupt: the receiver interrupt was lost (RDONE stayed set
+   //   with no request, waiting for an RBUF read that never came) and the
+   //   CPU ran the transmitter service routine instead.
+   //
+   //   Now, until the acknowledge, the vector follows rxINTR directly.  On
+   //   the acknowledge clock, the same rxINTR value that selected the vector
+   //   is latched (rxACKED), and it holds the vector and selects which
+   //   interrupt to complete.  An acknowledge in stateIDLE (an interrupt that
+   //   is still pending after the previous one completed) is handled the
+   //   same way.
+   //
+
    logic [3:0] arbstate;
+   logic       rxACKED;
 
    always_ff @(posedge clk)
      begin
         if (rst | clr)
           begin
-             rxVECTOR <= 0;
+             rxACKED  <= 0;
              arbstate <= stateIDLE;
           end
         else
           case (arbstate)
             stateIDLE:
-              if ((rxstate == stateACT) | (txstate == stateACT))
+              if (dzIACK)
                 begin
-                   rxVECTOR <= 0;
-                   arbstate <= stateVECTREAD;
-                end
-            stateVECTREAD:
-              begin
-                 rxVECTOR <= rxVECTOR | rxINTR;
-                 if (dzIACK)
+                   rxACKED  <= rxINTR;
                    arbstate <= stateVECTCLR;
-              end
+                end
+              else if ((rxstate == stateACT) | (txstate == stateACT))
+                arbstate <= stateVECTREAD;
+            stateVECTREAD:
+              if (dzIACK)
+                begin
+                   rxACKED  <= rxINTR;
+                   arbstate <= stateVECTCLR;
+                end
             stateVECTCLR:
               if (!dzIACK)
-                arbstate <= rxVECTOR ? stateRXDONE : stateTXDONE;
+                arbstate <= rxACKED ? stateRXDONE : stateTXDONE;
             stateRXDONE:
               arbstate <= stateIDLE;
             stateTXDONE:
               arbstate <= stateIDLE;
           endcase
      end
+
+   assign rxVECTOR = (arbstate == stateVECTCLR) ? rxACKED : rxINTR;
 
    assign rxclr  = (arbstate == stateRXDONE);
    assign txclr  = (arbstate == stateTXDONE);

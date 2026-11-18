@@ -142,7 +142,7 @@ module LP20 (
 
    wire lpREAD   = /* FIXME: unibus.devREQI & */ devREAD  & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV);
    wire lpWRITE  = /* FIXME: unibus.devREQI & */ devWRITE & devIO & devPHYS & !devWRU & !devVECT & (devDEV == lpDEV);
-   wire vectREAD = /* FIXME: unibus.devREQI & */ devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == lpDEV);
+   wire vectREAD = unibus.devREQI & devREAD  & devIO & devPHYS & !devWRU &  devVECT & (devDEV == lpDEV);
 
    //
    // Address Decoding

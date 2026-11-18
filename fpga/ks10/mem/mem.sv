@@ -351,6 +351,20 @@ module MEM (
              ((busMEMADDR >= `SIM_MEMMON_LO) & (busMEMADDR <= `SIM_MEMMON_HI))))
           $display("[%11.3f] MEMMON: Write mem[%06o] = %012o. Flags=%05o",
                    $time/1.0e3, busMEMADDR, memBUS.busDATAI, memBUS.busADDRI[0:13]);
+`ifdef SIM_MEMMON_AFTER
+        //
+        // Between SIM_MEMMON_AFTER and SIM_MEMMON_UNTIL (us), report every
+        // write at any address, plus reads in SIM_MEMMON_LO..SIM_MEMMON_HI.
+        //
+        else if (memWRITE & (!lastMEMWRITE | (busMEMADDR != lastMEMADDR)) &
+                 ($time/1.0e3 >= `SIM_MEMMON_AFTER) & ($time/1.0e3 <= `SIM_MEMMON_UNTIL))
+          $display("[%11.3f] MEMMON: Write mem[%06o] = %012o. Flags=%05o",
+                   $time/1.0e3, busMEMADDR, memBUS.busDATAI, memBUS.busADDRI[0:13]);
+        if (memREAD & (busMEMADDR >= `SIM_MEMMON_LO) & (busMEMADDR <= `SIM_MEMMON_HI) &
+            ($time/1.0e3 >= `SIM_MEMMON_AFTER) & ($time/1.0e3 <= `SIM_MEMMON_UNTIL))
+          $display("[%11.3f] MEMMON: Read  mem[%06o] = %012o. Flags=%05o",
+                   $time/1.0e3, busMEMADDR, memBUS.busDATAO, memBUS.busADDRI[0:13]);
+`endif
      end
 
 `endif
