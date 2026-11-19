@@ -730,10 +730,10 @@ include wave.mak
 
 ifneq (, $(findstring SSRAMx18, $(KS10_SYN)))
     $(TESTBENCH)/ssram.dat : $(DIAG_FILE)
-        cp $(DIAG_FILE) $(TESTBENCH)/ssram.dat
+	cp $(DIAG_FILE) $(TESTBENCH)/ssram.dat
 else
     $(TESTBENCH)/ssram.dat : $(DIAG_FILE)
-	    cp $(DIAG_FILE) $(TESTBENCH)/ssram.dat
+	cp $(DIAG_FILE) $(TESTBENCH)/ssram.dat
 endif
 
 #
