@@ -124,7 +124,7 @@ ASM10           := $(TOOL_DIR)/asm10/asm10
 MERGE18         := $(TOOL_DIR)/merge/merge18.awk
 MERGE36         := $(TOOL_DIR)/merge/merge36.awk
 SAV2VERILOG     := $(TOOL_DIR)/sav2verilog/sav2verilog
-T10BACKUP       := $(TOOL_DIR)/tapeutils/t10backup
+#T10BACKUP       := $(TOOL_DIR)/tapeutils/t10backup
 
 #
 # Tapes
@@ -191,7 +191,7 @@ KS10_SYN := \
 	SERIALNUM=2020 \
 	MAJOR_VER=\"00\" \
 	MINOR_VER=\"39\" \
-        CLKFRQ=12500000 \
+    CLKFRQ=12500000 \
 	SSRAMx18 \
 	RPXX_SIMSEEK \
 	RPXX_SIMDMD
@@ -214,7 +214,7 @@ KS10_SYN := \
 #   STARTADDR=18\'oxxxxxx         Set start address
 #                                 STARTADDR=18\'o020000 (Boot to SMMON)
 #                                 STARTADDR=18\'o030001 (Boot to Diagnostics)
-#				  If not set, STARTADDR will default to 18\'o020000
+#                                 If not set, STARTADDR will default to 18\'o020000
 #   valBRAR0=36\'oxxxxxx_xxxxxx   Set BRAR0 breakpoint register
 #   valBRMR0=36\'oxxxxxx_xxxxxx   Set BRMR0 breakpoint register
 #   valBRAR1=36\'oxxxxxx_xxxxxx   Set BRAR1 breakpoint register
@@ -341,10 +341,10 @@ RTL_FILES := \
 	ks10/ks10bus.sv \
 	ks10/unibus.sv \
 	ks10/massbus.sv \
-        ks10/mtcslbus.sv \
-        ks10/rpcslbus.sv \
+	ks10/mtcslbus.sv \
+	ks10/rpcslbus.sv \
 	ks10/brcslbus.sv \
-        ks10/trcslbus.sv \
+	ks10/trcslbus.sv \
 	ks10/ks10.sv \
 	ks10/arb/arb.sv \
 	ks10/breakpoint/breakpoint.sv \
@@ -449,12 +449,12 @@ RTL_FILES := \
 	ks10/rpxx/sd/sd.v \
 	ks10/rpxx/sd/sdspi.v \
 	ks10/mt/mt.sv \
-        ks10/mt/mtfc.sv \
-        ks10/mt/mtds.sv \
-        ks10/mt/mter.sv \
-        ks10/mt/mtmr.sv \
-        ks10/mt/mttc.sv \
-        ks10/mt/mtctrl.sv \
+	ks10/mt/mtfc.sv \
+	ks10/mt/mtds.sv \
+	ks10/mt/mter.sv \
+	ks10/mt/mtmr.sv \
+	ks10/mt/mttc.sv \
+	ks10/mt/mtctrl.sv \
 	ks10/trace/trace.sv \
 	ks10/uba/uba.sv \
 	ks10/uba/ubamr.sv \
@@ -730,10 +730,10 @@ include wave.mak
 
 ifneq (, $(findstring SSRAMx18, $(KS10_SYN)))
     $(TESTBENCH)/ssram.dat : $(DIAG_FILE)
-	cp $(DIAG_FILE) $(TESTBENCH)/ssram.dat
+    cp $(DIAG_FILE) $(TESTBENCH)/ssram.dat
 else
     $(TESTBENCH)/ssram.dat : $(DIAG_FILE)
-	cp $(DIAG_FILE) $(TESTBENCH)/ssram.dat
+    cp $(DIAG_FILE) $(TESTBENCH)/ssram.dat
 endif
 
 #
@@ -1120,8 +1120,8 @@ $(QUARTUS_DIR)/output_files/$(PROJECT).map.rpt : $(MAP_FILES) $(RTL_FILES) $(CRO
 #
 # qsys-generate options:
 #
-#   --family = <value>			: Specify familiy name
-#   --part = <part>			: Specify part number
+#   --family = <value>				: Specify familiy name
+#   --part = <part>					: Specify part number
 #   --synthesis = <VERILOG|VHDL>  	: Specify HDL language
 #   --output-directory = <dir>    	: Specify output directory.
 #
@@ -1181,7 +1181,7 @@ chkram :
     ifeq (, $(findstring SSRAMx18, $(KS10_SYN)))
         ifeq (, $(findstring SSRAMx36, $(KS10_SYN)))
             ifeq (, $(findstring SSRAM_BLKRAM, $(KS10_SYN)))
-		$(error KS10: The Memory Subsystem MUST be defined. Set KS10_SYN+=SSRAMx18, KS10_SYN+=SSRAMx36, or KS10_SYN+=SSRAM_BLKRAM)
+                $(error KS10: The Memory Subsystem MUST be defined. Set KS10_SYN+=SSRAMx18, KS10_SYN+=SSRAMx36, or KS10_SYN+=SSRAM_BLKRAM)
             endif
         endif
     endif
