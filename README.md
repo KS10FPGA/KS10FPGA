@@ -52,3 +52,6 @@ Detailed design information can be found on the wiki pages at:
 
 <p>Rob Doyle</p>
 <p>email: doyle at cox dot net</p>
+
+<p>Testing and debugging performed by Trevor Heartfield using claude code</p>
+<p>email: trevor dot heartfield at heartfield dot co dot uk</p>
