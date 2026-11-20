@@ -1,4 +1,4 @@
-# KS10FPGA
+<h1>KS10FPGA</h1>
 The Digital Equipment Corporation (DEC) KS10 was a low cost implementation of
 the popular PDP-10 mainframe computer. I’ve always wanted my own PDP-10 and now
 I’ve decided to build my own.   How hard could that be?
@@ -50,8 +50,20 @@ and Mouser.
 Detailed design information can be found on the wiki pages at:
 <a href="https://github.com/KS10FPGA/KS10FPGA/wiki">https://github.com/KS10FPGA/KS10FPGA/wiki</a>
 
-<p>Rob Doyle</p>
-<p>email: doyle at cox dot net</p>
+<h4>
+  <p>Author:</p>
+</h4>
+<ul>
+  <p>Rob Doyle</p>
+  <p>email: doyle at cox dot net</p>
+</ul>
 
-<p>Testing and debugging performed by Trevor Heartfield using claude code</p>
-<p>email: trevor dot heartfield at heartfield dot co dot uk</p>
+<h4>
+  Testing and Debugging (using Claude code):
+</h4>
+<ul>
+  <p>Trevor Heartfield</p>
+  <p>email: trevor dot heartfield at heartfield dot co dot uk</p>
+</ul>
+
+
