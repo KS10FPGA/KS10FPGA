@@ -331,7 +331,24 @@ module RPCTRL (
 
         if (rst | rpINIT)
           begin
-             rpCC     <= rpDC;
+             //
+             // An INIT that terminates a seek in progress transfers RPDC
+             // to RPCC without moving the heads.  DSRPA TEST-270 uses
+             // this (a seek hung in maintenance mode, then UBA init +
+             // RHCS2[CLR]) to put RPCC out of step with the positioner
+             // and expects the next seek to set RPER3[SKI].
+             //
+             // An INIT with the drive idle leaves RPCC and the heads
+             // alone.  TOPS-10 BOOT does a Read-in Preset (RPDC = 0), a
+             // UBA init and then a seek for every block.  Copying RPDC to
+             // RPCC there would put RPCC at cylinder 0 with the heads
+             // elsewhere, and check_ski() would set a false RPER3[SKI]
+             // for the next seek beyond LAST_CYL - head_pos ("?No file
+             // found on any structure" with SYSTEM.EXE above cylinder
+             // 511).
+             //
+             if (rst | (state != stateIDLE))
+               rpCC   <= rpDC;
              rpDFE    <= 0;
              rpDRY    <= 1;
              rpEBL    <= 0;
@@ -346,21 +363,8 @@ module RPCTRL (
              word_cnt <= 0;
              delay    <= 0;
              state    <= stateIDLE;
-             //
-             // Keep the head position in step with rpCC.  On a Massbus
-             // INIT (UBA init or RHCS2[CLR]) rpCC is loaded from rpDC,
-             // which a Read-in Preset may have just zeroed.  If head_pos
-             // stays at the old cylinder, check_ski() sees a seek beyond
-             // the last cylinder for any cylinder > LAST_CYL - head_pos
-             // and sets a false RPER3[SKI].  TOPS-10 BOOT does exactly
-             // this (preset, UBA init, seek) and fails with "?No file
-             // found on any structure" when SYSTEM.EXE is above cylinder
-             // 511.
-             //
              if (rst)
                head_pos <= 0;
-             else
-               head_pos <= rpDC;
           end
         else
           begin
