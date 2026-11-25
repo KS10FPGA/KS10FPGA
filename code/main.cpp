@@ -147,10 +147,16 @@ void processIniFile(command_t &command, const char *filename, bool debug = false
     while ((nread = getline(&cmd, &len, fp)) != -1) {
         // Replace newline with null termination
         cmd[nread-1] = 0;
-        if (debug) {
-            printf("KS10:  %s\n", cmd);
+        if (cmd[0] != '/' && cmd[1] != '/') {
+            if (debug) {
+                printf("KS10:  %s\n", cmd);
+            }
+            command.execute(cmd);
+        } else {
+            if (debug) {
+                printf("KS10:  Comment: \"%s\".\n", cmd);
+            }
         }
-        command.execute(cmd);
     }
     fclose(fp);
 

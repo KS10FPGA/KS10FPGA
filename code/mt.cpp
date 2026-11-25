@@ -53,25 +53,17 @@
 //!
 
 const char *mt_t::printDEN(uint16_t den) {
-    switch (den & 0x0007) {
-        case 0:
-            return "200 BPI NRZ";
-        case 1:
-            return "556 BPI NRZ";
-        case 2:
-            return "800 BPI NRZ";
-        case 3:
-            return "800 BPI NRZ";
-        case 4:
-            return "1600 BPI PE";
-        case 5:
-            return "DEN 5";
-        case 6:
-            return "DEN 6";
-        case 7:
-            return "DEN 7";
-    }
-    return "";
+    static const char * const density[8] = {
+        "200 BPI NRZ",          // 00
+        "556 BPI NRZ",          // 01
+        "800 BPI NRZ",          // 02
+        "800 BPI NRZ",          // 03
+        "1600 BPI PE",          // 04
+        "DEN 5",                // 05
+        "DEN 6",                // 06
+        "DEN 7",                // 07
+    };
+    return density[den & 0x0007];
 }
 
 //!
@@ -80,42 +72,25 @@ const char *mt_t::printDEN(uint16_t den) {
 //!
 
 const char *mt_t::printFMT(uint16_t fmt) {
-    switch (fmt & 0x000f) {
-        case 0:
-            return "PDP-10 Core Dump";
-        case 1:
-            return "PDP-15 Core Dump";
-        case 2:
-            return "PDP-10 ASCII";
-        case 3:
-            return "PDP-10 Normal";
-        case 4:
-            return "FMT 4 (004)";
-        case 5:
-            return "FMT 5 (005)";
-        case 6:
-            return "FMT 6 (006)";
-        case 7:
-            return "FMT 7 (007)";
-        case 010:
-            return "FMT 8 (010)";
-        case 011:
-            return "FMT 9 (011)";
-        case 012:
-            return "PDP-11 Normal";
-        case 013:
-            return "PDP-11 Core Dump";
-        case 014:
-            return "PDP-15 Normal";
-        case 015:
-            return "FMT 13 (015)";
-        case 016:
-            return "FMT 14 (016)";
-        case 017:
-            return "FMT 15 (017)";
-        default:
-            return "Unknown";
-    }
+    static const char * const format[16] = {
+        "PDP-10 Core Dump",     // 00
+        "PDP-15 Core Dump",     // 01
+        "PDP-10 ASCII",         // 02
+        "PDP-10 Normal",        // 03
+        "FMT 04",               // 04
+        "FMT 05",               // 05
+        "FMT 06",               // 06
+        "FMT 07",               // 07
+        "FMT 10",               // 10
+        "FMT 11",               // 11
+        "PDP-11 Normal",        // 12
+        "PDP-11 Core Dump",     // 13
+        "PDP-15 Normal",        // 14
+        "FMT 15",               // 15
+        "FMT 16",               // 16
+        "FMT 17",               // 17
+    };
+    return format[fmt & 0x000f];
 }
 
 //!
@@ -124,23 +99,41 @@ const char *mt_t::printFMT(uint16_t fmt) {
 //!
 
 const char *mt_t::printFUN(uint16_t fun) {
-    switch (fun) {
-        case 000: return "NOP";
-        case 001: return "Unload";
-        case 003: return "Rewind";
-        case 004: return "Drive Clear";
-        case 010: return "Preset";
-        case 012: return "Erase";
-        case 013: return "WRTM";
-        case 014: return "Space FWD";
-        case 015: return "Space REV";
-        case 024: return "WRCHK FWD";
-        case 027: return "WRCHK REV";
-        case 030: return "Write FWD";
-        case 034: return "Read FWD";
-        case 037: return "Read REV";
-        default:  return "Illegal Function";
-    }
+    static const char * const function[32] = {
+        "No-Op",                // 00
+        "Unload",               // 01
+        "Illegal Function",     // 02
+        "Rewind",               // 03
+        "Drive Clear",          // 04
+        "Illegal Function",     // 05
+        "Illegal Function",     // 06
+        "Illegal Function",     // 07
+        "Preset",               // 10
+        "Illegal Function",     // 11
+        "Erase",                // 12
+        "Write Tape Mark",      // 13
+        "Space Forward",        // 14
+        "Space Reverse",        // 15
+        "Illegal Function",     // 16
+        "Illegal Function",     // 17
+        "Illegal Function",     // 20
+        "Illegal Function",     // 21
+        "Illegal Function",     // 22
+        "Illegal Function",     // 23
+        "Write Check Forward",  // 24
+        "Illegal Function",     // 25
+        "Illegal Function",     // 26
+        "Write Check Reverse",  // 27
+        "Write Forward",        // 30
+        "Illegal Function",     // 31
+        "Illegal Function",     // 32
+        "Illegal Function",     // 33
+        "Read Forward",         // 34
+        "Illegal Function",     // 35
+        "Illegal Function",     // 36
+        "Read Reverse",         // 37
+    };
+    return function[fun & 0x001f];
 }
 
 //!
@@ -149,21 +142,25 @@ const char *mt_t::printFUN(uint16_t fun) {
 //!
 
 const char *mt_t::printMOP(uint16_t mop) {
-    switch (mop) {
-        case 000: return "NOP";
-        case 001: return "Interchange Read";
-        case 002: return "Even Parity";
-        case 003: return "Data Wraparound, Global";
-        case 004: return "Data Wraparound, Partial";
-        case 005: return "Data Wraparound, Formatter Write";
-        case 006: return "Data Wraparound, Formatter Read";
-        case 007: return "Cripple Reception of OCC";
-        case 010: return "Supress CRC check in NRZI mode";
-        case 011: return "Force Data Errors";
-        case 012: return "MM EOF";
-        case 013: return "Inv preamble/postamble in PE mode";
-        default:  return "Unrecognized MOP";
-    }
+    static const char * const op[16] = {
+        "NOP",                                  // 00
+        "Interchange Read",                     // 01
+        "Even Parity",                          // 02
+        "Data Wraparound, Global",              // 03
+        "Data Wraparound, Partial",             // 04
+        "Data Wraparound, Formatter Write",     // 05
+        "Data Wraparound, Formatter Read",      // 06
+        "Cripple Reception of OCC",             // 07
+        "Supress CRC check in NRZI mode",       // 10
+        "Force Data Errors",                    // 11
+        "MM EOF",                               // 12
+        "Inv preamble/postamble in PE mode",    // 13
+        "Unrecognized OP",                      // 14
+        "Unrecognized OP",                      // 15
+        "Unrecognized OP",                      // 16
+        "Unrecognized OP",                      // 17
+    };
+    return op[mop & 0x000f];
 }
 
 //!

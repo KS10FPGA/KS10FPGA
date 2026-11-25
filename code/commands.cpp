@@ -151,7 +151,7 @@ void command_t::initialize(void) {
 
     mt_cfg.baseaddr  = 03772440;                        // Standard base address
     mt_cfg.bootdiag  = false;                           // Not booting to diagnostics
-    mt_cfg.debugMask = 0x0fffb;                         // Debug Mask
+    mt_cfg.debugMask = 0;                               // Debug Mask
     for (int i = 0; i < 8; i++) {
         mt_cfg.drive[i].fp          = NULL;             // No tape file attached to slave
         mt_cfg.drive[i].param       = 00002000 + i;     // 1600 BPI + slave
@@ -933,16 +933,6 @@ bool command_t::cmdBR(int argc, char *argv[]) {
         }
     }
 
-#if 1
-    printf("argc = %d, index = %d, optind = %d\n", argc, index, optind);
-    printf("arv[0] = %s\n", argv[0]);
-    printf("arv[1] = %s\n", argv[1]);
-    printf("arv[2] = %s\n", argv[2]);
-    printf("arv[3] = %s\n", argv[3]);
-    printf("arv[4] = %s\n", argv[4]);
-    printf("arv[5] = %s\n", argv[5]);
-#endif
-
     //
     // Set the breakpoint registers
     //
@@ -1497,7 +1487,7 @@ static bool cmdDUP_CONF(int argc, char *argv[]) {
         if (ret == -1) {
             break;
         } else if (ret == '?') {
-            printf("dz config: unrecognized option \"%s\"\n\n%s", argv[optind-1], usage);
+            printf("du config: unrecognized option \"%s\"\n\n%s", argv[optind-1], usage);
             return true;
         } else {
             switch (index) {
@@ -1717,16 +1707,16 @@ static bool cmdDZ_CONF(int argc, char *argv[]) {
     if (argc == 2) {
         printf("        CO = Carrier Sense\n"
                "        RI = Ring Indication\n"
-               "        +------+----------+\n"
-               "        | LINE | CO   RI  |\n"
-               "        +------+----------+\n", dzccr);
+               "        +------+---------+---------+\n"
+               "        | LINE |   CO    |   RI    |\n"
+               "        +------+---------+---------+\n", dzccr);
 
         for (int i = 0; i < 8; i++) {
-            printf("        |   %1d  |  %c    %c  |\n", i,
-                   ((int)(dzccr >> ( 8 + i)) & 1) ? 'X' : ' ',
-                   ((int)(dzccr >> ( 0 + i)) & 1) ? 'X' : ' ');
+            printf("        |   %1d  |  %s  |  %s  |\n", i,
+                   ((int)(dzccr >> ( 8 + i)) & 1) ? "true " : "false",
+                   ((int)(dzccr >> ( 0 + i)) & 1) ? "true " : "false");
         }
-        printf("        +------+----------+\n");
+        printf("        +------+---------+---------+\n");
         return true;
     }
 

@@ -231,7 +231,7 @@ uint32_t tape_t::readHeader(void) {
 
     size_t nread = fread(buf, sizeof(buf[0]), bufsiz, fp);
     if (nread != bufsiz) {
-        DEBUG_HEADER("TAPE: Unit %d: Error: readHeader() - fread() returned %d.\n", unit, nread);
+        DEBUG_HEADER("TAPE: %sUnit %d: Error: readHeader(): fread() returned %d.%s\n", vt100fg_red, unit, nread, vt100at_rst);
         return h_EOT;
     }
 
