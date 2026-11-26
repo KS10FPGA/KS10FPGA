@@ -52,17 +52,15 @@ ARGS :=\
 
 all:
 	$(MAKE) -C code
+	$(MAKE) -C fpga
 	$(MAKE) -C tools
 	$(MAKE) -C Tape\ and\ Disk\ Images
-	$(MAKE) -C tools
-	$(MAKE) -C fpga
 
 clean:
 	$(MAKE) -C code clean
+	$(MAKE) -C fpga clean
 	$(MAKE) -C tools clean
 	$(MAKE) -C Tape\ and\ Disk\ Images clean
-	$(MAKE) -C tools clean
-	$(MAKE) -C fpga clean
 
 archive_all:
 	tar $(ARGS) --exclude-vcs -czvf ks10_all_`date '+%y%m%d'`.tgz *
